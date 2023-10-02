@@ -1,4 +1,8 @@
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
 #include "CesiumTileExcluderAdapter.h"
+#include "Cesium3DTilesSelection/Tile.h"
+#include "CesiumGeoreference.h"
 #include "VecMath.h"
 
 bool CesiumTileExcluderAdapter::shouldExclude(

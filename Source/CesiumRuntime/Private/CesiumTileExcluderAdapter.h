@@ -1,7 +1,12 @@
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
 #pragma once
+
 #include "CesiumTile.h"
 #include "CesiumTileExcluder.h"
 #include <Cesium3DTilesSelection/ITileExcluder.h>
+
+class ACesiumGeoreference;
 
 class CesiumTileExcluderAdapter : public Cesium3DTilesSelection::ITileExcluder {
   virtual bool shouldExclude(

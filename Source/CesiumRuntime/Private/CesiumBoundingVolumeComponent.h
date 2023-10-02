@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumViewExtension.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -16,6 +15,7 @@
 #include "CesiumBoundingVolumeComponent.generated.h"
 
 class ACesiumGeoreference;
+class CesiumViewExtension;
 
 UCLASS()
 class UCesiumBoundingVolumePoolComponent : public USceneComponent {
