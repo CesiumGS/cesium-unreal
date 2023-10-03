@@ -22,16 +22,6 @@ namespace Cesium {
 FString SceneGenerationContext::testIonToken(
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NjU3OGE4Zi0xOGM4LTQ4NjYtODc4ZS02YWNkMDZmY2Y1M2YiLCJpZCI6MjU5LCJpYXQiOjE2OTA4Nzg3MjB9.uxePYJL59S4pG5aqJHb9goikVSO-Px6xA7kZH8oM1eM");
 
-void SceneGenerationContext::setCamera(const FCesiumCamera& camera) {
-  // Take over first camera, or add if it doesn't exist
-  const TMap<int32, FCesiumCamera> cameras = cameraManager->GetCameras();
-  if (cameras.IsEmpty()) {
-    cameraManager->AddCamera(camera);
-  } else {
-    cameraManager->UpdateCamera(0, camera);
-  }
-}
-
 void SceneGenerationContext::refreshTilesets() {
   std::vector<ACesium3DTileset*>::iterator it;
   for (it = tilesets.begin(); it != tilesets.end(); ++it)
@@ -80,6 +70,10 @@ void SceneGenerationContext::initForPlay(
   cameraManager = CesiumTestHelpers::findInPlay(creationContext.cameraManager);
   pawn = CesiumTestHelpers::findInPlay(creationContext.pawn);
 
+  startPosition = creationContext.startPosition;
+  startRotation = creationContext.startRotation;
+  startFieldOfView = creationContext.startFieldOfView;
+
   tilesets.clear();
 
   std::vector<ACesium3DTileset*>& creationTilesets = creationContext.tilesets;
@@ -89,6 +83,20 @@ void SceneGenerationContext::initForPlay(
     ACesium3DTileset* tileset = CesiumTestHelpers::findInPlay(creationTileset);
     tilesets.push_back(tileset);
   }
+}
+
+void SceneGenerationContext::syncWorldPlayerCamera() {
+  assert(world->GetNumPlayerControllers() == 1);
+
+  APlayerController* controller = world->GetFirstPlayerController();
+  assert(controller);
+
+  controller->ClientSetLocation(startPosition, startRotation);
+
+  APlayerCameraManager* cameraManager = controller->PlayerCameraManager;
+  assert(cameraManager);
+
+  cameraManager->SetFOV(startFieldOfView);
 }
 
 void createCommonWorldObjects(SceneGenerationContext& context) {
@@ -118,22 +126,18 @@ void createCommonWorldObjects(SceneGenerationContext& context) {
 }
 
 void setupForGoogleTiles(SceneGenerationContext& context) {
-
   FVector targetOrigin(-122.083969, 37.424492, 142.859116);
   FString targetUrl(
       "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
 
-  FCesiumCamera camera;
-  camera.ViewportSize = FVector2D(1024, 768);
-  camera.Location = FVector(0, 0, 0);
-  camera.Rotation = FRotator(-25, 95, 0);
-  camera.FieldOfViewDegrees = 90;
-  context.setCamera(camera);
+  context.startPosition = FVector(0, 0, 0);
+  context.startRotation = FRotator(-25, 95, 0);
+  context.startFieldOfView = 90.0f;
 
   context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
-  context.pawn->SetActorLocation(FVector(0, 0, 0));
-  context.pawn->SetActorRotation(FRotator(-25, 95, 0));
+  context.pawn->SetActorLocation(context.startPosition);
+  context.pawn->SetActorRotation(context.startRotation);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(targetUrl);
@@ -144,20 +148,16 @@ void setupForGoogleTiles(SceneGenerationContext& context) {
 }
 
 void setupForDenver(SceneGenerationContext& context) {
-
   FVector targetOrigin(-104.988892, 39.743462, 1798.679443);
 
-  FCesiumCamera camera;
-  camera.ViewportSize = FVector2D(1024, 768);
-  camera.Location = FVector(0, 0, 0);
-  camera.Rotation = FRotator(-5.2, -149.4, 0);
-  camera.FieldOfViewDegrees = 90;
-  context.setCamera(camera);
+  context.startPosition = FVector(0, 0, 0);
+  context.startRotation = FRotator(-5.2, -149.4, 0);
+  context.startFieldOfView = 90.0f;
 
   context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
-  context.pawn->SetActorLocation(FVector(0, 0, 0));
-  context.pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
+  context.pawn->SetActorLocation(context.startPosition);
+  context.pawn->SetActorRotation(context.startRotation);
 
   // Add Cesium World Terrain
   ACesium3DTileset* worldTerrainTileset =
@@ -194,17 +194,14 @@ void setupForDenver(SceneGenerationContext& context) {
 void setupForMontrealPointCloud(SceneGenerationContext& context) {
   FVector targetOrigin(-73.616526, 45.57335, 95.048859);
 
-  FCesiumCamera camera;
-  camera.ViewportSize = FVector2D(1024, 768);
-  camera.Location = FVector(0, 0, 0);
-  camera.Rotation = FRotator(-90.0, 0.0, 0.0);
-  camera.FieldOfViewDegrees = 90;
-  context.setCamera(camera);
+  context.startPosition = FVector(0, 0, 0);
+  context.startRotation = FRotator(-90.0, 0.0, 0.0);
+  context.startFieldOfView = 90.0f;
 
   context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
-  context.pawn->SetActorLocation(FVector(0, 0, 0));
-  context.pawn->SetActorRotation(FRotator(-90.0, 0.0, 0.0));
+  context.pawn->SetActorLocation(context.startPosition);
+  context.pawn->SetActorRotation(context.startRotation);
 
   // Montreal Point Cloud
   ACesium3DTileset* montrealTileset =

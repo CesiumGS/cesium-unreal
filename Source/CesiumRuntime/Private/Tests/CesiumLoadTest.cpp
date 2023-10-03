@@ -35,6 +35,10 @@ struct LoadTestContext {
   SceneGenerationContext creationContext;
   SceneGenerationContext playContext;
 
+  float cameraFieldOfView = 90.0f;
+  int viewportWidth = 1024;
+  int viewportHeight = 768;
+
   bool testInProgress;
   double startMark;
   double endMark;
@@ -64,6 +68,7 @@ bool TimeLoadingCommand::Update() {
 
     // Bind all play in editor pointers
     context.playContext.initForPlay(context.creationContext);
+    context.playContext.syncWorldPlayerCamera();
 
     if (setupStep)
       setupStep(context.playContext);
@@ -179,15 +184,23 @@ bool RunLoadTest(
   // Wait for shaders. Shader compiles could affect performance
   ADD_LATENT_AUTOMATION_COMMAND(FWaitForShadersToFinishCompiling);
 
-  // Queue play in editor, then wait for it (don't sim in editor)
-  ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+  // Queue play in editor and set desired viewport size
+  FRequestPlaySessionParams Params;
+  Params.WorldType = EPlaySessionWorldType::PlayInEditor;
+  Params.EditorPlaySettings = NewObject<ULevelEditorPlaySettings>();
+  Params.EditorPlaySettings->NewWindowWidth = gLoadTestContext.viewportWidth;
+  Params.EditorPlaySettings->NewWindowHeight = gLoadTestContext.viewportHeight;
+  Params.EditorPlaySettings->EnableGameSound = false;
+  GEditor->RequestPlaySession(Params);
+
+  // Wait until PIE is ready
   ADD_LATENT_AUTOMATION_COMMAND(WaitForPIECommand());
 
   std::vector<TestPass>::const_iterator it;
   for (it = testPasses.begin(); it != testPasses.end(); ++it) {
     const TestPass& pass = *it;
 
-    // Wait a bit
+    // Wait to show distinct gap in profiler
     ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.0f));
 
     // Do our timing capture
@@ -200,7 +213,7 @@ bool RunLoadTest(
         pass.verifyStep));
   }
 
-  // Wait a bit to show a distinct gap if using a profiler
+  // Wait to show distinct gap in profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.0f));
 
   // End play in editor
@@ -237,14 +250,11 @@ bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
 
   auto adjustCamera = [this](SceneGenerationContext& context) {
     // Zoom way out
-    FCesiumCamera zoomedOut;
-    zoomedOut.ViewportSize = FVector2D(1024, 768);
-    zoomedOut.Location = FVector(0, 0, 7240000.0);
-    zoomedOut.Rotation = FRotator(-90.0, 0.0, 0.0);
-    zoomedOut.FieldOfViewDegrees = 90;
-    context.setCamera(zoomedOut);
+    context.startPosition = FVector(0, 0, 7240000.0);
+    context.startRotation = FRotator(-90.0, 0.0, 0.0);
+    context.syncWorldPlayerCamera();
 
-    context.pawn->SetActorLocation(zoomedOut.Location);
+    context.pawn->SetActorLocation(context.startPosition);
   };
 
   auto verifyVisibleTiles = [this](SceneGenerationContext& context) {

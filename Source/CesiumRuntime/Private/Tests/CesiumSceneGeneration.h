@@ -21,13 +21,17 @@ struct SceneGenerationContext {
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;
 
-  void setCamera(const FCesiumCamera& camera);
+  FVector startPosition;
+  FRotator startRotation;
+  float startFieldOfView;
+
   void refreshTilesets();
   void setSuspendUpdate(bool suspend);
   bool areTilesetsDoneLoading();
 
   void trackForPlay();
   void initForPlay(SceneGenerationContext& creationContext);
+  void syncWorldPlayerCamera();
 
   static FString testIonToken;
 };
