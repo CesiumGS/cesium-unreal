@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTypeTraits.h"
-#include "CesiumGltf/PropertyViewTypes.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
@@ -13,6 +11,10 @@
 #include <string_view>
 #include <variant>
 #include "CesiumPropertyTableProperty.generated.h"
+
+namespace CesiumGltf {
+class PropertyTableView;
+}
 
 /**
  * @brief Reports the status of a FCesiumPropertyTableProperty. If the property
@@ -47,70 +49,17 @@ public:
   /**
    * Construct an invalid property with an unknown type.
    */
-  FCesiumPropertyTableProperty()
-      : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(),
-        _valueType(),
-        _normalized(false) {}
+  FCesiumPropertyTableProperty();
 
-  /**
-   * Construct a wrapper for the property table property view.
-   *
-   * @param value The PropertyTablePropertyView to be stored in this struct.
-   */
-  template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property)
-      : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(),
-        _valueType(),
-        _normalized(Normalized) {
-    if constexpr (Normalized) {
-      _property = CesiumGltf::NormalizedPropertyTablePropertyViewType(Property);
-    } else {
-      _property = CesiumGltf::PropertyTablePropertyViewType(Property);
-    }
-
-    switch (Property.status()) {
-    case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
-      _status = ECesiumPropertyTablePropertyStatus::Valid;
-      break;
-    case CesiumGltf::PropertyTablePropertyViewStatus::EmptyPropertyWithDefault:
-      _status = ECesiumPropertyTablePropertyStatus::EmptyPropertyWithDefault;
-      break;
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidPropertyTable:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorNonexistentProperty:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorTypeMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::
-        ErrorComponentTypeMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorArrayTypeMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidNormalization:
-    case CesiumGltf::PropertyTablePropertyViewStatus::
-        ErrorNormalizationMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidOffset:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidScale:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMax:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMin:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidNoDataValue:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidDefaultValue:
-      // The status was already set in the initializer list.
-      return;
-    default:
-      _status = ECesiumPropertyTablePropertyStatus::ErrorInvalidPropertyData;
-      return;
-    }
-
-    _valueType = TypeToMetadataValueType<T>();
-    _normalized = Normalized;
-  }
+      const CesiumGltf::PropertyTableView& propertyTable,
+      const std::string& propertyName);
 
 private:
   ECesiumPropertyTablePropertyStatus _status;
 
-  using PropertyType = std::variant<
-      CesiumGltf::PropertyTablePropertyViewType,
-      CesiumGltf::NormalizedPropertyTablePropertyViewType>;
-  PropertyType _property;
+  struct Impl;
+  TSharedPtr<Impl> _pImpl;
 
   FCesiumMetadataValueType _valueType;
   bool _normalized;

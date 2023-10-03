@@ -1,7 +1,9 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTableProperty.h"
+#include "CesiumGltf/PropertyTableView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumGltf/PropertyViewTypes.h"
 #include "CesiumMetadataConversions.h"
 
 using namespace CesiumGltf;
@@ -25,7 +27,86 @@ T callback(
       std::get<CesiumGltf::NormalizedPropertyTablePropertyViewType>(property));
 }
 
+template <typename TPropertyView>
+FCesiumMetadataValueType GetMetadataValueType(const TPropertyView&) {
+  return TypeToMetadataValueType<typename TPropertyView::PropertyType>();
+}
+
 } // namespace
+
+struct FCesiumPropertyTableProperty::Impl {
+  using PropertyType = std::variant<
+      CesiumGltf::PropertyTablePropertyViewType,
+      CesiumGltf::NormalizedPropertyTablePropertyViewType>;
+  PropertyType property;
+};
+
+FCesiumPropertyTableProperty::FCesiumPropertyTableProperty()
+    : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
+      _pImpl(MakeShared<Impl>()),
+      _valueType(),
+      _normalized(false) {}
+
+FCesiumPropertyTableProperty::FCesiumPropertyTableProperty(
+    const CesiumGltf::PropertyTableView& propertyTable,
+    const std::string& propertyName)
+    : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
+      _pImpl(MakeShared<Impl>()),
+      _valueType(),
+      _normalized() {
+  propertyTable.getPropertyView(
+      propertyName,
+      [this](const std::string& propertyName, auto propertyView) {
+        if constexpr (propertyView.normalized()) {
+          _pImpl->property =
+              CesiumGltf::NormalizedPropertyTablePropertyViewType(propertyView);
+        } else {
+          _pImpl->property =
+              CesiumGltf::PropertyTablePropertyViewType(propertyView);
+        }
+
+        switch (propertyView.status()) {
+        case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
+          this->_status = ECesiumPropertyTablePropertyStatus::Valid;
+          break;
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            EmptyPropertyWithDefault:
+          this->_status =
+              ECesiumPropertyTablePropertyStatus::EmptyPropertyWithDefault;
+          break;
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorInvalidPropertyTable:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorNonexistentProperty:
+        case CesiumGltf::PropertyTablePropertyViewStatus::ErrorTypeMismatch:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorComponentTypeMismatch:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorArrayTypeMismatch:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorInvalidNormalization:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorNormalizationMismatch:
+        case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidOffset:
+        case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidScale:
+        case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMax:
+        case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMin:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorInvalidNoDataValue:
+        case CesiumGltf::PropertyTablePropertyViewStatus::
+            ErrorInvalidDefaultValue:
+          // The status was already set in the initializer list.
+          return;
+        default:
+          this->_status =
+              ECesiumPropertyTablePropertyStatus::ErrorInvalidPropertyData;
+          return;
+        }
+
+        this->_valueType = GetMetadataValueType(propertyView);
+        this->_normalized = propertyView.normalized();
+      });
+}
 
 ECesiumPropertyTablePropertyStatus
 UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertyTablePropertyStatus(
@@ -60,16 +141,16 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  return callback<int64>(Property._property, [](const auto& view) -> int64 {
-    return view.size();
-  });
+  return callback<int64>(
+      Property._pImpl->property,
+      [](const auto& view) -> int64 { return view.size(); });
 }
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  return callback<int64>(Property._property, [](const auto& view) -> int64 {
-    return view.arrayCount();
-  });
+  return callback<int64>(
+      Property._pImpl->property,
+      [](const auto& view) -> int64 { return view.arrayCount(); });
 }
 
 bool UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
@@ -77,7 +158,7 @@ bool UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
     int64 FeatureID,
     bool DefaultValue) {
   return callback<bool>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> bool {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -99,7 +180,7 @@ uint8 UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
     int64 FeatureID,
     uint8 DefaultValue) {
   return callback<uint8>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> uint8 {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -121,7 +202,7 @@ int32 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
     int64 FeatureID,
     int32 DefaultValue) {
   return callback<int32>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> int32 {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -143,7 +224,7 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
     int64 FeatureID,
     int64 DefaultValue) {
   return callback<int64>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> int64 {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -165,7 +246,7 @@ float UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
     int64 FeatureID,
     float DefaultValue) {
   return callback<float>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> float {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -187,7 +268,7 @@ double UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
     int64 FeatureID,
     double DefaultValue) {
   return callback<double>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> double {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -209,7 +290,7 @@ FIntPoint UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
     int64 FeatureID,
     const FIntPoint& DefaultValue) {
   return callback<FIntPoint>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FIntPoint {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -231,7 +312,7 @@ FVector2D UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
     int64 FeatureID,
     const FVector2D& DefaultValue) {
   return callback<FVector2D>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FVector2D {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -253,7 +334,7 @@ FIntVector UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
     int64 FeatureID,
     const FIntVector& DefaultValue) {
   return callback<FIntVector>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FIntVector {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -274,7 +355,7 @@ FVector3f UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
     int64 FeatureID,
     const FVector3f& DefaultValue) {
   return callback<FVector3f>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FVector3f {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -296,7 +377,7 @@ FVector UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
     int64 FeatureID,
     const FVector& DefaultValue) {
   return callback<FVector>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FVector {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -318,7 +399,7 @@ FVector4 UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
     int64 FeatureID,
     const FVector4& DefaultValue) {
   return callback<FVector4>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FVector4 {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -340,7 +421,7 @@ FMatrix UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
     int64 FeatureID,
     const FMatrix& DefaultValue) {
   return callback<FMatrix>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, DefaultValue](const auto& v) -> FMatrix {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -362,7 +443,7 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
     int64 FeatureID,
     const FString& DefaultValue) {
   return callback<FString>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID, &DefaultValue](const auto& v) -> FString {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -383,7 +464,7 @@ FCesiumPropertyArray UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID) {
   return callback<FCesiumPropertyArray>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID](const auto& v) -> FCesiumPropertyArray {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -404,7 +485,7 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID](const auto& view) -> FCesiumMetadataValue {
         // size() returns zero if the view is invalid.
         if (FeatureID >= 0 && FeatureID < view.size()) {
@@ -418,7 +499,7 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [FeatureID](const auto& view) -> FCesiumMetadataValue {
         // Return an empty value if the property is empty.
         if (view.status() ==
@@ -443,7 +524,7 @@ bool UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(
 FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no offset is specified.
         return FCesiumMetadataValue(view.offset());
@@ -453,7 +534,7 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
 FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no scale is specified.
         return FCesiumMetadataValue(view.scale());
@@ -464,7 +545,7 @@ FCesiumMetadataValue
 UCesiumPropertyTablePropertyBlueprintLibrary::GetMinimumValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no min is specified.
         return FCesiumMetadataValue(view.min());
@@ -475,7 +556,7 @@ FCesiumMetadataValue
 UCesiumPropertyTablePropertyBlueprintLibrary::GetMaximumValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no max is specified.
         return FCesiumMetadataValue(view.max());
@@ -486,7 +567,7 @@ FCesiumMetadataValue
 UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no "no data" value is specified.
         return FCesiumMetadataValue(view.noData());
@@ -497,7 +578,7 @@ FCesiumMetadataValue
 UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return callback<FCesiumMetadataValue>(
-      Property._property,
+      Property._pImpl->property,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no default value is specified.
         return FCesiumMetadataValue(view.defaultValue());
