@@ -130,6 +130,14 @@ bool TestCleanupCommand::Update() {
   return true;
 }
 
+DEFINE_LATENT_AUTOMATION_COMMAND(WaitForPIECommand);
+bool WaitForPIECommand::Update() {
+  if (!GEditor || !GEditor->IsPlayingSessionInEditor())
+    return false;
+  UE_LOG(LogCesium, Display, TEXT("Play in Editor ready..."));
+  return true;
+}
+
 struct TestPass {
   FString name;
   std::function<void(SceneGenerationContext&)> setupStep;
@@ -168,8 +176,12 @@ bool RunLoadTest(
   // Start async commands
   //
 
-  // Start play in editor (don't sim in editor)
+  // Wait for shaders. Shader compiles could affect performance
+  ADD_LATENT_AUTOMATION_COMMAND(FWaitForShadersToFinishCompiling);
+
+  // Queue play in editor, then wait for it (don't sim in editor)
   ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+  ADD_LATENT_AUTOMATION_COMMAND(WaitForPIECommand());
 
   std::vector<TestPass>::const_iterator it;
   for (it = testPasses.begin(); it != testPasses.end(); ++it) {
@@ -188,7 +200,7 @@ bool RunLoadTest(
         pass.verifyStep));
   }
 
-  // Wait a bit
+  // Wait a bit to show a distinct gap if using a profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.0f));
 
   // End play in editor
