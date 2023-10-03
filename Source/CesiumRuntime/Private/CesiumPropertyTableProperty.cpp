@@ -10,6 +10,36 @@ using namespace CesiumGltf;
 namespace {
 /**
  * Callback on a std::any, assuming that it contains a PropertyTablePropertyView
+ * of the specified type. If the type does not match, the callback is performed
+ * on an invalid PropertyTablePropertyView instead.
+ *
+ * @param property The std::any containing the property.
+ * @param callback The callback function.
+ *
+ * @tparam TProperty The property type.
+ * @tparam Normalized Whether the PropertyTablePropertyView is normalized.
+ * @tparam TResult The type of the output from the callback function.
+ * @tparam Callback The callback function type.
+ */
+template <
+    typename TProperty,
+    bool Normalized,
+    typename TResult,
+    typename Callback>
+TResult
+propertyTablePropertyCallback(const std::any& property, Callback&& callback) {
+  const PropertyTablePropertyView<TProperty, Normalized>* pProperty =
+      std::any_cast<PropertyTablePropertyView<TProperty, Normalized>>(
+          &property);
+  if (pProperty) {
+    return callback(*pProperty);
+  }
+
+  return callback(PropertyTablePropertyView<uint8_t>());
+}
+
+/**
+ * Callback on a std::any, assuming that it contains a PropertyTablePropertyView
  * on a scalar type. If the valueType does not have a valid component type, the
  * callback is performed on an invalid PropertyTablePropertyView instead.
  *
@@ -23,40 +53,66 @@ namespace {
  */
 template <bool Normalized, typename TResult, typename Callback>
 TResult scalarPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<int8, Normalized>>(property));
+    return propertyTablePropertyCallback<int8_t, Normalized, TResult, Callback>(
+        property,
+        std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<uint8, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        uint8_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<int16, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        int16_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<uint16, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        uint16_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int32:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<int32, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        int32_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint32:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<uint32, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        uint32_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int64:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<int64, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        int64_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint64:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<uint64, Normalized>>(property));
+    return propertyTablePropertyCallback<
+        uint64_t,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float32:
-    return callback(std::any_cast<PropertyTablePropertyView<float>>(property));
+    return propertyTablePropertyCallback<float, false, TResult, Callback>(
+        property,
+        std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float64:
-    return callback(std::any_cast<PropertyTablePropertyView<double>>(property));
+    return propertyTablePropertyCallback<double, false, TResult, Callback>(
+        property,
+        std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
@@ -76,60 +132,72 @@ TResult scalarPropertyTablePropertyCallback(
  */
 template <bool Normalized, typename TResult, typename Callback>
 TResult scalarArrayPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<int8>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<int8_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<uint8>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<uint8_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<int16>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<int16_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<uint16>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<uint16_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int32:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<int32>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<int32_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint32:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<uint32>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<uint32_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int64:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<int64>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<int64_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint64:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<uint64>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<uint64_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float32:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<PropertyArrayView<float>>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<float>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float64:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<PropertyArrayView<double>>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<double>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
@@ -149,51 +217,72 @@ TResult scalarArrayPropertyTablePropertyCallback(
  */
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult vecNPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<glm::vec<N, int8>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, int8_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, uint8>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, uint8_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, int16>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, int16_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, uint16>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, uint16_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int32:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, int32>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, int32_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint32:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, uint32>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, uint32_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int64:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, int64>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, int64_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint64:
-    return callback(std::any_cast<
-                    PropertyTablePropertyView<glm::vec<N, uint64>, Normalized>>(
-        property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, uint64_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float32:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<glm::vec<N, float>>>(property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, float>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float64:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<glm::vec<N, double>>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::vec<N, double>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
@@ -212,7 +301,7 @@ TResult vecNPropertyTablePropertyCallback(
  */
 template <bool Normalized, typename TResult, typename Callback>
 TResult vecNPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Vec2) {
@@ -236,7 +325,7 @@ TResult vecNPropertyTablePropertyCallback(
         std::forward<Callback>(callback));
   }
 
-  return callback(PropertyTablePropertyView<uint8>());
+  return callback(PropertyTablePropertyView<uint8_t>());
 }
 
 /**
@@ -256,54 +345,72 @@ TResult vecNPropertyTablePropertyCallback(
  */
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult vecNArrayPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, int8>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, int8_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, uint8>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, uint8_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, int16>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, int16_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, uint16>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, uint16_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int32:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, int32>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, int32_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint32:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, uint32>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, uint32_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int64:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, int64>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, int64_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint64:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::vec<N, uint64>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, uint64_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float32:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<glm::vec<N, float>>>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, float>>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float64:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<PropertyArrayView<glm::vec<N, double>>>>(
-            property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::vec<N, double>>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
@@ -323,7 +430,7 @@ TResult vecNArrayPropertyTablePropertyCallback(
  */
 template <bool Normalized, typename TResult, typename Callback>
 TResult vecNArrayPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Vec2) {
@@ -350,7 +457,7 @@ TResult vecNArrayPropertyTablePropertyCallback(
         Callback>(property, valueType, std::forward<Callback>(callback));
   }
 
-  return callback(PropertyTablePropertyView<uint8>());
+  return callback(PropertyTablePropertyView<uint8_t>());
 }
 
 /**
@@ -369,68 +476,79 @@ TResult vecNArrayPropertyTablePropertyCallback(
  */
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult matNPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, int8>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, int8_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, uint8>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, uint8_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, int16>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, int16_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, uint16>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, uint16_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int32:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, int32>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, int32_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint32:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, uint32>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, uint32_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int64:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, int64>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, int64_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint64:
-    return callback(
-        std::any_cast<
-            PropertyTablePropertyView<glm::mat<N, N, uint64>, Normalized>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, uint64_t>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float32:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<glm::mat<N, N, float>>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, float>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float64:
-    return callback(
-        std::any_cast<PropertyTablePropertyView<glm::mat<N, N, double>>>(
-            property));
+    return propertyTablePropertyCallback<
+        glm::mat<N, N, double>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
 /**
  * Callback on a std::any, assuming that it contains a PropertyTablePropertyView
- * on a glm::matN type. This restricts the number of typeid checks done on the
- * std::any. If the valueType does not have a valid component type, the callback
- * is performed on an invalid PropertyTablePropertyView instead.
+ * on a glm::matN type. If the valueType does not have a valid component type,
+ * the callback is performed on an invalid PropertyTablePropertyView instead.
  *
  * @param property The std::any containing the property.
  * @param valueType The FCesiumMetadataValueType of the property.
@@ -442,7 +560,7 @@ TResult matNPropertyTablePropertyCallback(
  */
 template <bool Normalized, typename TResult, typename Callback>
 TResult matNPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Mat2) {
@@ -471,9 +589,9 @@ TResult matNPropertyTablePropertyCallback(
 
 /**
  * Callback on a std::any, assuming that it contains a PropertyTablePropertyView
- * on a glm::matN array type. This restricts the number of typeid checks done on
- * the std::any. If the valueType does not have a valid component type, the
- * callback is performed on an invalid PropertyTablePropertyView instead.
+ * on a glm::matN array type. If the valueType does not have a valid component
+ * type, the callback is performed on an invalid PropertyTablePropertyView
+ * instead.
  *
  * @param property The std::any containing the property.
  * @param valueType The FCesiumMetadataValueType of the property.
@@ -486,58 +604,80 @@ TResult matNPropertyTablePropertyCallback(
  */
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult matNArrayPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, int8>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, int8_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, uint8>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, uint8_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, int16>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, int16_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, uint16>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, uint16_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int32:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, int32>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, int32_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint32:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, uint32>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, uint32_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int64:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, int64>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, int64_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint64:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, uint64>>,
-                        Normalized>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, uint64_t>>,
+        Normalized,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float32:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, float>>>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, float>>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Float64:
-    return callback(std::any_cast<PropertyTablePropertyView<
-                        PropertyArrayView<glm::mat<N, N, double>>>>(property));
+    return propertyTablePropertyCallback<
+        PropertyArrayView<glm::mat<N, N, double>>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
 /**
  * Callback on a std::any, assuming that it contains a PropertyTablePropertyView
- * on a glm::matN array type. This restricts the number of typeid checks done on
- * the std::any. If the valueType does not have a valid component type, the
- * callback is performed on an invalid PropertyTablePropertyView instead.
+ * on a glm::matN array type. If the valueType does not have a valid component
+ * type, the callback is performed on an invalid PropertyTablePropertyView
+ * instead.
  *
  * @param property The std::any containing the property.
  * @param valueType The FCesiumMetadataValueType of the property.
@@ -549,7 +689,7 @@ TResult matNArrayPropertyTablePropertyCallback(
  */
 template <bool Normalized, typename TResult, typename Callback>
 TResult matNArrayPropertyTablePropertyCallback(
-    std::any property,
+    const std::any& property,
     FCesiumMetadataValueType valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Mat2) {
@@ -576,7 +716,7 @@ TResult matNArrayPropertyTablePropertyCallback(
         Callback>(property, valueType, std::forward<Callback>(callback));
   }
 
-  return callback(PropertyTablePropertyView<uint8>());
+  return callback(PropertyTablePropertyView<uint8_t>());
 }
 
 template <bool Normalized, typename TResult, typename Callback>
@@ -605,22 +745,19 @@ TResult arrayPropertyTablePropertyCallback(
         TResult,
         Callback>(property, valueType, std::forward<Callback>(callback));
   case ECesiumMetadataType::Boolean:
-    if (property.type() ==
-        typeid(PropertyTablePropertyView<PropertyArrayView<bool>>))
-      return callback(
-          std::any_cast<PropertyTablePropertyView<PropertyArrayView<bool>>>(
-              property));
-    [[fallthrough]];
+    return propertyTablePropertyCallback<
+        PropertyArrayView<bool>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataType::String:
-    if (property.type() ==
-        typeid(PropertyTablePropertyView<PropertyArrayView<std::string_view>>))
-      return callback(
-          std::any_cast<
-              PropertyTablePropertyView<PropertyArrayView<std::string_view>>>(
-              property));
-    [[fallthrough]];
+    return propertyTablePropertyCallback<
+        PropertyArrayView<std::string_view>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
@@ -678,16 +815,17 @@ TResult propertyTablePropertyCallback(
                      valueType,
                      std::forward<Callback>(callback));
   case ECesiumMetadataType::Boolean:
-    if (property.type() == typeid(PropertyTablePropertyView<bool>))
-      return callback(std::any_cast<PropertyTablePropertyView<bool>>(property));
-    [[fallthrough]];
+    return propertyTablePropertyCallback<bool, false, TResult, Callback>(
+        property,
+        std::forward<Callback>(callback));
   case ECesiumMetadataType::String:
-    if (property.type() == typeid(PropertyTablePropertyView<std::string_view>))
-      return callback(
-          std::any_cast<PropertyTablePropertyView<std::string_view>>(property));
-    [[fallthrough]];
+    return propertyTablePropertyCallback<
+        std::string_view,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTablePropertyView<uint8>());
+    return callback(PropertyTablePropertyView<uint8_t>());
   }
 }
 
@@ -770,7 +908,7 @@ uint8 UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID,
     uint8 DefaultValue) {
-  return propertyTablePropertyCallback<uint8>(
+  return propertyTablePropertyCallback<uint8_t>(
       Property._property,
       Property._valueType,
       Property._normalized,
@@ -1093,7 +1231,7 @@ FCesiumPropertyArray UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
         if (maybeValue) {
           auto value = *maybeValue;
           if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-            return FCesiumPropertyArray(value);
+            return FCesiumPropertyArray(std::move(value));
           }
         }
         return FCesiumPropertyArray();
