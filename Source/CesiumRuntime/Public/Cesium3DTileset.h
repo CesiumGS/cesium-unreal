@@ -33,8 +33,6 @@ class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
 
-Here is an error
-
 namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
