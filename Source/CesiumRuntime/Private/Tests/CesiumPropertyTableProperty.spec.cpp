@@ -540,7 +540,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetArray(value);
 
       TestEqual(
-          "Size",
+          TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(*classProperty.count));
       TestEqual(
@@ -560,7 +560,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
 
       TestEqual(
-          "Size",
+          TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(*classProperty.count));
       TestEqual(
@@ -581,7 +581,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
 
       TestEqual(
-          "Size",
+          TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(*classProperty.count));
       TestEqual(
@@ -602,7 +602,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
 
       TestEqual(
-          "Size",
+          TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(*classProperty.count));
       TestEqual(
@@ -623,7 +623,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
 
       TestEqual(
-          "Size",
+          TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(*classProperty.count));
       TestEqual(
@@ -644,7 +644,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
 
       TestEqual(
-          "Size",
+          TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(*classProperty.count));
       TestEqual(
