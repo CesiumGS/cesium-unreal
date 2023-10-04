@@ -20,10 +20,6 @@ END_DEFINE_SPEC(FCesiumGlobeAnchorSpec)
 void FCesiumGlobeAnchorSpec::Define() {
   BeforeEach([this]() {
     UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
-    ACesiumGeoreference* pGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(pWorld);
-    pGeoreference->SetOriginLongitudeLatitudeHeight(FVector(1.0, 2.0, 3.0));
-
     this->pActor = pWorld->SpawnActor<AActor>();
     this->pActor->AddComponentByClass(
         USceneComponent::StaticClass(),
@@ -31,6 +27,10 @@ void FCesiumGlobeAnchorSpec::Define() {
         FTransform::Identity,
         false);
     this->pActor->SetActorRelativeTransform(FTransform());
+
+    ACesiumGeoreference* pGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(pActor);
+    pGeoreference->SetOriginLongitudeLatitudeHeight(FVector(1.0, 2.0, 3.0));
 
     this->pGlobeAnchor =
         Cast<UCesiumGlobeAnchorComponent>(pActor->AddComponentByClass(

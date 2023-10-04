@@ -84,6 +84,11 @@ void waitFor(
   waitForImpl<T>(done, pWorld, std::forward<T>(condition), timerHandle);
 }
 
+void waitForNextFrame(
+    const FDoneDelegate& done,
+    UWorld* pWorld,
+    float timeoutSeconds);
+
 /// <summary>
 /// Gets the first Actor that has a given tag.
 /// </summary>

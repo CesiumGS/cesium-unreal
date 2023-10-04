@@ -70,7 +70,5 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
   CesiumCategory.AddProperty(
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, Scale));
   CesiumCategory.AddProperty(
-      GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, SubLevelCamera));
-  CesiumCategory.AddProperty(
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, ShowLoadRadii));
 }

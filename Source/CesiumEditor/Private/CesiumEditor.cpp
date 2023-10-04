@@ -3,6 +3,7 @@
 #include "CesiumEditor.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumGlobeAnchorCustomization.h"
@@ -520,12 +521,24 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
+  ACesiumGeoreference* Georeference =
+      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
+
   AActor* pNewActor = GEditor->AddActor(
       pCurrentLevel,
       ACesium3DTileset::StaticClass(),
       FTransform(),
       false,
       RF_Transactional);
+
+  // Make the new Tileset a child of the CesiumGeoreference. Unless they're in
+  // different levels.
+  if (Georeference->GetLevel() == pCurrentLevel) {
+    pNewActor->AttachToActor(
+        Georeference,
+        FAttachmentTransformRules::KeepRelativeTransform);
+  }
+
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
   if (assetID != -1) {
@@ -657,12 +670,25 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-  return GEditor->AddActor(
+  ACesiumGeoreference* Georeference =
+      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
+
+  AActor* NewActor = GEditor->AddActor(
       pCurrentLevel,
       actorClass,
       FTransform(),
       false,
       RF_Transactional);
+
+  // Make the new Actor a child of the CesiumGeoreference. Unless they're in
+  // different levels.
+  if (Georeference->GetLevel() == pCurrentLevel) {
+    NewActor->AttachToActor(
+        Georeference,
+        FAttachmentTransformRules::KeepRelativeTransform);
+  }
+
+  return NewActor;
 }
 } // namespace
 
@@ -684,6 +710,14 @@ AActor* FCesiumEditorModule::SpawnDynamicPawn() {
 
 UClass* FCesiumEditorModule::GetCesiumSunSkyClass() {
   return ACesiumSunSky::StaticClass();
+}
+
+AActor* FCesiumEditorModule::SpawnBlankTileset() {
+  return SpawnActorWithClass(ACesium3DTileset::StaticClass());
+}
+
+AActor* FCesiumEditorModule::SpawnCartographicPolygon() {
+  return SpawnActorWithClass(ACesiumCartographicPolygon::StaticClass());
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {

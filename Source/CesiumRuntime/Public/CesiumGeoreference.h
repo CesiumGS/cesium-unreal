@@ -41,10 +41,17 @@ public:
   static const double kMinimumScale;
 
   /**
-   * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
-   * persistent level of the calling object's world. If not found, it creates a
-   * new default Georeference.
-   * @param WorldContextObject Any `UObject`.
+   * Finds and returns a CesiumGeoreference in the world. It searches in the
+   * following order:
+   *
+   * 1. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 2. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 3. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -52,6 +59,23 @@ public:
       meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
+
+  /**
+   * Finds and returns the CesiumGeoreference suitable for use with the given
+   * Actor. It searches in the following order:
+   *
+   * 1. A CesiumGeoreference that is an attachment parent of the given Actor.
+   * 2. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 3. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 4. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static ACesiumGeoreference* GetDefaultGeoreferenceForActor(AActor* Actor);
 
   /**
    * A delegate that will be called whenever the Georeference is
@@ -156,15 +180,27 @@ private:
   /**
    * The camera to use to determine which sub-level is closest, so that one can
    * be activated and all others deactivated.
+   * @deprecated Add a CesiumOriginShiftComponent to the appropriate Actor
+   * instead.
    */
   UPROPERTY(
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Add a CesiumOriginShiftComponent to the appropriate Actor instead."))
+  APlayerCameraManager* SubLevelCamera_DEPRECATED = nullptr;
+
+  /**
+   * The component that allows switching between the sub-levels registered with
+   * this georeference.
+   */
+  UPROPERTY(
+      Instanced,
       Category = "Cesium|Sub-levels",
-      EditAnywhere,
-      BlueprintReadWrite,
-      BlueprintGetter = GetSubLevelCamera,
-      BlueprintSetter = SetSublevelCamera,
+      BlueprintReadOnly,
+      BlueprintGetter = GetSubLevelSwitcher,
       meta = (AllowPrivateAccess))
-  APlayerCameraManager* SubLevelCamera = nullptr;
+  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
 
 #if WITH_EDITORONLY_DATA
   /**
@@ -320,6 +356,9 @@ public:
    * Gets the camera to use to determine which sub-level is closest, so that one
    * can be activated and all others deactivated.
    */
+  UE_DEPRECATED(
+      "Cesium For Unreal v2.0",
+      "Add a CesiumOriginShiftComponent to the appropriate Actor instead.")
   UFUNCTION(BlueprintGetter)
   APlayerCameraManager* GetSubLevelCamera() const;
 
@@ -327,8 +366,20 @@ public:
    * Sets the camera to use to determine which sub-level is closest, so that one
    * can be activated and all others deactivated.
    */
+  UE_DEPRECATED(
+      "Cesium For Unreal v2.0",
+      "Add a CesiumOriginShiftComponent to the appropriate Actor instead.")
   UFUNCTION(BlueprintSetter)
   void SetSubLevelCamera(APlayerCameraManager* NewValue);
+
+  /**
+   * Gets the component that allows switching between different sub-levels
+   * registered with this georeference.
+   */
+  UFUNCTION(BlueprintGetter)
+  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
+    return this->SubLevelSwitcher;
+  }
 
 #if WITH_EDITOR
   /**
@@ -721,7 +772,7 @@ public:
   ACesiumGeoreference();
 
   const CesiumGeospatial::LocalHorizontalCoordinateSystem&
-  getCoordinateSystem() const noexcept {
+  GetCoordinateSystem() const noexcept {
     return this->_coordinateSystem;
   }
 
@@ -740,34 +791,11 @@ private:
   CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem{
       glm::dmat4(1.0)};
 
-  UPROPERTY()
-  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
-
-  /**
-   * @brief Updates the load state of sub-levels.
-   *
-   * This checks all sub-levels whether their load radius contains the
-   * `SubLevelCamera`, in ECEF coordinates. The sub-levels that
-   * contain the camera will be loaded. All others will be unloaded.
-   *
-   * @return Whether the camera is contained in *any* sub-level.
-   */
-  bool _updateSublevelState();
-
   /**
    * Updates _geoTransforms based on the current ellipsoid and center, and
    * returns the old transforms.
    */
   void _updateCoordinateSystem();
-
-  /**
-   * Determines if this Georeference should manage sub-level switching.
-   *
-   * A Georeference inside a sub-level should not manage sub-level switching,
-   * so this function returns true the Georeference is in the world's
-   * PersistentLevel.
-   */
-  bool _shouldManageSubLevels() const;
 
   friend class FCesiumGeoreferenceCustomization;
 #pragma endregion
