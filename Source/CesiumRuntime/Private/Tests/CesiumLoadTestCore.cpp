@@ -8,6 +8,7 @@
 #include "CesiumRuntime.h"
 
 #include "Editor.h"
+#include "Settings/LevelEditorPlaySettings.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
 
