@@ -26,7 +26,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Performance.SampleLoadMontrealPointCloud",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
-void refreshTilesets(SceneGenerationContext& context) {
+void refreshSampleTilesets(SceneGenerationContext& context) {
   context.refreshTilesets();
 }
 
@@ -34,7 +34,7 @@ bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
 
   return RunLoadTest(GetTestName(), setupForDenver, testPasses);
 }
@@ -43,9 +43,9 @@ bool FCesiumSampleLoadGoogleplex::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForGoogleTiles, testPasses);
+  return RunLoadTest(GetTestName(), setupForGoogleplex, testPasses);
 }
 
 bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {

@@ -20,6 +20,8 @@ namespace Cesium {
 
 FString SceneGenerationContext::testIonToken(
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NjU3OGE4Zi0xOGM4LTQ4NjYtODc4ZS02YWNkMDZmY2Y1M2YiLCJpZCI6MjU5LCJpYXQiOjE2OTA4Nzg3MjB9.uxePYJL59S4pG5aqJHb9goikVSO-Px6xA7kZH8oM1eM");
+FString SceneGenerationContext::testGoogleUrl(
+    "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
 
 void SceneGenerationContext::refreshTilesets() {
   std::vector<ACesium3DTileset*>::iterator it;
@@ -119,10 +121,8 @@ void createCommonWorldObjects(SceneGenerationContext& context) {
     pWorldSettings->bEnableWorldBoundsChecks = false;
 }
 
-void setupForGoogleTiles(SceneGenerationContext& context) {
+void setupForGoogleplex(SceneGenerationContext& context) {
   FVector targetOrigin(-122.083969, 37.424492, 142.859116);
-  FString targetUrl(
-      "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
 
   context.startPosition = FVector(0, 0, 0);
   context.startRotation = FRotator(-25, 95, 0);
@@ -134,7 +134,7 @@ void setupForGoogleTiles(SceneGenerationContext& context) {
   context.pawn->SetActorRotation(context.startRotation);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(targetUrl);
+  tileset->SetUrl(SceneGenerationContext::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
   tileset->SetActorLabel(TEXT("Google Photorealistic 3D Tiles"));
 
