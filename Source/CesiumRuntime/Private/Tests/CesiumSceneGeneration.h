@@ -24,6 +24,12 @@ struct SceneGenerationContext {
   FRotator startRotation;
   float startFieldOfView;
 
+  void setCommonProperties(
+      const FVector& origin,
+      const FVector& position,
+      const FRotator& rotation,
+      float fieldOfView);
+
   void refreshTilesets();
   void setSuspendUpdate(bool suspend);
   bool areTilesetsDoneLoading();

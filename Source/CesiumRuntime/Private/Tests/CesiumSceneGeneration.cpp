@@ -23,6 +23,21 @@ FString SceneGenerationContext::testIonToken(
 FString SceneGenerationContext::testGoogleUrl(
     "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
 
+void SceneGenerationContext::setCommonProperties(
+    const FVector& origin,
+    const FVector& position,
+    const FRotator& rotation,
+    float fieldOfView) {
+  startPosition = position;
+  startRotation = rotation;
+  startFieldOfView = fieldOfView;
+
+  georeference->SetOriginLongitudeLatitudeHeight(origin);
+
+  pawn->SetActorLocation(startPosition);
+  pawn->SetActorRotation(startRotation);
+}
+
 void SceneGenerationContext::refreshTilesets() {
   std::vector<ACesium3DTileset*>::iterator it;
   for (it = tilesets.begin(); it != tilesets.end(); ++it)
@@ -122,16 +137,12 @@ void createCommonWorldObjects(SceneGenerationContext& context) {
 }
 
 void setupForGoogleplex(SceneGenerationContext& context) {
-  FVector targetOrigin(-122.083969, 37.424492, 142.859116);
 
-  context.startPosition = FVector(0, 0, 0);
-  context.startRotation = FRotator(-25, 95, 0);
-  context.startFieldOfView = 90.0f;
-
-  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
-
-  context.pawn->SetActorLocation(context.startPosition);
-  context.pawn->SetActorRotation(context.startRotation);
+  context.setCommonProperties(
+      FVector(-122.083969, 37.424492, 142.859116),
+      FVector(0, 0, 0),
+      FRotator(-25, 95, 0),
+      90.0f);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(SceneGenerationContext::testGoogleUrl);
@@ -142,16 +153,12 @@ void setupForGoogleplex(SceneGenerationContext& context) {
 }
 
 void setupForDenver(SceneGenerationContext& context) {
-  FVector targetOrigin(-104.988892, 39.743462, 1798.679443);
 
-  context.startPosition = FVector(0, 0, 0);
-  context.startRotation = FRotator(-5.2, -149.4, 0);
-  context.startFieldOfView = 90.0f;
-
-  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
-
-  context.pawn->SetActorLocation(context.startPosition);
-  context.pawn->SetActorRotation(context.startRotation);
+  context.setCommonProperties(
+      FVector(-104.988892, 39.743462, 1798.679443),
+      FVector(0, 0, 0),
+      FRotator(-5.2, -149.4, 0),
+      90.0f);
 
   // Add Cesium World Terrain
   ACesium3DTileset* worldTerrainTileset =
@@ -186,18 +193,13 @@ void setupForDenver(SceneGenerationContext& context) {
 }
 
 void setupForMontrealPointCloud(SceneGenerationContext& context) {
-  FVector targetOrigin(-73.616526, 45.57335, 95.048859);
 
-  context.startPosition = FVector(0, 0, 0);
-  context.startRotation = FRotator(-90.0, 0.0, 0.0);
-  context.startFieldOfView = 90.0f;
+  context.setCommonProperties(
+      FVector(-73.616526, 45.57335, 95.048859),
+      FVector(0, 0, 0),
+      FRotator(-90.0, 0.0, 0.0),
+      90.0f);
 
-  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
-
-  context.pawn->SetActorLocation(context.startPosition);
-  context.pawn->SetActorRotation(context.startRotation);
-
-  // Montreal Point Cloud
   ACesium3DTileset* montrealTileset =
       context.world->SpawnActor<ACesium3DTileset>();
   montrealTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
