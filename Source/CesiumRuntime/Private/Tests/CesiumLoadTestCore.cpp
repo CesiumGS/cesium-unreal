@@ -19,8 +19,6 @@ struct LoadTestContext {
   SceneGenerationContext playContext;
 
   float cameraFieldOfView = 90.0f;
-  int viewportWidth = 1024;
-  int viewportHeight = 768;
 
   bool testInProgress;
   double startMark;
@@ -135,17 +133,20 @@ void clearCacheDb() {
 bool RunLoadTest(
     const FString& testName,
     std::function<void(SceneGenerationContext&)> locationSetup,
-    const std::vector<TestPass>& testPasses) {
+    const std::vector<TestPass>& testPasses,
+    int viewportWidth,
+    int viewportHeight) {
 
   gLoadTestContext.reset();
 
   //
   // Programmatically set up the world
   //
-  UE_LOG(LogCesium, Display, TEXT("Creating world objects..."));
+  UE_LOG(LogCesium, Display, TEXT("Creating common world objects..."));
   createCommonWorldObjects(gLoadTestContext.creationContext);
 
   // Configure location specific objects
+  UE_LOG(LogCesium, Display, TEXT("Setting up location..."));
   locationSetup(gLoadTestContext.creationContext);
   gLoadTestContext.creationContext.trackForPlay();
 
@@ -165,8 +166,8 @@ bool RunLoadTest(
   FRequestPlaySessionParams Params;
   Params.WorldType = EPlaySessionWorldType::PlayInEditor;
   Params.EditorPlaySettings = NewObject<ULevelEditorPlaySettings>();
-  Params.EditorPlaySettings->NewWindowWidth = gLoadTestContext.viewportWidth;
-  Params.EditorPlaySettings->NewWindowHeight = gLoadTestContext.viewportHeight;
+  Params.EditorPlaySettings->NewWindowWidth = viewportWidth;
+  Params.EditorPlaySettings->NewWindowHeight = viewportHeight;
   Params.EditorPlaySettings->EnableGameSound = false;
   GEditor->RequestPlaySession(Params);
 

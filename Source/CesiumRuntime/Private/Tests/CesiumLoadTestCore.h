@@ -19,7 +19,9 @@ struct TestPass {
 bool RunLoadTest(
     const FString& testName,
     std::function<void(SceneGenerationContext&)> locationSetup,
-    const std::vector<TestPass>& testPasses);
+    const std::vector<TestPass>& testPasses,
+    int viewportWidth,
+    int viewportHeight);
 
 }; // namespace Cesium
 

@@ -36,7 +36,7 @@ bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForDenver, testPasses);
+  return RunLoadTest(GetTestName(), setupForDenver, testPasses, 1024, 768);
 }
 
 bool FCesiumSampleLoadGoogleplex::RunTest(const FString& Parameters) {
@@ -45,7 +45,7 @@ bool FCesiumSampleLoadGoogleplex::RunTest(const FString& Parameters) {
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForGoogleplex, testPasses);
+  return RunLoadTest(GetTestName(), setupForGoogleplex, testPasses, 1280, 720);
 }
 
 bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
@@ -89,7 +89,12 @@ bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
   testPasses.push_back(TestPass{"Adjust", adjustCamera, verifyVisibleTiles});
 
-  return RunLoadTest(GetTestName(), setupForMontrealPointCloud, testPasses);
+  return RunLoadTest(
+      GetTestName(),
+      setupForMontrealPointCloud,
+      testPasses,
+      512,
+      512);
 }
 
 #endif
