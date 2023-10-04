@@ -4,20 +4,19 @@
 
 #if WITH_EDITOR
 
-#include "CesiumCameraManager.h"
-#include "Editor.h"
+#include <vector>
 
 class UWorld;
 class ACesiumGeoreference;
 class AGlobeAwareDefaultPawn;
 class ACesium3DTileset;
+class ACesiumCameraManager;
 
 namespace Cesium {
 
 struct SceneGenerationContext {
   UWorld* world;
   ACesiumGeoreference* georeference;
-  ACesiumCameraManager* cameraManager;
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;
 

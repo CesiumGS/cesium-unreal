@@ -1,15 +1,14 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
-#include "CesiumSceneGeneration.h"
-
 #if WITH_EDITOR
+
+#include "CesiumSceneGeneration.h"
 
 #include "Tests/AutomationEditorCommon.h"
 
 #include "GameFramework/PlayerStart.h"
 
 #include "Cesium3DTileset.h"
-#include "CesiumCameraManager.h"
 #include "CesiumGeoreference.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumSunSky.h"
@@ -53,7 +52,6 @@ bool SceneGenerationContext::areTilesetsDoneLoading() {
 
 void SceneGenerationContext::trackForPlay() {
   CesiumTestHelpers::trackForPlay(georeference);
-  CesiumTestHelpers::trackForPlay(cameraManager);
   CesiumTestHelpers::trackForPlay(pawn);
 
   std::vector<ACesium3DTileset*>::iterator it;
@@ -67,7 +65,6 @@ void SceneGenerationContext::initForPlay(
     SceneGenerationContext& creationContext) {
   world = GEditor->PlayWorld;
   georeference = CesiumTestHelpers::findInPlay(creationContext.georeference);
-  cameraManager = CesiumTestHelpers::findInPlay(creationContext.cameraManager);
   pawn = CesiumTestHelpers::findInPlay(creationContext.pawn);
 
   startPosition = creationContext.startPosition;
@@ -105,9 +102,6 @@ void createCommonWorldObjects(SceneGenerationContext& context) {
 
   ACesiumSunSky* sunSky = context.world->SpawnActor<ACesiumSunSky>();
   APlayerStart* playerStart = context.world->SpawnActor<APlayerStart>();
-
-  context.cameraManager =
-      ACesiumCameraManager::GetDefaultCameraManager(context.world);
 
   FSoftObjectPath objectPath(
       TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
