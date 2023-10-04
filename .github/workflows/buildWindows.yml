@@ -73,7 +73,7 @@ jobs:
         run: |
           echo "Temp directory: $env:TEMP"
           cd "$env:UNREAL_BATCH_FILES_PATH"
-          $consoleLog = ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
+          ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
           echo LastExitCode=$LASTEXITCODE
           if ($LASTEXITCODE -eq 0) {
             exit 0
@@ -81,12 +81,6 @@ jobs:
           else {
             exit -1
           }
-      - name: Display build log 
-        if: always()
-        run: |
-          cd "$env:UNREAL_BUILD_LOG_PATH"  
-          dir 
-          Get-Content Log.txt
       - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
