@@ -54,7 +54,7 @@ propertyTablePropertyCallback(const std::any& property, Callback&& callback) {
 template <bool Normalized, typename TResult, typename Callback>
 TResult scalarPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
@@ -133,7 +133,7 @@ TResult scalarPropertyTablePropertyCallback(
 template <bool Normalized, typename TResult, typename Callback>
 TResult scalarArrayPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
@@ -218,7 +218,7 @@ TResult scalarArrayPropertyTablePropertyCallback(
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult vecNPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
@@ -302,7 +302,7 @@ TResult vecNPropertyTablePropertyCallback(
 template <bool Normalized, typename TResult, typename Callback>
 TResult vecNPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Vec2) {
     return vecNPropertyTablePropertyCallback<2, Normalized, TResult, Callback>(
@@ -346,7 +346,7 @@ TResult vecNPropertyTablePropertyCallback(
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult vecNArrayPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
@@ -431,7 +431,7 @@ TResult vecNArrayPropertyTablePropertyCallback(
 template <bool Normalized, typename TResult, typename Callback>
 TResult vecNArrayPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Vec2) {
     return vecNArrayPropertyTablePropertyCallback<
@@ -477,7 +477,7 @@ TResult vecNArrayPropertyTablePropertyCallback(
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult matNPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
@@ -561,7 +561,7 @@ TResult matNPropertyTablePropertyCallback(
 template <bool Normalized, typename TResult, typename Callback>
 TResult matNPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Mat2) {
     return matNPropertyTablePropertyCallback<2, Normalized, TResult, Callback>(
@@ -605,7 +605,7 @@ TResult matNPropertyTablePropertyCallback(
 template <glm::length_t N, bool Normalized, typename TResult, typename Callback>
 TResult matNArrayPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
@@ -690,7 +690,7 @@ TResult matNArrayPropertyTablePropertyCallback(
 template <bool Normalized, typename TResult, typename Callback>
 TResult matNArrayPropertyTablePropertyCallback(
     const std::any& property,
-    FCesiumMetadataValueType valueType,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   if (valueType.Type == ECesiumMetadataType::Mat2) {
     return matNArrayPropertyTablePropertyCallback<
@@ -721,8 +721,8 @@ TResult matNArrayPropertyTablePropertyCallback(
 
 template <bool Normalized, typename TResult, typename Callback>
 TResult arrayPropertyTablePropertyCallback(
-    std::any property,
-    FCesiumMetadataValueType valueType,
+    const std::any& property,
+    const FCesiumMetadataValueType& valueType,
     Callback&& callback) {
   switch (valueType.Type) {
   case ECesiumMetadataType::Scalar:
@@ -763,8 +763,8 @@ TResult arrayPropertyTablePropertyCallback(
 
 template <typename TResult, typename Callback>
 TResult propertyTablePropertyCallback(
-    std::any property,
-    FCesiumMetadataValueType valueType,
+    const std::any& property,
+    const FCesiumMetadataValueType& valueType,
     bool normalized,
     Callback&& callback) {
   if (valueType.bIsArray) {

@@ -1,5 +1,3 @@
-#pragma once
-
 #include "CesiumGltfSpecUtility.h"
 
 using namespace CesiumGltf;
