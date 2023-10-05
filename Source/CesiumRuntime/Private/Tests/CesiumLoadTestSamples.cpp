@@ -54,7 +54,7 @@ bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
     // Zoom way out
     context.startPosition = FVector(0, 0, 7240000.0);
     context.startRotation = FRotator(-90.0, 0.0, 0.0);
-    context.syncWorldPlayerCamera();
+    context.syncWorldCamera();
 
     context.pawn->SetActorLocation(context.startPosition);
   };

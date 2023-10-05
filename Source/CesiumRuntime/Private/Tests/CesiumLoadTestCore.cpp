@@ -49,7 +49,7 @@ bool TimeLoadingCommand::Update() {
 
     // Bind all play in editor pointers
     context.playContext.initForPlay(context.creationContext);
-    context.playContext.syncWorldPlayerCamera();
+    context.playContext.syncWorldCamera();
 
     if (setupStep)
       setupStep(context.playContext);
@@ -154,6 +154,9 @@ bool RunLoadTest(
   gLoadTestContext.creationContext.setSuspendUpdate(true);
   gLoadTestContext.creationContext.refreshTilesets();
   clearCacheDb();
+
+  // Let the editor viewports see the same thing the test will
+  gLoadTestContext.creationContext.syncWorldCamera();
 
   //
   // Start async commands
