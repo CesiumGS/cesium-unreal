@@ -97,7 +97,7 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
-  return std::visit(
+  return mpark::visit(
       VertexCountFromAccessor{},
       FeatureIDAttribute._featureIDAccessor);
 }
@@ -105,7 +105,7 @@ int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 VertexIndex) {
-  return std::visit(
+  return mpark::visit(
       FeatureIDFromAccessor{VertexIndex},
       FeatureIDAttribute._featureIDAccessor);
 }

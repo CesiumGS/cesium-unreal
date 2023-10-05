@@ -522,7 +522,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
   // calculate unreal camera position
   glm::dvec3 ecefCameraPosition =
-      std::visit(CalculateECEFCameraPosition{}, boundingVolume);
+      mpark::visit(CalculateECEFCameraPosition{}, boundingVolume);
   FVector unrealCameraPosition =
       pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
           VecMath::createVector(ecefCameraPosition));
@@ -676,7 +676,7 @@ public:
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
     CesiumGltf::Model* pModel =
-        std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
+        mpark::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
     if (!pModel)
       return asyncSystem.createResolvedFuture(
           Cesium3DTilesSelection::TileLoadResultAndRenderResources{
@@ -788,7 +788,7 @@ public:
     // The image source pointer during loading may have been invalidated,
     // so replace it.
     CesiumTextureUtility::GltfImagePtr* pImageSource =
-        std::get_if<CesiumTextureUtility::GltfImagePtr>(
+        mpark::get_if<CesiumTextureUtility::GltfImagePtr>(
             &pLoadedTexture->textureSource);
     if (pImageSource) {
       pImageSource->pImage = &rasterTile.getImage();
@@ -1664,7 +1664,8 @@ bool isInExclusionZone(
   // Apparently, only tiles with bounding REGIONS are
   // checked for the exclusion...
   const CesiumGeospatial::BoundingRegion* pRegion =
-      std::get_if<CesiumGeospatial::BoundingRegion>(&tile->getBoundingVolume());
+      mpark::get_if<CesiumGeospatial::BoundingRegion>(
+          &tile->getBoundingVolume());
   if (!pRegion) {
     return false;
   }
@@ -1903,7 +1904,7 @@ void ACesium3DTileset::showTilesToRender(
     // That looks like some reeeally entertaining debug session...:
     // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
     // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
-    // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
+    // mpark::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
     // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
     // 11626) { 	continue;
     //}

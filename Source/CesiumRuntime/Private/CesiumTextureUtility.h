@@ -10,8 +10,8 @@
 #include "RHI.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Templates/UniquePtr.h"
+#include <mpark/variant.hpp>
 #include <optional>
-#include <variant>
 
 namespace CesiumGltf {
 struct ImageCesium;
@@ -71,7 +71,7 @@ struct LegacyTextureSource {};
  * @brief The texture source that should be used to create or finalize an
  * Unreal texture.
  */
-typedef std::variant<
+typedef mpark::variant<
     AsyncCreatedTexture,
     GltfImagePtr,
     GltfImageIndex,

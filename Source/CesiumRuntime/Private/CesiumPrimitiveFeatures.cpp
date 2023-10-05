@@ -121,7 +121,7 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
     return -1;
   }
 
-  return std::visit(
+  return mpark::visit(
       VertexIndexFromAccessor{FaceIndex, PrimitiveFeatures._vertexCount},
       PrimitiveFeatures._vertexIDAccessor);
 }

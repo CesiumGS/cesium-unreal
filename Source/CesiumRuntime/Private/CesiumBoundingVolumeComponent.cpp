@@ -7,7 +7,7 @@
 #include "UObject/UObjectGlobals.h"
 #include "VecMath.h"
 #include <optional>
-#include <variant>
+#include <mpark/variant.hpp>
 
 using namespace Cesium3DTilesSelection;
 
@@ -144,7 +144,7 @@ void UCesiumBoundingVolumeComponent::reset(const Tile* pTile) {
 
 FBoxSphereBounds UCesiumBoundingVolumeComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
-  return std::visit(
+  return mpark::visit(
       CalcBoundsOperation{LocalToWorld, this->_tileTransform},
       this->_tileBounds);
 }

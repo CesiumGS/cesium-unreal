@@ -38,7 +38,7 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
   GENERATED_USTRUCT_BODY()
 
-  using TexCoordAccessorType = std::variant<
+  using TexCoordAccessorType = mpark::variant<
       std::monostate,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint8_t>>,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint16_t>>,

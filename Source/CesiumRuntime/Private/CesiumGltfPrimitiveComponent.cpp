@@ -9,7 +9,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "VecMath.h"
-#include <variant>
+#include <mpark/variant.hpp>
 
 // Prevent deprecation warnings while initializing deprecated metadata structs.
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -166,7 +166,7 @@ FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
     return Super::CalcBounds(LocalToWorld);
   }
 
-  return std::visit(
+  return mpark::visit(
       CalcBoundsOperation{LocalToWorld, this->HighPrecisionNodeTransform},
       *this->boundingVolume);
 }

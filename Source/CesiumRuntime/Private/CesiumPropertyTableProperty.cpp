@@ -880,6 +880,31 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
       [](const auto& view) -> int64 { return view.arrayCount(); });
 }
 
+namespace {
+
+template <typename TTo> struct Convertifier {
+  int64 FeatureID;
+  TTo DefaultValue;
+
+  template <typename TFrom, bool Normalized = false>
+  TTo operator()(const PropertyTablePropertyView<TFrom, Normalized>& v) {
+    // size() returns zero if the view is invalid.
+    if (FeatureID < 0 || FeatureID >= v.size()) {
+      return DefaultValue;
+    }
+    auto maybeValue = v.get(FeatureID);
+    if (maybeValue) {
+      auto value = *maybeValue;
+      return CesiumMetadataConversions<TTo, decltype(value)>::convert(
+          value,
+          DefaultValue);
+    }
+    return DefaultValue;
+  }
+};
+
+} // namespace
+
 bool UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID,
@@ -888,20 +913,7 @@ bool UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> bool {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<bool, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<bool>{FeatureID, DefaultValue});
 }
 
 uint8 UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
@@ -912,20 +924,7 @@ uint8 UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> uint8 {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<uint8, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<uint8>{FeatureID, DefaultValue});
 }
 
 int32 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
@@ -936,20 +935,7 @@ int32 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> int32 {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<int32, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<int32>{FeatureID, DefaultValue});
 }
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
@@ -960,20 +946,7 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> int64 {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<int64, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<int64>{FeatureID, DefaultValue});
 }
 
 float UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
@@ -984,20 +957,7 @@ float UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> float {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<float, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<float>{FeatureID, DefaultValue});
 }
 
 double UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
@@ -1008,20 +968,7 @@ double UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> double {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<double, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<double>{FeatureID, DefaultValue});
 }
 
 FIntPoint UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
@@ -1032,20 +979,7 @@ FIntPoint UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FIntPoint {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FIntPoint, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FIntPoint>{FeatureID, DefaultValue});
 }
 
 FVector2D UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
@@ -1056,20 +990,7 @@ FVector2D UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector2D {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector2D, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FVector2D>{FeatureID, DefaultValue});
 }
 
 FIntVector UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
@@ -1080,19 +1001,7 @@ FIntVector UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FIntVector {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FIntVector, decltype(value)>::
-              convert(value, DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FIntVector>{FeatureID, DefaultValue});
 }
 
 FVector3f UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
@@ -1103,20 +1012,7 @@ FVector3f UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector3f {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector3f, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FVector3f>{FeatureID, DefaultValue});
 }
 
 FVector UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
@@ -1127,20 +1023,7 @@ FVector UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FVector>{FeatureID, DefaultValue});
 }
 
 FVector4 UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
@@ -1151,20 +1034,7 @@ FVector4 UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector4 {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector4, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FVector4>{FeatureID, DefaultValue});
 }
 
 FMatrix UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
@@ -1175,20 +1045,7 @@ FMatrix UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FMatrix {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FMatrix, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FMatrix>{FeatureID, DefaultValue});
 }
 
 FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
@@ -1199,20 +1056,7 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, &DefaultValue](const auto& v) -> FString {
-        // size() returns zero if the view is invalid.
-        if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
-        }
-        auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FString, decltype(value)>::convert(
-              value,
-              DefaultValue);
-        }
-        return DefaultValue;
-      });
+      Convertifier<FString>{FeatureID, DefaultValue});
 }
 
 FCesiumPropertyArray UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(

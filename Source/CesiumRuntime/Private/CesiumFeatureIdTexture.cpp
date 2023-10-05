@@ -175,7 +175,7 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
     int64 VertexIndex) {
-  const std::optional<glm::vec2> texCoords = std::visit(
+  const std::optional<glm::vec2> texCoords = mpark::visit(
       TexCoordFromAccessor{VertexIndex},
       FeatureIDTexture._texCoordAccessor);
   if (!texCoords) {

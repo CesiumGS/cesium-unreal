@@ -3,14 +3,15 @@
 #pragma once
 
 #include "Widgets/SWindow.h"
+#include <mpark/variant.hpp>
 #include <optional>
-#include <variant>
 #include <vector>
 
 class ACesium3DTileset;
 class UCesiumRasterOverlay;
 
-using CesiumIonObject = std::variant<ACesium3DTileset*, UCesiumRasterOverlay*>;
+using CesiumIonObject =
+    mpark::variant<ACesium3DTileset*, UCesiumRasterOverlay*>;
 
 class CesiumIonTokenTroubleshooting : public SWindow {
   SLATE_BEGIN_ARGS(CesiumIonTokenTroubleshooting) {}

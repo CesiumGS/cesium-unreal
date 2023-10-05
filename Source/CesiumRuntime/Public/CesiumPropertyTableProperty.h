@@ -11,8 +11,8 @@
 #include "UObject/ObjectMacros.h"
 #include <any>
 #include <glm/glm.hpp>
+#include <mpark/variant.hpp>
 #include <string_view>
-#include <variant>
 #include "CesiumPropertyTableProperty.generated.h"
 
 /**

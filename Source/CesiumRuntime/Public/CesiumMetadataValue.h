@@ -22,7 +22,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 private:
 #pragma region ValueType declaration
   template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
-  using ValueType = std::variant<
+  using ValueType = mpark::variant<
       std::monostate,
       int8_t,
       uint8_t,
@@ -221,6 +221,10 @@ public:
 private:
   ValueType _value;
   FCesiumMetadataValueType _valueType;
+
+  template <typename TTo>
+  static TTo
+  convertTo(const ValueType& Value, const TTo& DefaultValue) noexcept;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
 };

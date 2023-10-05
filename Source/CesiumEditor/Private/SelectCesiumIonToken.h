@@ -6,9 +6,9 @@
 #include "CesiumIonClient/Token.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/SWindow.h"
+#include <mpark/variant.hpp>
 #include <optional>
 #include <string>
-#include <variant>
 
 class SelectCesiumIonToken : public SWindow {
   SLATE_BEGIN_ARGS(SelectCesiumIonToken) {}

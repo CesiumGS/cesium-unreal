@@ -33,7 +33,7 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
   GENERATED_USTRUCT_BODY()
 
-  using FeatureIDType = std::variant<
+  using FeatureIDType = mpark::variant<
       std::monostate,
       FCesiumFeatureIdAttribute,
       FCesiumFeatureIdTexture>;

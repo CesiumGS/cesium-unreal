@@ -10,7 +10,7 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
-#include <variant>
+#include <mpark/variant.hpp>
 
 struct FCesiumFeatureIdSet;
 struct FCesiumPrimitiveFeatures;

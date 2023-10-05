@@ -72,7 +72,7 @@ const FCesiumFeatureIdAttribute&
 UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
-    return std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
+    return mpark::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
   }
 
   return EmptyFeatureIDAttribute;
@@ -82,7 +82,7 @@ const FCesiumFeatureIdTexture&
 UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Texture) {
-    return std::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
+    return mpark::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
   }
 
   return EmptyFeatureIDTexture;
@@ -113,7 +113,7 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
     int64 VertexIndex) {
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
     FCesiumFeatureIdAttribute attribute =
-        std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
+        mpark::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
     return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
         attribute,
         VertexIndex);
@@ -121,7 +121,7 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
 
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Texture) {
     FCesiumFeatureIdTexture texture =
-        std::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
+        mpark::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
     return UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
         texture,
         VertexIndex);

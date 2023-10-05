@@ -24,8 +24,8 @@
 #include <CesiumGltfReader/GltfReader.h>
 #include <CesiumUtility/Tracing.h>
 #include <memory>
+#include <mpark/variant.hpp>
 #include <stb_image_resize.h>
-#include <variant>
 
 using namespace CesiumGltf;
 
@@ -255,7 +255,7 @@ public:
     this->bSRGB = sRGB;
 
     CesiumTextureUtility::AsyncCreatedTexture* pAsyncTexture =
-        std::get_if<CesiumTextureUtility::AsyncCreatedTexture>(
+        mpark::get_if<CesiumTextureUtility::AsyncCreatedTexture>(
             &this->_textureSource);
     if (pAsyncTexture) {
       this->TextureRHI = pAsyncTexture->rhiTextureRef;
@@ -321,7 +321,7 @@ public:
       // Asynchronous RHI texture creation was not available. So create it now
       // directly from the in-memory cesium mips.
       CesiumGltf::ImageCesium* pImage =
-          std::visit(GetImageFromSource{}, this->_textureSource);
+          mpark::visit(GetImageFromSource{}, this->_textureSource);
 
       check(pImage != nullptr);
 
@@ -583,7 +583,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool sRGB) {
 
   CesiumGltf::ImageCesium* pImage =
-      std::visit(GetImageFromSource{}, imageSource);
+      mpark::visit(GetImageFromSource{}, imageSource);
 
   assert(pImage != nullptr);
   CesiumGltf::ImageCesium& image = *pImage;
@@ -853,7 +853,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 
   // Replace the image pointer with an index, in case the pointer gets
   // invalidated before the main thread loading continues.
-  if (result && std::get_if<GltfImagePtr>(&result->textureSource)) {
+  if (result && mpark::get_if<GltfImagePtr>(&result->textureSource)) {
     result->textureSource = GltfImageIndex{source};
   }
 
@@ -873,7 +873,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
 
   UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
 
-  if (std::get_if<LegacyTextureSource>(&pHalfLoadedTexture->textureSource)) {
+  if (mpark::get_if<LegacyTextureSource>(&pHalfLoadedTexture->textureSource)) {
     pTexture->UpdateResource();
     return pTexture;
   }
@@ -910,7 +910,7 @@ UTexture2D* loadTextureGameThreadPart(
   }
 
   GltfImageIndex* pImageIndex =
-      std::get_if<GltfImageIndex>(&pHalfLoadedTexture->textureSource);
+      mpark::get_if<GltfImageIndex>(&pHalfLoadedTexture->textureSource);
   if (pImageIndex) {
     pHalfLoadedTexture->textureSource = pImageIndex->resolveImage(model);
   }
@@ -920,7 +920,7 @@ UTexture2D* loadTextureGameThreadPart(
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded) {
   AsyncCreatedTexture* pAsyncCreatedTexture =
-      std::get_if<AsyncCreatedTexture>(&halfLoaded.textureSource);
+      mpark::get_if<AsyncCreatedTexture>(&halfLoaded.textureSource);
   if (pAsyncCreatedTexture) {
     // An RHI texture was asynchronously created and must now be destroyed.
     ENQUEUE_RENDER_COMMAND(Cesium_ReleaseHalfLoadedTexture)

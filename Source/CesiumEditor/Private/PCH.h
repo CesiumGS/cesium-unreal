@@ -13,8 +13,8 @@
 #pragma warning(push)
 #pragma warning(disable : 4583)
 #pragma warning(disable : 4582)
+#include <mpark/variant.hpp>
 #include <optional>
-#include <variant>
 #pragma warning(pop)
 #endif
 #endif

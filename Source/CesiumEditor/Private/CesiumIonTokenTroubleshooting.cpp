@@ -42,7 +42,7 @@ using namespace CesiumIonClient;
 
   // If this is a tileset, close any already-open panels associated with its
   // overlays. Overlays won't appear until the tileset is working anyway.
-  ACesium3DTileset** ppTileset = std::get_if<ACesium3DTileset*>(&ionObject);
+  ACesium3DTileset** ppTileset = mpark::get_if<ACesium3DTileset*>(&ionObject);
   if (ppTileset && *ppTileset) {
     TArray<UCesiumRasterOverlay*> rasterOverlays;
     (*ppTileset)->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
@@ -65,7 +65,7 @@ using namespace CesiumIonClient;
   // If this is a raster overlay and this panel is already open for its attached
   // tileset, don't open the panel for the overlay for the same reason as above.
   UCesiumRasterOverlay** ppRasterOverlay =
-      std::get_if<UCesiumRasterOverlay*>(&ionObject);
+      mpark::get_if<UCesiumRasterOverlay*>(&ionObject);
   if (ppRasterOverlay && *ppRasterOverlay) {
     ACesium3DTileset* pOwner =
         Cast<ACesium3DTileset>((*ppRasterOverlay)->GetOwner());
@@ -141,7 +141,7 @@ addTokenCheck(const FString& label, std::optional<bool>& state) {
 }
 
 bool isNull(const CesiumIonObject& o) {
-  return std::visit([](auto p) { return p == nullptr; }, o);
+  return mpark::visit([](auto p) { return p == nullptr; }, o);
 }
 
 FString getLabel(const CesiumIonObject& o) {
@@ -155,11 +155,11 @@ FString getLabel(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return mpark::visit(Operation(), o);
 }
 
 FString getName(const CesiumIonObject& o) {
-  return std::visit([](auto p) { return p->GetName(); }, o);
+  return mpark::visit([](auto p) { return p->GetName(); }, o);
 }
 
 int64 getIonAssetID(const CesiumIonObject& o) {
@@ -183,7 +183,7 @@ int64 getIonAssetID(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return mpark::visit(Operation(), o);
 }
 
 FString getIonAccessToken(const CesiumIonObject& o) {
@@ -207,7 +207,7 @@ FString getIonAccessToken(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return mpark::visit(Operation(), o);
 }
 
 void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
@@ -238,7 +238,7 @@ void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
     }
   };
 
-  return std::visit(Operation{newToken}, o);
+  return mpark::visit(Operation{newToken}, o);
 }
 
 FString getObjectType(const CesiumIonObject& o) {
@@ -250,11 +250,11 @@ FString getObjectType(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return mpark::visit(Operation(), o);
 }
 
 UObject* asUObject(const CesiumIonObject& o) {
-  return std::visit([](auto p) -> UObject* { return p; }, o);
+  return mpark::visit([](auto p) -> UObject* { return p; }, o);
 }
 
 bool isUsingCesiumIon(const CesiumIonObject& o) {
@@ -270,7 +270,7 @@ bool isUsingCesiumIon(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return mpark::visit(Operation(), o);
 }
 
 } // namespace
