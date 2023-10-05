@@ -7,6 +7,7 @@
 #include <vector>
 
 class UWorld;
+class ACesiumSunSky;
 class ACesiumGeoreference;
 class AGlobeAwareDefaultPawn;
 class ACesium3DTileset;
@@ -16,6 +17,7 @@ namespace Cesium {
 
 struct SceneGenerationContext {
   UWorld* world;
+  ACesiumSunSky* sunSky;
   ACesiumGeoreference* georeference;
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;

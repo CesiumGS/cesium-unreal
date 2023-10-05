@@ -69,6 +69,7 @@ bool SceneGenerationContext::areTilesetsDoneLoading() {
 }
 
 void SceneGenerationContext::trackForPlay() {
+  CesiumTestHelpers::trackForPlay(sunSky);
   CesiumTestHelpers::trackForPlay(georeference);
   CesiumTestHelpers::trackForPlay(pawn);
 
@@ -82,6 +83,7 @@ void SceneGenerationContext::trackForPlay() {
 void SceneGenerationContext::initForPlay(
     SceneGenerationContext& creationContext) {
   world = GEditor->PlayWorld;
+  sunSky = CesiumTestHelpers::findInPlay(creationContext.sunSky);
   georeference = CesiumTestHelpers::findInPlay(creationContext.georeference);
   pawn = CesiumTestHelpers::findInPlay(creationContext.pawn);
 
@@ -135,7 +137,8 @@ void createCommonWorldObjects(SceneGenerationContext& context) {
 
   context.world = FAutomationEditorCommonUtils::CreateNewMap();
 
-  ACesiumSunSky* sunSky = context.world->SpawnActor<ACesiumSunSky>();
+  context.sunSky = context.world->SpawnActor<ACesiumSunSky>();
+
   APlayerStart* playerStart = context.world->SpawnActor<APlayerStart>();
 
   FSoftObjectPath objectPath(
