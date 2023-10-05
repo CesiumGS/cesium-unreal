@@ -462,6 +462,204 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, 0.0),
           defaultValue);
     });
+
+    It("constructs valid array instance with additional properties", [this]() {
+      PropertyTableProperty propertyTableProperty;
+      ClassProperty classProperty;
+      classProperty.type = ClassProperty::Type::SCALAR;
+      classProperty.componentType = ClassProperty::ComponentType::INT32;
+      classProperty.normalized = true;
+      classProperty.array = true;
+      classProperty.count = 2;
+
+      std::vector<double> offset = {1.0, 2.0};
+      std::vector<double> scale = {2.0, -1.0};
+      std::vector<double> min = {1.0, 1.0};
+      std::vector<double> max = {3.0, 2.0};
+      std::vector<int32_t> noData = {-1, -1};
+      std::vector<double> defaultValue = {12.3, 4.5};
+
+      classProperty.offset = {offset[0], offset[1]};
+      classProperty.scale = {scale[0], scale[1]};
+      classProperty.min = {min[0], min[1]};
+      classProperty.max = {max[0], max[1]};
+      classProperty.noData = {noData[0], noData[1]};
+      classProperty.defaultProperty = {defaultValue[0], defaultValue[1]};
+
+      std::vector<int32_t> values{1, 2, 3, 4, 5, 6, -1, -1};
+      std::vector<std::byte> data = GetValuesAsBytes(values);
+      PropertyTablePropertyView<PropertyArrayView<int32_t>, true> propertyView(
+          propertyTableProperty,
+          classProperty,
+          static_cast<int64_t>(values.size()),
+          gsl::span<const std::byte>(data.data(), data.size()));
+
+      FCesiumPropertyTableProperty property(propertyView);
+      TestEqual(
+          "PropertyTablePropertyStatus",
+          UCesiumPropertyTablePropertyBlueprintLibrary::
+              GetPropertyTablePropertyStatus(property),
+          ECesiumPropertyTablePropertyStatus::Valid);
+      TestEqual<int64>(
+          "Size",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
+              property),
+          static_cast<int64_t>(values.size()));
+
+      FCesiumMetadataValueType expectedType(
+          ECesiumMetadataType::Scalar,
+          ECesiumMetadataComponentType::Int32,
+          true);
+      TestTrue(
+          "ValueType",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
+              property) == expectedType);
+      TestEqual(
+          "BlueprintType",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetBlueprintType(
+              property),
+          ECesiumMetadataBlueprintType::Array);
+
+      TestTrue(
+          "IsNormalized",
+          UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
+
+      TestEqual<int64>(
+          "ArraySize",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "ArrayElementBlueprintType",
+          UCesiumPropertyTablePropertyBlueprintLibrary::
+              GetArrayElementBlueprintType(property),
+          ECesiumMetadataBlueprintType::Integer);
+
+      FCesiumMetadataValue value =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(property);
+      FCesiumPropertyArray array =
+          UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+
+      TestEqual(
+          TEXT("Size"),
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "Offset0",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 0),
+              0.0),
+          offset[0]);
+      TestEqual(
+          "Offset1",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 1),
+              0.0),
+          offset[1]);
+
+      value = UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(property);
+      array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+
+      TestEqual(
+          TEXT("Size"),
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "Scale0",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 0),
+              0.0),
+          scale[0]);
+      TestEqual(
+          "Scale1",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 1),
+              0.0),
+          scale[1]);
+
+      value = UCesiumPropertyTablePropertyBlueprintLibrary::GetMaximumValue(
+          property);
+      array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+
+      TestEqual(
+          TEXT("Size"),
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "Max0",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 0),
+              0.0),
+          max[0]);
+      TestEqual(
+          "Max1",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 1),
+              0.0),
+          max[1]);
+
+      value = UCesiumPropertyTablePropertyBlueprintLibrary::GetMinimumValue(
+          property);
+      array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+
+      TestEqual(
+          TEXT("Size"),
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "Min0",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 0),
+              0.0),
+          min[0]);
+      TestEqual(
+          "Min1",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 1),
+              0.0),
+          min[1]);
+
+      value = UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
+          property);
+      array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+
+      TestEqual(
+          TEXT("Size"),
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "NoData0",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 0),
+              0),
+          noData[0]);
+      TestEqual(
+          "NoData1",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 1),
+              0),
+          noData[1]);
+
+      value = UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
+          property);
+      array = UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+
+      TestEqual(
+          TEXT("Size"),
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64_t>(*classProperty.count));
+      TestEqual(
+          "DefaultValue0",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 0),
+              0.0),
+          defaultValue[0]);
+      TestEqual(
+          "DefaultValue1",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, 1),
+              0.0),
+          defaultValue[1]);
+    });
   });
 
   Describe("GetBoolean", [this]() {

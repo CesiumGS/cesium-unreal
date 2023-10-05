@@ -2,13 +2,14 @@
 
 #pragma once
 
+#include "CesiumGltf/PropertyTablePropertyView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
-#include "CesiumGltf/PropertyViewTypes.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
+#include <any>
 #include <glm/glm.hpp>
 #include <string_view>
 #include <variant>
@@ -62,15 +63,9 @@ public:
   FCesiumPropertyTableProperty(
       const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property)
       : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(),
+        _property(Property),
         _valueType(),
         _normalized(Normalized) {
-    if constexpr (Normalized) {
-      _property = CesiumGltf::NormalizedPropertyTablePropertyViewType(Property);
-    } else {
-      _property = CesiumGltf::PropertyTablePropertyViewType(Property);
-    }
-
     switch (Property.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
@@ -107,10 +102,7 @@ public:
 private:
   ECesiumPropertyTablePropertyStatus _status;
 
-  using PropertyType = std::variant<
-      CesiumGltf::PropertyTablePropertyViewType,
-      CesiumGltf::NormalizedPropertyTablePropertyViewType>;
-  PropertyType _property;
+  std::any _property;
 
   FCesiumMetadataValueType _valueType;
   bool _normalized;
