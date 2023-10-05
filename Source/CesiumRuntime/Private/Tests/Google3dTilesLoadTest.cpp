@@ -8,32 +8,33 @@
 #include "Misc/AutomationTest.h"
 
 #include "Cesium3DTileset.h"
+#include "CesiumSunSky.h"
 
 using namespace Cesium;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesPompidou,
-    "Cesium.Performance.GoogleTilesPompidou",
+    "Cesium.Performance.GoogleTiles.Pompidou",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesChrysler,
-    "Cesium.Performance.GoogleTilesChrysler",
+    "Cesium.Performance.GoogleTiles.Chrysler",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesGuggenheim,
-    "Cesium.Performance.GoogleTilesGuggenheim",
+    "Cesium.Performance.GoogleTiles.Guggenheim",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesDeathValley,
-    "Cesium.Performance.GoogleTilesDeathValley",
+    "Cesium.Performance.GoogleTiles.DeathValley",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesTokyo,
-    "Cesium.Performance.GoogleTilesTokyo",
+    "Cesium.Performance.GoogleTiles.Tokyo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 void setupForPompidou(SceneGenerationContext& context) {
@@ -42,6 +43,9 @@ void setupForPompidou(SceneGenerationContext& context) {
       FVector(0, 0, 0),
       FRotator(-20.0, 0.0, 0.0),
       60.0f);
+
+  context.sunSky->TimeZone = 2.0f;
+  context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
@@ -57,6 +61,9 @@ void setupForChrysler(SceneGenerationContext& context) {
       FRotator(-15.0, 0.0, 0.0),
       60.0f);
 
+  context.sunSky->TimeZone = -4.0f;
+  context.sunSky->UpdateSun();
+
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
@@ -70,6 +77,9 @@ void setupForGuggenheim(SceneGenerationContext& context) {
       FVector(0, 0, 0),
       FRotator(-15.0, 90.0, 0.0),
       60.0f);
+
+  context.sunSky->TimeZone = 2.0f;
+  context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
@@ -85,6 +95,9 @@ void setupForDeathValley(SceneGenerationContext& context) {
       FRotator(0, 90.0, 0.0),
       60.0f);
 
+  context.sunSky->TimeZone = -7.0f;
+  context.sunSky->UpdateSun();
+
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
@@ -99,6 +112,9 @@ void setupForTokyo(SceneGenerationContext& context) {
       FVector(0, 0, 0),
       FRotator(-15, 300, 0.0),
       60.0f);
+
+  context.sunSky->TimeZone = 9.0f;
+  context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
