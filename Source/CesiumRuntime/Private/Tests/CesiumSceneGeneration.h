@@ -36,7 +36,7 @@ struct SceneGenerationContext {
 
   void trackForPlay();
   void initForPlay(SceneGenerationContext& creationContext);
-  void syncWorldPlayerCamera();
+  void syncWorldCamera();
 
   static FString testIonToken;
   static FString testGoogleUrl;

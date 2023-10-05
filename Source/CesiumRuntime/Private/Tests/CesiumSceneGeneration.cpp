@@ -7,6 +7,7 @@
 #include "Tests/AutomationEditorCommon.h"
 
 #include "GameFramework/PlayerStart.h"
+#include "LevelEditorViewport.h"
 
 #include "Cesium3DTileset.h"
 #include "CesiumGeoreference.h"
@@ -99,18 +100,35 @@ void SceneGenerationContext::initForPlay(
   }
 }
 
-void SceneGenerationContext::syncWorldPlayerCamera() {
-  assert(world->GetNumPlayerControllers() == 1);
+void SceneGenerationContext::syncWorldCamera() {
+  assert(GEditor);
 
-  APlayerController* controller = world->GetFirstPlayerController();
-  assert(controller);
+  if (GEditor->IsPlayingSessionInEditor()) {
+    // If in PIE, set the player
+    assert(world->GetNumPlayerControllers() == 1);
 
-  controller->ClientSetLocation(startPosition, startRotation);
+    APlayerController* controller = world->GetFirstPlayerController();
+    assert(controller);
 
-  APlayerCameraManager* cameraManager = controller->PlayerCameraManager;
-  assert(cameraManager);
+    controller->ClientSetLocation(startPosition, startRotation);
 
-  cameraManager->SetFOV(startFieldOfView);
+    APlayerCameraManager* cameraManager = controller->PlayerCameraManager;
+    assert(cameraManager);
+
+    cameraManager->SetFOV(startFieldOfView);
+  } else {
+    // If editing, set any viewports
+    for (FLevelEditorViewportClient* ViewportClient :
+         GEditor->GetLevelViewportClients()) {
+      if (ViewportClient == NULL)
+        continue;
+      ViewportClient->SetViewLocation(startPosition);
+      ViewportClient->SetViewRotation(startRotation);
+      if (ViewportClient->ViewportType == LVT_Perspective)
+        ViewportClient->ViewFOV = startFieldOfView;
+      ViewportClient->Invalidate();
+    }
+  }
 }
 
 void createCommonWorldObjects(SceneGenerationContext& context) {
