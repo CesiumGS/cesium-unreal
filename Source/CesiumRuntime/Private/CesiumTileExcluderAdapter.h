@@ -3,6 +3,12 @@
 #include "CesiumTileExcluder.h"
 #include <Cesium3DTilesSelection/ITileExcluder.h>
 
+class ACesiumGeoreference;
+
+namespace Cesium3DTilesSelection {
+class Tile;
+}
+
 class CesiumTileExcluderAdapter : public Cesium3DTilesSelection::ITileExcluder {
   virtual bool shouldExclude(
       const Cesium3DTilesSelection::Tile& tile) const noexcept override;
