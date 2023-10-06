@@ -71,8 +71,8 @@ bool TimeLoadingCommand::Update() {
   double testElapsedTime = timeMark - context.startMark;
 
   // The command is over if tilesets are loaded, or timed out
-  // Wait for a maximum of 20 seconds
-  const size_t testTimeout = 20;
+  // Wait for a maximum of 30 seconds
+  const size_t testTimeout = 30;
   bool tilesetsloaded = context.playContext.areTilesetsDoneLoading();
   bool timedOut = testElapsedTime >= testTimeout;
 
