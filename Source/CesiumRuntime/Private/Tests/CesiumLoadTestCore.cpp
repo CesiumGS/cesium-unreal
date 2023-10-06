@@ -11,6 +11,7 @@
 #include "Settings/LevelEditorPlaySettings.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
+#include "UnrealClient.h"
 
 namespace Cesium {
 
