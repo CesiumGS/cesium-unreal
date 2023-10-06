@@ -110,7 +110,7 @@ void setupForTokyo(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(139.7563178458, 35.652798383944, 525.62),
       FVector(0, 0, 0),
-      FRotator(-15, 300, 0.0),
+      FRotator(-15, -150, 0.0),
       60.0f);
 
   context.sunSky->TimeZone = 9.0f;
