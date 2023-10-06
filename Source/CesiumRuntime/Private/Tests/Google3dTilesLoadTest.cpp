@@ -41,7 +41,7 @@ void setupForPompidou(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(2.352200, 48.860600, 200),
       FVector(0, 0, 0),
-      FRotator(-20.0, 0.0, 0.0),
+      FRotator(-20.0, -90.0, 0.0),
       60.0f);
 
   context.sunSky->TimeZone = 2.0f;
@@ -58,7 +58,7 @@ void setupForChrysler(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(-73.9752624659, 40.74697185903, 307.38),
       FVector(0, 0, 0),
-      FRotator(-15.0, 0.0, 0.0),
+      FRotator(-15.0, -90.0, 0.0),
       60.0f);
 
   context.sunSky->TimeZone = -4.0f;
@@ -75,7 +75,7 @@ void setupForGuggenheim(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(-2.937, 43.2685, 150),
       FVector(0, 0, 0),
-      FRotator(-15.0, 90.0, 0.0),
+      FRotator(-15.0, 0.0, 0.0),
       60.0f);
 
   context.sunSky->TimeZone = 2.0f;
@@ -92,7 +92,7 @@ void setupForDeathValley(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(-116.812278, 36.42, 300),
       FVector(0, 0, 0),
-      FRotator(0, 90.0, 0.0),
+      FRotator(0, 0.0, 0.0),
       60.0f);
 
   context.sunSky->TimeZone = -7.0f;
