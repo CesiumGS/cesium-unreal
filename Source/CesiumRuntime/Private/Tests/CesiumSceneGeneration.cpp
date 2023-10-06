@@ -37,6 +37,11 @@ void SceneGenerationContext::setCommonProperties(
 
   pawn->SetActorLocation(startPosition);
   pawn->SetActorRotation(startRotation);
+
+  TInlineComponentArray<UCameraComponent*> cameras;
+  pawn->GetComponents<UCameraComponent>(cameras);
+  for (UCameraComponent* cameraComponent : cameras)
+    cameraComponent->SetFieldOfView(startFieldOfView);
 }
 
 void SceneGenerationContext::refreshTilesets() {
