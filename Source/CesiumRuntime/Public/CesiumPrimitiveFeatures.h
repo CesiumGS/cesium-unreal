@@ -1,8 +1,9 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumFeatureIdSet.h"
+#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
@@ -19,12 +20,6 @@ struct ExtensionExtMeshFeatures;
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
   GENERATED_USTRUCT_BODY()
-
-  using IndexAccessorType = std::variant<
-      std::monostate,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>>;
 
 public:
   /**
@@ -48,7 +43,7 @@ public:
 
 private:
   TArray<FCesiumFeatureIdSet> _featureIDSets;
-  IndexAccessorType _vertexIDAccessor;
+  CesiumIndexAccessorType _vertexIDAccessor;
   int64_t _vertexCount;
 
   friend class UCesiumPrimitiveFeaturesBlueprintLibrary;

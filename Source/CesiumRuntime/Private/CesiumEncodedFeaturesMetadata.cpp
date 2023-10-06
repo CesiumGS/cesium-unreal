@@ -691,6 +691,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     EncodedPropertyTextureProperty& encodedProperty =
         encodedPropertyTexture.properties.Emplace_GetRef();
     encodedProperty.name = createHlslSafeName(pDescription->Name);
+    encodedProperty.type = pDescription->PropertyDetails.Type;
     encodedProperty.textureCoordinateSetIndex = property.getTexCoordSetIndex();
 
     if (UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -802,26 +803,27 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
 }
 
 EncodedPrimitiveMetadata encodePrimitiveMetadataAnyThreadPart(
-    const FCesiumModelMetadataDescription& metadataDescription,
-    const FCesiumPrimitiveFeatures& features,
-    const FCesiumPrimitiveMetadata& primitive) {
-
+    const FCesiumPrimitiveMetadataDescription& metadataDescription,
+    const FCesiumPrimitiveMetadata& primitiveMetadata,
+    const FCesiumModelMetadata& modelMetadata) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadataPrimitive)
 
   EncodedPrimitiveMetadata result;
 
-  // const TArray<FString>& PropertyTextureNames =
-  //    UCesiumMetadataPrimitiveBlueprintLibrary::GetPropertyTextureNames(
-  //        primitive);
-  // result.PropertyTextureNames.Reserve(PropertyTextureNames.Num());
+  const TArray<FCesiumPropertyTexture>& propertyTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(modelMetadata);
+  result.propertyTextureIndices.Reserve(
+      metadataDescription.PropertyTextureNames.Num());
 
-  // for (const FPropertyTextureDescription& expectedPropertyTexture :
-  //     metadataDescription.PropertyTextures) {
-  //  if (PropertyTextureNames.Find(expectedPropertyTexture.Name) != INDEX_NONE)
-  //  {
-  //    result.PropertyTextureNames.Add(expectedPropertyTexture.Name);
-  //  }
-  //}
+  for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
+    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
+    int32 index =
+        metadataDescription.PropertyTextureNames.Find(propertyTextureName);
+    // Confirm that the named property texture is actually present.
+    if (index != INDEX_NONE) {
+      result.propertyTextureIndices.Add(index);
+    }
+  }
 
   return result;
 }
@@ -926,30 +928,6 @@ bool encodePropertyTextureGameThreadPart(
   return success;
 }
 
-bool encodePrimitiveMetadataGameThreadPart(
-    EncodedPrimitiveMetadata& encodedPrimitive) {
-  bool success = true;
-
-  // TArray<const LoadedTextureResult*> uniqueFeatureIdImages;
-  // uniqueFeatureIdImages.Reserve(
-  //    encodedPrimitive.encodedFeatureIdTextures.Num());
-
-  // for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
-  //     encodedPrimitive.encodedFeatureIdTextures) {
-  //  if
-  //  (uniqueFeatureIdImages.Find(encodedFeatureIdTexture.pTexture.Get())
-  //  ==
-  //      INDEX_NONE) {
-  //    success &= loadTextureGameThreadPart(
-  //                   encodedFeatureIdTexture.pTexture.Get()) !=
-  //                   nullptr;
-  //    uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture.Get());
-  //  }
-  //}
-
-  return success;
-}
-
 bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadata)
 
@@ -968,18 +946,6 @@ bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata) {
   }
 
   return success;
-}
-
-void destroyEncodedPrimitiveMetadata(
-    EncodedPrimitiveMetadata& encodedPrimitive) {
-  // for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
-  //     encodedPrimitive.encodedFeatureIdTextures) {
-
-  //  if (encodedFeatureIdTexture.pTexture->pTexture.IsValid()) {
-  //    CesiumLifetime::destroy(encodedFeatureIdTexture.pTexture->pTexture.Get());
-  //    encodedFeatureIdTexture.pTexture->pTexture.Reset();
-  //  }
-  //}
 }
 
 void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {

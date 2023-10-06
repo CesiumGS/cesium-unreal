@@ -4,6 +4,7 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumGltf/PropertyTexturePropertyView.h"
 #include "CesiumGltf/PropertyTextureView.h"
+#include "CesiumMetadataPickingBlueprintLibrary.h"
 
 using namespace CesiumGltf;
 
@@ -31,6 +32,8 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     FString key(UTF8_TO_TCHAR(propertyName.data()));
     properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
   });
+
+  /* const std::string positionName = "POSITION";*/
 }
 
 /*static*/ const ECesiumPropertyTextureStatus
@@ -59,7 +62,7 @@ UCesiumPropertyTextureBlueprintLibrary::GetPropertyNames(
   return names;
 }
 
-const FCesiumPropertyTextureProperty&
+/*static*/ const FCesiumPropertyTextureProperty&
 UCesiumPropertyTextureBlueprintLibrary::FindProperty(
     UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
     const FString& PropertyName) {
@@ -68,7 +71,7 @@ UCesiumPropertyTextureBlueprintLibrary::FindProperty(
   return property ? *property : EmptyPropertyTextureProperty;
 }
 
-TMap<FString, FCesiumMetadataValue>
+/*static*/ TMap<FString, FCesiumMetadataValue>
 UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUV(
     UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
     const FVector2D& UV) {
@@ -98,34 +101,24 @@ UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUV(
   return values;
 }
 
-TMap<FString, FString>
-UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUVAsStrings(
+/*static*/ TMap<FString, FCesiumMetadataValue>
+UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
     UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
-    const FVector2D& UV) {
-  TMap<FString, FString> values;
+    const FHitResult& Hit) {
+  TMap<FString, FCesiumMetadataValue> values;
 
-  for (const auto& pair : PropertyTexture._properties) {
-    const FCesiumPropertyTextureProperty& property = pair.Value;
-    ECesiumPropertyTexturePropertyStatus status =
-        UCesiumPropertyTexturePropertyBlueprintLibrary::
-            GetPropertyTexturePropertyStatus(property);
-    if (status == ECesiumPropertyTexturePropertyStatus::Valid) {
-      FCesiumMetadataValue value =
+  for (const auto& propertyIt : PropertyTexture._properties) {
+    auto glTFTexCoordIndex = propertyIt.Value.getTexCoordSetIndex();
+    FVector2D UV;
+    if (UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
+            Hit,
+            glTFTexCoordIndex,
+            UV)) {
+      values.Add(
+          propertyIt.Key,
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
-              pair.Value,
-              UV);
-      values.Add(
-          pair.Key,
-          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
-    } else if (
-        status ==
-        ECesiumPropertyTexturePropertyStatus::EmptyPropertyWithDefault) {
-      FCesiumMetadataValue value =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
-              pair.Value);
-      values.Add(
-          pair.Key,
-          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
+              propertyIt.Value,
+              UV));
     }
   }
 

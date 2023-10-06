@@ -40,7 +40,7 @@ namespace CesiumEncodedFeaturesMetadata {
 /**
  * Naming convention for feature ID texture parameters:
  *  - Texture: FeatureIDTextureName + "_TX"
- *  - Texture Coordinate Index: FeatureIDTextureName + "_UV"
+ *  - Texture Coordinate Index: FeatureIDTextureName + "_UV_INDEX"
  *  - Channels: FeatureIDTextureName + "_CHANNELS"
  *  - NumChannels: FeatureIDTextureName + "_NUM_CHANNELS"
  */
@@ -59,8 +59,10 @@ static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
  * - Property Table: "PTABLE_" + PropertyTableName
  * - Property Texture: "PTEXTURE_" + PropertyTableName
  * - Property Table Property: "PTABLE_" + PropertyTableName + PropertyName
- * - Property Texture Property: "PTEXTURE_" + PropertyTableName + PropertyName
- * - Property Texture Property Channels: "PTEXTURE_" + PropertyTableName +
+ * - Property Texture Property: "PTEXTURE_" + PropertyTextureName + PropertyName
+ * - Property Texture Property UV Index: "PTEXTURE_" + PropertyTextureName +
+ * PropertyName + "_UV_INDEX"
+ * - Property Texture Property Channels: "PTEXTURE_" + PropertyTextureName +
  * PropertyName + "_CHANNELS"
  */
 static const FString MaterialPropertyTablePrefix = "PTABLE_";
@@ -85,11 +87,13 @@ static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
  * - Property Data (node parameter name): PropertyName + "_DATA"
  * - Property Raw Value (output name): PropertyName + "_RAW"
  * - Property Transform Value (node parameter name): TransformName +
- * "_VALUE".
+ * "_VALUE"
+ * - Property UV Value (node parameter name): PropertyName = "_UV"
  */
 static const FString MaterialPropertyDataSuffix = "_DATA";
 static const FString MaterialPropertyRawSuffix = "_RAW";
 static const FString MaterialPropertyValueSuffix = "_VALUE";
+static const FString MaterialPropertyUVSuffix = "_UV";
 
 #pragma region Encoded Primitive Features
 
@@ -345,13 +349,22 @@ struct EncodedPropertyTextureProperty {
   TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 
   /**
-   * @brief The set index of the texture coordinates used to sample this
-   * property texture.
+   * @brief The type that of the metadata encoded in the texture.
+   */
+  ECesiumMetadataType type;
+
+  /**
+   * @brief The set index of the texture coordinates from the glTF primitive
+   * that are used to sample this property texture. If this is -1, this texture
+   * will not be sampled by texture coordinates in the primitive, but may be
+   * sampled by other means in the Unreal material.
    */
   int64 textureCoordinateSetIndex;
 
   /**
-   * @brief The channels to use when constructing a value from texture data.
+   * @brief The channels to use when constructing a value from texture data. The
+   * number of channels used is specified in the material itself, and derives
+   * from the type of the property.
    */
   std::array<int32, 4> channels;
 
@@ -398,6 +411,9 @@ struct EncodedPropertyTexture {
  * primitive.
  */
 struct EncodedPrimitiveMetadata {
+  /**
+   * @brief The indices of the property textures used by the primitive.
+   */
   TArray<int64> propertyTextureIndices;
 };
 
@@ -411,22 +427,21 @@ struct EncodedModelMetadata {
 };
 
 EncodedPropertyTable encodePropertyTableAnyThreadPart(
-    const FCesiumPropertyTableDescription& featureTableDescription,
+    const FCesiumPropertyTableDescription& propertyTableDescription,
     const FCesiumPropertyTable& propertyTable);
 
 EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
+    const FCesiumPropertyTextureDescription& propertyTextureDescription,
+    const FCesiumPropertyTexture& propertyTexture,
     TMap<
         const CesiumGltf::ImageCesium*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
-        propertyTexturePropertyMap,
-    const FCesiumPropertyTextureDescription& propertyTextureDescription,
-    const FString& propertyTextureName,
-    const FCesiumPropertyTexture& propertyTexture);
+        propertyTexturePropertyMap);
 
 EncodedPrimitiveMetadata encodePrimitiveMetadataAnyThreadPart(
-    const FCesiumModelMetadataDescription& metadataDescription,
-    const FCesiumPrimitiveFeatures& features,
-    const FCesiumPrimitiveMetadata& primitive);
+    const FCesiumPrimitiveMetadataDescription& metadataDescription,
+    const FCesiumPrimitiveMetadata& primitive,
+    const FCesiumModelMetadata& modelMetadata);
 
 EncodedModelMetadata encodeModelMetadataAnyThreadPart(
     const FCesiumModelMetadataDescription& metadataDescription,
@@ -440,13 +455,7 @@ bool encodePropertyTextureGameThreadPart(
         uniqueTextures,
     EncodedPropertyTexture& encodedFeatureTexture);
 
-bool encodePrimitiveMetadataGameThreadPart(
-    EncodedPrimitiveMetadata& encodedPrimitive);
-
 bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata);
-
-void destroyEncodedPrimitiveMetadata(
-    EncodedPrimitiveMetadata& encodedPrimitive);
 
 void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 

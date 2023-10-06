@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CesiumGltf/PropertyTexturePropertyView.h"
-#include "CesiumGltf/PropertyViewTypes.h"
 #include "CesiumMetadataValue.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include <any>
 #include "CesiumPropertyTextureProperty.generated.h"
 
 /**
@@ -49,15 +49,9 @@ public:
   FCesiumPropertyTextureProperty(
       const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property)
       : _status(ECesiumPropertyTexturePropertyStatus::ErrorInvalidProperty),
-        _property(),
+        _property(Property),
         _valueType(),
         _normalized(Normalized) {
-    if constexpr (Normalized) {
-      _property = NormalizedPropertyTexturePropertyViewType(Property);
-    } else {
-      _property = PropertyTexturePropertyViewType(Property);
-    }
-
     switch (Property.status()) {
     case CesiumGltf::PropertyTexturePropertyViewStatus::Valid:
       _status = ECesiumPropertyTexturePropertyStatus::Valid;
@@ -107,10 +101,7 @@ public:
 private:
   ECesiumPropertyTexturePropertyStatus _status;
 
-  using PropertyType = std::variant<
-      CesiumGltf::PropertyTexturePropertyViewType,
-      CesiumGltf::NormalizedPropertyTexturePropertyViewType>;
-  PropertyType _property;
+  std::any _property;
 
   FCesiumMetadataValueType _valueType;
   bool _normalized;
@@ -183,21 +174,41 @@ public:
                                 const FCesiumPropertyTextureProperty& Property);
 
   /**
-   * Get the index of the texture coordinate set that corresponds to the
-   * property texture property for the given primitive component.
+   * Gets the glTF texture coordinate set index used by the property texture
+   * property. This is the index N corresponding to the "TEXCOORD_N" attribute
+   * on the glTF primitive that samples this texture.
    *
-   * This is the index relative to the number of texture coordinate sets that
-   * the Unreal primitive has. In contrast, the property texture property
-   * defines a set index for the "TEXCOORD_N" attribute it uses in the glTF,
-   * where N is the index. The Unreal index and the glTF index may not
-   * necessarily be the same.
+   * If the property texture property is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTextureProperty")
-  static int64 GetTextureCoordinateIndex(
-      const UPrimitiveComponent* PrimitiveComponent,
+  static int64 GetGltfTextureCoordinateSetIndex(
+      UPARAM(ref) const FCesiumPropertyTextureProperty& Property);
+
+  /**
+   * Gets the UV channel containing the texture coordinate set that is used by
+   * the property texture property on the given component. This refers to the UV
+   * channel it uses on the primitive's static mesh, which is not necessarily
+   * equal to value of GetGltfTextureCoordinateSetIndex.
+   *
+   * This function may be used with FindCollisionUV to get the feature ID from a
+   * line trace hit. However, in order for this function to work, the feature ID
+   * texture should be listed under the CesiumFeaturesMetadataComponent of the
+   * owner Cesium3DTileset. Otherwise, its texture coordinate set may not be
+   * included in the Unreal mesh data. To avoid using
+   * CesiumFeaturesMetadataComponent, use GetFeatureIDFromHit instead.
+   *
+   * This returns -1 if the property texture property is invalid, or if the specified
+   * texture coordinate set is not present in the component's mesh data.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTextureProperty")
+  static int64 GetUnrealUVChannel(
+      const UPrimitiveComponent* Component,
       UPARAM(ref) const FCesiumPropertyTextureProperty& Property);
 
   /**

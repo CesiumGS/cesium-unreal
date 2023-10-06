@@ -79,7 +79,12 @@ struct LoadPrimitiveResult {
   // index in the Unreal mesh.
   // The -1 key is reserved for implicit feature IDs (in other words, the vertex
   // index).
-  std::unordered_map<int32_t, uint32_t> textureCoordinateMap;
+  std::unordered_map<int32_t, uint32_t> glTFToUnrealTexCoordMap;
+
+  // Maps texture coordinate set indices in a glTF to AccessorViews. This stores
+  // accessor views on texture coordinate sets that will be used by feature ID
+  // textures or property textures.
+  std::unordered_map<int32_t, CesiumTexCoordAccessorType> TexCoordAccessorMap;
 
   glm::vec3 dimensions;
 };

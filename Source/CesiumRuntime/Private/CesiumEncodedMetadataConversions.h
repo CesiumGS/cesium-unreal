@@ -4,11 +4,18 @@
 
 #include <gsl/span>
 
+enum class ECesiumMetadataType : uint8;
 enum class ECesiumEncodedMetadataType : uint8;
 struct FCesiumPropertyTablePropertyDescription;
 struct FCesiumPropertyTableProperty;
 struct FCesiumMetadataPropertyDetails;
 struct FCesiumMetadataEncodingDetails;
+
+/**
+ * @brief Gets the best-fitting encoded type for the given metadata type.
+ */
+ECesiumEncodedMetadataType
+CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type);
 
 /**
  * @brief Gets the best-fitting encoded types and conversion method for a given

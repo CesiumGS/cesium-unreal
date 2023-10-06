@@ -228,6 +228,11 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveMetadataDescription {
   /**
    * @brief The names of the property textures used by the glTF primitives
    * across the tileset.
+   *
+   * This should be a subset of the property textures listed in the model
+   * metadata. Property textures can be passed to the material even if they are
+   * not explicitly used by a glTF primitive, but the primitive may lack the
+   * corresponding sets of texture coordinates intended to sample them.
    */
   UPROPERTY(
       EditAnywhere,
@@ -324,7 +329,7 @@ public:
   void AutoFill();
 
   /**
-   * @brief This button can be used to create a boiler-plate material layer that
+   * This button can be used to create a boiler-plate material layer that
    * exposes the requested metadata properties in the current description. The
    * nodes to access the metadata will be added to TargetMaterialLayer if it
    * exists. Otherwise a new material layer will be created in the /Content/
@@ -336,7 +341,7 @@ public:
 
 #if WITH_EDITORONLY_DATA
   /**
-   * @brief This is the target UMaterialFunctionMaterialLayer that the
+   * This is the target UMaterialFunctionMaterialLayer that the
    * boiler-plate material generation will use. When pressing
    * "Generate Material", nodes will be added to this material to enable access
    * to the requested metadata. If this is left blank, a new material layer
@@ -354,33 +359,44 @@ public:
    * Description of the feature ID sets in the visible glTF primitives across
    * the tileset.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Primitive Features",
+      Meta = (TitleProperty = "Name"))
   TArray<FCesiumFeatureIdSetDescription> FeatureIdSets;
 
   /**
-   * @brief The names of the property textures used by the glTF primitives
-   * across the tileset.
+   * Names of the property textures used by the glTF primitives across the
+   * tileset.
+   *
+   * This should be a subset of the property textures listed in the model
+   * metadata. Property textures can be passed to the material even if they are
+   * not explicitly used by a glTF primitive, but the primitive may lack the
+   * corresponding sets of texture coordinates intended to sample them.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Primitive Metadata",
       Meta = (TitleProperty = "Name"))
   TSet<FString> PropertyTextureNames;
 
   /**
-   * @brief Descriptions of the property tables in the visible glTF
+   * Descriptions of the property tables in the visible glTF
    * models across the tileset.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Model Metadata",
+      Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTableDescription> PropertyTables;
 
   /**
-   * @brief Descriptions of property textures in the visible glTF models across
+   * Descriptions of property textures in the visible glTF models across
    * the tileset.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Model Metadata",
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
 };

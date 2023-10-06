@@ -6,6 +6,7 @@
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "CesiumPropertyTexture.generated.h"
 
 namespace CesiumGltf {
@@ -125,6 +126,12 @@ public:
    * property name. This will only include values from valid property texture
    * properties.
    *
+   * In EXT_structural_metadata, individual properties can specify different
+   * texture coordinate sets to be sampled from. This method uses the same
+   * coordinates to sample each property, regardless of its intended texture
+   * coordinate set. Use GetMetadataValuesForHit instead to sample the property
+   * texture's properties with their respective texture coordinate sets.
+   *
    * @param UV The texture coordinates.
    * @return The property values mapped by property name.
    */
@@ -137,21 +144,18 @@ public:
       const FVector2D& UV);
 
   /**
-   * Gets all of the property values at the given texture coordinates as
-   * strings, mapped by property name. This will only include values from valid
-   * property texture properties.
+   * Given a trace hit result, get all of the property values from the hit
+   * component, mapped by property name. This will only include values from
+   * valid property texture properties.
    *
-   * Array properties cannot be converted to strings, so empty strings
-   * will be returned for their values.
-   *
-   * @param UV The texture coordinates.
-   * @return The property values as strings mapped by property name.
+   * @param Hit The trace hit result
+   * @return The property values mapped by property name.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTexture")
-  static TMap<FString, FString> GetMetadataValuesForUVAsStrings(
+  static TMap<FString, FCesiumMetadataValue> GetMetadataValuesFromHit(
       UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
-      const FVector2D& UV);
+      const FHitResult& Hit);
 };
