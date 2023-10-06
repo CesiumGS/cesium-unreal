@@ -123,48 +123,64 @@ void setupForTokyo(SceneGenerationContext& context) {
   context.tilesets.push_back(tileset);
 }
 
-void refreshTilesets(SceneGenerationContext& context) {
-  context.refreshTilesets();
-}
-
 bool FGoogleTilesPompidou::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForPompidou, testPasses, 1280, 720);
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForPompidou,
+      testPasses,
+      1280,
+      720);
 }
 
 bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForChrysler, testPasses, 1280, 720);
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForChrysler,
+      testPasses,
+      1280,
+      720);
 }
 
 bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForGuggenheim, testPasses, 1280, 720);
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForGuggenheim,
+      testPasses,
+      1280,
+      720);
 }
 
 bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForDeathValley, testPasses, 1280, 720);
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForDeathValley,
+      testPasses,
+      1280,
+      720);
 }
 
 bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(GetTestName(), setupForTokyo, testPasses, 1280, 720);
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForTokyo,
+      testPasses,
+      1280,
+      720);
 }
 
 #endif
