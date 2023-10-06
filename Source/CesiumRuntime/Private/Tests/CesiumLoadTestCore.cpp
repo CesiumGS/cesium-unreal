@@ -111,7 +111,10 @@ DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
     FString,
     screenshotName);
 bool LoadTestScreenshotCommand::Update() {
-  UE_LOG(LogCesium, Display, TEXT("Requesting screenshot to /Saved/Screenshots/WindowsEditor..."));
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Requesting screenshot to /Saved/Screenshots/WindowsEditor..."));
 
   // Add a dash to separate name from unique index of screen shot
   // Also add a dot to keep the base path logic from stripping away too much
