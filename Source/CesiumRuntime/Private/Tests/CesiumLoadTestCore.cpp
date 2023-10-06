@@ -107,6 +107,20 @@ bool TimeLoadingCommand::Update() {
 }
 
 DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    LoadTestScreenshotCommand,
+    FString,
+    screenshotName);
+bool LoadTestScreenshotCommand::Update() {
+  UE_LOG(LogCesium, Display, TEXT("Requesting screenshot to /Saved/Screenshots/WindowsEditor..."));
+
+  // Add a dash to separate name from unique index of screen shot
+  // Also add a dot to keep the base path logic from stripping away too much
+  FString requestFilename = screenshotName + "-" + ".";
+  FScreenshotRequest::RequestScreenshot(requestFilename, false, true);
+  return true;
+}
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
     TestCleanupCommand,
     LoadTestContext&,
     context);
@@ -177,25 +191,29 @@ bool RunLoadTest(
   // Wait until PIE is ready
   ADD_LATENT_AUTOMATION_COMMAND(WaitForPIECommand());
 
+  // Wait to show distinct gap in profiler
+  ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
+
   std::vector<TestPass>::const_iterator it;
   for (it = testPasses.begin(); it != testPasses.end(); ++it) {
     const TestPass& pass = *it;
 
-    // Wait to show distinct gap in profiler
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.0f));
-
     // Do our timing capture
-    FString loggingName = testName + ":" + pass.name;
+    FString loggingName = testName + "-" + pass.name;
 
     ADD_LATENT_AUTOMATION_COMMAND(TimeLoadingCommand(
         loggingName,
         gLoadTestContext,
         pass.setupStep,
         pass.verifyStep));
-  }
 
-  // Wait to show distinct gap in profiler
-  ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.0f));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
+
+    FString screenshotName = testName + "-" + pass.name;
+    ADD_LATENT_AUTOMATION_COMMAND(LoadTestScreenshotCommand(screenshotName))
+
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
+  }
 
   // End play in editor
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
