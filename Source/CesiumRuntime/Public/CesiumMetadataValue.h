@@ -218,6 +218,12 @@ public:
     _valueType = TypeToMetadataValueType<T>();
   }
 
+  FCesiumMetadataValue& operator=(const FCesiumMetadataValue& rhs) noexcept;
+  FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs) noexcept;
+  FCesiumMetadataValue(const FCesiumMetadataValue& rhs) noexcept;
+  FCesiumMetadataValue(FCesiumMetadataValue&& rhs) noexcept;
+  ~FCesiumMetadataValue() noexcept;
+
 private:
   ValueType _value;
   FCesiumMetadataValueType _valueType;

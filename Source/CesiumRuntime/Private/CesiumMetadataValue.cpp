@@ -133,15 +133,14 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return FCesiumPropertyArray();
-  //return mpark::visit(
-  //    [](auto value) -> FCesiumPropertyArray {
-  //      if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-  //        return FCesiumPropertyArray(value);
-  //      }
-  //      return FCesiumPropertyArray();
-  //    },
-  //    Value._value);
+  return mpark::visit(
+      [](auto value) -> FCesiumPropertyArray {
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
+          return FCesiumPropertyArray(value);
+        }
+        return FCesiumPropertyArray();
+      },
+      Value._value);
 }
 
 bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
@@ -153,12 +152,21 @@ template <typename TTo>
 /*static*/ TTo FCesiumMetadataValue::convertTo(
     const ValueType& Value,
     const TTo& DefaultValue) noexcept {
-  return DefaultValue;
-  //return mpark::visit(
-  //    [DefaultValue](auto value) {
-  //      return CesiumMetadataConversions<TTo, decltype(value)>::convert(
-  //          value,
-  //          DefaultValue);
-  //    },
-  //    Value);
+  return mpark::visit(
+      [DefaultValue](auto value) {
+        return CesiumMetadataConversions<TTo, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value);
 }
+
+FCesiumMetadataValue& FCesiumMetadataValue::operator=(
+    const FCesiumMetadataValue& rhs) noexcept = default;
+FCesiumMetadataValue&
+FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) noexcept = default;
+FCesiumMetadataValue::FCesiumMetadataValue(
+    const FCesiumMetadataValue& rhs) noexcept = default;
+FCesiumMetadataValue::FCesiumMetadataValue(
+    FCesiumMetadataValue&& rhs) noexcept = default;
+FCesiumMetadataValue ::~FCesiumMetadataValue() noexcept = default;
