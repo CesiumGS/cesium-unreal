@@ -6,8 +6,8 @@
 #include "CesiumLifetime.h"
 #include "UObject/UObjectGlobals.h"
 #include "VecMath.h"
-#include <optional>
 #include <mpark/variant.hpp>
+#include <optional>
 
 using namespace Cesium3DTilesSelection;
 
