@@ -35,7 +35,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDAccessorType = mpark::variant<
-      std::monostate,
+      mpark::monostate,
       CesiumGltf::AccessorView<int8_t>,
       CesiumGltf::AccessorView<uint8_t>,
       CesiumGltf::AccessorView<int16_t>,

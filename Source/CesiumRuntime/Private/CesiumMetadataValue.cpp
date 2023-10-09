@@ -145,7 +145,7 @@ FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
 
 bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return mpark::holds_alternative<std::monostate>(Value._value);
+  return mpark::holds_alternative<mpark::monostate>(Value._value);
 }
 
 template <typename TTo>

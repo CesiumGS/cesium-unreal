@@ -9,7 +9,7 @@ using namespace CesiumGltf;
 namespace {
 
 struct FeatureIDFromAccessor {
-  int64 operator()(std::monostate) { return -1; }
+  int64 operator()(mpark::monostate) { return -1; }
 
   int64 operator()(const AccessorView<float>& value) {
     if (vertexIndex < 0 || vertexIndex >= value.size()) {
@@ -29,7 +29,7 @@ struct FeatureIDFromAccessor {
 };
 
 struct VertexCountFromAccessor {
-  int64 operator()(std::monostate) { return 0; }
+  int64 operator()(mpark::monostate) { return 0; }
 
   template <typename T> int64 operator()(const AccessorView<T>& value) {
     return static_cast<int64>(value.size());

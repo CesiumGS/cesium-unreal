@@ -14,7 +14,7 @@ namespace {
 // There are technically no invalid texcoord values because of clamp / wrap
 // behavior, so we use std::nullopt to denote an erroneous value.
 struct TexCoordFromAccessor {
-  std::optional<glm::vec2> operator()(std::monostate) { return std::nullopt; }
+  std::optional<glm::vec2> operator()(mpark::monostate) { return std::nullopt; }
 
   std::optional<glm::vec2>
   operator()(const AccessorView<AccessorTypes::VEC2<float>>& value) {

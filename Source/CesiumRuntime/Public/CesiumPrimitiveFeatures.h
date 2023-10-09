@@ -21,7 +21,7 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
   GENERATED_USTRUCT_BODY()
 
   using IndexAccessorType = mpark::variant<
-      std::monostate,
+      mpark::monostate,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>>;

@@ -11,7 +11,7 @@ static FCesiumPrimitiveFeatures EmptyPrimitiveFeatures;
 
 namespace {
 struct VertexIndexFromAccessor {
-  int64 operator()(std::monostate) {
+  int64 operator()(mpark::monostate) {
     const int64 vertexIndex = faceIndex * 3;
     if (vertexIndex < vertexCount) {
       return vertexIndex;

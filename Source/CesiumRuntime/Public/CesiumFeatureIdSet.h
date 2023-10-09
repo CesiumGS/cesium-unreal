@@ -34,7 +34,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDType = mpark::variant<
-      std::monostate,
+      mpark::monostate,
       FCesiumFeatureIdAttribute,
       FCesiumFeatureIdTexture>;
 
