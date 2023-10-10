@@ -900,9 +900,10 @@ template <typename TTo> struct Convertifier {
     }
     auto maybeValue = v.get(FeatureID);
     if (maybeValue) {
-      return CesiumMetadataConversions<TTo, decltype(*maybeValue)>::convert(
-          *maybeValue,
-          DefaultValue);
+      return CesiumMetadataConversions<
+          TTo,
+          std::remove_reference_t<std::remove_cv_t<decltype((*maybeValue))>>>::
+          convert(*maybeValue, DefaultValue);
     }
     return DefaultValue;
   }

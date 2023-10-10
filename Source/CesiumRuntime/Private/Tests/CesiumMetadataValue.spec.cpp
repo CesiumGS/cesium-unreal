@@ -1129,7 +1129,7 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets array from array value", [this]() {
       std::vector<uint8_t> arrayValues{1, 2};
-      PropertyArrayView<uint8_t> arrayView(std::move(arrayValues));
+      PropertyArrayView<uint8_t> arrayView{std::vector<uint8_t>(arrayValues)};
 
       FCesiumMetadataValue value(arrayView);
       FCesiumPropertyArray array =

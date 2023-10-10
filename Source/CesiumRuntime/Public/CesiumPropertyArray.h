@@ -107,7 +107,23 @@ public:
    * @param value The property array view that will be stored in this struct
    */
   template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayView<T> value)
+  FCesiumPropertyArray(CesiumGltf::PropertyArrayView<T>&& value)
+      : _value(std::move(value)), _elementType() {
+    ECesiumMetadataType type =
+        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    bool isArray = false;
+
+    _elementType = {type, componentType, isArray};
+  }
+
+  /**
+   * Constructs an array instance.
+   * @param value The property array view that will be stored in this struct
+   */
+  template <typename T>
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
       : _value(value), _elementType() {
     ECesiumMetadataType type =
         ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
