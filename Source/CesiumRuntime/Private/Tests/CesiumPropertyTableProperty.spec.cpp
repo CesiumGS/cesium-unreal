@@ -1,3 +1,4 @@
+#if false
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "CesiumPropertyTableProperty.h"
@@ -4273,3 +4274,5 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
   });
 }
+#endif
+

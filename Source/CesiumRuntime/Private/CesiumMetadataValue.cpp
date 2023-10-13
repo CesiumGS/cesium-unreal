@@ -134,8 +134,9 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
   return mpark::visit(
-      [](auto value) -> FCesiumPropertyArray {
-        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
+      [](const auto& value) -> FCesiumPropertyArray {
+        if constexpr (CesiumGltf::IsMetadataArray<std::remove_cv_t<
+                          std::remove_reference_t<decltype(value)>>>::value) {
           return FCesiumPropertyArray(value);
         }
         return FCesiumPropertyArray();
@@ -148,15 +149,19 @@ bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
   return mpark::holds_alternative<mpark::monostate>(Value._value);
 }
 
+FCesiumMetadataValue::FCesiumMetadataValue() noexcept
+    : _value(mpark::monostate{}), _valueType() {}
+
 template <typename TTo>
 /*static*/ TTo FCesiumMetadataValue::convertTo(
     const ValueType& Value,
     const TTo& DefaultValue) noexcept {
   return mpark::visit(
-      [DefaultValue](auto value) {
-        return CesiumMetadataConversions<TTo, decltype(value)>::convert(
-            value,
-            DefaultValue);
+      [&DefaultValue](const auto& value) noexcept {
+        return CesiumMetadataConversions<
+            TTo,
+            std::remove_cv_t<std::remove_reference_t<decltype(value)>>>::
+            convert(value, DefaultValue);
       },
       Value);
 }

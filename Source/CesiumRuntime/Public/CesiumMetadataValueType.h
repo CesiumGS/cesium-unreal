@@ -138,16 +138,12 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   GENERATED_USTRUCT_BODY()
 
-  FCesiumMetadataValueType()
-      : Type(ECesiumMetadataType::Invalid),
-        ComponentType(ECesiumMetadataComponentType::None),
-        bIsArray(false) {}
+  FCesiumMetadataValueType() noexcept;
 
   FCesiumMetadataValueType(
       ECesiumMetadataType InType,
       ECesiumMetadataComponentType InComponentType,
-      bool IsArray = false)
-      : Type(InType), ComponentType(InComponentType), bIsArray(IsArray) {}
+      bool IsArray = false) noexcept;
 
   /**
    * The type of the metadata property or value.
@@ -175,15 +171,8 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool bIsArray;
 
-  inline bool operator==(const FCesiumMetadataValueType& ValueType) const {
-    return Type == ValueType.Type && ComponentType == ValueType.ComponentType &&
-           bIsArray == ValueType.bIsArray;
-  }
-
-  inline bool operator!=(const FCesiumMetadataValueType& ValueType) const {
-    return Type != ValueType.Type || ComponentType != ValueType.ComponentType ||
-           bIsArray != ValueType.bIsArray;
-  }
+  bool operator==(const FCesiumMetadataValueType& ValueType) const noexcept;
+  bool operator!=(const FCesiumMetadataValueType& ValueType) const noexcept;
 };
 
 template <typename T>

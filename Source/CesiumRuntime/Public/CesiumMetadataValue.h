@@ -174,33 +174,14 @@ public:
   /**
    * Constructs an empty metadata value with unknown type.
    */
-  FCesiumMetadataValue() : _value(mpark::monostate{}), _valueType() {}
+  FCesiumMetadataValue() noexcept;
 
   /**
    * Constructs a metadata value with the given input.
    *
    * @param Value The value to be stored in this struct.
    */
-  template <typename T>
-  explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
-    ECesiumMetadataType type;
-    ECesiumMetadataComponentType componentType;
-    bool isArray;
-    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-      type =
-          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<ArrayType>::component);
-      isArray = true;
-    } else {
-      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
-      isArray = false;
-    }
-    _valueType = {type, componentType, isArray};
-  }
+  template <typename T> explicit FCesiumMetadataValue(const T& Value) noexcept;
 
   /**
    * Constructs a metadata value with the given optional input.
@@ -208,15 +189,7 @@ public:
    * @param MaybeValue The optional value to be stored in this struct.
    */
   template <typename T>
-  explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue)
-      : _value(mpark::monostate{}), _valueType() {
-    if (!MaybeValue) {
-      return;
-    }
-
-    _value = *MaybeValue;
-    _valueType = TypeToMetadataValueType<T>();
-  }
+  explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue) noexcept;
 
   FCesiumMetadataValue& operator=(const FCesiumMetadataValue& rhs) noexcept;
   FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs) noexcept;
@@ -234,6 +207,40 @@ private:
 
   friend class UCesiumMetadataValueBlueprintLibrary;
 };
+
+template <typename T>
+FCesiumMetadataValue::FCesiumMetadataValue(const T& Value) noexcept
+    : _value(Value), _valueType() {
+  ECesiumMetadataType type;
+  ECesiumMetadataComponentType componentType;
+  bool isArray;
+  if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+    using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
+    type =
+        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<ArrayType>::component);
+    isArray = true;
+  } else {
+    type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    isArray = false;
+  }
+  _valueType = {type, componentType, isArray};
+}
+
+template <typename T>
+FCesiumMetadataValue::FCesiumMetadataValue(
+    const std::optional<T>& MaybeValue) noexcept
+    : _value(mpark::monostate{}), _valueType() {
+  if (!MaybeValue) {
+    return;
+  }
+
+  _value = *MaybeValue;
+  _valueType = TypeToMetadataValueType<T>();
+}
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataValueBlueprintLibrary

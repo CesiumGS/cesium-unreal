@@ -25,12 +25,12 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
-  propertyTableView.forEachProperty([&properties = _properties](
-                                        const std::string& propertyName,
-                                        auto propertyValue) mutable {
-    FString key(UTF8_TO_TCHAR(propertyName.data()));
-    properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
-  });
+  for (const auto& propertyPair : propertyTableView.getClass()->properties) {
+    FString key(UTF8_TO_TCHAR(propertyPair.first.c_str()));
+    _properties.Add(
+        key,
+        FCesiumPropertyTableProperty(propertyTableView, propertyPair.first));
+  }
 }
 
 /*static*/ ECesiumPropertyTableStatus

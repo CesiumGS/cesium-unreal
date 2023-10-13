@@ -100,49 +100,57 @@ public:
   /**
    * Constructs an empty array instance with an unknown element type.
    */
-  FCesiumPropertyArray() : _value(), _elementType() {}
+  FCesiumPropertyArray() noexcept;
 
   /**
    * Constructs an array instance.
    * @param value The property array view that will be stored in this struct
    */
   template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayView<T>&& value)
-      : _value(std::move(value)), _elementType() {
-    ECesiumMetadataType type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<T>::component);
-    bool isArray = false;
-
-    _elementType = {type, componentType, isArray};
-  }
+  FCesiumPropertyArray(CesiumGltf::PropertyArrayView<T>&& value) noexcept;
 
   /**
    * Constructs an array instance.
    * @param value The property array view that will be stored in this struct
    */
   template <typename T>
-  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
-      : _value(value), _elementType() {
-    ECesiumMetadataType type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<T>::component);
-    bool isArray = false;
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value) noexcept;
 
-    _elementType = {type, componentType, isArray};
-  }
+  FCesiumPropertyArray(const FCesiumPropertyArray& rhs) noexcept;
+  FCesiumPropertyArray(FCesiumPropertyArray&& rhs) noexcept;
+  FCesiumPropertyArray& operator=(const FCesiumPropertyArray& rhs) noexcept;
+  FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs) noexcept;
+  ~FCesiumPropertyArray() noexcept;
 
 private:
-  template <typename T, typename... VariantType>
-  static bool
-  holdsArrayAlternative(const mpark::variant<VariantType...>& variant) {
-    return mpark::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
-  }
-
   ArrayType _value;
   FCesiumMetadataValueType _elementType;
 
   friend class UCesiumPropertyArrayBlueprintLibrary;
 };
+
+template <typename T>
+FCesiumPropertyArray::FCesiumPropertyArray(
+    CesiumGltf::PropertyArrayView<T>&& value) noexcept
+    : _value(std::move(value)), _elementType() {
+  ECesiumMetadataType type =
+      ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+  ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
+      CesiumGltf::TypeToPropertyType<T>::component);
+  bool isArray = false;
+
+  _elementType = {type, componentType, isArray};
+}
+
+template <typename T>
+FCesiumPropertyArray::FCesiumPropertyArray(
+    const CesiumGltf::PropertyArrayView<T>& value) noexcept
+    : _value(value), _elementType() {
+  ECesiumMetadataType type =
+      ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+  ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
+      CesiumGltf::TypeToPropertyType<T>::component);
+  bool isArray = false;
+
+  _elementType = {type, componentType, isArray};
+}

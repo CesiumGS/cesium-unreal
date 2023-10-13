@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTablePropertyView.h"
+#include "CesiumGltf/PropertyTableView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
@@ -10,10 +10,11 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include <any>
-#include <glm/glm.hpp>
-#include <mpark/variant.hpp>
-#include <string_view>
 #include "CesiumPropertyTableProperty.generated.h"
+
+namespace CesiumGltf {
+class PropertyTableView;
+}
 
 /**
  * @brief Reports the status of a FCesiumPropertyTableProperty. If the property
@@ -48,64 +49,33 @@ public:
   /**
    * Construct an invalid property with an unknown type.
    */
-  FCesiumPropertyTableProperty()
-      : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(),
-        _valueType(),
-        _normalized(false) {}
+  FCesiumPropertyTableProperty() noexcept;
 
   /**
-   * Construct a wrapper for the property table property view.
+   * Construct a wrapper for the given property.
    *
-   * @param value The PropertyTablePropertyView to be stored in this struct.
+   * @param propertyTable The PropertyTableView in which to find the property.
+   * @param propertyName The name of the property.
    */
-  template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property)
-      : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(Property),
-        _valueType(),
-        _normalized(Normalized) {
-    switch (Property.status()) {
-    case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
-      _status = ECesiumPropertyTablePropertyStatus::Valid;
-      break;
-    case CesiumGltf::PropertyTablePropertyViewStatus::EmptyPropertyWithDefault:
-      _status = ECesiumPropertyTablePropertyStatus::EmptyPropertyWithDefault;
-      break;
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidPropertyTable:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorNonexistentProperty:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorTypeMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::
-        ErrorComponentTypeMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorArrayTypeMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidNormalization:
-    case CesiumGltf::PropertyTablePropertyViewStatus::
-        ErrorNormalizationMismatch:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidOffset:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidScale:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMax:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMin:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidNoDataValue:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidDefaultValue:
-      // The status was already set in the initializer list.
-      return;
-    default:
-      _status = ECesiumPropertyTablePropertyStatus::ErrorInvalidPropertyData;
-      return;
-    }
+      const CesiumGltf::PropertyTableView& propertyTable,
+      const std::string& propertyName) noexcept;
 
-    _valueType = TypeToMetadataValueType<T>();
-    _normalized = Normalized;
-  }
+  ~FCesiumPropertyTableProperty() noexcept;
+  FCesiumPropertyTableProperty(FCesiumPropertyTableProperty&& rhs) noexcept;
+  FCesiumPropertyTableProperty(
+      const FCesiumPropertyTableProperty& rhs) noexcept;
+  FCesiumPropertyTableProperty&
+  operator=(FCesiumPropertyTableProperty&& rhs) noexcept;
+  FCesiumPropertyTableProperty&
+  operator=(const FCesiumPropertyTableProperty& rhs) noexcept;
 
 private:
-  ECesiumPropertyTablePropertyStatus _status;
+  template <typename TResult, typename TCallback>
+  TResult invoke(TCallback&& callback) const;
 
-  std::any _property;
-
-  FCesiumMetadataValueType _valueType;
-  bool _normalized;
+  CesiumGltf::PropertyTableView _propertyTable;
+  CesiumGltf::PropertyTableView::PropertyId _propertyId;
 
   friend class UCesiumPropertyTablePropertyBlueprintLibrary;
 };

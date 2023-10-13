@@ -11,3 +11,4 @@ node_modules
 extern/build-helper.sh
 Documentation/Reference
 extern/build-linux
+extern/build-android

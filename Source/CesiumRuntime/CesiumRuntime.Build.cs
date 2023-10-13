@@ -207,5 +207,13 @@ public class CesiumRuntime : ModuleRules
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
+
+        // if (Target.Platform == UnrealTargetPlatform.Linux)
+        // {
+        //     Type type = Target.GetType();
+        //     FieldInfo innerField = type.GetField("Inner", BindingFlags.Instance | BindingFlags.NonPublic);
+        //     TargetRules inner = (TargetRules)innerField.GetValue(Target);
+        //     inner.AdditionalCompilerArguments += " -ftime-trace -v";
+        // }
     }
 }
