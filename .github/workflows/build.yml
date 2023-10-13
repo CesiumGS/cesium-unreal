@@ -97,6 +97,8 @@ jobs:
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
       - name: Compress debug sections
         run: |
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
+          $ENV:UNREAL_ENGINE_COMPILER_DIR="${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           dir packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:UNREAL_ENGINE_COMPILER_DIR/bin/x86_64-unknown-linux-gnu-objcopy.exe --compress-debug-sections $_.FullName }
           dir packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:UNREAL_ENGINE_COMPILER_DIR/bin/x86_64-unknown-linux-gnu-objcopy.exe --compress-debug-sections $_.FullName }
       - name: Publish plugin package artifact
