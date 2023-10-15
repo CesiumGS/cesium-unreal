@@ -37,6 +37,12 @@ public:
   FString Style;
 
   /**
+   * Format.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FString Format = "image/jpeg";
+
+  /**
    * Tile Matrix Set ID.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
@@ -47,6 +53,93 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   TArray<FString> TileMatrixSetLabels;
+
+  /**
+   * False to use geographic projection, true to use webmercator projection.
+   * For instance, EPSG:4326 uses geographic and EPSG:3857 uses webmercator.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool UseWebMercatorProjection;
+
+  /**
+   * True to specify quadtree tiling scheme according to projection and
+   * bounding rectangle, or false to automatically determine from projection.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool bSpecifyTilingScheme = false;
+
+  /**
+   * Tile number corresponding to TileCol, also known as TileMatrixWidth.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "bSpecifyTilingScheme", ClampMin = 1))
+  int32 RootTilesX = 1;
+
+  /**
+   * Tile number corresponding to TileRow, also known as TileMatrixHeight.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "bSpecifyTilingScheme", ClampMin = 1))
+  int32 RootTilesY = 1;
+
+  /**
+   * The longitude of the west boundary on globe in degrees, in the range
+   * [-180, 180]
+   */
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta =
+          (EditCondition = "bSpecifyTilingScheme",
+           ClampMin = -180.0,
+           ClampMax = 180.0))
+  double West = -180;
+
+  /**
+   * The latitude of the south boundary on globe in degrees, in the range
+   * [-90, 90]
+   */
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta = (EditCondition = "bSpecifyTilingScheme",
+           ClampMin = -90.0,
+           ClampMax = 90.0))
+  double South = -90;
+
+  /**
+   * The longitude of the west boundary in degrees, in the range [-180, 180]
+   */
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta =
+          (EditCondition = "bSpecifyTilingScheme",
+           ClampMin = -180.0,
+           ClampMax = 180.0))
+  double East = 180;
+
+  /**
+   * The latitude of the south boundary in degrees, in the range [-90, 90]
+   */
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta =
+          (EditCondition = "bSpecifyTilingScheme",
+           ClampMin = -90.0,
+           ClampMax = 90.0))
+  double North = 90;
 
   /**
    * True to directly specify minum and maximum zoom levels available from the
