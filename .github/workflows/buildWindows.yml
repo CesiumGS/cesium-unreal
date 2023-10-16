@@ -9,7 +9,7 @@ on:
       unreal-runner-label:
         required: true
         type: string
-      unreal-batch-files-path:
+      unreal-program-name:
         required: true
         type: string
       upload-package-base-name:
@@ -37,7 +37,7 @@ jobs:
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
-          $env:UNREAL_BATCH_FILES_PATH="${{ inputs.unreal-batch-files-path }}"
+          $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
 
           # Store temp files on the D drive, which is much faster than the EBS-backed C drive.
           mkdir -p d:\cesium\temp
@@ -71,6 +71,13 @@ jobs:
           echo "Temp directory: $env:TEMP"
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
+          echo LastExitCode=$LASTEXITCODE
+          if ($LASTEXITCODE -eq 0) {
+            exit 0
+          }
+          else {
+            exit -1
+          }
       - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
