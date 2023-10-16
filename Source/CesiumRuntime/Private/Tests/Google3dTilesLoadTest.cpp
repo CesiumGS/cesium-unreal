@@ -47,6 +47,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Performance.GoogleTiles.Googleplex",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
+void googleWarmCacheSetup(SceneGenerationContext& context) {
+  context.refreshTilesets();
+}
+
 void setupForPompidou(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(2.352200, 48.860600, 200),
@@ -163,6 +167,7 @@ bool FGoogleTilesPompidou::RunTest(const FString& Parameters) {
 bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", googleWarmCacheSetup, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -175,6 +180,7 @@ bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
 bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", googleWarmCacheSetup, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -187,6 +193,7 @@ bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
 bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", googleWarmCacheSetup, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -199,6 +206,7 @@ bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
 bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", googleWarmCacheSetup, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -211,6 +219,7 @@ bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
 bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", googleWarmCacheSetup, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
