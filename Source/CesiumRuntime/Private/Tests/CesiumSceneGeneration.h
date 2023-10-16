@@ -45,9 +45,6 @@ struct SceneGenerationContext {
 
 void createCommonWorldObjects(SceneGenerationContext& context);
 
-void setupForDenver(SceneGenerationContext& context);
-void setupForMontrealPointCloud(SceneGenerationContext& context);
-
 }; // namespace Cesium
 
 #endif // #if WITH_EDITOR

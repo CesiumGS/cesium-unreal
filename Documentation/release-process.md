@@ -4,6 +4,7 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 
 ## Verify the code
 * Update any hard coded API keys in the code
+  * CesiumSceneGeneration.cpp, testIonToken - Make sure matches samples project
   * Google3dTilesLoadTest.cpp, testGoogleUrl - Make sure matches samples project
 * Verify that the cesium-native submodule in the `extern` directory references the expected commit of cesium-native. Update it if necessary. Verify that CI has completed successfully for that commit of cesium-native.
 * Merge `ue4-main` into `ue5-main`.
