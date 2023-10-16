@@ -72,10 +72,10 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetUnrealUVChannel(
     return -1;
   }
 
-  auto textureCoordinateIndexIt = pPrimitive->glTFToUnrealTexCoordMap.find(
+  auto textureCoordinateIndexIt = pPrimitive->GltfToUnrealTexCoordMap.find(
       UCesiumFeatureIdTextureBlueprintLibrary::GetGltfTextureCoordinateSetIndex(
           FeatureIDTexture));
-  if (textureCoordinateIndexIt == pPrimitive->glTFToUnrealTexCoordMap.end()) {
+  if (textureCoordinateIndexIt == pPrimitive->GltfToUnrealTexCoordMap.end()) {
     return -1;
   }
 

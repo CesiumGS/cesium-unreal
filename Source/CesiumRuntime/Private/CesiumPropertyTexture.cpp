@@ -32,8 +32,6 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     FString key(UTF8_TO_TCHAR(propertyName.data()));
     properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
   });
-
-  /* const std::string positionName = "POSITION";*/
 }
 
 /*static*/ const ECesiumPropertyTextureStatus
@@ -77,24 +75,24 @@ UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUV(
     const FVector2D& UV) {
   TMap<FString, FCesiumMetadataValue> values;
 
-  for (const auto& pair : PropertyTexture._properties) {
-    const FCesiumPropertyTextureProperty& property = pair.Value;
+  for (const auto& propertyIt : PropertyTexture._properties) {
+    const FCesiumPropertyTextureProperty& property = propertyIt.Value;
     ECesiumPropertyTexturePropertyStatus status =
         UCesiumPropertyTexturePropertyBlueprintLibrary::
             GetPropertyTexturePropertyStatus(property);
     if (status == ECesiumPropertyTexturePropertyStatus::Valid) {
       values.Add(
-          pair.Key,
+          propertyIt.Key,
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
-              pair.Value,
+              propertyIt.Value,
               UV));
     } else if (
         status ==
         ECesiumPropertyTexturePropertyStatus::EmptyPropertyWithDefault) {
       values.Add(
-          pair.Key,
+          propertyIt.Key,
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
-              pair.Value));
+              propertyIt.Value));
     }
   }
 
@@ -108,6 +106,16 @@ UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
   TMap<FString, FCesiumMetadataValue> values;
 
   for (const auto& propertyIt : PropertyTexture._properties) {
+    if (UCesiumPropertyTexturePropertyBlueprintLibrary::
+            GetPropertyTexturePropertyStatus(propertyIt.Value) ==
+        ECesiumPropertyTexturePropertyStatus::EmptyPropertyWithDefault) {
+      values.Add(
+          propertyIt.Key,
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
+              propertyIt.Value));
+      continue;
+    }
+
     auto glTFTexCoordIndex = propertyIt.Value.getTexCoordSetIndex();
     FVector2D UV;
     if (UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(

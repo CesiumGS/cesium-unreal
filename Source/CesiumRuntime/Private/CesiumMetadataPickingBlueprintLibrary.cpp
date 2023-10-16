@@ -79,39 +79,6 @@ UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFaceAsStrings(
   return strings;
 }
 
-namespace {
-bool GetVertexIndicesFromFace(
-    const FStaticMeshLODResources& LODResources,
-    int32 FaceIndex,
-    std::array<uint32, 3>& Indices) {
-  int32 FirstIndex = FaceIndex * 3;
-
-  if (LODResources.IndexBuffer.GetNumIndices() > 0) {
-    if (FirstIndex + 2 >= LODResources.IndexBuffer.GetNumIndices()) {
-      return false;
-    }
-
-    for (int32 i = 0; i < 3; i++) {
-      Indices[static_cast<size_t>(i)] =
-          LODResources.IndexBuffer.GetIndex(FirstIndex + i);
-    }
-
-    return true;
-  }
-
-  int32 VertexCount = LODResources.GetNumVertices();
-  if (FirstIndex + 2 >= VertexCount) {
-    return false;
-  }
-
-  Indices[0] = static_cast<uint32>(FirstIndex);
-  Indices[1] = static_cast<uint32>(FirstIndex + 1);
-  Indices[2] = static_cast<uint32>(FirstIndex + 2);
-
-  return true;
-}
-} // namespace
-
 bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     const FHitResult& Hit,
     int64 GltfTexCoordSetIndex,
@@ -122,27 +89,17 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     return false;
   }
 
-  const auto pMesh = pGltfComponent->GetStaticMesh();
-  if (!IsValid(pMesh)) {
-    return false;
-  }
-
-  const auto pRenderData = pMesh->GetRenderData();
-  if (!pRenderData || pRenderData->LODResources.Num() == 0) {
-    return false;
-  }
-
   auto accessorIt =
       pGltfComponent->TexCoordAccessorMap.find(GltfTexCoordSetIndex);
   if (accessorIt == pGltfComponent->TexCoordAccessorMap.end()) {
     return false;
   }
 
-  const auto& LODResources = pRenderData->LODResources[0];
-  std::array<uint32, 3> VertexIndices;
-  if (!GetVertexIndicesFromFace(LODResources, Hit.FaceIndex, VertexIndices)) {
-    return false;
-  }
+  std::array<int64, 3> VertexIndices = std::visit(
+      CesiumFaceVertexIndicesFromAccessor{
+          Hit.FaceIndex,
+          pGltfComponent->PositionAccessor.size()},
+      pGltfComponent->IndexAccessor);
 
   // Adapted from UBodySetup::CalcUVAtLocation. Compute the barycentric
   // coordinates of the point relative to the face, then use those to
@@ -162,16 +119,13 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
 
   std::array<FVector, 3> Positions;
   for (size_t i = 0; i < Positions.size(); i++) {
-    auto Position =
-        LODResources.VertexBuffers.PositionVertexBuffer.VertexPosition(
-            VertexIndices[i]);
-    Positions[i] = FVector(Position[0], Position[1], Position[2]);
+    auto Position = pGltfComponent->PositionAccessor[VertexIndices[i]];
+    Positions[i] = FVector(Position[0], -Position[1], Position[2]);
   }
 
   const FVector Location =
       pGltfComponent->GetComponentToWorld().InverseTransformPosition(
           Hit.Location);
-
   FVector BaryCoords = FMath::ComputeBaryCentric2D(
       Location,
       Positions[0],
@@ -222,9 +176,9 @@ UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesFromHit(
       propertyTables[propertyTableIndex];
 
   int64 featureID =
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit(
           features,
-          Hit.FaceIndex,
+          Hit,
           FeatureIDSetIndex);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataValue>();

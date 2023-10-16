@@ -112,3 +112,17 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
           PrimitiveFeatures,
           FaceIndex));
 }
+
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit(
+    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+    const FHitResult& Hit,
+    int64 FeatureIDSetIndex) {
+  if (FeatureIDSetIndex < 0 ||
+      FeatureIDSetIndex >= PrimitiveFeatures._featureIDSets.Num()) {
+    return -1;
+  }
+
+  return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
+      PrimitiveFeatures._featureIDSets[FeatureIDSetIndex],
+      Hit);
+}

@@ -144,9 +144,13 @@ public:
       const FVector2D& UV);
 
   /**
-   * Given a trace hit result, get all of the property values from the hit
-   * component, mapped by property name. This will only include values from
-   * valid property texture properties.
+   * Given a trace hit result, gets all of the property values from property
+   * texture on the hit component, mapped by property name. This will only
+   * include values from valid property texture properties.
+   *
+   * In EXT_structural_metadata, individual properties can specify different
+   * texture coordinate sets to be sampled from. This method uses the
+   * corresponding texture coordinate sets to sample each property.
    *
    * @param Hit The trace hit result
    * @return The property values mapped by property name.

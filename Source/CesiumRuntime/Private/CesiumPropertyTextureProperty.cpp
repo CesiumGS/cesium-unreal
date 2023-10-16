@@ -403,8 +403,8 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetUnrealUVChannel(
       GetGltfTextureCoordinateSetIndex(Property);
 
   auto textureCoordinateIndexIt =
-      pPrimitive->glTFToUnrealTexCoordMap.find(texCoordSetIndex);
-  if (textureCoordinateIndexIt == pPrimitive->glTFToUnrealTexCoordMap.end()) {
+      pPrimitive->GltfToUnrealTexCoordMap.find(texCoordSetIndex);
+  if (textureCoordinateIndexIt == pPrimitive->GltfToUnrealTexCoordMap.end()) {
     return -1;
   }
 

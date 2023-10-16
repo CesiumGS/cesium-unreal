@@ -119,7 +119,7 @@ static uint32_t updateTextureCoordinates(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const std::optional<T>& texture,
-    std::unordered_map<int32_t, uint32_t>& glTFToUnrealTexCoordMap) {
+    std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
   if (!texture) {
     return 0;
   }
@@ -131,7 +131,7 @@ static uint32_t updateTextureCoordinates(
       vertices,
       indices,
       "TEXCOORD_" + std::to_string(texture.value().texCoord),
-      glTFToUnrealTexCoordMap);
+      gltfToUnrealTexCoordMap);
 }
 
 uint32_t updateTextureCoordinates(
@@ -141,7 +141,7 @@ uint32_t updateTextureCoordinates(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const std::string& attributeName,
-    std::unordered_map<int32_t, uint32_t>& glTFToUnrealTexCoordMap) {
+    std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
   auto uvAccessorIt = primitive.attributes.find(attributeName);
   if (uvAccessorIt == primitive.attributes.end()) {
     // Texture not used, texture coordinates don't matter.
@@ -149,14 +149,14 @@ uint32_t updateTextureCoordinates(
   }
 
   int32_t uvAccessorID = uvAccessorIt->second;
-  auto mapIt = glTFToUnrealTexCoordMap.find(uvAccessorID);
-  if (mapIt != glTFToUnrealTexCoordMap.end()) {
+  auto mapIt = gltfToUnrealTexCoordMap.find(uvAccessorID);
+  if (mapIt != gltfToUnrealTexCoordMap.end()) {
     // Texture coordinates for this accessor are already populated.
     return mapIt->second;
   }
 
-  size_t textureCoordinateIndex = glTFToUnrealTexCoordMap.size();
-  glTFToUnrealTexCoordMap[uvAccessorID] = textureCoordinateIndex;
+  size_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+  gltfToUnrealTexCoordMap[uvAccessorID] = textureCoordinateIndex;
 
   AccessorView<TMeshVector2> uvAccessor(model, uvAccessorID);
   if (uvAccessor.status() != AccessorViewStatus::Valid) {
@@ -553,6 +553,7 @@ static void createTexCoordAccessorsForFeaturesMetadata(
       if (gltfTexCoordSetIndex < 0 ||
           texCoordAccessorsMap.find(gltfTexCoordSetIndex) !=
               texCoordAccessorsMap.end()) {
+        // Skip if the index is invalid or if it has already been accounted for.
         continue;
       }
 
@@ -577,7 +578,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
     const CesiumEncodedFeaturesMetadata::EncodedModelMetadata&
         encodedModelMetadata,
     TMap<FString, uint32_t>& featuresMetadataTexcoordParameters,
-    std::unordered_map<int32_t, uint32_t>& glTFToUnrealTexCoordMap) {
+    std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(
       Cesium::UpdateTextureCoordinatesForFeaturesMetadata)
@@ -603,7 +604,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
               indices,
               "TEXCOORD_" +
                   std::to_string(encodedProperty.textureCoordinateSetIndex),
-              glTFToUnrealTexCoordMap));
+              gltfToUnrealTexCoordMap));
     }
   }
 
@@ -629,8 +630,8 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       // This was already validated when creating the EncodedFeatureIdSet.
       int32_t accessor = primitive.attributes.at(attributeName);
 
-      uint32_t textureCoordinateIndex = glTFToUnrealTexCoordMap.size();
-      glTFToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
+      uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+      gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
       featuresMetadataTexcoordParameters.Emplace(
           encodedFeatureIDSet.name,
           textureCoordinateIndex);
@@ -688,14 +689,14 @@ static void updateTextureCoordinatesForFeaturesMetadata(
               "TEXCOORD_" +
                   std::to_string(
                       encodedFeatureIDTexture.textureCoordinateSetIndex),
-              glTFToUnrealTexCoordMap));
+              gltfToUnrealTexCoordMap));
     } else {
       // Similar to feature ID attributes, we encode the unsigned integer vertex
       // ids as floats in the u-channel of a texture coordinate slot. If it ever
       // becomes possible to access the vertex ID through an Unreal material
       // node, this can be removed.
-      uint32_t textureCoordinateIndex = glTFToUnrealTexCoordMap.size();
-      glTFToUnrealTexCoordMap[-1] = textureCoordinateIndex;
+      uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+      gltfToUnrealTexCoordMap[-1] = textureCoordinateIndex;
       featuresMetadataTexcoordParameters.Emplace(
           encodedFeatureIDSet.name,
           textureCoordinateIndex);
@@ -728,7 +729,7 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
         encodedPrimitiveMetadata,
     const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes,
     TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
-    std::unordered_map<int32_t, uint32_t>& glTFToUnrealTexCoordMap) {
+    std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinatesForMetadata)
 
@@ -746,7 +747,7 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
             "TEXCOORD_" +
                 std::to_string(
                     encodedFeatureIdTexture.textureCoordinateAttributeId),
-            glTFToUnrealTexCoordMap));
+            gltfToUnrealTexCoordMap));
   }
 
   for (const FString& featureTextureName :
@@ -767,7 +768,7 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
                 indices,
                 "TEXCOORD_" + std::to_string(
                                   encodedProperty.textureCoordinateAttributeId),
-                glTFToUnrealTexCoordMap));
+                gltfToUnrealTexCoordMap));
       }
     }
   }
@@ -792,8 +793,8 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
       // This was already validated when creating the EncodedFeatureIdSet.
       int32_t accessor = primitive.attributes.at(attributeName);
 
-      uint32_t textureCoordinateIndex = glTFToUnrealTexCoordMap.size();
-      glTFToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
+      uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+      gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
       metadataTextureCoordinateParameters.Emplace(
           encodedFeatureIdAttribute.name,
           textureCoordinateIndex);
@@ -1170,8 +1171,8 @@ static void loadPrimitive(
   // We need to copy the texture coordinates associated with each texture (if
   // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
 
-  std::unordered_map<int32_t, uint32_t>& glTFToUnrealTexCoordMap =
-      primitiveResult.glTFToUnrealTexCoordMap;
+  std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
+      primitiveResult.GltfToUnrealTexCoordMap;
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
@@ -1201,7 +1202,7 @@ static void loadPrimitive(
             StaticMeshBuildVertices,
             indices,
             pbrMetallicRoughness.baseColorTexture,
-            glTFToUnrealTexCoordMap);
+            gltfToUnrealTexCoordMap);
     primitiveResult.textureCoordinateParameters
         ["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(
         model,
@@ -1210,7 +1211,7 @@ static void loadPrimitive(
         StaticMeshBuildVertices,
         indices,
         pbrMetallicRoughness.metallicRoughnessTexture,
-        glTFToUnrealTexCoordMap);
+        gltfToUnrealTexCoordMap);
     primitiveResult
         .textureCoordinateParameters["normalTextureCoordinateIndex"] =
         updateTextureCoordinates(
@@ -1220,7 +1221,7 @@ static void loadPrimitive(
             StaticMeshBuildVertices,
             indices,
             material.normalTexture,
-            glTFToUnrealTexCoordMap);
+            gltfToUnrealTexCoordMap);
     primitiveResult
         .textureCoordinateParameters["occlusionTextureCoordinateIndex"] =
         updateTextureCoordinates(
@@ -1230,7 +1231,7 @@ static void loadPrimitive(
             StaticMeshBuildVertices,
             indices,
             material.occlusionTexture,
-            glTFToUnrealTexCoordMap);
+            gltfToUnrealTexCoordMap);
     primitiveResult
         .textureCoordinateParameters["emissiveTextureCoordinateIndex"] =
         updateTextureCoordinates(
@@ -1240,7 +1241,7 @@ static void loadPrimitive(
             StaticMeshBuildVertices,
             indices,
             material.emissiveTexture,
-            glTFToUnrealTexCoordMap);
+            gltfToUnrealTexCoordMap);
 
     for (size_t i = 0;
          i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
@@ -1256,7 +1257,7 @@ static void loadPrimitive(
                 StaticMeshBuildVertices,
                 indices,
                 attributeName,
-                glTFToUnrealTexCoordMap);
+                gltfToUnrealTexCoordMap);
       } else {
         primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
       }
@@ -1313,8 +1314,8 @@ static void loadPrimitive(
         primitiveResult.EncodedFeatures,
         primitiveResult.EncodedMetadata,
         pModelResult->EncodedMetadata,
-        primitiveResult.featuresMetadataTexCoordParameters,
-        glTFToUnrealTexCoordMap);
+        primitiveResult.FeaturesMetadataTexCoordParameters,
+        gltfToUnrealTexCoordMap);
   } else if (pMetadataDescription_DEPRECATED) {
     primitiveResult.EncodedMetadata_DEPRECATED =
         CesiumEncodedMetadataUtility::encodeMetadataPrimitiveAnyThreadPart(
@@ -1331,8 +1332,8 @@ static void loadPrimitive(
         *primitiveResult.EncodedMetadata_DEPRECATED,
         UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
             primitiveResult.Metadata_DEPRECATED),
-        primitiveResult.featuresMetadataTexCoordParameters,
-        glTFToUnrealTexCoordMap);
+        primitiveResult.FeaturesMetadataTexCoordParameters,
+        gltfToUnrealTexCoordMap);
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -1442,8 +1443,8 @@ static void loadPrimitive(
 
     LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
         StaticMeshBuildVertices,
-        glTFToUnrealTexCoordMap.size() == 0 ? 1
-                                            : glTFToUnrealTexCoordMap.size(),
+        gltfToUnrealTexCoordMap.size() == 0 ? 1
+                                            : gltfToUnrealTexCoordMap.size(),
         false);
   }
 
@@ -1541,17 +1542,7 @@ static void loadIndexedPrimitive(
   const MeshPrimitive& primitive = *options.pPrimitive;
 
   const Accessor& indexAccessorGltf = model.accessors[primitive.indices];
-  if (indexAccessorGltf.componentType == Accessor::ComponentType::BYTE) {
-    AccessorView<int8_t> indexAccessor(model, primitive.indices);
-    loadPrimitive(
-        primitiveResult,
-        transform,
-        options,
-        positionAccessor,
-        positionView,
-        indexAccessor);
-  } else if (
-      indexAccessorGltf.componentType ==
+  if (indexAccessorGltf.componentType ==
       Accessor::ComponentType::UNSIGNED_BYTE) {
     AccessorView<uint8_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
@@ -1561,16 +1552,7 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor);
-  } else if (
-      indexAccessorGltf.componentType == Accessor::ComponentType::SHORT) {
-    AccessorView<int16_t> indexAccessor(model, primitive.indices);
-    loadPrimitive(
-        primitiveResult,
-        transform,
-        options,
-        positionAccessor,
-        positionView,
-        indexAccessor);
+    primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
       Accessor::ComponentType::UNSIGNED_SHORT) {
@@ -1582,6 +1564,7 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor);
+    primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
       Accessor::ComponentType::UNSIGNED_INT) {
@@ -1593,6 +1576,7 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor);
+    primitiveResult.IndexAccessor = indexAccessor;
   }
 }
 
@@ -1621,6 +1605,7 @@ static void loadPrimitive(
   }
 
   AccessorView<TMeshVector3> positionView(model, *pPositionAccessor);
+  result.PositionAccessor = positionView;
 
   if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
     std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
@@ -2259,7 +2244,7 @@ static void SetFeaturesMetadataParameterValues(
     int32 index) {
   if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
     for (const auto& textureCoordinateSet :
-         loadResult.featuresMetadataTexCoordParameters) {
+         loadResult.FeaturesMetadataTexCoordParameters) {
       pMaterial->SetScalarParameterValueByInfo(
           FMaterialParameterInfo(
               FName(textureCoordinateSet.Key),
@@ -2397,7 +2382,7 @@ static void SetMetadataParameterValues_DEPRECATED(
   }
 
   for (const auto& textureCoordinateSet :
-       loadResult.featuresMetadataTexCoordParameters) {
+       loadResult.FeaturesMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -2530,9 +2515,11 @@ static void loadPrimitiveGameThreadPart(
   pMesh->pTilesetActor = pTilesetActor;
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
-  pMesh->glTFToUnrealTexCoordMap =
-      std::move(loadResult.glTFToUnrealTexCoordMap);
+  pMesh->GltfToUnrealTexCoordMap =
+      std::move(loadResult.GltfToUnrealTexCoordMap);
   pMesh->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+  pMesh->PositionAccessor = std::move(loadResult.PositionAccessor);
+  pMesh->IndexAccessor = std::move(loadResult.IndexAccessor);
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
