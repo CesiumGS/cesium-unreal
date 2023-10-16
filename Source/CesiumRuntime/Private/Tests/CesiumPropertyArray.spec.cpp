@@ -6,7 +6,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyArraySpec,
-    "Cesium.PropertyArray",
+    "Cesium.Unit.PropertyArray",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumPropertyArraySpec)

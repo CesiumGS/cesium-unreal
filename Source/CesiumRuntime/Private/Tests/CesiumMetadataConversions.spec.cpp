@@ -8,7 +8,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataConversionsSpec,
-    "Cesium.MetadataConversions",
+    "Cesium.Unit.MetadataConversions",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumMetadataConversionsSpec)
