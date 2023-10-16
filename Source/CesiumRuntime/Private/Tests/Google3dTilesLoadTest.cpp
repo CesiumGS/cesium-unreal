@@ -14,7 +14,7 @@ using namespace Cesium;
 
 namespace Cesium {
 FString testGoogleUrl(
-    "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
+    "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCaIL-JEK2Tw9MMBVKSTIu8dPkwfzfqAbU");
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
