@@ -38,7 +38,6 @@ jobs:
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
-          $env:UNREAL_BUILD_LOG_PATH="C:/Users/ec2-user/AppData/Roaming/Unreal Engine/AutomationTool/Logs/C+Program+Files+Epic+Games+${{ inputs.unreal-program-name }}"
 
           # Store temp files on the D drive, which is much faster than the EBS-backed C drive.
           mkdir -p d:\cesium\temp
@@ -48,7 +47,6 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_PATH=${env:BUILD_CESIUM_UNREAL_PACKAGE_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
-          echo "UNREAL_BUILD_LOG_PATH=${env:UNREAL_BUILD_LOG_PATH}" >> $env:GITHUB_ENV
           echo "TEMP=${env:TEMP}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
@@ -56,7 +54,6 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
-          echo UNREAL_BUILD_LOG_PATH=$env:UNREAL_BUILD_LOG_PATH
           echo TEMP=$env:TEMP
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
