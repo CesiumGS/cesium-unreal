@@ -38,11 +38,10 @@ class UCesiumSubLevelSwitcherComponent;
  * In the Editor, the currently-active sub-level is selected by clicking the
  * "Eye" icon next to the Level Instance in the Outliner.
  *
- * At runtime, the currently-active sub-level is selected by the object
- * identified by the "Sub Level Camera" property on the "Cesium Georeference".
- * Only if the "Sub Level Camera" is inside a sub-level's "Load Radius" will
- * that sub-level be activated. If multiple sub-levels are in range, only the
- * closest one will be activated.
+ * At runtime, the currently-active sub-level is selected by the Actor with a
+ * CesiumOriginShiftComponent attached to it. If this Actor is inside a
+ * sub-level's "Load Radius" that sub-level will be activated. If multiple
+ * sub-levels are in range, only the closest one will be activated.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
@@ -172,18 +171,10 @@ public:
    * the value of the Georeference property if it is set. Otherwise, finds a
    * Georeference in the World and returns it, creating it if necessary. The
    * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
+   * return the same instance, unless ForceReresolve is true.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* ResolveGeoreference();
-
-  /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time ResolveGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InvalidateResolvedGeoreference();
+  ACesiumGeoreference* ResolveGeoreference(bool bForceReresolve = false);
 
   /**
    * Sets the longitude (X), latitude (Y), and height (Z) of this sub-level's
@@ -347,6 +338,7 @@ private:
    */
   UPROPERTY(
       Transient,
+      VisibleAnywhere,
       BlueprintReadOnly,
       BlueprintGetter = GetResolvedGeoreference,
       Category = "Cesium",
@@ -366,4 +358,11 @@ private:
    * warning and returns nullptr.
    */
   ALevelInstance* _getLevelInstance() const noexcept;
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time ResolveGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  void _invalidateResolvedGeoreference();
 };

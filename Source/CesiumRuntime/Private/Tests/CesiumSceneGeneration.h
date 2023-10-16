@@ -41,13 +41,11 @@ struct SceneGenerationContext {
   void syncWorldCamera();
 
   static FString testIonToken;
-  static FString testGoogleUrl;
 };
 
 void createCommonWorldObjects(SceneGenerationContext& context);
 
 void setupForDenver(SceneGenerationContext& context);
-void setupForGoogleplex(SceneGenerationContext& context);
 void setupForMontrealPointCloud(SceneGenerationContext& context);
 
 }; // namespace Cesium

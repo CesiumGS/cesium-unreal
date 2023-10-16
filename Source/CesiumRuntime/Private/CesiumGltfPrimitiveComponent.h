@@ -4,10 +4,12 @@
 
 #include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTileset.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "CesiumRasterOverlays.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -25,9 +27,35 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
-  FCesiumMetadataPrimitive Metadata;
+  /**
+   * Represents the primitive's EXT_mesh_features extension.
+   */
+  FCesiumPrimitiveFeatures Features;
+  /**
+   * Represents the primitive's EXT_structural_metadata extension.
+   */
+  FCesiumPrimitiveMetadata Metadata;
 
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
+  /**
+   * The encoded representation of the primitive's EXT_mesh_features extension.
+   */
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
+  /**
+   * The encoded representation of the primitive's EXT_structural_metadata
+   * extension.
+   */
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+  /**
+   * For backwards compatibility with the EXT_feature_metadata implementation.
+   */
+  FCesiumMetadataPrimitive Metadata_DEPRECATED;
+
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
+      EncodedMetadata_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   ACesium3DTileset* pTilesetActor;
 
@@ -41,7 +69,11 @@ public:
   glm::dmat4x4 HighPrecisionNodeTransform;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
-  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+  // Maps the accessor index in a glTF to its corresponding texture coordinate
+  // index in the Unreal mesh.
+  // The -1 key is reserved for implicit feature IDs (in other words, the vertex
+  // index).
+  std::unordered_map<int32_t, uint32_t> textureCoordinateMap;
 
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 

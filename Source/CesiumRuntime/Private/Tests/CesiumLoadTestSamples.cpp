@@ -17,11 +17,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumSampleLoadGoogleplex,
-    "Cesium.Performance.SampleLoadGoogleplex",
-    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumSampleLoadMontrealPointCloud,
     "Cesium.Performance.SampleLoadMontrealPointCloud",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
@@ -42,20 +37,6 @@ bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
       testPasses,
       1024,
       768);
-}
-
-bool FCesiumSampleLoadGoogleplex::RunTest(const FString& Parameters) {
-
-  std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
-
-  return RunLoadTest(
-      GetBeautifiedTestName(),
-      setupForGoogleplex,
-      testPasses,
-      1280,
-      720);
 }
 
 bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {

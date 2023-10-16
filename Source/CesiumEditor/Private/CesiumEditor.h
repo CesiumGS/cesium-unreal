@@ -1,7 +1,8 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
+#include "CesiumEditorReparentHandler.h"
 #include "CesiumEditorSubLevelMutex.h"
 #include "CesiumIonSession.h"
 #include "CoreMinimal.h"
@@ -85,6 +86,18 @@ public:
    */
   static AActor* SpawnDynamicPawn();
 
+  /**
+   * Spawns a new Cesium3DTileset with default values in the current level of
+   * the edited world.
+   */
+  static AActor* SpawnBlankTileset();
+
+  /**
+   * Spawns a new CesiumCartographicPolygon in the current level of the edited
+   * world.
+   */
+  static AActor* SpawnCartographicPolygon();
+
 private:
   TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
   TSharedRef<SDockTab>
@@ -103,6 +116,7 @@ private:
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
+  CesiumEditorReparentHandler _reparentHandler;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;

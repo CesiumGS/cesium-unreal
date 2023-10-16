@@ -9,6 +9,7 @@
 #include "CesiumCreditSystem.h"
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
+#include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGeoreference.h"
 #include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
@@ -130,6 +131,7 @@ private:
    */
   UPROPERTY(
       Transient,
+      VisibleAnywhere,
       BlueprintReadOnly,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
@@ -1198,7 +1200,12 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
 
-  FMetadataDescription _encodedMetadataDescription;
+  std::optional<FCesiumFeaturesMetadataDescription>
+      _featuresMetadataDescription;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  std::optional<FMetadataDescription> _metadataDescription_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   // For debug output
   uint32_t _lastTilesRendered;

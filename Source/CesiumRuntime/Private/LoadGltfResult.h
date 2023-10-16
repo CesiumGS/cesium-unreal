@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveFeatures.h"
+#include "CesiumPrimitiveMetadata.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumTextureUtility.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
@@ -24,9 +26,27 @@
 // TODO: internal documentation
 namespace LoadGltfResult {
 struct LoadPrimitiveResult {
-  FCesiumMetadataPrimitive Metadata{};
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
-  TMap<FString, uint32_t> metadataTextureCoordinateParameters;
+  // Parses EXT_mesh_features from a mesh primitive.
+  FCesiumPrimitiveFeatures Features{};
+  // Parses EXT_structural_metadata from a mesh primitive.
+  FCesiumPrimitiveMetadata Metadata{};
+
+  // Encodes the EXT_mesh_features on a mesh primitive.
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures{};
+  // Encodes the EXT_structural_metadata on a mesh primitive.
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata{};
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  // For backwards compatibility with CesiumEncodedMetadataComponent.
+  FCesiumMetadataPrimitive Metadata_DEPRECATED{};
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
+      EncodedMetadata_DEPRECATED = std::nullopt;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  // A map of feature ID set names to their corresponding texture coordinate
+  // indices in the Unreal mesh.
+  TMap<FString, uint32_t> featuresMetadataTexCoordParameters;
+
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
@@ -55,7 +75,11 @@ struct LoadPrimitiveResult {
   double waterMaskScale = 1.0;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
-  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+  // Maps the accessor index in a glTF to its corresponding texture coordinate
+  // index in the Unreal mesh.
+  // The -1 key is reserved for implicit feature IDs (in other words, the vertex
+  // index).
+  std::unordered_map<int32_t, uint32_t> textureCoordinateMap;
 
   glm::vec3 dimensions;
 };
@@ -70,7 +94,13 @@ struct LoadNodeResult {
 
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
-  FCesiumMetadataModel Metadata{};
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
+  // Parses the root EXT_structural_metadata extension.
+  FCesiumModelMetadata Metadata{};
+  // Encodes the EXT_structural_metadata on a glTF model.
+  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
+
+  // For backwards compatibility with CesiumEncodedMetadataComponent.
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
+      EncodedMetadata_DEPRECATED{};
 };
 } // namespace LoadGltfResult

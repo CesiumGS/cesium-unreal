@@ -1,14 +1,28 @@
 # Change Log
 
-### ? - ?
+### v2.0.0 Preview 1 - 2023-10-02
 
 ##### Breaking Changes :mega:
 
+- Feature IDs and metadata are now parsed through the `EXT_mesh_features` and `EXT_structural_metadata` extensions respectively. Models with `EXT_feature_metadata` will still be parsed, but their metadata will no longer be accessible. See the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for the full changelog and for tips on upgrading to the new API.
+- Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
 - The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
 - `CesiumSunSky` now uses a default `TransmittanceMinLightElevationAngle` value on its `SkyAtmosphere` component of 90.0 degrees instead of -90.0 degrees. This will generally improve lighting when far from the CesiumGeoreference origin, but it is a breaking change because it may change the lighting conditions in existing levels, particularly at sunrise and sunset.
 - The `Mobility` property on `ACesium3DTileset` is now obsolete. Instead, use the normal mechanism of setting the root component's mobility.
-- Removed many methods that from the C++ interface of `ACesiumGeoreference` that used `glm` vector types. Use the versions that work with Unreal types instead.
+- Removed many methods from the C++ interface of `ACesiumGeoreference` and `UCesiumGlobeAnchorComponent` that used `glm` vector types. Use the versions that work with Unreal types instead.
 - The `ComputeEastSouthUpToUnreal` function on `ACesiumGeoreference` has been renamed to `ComputeEastSouthUpToUnrealTransformation` and now returns a matrix that includes the translation component of the transformation. Previously it only included the rotation component.
+- Numerous properties on `CesiumGlobeAnchorComponent` must now be accessed with get/set functions from C++, instead of direct field access.
+- Renamed the following on `CesiumGlobeAnchorComponent`:
+  - `GetECEF` renamed to `GetEarthCenteredEarthFixedPosition`
+  - `MoveToECEF` renamed to `MoveToEarthCenteredEarthFixedPosition`
+- Deprecated the `InvalidateResolvedGeoreference` function on `CesiumGlobeAnchorComponent`.
+- The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` to trigger sub-level loading. When loading old levels that contain sub-levels, the plugin will automatically attempt to add this component.
+- Removed the old `FloatingPawn` that has been deprecated since v1.3.0.
+- Deprecated the flight functionality in `GlobeAwareDefaultPawn`. This functionality is now found in `CesiumFlyToComponent` and can be used with any Pawn or Actor. Existing Blueprints should continue to work, but C++ code will likely require changes.
+- Renamed the various Curve assets used with flights to have more descriptive names and moved them to the `Curves/FlyTo` folder. Redirectors should upgrade references to the old names.
+  - `Curve_AltitudeProfile_Float` was renamed to `Curve_CesiumFlyToDefaultHeightPercentage_Float`
+  - `Curve_MaxAltitude_Float` was renamed to `Curve_CesiumFlyToDefaultMaximumHeightByDistance_Float`
+  - `Curve_Progress_Float` was renamed to `Curve_CesiumFlyToDefaultProgress_Float`
 
 ##### Additions :tada:
 
@@ -17,9 +31,19 @@
 - The `CesiumCameraManager` instance to use with a `Cesium3DTileset` can now be specified with a property on the tileset. In addition to offering more flexibility, this avoids the work of finding the camera manager in the level every frame.
 - Cesium Actors created with the Quick Add or Cesium ion panels are now created inside the active sub-level, if there is one.
 - Cesium objects in sub-levels can now explicitly reference `ACesiumGeoreference`, `ACesiumCreditSystem`, and `ACesiumCameraManager` instances in the Persistent Level.
+- Added support for excluding Cesium Tiles from a tileset using the new `CesiumTileExcluder` actor component. This component can be used to implement custom logic for determining whether a tile should be excluded, either in C++ or Blueprints.
 - `ACesiumGeoreference` can now act as a parent Actor. By adjusting the georeference's transformation, the entire globe can be located, rotated, and scaled within the Unreal Engine world.
 - Added `AtmosphereHeight`, `AerialPerspectiveViewDistanceScale`, `RayleighExponentialDistribution`, and `MieExponentialDistribution` properties to `ACesiumSunSky`. These have the same function as the properties of the same name on Unreal's built-in SkyAtmosphere component, except that they automatically respond to the scale of the globe.
 - Added `UCesiumWgs84Ellipsoid` Blueprint function library class.
+- Longitude / Latitude / Height properties on CesiumGeoreference and CesiumGlobeAnchorComponent are now settable using degrees-minutes-seconds in addition to decimal degrees.
+- Added the ability to interactively set the orientation of a `CesiumGlobeAnchorComponent` relative to an East-South-Up coordinate system.
+- Added `ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation` function to `CesiumGeoreference`.
+- Added `CesiumOriginShiftComponent`. In addition to triggering transitions between sub-levels, this component optionally allows the Unreal world origin to be shifted as the Actor to which it is attached moves. The shifting may be done by either changing the `CesiumGeoreference` origin or by setting Unreal's `OriginLocation` property.
+- Sub-level transitions can now be triggered manually from Blueprints using functions on the `CesiumSubLevelSwitcherComponent` attached to the `CesiumGeoreference`. Be sure to disable any `CesiumOriginShiftComponent` instances in your level if you want manual control of sub-level switching.
+- Added `CesiumFlyToComponent` to allow animated flights of any Actor or Pawn.
+- Globe aware objects now find their associated CesiumGeoreference by using `ACesiumGeoreference::GetDefaultDefaultGeoreferenceForActor`, which checks first for an attachment parent that is a CesiumGeoreference. This way a `Cesium3DTileset` or similar object will by associated with the CesiumGeoreference it is nested inside by default.
+- The Quick Add panel now creates Actors nested inside a `CesiumGeoreference`.
+- The `ResolvedGeoreference` is now shown in the Editor Details UI for georeferenced objects, next to the `Georeference` property.
 
 ##### Fixes :wrench:
 
@@ -27,6 +51,27 @@
 - `ACesiumGeoreference`, `ACesiumCameraManager`, and `ACesiumCreditSystem` are now created in the Persistent Level, even if the object that triggered their automatic creation (such as `ACesium3DTileset`) exists in a sub-level. It is very rarely useful to have instances of these objects within a sub-level.
 - An instance of `ACesiumCreditSystem` in a sub-level will no longer cause overlapping and broken-looking credits. However, we still recommend deleting credit system instances from sub-levels.
 - `ACesiumCartographicPolygon` now operates on the parts of the tileset that are shown in the Editor viewport, even if it is used with a Cesium3DTileset with a non-identity transformation.
+- Fixed bug where older scenes that used Cesium UI created actors could have their `RF_Public` flag set. This could cause problems when converting an existing level to World Partition, or perhaps cause other subtle issues that we haven't realized yet.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.3 to v0.28.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.31.1 - 2023-10-02
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.0. Future versions will require Unreal Engine v5.1+.
+
+##### Fixes :wrench:
+
+- Fixed a bug that could crash the editor when selecting an individual tile in the viewport, then moving the camera to look at something else.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.2 to v0.27.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.31.0 - 2023-09-20
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.3. There is current a known issue with `Cesium3DTileset` textures on iOS, so we recommend that you continue to use Unreal Engine 5.2 for the time being if you are deploying to iOS.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.1 to v0.27.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.30.1 - 2023-09-03
 

@@ -12,8 +12,15 @@
 // TODO: internal documentation
 namespace CreateGltfOptions {
 struct CreateModelOptions {
+  /**
+   * A pointer to the glTF model.
+   */
   CesiumGltf::Model* pModel = nullptr;
-  const FMetadataDescription* pEncodedMetadataDescription = nullptr;
+  const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
+      nullptr;
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  const FMetadataDescription* pEncodedMetadataDescription_DEPRECATED = nullptr;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
   bool alwaysIncludeTangents = false;
   bool createPhysicsMeshes = true;
   bool ignoreKhrMaterialsUnlit = false;
