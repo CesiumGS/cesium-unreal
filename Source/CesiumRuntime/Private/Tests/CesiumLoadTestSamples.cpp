@@ -7,6 +7,7 @@
 #include "Misc/AutomationTest.h"
 
 #include "CesiumGltfComponent.h"
+#include "CesiumIonRasterOverlay.h"
 #include "GlobeAwareDefaultPawn.h"
 
 using namespace Cesium;
@@ -25,8 +26,64 @@ void refreshSampleTilesets(SceneGenerationContext& context) {
   context.refreshTilesets();
 }
 
-bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
+void setupForDenver(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-104.988892, 39.743462, 1798.679443),
+      FVector(0, 0, 0),
+      FRotator(-5.2, -149.4, 0),
+      90.0f);
 
+  // Add Cesium World Terrain
+  ACesium3DTileset* worldTerrainTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  worldTerrainTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  worldTerrainTileset->SetIonAssetID(1);
+  worldTerrainTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
+
+  // Bing Maps Aerial overlay
+  UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
+      worldTerrainTileset,
+      FName("Bing Maps Aerial"),
+      RF_Transactional);
+  pOverlay->MaterialLayerKey = TEXT("Overlay0");
+  pOverlay->IonAssetID = 2;
+  pOverlay->SetActive(true);
+  pOverlay->OnComponentCreated();
+  worldTerrainTileset->AddInstanceComponent(pOverlay);
+
+  // Aerometrex Denver
+  ACesium3DTileset* aerometrexTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  aerometrexTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  aerometrexTileset->SetIonAssetID(354307);
+  aerometrexTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  aerometrexTileset->SetMaximumScreenSpaceError(2.0);
+  aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
+
+  context.tilesets.push_back(worldTerrainTileset);
+  context.tilesets.push_back(aerometrexTileset);
+}
+
+void setupForMontrealPointCloud(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-73.616526, 45.57335, 95.048859),
+      FVector(0, 0, 0),
+      FRotator(-90.0, 0.0, 0.0),
+      90.0f);
+
+  ACesium3DTileset* montrealTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  montrealTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  montrealTileset->SetIonAssetID(28945);
+  montrealTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  montrealTileset->SetMaximumScreenSpaceError(16.0);
+  montrealTileset->SetActorLabel(TEXT("Montreal Point Cloud"));
+
+  context.tilesets.push_back(montrealTileset);
+}
+
+bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
@@ -40,7 +97,6 @@ bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
 }
 
 bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
-
   auto adjustCamera = [this](SceneGenerationContext& context) {
     // Zoom way out
     context.startPosition = FVector(0, 0, 7240000.0);
