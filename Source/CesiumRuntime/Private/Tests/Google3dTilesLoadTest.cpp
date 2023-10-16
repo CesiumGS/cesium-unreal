@@ -47,6 +47,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Performance.GoogleTiles.Googleplex",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
+#define TEST_SCREEN_WIDTH 1280
+#define TEST_SCREEN_HEIGHT 720
+
 void googleWarmCacheSetup(SceneGenerationContext& context) {
   context.refreshTilesets();
 }
@@ -160,8 +163,8 @@ bool FGoogleTilesPompidou::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupForPompidou,
       testPasses,
-      1280,
-      720);
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
 }
 
 bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
@@ -173,8 +176,8 @@ bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupForChrysler,
       testPasses,
-      1280,
-      720);
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
 }
 
 bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
@@ -186,8 +189,8 @@ bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupForGuggenheim,
       testPasses,
-      1280,
-      720);
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
 }
 
 bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
@@ -199,8 +202,8 @@ bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupForDeathValley,
       testPasses,
-      1280,
-      720);
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
 }
 
 bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
@@ -212,8 +215,8 @@ bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupForTokyo,
       testPasses,
-      1280,
-      720);
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
 }
 
 bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
@@ -225,8 +228,8 @@ bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupForGoogleplex,
       testPasses,
-      1280,
-      720);
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
 }
 
 #endif
