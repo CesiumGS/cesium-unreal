@@ -12,6 +12,11 @@
 
 using namespace Cesium;
 
+namespace Cesium {
+FString testGoogleUrl(
+    "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesPompidou,
     "Cesium.Performance.GoogleTiles.Pompidou",
@@ -37,6 +42,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Performance.GoogleTiles.Tokyo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FGoogleTilesGoogleplex,
+    "Cesium.Performance.GoogleTiles.Googleplex",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
 void setupForPompidou(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(2.352200, 48.860600, 200),
@@ -48,7 +58,7 @@ void setupForPompidou(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
+  tileset->SetUrl(Cesium::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
   tileset->SetActorLabel(TEXT("Center Pompidou, Paris, France"));
   context.tilesets.push_back(tileset);
@@ -65,7 +75,7 @@ void setupForChrysler(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
+  tileset->SetUrl(Cesium::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
   tileset->SetActorLabel(TEXT("Chrysler Building, NYC"));
   context.tilesets.push_back(tileset);
@@ -82,7 +92,7 @@ void setupForGuggenheim(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
+  tileset->SetUrl(Cesium::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
   tileset->SetActorLabel(TEXT("Guggenheim Museum, Bilbao, Spain"));
   context.tilesets.push_back(tileset);
@@ -99,7 +109,7 @@ void setupForDeathValley(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
+  tileset->SetUrl(Cesium::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
   tileset->SetActorLabel(
       TEXT("Zabriskie Point, Death Valley National Park, California"));
@@ -117,9 +127,24 @@ void setupForTokyo(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::SceneGenerationContext::testGoogleUrl);
+  tileset->SetUrl(Cesium::testGoogleUrl);
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
   tileset->SetActorLabel(TEXT("Tokyo Tower, Tokyo, Japan"));
+  context.tilesets.push_back(tileset);
+}
+
+void setupForGoogleplex(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-122.083969, 37.424492, 142.859116),
+      FVector(0, 0, 0),
+      FRotator(-25, 95, 0),
+      90.0f);
+
+  ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
+  tileset->SetUrl(Cesium::testGoogleUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetActorLabel(TEXT("Google Photorealistic 3D Tiles"));
+
   context.tilesets.push_back(tileset);
 }
 
@@ -178,6 +203,18 @@ bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
   return RunLoadTest(
       GetBeautifiedTestName(),
       setupForTokyo,
+      testPasses,
+      1280,
+      720);
+}
+
+bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForGoogleplex,
       testPasses,
       1280,
       720);
