@@ -2077,25 +2077,25 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         CreateViewStateFromViewParameters(camera, unrealWorldToCesiumTileset));
   }
 
-  Cesium3DTilesSelection::ViewUpdateResult result;
+  const Cesium3DTilesSelection::ViewUpdateResult* result;
   if (this->_captureMovieMode) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
-    result = this->_pTileset->updateViewOffline(frustums);
+    result = &this->_pTileset->updateViewOffline(frustums);
   } else {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
-    result = this->_pTileset->updateView(frustums, DeltaTime);
+    result = &this->_pTileset->updateView(frustums, DeltaTime);
   }
-  updateLastViewUpdateResultState(result);
+  updateLastViewUpdateResultState(*result);
 
-  removeCollisionForTiles(result.tilesFadingOut);
+  removeCollisionForTiles(result->tilesFadingOut);
 
   removeVisibleTilesFromList(
       _tilesToHideNextFrame,
-      result.tilesToRenderThisFrame);
+      result->tilesToRenderThisFrame);
   hideTiles(_tilesToHideNextFrame);
 
   _tilesToHideNextFrame.clear();
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+  for (Cesium3DTilesSelection::Tile* pTile : result->tilesFadingOut) {
     Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         pTile->getContent().getRenderContent();
     if (!this->UseLodTransitions ||
@@ -2105,16 +2105,16 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
   }
 
-  showTilesToRender(result.tilesToRenderThisFrame);
+  showTilesToRender(result->tilesToRenderThisFrame);
 
   if (this->UseLodTransitions) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
 
-    for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+    for (Cesium3DTilesSelection::Tile* pTile : result->tilesToRenderThisFrame) {
       updateTileFade(pTile, true);
     }
 
-    for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    for (Cesium3DTilesSelection::Tile* pTile : result->tilesFadingOut) {
       updateTileFade(pTile, false);
     }
   }
