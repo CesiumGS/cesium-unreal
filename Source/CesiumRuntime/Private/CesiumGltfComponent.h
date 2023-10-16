@@ -4,8 +4,9 @@
 
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTileset.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
-#include "CesiumMetadataModel.h"
+#include "CesiumModelMetadata.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -91,9 +92,13 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
-  FCesiumMetadataModel Metadata{};
+  FCesiumModelMetadata Metadata{};
+  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
+      EncodedMetadata_DEPRECATED = std::nullopt;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
