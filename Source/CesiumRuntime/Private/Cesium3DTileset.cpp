@@ -877,27 +877,41 @@ private:
 void ACesium3DTileset::UpdateLoadStatus() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateLoadStatus)
 
-  this->LoadProgress = this->_pTileset->computeLoadProgress();
+  float nativeLoadProgress = this->_pTileset->computeLoadProgress();
 
-  if (this->LoadProgress < 100 ||
-      this->_lastTilesWaitingForOcclusionResults > 0) {
-    this->_activeLoading = true;
-  } else if (this->_activeLoading && this->LoadProgress == 100) {
+  // If native tileset still loading, just copy its progress
+  if (nativeLoadProgress < 100) {
+    this->LoadProgress = nativeLoadProgress;
+    return;
+  }
 
-    // There might be a few frames where nothing needs to be loaded as we
-    // are waiting for occlusion results to come back, which means we are not
-    // done with loading all the tiles in the tileset yet.
-    if (this->_lastTilesWaitingForOcclusionResults == 0) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BroadcastOnTilesetLoaded)
+  // Native tileset is 100% loaded, but there might be a few frames where
+  // nothing needs to be loaded as we are waiting for occlusion results to come
+  // back, which means we are not done with loading all the tiles in the tileset
+  // yet. Interpret this as 99% (almost) done
+  if (this->_lastTilesWaitingForOcclusionResults > 0) {
+    this->LoadProgress = 99;
+    return;
+  }
 
-      // Tileset just finished loading, we broadcast the update
-      UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
-      OnTilesetLoaded.Broadcast();
+  // If we have tiles to hide next frame, we haven't completely finished loading
+  // yet. We need to tick once more. We're really close to done.
+  if (!this->_tilesToHideNextFrame.empty()) {
+    this->LoadProgress = glm::min(this->LoadProgress, 99.9999f);
+    return;
+  }
 
-      // Tileset remains 100% loaded if we don't have to reload it
-      // so we don't want to keep on sending finished loading updates
-      this->_activeLoading = false;
-    }
+  // We can now report 100 percent loaded
+  float lastLoadProgress = this->LoadProgress;
+  this->LoadProgress = 100;
+
+  // Only broadcast the update when we first hit 100%, not everytime
+  if (lastLoadProgress != LoadProgress) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BroadcastOnTilesetLoaded)
+
+    // Tileset just finished loading, we broadcast the update
+    UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
+    OnTilesetLoaded.Broadcast();
   }
 }
 
@@ -1031,6 +1045,8 @@ void ACesium3DTileset::LoadTileset() {
           : nullptr};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
+
+  this->LoadProgress = 0;
 
   Cesium3DTilesSelection::TilesetOptions options;
 
@@ -2061,22 +2077,25 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         CreateViewStateFromViewParameters(camera, unrealWorldToCesiumTileset));
   }
 
-  const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode
-          ? this->_pTileset->updateViewOffline(frustums)
-          : this->_pTileset->updateView(frustums, DeltaTime);
-  updateLastViewUpdateResultState(result);
-  this->UpdateLoadStatus();
+  const Cesium3DTilesSelection::ViewUpdateResult* pResult;
+  if (this->_captureMovieMode) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
+    pResult = &this->_pTileset->updateViewOffline(frustums);
+  } else {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
+    pResult = &this->_pTileset->updateView(frustums, DeltaTime);
+  }
+  updateLastViewUpdateResultState(*pResult);
 
-  removeCollisionForTiles(result.tilesFadingOut);
+  removeCollisionForTiles(pResult->tilesFadingOut);
 
   removeVisibleTilesFromList(
       _tilesToHideNextFrame,
-      result.tilesToRenderThisFrame);
+      pResult->tilesToRenderThisFrame);
   hideTiles(_tilesToHideNextFrame);
 
   _tilesToHideNextFrame.clear();
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+  for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
     Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         pTile->getContent().getRenderContent();
     if (!this->UseLodTransitions ||
@@ -2086,19 +2105,22 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
   }
 
-  showTilesToRender(result.tilesToRenderThisFrame);
+  showTilesToRender(pResult->tilesToRenderThisFrame);
 
   if (this->UseLodTransitions) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
 
-    for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+    for (Cesium3DTilesSelection::Tile* pTile :
+         pResult->tilesToRenderThisFrame) {
       updateTileFade(pTile, true);
     }
 
-    for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
       updateTileFade(pTile, false);
     }
   }
+
+  this->UpdateLoadStatus();
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {

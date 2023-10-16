@@ -11,7 +11,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataPickingSpec,
-    "Cesium.MetadataPicking",
+    "Cesium.Unit.MetadataPicking",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;

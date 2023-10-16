@@ -12,7 +12,7 @@ using namespace CesiumUtility;
 
 BEGIN_DEFINE_SPEC(
     FCesiumGeoreferenceSpec,
-    "Cesium.Georeference",
+    "Cesium.Unit.Georeference",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 
