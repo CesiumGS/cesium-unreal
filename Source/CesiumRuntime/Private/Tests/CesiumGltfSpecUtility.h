@@ -58,12 +58,14 @@ template <typename T>
 void CreateIndicesForPrimitive(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
-    const std::string& type,
     const int32_t componentType,
     const std::vector<T>& indices) {
   std::vector<std::byte> values = GetValuesAsBytes(indices);
-  const int32_t accessor =
-      AddBufferToModel(model, type, componentType, std::move(values));
+  const int32_t accessor = AddBufferToModel(
+      model,
+      AccessorSpec::Type::SCALAR,
+      componentType,
+      std::move(values));
   primitive.indices = accessor;
 }
 
@@ -215,7 +217,6 @@ CesiumGltf::PropertyTextureProperty& AddPropertyTexturePropertyToModel(
   CesiumGltf::PropertyTextureProperty& property =
       propertyTexture.properties[propertyName];
   property.channels = channels;
-  property.index = static_cast<int32_t>(model.textures.size() - 1)
-    ;
+  property.index = static_cast<int32_t>(model.textures.size() - 1);
   return property;
 }

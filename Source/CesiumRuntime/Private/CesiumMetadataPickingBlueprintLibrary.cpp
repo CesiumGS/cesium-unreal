@@ -89,6 +89,11 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     return false;
   }
 
+  if (pGltfComponent->PositionAccessor.status() !=
+      CesiumGltf::AccessorViewStatus::Valid) {
+    return false;
+  }
+
   auto accessorIt =
       pGltfComponent->TexCoordAccessorMap.find(GltfTexCoordSetIndex);
   if (accessorIt == pGltfComponent->TexCoordAccessorMap.end()) {
@@ -112,14 +117,13 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     if (!maybeTexCoord) {
       return false;
     }
-
     const glm::dvec2& texCoord = *maybeTexCoord;
     UVs[i] = FVector2D(texCoord[0], texCoord[1]);
   }
 
   std::array<FVector, 3> Positions;
   for (size_t i = 0; i < Positions.size(); i++) {
-    auto Position = pGltfComponent->PositionAccessor[VertexIndices[i]];
+    auto& Position = pGltfComponent->PositionAccessor[VertexIndices[i]];
     // The Y-component of glTF positions must be inverted
     Positions[i] = FVector(Position[0], -Position[1], Position[2]);
   }

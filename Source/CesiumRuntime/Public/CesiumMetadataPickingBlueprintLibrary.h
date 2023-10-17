@@ -46,7 +46,7 @@ public:
       BlueprintPure,
       Meta =
           (DeprecatedFunction,
-           DeprecationMessage = "Use GetPropertyTableValuesForHit instead."))
+           DeprecationMessage = "Use GetPropertyTableValuesFromHit instead."))
   static TMap<FString, FCesiumMetadataValue> GetMetadataValuesForFace(
       const UPrimitiveComponent* Component,
       int64 FaceIndex,
@@ -84,7 +84,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use GetValuesAsStrings to convert the output of GetPropertyTableValuesForHit instead."))
+               "Use GetValuesAsStrings to convert the output of GetPropertyTableValuesFromHit instead."))
   static TMap<FString, FString> GetMetadataValuesForFaceAsStrings(
       const UPrimitiveComponent* Component,
       int64 FaceIndex,

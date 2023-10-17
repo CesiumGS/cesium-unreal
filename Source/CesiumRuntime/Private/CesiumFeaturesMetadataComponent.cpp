@@ -855,6 +855,8 @@ FString GetCodeForAssemblingPropertyFromTexture(
           "  uint channel = uint(f.Get(Channels, i));\n"
           "  uint sample = asuint(f.Get(sample, channel));\n"
           "}\n";
+
+  return code;
 }
 
 UMaterialExpressionMaterialFunctionCall* GenerateNodesForFeatureIdTexture(
@@ -1769,7 +1771,7 @@ void GenerateMaterialNodes(
   // NodeX = MetadataSectionLeft;
 
   //// Generate nodes for any property textures that aren't linked to a
-  ///primitive / texture coordinate set.
+  /// primitive / texture coordinate set.
   // for (const FCesiumPropertyTextureDescription& propertyTexture :
   //     pComponent->PropertyTextures) {
   //  if (!GeneratedPropertyTextureNames.Find(propertyTexture.Name)) {

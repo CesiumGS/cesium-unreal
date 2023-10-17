@@ -1577,6 +1577,12 @@ static void loadIndexedPrimitive(
         positionView,
         indexAccessor);
     primitiveResult.IndexAccessor = indexAccessor;
+  } else {
+    UE_LOG(
+        LogCesium,
+        VeryVerbose,
+        TEXT(
+            "Skip loading primitive due to invalid component type in its index accessor."));
   }
 }
 
@@ -1605,7 +1611,6 @@ static void loadPrimitive(
   }
 
   AccessorView<TMeshVector3> positionView(model, *pPositionAccessor);
-  result.PositionAccessor = positionView;
 
   if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
     std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
@@ -1628,6 +1633,7 @@ static void loadPrimitive(
         *pPositionAccessor,
         positionView);
   }
+  result.PositionAccessor = std::move(positionView);
 }
 
 static void loadMesh(
