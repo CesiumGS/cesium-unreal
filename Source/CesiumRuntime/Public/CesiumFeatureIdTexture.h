@@ -199,9 +199,9 @@ public:
    * per-vertex metadata.
    *
    * This works if the vertex contains texture coordinates for the relevant
-   * texture coordinate set as indicated by GetUnrealUVChannel. If the vertex
-   * has no such coordinates, or if the feature ID texture itself is invalid,
-   * this returns -1.
+   * texture coordinate set as indicated by GetGltfTextureCoordinateSetIndex. If
+   * the vertex has no such coordinates, or if the feature ID texture itself is
+   * invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -212,9 +212,9 @@ public:
       int64 VertexIndex);
 
   /**
-   * Gets the feature ID corresponding to the pixel specified by the UV texture
-   * coordinates. The feature ID can be used with a FCesiumPropertyTable to
-   * retrieve the per-pixel metadata.
+   * Gets the feature ID from a given line trace hit on the primitive containing
+   * this feature ID texture. The feature ID can be used with a
+   * FCesiumPropertyTable to retrieve the corresponding metadata.
    *
    * If the feature ID texture is invalid, this returns -1.
    */

@@ -546,7 +546,7 @@ static void createTexCoordAccessorsForFeaturesMetadata(
   for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
     auto properties =
         UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture);
-    for (const auto propertyIt : properties) {
+    for (const auto& propertyIt : properties) {
       int64 gltfTexCoordSetIndex =
           UCesiumPropertyTexturePropertyBlueprintLibrary::
               GetGltfTextureCoordinateSetIndex(propertyIt.Value);

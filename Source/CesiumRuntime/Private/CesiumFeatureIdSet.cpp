@@ -155,19 +155,10 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
     return false;
   }
 
-  if (!pGltfComponent->GetStaticMesh() ||
-      !pGltfComponent->GetStaticMesh()->GetRenderData()) {
-    return false;
-  }
-
-  auto& LODResources =
-      pGltfComponent->GetStaticMesh()->GetRenderData()->LODResources[0];
-  auto PositionBuffer = LODResources.VertexBuffers.PositionVertexBuffer;
-
   auto faceIndices = std::visit(
       CesiumFaceVertexIndicesFromAccessor{
           Hit.FaceIndex,
-          static_cast<int64_t>(PositionBuffer.GetNumVertices())},
+          pGltfComponent->PositionAccessor.size()},
       pGltfComponent->IndexAccessor);
 
   int64 VertexIndex = faceIndices[0];
