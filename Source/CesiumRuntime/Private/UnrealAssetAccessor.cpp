@@ -4,6 +4,7 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
+#include "HAL/PlatformFilemanager.h"
 #include "HttpManager.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
@@ -15,8 +16,9 @@
 #include <optional>
 #include <set>
 
-static CesiumAsync::HttpHeaders
-parseHeaders(const TArray<FString>& unrealHeaders) {
+namespace {
+
+CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeaders) {
   CesiumAsync::HttpHeaders result;
   for (const FString& header : unrealHeaders) {
     int32_t separator = -1;
@@ -92,6 +94,8 @@ private:
   CesiumAsync::HttpHeaders _headers;
 };
 
+} // namespace
+
 UnrealAssetAccessor::UnrealAssetAccessor()
     : _userAgent(), _cesiumRequestHeaders() {
   FString OsVersion, OsSubVersion;
@@ -129,6 +133,27 @@ UnrealAssetAccessor::UnrealAssetAccessor()
   this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-OS"), OsVersion);
 }
 
+namespace {
+
+const char fileProtocol[] = "file:///";
+
+bool isAbsoluteFile(const std::string& url) {
+  // URLs that start with `file:///` are assumed to be absolute file system
+  // paths.
+  return url.compare(0, sizeof(fileProtocol) - 1, fileProtocol) == 0;
+}
+
+bool isRelativeFile(const std::string& url) {
+  // URLs that start with `.` are assumed to be relative file system paths.
+  return !url.empty() && url[0] == '.';
+}
+
+bool isFile(const std::string& url) {
+  return isAbsoluteFile(url) || isRelativeFile(url);
+}
+
+} // namespace
+
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
 UnrealAssetAccessor::get(
     const CesiumAsync::AsyncSystem& asyncSystem,
@@ -136,6 +161,10 @@ UnrealAssetAccessor::get(
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
 
   CESIUM_TRACE_BEGIN_IN_TRACK("requestAsset");
+
+  if (isFile(url)) {
+    return getFromFile(asyncSystem, url, headers);
+  }
 
   const FString& userAgent = this->_userAgent;
   const TMap<FString, FString>& cesiumRequestHeaders =
@@ -251,4 +280,182 @@ UnrealAssetAccessor::request(
 void UnrealAssetAccessor::tick() noexcept {
   FHttpManager& manager = FHttpModule::Get().GetHttpManager();
   manager.Tick(0.0f);
+}
+
+namespace {
+
+struct AsyncReadRequestResult {
+  std::unique_ptr<IAsyncReadFileHandle> readFileHandle;
+  std::unique_ptr<IAsyncReadRequest> readRequest;
+};
+
+struct FileCallbackHolder {
+  IAsyncReadFileHandle* readFileHandle;
+  CesiumAsync::Promise<AsyncReadRequestResult> promise;
+  FAsyncFileCallBack* callback;
+
+  void operator()(bool bWasCancelled, IAsyncReadRequest* ReadRequest) {
+    // Guarantee the callback will be destroyed after this function ends.
+    std::unique_ptr<FAsyncFileCallBack> me(this->callback);
+    this->callback = nullptr;
+
+    // Guarantee the IAsyncReadRequest and readFileHandle are destroyed, too,
+    // unless we pass them along.
+    std::unique_ptr<IAsyncReadRequest> ReadRequestUnique(ReadRequest);
+    std::unique_ptr<IAsyncReadFileHandle> ReadFileHandle(this->readFileHandle);
+    this->readFileHandle = nullptr;
+
+    if (bWasCancelled) {
+      promise.reject(std::runtime_error("File request was canceled."));
+    } else if (!ReadRequestUnique) {
+      promise.reject(std::runtime_error("File request failed."));
+    } else {
+      promise.resolve(
+          {std::move(ReadFileHandle), std::move(ReadRequestUnique)});
+    }
+  }
+
+  static FAsyncFileCallBack* Create(
+      std::unique_ptr<IAsyncReadFileHandle>&& ReadFileHandle,
+      const CesiumAsync::Promise<AsyncReadRequestResult>& Promise) {
+    FAsyncFileCallBack* Result = new FAsyncFileCallBack();
+    *Result = FAsyncFileCallBack(
+        FileCallbackHolder{ReadFileHandle.release(), Promise, Result});
+    return Result;
+  }
+};
+
+class UnrealFileAssetRequestResponse : public CesiumAsync::IAssetRequest,
+                                       public CesiumAsync::IAssetResponse {
+public:
+  UnrealFileAssetRequestResponse(
+      const std::string& url,
+      uint8* data,
+      int64 dataSize)
+      : _url(url), _data(data), _dataSize(dataSize) {}
+  ~UnrealFileAssetRequestResponse() { delete[] this->_data; }
+
+  virtual const std::string& method() const { return getMethod; }
+
+  virtual const std::string& url() const { return this->_url; }
+
+  virtual const CesiumAsync::HttpHeaders& headers() const override {
+    return emptyHeaders;
+  }
+
+  virtual const CesiumAsync::IAssetResponse* response() const override {
+    return this;
+  }
+
+  virtual uint16_t statusCode() const override {
+    return this->_data == nullptr ? 404 : 200;
+  }
+
+  virtual std::string contentType() const override { return std::string(); }
+
+  virtual gsl::span<const std::byte> data() const override {
+    return gsl::span<const std::byte>(
+        reinterpret_cast<const std::byte*>(this->_data),
+        this->_dataSize);
+  }
+
+private:
+  static const std::string getMethod;
+  static const CesiumAsync::HttpHeaders emptyHeaders;
+
+  std::string _url;
+  uint8* _data;
+  int64 _dataSize;
+};
+
+const std::string UnrealFileAssetRequestResponse::getMethod = "GET";
+const CesiumAsync::HttpHeaders UnrealFileAssetRequestResponse::emptyHeaders{};
+
+} // namespace
+
+CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
+UnrealAssetAccessor::getFromFile(
+    const CesiumAsync::AsyncSystem& asyncSystem,
+    const std::string& url,
+    const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
+  check(!url.empty());
+
+  return asyncSystem
+      .createFuture<AsyncReadRequestResult>([&](const auto& promise) {
+        FString filename;
+
+        if (isAbsoluteFile(url)) {
+          filename =
+              UTF8_TO_TCHAR(url.substr(sizeof(fileProtocol) - 1).c_str());
+
+          // If this filename is now a relative path, make it absolute by
+          // adding a slash at the start. For example,
+          // `file:///home/foo/tileset.json` becomes `home/foo/tileset.json`
+          // which is still relative, so we turn it into
+          // `/home/foo/tileset.json`. FPaths::IsRelative correctly
+          // identifies paths like `C:/foo/tileset.json` as absolute.
+          if (FPaths::IsRelative(filename)) {
+            filename = "/" + filename;
+          }
+        } else if (isRelativeFile(url)) {
+          filename =
+              FPaths::ConvertRelativePathToFull(UTF8_TO_TCHAR(url.c_str()));
+        }
+
+        IPlatformFile& FileManager =
+            FPlatformFileManager::Get().GetPlatformFile();
+        std::unique_ptr<IAsyncReadFileHandle> ReadHandle(
+            FileManager.OpenAsyncRead(*filename));
+        if (!ReadHandle) {
+          promise.reject(std::runtime_error("OpenAsyncRead failed."));
+          return;
+        }
+
+        IAsyncReadFileHandle* RawReadHandle = ReadHandle.get();
+        RawReadHandle->SizeRequest(
+            FileCallbackHolder::Create(std::move(ReadHandle), promise));
+      })
+      .thenImmediately(
+          [asyncSystem, url](AsyncReadRequestResult&& Result)
+              -> CesiumAsync::Future<
+                  std::shared_ptr<CesiumAsync::IAssetRequest>> {
+            int64 size = Result.readRequest->GetSizeResults();
+            if (size < 0) {
+              // Indicates the file was not found or could not be read.
+              return asyncSystem.createResolvedFuture<
+                  std::shared_ptr<CesiumAsync::IAssetRequest>>(
+                  std::make_shared<UnrealFileAssetRequestResponse>(
+                      url,
+                      nullptr,
+                      0));
+            }
+
+            CesiumAsync::Promise<AsyncReadRequestResult> promise =
+                asyncSystem.createPromise<AsyncReadRequestResult>();
+            IAsyncReadFileHandle* readFileHandle = Result.readFileHandle.get();
+            readFileHandle->ReadRequest(
+                0,
+                size,
+                AIOP_Normal,
+                FileCallbackHolder::Create(
+                    std::move(Result.readFileHandle),
+                    promise));
+            return promise.getFuture().thenImmediately(
+                [url, size](AsyncReadRequestResult&& Result)
+                    -> std::shared_ptr<CesiumAsync::IAssetRequest> {
+                  if (size < 0) {
+                    // Indicates the file was not found or could not be read.
+                    return std::make_shared<UnrealFileAssetRequestResponse>(
+                        url,
+                        nullptr,
+                        0);
+                  } else {
+                    uint8_t* data = Result.readRequest->GetReadResults();
+                    return std::make_shared<UnrealFileAssetRequestResponse>(
+                        url,
+                        data,
+                        size);
+                  }
+                });
+          });
 }
