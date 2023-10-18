@@ -24,6 +24,7 @@ struct FCesiumPropertyTextureDescription;
 struct FFeatureTextureDescription;
 struct FCesiumModelMetadataDescription;
 struct FCesiumPrimitiveFeaturesDescription;
+struct FCesiumPrimitiveMetadataDescription;
 
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and

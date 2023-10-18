@@ -1,10 +1,10 @@
+#include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;
@@ -47,9 +47,8 @@ void FCesiumMetadataPickingSpec::Define() {
           AccessorSpec::Type::VEC3,
           AccessorSpec::ComponentType::FLOAT,
           positions);
-      pPrimitiveComponent->PositionAccessor = AccessorView<FVector3f>(
-          model,
-          static_cast<int32_t>(model.accessors.size() - 1));
+      int32_t positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
 
       // For convenience when testing, the UVs are the same as the positions
       // they correspond to. This means that the interpolated UV value should be
@@ -69,6 +68,8 @@ void FCesiumMetadataPickingSpec::Define() {
           AccessorSpec::ComponentType::FLOAT,
           texCoords);
 
+      pPrimitiveComponent->PositionAccessor =
+          AccessorView<FVector3f>(model, positionAccessorIndex);
       pPrimitiveComponent->TexCoordAccessorMap.emplace(
           0,
           AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
