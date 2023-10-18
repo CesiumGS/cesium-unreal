@@ -328,11 +328,8 @@ struct FileCallbackHolder {
 class UnrealFileAssetRequestResponse : public CesiumAsync::IAssetRequest,
                                        public CesiumAsync::IAssetResponse {
 public:
-  UnrealFileAssetRequestResponse(
-      const std::string& url,
-      uint8* data,
-      int64 dataSize)
-      : _url(url), _data(data), _dataSize(dataSize) {}
+  UnrealFileAssetRequestResponse(std::string&& url, uint8* data, int64 dataSize)
+      : _url(std::move(url)), _data(data), _dataSize(dataSize) {}
   ~UnrealFileAssetRequestResponse() { delete[] this->_data; }
 
   virtual const std::string& method() const { return getMethod; }
@@ -416,16 +413,15 @@ UnrealAssetAccessor::getFromFile(
             FileCallbackHolder::Create(std::move(ReadHandle), promise));
       })
       .thenImmediately(
-          [asyncSystem, url](AsyncReadRequestResult&& Result)
-              -> CesiumAsync::Future<
-                  std::shared_ptr<CesiumAsync::IAssetRequest>> {
+          [asyncSystem, url = url](AsyncReadRequestResult&& Result) mutable
+          -> CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> {
             int64 size = Result.readRequest->GetSizeResults();
             if (size < 0) {
               // Indicates the file was not found or could not be read.
               return asyncSystem.createResolvedFuture<
                   std::shared_ptr<CesiumAsync::IAssetRequest>>(
                   std::make_shared<UnrealFileAssetRequestResponse>(
-                      url,
+                      std::move(url),
                       nullptr,
                       0));
             }
@@ -441,18 +437,19 @@ UnrealAssetAccessor::getFromFile(
                     std::move(Result.readFileHandle),
                     promise));
             return promise.getFuture().thenImmediately(
-                [url, size](AsyncReadRequestResult&& Result)
-                    -> std::shared_ptr<CesiumAsync::IAssetRequest> {
+                [url = std::move(url),
+                 size](AsyncReadRequestResult&& Result) mutable
+                -> std::shared_ptr<CesiumAsync::IAssetRequest> {
                   if (size < 0) {
                     // Indicates the file was not found or could not be read.
                     return std::make_shared<UnrealFileAssetRequestResponse>(
-                        url,
+                        std::move(url),
                         nullptr,
                         0);
                   } else {
                     uint8_t* data = Result.readRequest->GetReadResults();
                     return std::make_shared<UnrealFileAssetRequestResponse>(
-                        url,
+                        std::move(url),
                         data,
                         size);
                   }
