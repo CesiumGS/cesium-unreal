@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause tiles in a Cesium3DTileset to have an incorrect transformation.
+
 ### v2.0.0 Preview 1 - 2023-10-02
 
 ##### Breaking Changes :mega:
