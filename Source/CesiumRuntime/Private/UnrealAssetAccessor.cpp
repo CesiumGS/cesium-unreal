@@ -137,19 +137,8 @@ namespace {
 
 const char fileProtocol[] = "file:///";
 
-bool isAbsoluteFile(const std::string& url) {
-  // URLs that start with `file:///` are assumed to be absolute file system
-  // paths.
-  return url.compare(0, sizeof(fileProtocol) - 1, fileProtocol) == 0;
-}
-
-bool isRelativeFile(const std::string& url) {
-  // URLs that start with `.` are assumed to be relative file system paths.
-  return !url.empty() && url[0] == '.';
-}
-
 bool isFile(const std::string& url) {
-  return isAbsoluteFile(url) || isRelativeFile(url);
+  return url.compare(0, sizeof(fileProtocol) - 1, fileProtocol) == 0;
 }
 
 } // namespace
@@ -379,24 +368,17 @@ UnrealAssetAccessor::getFromFile(
 
   return asyncSystem
       .createFuture<AsyncReadRequestResult>([&](const auto& promise) {
-        FString filename;
+        FString filename =
+            UTF8_TO_TCHAR(url.substr(sizeof(fileProtocol) - 1).c_str());
 
-        if (isAbsoluteFile(url)) {
-          filename =
-              UTF8_TO_TCHAR(url.substr(sizeof(fileProtocol) - 1).c_str());
-
-          // If this filename is now a relative path, make it absolute by
-          // adding a slash at the start. For example,
-          // `file:///home/foo/tileset.json` becomes `home/foo/tileset.json`
-          // which is still relative, so we turn it into
-          // `/home/foo/tileset.json`. FPaths::IsRelative correctly
-          // identifies paths like `C:/foo/tileset.json` as absolute.
-          if (FPaths::IsRelative(filename)) {
-            filename = "/" + filename;
-          }
-        } else if (isRelativeFile(url)) {
-          filename =
-              FPaths::ConvertRelativePathToFull(UTF8_TO_TCHAR(url.c_str()));
+        // If this filename is now a relative path, make it absolute by
+        // adding a slash at the start. For example,
+        // `file:///home/foo/tileset.json` becomes `home/foo/tileset.json`
+        // which is still relative, so we turn it into
+        // `/home/foo/tileset.json`. FPaths::IsRelative correctly
+        // identifies paths like `C:/foo/tileset.json` as absolute.
+        if (FPaths::IsRelative(filename)) {
+          filename = "/" + filename;
         }
 
         IPlatformFile& FileManager =
