@@ -10,7 +10,7 @@
 ##### Additions :tada:
 
 - Added new functions to `UCesiumPropertyTexturePropertyBlueprintLibrary` to retrieve detailed property information and get the values of the property as a certain type. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
-- Added `UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit`, which computes the UV coordinates from a line trace hit without requiring "Support UV Hit Info" to be enabled. This can used to retrieve more accurate feature IDs or metadata values by sampling more accurately from a point on the face.
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit`, which computes the UV coordinates from a line trace hit without requiring "Support UV Hit Info" to be enabled. This can used to retrieve more accurate feature IDs or metadata values by sampling at an intermediary point on the face.
 - Added `GetPropertyTableValuesFromHit` and `GetPropertyTextureValuesFromHit` to `UCesiumMetadataPickingBlueprintLibrary` to retrieve the respective metadata from a line trace hit. For both functions, the target to sample is specified by index.
 - Added `UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive containing the feature ID set. This returns more accurate values for feature ID textures than `GetFeatureIDForVertex`.
 - Added `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive, where the desired feature ID set is specified by index. For feature ID textures, this returns more accurate values than `GetFeatureIDFromFace`. 

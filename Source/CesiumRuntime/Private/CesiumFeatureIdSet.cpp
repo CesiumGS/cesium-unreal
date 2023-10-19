@@ -152,7 +152,7 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(Hit.Component);
   if (!IsValid(pGltfComponent)) {
-    return false;
+    return -1;
   }
 
   auto faceIndices = std::visit(

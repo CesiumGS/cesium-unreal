@@ -63,7 +63,7 @@ void CreateIndicesForPrimitive(
   std::vector<std::byte> values = GetValuesAsBytes(indices);
   const int32_t accessor = AddBufferToModel(
       model,
-      AccessorSpec::Type::SCALAR,
+      CesiumGltf::AccessorSpec::Type::SCALAR,
       componentType,
       std::move(values));
   primitive.indices = accessor;
