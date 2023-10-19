@@ -4,8 +4,8 @@
 
 ##### Fixes :wrench:
 
-- Fixed a bug that could cause tiles in a Cesium3DTileset to have an incorrect transformation.
-- Fixed a crash that happens when a level is played with no Level Sequence Asset assigned.
+- Fixed a bug that could cause tiles in a `Cesium3DTileset` to have an incorrect transformation.
+- Fixed a crash that occurred when a `LevelSequenceActor` in the level did not have a `LevelSequencePlayer` assigned.
 
 ### v2.0.0 Preview 1 - 2023-10-02
 
