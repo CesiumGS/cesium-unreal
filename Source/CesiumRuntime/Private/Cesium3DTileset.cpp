@@ -602,6 +602,10 @@ void ACesium3DTileset::BeginPlay() {
        ++sequenceActorIt) {
     ALevelSequenceActor* sequenceActor = *sequenceActorIt;
 
+    if (!IsValid(sequenceActor->GetSequencePlayer())) {
+      continue;
+    }
+
     FScriptDelegate playMovieSequencerDelegate;
     playMovieSequencerDelegate.BindUFunction(this, FName("PlayMovieSequencer"));
     sequenceActor->GetSequencePlayer()->OnPlay.Add(playMovieSequencerDelegate);
