@@ -8,7 +8,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdTextureSpec,
-    "Cesium.FeatureIdTexture",
+    "Cesium.Unit.FeatureIdTexture",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;

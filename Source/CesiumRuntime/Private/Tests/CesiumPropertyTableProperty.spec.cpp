@@ -8,7 +8,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTablePropertySpec,
-    "Cesium.PropertyTableProperty",
+    "Cesium.Unit.PropertyTableProperty",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumPropertyTablePropertySpec)

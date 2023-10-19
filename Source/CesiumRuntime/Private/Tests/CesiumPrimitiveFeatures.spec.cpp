@@ -7,7 +7,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPrimitiveFeaturesSpec,
-    "Cesium.PrimitiveFeatures",
+    "Cesium.Unit.PrimitiveFeatures",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;

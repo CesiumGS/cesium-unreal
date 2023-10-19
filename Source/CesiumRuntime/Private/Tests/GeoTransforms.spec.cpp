@@ -10,7 +10,7 @@ using namespace CesiumUtility;
 
 BEGIN_DEFINE_SPEC(
     FGeoTransformsSpec,
-    "Cesium.GeoTransforms",
+    "Cesium.Unit.GeoTransforms",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FGeoTransformsSpec)
