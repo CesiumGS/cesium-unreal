@@ -79,11 +79,13 @@ public:
    *
    * A primitive may use multiple property textures, as indicated by its indices
    * in CesiumPrimitiveMetadata. This function allows for selection of which
-   * property texture to use from those available in CesiumPrimitiveMetadata. In
-   * other words, the "primitive property texture index" refers to an index into
-   * the array property texture indices in the CesiumPrimitiveMetadata. This
-   * does not necessarily include all of the property textures in the
-   * CesiumModelMetadata.
+   * property texture to use from those available in CesiumPrimitiveMetadata.
+   *
+   * In other words, the "Primitive Property Texture Index" should index into
+   * the array property texture indices in the CesiumPrimitiveMetadata. The
+   * primitive metadata will not necessarily contain all of the available
+   * property textures in the CesiumModelMetadata, nor will it necessarily be
+   * listed in the same order.
    *
    * The returned result may be empty for several reasons:
    * - if the component is not a Cesium glTF primitive component

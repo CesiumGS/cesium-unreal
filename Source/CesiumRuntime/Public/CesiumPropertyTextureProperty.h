@@ -200,8 +200,9 @@ public:
    * included in the Unreal mesh data. To avoid using
    * CesiumFeaturesMetadataComponent, use GetFeatureIDFromHit instead.
    *
-   * This returns -1 if the property texture property is invalid, or if the specified
-   * texture coordinate set is not present in the component's mesh data.
+   * This returns -1 if the property texture property is invalid, or if the
+   * specified texture coordinate set is not present in the component's mesh
+   * data.
    */
   UFUNCTION(
       BlueprintCallable,
