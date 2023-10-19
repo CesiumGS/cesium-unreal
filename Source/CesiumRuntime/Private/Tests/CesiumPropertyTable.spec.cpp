@@ -128,9 +128,7 @@ void FCesiumPropertyTableSpec::Define() {
   });
 
   Describe("GetProperties", [this]() {
-    BeforeEach([this]() {
-      pPropertyTable->classProperty = "testClass";
-    });
+    BeforeEach([this]() { pPropertyTable->classProperty = "testClass"; });
 
     It("returns no properties for invalid property table", [this]() {
       FCesiumPropertyTable propertyTable;
@@ -289,9 +287,7 @@ void FCesiumPropertyTableSpec::Define() {
   });
 
   Describe("GetPropertyNames", [this]() {
-    BeforeEach([this]() {
-      pPropertyTable->classProperty = "testClass";
-    });
+    BeforeEach([this]() { pPropertyTable->classProperty = "testClass"; });
 
     It("returns empty array for invalid property table", [this]() {
       FCesiumPropertyTable propertyTable;
@@ -370,9 +366,7 @@ void FCesiumPropertyTableSpec::Define() {
   });
 
   Describe("FindProperty", [this]() {
-    BeforeEach([this]() {
-      pPropertyTable->classProperty = "testClass";
-    });
+    BeforeEach([this]() { pPropertyTable->classProperty = "testClass"; });
 
     It("returns invalid instance for nonexistent property", [this]() {
       std::string propertyName("testProperty");
@@ -486,9 +480,7 @@ void FCesiumPropertyTableSpec::Define() {
   });
 
   Describe("GetMetadataValuesForFeature", [this]() {
-    BeforeEach([this]() {
-      pPropertyTable->classProperty = "testClass";
-    });
+    BeforeEach([this]() { pPropertyTable->classProperty = "testClass"; });
 
     It("returns empty map for invalid property table", [this]() {
       FCesiumPropertyTable propertyTable;
@@ -673,9 +665,7 @@ void FCesiumPropertyTableSpec::Define() {
   });
 
   Describe("GetMetadataValuesForFeatureAsStrings", [this]() {
-    BeforeEach([this]() {
-      pPropertyTable->classProperty = "testClass";
-    });
+    BeforeEach([this]() { pPropertyTable->classProperty = "testClass"; });
 
     It("returns empty map for invalid property table", [this]() {
       FCesiumPropertyTable propertyTable;

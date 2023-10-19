@@ -16,6 +16,92 @@ class CESIUMRUNTIME_API UCesiumMetadataPickingBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  /**
+   * Compute the UV coordinates from the given line trace hit, assuming it has
+   * hit a glTF primitive component that contains the specified texture
+   * coordinate set. The texture coordinate set is specified relative to the
+   * glTF itself, where the set index N resolves to the "TEXCOORD_N" attribute
+   * in the glTF primitive.
+   *
+   * This function can be used to sample feature ID textures or property
+   * textures in the primitive. This works similarly to the FindCollisionUV
+   * Blueprint, except it does not require the texture coordinate sets to be
+   * present in the model's physics mesh.
+   *
+   * Returns false if the given texture coordinate set index does not exist for
+   * the primitive, or if its accessor is invalid.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Picking")
+  static bool FindUVFromHit(
+      const FHitResult& Hit,
+      int64 GltfTexCoordSetIndex,
+      FVector2D& UV);
+
+  /**
+   * Gets the property table values from a given line trace hit, assuming
+   * that it has hit a feature of a glTF primitive component.
+   *
+   * A primitive may have multiple feature ID sets, so this allows a feature ID
+   * set to be specified by index. This value should index into the array of
+   * CesiumFeatureIdSets in the component's CesiumPrimitiveFeatures. If the
+   * feature ID set is associated with a property table, it will return that
+   * property table's data.
+   *
+   * For feature ID textures and implicit feature IDs, the feature ID can vary
+   * across the face of a primitive. If the specified CesiumFeatureIdSet is one
+   * of those types, the feature ID of the first vertex on the face will be
+   * used.
+   *
+   * The returned result may be empty for several reasons:
+   * - if the component is not a Cesium glTF primitive component
+   * - if the hit's face index is somehow out-of-bounds
+   * - if the specified feature ID set does not exist on the primitive
+   * - if the specified feature ID set is not associated with a valid property
+   * table
+   *
+   * Additionally, if any of the property table's properties are invalid, they
+   * will not be included in the result.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Picking")
+  static TMap<FString, FCesiumMetadataValue> GetPropertyTableValuesFromHit(
+      const FHitResult& Hit,
+      int64 FeatureIDSetIndex = 0);
+
+  /**
+   * Gets the property texture values from a given line trace hit, assuming it
+   * has hit a glTF primitive component.
+   *
+   * A primitive may use multiple property textures, as indicated by its indices
+   * in CesiumPrimitiveMetadata. This function allows for selection of which
+   * property texture to use from those available in CesiumPrimitiveMetadata. In
+   * other words, the "primitive property texture index" refers to an index into
+   * the array property texture indices in the CesiumPrimitiveMetadata. This
+   * does not necessarily include all of the property textures in the
+   * CesiumModelMetadata.
+   *
+   * The returned result may be empty for several reasons:
+   * - if the component is not a Cesium glTF primitive component
+   * - if the given primitive property texture index is out-of-bounds
+   * - if the property texture index derived from CesiumPrimitiveMetadata
+   * is out-of-bounds
+   *
+   * Additionally, if any of the property texture's properties are invalid, they
+   * will not be included in the result.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Picking")
+  static TMap<FString, FCesiumMetadataValue> GetPropertyTextureValuesFromHit(
+      const FHitResult& Hit,
+      int64 PrimitivePropertyTextureIndex = 0);
+
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the metadata values for a face on a glTF primitive component.
@@ -90,84 +176,4 @@ public:
       int64 FaceIndex,
       int64 FeatureIDSetIndex = 0);
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-  /**
-   * Compute the UV coordinates from the given line trace hit, assuming it has
-   * hit a glTF primitive component that contains the specified texture
-   * coordinate set. The texture coordinate set is specified relative to the
-   * glTF itself, where the set index N resolves to the "TEXCOORD_N" attribute
-   * in the glTF primitive.
-   *
-   * This function can be used to sample feature ID textures or property
-   * textures in the primitive. This works similarly to the FindCollisionUV
-   * Blueprint, except it does not require the texture coordinate sets to be
-   * present in the model's physics mesh.
-   *
-   * Returns false if the given texture coordinate set index does not exist for
-   * the primitive, or if its accessor is invalid.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Picking")
-  static bool FindUVFromHit(
-      const FHitResult& Hit,
-      int64 GltfTexCoordSetIndex,
-      FVector2D& UV);
-
-  /**
-   * Gets the property table values from a given line trace hit, assuming
-   * that it has hit a feature of a glTF primitive component.
-   *
-   * A primitive may have multiple feature ID sets, so this allows a feature ID
-   * set to be specified by index. This value should index into the array of
-   * CesiumFeatureIdSets in the component's CesiumPrimitiveFeatures. If the
-   * feature ID set is associated with a property table, it will return that
-   * property table's data.
-   *
-   * For feature ID textures and implicit feature IDs, the feature ID can vary
-   * across the face of a primitive. If the specified CesiumFeatureIdSet is one
-   * of those types, the feature ID of the first vertex on the face will be
-   * used.
-   *
-   * The returned result may be empty for several reasons:
-   * - if the component is not a Cesium glTF primitive component
-   * - if the hit's face index is somehow out-of-bounds
-   * - if the specified feature ID set does not exist on the primitive
-   * - if the specified feature ID set is not associated with a valid property
-   * table
-   *
-   * Additionally, if any of the property table's properties are invalid, they
-   * will not be included in the result.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Picking")
-  static TMap<FString, FCesiumMetadataValue> GetPropertyTableValuesFromHit(
-      const FHitResult& Hit,
-      int64 FeatureIDSetIndex = 0);
-
-  /**
-   * Gets the property texture values from a given line trace hit, assuming it
-   * has hit a glTF primitive component.
-   *
-   * A primitive may have multiple property textures, so this allows a property
-   * texture to be specified by index. This value should index into the array of
-   * CesiumPropertyTextures in the CesiumModelMetadata of the component's owner.
-   *
-   * The returned result may be empty for several reasons:
-   * - if the component is not a Cesium glTF primitive component
-   * - if the given property texture index is out-of-bounds
-   *
-   * Additionally, if any of the property texture's properties are invalid, they
-   * will not be included in the result.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Picking")
-  static TMap<FString, FCesiumMetadataValue> GetPropertyTextureValuesFromHit(
-      const FHitResult& Hit,
-      int64 PropertyTextureIndex = 0);
 };

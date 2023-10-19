@@ -1,5 +1,7 @@
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumPropertyTexture.h"
 #include "Misc/AutomationTest.h"
@@ -13,8 +15,11 @@ BEGIN_DEFINE_SPEC(
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;
+MeshPrimitive* pPrimitive;
 ExtensionModelExtStructuralMetadata* pExtension;
 PropertyTexture* pPropertyTexture;
+TObjectPtr<UCesiumGltfComponent> pModelComponent;
+TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
 
 const std::vector<FVector2D> texCoords{
     FVector2D(0, 0),
@@ -102,8 +107,8 @@ void FCesiumPropertyTextureSpec::Define() {
     });
 
     It("constructs valid instance with invalid property", [this]() {
-      // Even if one of its properties is invalid, the property table itself is
-      // still valid.
+      // Even if one of its properties is invalid, the property texture itself
+      // is still valid.
       pPropertyTexture->classProperty = "testClass";
       std::string propertyName("testProperty");
       std::array<int8_t, 4> values{1, 2, 3, 4};
@@ -271,7 +276,7 @@ void FCesiumPropertyTextureSpec::Define() {
   Describe("GetPropertyNames", [this]() {
     BeforeEach([this]() { pPropertyTexture->classProperty = "testClass"; });
 
-    It("returns empty array for invalid property table", [this]() {
+    It("returns empty array for invalid property texture", [this]() {
       FCesiumPropertyTexture propertyTexture;
       TestEqual(
           "PropertyTextureStatus",
@@ -449,7 +454,7 @@ void FCesiumPropertyTextureSpec::Define() {
   Describe("GetMetadataValuesForUV", [this]() {
     BeforeEach([this]() { pPropertyTexture->classProperty = "testClass"; });
 
-    It("returns empty map for invalid property table", [this]() {
+    It("returns empty map for invalid property texture", [this]() {
       FCesiumPropertyTexture propertyTexture;
 
       TestEqual(
@@ -572,6 +577,237 @@ void FCesiumPropertyTextureSpec::Define() {
           UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUV(
               propertyTexture,
               FVector2D::Zero());
+      TestTrue("values map is empty", values.IsEmpty());
+    });
+  });
+
+  Describe("GetMetadataValuesFromHit", [this]() {
+    BeforeEach([this]() {
+      Mesh& mesh = model.meshes.emplace_back();
+      pPrimitive = &mesh.primitives.emplace_back();
+
+      std::vector<glm::vec3> positions{
+          glm::vec3(-1, 0, 0),
+          glm::vec3(0, 1, 0),
+          glm::vec3(1, 0, 0),
+          glm::vec3(-1, 3, 0),
+          glm::vec3(0, 4, 0),
+          glm::vec3(1, 3, 0),
+      };
+
+      CreateAttributeForPrimitive(
+          model,
+          *pPrimitive,
+          "POSITION",
+          AccessorSpec::Type::VEC3,
+          AccessorSpec::ComponentType::FLOAT,
+          positions);
+
+      int32_t positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      // For convenience when testing, the UVs are the same as the positions
+      // they correspond to. This means that the interpolated UV value should be
+      // directly equal to the barycentric coordinates of the triangle.
+      std::vector<glm::vec2> texCoords0{
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0),
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0)};
+
+      CreateAttributeForPrimitive(
+          model,
+          *pPrimitive,
+          "TEXCOORD_0",
+          AccessorSpec::Type::VEC2,
+          AccessorSpec::ComponentType::FLOAT,
+          texCoords0);
+
+      pModelComponent = NewObject<UCesiumGltfComponent>();
+      pPrimitiveComponent =
+          NewObject<UCesiumGltfPrimitiveComponent>(pModelComponent);
+      pPrimitiveComponent->AttachToComponent(
+          pModelComponent,
+          FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+
+      pPrimitiveComponent->PositionAccessor =
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          0,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              static_cast<int32_t>(model.accessors.size() - 1)));
+
+      pPropertyTexture->classProperty = "testClass";
+    });
+
+    It("returns empty map for invalid hit component", [this]() {
+      std::string scalarPropertyName("scalarProperty");
+      std::array<int8_t, 4> scalarValues{-1, 2, -3, 4};
+      AddPropertyTexturePropertyToModel(
+          model,
+          *pPropertyTexture,
+          scalarPropertyName,
+          ClassProperty::Type::SCALAR,
+          ClassProperty::ComponentType::INT8,
+          scalarValues,
+          {0});
+
+      FCesiumPropertyTexture propertyTexture(model, *pPropertyTexture);
+
+      TestEqual(
+          "PropertyTextureStatus",
+          UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureStatus(
+              propertyTexture),
+          ECesiumPropertyTextureStatus::Valid);
+      TestEqual(
+          "Property Count",
+          UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture)
+              .Num(),
+          1);
+
+      FHitResult Hit;
+      Hit.Component = nullptr;
+      Hit.FaceIndex = 0;
+      Hit.Location = {0, 0, 0};
+
+      const auto values =
+          UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
+              propertyTexture,
+              Hit);
+      TestTrue("values is empty", values.IsEmpty());
+    });
+
+    It("returns values of valid properties", [this]() {
+      std::string scalarPropertyName("scalarProperty");
+      std::array<int8_t, 4> scalarValues{-1, 2, -3, 4};
+      AddPropertyTexturePropertyToModel(
+          model,
+          *pPropertyTexture,
+          scalarPropertyName,
+          ClassProperty::Type::SCALAR,
+          ClassProperty::ComponentType::INT8,
+          scalarValues,
+          {0});
+
+      std::string vec2PropertyName("vec2Property");
+      std::array<glm::u8vec2, 4> vec2Values{
+          glm::u8vec2(1, 2),
+          glm::u8vec2(0, 4),
+          glm::u8vec2(8, 9),
+          glm::u8vec2(11, 0),
+      };
+      AddPropertyTexturePropertyToModel(
+          model,
+          *pPropertyTexture,
+          vec2PropertyName,
+          ClassProperty::Type::VEC2,
+          ClassProperty::ComponentType::UINT8,
+          vec2Values,
+          {0, 1});
+
+      FCesiumPropertyTexture propertyTexture(model, *pPropertyTexture);
+
+      TestEqual(
+          "PropertyTextureStatus",
+          UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureStatus(
+              propertyTexture),
+          ECesiumPropertyTextureStatus::Valid);
+      TestEqual(
+          "Property Count",
+          UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture)
+              .Num(),
+          2);
+
+      FHitResult Hit;
+      Hit.Component = pPrimitiveComponent;
+      Hit.FaceIndex = 0;
+
+      std::array<FVector_NetQuantize, 3> locations{
+          FVector_NetQuantize(1, 0, 0),
+          FVector_NetQuantize(0, -1, 0),
+          FVector_NetQuantize(0, -0.25, 0)};
+      std::array<int8_t, 3> expectedScalar{2, -3, -1};
+      std::array<FIntPoint, 3> expectedVec2{
+          FIntPoint(0, 4),
+          FIntPoint(8, 9),
+          FIntPoint(1, 2)};
+
+      for (size_t i = 0; i < locations.size(); i++) {
+        Hit.Location = locations[i];
+        const auto values =
+            UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
+                propertyTexture,
+                Hit);
+        TestEqual("number of values", values.Num(), 2);
+
+        TestTrue(
+            "contains scalar value",
+            values.Contains(FString(scalarPropertyName.c_str())));
+        TestTrue(
+            "contains vec2 value",
+            values.Contains(FString(vec2PropertyName.c_str())));
+
+        const FCesiumMetadataValue* pScalarValue =
+            values.Find(FString(scalarPropertyName.c_str()));
+        if (pScalarValue) {
+          TestEqual(
+              "scalar value",
+              UCesiumMetadataValueBlueprintLibrary::GetInteger(
+                  *pScalarValue,
+                  0),
+              expectedScalar[i]);
+        }
+
+        const FCesiumMetadataValue* pVec2Value =
+            values.Find(FString(vec2PropertyName.c_str()));
+        if (pVec2Value) {
+          TestEqual(
+              "vec2 value",
+              UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+                  *pVec2Value,
+                  FIntPoint(0)),
+              expectedVec2[i]);
+        }
+      }
+    });
+
+    It("does not return value for invalid property", [this]() {
+      std::string propertyName("badProperty");
+      std::array<int8_t, 4> data{-1, 2, -3, 4};
+      AddPropertyTexturePropertyToModel(
+          model,
+          *pPropertyTexture,
+          propertyName,
+          ClassProperty::Type::SCALAR,
+          ClassProperty::ComponentType::INT32,
+          data,
+          {0});
+
+      FCesiumPropertyTexture propertyTexture(model, *pPropertyTexture);
+
+      TestEqual(
+          "PropertyTextureStatus",
+          UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureStatus(
+              propertyTexture),
+          ECesiumPropertyTextureStatus::Valid);
+      TestEqual(
+          "Property Count",
+          UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture)
+              .Num(),
+          1);
+
+      FHitResult Hit;
+      Hit.Component = pPrimitiveComponent;
+      Hit.FaceIndex = 0;
+      Hit.Location = {0, 0, 0};
+
+      const auto values =
+          UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
+              propertyTexture,
+              Hit);
       TestTrue("values map is empty", values.IsEmpty());
     });
   });

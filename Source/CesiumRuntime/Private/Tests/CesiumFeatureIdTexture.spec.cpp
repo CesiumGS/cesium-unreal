@@ -500,7 +500,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       // For convenience when testing, the UVs are the same as the positions
       // they correspond to. This means that the interpolated UV value should be
       // directly equal to the barycentric coordinates of the triangle.
-      std::vector<glm::vec2> texCoords{
+      std::vector<glm::vec2> texCoords0{
           glm::vec2(-1, 0),
           glm::vec2(0, 1),
           glm::vec2(1, 0),
@@ -516,7 +516,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           4,
           2,
           2,
-          texCoords,
+          texCoords0,
           0);
 
       pPrimitiveComponent->PositionAccessor =
@@ -559,7 +559,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       // For convenience when testing, the UVs are the same as the positions
       // they correspond to. This means that the interpolated UV value should be
       // directly equal to the barycentric coordinates of the triangle.
-      std::vector<glm::vec2> texCoords{
+      std::vector<glm::vec2> texCoords0{
           glm::vec2(-1, 0),
           glm::vec2(0, 1),
           glm::vec2(1, 0),
@@ -575,7 +575,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           4,
           2,
           2,
-          texCoords,
+          texCoords0,
           0);
 
       pPrimitiveComponent->PositionAccessor =
@@ -618,7 +618,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       // For convenience when testing, the UVs are the same as the positions
       // they correspond to. This means that the interpolated UV value should be
       // directly equal to the barycentric coordinates of the triangle.
-      std::vector<glm::vec2> texCoords{
+      std::vector<glm::vec2> texCoords0{
           glm::vec2(-1, 0),
           glm::vec2(0, 1),
           glm::vec2(1, 0),
@@ -634,7 +634,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           4,
           2,
           2,
-          texCoords,
+          texCoords0,
           0);
 
       pPrimitiveComponent->PositionAccessor =
@@ -684,7 +684,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       // For convenience when testing, the UVs are the same as the positions
       // they correspond to. This means that the interpolated UV value should be
       // directly equal to the barycentric coordinates of the triangle.
-      std::vector<glm::vec2> texCoords{
+      std::vector<glm::vec2> texCoords0{
           glm::vec2(-1, 0),
           glm::vec2(0, 1),
           glm::vec2(1, 0),
@@ -700,7 +700,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           4,
           2,
           2,
-          texCoords,
+          texCoords0,
           0);
 
       pPrimitiveComponent->PositionAccessor =

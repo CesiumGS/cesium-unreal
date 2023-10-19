@@ -116,6 +116,12 @@ UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
       continue;
     }
 
+    if (UCesiumPropertyTexturePropertyBlueprintLibrary::
+            GetPropertyTexturePropertyStatus(propertyIt.Value) !=
+        ECesiumPropertyTexturePropertyStatus::Valid) {
+      continue;
+    }
+
     auto glTFTexCoordIndex = propertyIt.Value.getTexCoordSetIndex();
     FVector2D UV;
     if (UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
@@ -129,6 +135,5 @@ UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
               UV));
     }
   }
-
   return values;
 }

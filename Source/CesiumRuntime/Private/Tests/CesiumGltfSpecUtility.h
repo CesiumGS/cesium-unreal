@@ -208,7 +208,9 @@ CesiumGltf::PropertyTextureProperty& AddPropertyTexturePropertyToModel(
       values.data(),
       image.cesium.pixelData.size());
 
-  model.samplers.emplace_back();
+  CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+  sampler.wrapS = CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE;
+  sampler.wrapT = CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE;
 
   CesiumGltf::Texture& texture = model.textures.emplace_back();
   texture.sampler = static_cast<int32_t>(model.samplers.size() - 1);
