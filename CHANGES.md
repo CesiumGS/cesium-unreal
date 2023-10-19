@@ -6,6 +6,7 @@
 
 - Fixed a bug that could cause tiles in a `Cesium3DTileset` to have an incorrect transformation.
 - Fixed a crash that occurred when a `LevelSequenceActor` in the level did not have a `LevelSequencePlayer` assigned.
+- Fixed a bug that would spam Georeference-related messages to the log when editing a globe anchor component that is not embedded in a world. For example, when editing a Blueprint asset with a globe anchor.
 
 ### v2.0.0 Preview 1 - 2023-10-02
 
