@@ -4,7 +4,7 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
-#include "HAL/PlatformFilemanager.h"
+#include "HAL/PlatformFileManager.h"
 #include "HttpManager.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
