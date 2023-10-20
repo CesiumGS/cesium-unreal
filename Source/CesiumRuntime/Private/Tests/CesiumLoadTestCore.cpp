@@ -24,10 +24,13 @@ struct LoadTestContext {
 
   float cameraFieldOfView = 90.0f;
 
+  ReportCallback reportStep;
+
   void reset() {
     testName.Reset();
     testPasses.clear();
     creationContext = playContext = SceneGenerationContext();
+    reportStep = nullptr;
   }
 };
 
@@ -120,26 +123,45 @@ bool LoadTestScreenshotCommand::Update() {
   return true;
 }
 
+void defaultReportStep(const std::vector<TestPass>& testPasses) {
+  FString reportStr;
+  reportStr += "\n\nTest Results\n";
+  reportStr += "-----------------------------\n";
+  reportStr += "(measured time) - (pass name)\n";
+  std::vector<TestPass>::const_iterator it;
+  for (it = testPasses.begin(); it != testPasses.end(); ++it) {
+    const TestPass& pass = *it;
+    reportStr +=
+        FString::Printf(TEXT("%.2f secs - %s\n"), pass.elapsedTime, *pass.name);
+  }
+  reportStr += "-----------------------------\n";
+
+  UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
+}
+
 DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
     TestCleanupCommand,
     LoadTestContext&,
     context);
 bool TestCleanupCommand::Update() {
-
-  // Output a quick report
-  FString reportStr;
-  reportStr += "\n\nTest Results\n";
-  reportStr += "-------------------------\n";
-  reportStr += "(measured time) - (pass name)\n";
-  std::vector<TestPass>::const_iterator it;
-  for (it = context.testPasses.begin(); it != context.testPasses.end(); ++it) {
-    const TestPass& pass = *it;
-    reportStr +=
-        FString::Printf(TEXT("%.2f secs - %s\n"), pass.elapsedTime, *pass.name);
+  // Tag the fastest pass
+  if (context.testPasses.size() > 0) {
+    size_t fastestPass;
+    double fastestTime = -1.0;
+    for (size_t index = 0; index < context.testPasses.size(); ++index) {
+      const TestPass& pass = context.testPasses[index];
+      if (fastestTime == -1.0 || pass.elapsedTime < fastestTime) {
+        fastestPass = index;
+        fastestTime = pass.elapsedTime;
+      }
+    }
+    context.testPasses[fastestPass].isFastest = true;
   }
-  reportStr += "-------------------------\n";
 
-  UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
+  if (context.reportStep)
+    context.reportStep(context.testPasses);
+  else
+    defaultReportStep(context.testPasses);
 
   // Turn on the editor tileset updates so we can see what we loaded
   gLoadTestContext.creationContext.setSuspendUpdate(false);
@@ -171,7 +193,8 @@ bool RunLoadTest(
     std::function<void(SceneGenerationContext&)> locationSetup,
     const std::vector<TestPass>& testPasses,
     int viewportWidth,
-    int viewportHeight) {
+    int viewportHeight,
+    ReportCallback optionalReportStep) {
 
   LoadTestContext& context = gLoadTestContext;
 
@@ -179,6 +202,7 @@ bool RunLoadTest(
 
   context.testName = testName;
   context.testPasses = testPasses;
+  context.reportStep = optionalReportStep;
 
   //
   // Programmatically set up the world

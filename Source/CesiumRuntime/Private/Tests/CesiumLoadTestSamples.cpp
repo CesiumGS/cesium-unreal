@@ -231,6 +231,25 @@ bool FSampleMaxTileLoads::RunTest(const FString& Parameters) {
     context.refreshTilesets();
   };
 
+  auto reportStep = [this](const std::vector<TestPass>& testPasses) {
+    FString reportStr;
+    reportStr += "\n\nTest Results\n";
+    reportStr += "------------------------------------------------------\n";
+    reportStr += "(measured time) - (MaximumSimultaneousTileLoads value)\n";
+    reportStr += "------------------------------------------------------\n";
+    std::vector<TestPass>::const_iterator it;
+    for (it = testPasses.begin(); it != testPasses.end(); ++it) {
+      const TestPass& pass = *it;
+      reportStr +=
+          FString::Printf(TEXT("%.2f secs - %s"), pass.elapsedTime, *pass.name);
+      if (pass.isFastest)
+        reportStr += " <-- fastest";
+      reportStr += "\n";
+    }
+    reportStr += "------------------------------------------------------\n";
+    UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
+  };
+
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Default", NULL, NULL});
   testPasses.push_back(TestPass{"12", setupPass, NULL, 12});
@@ -244,6 +263,7 @@ bool FSampleMaxTileLoads::RunTest(const FString& Parameters) {
       setupForMelbourne,
       testPasses,
       1024,
-      768);
+      768,
+      reportStep);
 }
 #endif
