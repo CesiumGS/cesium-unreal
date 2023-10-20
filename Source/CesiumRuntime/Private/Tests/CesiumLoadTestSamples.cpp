@@ -22,7 +22,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Performance.SampleLoadMontrealPointCloud",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
-void refreshSampleTilesets(SceneGenerationContext& context) {
+void refreshSampleTilesets(
+    SceneGenerationContext& context,
+    TestPass::TestingParameter parameter) {
   context.refreshTilesets();
 }
 
@@ -97,7 +99,9 @@ bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
 }
 
 bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
-  auto adjustCamera = [this](SceneGenerationContext& context) {
+  auto adjustCamera = [this](
+                          SceneGenerationContext& context,
+                          TestPass::TestingParameter parameter) {
     // Zoom way out
     context.startPosition = FVector(0, 0, 7240000.0);
     context.startRotation = FRotator(-90.0, 0.0, 0.0);
@@ -106,7 +110,9 @@ bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
     context.pawn->SetActorLocation(context.startPosition);
   };
 
-  auto verifyVisibleTiles = [this](SceneGenerationContext& context) {
+  auto verifyVisibleTiles = [this](
+                                SceneGenerationContext& context,
+                                TestPass::TestingParameter parameter) {
     Cesium3DTilesSelection::Tileset* pTileset =
         context.tilesets[0]->GetTileset();
     if (TestNotNull("Tileset", pTileset)) {

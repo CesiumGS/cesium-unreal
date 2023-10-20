@@ -16,68 +16,64 @@
 namespace Cesium {
 
 struct LoadTestContext {
+  FString testName;
+  std::vector<TestPass> testPasses;
+
   SceneGenerationContext creationContext;
   SceneGenerationContext playContext;
 
   float cameraFieldOfView = 90.0f;
 
-  bool testInProgress;
-  double startMark;
-  double endMark;
-
   void reset() {
+    testName.Reset();
+    testPasses.clear();
     creationContext = playContext = SceneGenerationContext();
-    testInProgress = false;
-    startMark = endMark = 0;
   }
 };
 
 LoadTestContext gLoadTestContext;
 
-DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
+DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
     TimeLoadingCommand,
     FString,
     loggingName,
-    LoadTestContext&,
-    context,
-    std::function<void(SceneGenerationContext&)>,
-    setupStep,
-    std::function<void(SceneGenerationContext&)>,
-    verifyStep);
+    SceneGenerationContext&,
+    playContext,
+    TestPass&,
+    pass);
 bool TimeLoadingCommand::Update() {
 
-  if (!context.testInProgress) {
+  if (!pass.testInProgress) {
 
-    // Bind all play in editor pointers
-    context.playContext.initForPlay(context.creationContext);
-    context.playContext.syncWorldCamera();
-
-    if (setupStep)
-      setupStep(context.playContext);
+    // Set up the world for this pass
+    playContext.syncWorldCamera();
+    if (pass.setupStep)
+      pass.setupStep(playContext, pass.optionalParameter);
 
     // Start test mark, turn updates back on
-    context.startMark = FPlatformTime::Seconds();
+    pass.startMark = FPlatformTime::Seconds();
     UE_LOG(LogCesium, Display, TEXT("-- Load start mark -- %s"), *loggingName);
 
-    context.playContext.setSuspendUpdate(false);
+    playContext.setSuspendUpdate(false);
 
-    context.testInProgress = true;
+    pass.testInProgress = true;
 
     // Return, let world tick
     return false;
   }
 
   double timeMark = FPlatformTime::Seconds();
-  double testElapsedTime = timeMark - context.startMark;
+
+  pass.elapsedTime = timeMark - pass.startMark;
 
   // The command is over if tilesets are loaded, or timed out
   // Wait for a maximum of 30 seconds
   const size_t testTimeout = 30;
-  bool tilesetsloaded = context.playContext.areTilesetsDoneLoading();
-  bool timedOut = testElapsedTime >= testTimeout;
+  bool tilesetsloaded = playContext.areTilesetsDoneLoading();
+  bool timedOut = pass.elapsedTime >= testTimeout;
 
   if (tilesetsloaded || timedOut) {
-    context.endMark = timeMark;
+    pass.endMark = timeMark;
     UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
 
     if (timedOut) {
@@ -85,19 +81,19 @@ bool TimeLoadingCommand::Update() {
           LogCesium,
           Error,
           TEXT("TIMED OUT: Loading stopped after %.2f seconds"),
-          testElapsedTime);
+          pass.elapsedTime);
     } else {
       UE_LOG(
           LogCesium,
           Display,
           TEXT("Tileset load completed in %.2f seconds"),
-          testElapsedTime);
+          pass.elapsedTime);
     }
 
-    if (verifyStep)
-      verifyStep(context.playContext);
+    if (pass.verifyStep)
+      pass.verifyStep(playContext, pass.optionalParameter);
 
-    context.testInProgress = false;
+    pass.testInProgress = false;
 
     // Command is done
     return true;
@@ -129,16 +125,38 @@ DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
     LoadTestContext&,
     context);
 bool TestCleanupCommand::Update() {
+
+  // Output a quick report
+  FString reportStr;
+  reportStr += "\n\nTest Results\n";
+  reportStr += "-------------------------\n";
+  reportStr += "(measured time) - (pass name)\n";
+  std::vector<TestPass>::const_iterator it;
+  for (it = context.testPasses.begin(); it != context.testPasses.end(); ++it) {
+    const TestPass& pass = *it;
+    reportStr +=
+        FString::Printf(TEXT("%.2f secs - %s\n"), pass.elapsedTime, *pass.name);
+  }
+  reportStr += "-------------------------\n";
+
+  UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
+
   // Turn on the editor tileset updates so we can see what we loaded
   gLoadTestContext.creationContext.setSuspendUpdate(false);
   return true;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND(WaitForPIECommand);
-bool WaitForPIECommand::Update() {
+DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
+    InitForPlayWhenReady,
+    SceneGenerationContext&,
+    creationContext,
+    SceneGenerationContext&,
+    playContext);
+bool InitForPlayWhenReady::Update() {
   if (!GEditor || !GEditor->IsPlayingSessionInEditor())
     return false;
   UE_LOG(LogCesium, Display, TEXT("Play in Editor ready..."));
+  playContext.initForPlay(creationContext);
   return true;
 }
 
@@ -155,26 +173,31 @@ bool RunLoadTest(
     int viewportWidth,
     int viewportHeight) {
 
-  gLoadTestContext.reset();
+  LoadTestContext& context = gLoadTestContext;
+
+  context.reset();
+
+  context.testName = testName;
+  context.testPasses = testPasses;
 
   //
   // Programmatically set up the world
   //
   UE_LOG(LogCesium, Display, TEXT("Creating common world objects..."));
-  createCommonWorldObjects(gLoadTestContext.creationContext);
+  createCommonWorldObjects(context.creationContext);
 
   // Configure location specific objects
   UE_LOG(LogCesium, Display, TEXT("Setting up location..."));
-  locationSetup(gLoadTestContext.creationContext);
-  gLoadTestContext.creationContext.trackForPlay();
+  locationSetup(context.creationContext);
+  context.creationContext.trackForPlay();
 
   // Halt tileset updates and reset them
-  gLoadTestContext.creationContext.setSuspendUpdate(true);
-  gLoadTestContext.creationContext.refreshTilesets();
+  context.creationContext.setSuspendUpdate(true);
+  context.creationContext.refreshTilesets();
   clearCacheDb();
 
   // Let the editor viewports see the same thing the test will
-  gLoadTestContext.creationContext.syncWorldCamera();
+  context.creationContext.syncWorldCamera();
 
   //
   // Start async commands
@@ -193,23 +216,21 @@ bool RunLoadTest(
   GEditor->RequestPlaySession(Params);
 
   // Wait until PIE is ready
-  ADD_LATENT_AUTOMATION_COMMAND(WaitForPIECommand());
+  ADD_LATENT_AUTOMATION_COMMAND(
+      InitForPlayWhenReady(context.creationContext, context.playContext));
 
   // Wait to show distinct gap in profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 
-  std::vector<TestPass>::const_iterator it;
-  for (it = testPasses.begin(); it != testPasses.end(); ++it) {
-    const TestPass& pass = *it;
+  std::vector<TestPass>::iterator it;
+  for (it = context.testPasses.begin(); it != context.testPasses.end(); ++it) {
+    TestPass& pass = *it;
 
     // Do our timing capture
     FString loggingName = testName + "-" + pass.name;
 
-    ADD_LATENT_AUTOMATION_COMMAND(TimeLoadingCommand(
-        loggingName,
-        gLoadTestContext,
-        pass.setupStep,
-        pass.verifyStep));
+    ADD_LATENT_AUTOMATION_COMMAND(
+        TimeLoadingCommand(loggingName, context.playContext, pass));
 
     ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 
@@ -222,7 +243,7 @@ bool RunLoadTest(
   // End play in editor
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
 
-  ADD_LATENT_AUTOMATION_COMMAND(TestCleanupCommand(gLoadTestContext));
+  ADD_LATENT_AUTOMATION_COMMAND(TestCleanupCommand(context));
 
   return true;
 }

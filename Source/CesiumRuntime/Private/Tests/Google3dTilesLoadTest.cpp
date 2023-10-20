@@ -8,6 +8,7 @@
 #include "Misc/AutomationTest.h"
 
 #include "Cesium3DTileset.h"
+#include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumSunSky.h"
 
 using namespace Cesium;
@@ -19,38 +20,45 @@ FString testGoogleUrl(
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesPompidou,
-    "Cesium.Performance.GoogleTiles.Pompidou",
+    "Cesium.Performance.GoogleTiles.LocalePompidou",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesChrysler,
-    "Cesium.Performance.GoogleTiles.Chrysler",
+    "Cesium.Performance.GoogleTiles.LocaleChrysler",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesGuggenheim,
-    "Cesium.Performance.GoogleTiles.Guggenheim",
+    "Cesium.Performance.GoogleTiles.LocaleGuggenheim",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesDeathValley,
-    "Cesium.Performance.GoogleTiles.DeathValley",
+    "Cesium.Performance.GoogleTiles.LocaleDeathValley",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesTokyo,
-    "Cesium.Performance.GoogleTiles.Tokyo",
+    "Cesium.Performance.GoogleTiles.LocaleTokyo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesGoogleplex,
-    "Cesium.Performance.GoogleTiles.Googleplex",
+    "Cesium.Performance.GoogleTiles.LocaleGoogleplex",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FGoogleTilesMaxTileLoads,
+    "Cesium.Performance.GoogleTiles.VaryMaxTileLoads",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 #define TEST_SCREEN_WIDTH 1280
 #define TEST_SCREEN_HEIGHT 720
 
-void googleWarmCacheSetup(SceneGenerationContext& context) {
+void googleWarmCacheSetup(
+    SceneGenerationContext& context,
+    TestPass::TestingParameter parameter) {
   context.refreshTilesets();
 }
 
@@ -227,6 +235,42 @@ bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
   return RunLoadTest(
       GetBeautifiedTestName(),
       setupForGoogleplex,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
+void setupMaxTileLoads(
+    SceneGenerationContext& context,
+    TestPass::TestingParameter parameter) {
+  std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+      getCacheDatabase();
+  pCacheDatabase->clearAll();
+
+  int maxLoadsTarget = std::get<int>(parameter);
+  context.tilesets[0]->MaximumSimultaneousTileLoads = maxLoadsTarget;
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Set tileset MaximumSimultaneousTileLoads to %d"),
+      maxLoadsTarget);
+
+  context.refreshTilesets();
+}
+
+bool FGoogleTilesMaxTileLoads::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Default", NULL, NULL});
+  testPasses.push_back(TestPass{"12", setupMaxTileLoads, NULL, 12});
+  testPasses.push_back(TestPass{"16", setupMaxTileLoads, NULL, 16});
+  testPasses.push_back(TestPass{"20", setupMaxTileLoads, NULL, 20});
+  testPasses.push_back(TestPass{"24", setupMaxTileLoads, NULL, 24});
+  testPasses.push_back(TestPass{"28", setupMaxTileLoads, NULL, 28});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForChrysler,
       testPasses,
       TEST_SCREEN_WIDTH,
       TEST_SCREEN_HEIGHT);
