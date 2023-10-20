@@ -1,9 +1,10 @@
+#include "UnrealAssetAccessor.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumRuntime.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
-#include "UnrealAssetAccessor.h"
+#include "Misc/Paths.h"
 
 BEGIN_DEFINE_SPEC(
     FUnrealAssetAccessorSpec,
