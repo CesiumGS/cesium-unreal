@@ -5,6 +5,7 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
+#include "CesiumRuntime.h"
 #include "HAL/PlatformFileManager.h"
 #include "HttpManager.h"
 #include "HttpModule.h"
@@ -15,8 +16,10 @@
 #include "Misc/EngineVersion.h"
 #include "Misc/Paths.h"
 #include <cstddef>
+#include <cstring>
 #include <optional>
 #include <set>
+#include <uriparser/Uri.h>
 
 namespace {
 
@@ -359,6 +362,28 @@ private:
 const std::string UnrealFileAssetRequestResponse::getMethod = "GET";
 const CesiumAsync::HttpHeaders UnrealFileAssetRequestResponse::emptyHeaders{};
 
+std::string convertFileUriToFilename(const std::string& url) {
+  // According to the uriparser docs, both uriUriStringToWindowsFilenameA and
+  // uriUriStringToUnixFilenameA require an output buffer with space for at most
+  // length(url)+1 characters.
+  // https://uriparser.github.io/doc/api/latest/Uri_8h.html#a4afbc8453c7013b9618259bc57d81a39
+  std::string result(url.size() + 1, '\0');
+
+#ifdef _WIN32
+  int errorCode = uriUriStringToWindowsFilenameA(url.c_str(), result.data());
+#else
+  int errorCode = uriUriStringToUnixFilenameA(url.c_str(), result.data());
+#endif
+
+  // Truncate the string if necessary by finding the first null character.
+  size_t end = result.find('\0');
+  if (end != std::string::npos) {
+    result.resize(end);
+  }
+
+  return result;
+}
+
 } // namespace
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
@@ -370,18 +395,7 @@ UnrealAssetAccessor::getFromFile(
 
   return asyncSystem
       .createFuture<AsyncReadRequestResult>([&](const auto& promise) {
-        FString filename =
-            UTF8_TO_TCHAR(url.substr(sizeof(fileProtocol) - 1).c_str());
-
-        // If this filename is now a relative path, make it absolute by
-        // adding a slash at the start. For example,
-        // `file:///home/foo/tileset.json` becomes `home/foo/tileset.json`
-        // which is still relative, so we turn it into
-        // `/home/foo/tileset.json`. FPaths::IsRelative correctly
-        // identifies paths like `C:/foo/tileset.json` as absolute.
-        if (FPaths::IsRelative(filename)) {
-          filename = "/" + filename;
-        }
+        FString filename = UTF8_TO_TCHAR(convertFileUriToFilename(url).c_str());
 
         IPlatformFile& FileManager =
             FPlatformFileManager::Get().GetPlatformFile();
@@ -402,6 +416,11 @@ UnrealAssetAccessor::getFromFile(
             int64 size = Result.readRequest->GetSizeResults();
             if (size < 0) {
               // Indicates the file was not found or could not be read.
+              UE_LOG(
+                  LogCesium,
+                  Display,
+                  TEXT("File not found or could not be read: %s"),
+                  UTF8_TO_TCHAR(convertFileUriToFilename(url).c_str()));
               return asyncSystem.createResolvedFuture<
                   std::shared_ptr<CesiumAsync::IAssetRequest>>(
                   std::make_shared<UnrealFileAssetRequestResponse>(
@@ -424,19 +443,18 @@ UnrealAssetAccessor::getFromFile(
                 [url = std::move(url),
                  size](AsyncReadRequestResult&& Result) mutable
                 -> std::shared_ptr<CesiumAsync::IAssetRequest> {
-                  if (size < 0) {
-                    // Indicates the file was not found or could not be read.
-                    return std::make_shared<UnrealFileAssetRequestResponse>(
-                        std::move(url),
-                        nullptr,
-                        0);
-                  } else {
-                    uint8_t* data = Result.readRequest->GetReadResults();
-                    return std::make_shared<UnrealFileAssetRequestResponse>(
-                        std::move(url),
-                        data,
-                        size);
+                  uint8_t* data = Result.readRequest->GetReadResults();
+                  if (data == nullptr) {
+                    UE_LOG(
+                        LogCesium,
+                        Display,
+                        TEXT("File could not be read: %s"),
+                        UTF8_TO_TCHAR(convertFileUriToFilename(url).c_str()));
                   }
+                  return std::make_shared<UnrealFileAssetRequestResponse>(
+                      std::move(url),
+                      data,
+                      size);
                 });
           });
 }
