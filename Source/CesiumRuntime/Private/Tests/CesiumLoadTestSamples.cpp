@@ -8,8 +8,8 @@
 
 #include "CesiumGltfComponent.h"
 #include "CesiumIonRasterOverlay.h"
-#include "GlobeAwareDefaultPawn.h"
 #include "CesiumSunSky.h"
+#include "GlobeAwareDefaultPawn.h"
 
 using namespace Cesium;
 
@@ -26,6 +26,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumSampleMontrealPointCloud,
     "Cesium.Performance.SampleTestPointCloud",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSampleMaxTileLoads,
+    "Cesium.Performance.SampleVaryMaxTileLoads",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 void refreshSampleTilesets(
@@ -211,4 +216,34 @@ bool FCesiumSampleMontrealPointCloud::RunTest(const FString& Parameters) {
       512);
 }
 
+bool FSampleMaxTileLoads::RunTest(const FString& Parameters) {
+
+  auto setupPass = [this](
+                       SceneGenerationContext& context,
+                       TestPass::TestingParameter parameter) {
+    std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+        getCacheDatabase();
+    pCacheDatabase->clearAll();
+
+    int maxLoadsTarget = std::get<int>(parameter);
+    context.setMaximumSimultaneousTileLoads(maxLoadsTarget);
+
+    context.refreshTilesets();
+  };
+
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Default", NULL, NULL});
+  testPasses.push_back(TestPass{"12", setupPass, NULL, 12});
+  testPasses.push_back(TestPass{"16", setupPass, NULL, 16});
+  testPasses.push_back(TestPass{"20", setupPass, NULL, 20});
+  testPasses.push_back(TestPass{"24", setupPass, NULL, 24});
+  testPasses.push_back(TestPass{"28", setupPass, NULL, 28});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForMelbourne,
+      testPasses,
+      1024,
+      768);
+}
 #endif

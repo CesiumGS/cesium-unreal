@@ -240,33 +240,28 @@ bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-void setupMaxTileLoads(
-    SceneGenerationContext& context,
-    TestPass::TestingParameter parameter) {
-  std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
-      getCacheDatabase();
-  pCacheDatabase->clearAll();
-
-  int maxLoadsTarget = std::get<int>(parameter);
-  context.tilesets[0]->MaximumSimultaneousTileLoads = maxLoadsTarget;
-
-  UE_LOG(
-      LogCesium,
-      Display,
-      TEXT("Set tileset MaximumSimultaneousTileLoads to %d"),
-      maxLoadsTarget);
-
-  context.refreshTilesets();
-}
-
 bool FGoogleTilesMaxTileLoads::RunTest(const FString& Parameters) {
+
+  auto setupPass = [this](
+                       SceneGenerationContext& context,
+                       TestPass::TestingParameter parameter) {
+    std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+        getCacheDatabase();
+    pCacheDatabase->clearAll();
+
+    int maxLoadsTarget = std::get<int>(parameter);
+    context.setMaximumSimultaneousTileLoads(maxLoadsTarget);
+
+    context.refreshTilesets();
+  };
+
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Default", NULL, NULL});
-  testPasses.push_back(TestPass{"12", setupMaxTileLoads, NULL, 12});
-  testPasses.push_back(TestPass{"16", setupMaxTileLoads, NULL, 16});
-  testPasses.push_back(TestPass{"20", setupMaxTileLoads, NULL, 20});
-  testPasses.push_back(TestPass{"24", setupMaxTileLoads, NULL, 24});
-  testPasses.push_back(TestPass{"28", setupMaxTileLoads, NULL, 28});
+  testPasses.push_back(TestPass{"12", setupPass, NULL, 12});
+  testPasses.push_back(TestPass{"16", setupPass, NULL, 16});
+  testPasses.push_back(TestPass{"20", setupPass, NULL, 20});
+  testPasses.push_back(TestPass{"24", setupPass, NULL, 24});
+  testPasses.push_back(TestPass{"28", setupPass, NULL, 28});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
