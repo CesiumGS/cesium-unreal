@@ -1,3 +1,4 @@
+#include "Async/Async.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumRuntime.h"
 #include "HAL/PlatformFileManager.h"
