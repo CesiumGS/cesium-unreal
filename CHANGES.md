@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added support for `file:///` URLs across all platforms and Unreal Engine versions.
+
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause tiles in a `Cesium3DTileset` to have an incorrect transformation.
