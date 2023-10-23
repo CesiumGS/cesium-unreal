@@ -5,6 +5,8 @@
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonClient/Token.h"
 #include "HAL/PlatformApplicationMisc.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Misc/App.h"
 #include "Styling/SlateStyle.h"
 #include "Widgets/Images/SImage.h"
@@ -81,8 +83,14 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                             .OnClicked(
                                 this,
                                 &IonLoginPanel::CopyAuthorizeUrlToClipboard)
-                            .Text(
-                                FText::FromString(TEXT("Copy to clipboard")))]];
+                            .Text(FText::FromString(
+                                TEXT("Copy to clipboard")))]] +
+      SVerticalBox::Slot()
+          .HAlign(HAlign_Center)
+          .Padding(5)
+          .AutoHeight()[SNew(SHyperlink)
+                            .OnNavigate(this, &IonLoginPanel::CancelLogin)
+                            .Text(FText::FromString(TEXT("Cancel")))];
 
   TSharedPtr<SVerticalBox> connectionWidget =
       SNew(SVerticalBox) +
@@ -169,4 +177,12 @@ void IonLoginPanel::LaunchBrowserAgain() {
       UTF8_TO_TCHAR(FCesiumEditorModule::ion().getAuthorizeUrl().c_str()),
       NULL,
       NULL);
+}
+
+void IonLoginPanel::CancelLogin() {
+  TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
+      FHttpModule::Get().CreateRequest();
+  pRequest->SetURL(
+      UTF8_TO_TCHAR(FCesiumEditorModule::ion().getRedirectUrl().c_str()));
+  pRequest->ProcessRequest();
 }

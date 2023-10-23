@@ -6,6 +6,7 @@
 #include "CesiumSourceControl.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
+#include <CesiumUtility/Uri.h>
 
 using namespace CesiumAsync;
 using namespace CesiumIonClient;
@@ -50,6 +51,10 @@ void CesiumIonSession::connect() {
        "geocode"},
       [this](const std::string& url) {
         this->_authorizeUrl = url;
+
+        this->_redirectUrl =
+            CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
+
         FPlatformProcess::LaunchURL(
             UTF8_TO_TCHAR(this->_authorizeUrl.c_str()),
             NULL,

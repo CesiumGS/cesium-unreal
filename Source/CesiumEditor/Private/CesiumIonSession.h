@@ -57,6 +57,7 @@ public:
   const std::vector<CesiumIonClient::Token>& getTokens();
 
   const std::string& getAuthorizeUrl() const { return this->_authorizeUrl; }
+  const std::string& getRedirectUrl() const { return this->_redirectUrl; }
 
   bool refreshProfileIfNeeded();
   bool refreshAssetsIfNeeded();
@@ -115,4 +116,5 @@ private:
   bool _loadTokensQueued;
 
   std::string _authorizeUrl;
+  std::string _redirectUrl;
 };
