@@ -58,34 +58,22 @@ void FUnrealAssetAccessorSpec::Define() {
         FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
   });
 
+  AfterEach([this]() { FileManager->DeleteFile(*Filename); });
+
   It("Fails with non-existant file:/// URLs", [this]() {
-    try {
-      FString Uri = TEXT("file:///") + Filename;
-      Uri.ReplaceCharInline('\\', '/');
-      Uri.ReplaceInline(TEXT(" "), TEXT("%20"));
-      Uri += ".bogusExtension";
+    FString Uri = TEXT("file:///") + Filename;
+    Uri.ReplaceCharInline('\\', '/');
+    Uri.ReplaceInline(TEXT(" "), TEXT("%20"));
+    Uri += ".bogusExtension";
 
-      TestAccessorRequest(Uri, "");
-
-      FileManager->DeleteFile(*Filename);
-    } catch (...) {
-      FileManager->DeleteFile(*Filename);
-      throw;
-    }
+    TestAccessorRequest(Uri, "");
   });
 
   It("Can access file:/// URLs", [this]() {
-    try {
-      FString Uri = TEXT("file:///") + Filename;
-      Uri.ReplaceCharInline('\\', '/');
-      Uri.ReplaceInline(TEXT(" "), TEXT("%20"));
+    FString Uri = TEXT("file:///") + Filename;
+    Uri.ReplaceCharInline('\\', '/');
+    Uri.ReplaceInline(TEXT(" "), TEXT("%20"));
 
-      TestAccessorRequest(Uri, randomText);
-
-      FileManager->DeleteFile(*Filename);
-    } catch (...) {
-      FileManager->DeleteFile(*Filename);
-      throw;
-    }
+    TestAccessorRequest(Uri, randomText);
   });
 }
