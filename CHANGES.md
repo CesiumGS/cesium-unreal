@@ -1,5 +1,13 @@
 # Change Log
 
+### v1.31.2 - 2023-10-26
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.0. Future versions will require Unreal Engine v5.1+.
+
+##### Additions :tada:
+
+- Added "Google Photorealistic 3D Tiles" to the Quick Add panel.
+
 ### v1.31.1 - 2023-10-02
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.0. Future versions will require Unreal Engine v5.1+.
