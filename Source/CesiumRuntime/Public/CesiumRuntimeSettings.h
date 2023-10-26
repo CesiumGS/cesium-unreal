@@ -38,6 +38,29 @@ public:
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
 
+  /**
+   * The base URL of the Cesium ion server to connect to. This can be a local or
+   * remote server. Example: "https://ion.cesium.com/" or
+   * "http://localhost:8070/".
+   */
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cesium ion",
+      meta = (DisplayName = "Base URL of the Cesium ion Server"))
+  FString IonServerUrl;
+
+  /**
+   * The client ID that is provided by Cesium ion when you register an
+   * application.
+   */
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cesium ion",
+      meta = (DisplayName = "Unique Identifier for Your ion Application"))
+  int IonClientId = 190;
+
   UPROPERTY(
       Config,
       EditAnywhere,
