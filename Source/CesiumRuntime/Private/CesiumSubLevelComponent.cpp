@@ -1,15 +1,19 @@
 #include "CesiumSubLevelComponent.h"
+#include "Cesium3DTileset.h"
 #include "CesiumActors.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumUtility/Math.h"
+#include "EngineUtils.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "VecMath.h"
+#include <glm/gtc/matrix_inverse.hpp>
 
 #if WITH_EDITOR
 #include "EditorViewportClient.h"
+#include "LevelInstance/LevelInstanceLevelStreaming.h"
 #include "ScopedTransaction.h"
 #endif
 
@@ -115,6 +119,28 @@ void UCesiumSubLevelComponent::SetOriginLongitudeLatitudeHeight(
 
 #if WITH_EDITOR
 
+namespace {
+
+ULevelStreaming* getLevelStreamingForSubLevel(ALevelInstance* SubLevel) {
+  if (!IsValid(SubLevel))
+    return nullptr;
+
+  ULevelStreaming* const* ppStreaming =
+      SubLevel->GetWorld()->GetStreamingLevels().FindByPredicate(
+          [SubLevel](ULevelStreaming* pStreaming) {
+            ULevelStreamingLevelInstance* pInstanceStreaming =
+                Cast<ULevelStreamingLevelInstance>(pStreaming);
+            if (!pInstanceStreaming)
+              return false;
+
+            return pInstanceStreaming->GetLevelInstance() == SubLevel;
+          });
+
+  return ppStreaming ? *ppStreaming : nullptr;
+}
+
+} // namespace
+
 void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (!IsValid(pGeoreference)) {
@@ -126,13 +152,8 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
     return;
   }
 
-  AActor* pOwner = this->GetOwner();
-
+  ALevelInstance* pOwner = this->_getLevelInstance();
   if (!IsValid(pOwner)) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT("CesiumSubLevelComponent does not have an owning Actor."));
     return;
   }
 
@@ -173,6 +194,8 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
   // Transform the level instance from the old origin to the new one.
   glm::dmat4 oldToEcef =
       currentTransforms.GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+  glm::dmat4 ecefToOld =
+      currentTransforms.GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
   glm::dmat4 ecefToNew =
       newTransforms.GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
   glm::dmat4 oldToNew = ecefToNew * oldToEcef;
@@ -183,8 +206,53 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
   FScopedTransaction transaction(
       FText::FromString("Place Georeference Origin At SubLevel Origin"));
 
+  ULevelStreaming* LevelStreaming = getLevelStreamingForSubLevel(pOwner);
+   ULevel* Level =
+      IsValid(LevelStreaming) ? LevelStreaming->GetLoadedLevel() : nullptr;
+  bool bHasTilesets =
+      IsValid(Level) && Level->Actors.FindByPredicate([](AActor* Actor) {
+        return Cast<ACesium3DTileset>(Actor) != nullptr;
+      }) != nullptr;
+
+  FTransform OldLevelTransform = LevelStreaming->LevelTransform;
+
   pOwner->Modify();
   pOwner->SetActorTransform(FTransform(VecMath::createMatrix(newTransform)));
+
+  // Restore the previous tileset transforms if (IsValid(Level)) {
+  if (bHasTilesets) {
+    pOwner->EnterEdit();
+    Level = pOwner->GetLoadedLevel();
+    for (AActor* Actor : Level->Actors) {
+      ACesium3DTileset* Tileset = Cast<ACesium3DTileset>(Actor);
+      if (!IsValid(Tileset))
+        continue;
+
+      USceneComponent* Root = Tileset->GetRootComponent();
+      if (!IsValid(Root))
+        continue;
+
+      // Change of basis of the old relative transform to the new coordinate
+      // system.
+      glm::dmat4 newToEcef =
+          newTransforms.GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+      glm::dmat4 oldRelativeTransform = VecMath::createMatrix4D(
+          (Root->GetRelativeTransform() * OldLevelTransform)
+              .ToMatrixWithScale());
+      glm::dmat4 relativeTransformInNew =
+          glm::affineInverse(newTransform) * ecefToNew * oldToEcef *
+          oldRelativeTransform * ecefToOld * newToEcef;
+
+      Tileset->Modify();
+      Root->Modify();
+      Root->SetRelativeTransform(
+          FTransform(VecMath::createMatrix(relativeTransformInNew)),
+          false,
+          nullptr,
+          ETeleportType::TeleportPhysics);
+    }
+    pOwner->ExitEdit(false);
+  }
 
   // Set the new sub-level georeference origin.
   this->Modify();
