@@ -663,6 +663,9 @@ public:
    */
   UFUNCTION(Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
+
+  UFUNCTION(Category = "Cesium")
+  void CreateSubLevelHere();
 #endif
 
 private:

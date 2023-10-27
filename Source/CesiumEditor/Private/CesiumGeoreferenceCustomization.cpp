@@ -39,6 +39,10 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
               ACesiumGeoreference,
               PlaceGeoreferenceOriginHere)));
 
+  pButtons->AddButtonForUFunction(
+      ACesiumGeoreference::StaticClass()->FindFunctionByName(
+          GET_FUNCTION_NAME_CHECKED(ACesiumGeoreference, CreateSubLevelHere)));
+
   pButtons->Finish(DetailBuilder, CesiumCategory);
 
   CesiumCategory.AddProperty(
