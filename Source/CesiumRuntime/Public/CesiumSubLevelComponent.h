@@ -192,6 +192,11 @@ public:
    * Level Instance's Location to (0,0,0). This improves the precision of the
    * objects in the sub-level as well as makes the Load Radius more sensible.
    *
+   * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
+   * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
+   * be updated based on the new georeference origin. You should Commit this
+   * change.
+   *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
    * or attached to an actor with that component. Ensure that static actors only
@@ -205,6 +210,11 @@ public:
    * the globe so the current longitude/latitude/height of the camera is at the
    * Unreal origin of this sub-level. The camera is also teleported to the new
    * Unreal origin and rotated so that the view direction is maintained.
+   *
+   * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
+   * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
+   * be updated based on the new georeference origin. You should Commit this
+   * change.
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
