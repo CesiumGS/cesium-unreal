@@ -37,49 +37,69 @@ void CesiumIonSession::connect() {
 
   this->_isConnecting = true;
 
-  Connection::authorize(
-      this->_asyncSystem,
-      this->_pAssetAccessor,
-      "Cesium for Unreal",
-      190,
-      "/cesium-for-unreal/oauth2/callback",
-      {"assets:list",
-       "assets:read",
-       "profile:read",
-       "tokens:read",
-       "tokens:write",
-       "geocode"},
-      [this](const std::string& url) {
-        this->_authorizeUrl = url;
+  std::string ionServerUrl =
+      GetDefault<UCesiumRuntimeSettings>()->IonServerUrl.IsEmpty()
+          ? "https://api.cesium.com/"
+          : TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonServerUrl);
 
-        this->_redirectUrl =
-            CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
+  Connection::getApiUrl(this->_asyncSystem, this->_pAssetAccessor, ionServerUrl)
+      .thenInMainThread([ionServerUrl,
+                         this](const std::optional<std::string>&& ionApiUrl) {
+        if (!ionApiUrl) {
+          this->_isConnecting = false;
+          this->_connection = std::nullopt;
+          this->ConnectionUpdated.Broadcast();
+          return;
+        }
 
-        FPlatformProcess::LaunchURL(
-            UTF8_TO_TCHAR(this->_authorizeUrl.c_str()),
-            NULL,
-            NULL);
-      })
-      .thenInMainThread([this](CesiumIonClient::Connection&& connection) {
-        this->_isConnecting = false;
-        this->_connection = std::move(connection);
+        int64_t clientID = GetDefault<UCesiumRuntimeSettings>()->IonClientId;
 
-        UCesiumEditorSettings* pSettings =
-            GetMutableDefault<UCesiumEditorSettings>();
-        pSettings->UserAccessToken =
-            UTF8_TO_TCHAR(this->_connection.value().getAccessToken().c_str());
+        Connection::authorize(
+            this->_asyncSystem,
+            this->_pAssetAccessor,
+            "Cesium for Unreal",
+            clientID,
+            "/cesium-for-unreal/oauth2/callback",
+            {"assets:list",
+             "assets:read",
+             "profile:read",
+             "tokens:read",
+             "tokens:write",
+             "geocode"},
+            [this](const std::string& url) {
+              this->_authorizeUrl = url;
 
-        CesiumSourceControl::PromptToCheckoutConfigFile(
-            pSettings->GetClass()->GetConfigName());
+              this->_redirectUrl =
+                  CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
 
-        pSettings->SaveConfig();
+              FPlatformProcess::LaunchURL(
+                  UTF8_TO_TCHAR(this->_authorizeUrl.c_str()),
+                  NULL,
+                  NULL);
+            },
+            *ionApiUrl,
+            CesiumUtility::Uri::resolve(ionServerUrl, "oauth"))
+            .thenInMainThread([this](CesiumIonClient::Connection&& connection) {
+              this->_isConnecting = false;
+              this->_connection = std::move(connection);
 
-        this->ConnectionUpdated.Broadcast();
-      })
-      .catchInMainThread([this](std::exception&& e) {
-        this->_isConnecting = false;
-        this->_connection = std::nullopt;
-        this->ConnectionUpdated.Broadcast();
+              UCesiumEditorSettings* pSettings =
+                  GetMutableDefault<UCesiumEditorSettings>();
+              pSettings->UserAccessToken = UTF8_TO_TCHAR(
+                  this->_connection.value().getAccessToken().c_str());
+
+              CesiumSourceControl::PromptToCheckoutConfigFile(
+                  pSettings->GetClass()->GetConfigName());
+
+              pSettings->SaveConfig();
+
+              this->ConnectionUpdated.Broadcast();
+            })
+            .catchInMainThread([this](std::exception&& e) {
+              this->_isConnecting = false;
+              this->_connection = std::nullopt;
+              this->ConnectionUpdated.Broadcast();
+            });
       });
 }
 
