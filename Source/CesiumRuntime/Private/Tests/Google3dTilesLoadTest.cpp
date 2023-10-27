@@ -13,11 +13,6 @@
 
 using namespace Cesium;
 
-namespace Cesium {
-FString testGoogleUrl(
-    "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCaIL-JEK2Tw9MMBVKSTIu8dPkwfzfqAbU");
-}
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesPompidou,
     "Cesium.Performance.GoogleTiles.LocalePompidou",
@@ -73,8 +68,9 @@ void setupForPompidou(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Center Pompidou, Paris, France"));
   context.tilesets.push_back(tileset);
 }
@@ -90,8 +86,9 @@ void setupForChrysler(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Chrysler Building, NYC"));
   context.tilesets.push_back(tileset);
 }
@@ -107,8 +104,9 @@ void setupForGuggenheim(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Guggenheim Museum, Bilbao, Spain"));
   context.tilesets.push_back(tileset);
 }
@@ -124,8 +122,9 @@ void setupForDeathValley(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(
       TEXT("Zabriskie Point, Death Valley National Park, California"));
   context.tilesets.push_back(tileset);
@@ -142,8 +141,9 @@ void setupForTokyo(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Tokyo Tower, Tokyo, Japan"));
   context.tilesets.push_back(tileset);
 }
@@ -156,8 +156,9 @@ void setupForGoogleplex(SceneGenerationContext& context) {
       90.0f);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Google Photorealistic 3D Tiles"));
 
   context.tilesets.push_back(tileset);
