@@ -163,13 +163,17 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
     return;
   }
 
+  FVector UnrealPosition =
+      pGeoreference->GetActorTransform().InverseTransformPosition(
+          pOwner->GetActorLocation());
+
   FVector NewOriginEcef =
       pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
-          Root->GetRelativeLocation());
+          UnrealPosition);
   this->PlaceOriginAtEcef(NewOriginEcef);
 }
 
-void UCesiumSubLevelComponent::PlaceOriginHere() {
+void UCesiumSubLevelComponent::PlaceGeoreferenceOriginHere() {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (!IsValid(pGeoreference)) {
     UE_LOG(
@@ -191,9 +195,15 @@ void UCesiumSubLevelComponent::PlaceOriginHere() {
   FEditorViewportClient* pEditorViewportClient =
       static_cast<FEditorViewportClient*>(pViewportClient);
 
+  FVector ViewLocation = pEditorViewportClient->GetViewLocation();
+
+  // Transform the world-space view location to the CesiumGeoreference's frame.
+  ViewLocation =
+      pGeoreference->GetActorTransform().InverseTransformPosition(ViewLocation);
+
   FVector CameraEcefPosition =
       pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
-          pEditorViewportClient->GetViewLocation());
+          ViewLocation);
   this->PlaceOriginAtEcef(CameraEcefPosition);
 }
 

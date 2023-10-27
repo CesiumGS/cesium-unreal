@@ -211,6 +211,11 @@ public:
    * Unreal origin of this sub-level. The camera is also teleported to the new
    * Unreal origin and rotated so that the view direction is maintained.
    *
+   * This function is similar to "Place Georeference Origin Here" on the
+   * CesiumGeoreference, except that this moves the georeference origin while
+   * also ensuring that the sub-level content stays in the same place on the
+   * globe by adjusting the Level Instance's transform.
+   *
    * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
    * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
    * be updated based on the new georeference origin. You should Commit this
@@ -222,7 +227,7 @@ public:
    * exist in georeferenced sub-levels.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
-  void PlaceOriginHere();
+  void PlaceGeoreferenceOriginHere();
 #endif
 
   /**
