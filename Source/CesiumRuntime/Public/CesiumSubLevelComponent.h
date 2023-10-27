@@ -199,6 +199,20 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginAtSubLevelOrigin();
+
+  /**
+   * Places the sub-level's origin at the camera's current location. Rotates
+   * the globe so the current longitude/latitude/height of the camera is at the
+   * Unreal origin of this sub-level. The camera is also teleported to the new
+   * Unreal origin and rotated so that the view direction is maintained.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sub-levels.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void PlaceOriginHere();
 #endif
 
   /**
@@ -365,4 +379,6 @@ private:
    * Georeference will be re-resolved and re-subscribed.
    */
   void _invalidateResolvedGeoreference();
+
+  void PlaceOriginAtEcef(const FVector& NewOriginEcef);
 };
