@@ -338,6 +338,8 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
+          mkdir -p ~/.config/Unreal Engine/UnrealBuildTool
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"5.2.0\"/g' CesiumForUnreal.uplugin
           export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7/"
           cd /opt/ue52/Engine/Build/BatchFiles
@@ -607,6 +609,8 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
+          mkdir -p ~/.config/Unreal Engine/UnrealBuildTool
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"5.3.0\"/g' CesiumForUnreal.uplugin
           export LINUX_MULTIARCH_ROOT="/opt/ue53/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v22_clang-16.0.6-centos7/"
           cd /opt/ue53/Engine/Build/BatchFiles
