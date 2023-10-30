@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -6,6 +6,7 @@
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "CesiumPropertyTexture.generated.h"
 
 namespace CesiumGltf {
@@ -15,8 +16,13 @@ struct PropertyTexture;
 
 UENUM(BlueprintType)
 enum class ECesiumPropertyTextureStatus : uint8 {
+  /* The property texture is valid. */
   Valid = 0,
-  ErrorInvalidMetadataExtension,
+  /* The property texture instance was not initialized from an actual glTF
+   property texture. */
+  ErrorInvalidPropertyTexture,
+  /* The property texture's class could be found in the schema of the metadata
+   extension. */
   ErrorInvalidPropertyTextureClass
 };
 
@@ -31,15 +37,22 @@ struct CESIUMRUNTIME_API FCesiumPropertyTexture {
 
 public:
   FCesiumPropertyTexture()
-      : _status(ECesiumPropertyTextureStatus::ErrorInvalidMetadataExtension) {}
+      : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTexture) {}
 
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
       const CesiumGltf::PropertyTexture& PropertyTexture);
 
+  /**
+   * Gets the name of the metadata class that this property table conforms to.
+   */
+  FString getClassName() const { return _className; }
+
 private:
   ECesiumPropertyTextureStatus _status;
   FString _name;
+  FString _className;
+
   TMap<FString, FCesiumPropertyTextureProperty> _properties;
 
   friend class UCesiumPropertyTextureBlueprintLibrary;
@@ -75,14 +88,13 @@ public:
                              const FCesiumPropertyTexture& PropertyTexture);
 
   /**
-   * Gets the FCesiumPropertyTextureProperty views for the given property
-   * texture. If the property texture is invalid, this returns an empty array.
+   * Gets all the properties of the property texture, mapped by property name.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTexture")
-  static const TArray<FCesiumPropertyTextureProperty>
+  static const TMap<FString, FCesiumPropertyTextureProperty>
   GetProperties(UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture);
 
   /**
@@ -108,4 +120,46 @@ public:
   static const FCesiumPropertyTextureProperty& FindProperty(
       UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
       const FString& PropertyName);
+
+  /**
+   * Gets all of the property values at the given texture coordinates, mapped by
+   * property name. This will only include values from valid property texture
+   * properties.
+   *
+   * In EXT_structural_metadata, individual properties can specify different
+   * texture coordinate sets to be sampled from. This method uses the same
+   * coordinates to sample each property, regardless of its intended texture
+   * coordinate set. Use GetMetadataValuesForHit instead to sample the property
+   * texture's properties with their respective texture coordinate sets.
+   *
+   * @param UV The texture coordinates.
+   * @return The property values mapped by property name.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTexture")
+  static TMap<FString, FCesiumMetadataValue> GetMetadataValuesForUV(
+      UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
+      const FVector2D& UV);
+
+  /**
+   * Given a trace hit result, gets all of the property values from property
+   * texture on the hit component, mapped by property name. This will only
+   * include values from valid property texture properties.
+   *
+   * In EXT_structural_metadata, individual properties can specify different
+   * texture coordinate sets to be sampled from. This method uses the
+   * corresponding texture coordinate sets to sample each property.
+   *
+   * @param Hit The trace hit result
+   * @return The property values mapped by property name.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTexture")
+  static TMap<FString, FCesiumMetadataValue> GetMetadataValuesFromHit(
+      UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
+      const FHitResult& Hit);
 };

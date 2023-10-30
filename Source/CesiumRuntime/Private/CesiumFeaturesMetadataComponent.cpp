@@ -49,8 +49,7 @@ void AutoFillPropertyTableDescriptions(
   const TArray<FCesiumPropertyTable>& propertyTables =
       UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(ModelMetadata);
 
-  for (int32 i = 0; i < propertyTables.Num(); i++) {
-    FCesiumPropertyTable propertyTable = propertyTables[i];
+  for (const auto& propertyTable : propertyTables) {
     FString propertyTableName = getNameForPropertyTable(propertyTable);
 
     FCesiumPropertyTableDescription* pDescription =
@@ -152,66 +151,110 @@ void AutoFillPropertyTableDescriptions(
   }
 }
 
-void AutoFillPropertyTextureDescriptions() {
-  // const TMap<FString, FCesiumFeatureTexture>& featureTextures =
-  //    UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(model);
+void AutoFillPropertyTextureDescriptions(
+    TArray<FCesiumPropertyTextureDescription>& Descriptions,
+    const FCesiumModelMetadata& ModelMetadata) {
+  const TArray<FCesiumPropertyTexture>& propertyTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(ModelMetadata);
 
-  // for (const auto& featureTextureIt : featureTextures) {
-  //  FFeatureTextureDescription* pFeatureTexture =
-  //      this->FeatureTextures.FindByPredicate(
-  //          [&featureTextureName = featureTextureIt.Key](
-  //              const FFeatureTextureDescription& existingFeatureTexture) {
-  //            return existingFeatureTexture.Name == featureTextureName;
-  //          });
+  for (const auto& propertyTexture : propertyTextures) {
+    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
+    FCesiumPropertyTextureDescription* pDescription =
+        Descriptions.FindByPredicate(
+            [&propertyTextureName =
+                 propertyTextureName](const FCesiumPropertyTextureDescription&
+                                          existingPropertyTexture) {
+              return existingPropertyTexture.Name == propertyTextureName;
+            });
 
-  //  if (!pFeatureTexture) {
-  //    pFeatureTexture = &this->FeatureTextures.Emplace_GetRef();
-  //    pFeatureTexture->Name = featureTextureIt.Key;
-  //  }
+    if (!pDescription) {
+      pDescription = &Descriptions.Emplace_GetRef();
+      pDescription->Name = propertyTextureName;
+    }
 
-  //  const TArray<FString>& propertyNames =
-  //      UCesiumFeatureTextureBlueprintLibrary::GetPropertyKeys(
-  //          featureTextureIt.Value);
+    const TMap<FString, FCesiumPropertyTextureProperty>& properties =
+        UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture);
+    for (const auto& propertyIt : properties) {
+      auto pExistingProperty = pDescription->Properties.FindByPredicate(
+          [&propertyName =
+               propertyIt.Key](const FCesiumPropertyTexturePropertyDescription&
+                                   existingProperty) {
+            return propertyName == existingProperty.Name;
+          });
 
-  //  for (const FString& propertyName : propertyNames) {
-  //    if (pFeatureTexture->Properties.FindByPredicate(
-  //            [&propertyName](const FFeatureTexturePropertyDescription&
-  //                                existingProperty) {
-  //              return propertyName == existingProperty.Name;
-  //            })) {
-  //      // We have already filled this property.
-  //      continue;
-  //    }
+      if (pExistingProperty) {
+        // We have already accounted for this property, but we may need to check
+        // for its offset / scale, since they can differ from the class
+        // property's definition.
+        ECesiumMetadataType type = pExistingProperty->PropertyDetails.Type;
+        switch (type) {
+        case ECesiumMetadataType::Scalar:
+        case ECesiumMetadataType::Vec2:
+        case ECesiumMetadataType::Vec3:
+        case ECesiumMetadataType::Vec4:
+        case ECesiumMetadataType::Mat2:
+        case ECesiumMetadataType::Mat3:
+        case ECesiumMetadataType::Mat4:
+          break;
+        default:
+          continue;
+        }
 
-  //    FCesiumPropertyTextureProperty property =
-  //        UCesiumPropertyTextureBlueprintLibrary::FindProperty(
-  //            featureTextureIt.Value,
-  //            propertyName);
-  //    FFeatureTexturePropertyDescription& propertyDescription =
-  //        pFeatureTexture->Properties.Emplace_GetRef();
-  //    propertyDescription.Name = propertyName;
-  //    propertyDescription.Normalized =
-  //        UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
-  //            property);
+        FCesiumMetadataValue offset =
+            UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
+                propertyIt.Value);
+        pExistingProperty->PropertyDetails.bHasOffset |=
+            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
 
-  //    switch (
-  //        UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
-  //            property)) {
-  //    case 2:
-  //      propertyDescription.Type = ECesiumPropertyType::Vec2;
-  //      break;
-  //    case 3:
-  //      propertyDescription.Type = ECesiumPropertyType::Vec3;
-  //      break;
-  //    case 4:
-  //      propertyDescription.Type = ECesiumPropertyType::Vec4;
-  //      break;
-  //    // case 1:
-  //    default:
-  //      propertyDescription.Type = ECesiumPropertyType::Scalar;
-  //    }
-  //  }
-  //}
+        FCesiumMetadataValue scale =
+            UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
+                propertyIt.Value);
+        pExistingProperty->PropertyDetails.bHasScale |=
+            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
+
+        continue;
+      }
+
+      FCesiumPropertyTexturePropertyDescription& property =
+          pDescription->Properties.Emplace_GetRef();
+      property.Name = propertyIt.Key;
+
+      const FCesiumMetadataValueType ValueType =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetValueType(
+              propertyIt.Value);
+      property.PropertyDetails.SetValueType(ValueType);
+      property.PropertyDetails.ArraySize =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
+              propertyIt.Value);
+      property.PropertyDetails.bIsNormalized =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
+              propertyIt.Value);
+
+      FCesiumMetadataValue offset =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
+              propertyIt.Value);
+      property.PropertyDetails.bHasOffset =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
+
+      FCesiumMetadataValue scale =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
+              propertyIt.Value);
+      property.PropertyDetails.bHasScale =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
+
+      FCesiumMetadataValue noData =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetNoDataValue(
+              propertyIt.Value);
+      property.PropertyDetails.bHasNoDataValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(noData);
+
+      FCesiumMetadataValue defaultValue =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
+              propertyIt.Value);
+      property.PropertyDetails.bHasDefaultValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(defaultValue);
+    }
+  }
 }
 
 void AutoFillFeatureIdSetDescriptions(
@@ -265,6 +308,27 @@ void AutoFillFeatureIdSetDescriptions(
   }
 }
 
+void AutoFillPropertyTextureNames(
+    TSet<FString>& Names,
+    const FCesiumPrimitiveMetadata& PrimitiveMetadata,
+    const TArray<FCesiumPropertyTexture>& PropertyTextures) {
+  const TArray<int64> propertyTextureIndices =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
+          PrimitiveMetadata);
+
+  for (const int64& propertyTextureIndex : propertyTextureIndices) {
+    if (propertyTextureIndex < 0 ||
+        propertyTextureIndex >= PropertyTextures.Num()) {
+      continue;
+    }
+
+    const FCesiumPropertyTexture& propertyTexture =
+        PropertyTextures[propertyTextureIndex];
+    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
+    Names.Emplace(propertyTextureName);
+  }
+}
+
 } // namespace
 
 void UCesiumFeaturesMetadataComponent::AutoFill() {
@@ -285,6 +349,7 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
 
     const FCesiumModelMetadata& modelMetadata = pGltf->Metadata;
     AutoFillPropertyTableDescriptions(this->PropertyTables, modelMetadata);
+    AutoFillPropertyTextureDescriptions(this->PropertyTextures, modelMetadata);
 
     TArray<USceneComponent*> childComponents;
     pGltf->GetChildrenComponents(false, childComponents);
@@ -305,6 +370,16 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
           this->FeatureIdSets,
           primitiveFeatures,
           propertyTables);
+
+      const FCesiumPrimitiveMetadata& primitiveMetadata =
+          pGltfPrimitive->Metadata;
+      const TArray<FCesiumPropertyTexture>& propertyTextures =
+          UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
+              modelMetadata);
+      AutoFillPropertyTextureNames(
+          this->PropertyTextureNames,
+          primitiveMetadata,
+          propertyTextures);
     }
   }
 
@@ -356,11 +431,10 @@ static void ClassifyNodes(
             ESearchCase::Type::CaseSensitive)) {
       Classification.AutoGeneratedNodes.Add(Node);
 
-      // The only auto-generated custom nodes are the property result nodes
-      // (i.e., nodes named "Get Property Values From ___").
       UMaterialExpressionCustom* CustomNode =
           Cast<UMaterialExpressionCustom>(Node);
-      if (CustomNode) {
+      if (CustomNode &&
+          CustomNode->Description.Contains("Get Property Values From")) {
         Classification.GetPropertyValueNodes.Add(CustomNode);
         continue;
       }
@@ -429,8 +503,9 @@ static void ClearAutoGeneratedNodes(
     }
 
     // It's not as easy to distinguish the material function calls from each
-    // other. Try using the name of the first valid input (the texcoord index
-    // name), which should be different for each feature ID set.
+    // other. Try using the name of the first valid input (the texture
+    // coordinate index name), which should be different for each feature ID
+    // set.
     const auto Parameter =
         Cast<UMaterialExpressionParameter>(Inputs[0].Input.Expression);
     FString ParameterName;
@@ -745,6 +820,45 @@ FString GetSwizzleForEncodedType(ECesiumEncodedMetadataType Type) {
   };
 }
 
+FString GetCodeForAssemblingPropertyFromTexture(
+    const FString& PropertyName,
+    const FString& PropertyDataName,
+    FCesiumMetadataPropertyDetails PropertyDetails) {
+  FCesiumMetadataEncodingDetails encodingDetails =
+      CesiumMetadataPropertyDetailsToEncodingDetails(PropertyDetails);
+  size_t componentCount = 0;
+  switch (encodingDetails.Type) {
+  case ECesiumEncodedMetadataType::Scalar:
+    componentCount = 1;
+    break;
+  case ECesiumEncodedMetadataType::Vec2:
+    componentCount = 2;
+    break;
+  case ECesiumEncodedMetadataType::Vec3:
+    componentCount = 3;
+    break;
+  case ECesiumEncodedMetadataType::Vec4:
+    componentCount = 4;
+    break;
+  default:
+    break;
+  }
+
+  FString code = "sample = Texture.Sample(TextureSampler, UVs);\n";
+  if (componentCount == 1) {
+  }
+
+  if (componentCount == 2) {
+  }
+
+  code += "for (uint i = 0; i < componentCount; i++) {\n"
+          "  uint channel = uint(f.Get(Channels, i));\n"
+          "  uint sample = asuint(f.Get(sample, channel));\n"
+          "}\n";
+
+  return code;
+}
+
 UMaterialExpressionMaterialFunctionCall* GenerateNodesForFeatureIdTexture(
     const FCesiumFeatureIdSetDescription& Description,
     TArray<UMaterialExpression*>& AutoGeneratedNodes,
@@ -919,7 +1033,8 @@ UMaterialExpressionParameter* GenerateParameterNodeWithGivenType(
 }
 
 void GenerateNodesForMetadataPropertyTransforms(
-    const FCesiumPropertyTablePropertyDescription& Property,
+    const FCesiumMetadataPropertyDetails& PropertyDetails,
+    ECesiumEncodedMetadataType Type,
     const FString& PropertyName,
     const FString& FullPropertyName,
     TArray<UMaterialExpression*>& AutoGeneratedNodes,
@@ -936,9 +1051,10 @@ void GenerateNodesForMetadataPropertyTransforms(
   UMaterialExpression* GetDefaultValueNode = nullptr;
   UMaterialExpressionIf* NoDataIfNode = nullptr;
 
-  if (Property.PropertyDetails.bIsNormalized ||
-      Property.PropertyDetails.bHasScale ||
-      Property.PropertyDetails.bHasOffset) {
+  ECustomMaterialOutputType OutputType = GetOutputTypeForEncodedType(Type);
+
+  if (PropertyDetails.bIsNormalized || PropertyDetails.bHasScale ||
+      PropertyDetails.bHasOffset) {
 
     ApplyTransformsFunction =
         NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
@@ -966,12 +1082,11 @@ void GenerateNodesForMetadataPropertyTransforms(
     ApplyTransformsFunction->Outputs.Add(
         FExpressionOutput(TransformedOutput.OutputName));
 
-    TransformedOutput.OutputType =
-        GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+    TransformedOutput.OutputType = OutputType;
 
     FString TransformCode = "TransformedValue = ";
 
-    if (Property.PropertyDetails.bIsNormalized) {
+    if (PropertyDetails.bIsNormalized) {
       // The normalization can be hardcoded since only normalized uint8s are
       // supported.
       TransformCode += "(RawValue / 255.0f)";
@@ -979,12 +1094,12 @@ void GenerateNodesForMetadataPropertyTransforms(
       TransformCode += "RawValue";
     }
 
-    if (Property.PropertyDetails.bHasScale) {
+    if (PropertyDetails.bHasScale) {
       NodeY += 0.75 * Incr;
 
       UMaterialExpressionParameter* Parameter =
           GenerateParameterNodeWithGivenType(
-              Property.EncodingDetails.Type,
+              Type,
               FullPropertyName + MaterialPropertyScaleSuffix,
               AutoGeneratedNodes,
               TargetMaterialLayer,
@@ -1001,12 +1116,12 @@ void GenerateNodesForMetadataPropertyTransforms(
       TransformCode += " * " + ScaleName;
     }
 
-    if (Property.PropertyDetails.bHasOffset) {
+    if (PropertyDetails.bHasOffset) {
       NodeY += 0.75 * Incr;
 
       UMaterialExpressionParameter* Parameter =
           GenerateParameterNodeWithGivenType(
-              Property.EncodingDetails.Type,
+              Type,
               FullPropertyName + MaterialPropertyOffsetSuffix,
               AutoGeneratedNodes,
               TargetMaterialLayer,
@@ -1030,24 +1145,23 @@ void GenerateNodesForMetadataPropertyTransforms(
     ApplyTransformsFunction->Code += TransformCode + ";\n";
 
     // Return the raw value.
-    ApplyTransformsFunction->OutputType =
-        GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+    ApplyTransformsFunction->OutputType = OutputType;
     ApplyTransformsFunction->Code += "return RawValue;";
   }
 
-  FString swizzle = GetSwizzleForEncodedType(Property.EncodingDetails.Type);
+  FString swizzle = GetSwizzleForEncodedType(Type);
 
-  if (Property.PropertyDetails.bHasNoDataValue) {
+  if (PropertyDetails.bHasNoDataValue) {
     UMaterialExpressionParameter* Parameter =
         GenerateParameterNodeWithGivenType(
-            Property.EncodingDetails.Type,
+            Type,
             FullPropertyName + MaterialPropertyNoDataSuffix,
             AutoGeneratedNodes,
             TargetMaterialLayer,
             NodeX,
             NodeY);
 
-    if (Property.EncodingDetails.Type == ECesiumEncodedMetadataType::Scalar) {
+    if (Type == ECesiumEncodedMetadataType::Scalar) {
       // No additional work needs to be done to retrieve the scalar, so don't
       // an extra unnecessary node.
       GetNoDataValueNode = Parameter;
@@ -1071,8 +1185,7 @@ void GenerateNodesForMetadataPropertyTransforms(
       NoDataInput.Input.Expression = Parameter;
 
       CustomFunction->Outputs.Add(FExpressionOutput(FName(NoDataName)));
-      CustomFunction->OutputType =
-          GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+      CustomFunction->OutputType = OutputType;
 
       CustomFunction->Code = "return " + InputName + swizzle + ";\n";
 
@@ -1083,17 +1196,17 @@ void GenerateNodesForMetadataPropertyTransforms(
     NodeY += Incr;
   }
 
-  if (Property.PropertyDetails.bHasDefaultValue) {
+  if (PropertyDetails.bHasDefaultValue) {
     UMaterialExpressionParameter* Parameter =
         GenerateParameterNodeWithGivenType(
-            Property.EncodingDetails.Type,
+            Type,
             FullPropertyName + MaterialPropertyDefaultValueSuffix,
             AutoGeneratedNodes,
             TargetMaterialLayer,
             NodeX,
             NodeY);
 
-    if (Property.EncodingDetails.Type == ECesiumEncodedMetadataType::Scalar) {
+    if (Type == ECesiumEncodedMetadataType::Scalar) {
       // No additional work needs to be done to retrieve the scalar, so don't
       // an extra unnecessary node.
       GetDefaultValueNode = Parameter;
@@ -1117,8 +1230,7 @@ void GenerateNodesForMetadataPropertyTransforms(
       DefaultInput.Input.Expression = Parameter;
 
       CustomFunction->Outputs.Add(FExpressionOutput(FName("Default Value")));
-      CustomFunction->OutputType =
-          GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+      CustomFunction->OutputType = OutputType;
 
       // Example: Default = Default_VALUE.xyz;
       CustomFunction->Code = "return " + InputName + swizzle + ";\n";
@@ -1347,7 +1459,8 @@ void GenerateNodesForPropertyTable(
     if (property.PropertyDetails.HasValueTransforms()) {
       int32 PropertyTransformsSectionX = SectionLeft + 4 * Incr;
       GenerateNodesForMetadataPropertyTransforms(
-          property,
+          property.PropertyDetails,
+          property.EncodingDetails.Type,
           propertyName,
           FullPropertyName,
           AutoGeneratedNodes,
@@ -1371,147 +1484,167 @@ void GenerateNodesForPropertyTable(
 }
 
 void GenerateNodesForPropertyTexture(
-    // const TArray<FCesiumPropertyTableDescription>& Descriptions,
+    const FCesiumPropertyTextureDescription& PropertyTexture,
     TArray<UMaterialExpression*>& AutoGeneratedNodes,
     UMaterialFunctionMaterialLayer* TargetMaterialLayer,
     int32& NodeX,
-    int32& NodeY) {
-  //  for (const FFeatureTextureDescription& featureTexture :
-  //       this->FeatureTextures) {
-  //    int32 SectionLeft = NodeX;
-  //    int32 SectionTop = NodeY;
-  //
-  //    UMaterialExpressionCustom* FeatureTextureLookup =
-  //        NewObject<UMaterialExpressionCustom>(this->TargetMaterialLayer);
-  //    FeatureTextureLookup->Inputs.Reset(2 *
-  //    featureTexture.Properties.Num());
-  //    FeatureTextureLookup->Outputs.Reset(featureTexture.Properties.Num() +
-  //    1);
-  //    FeatureTextureLookup->Outputs.Add(FExpressionOutput(TEXT("return")));
-  //    FeatureTextureLookup->bShowOutputNameOnPin = true;
-  //    FeatureTextureLookup->Code = "";
-  //    FeatureTextureLookup->Description =
-  //        "Resolve properties from " + featureTexture.Name;
-  //    FeatureTextureLookup->MaterialExpressionEditorX = NodeX + 2 * IncrX;
-  //    FeatureTextureLookup->MaterialExpressionEditorY = NodeY;
-  //    AutoGeneratedNodes.Add(FeatureTextureLookup);
-  //
-  //    for (const FFeatureTexturePropertyDescription& property :
-  //         featureTexture.Properties) {
-  //      UMaterialExpressionTextureObjectParameter* PropertyTexture =
-  //          NewObject<UMaterialExpressionTextureObjectParameter>(
-  //              this->TargetMaterialLayer);
-  //      PropertyTexture->ParameterName =
-  //          FName("FTX_" + featureTexture.Name + "_" + property.Name +
-  //          "_TX");
-  //      PropertyTexture->MaterialExpressionEditorX = NodeX;
-  //      PropertyTexture->MaterialExpressionEditorY = NodeY;
-  //      AutoGeneratedNodes.Add(PropertyTexture);
-  //
-  //      FString propertyName = createHlslSafeName(property.Name);
-  //
-  //      FCustomInput& PropertyTextureInput =
-  //          FeatureTextureLookup->Inputs.Emplace_GetRef();
-  //      FString propertyTextureName = propertyName + "_TX";
-  //      PropertyTextureInput.InputName = FName(propertyTextureName);
-  //      PropertyTextureInput.Input.Expression = PropertyTexture;
-  //
-  //      NodeY += IncrY;
-  //
-  //      UMaterialExpressionScalarParameter* TexCoordsIndex =
-  //          NewObject<UMaterialExpressionScalarParameter>(
-  //              this->TargetMaterialLayer);
-  //      TexCoordsIndex->ParameterName =
-  //          FName("FTX_" + featureTexture.Name + "_" + property.Name +
-  //          "_UV");
-  //      TexCoordsIndex->DefaultValue = 0.0f;
-  //      TexCoordsIndex->MaterialExpressionEditorX = NodeX;
-  //      TexCoordsIndex->MaterialExpressionEditorY = NodeY;
-  //      AutoGeneratedNodes.Add(TexCoordsIndex);
-  //
-  //      NodeX += IncrX;
-  //
-  //      UMaterialExpressionMaterialFunctionCall* SelectTexCoords =
-  //          NewObject<UMaterialExpressionMaterialFunctionCall>(
-  //              this->TargetMaterialLayer);
-  //      SelectTexCoords->MaterialFunction = SelectTexCoordsFunction;
-  //      SelectTexCoords->MaterialExpressionEditorX = NodeX;
-  //      SelectTexCoords->MaterialExpressionEditorY = NodeY;
-  //
-  //      SelectTexCoordsFunction->GetInputsAndOutputs(
-  //          SelectTexCoords->FunctionInputs,
-  //          SelectTexCoords->FunctionOutputs);
-  //      SelectTexCoords->FunctionInputs[0].Input.Expression =
-  //      TexCoordsIndex; AutoGeneratedNodes.Add(SelectTexCoords);
-  //
-  //      FCustomInput& TexCoordsInput =
-  //          FeatureTextureLookup->Inputs.Emplace_GetRef();
-  //      FString propertyUvName = propertyName + "_UV";
-  //      TexCoordsInput.InputName = FName(propertyUvName);
-  //      TexCoordsInput.Input.Expression = SelectTexCoords;
-  //
-  //      FCustomOutput& PropertyOutput =
-  //          FeatureTextureLookup->AdditionalOutputs.Emplace_GetRef();
-  //      PropertyOutput.OutputName = FName(propertyName);
-  //      FeatureTextureLookup->Outputs.Add(
-  //          FExpressionOutput(PropertyOutput.OutputName));
-  //
-  //      // Either the property is normalized or it is coerced into float.
-  //      Either
-  //      // way, the outputs will be float type.
-  //      switch (property.Type) {
-  //      case ECesiumPropertyType::Vec2:
-  //        PropertyOutput.OutputType =
-  //        ECustomMaterialOutputType::CMOT_Float2; break;
-  //      case ECesiumPropertyType::Vec3:
-  //        PropertyOutput.OutputType =
-  //        ECustomMaterialOutputType::CMOT_Float3; break;
-  //      case ECesiumPropertyType::Vec4:
-  //        PropertyOutput.OutputType =
-  //        ECustomMaterialOutputType::CMOT_Float4; break;
-  //      // case ECesiumPropertyType::Scalar:
-  //      default:
-  //        PropertyOutput.OutputType =
-  //        ECustomMaterialOutputType::CMOT_Float1;
-  //      };
-  //
-  //      // TODO: should dynamic channel offsets be used instead of swizzle
-  //      string
-  //      // determined at editor time? E.g. can swizzles be different for the
-  //      same
-  //      // property texture on different tiles?
-  //      FeatureTextureLookup->Code +=
-  //          propertyName + " = " +
-  //          (property.Normalized ? "asfloat(" : "asuint(") +
-  //          propertyTextureName +
-  //          ".Sample(" + propertyTextureName + "Sampler, " + propertyUvName
-  //          +
-  //          ")." + property.Swizzle + ");\n";
-  //
-  //      NodeY += IncrY;
-  //    }
-  //
-  //    FeatureTextureLookup->OutputType =
-  //    ECustomMaterialOutputType::CMOT_Float1; FeatureTextureLookup->Code +=
-  //    "return 0.0f;";
-  //
-  //    NodeX = SectionLeft;
-  //  }
+    int32& NodeY,
+    UMaterialFunction* SelectTexCoordsFunction) {
+  int32 SectionLeft = NodeX;
+  int32 PropertyDataSectionY = NodeY - 0.5 * Incr;
+  int32 PropertyTransformsSectionY = NodeY + 20;
+
+  UMaterialExpressionCustom* GetPropertyValuesFunction =
+      NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
+  GetPropertyValuesFunction->Inputs.Reset(2 * PropertyTexture.Properties.Num());
+  GetPropertyValuesFunction->Outputs.Reset(
+      PropertyTexture.Properties.Num() + 1);
+  GetPropertyValuesFunction->Outputs.Add(FExpressionOutput(TEXT("return")));
+  GetPropertyValuesFunction->bShowOutputNameOnPin = true;
+  GetPropertyValuesFunction->Code = "";
+  GetPropertyValuesFunction->Description =
+      "Get Property Values From " + PropertyTexture.Name;
+  GetPropertyValuesFunction->MaterialExpressionEditorX = NodeX + 2 * Incr;
+  GetPropertyValuesFunction->MaterialExpressionEditorY = NodeY;
+  AutoGeneratedNodes.Add(GetPropertyValuesFunction);
+
+  bool foundFirstProperty = false;
+
+  for (const FCesiumPropertyTexturePropertyDescription& property :
+       PropertyTexture.Properties) {
+    PropertyDataSectionY += Incr;
+
+    FString propertyName = createHlslSafeName(property.Name);
+    FString FullPropertyName = getMaterialNameForPropertyTextureProperty(
+        PropertyTexture.Name,
+        propertyName);
+    ECesiumEncodedMetadataType Type =
+        CesiumMetadataTypeToEncodingType(property.PropertyDetails.Type);
+
+    if (!foundFirstProperty) {
+      // Define this helper function at the beginning of the code. This extracts
+      // the correct value from a float4 based on the given channel index.
+      FString StructName = MaterialPropertyTexturePrefix + PropertyTexture.Name;
+      GetPropertyValuesFunction->Code +=
+          StructName +
+          " Functions {\n"
+          " float Get(float4 input, uint index) {\n"
+          "  if (index == 0)\n   return input.r;\n"
+          "  if (index == 1)\n   return input.g;\n"
+          "  if (index == 2)\n   return input.b;\n"
+          "  if (index == 3)\n   return input.a;\n"
+          "  return 0.0f;\n} \n};\n" +
+          StructName + "Functions f;\n";
+      // Also declare some variables for later use.
+      GetPropertyValuesFunction->Code += "float4 sample = float4(0, 0, 0, 0);\n"
+                                         "uint value = 0;\n"
+                                         "uint byteOffset = 0;\n";
+      foundFirstProperty = true;
+    }
+
+    UMaterialExpressionMaterialFunctionCall* SelectTexCoords = nullptr;
+    if (SelectTexCoordsFunction) {
+      UMaterialExpressionScalarParameter* TexCoordsIndex =
+          NewObject<UMaterialExpressionScalarParameter>(TargetMaterialLayer);
+      TexCoordsIndex->ParameterName =
+          FName(FullPropertyName + MaterialTexCoordIndexSuffix);
+      TexCoordsIndex->DefaultValue = 0.0f;
+      TexCoordsIndex->MaterialExpressionEditorX = NodeX;
+      TexCoordsIndex->MaterialExpressionEditorY = NodeY;
+      AutoGeneratedNodes.Add(TexCoordsIndex);
+
+      NodeX += 2 * Incr;
+
+      SelectTexCoords = NewObject<UMaterialExpressionMaterialFunctionCall>(
+          TargetMaterialLayer);
+      SelectTexCoords->MaterialFunction = SelectTexCoordsFunction;
+      SelectTexCoords->MaterialExpressionEditorX = NodeX;
+      SelectTexCoords->MaterialExpressionEditorY = NodeY;
+
+      SelectTexCoordsFunction->GetInputsAndOutputs(
+          SelectTexCoords->FunctionInputs,
+          SelectTexCoords->FunctionOutputs);
+      SelectTexCoords->FunctionInputs[0].Input.Expression = TexCoordsIndex;
+      AutoGeneratedNodes.Add(SelectTexCoords);
+    }
+
+    UMaterialExpressionTextureObjectParameter* PropertyData =
+        NewObject<UMaterialExpressionTextureObjectParameter>(
+            TargetMaterialLayer);
+    PropertyData->ParameterName = FName(FullPropertyName);
+    PropertyData->MaterialExpressionEditorX = NodeX;
+    PropertyData->MaterialExpressionEditorY = NodeY;
+    AutoGeneratedNodes.Add(PropertyData);
+
+    FCustomInput& PropertyTextureInput =
+        GetPropertyValuesFunction->Inputs.Emplace_GetRef();
+    FString propertyTextureDataName = propertyName + MaterialPropertyDataSuffix;
+    PropertyTextureInput.InputName = FName(propertyTextureDataName);
+    PropertyTextureInput.Input.Expression = PropertyData;
+
+    NodeY += Incr;
+
+    FCustomInput& TexCoordsInput =
+        GetPropertyValuesFunction->Inputs.Emplace_GetRef();
+    FString propertyTextureUVName = propertyName + MaterialPropertyUVSuffix;
+    TexCoordsInput.InputName = FName(propertyTextureUVName);
+    TexCoordsInput.Input.Expression = SelectTexCoords;
+
+    FCustomOutput& PropertyOutput =
+        GetPropertyValuesFunction->AdditionalOutputs.Emplace_GetRef();
+    PropertyOutput.OutputName = FName(propertyName);
+    GetPropertyValuesFunction->Outputs.Add(
+        FExpressionOutput(PropertyOutput.OutputName));
+
+    PropertyOutput.OutputType = GetOutputTypeForEncodedType(Type);
+
+    GetPropertyValuesFunction->Code += "";
+
+    //   propertyName + " = " + "asuint(" + propertyTextureDataName +
+    //   ".Sample(" + propertyTextureDataName + "Sampler, " +
+    //   propertyTextureUVName + ")." + property.Swizzle + ");\n";
+
+    // NodeY += IncrY;
+
+    if (property.PropertyDetails.HasValueTransforms()) {
+      int32 PropertyTransformsSectionX = SectionLeft + 4 * Incr;
+      GenerateNodesForMetadataPropertyTransforms(
+          property.PropertyDetails,
+          Type,
+          propertyName,
+          FullPropertyName,
+          AutoGeneratedNodes,
+          TargetMaterialLayer,
+          PropertyTransformsSectionX,
+          PropertyTransformsSectionY,
+          GetPropertyValuesFunction,
+          GetPropertyValuesFunction->Outputs.Num() - 1);
+
+      NodeX = FMath::Max(NodeX, PropertyTransformsSectionX);
+    }
+  } // namespace
+
+  // Obligatory return code.
+  GetPropertyValuesFunction->OutputType =
+      ECustomMaterialOutputType::CMOT_Float1;
+  GetPropertyValuesFunction->Code += "return 0.0f;";
 }
 
 void GenerateMaterialNodes(
     UCesiumFeaturesMetadataComponent* pComponent,
     TArray<UMaterialExpression*>& AutoGeneratedNodes,
     TArray<UMaterialExpression*>& OneTimeGeneratedNodes,
+    UMaterialFunction* SelectTexCoordsFunction,
     UMaterialFunction* GetFeatureIdsFromAttributeFunction,
     UMaterialFunction* GetFeatureIdsFromTextureFunction) {
   int32 NodeX = 0;
   int32 NodeY = 0;
 
   TSet<FString> GeneratedPropertyTableNames;
+  GeneratedPropertyTableNames.Reserve(pComponent->PropertyTables.Num());
 
-  int32 FeatureIdSectionLeft = NodeX;
-  int32 PropertyTableSectionLeft = FeatureIdSectionLeft + 4 * Incr;
+  int32 FeaturesSectionLeft = NodeX;
+  int32 MetadataSectionLeft = FeaturesSectionLeft + 4 * Incr;
   for (const FCesiumFeatureIdSetDescription& featureIdSet :
        pComponent->FeatureIdSets) {
     if (featureIdSet.Type == ECesiumFeatureIdSetType::None) {
@@ -1551,7 +1684,7 @@ void GenerateMaterialNodes(
               });
 
       if (pPropertyTable) {
-        NodeX = PropertyTableSectionLeft;
+        NodeX = MetadataSectionLeft;
         GenerateNodesForPropertyTable(
             *pPropertyTable,
             AutoGeneratedNodes,
@@ -1583,11 +1716,11 @@ void GenerateMaterialNodes(
       NodeY = OriginalY;
     }
 
-    NodeX = FeatureIdSectionLeft;
+    NodeX = FeaturesSectionLeft;
     NodeY += 2 * Incr;
   }
 
-  NodeX = PropertyTableSectionLeft;
+  NodeX = MetadataSectionLeft;
 
   // Generate nodes for any property tables that aren't linked to a feature ID
   // set.
@@ -1601,14 +1734,61 @@ void GenerateMaterialNodes(
           NodeX,
           NodeY,
           nullptr);
-      NodeX = PropertyTableSectionLeft;
-      NodeY += Incr;
+      NodeX = MetadataSectionLeft;
+      NodeY += 2 * Incr;
     }
   }
 
-  // GenerateNodesForPropertyTextures
+  NodeY += 2 * Incr;
 
-  NodeX = FeatureIdSectionLeft;
+  // TSet<FString> GeneratedPropertyTextureNames;
+  // GeneratedPropertyTextureNames.Reserve(pComponent->PropertyTextures.Num());
+
+  // for (const FString& propertyTextureName : pComponent->PropertyTextureNames)
+  // {
+  //  const FCesiumPropertyTextureDescription* pPropertyTexture =
+  //      pComponent->PropertyTextures.FindByPredicate(
+  //          [&propertyTextureName](const FCesiumPropertyTextureDescription&
+  //                                     existingPropertyTexture) {
+  //            return existingPropertyTexture.Name == propertyTextureName;
+  //          });
+  //  if (!pPropertyTexture) {
+  //    continue;
+  //  }
+
+  //  GenerateNodesForPropertyTexture(
+  //      *pPropertyTexture,
+  //      AutoGeneratedNodes,
+  //      pComponent->TargetMaterialLayer,
+  //      NodeX,
+  //      NodeY,
+  //      SelectTexCoordsFunction);
+
+  //  NodeX = FeaturesSectionLeft;
+  //  NodeY += 2 * Incr;
+  //}
+
+  // NodeX = MetadataSectionLeft;
+
+  //// Generate nodes for any property textures that aren't linked to a
+  /// primitive / texture coordinate set.
+  // for (const FCesiumPropertyTextureDescription& propertyTexture :
+  //     pComponent->PropertyTextures) {
+  //  if (!GeneratedPropertyTextureNames.Find(propertyTexture.Name)) {
+  //    GenerateNodesForPropertyTexture(
+  //        propertyTexture,
+  //        AutoGeneratedNodes,
+  //        pComponent->TargetMaterialLayer,
+  //        NodeX,
+  //        NodeY,
+  //        nullptr);
+
+  //    NodeX = MetadataSectionLeft;
+  //    NodeY += 2 * Incr;
+  //  }
+  //}
+
+  NodeX = FeaturesSectionLeft;
   NodeY = -2 * Incr;
 
   UMaterialExpressionFunctionInput* InputMaterial = nullptr;
@@ -1638,7 +1818,7 @@ void GenerateMaterialNodes(
     OneTimeGeneratedNodes.Add(InputMaterial);
   }
 
-  NodeX += PropertyTableSectionLeft + 8 * Incr;
+  NodeX += MetadataSectionLeft + 8 * Incr;
 
   UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes = nullptr;
 #if ENGINE_MINOR_VERSION == 0
@@ -1709,14 +1889,14 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
   FString PackageBaseName = "/Game/";
   FString PackageName = PackageBaseName + MaterialName;
 
-  // UMaterialFunction* SelectTexCoordsFunction = LoadMaterialFunction(
-  //    "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords");
+  UMaterialFunction* SelectTexCoordsFunction = LoadMaterialFunction(
+      "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords");
   UMaterialFunction* GetFeatureIdsFromAttributeFunction = LoadMaterialFunction(
       "/CesiumForUnreal/Materials/MaterialFunctions/CesiumGetFeatureIdsFromAttribute.CesiumGetFeatureIdsFromAttribute");
   UMaterialFunction* GetFeatureIdsFromTextureFunction = LoadMaterialFunction(
       "/CesiumForUnreal/Materials/MaterialFunctions/CesiumGetFeatureIdsFromTexture.CesiumGetFeatureIdsFromTexture");
 
-  if (!GetFeatureIdsFromAttributeFunction ||
+  if (!SelectTexCoordsFunction || !GetFeatureIdsFromAttributeFunction ||
       !GetFeatureIdsFromTextureFunction) {
     UE_LOG(
         LogCesium,
@@ -1784,6 +1964,7 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
       this,
       AutoGeneratedNodes,
       OneTimeGeneratedNodes,
+      SelectTexCoordsFunction,
       GetFeatureIdsFromAttributeFunction,
       GetFeatureIdsFromTextureFunction);
 

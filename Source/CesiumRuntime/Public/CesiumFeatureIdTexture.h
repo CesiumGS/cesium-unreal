@@ -1,10 +1,11 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/FeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
+#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdTexture.generated.h"
 
@@ -37,12 +38,6 @@ enum ECesiumFeatureIdTextureStatus {
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
   GENERATED_USTRUCT_BODY()
-
-  using TexCoordAccessorType = std::variant<
-      std::monostate,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint8_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint16_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>>;
 
 public:
   /**
@@ -80,8 +75,8 @@ public:
 private:
   ECesiumFeatureIdTextureStatus _status;
   CesiumGltf::FeatureIdTextureView _featureIdTextureView;
-  TexCoordAccessorType _texCoordAccessor;
-  int64 _textureCoordinateIndex;
+  CesiumTexCoordAccessorType _texCoordAccessor;
+  int64 _textureCoordinateSetIndex;
 
   // For backwards compatibility.
   FString _propertyTableName;
@@ -126,18 +121,44 @@ public:
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
   /**
-   * Gets the texture coordinate set index that corresponds to the feature ID
-   * texture on the given primitive component. If the feature ID texture is
-   * invalid, this returns -1.
+   * Gets the glTF texture coordinate set index used by the feature ID texture.
+   * This is the index N corresponding to the "TEXCOORD_N" attribute on the glTF
+   * primitive that samples this texture.
+   *
+   * If the feature ID texture is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Features|FeatureIDTexture")
-  static int64 GetTextureCoordinateIndex(
+  static int64 GetGltfTextureCoordinateSetIndex(
+      UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
+
+  /**
+   * Gets the UV channel containing the texture coordinate set that is used by
+   * the feature ID texture on the given component. This refers to the UV
+   * channel it uses on the primitive's static mesh, which is not necessarily
+   * equal to value of GetGltfTextureCoordinateSetIndex.
+   *
+   * This function may be used with FindCollisionUV to get the feature ID from a
+   * line trace hit. However, in order for this function to work, the feature ID
+   * texture should be listed under the CesiumFeaturesMetadataComponent of the
+   * owner Cesium3DTileset. Otherwise, its texture coordinate set may not be
+   * included in the Unreal mesh data. To avoid using
+   * CesiumFeaturesMetadataComponent, use GetFeatureIDFromHit instead.
+   *
+   * This returns -1 if the feature ID texture is invalid, or if the specified
+   * texture coordinate set is not present in the component's mesh data.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDTexture")
+  static int64 GetUnrealUVChannel(
       const UPrimitiveComponent* Component,
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the feature ID corresponding to the pixel specified by the texture
    * coordinates. The feature ID can be used with a FCesiumPropertyTable to
@@ -155,6 +176,22 @@ public:
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       float U,
       float V);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
+   * Gets the feature ID corresponding to the pixel specified by the UV texture
+   * coordinates. The feature ID can be used with a FCesiumPropertyTable to
+   * retrieve the per-pixel metadata.
+   *
+   * If the feature ID texture is invalid, this returns -1.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDTexture")
+  static int64 GetFeatureIDForUV(
+      UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
+      const FVector2D& UV);
 
   /**
    * Gets the feature ID associated with the given vertex. The
@@ -162,8 +199,8 @@ public:
    * per-vertex metadata.
    *
    * This works if the vertex contains texture coordinates for the relevant
-   * texture coordinate set as indicated by GetTextureCoordinateIndex. If the
-   * vertex has no such coordinates, or if the feature ID texture itself is
+   * texture coordinate set as indicated by GetGltfTextureCoordinateSetIndex. If
+   * the vertex has no such coordinates, or if the feature ID texture itself is
    * invalid, this returns -1.
    */
   UFUNCTION(
@@ -173,4 +210,19 @@ public:
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       int64 VertexIndex);
+
+  /**
+   * Gets the feature ID from a given line trace hit on the primitive containing
+   * this feature ID texture. The feature ID can be used with a
+   * FCesiumPropertyTable to retrieve the corresponding metadata.
+   *
+   * If the feature ID texture is invalid, this returns -1.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDTexture")
+  static int64 GetFeatureIDFromHit(
+      UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
+      const FHitResult& Hit);
 };
