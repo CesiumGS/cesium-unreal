@@ -42,7 +42,8 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
        actorIterator;
        ++actorIterator) {
     AActor* actor = *actorIterator;
-    if (actor->ActorHasTag(DEFAULT_CAMERAMANAGER_TAG)) {
+    if (actor->GetLevel() == world->PersistentLevel &&
+        actor->ActorHasTag(DEFAULT_CAMERAMANAGER_TAG)) {
       pCameraManager = Cast<ACesiumCameraManager>(actor);
       break;
     }
@@ -58,6 +59,7 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
     FActorSpawnParameters spawnParameters;
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    spawnParameters.OverrideLevel = world->PersistentLevel;
     pCameraManager = world->SpawnActor<ACesiumCameraManager>(spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
     // this function without a valid world context object.
@@ -73,6 +75,12 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
         *WorldContextObject->GetName());
   }
   return pCameraManager;
+}
+
+ACesiumCameraManager::ACesiumCameraManager() : AActor() {
+#if WITH_EDITOR
+  this->SetIsSpatiallyLoaded(false);
+#endif
 }
 
 bool ACesiumCameraManager::ShouldTickIfViewportsOnly() const { return true; }

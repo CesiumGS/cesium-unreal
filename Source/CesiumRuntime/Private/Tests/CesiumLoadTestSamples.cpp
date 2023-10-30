@@ -1,0 +1,147 @@
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
+#if WITH_EDITOR
+
+#include "CesiumLoadTestCore.h"
+
+#include "Misc/AutomationTest.h"
+
+#include "CesiumGltfComponent.h"
+#include "CesiumIonRasterOverlay.h"
+#include "GlobeAwareDefaultPawn.h"
+
+using namespace Cesium;
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesiumSampleLoadDenver,
+    "Cesium.Performance.SampleLoadDenver",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesiumSampleLoadMontrealPointCloud,
+    "Cesium.Performance.SampleLoadMontrealPointCloud",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+void refreshSampleTilesets(SceneGenerationContext& context) {
+  context.refreshTilesets();
+}
+
+void setupForDenver(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-104.988892, 39.743462, 1798.679443),
+      FVector(0, 0, 0),
+      FRotator(-5.2, -149.4, 0),
+      90.0f);
+
+  // Add Cesium World Terrain
+  ACesium3DTileset* worldTerrainTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  worldTerrainTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  worldTerrainTileset->SetIonAssetID(1);
+  worldTerrainTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
+
+  // Bing Maps Aerial overlay
+  UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
+      worldTerrainTileset,
+      FName("Bing Maps Aerial"),
+      RF_Transactional);
+  pOverlay->MaterialLayerKey = TEXT("Overlay0");
+  pOverlay->IonAssetID = 2;
+  pOverlay->SetActive(true);
+  pOverlay->OnComponentCreated();
+  worldTerrainTileset->AddInstanceComponent(pOverlay);
+
+  // Aerometrex Denver
+  ACesium3DTileset* aerometrexTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  aerometrexTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  aerometrexTileset->SetIonAssetID(354307);
+  aerometrexTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  aerometrexTileset->SetMaximumScreenSpaceError(2.0);
+  aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
+
+  context.tilesets.push_back(worldTerrainTileset);
+  context.tilesets.push_back(aerometrexTileset);
+}
+
+void setupForMontrealPointCloud(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-73.616526, 45.57335, 95.048859),
+      FVector(0, 0, 0),
+      FRotator(-90.0, 0.0, 0.0),
+      90.0f);
+
+  ACesium3DTileset* montrealTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  montrealTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  montrealTileset->SetIonAssetID(28945);
+  montrealTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  montrealTileset->SetMaximumScreenSpaceError(16.0);
+  montrealTileset->SetActorLabel(TEXT("Montreal Point Cloud"));
+
+  context.tilesets.push_back(montrealTileset);
+}
+
+bool FCesiumSampleLoadDenver::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForDenver,
+      testPasses,
+      1024,
+      768);
+}
+
+bool FCesiumSampleLoadMontrealPointCloud::RunTest(const FString& Parameters) {
+  auto adjustCamera = [this](SceneGenerationContext& context) {
+    // Zoom way out
+    context.startPosition = FVector(0, 0, 7240000.0);
+    context.startRotation = FRotator(-90.0, 0.0, 0.0);
+    context.syncWorldCamera();
+
+    context.pawn->SetActorLocation(context.startPosition);
+  };
+
+  auto verifyVisibleTiles = [this](SceneGenerationContext& context) {
+    Cesium3DTilesSelection::Tileset* pTileset =
+        context.tilesets[0]->GetTileset();
+    if (TestNotNull("Tileset", pTileset)) {
+      int visibleTiles = 0;
+      pTileset->forEachLoadedTile([&](Cesium3DTilesSelection::Tile& tile) {
+        if (tile.getState() != Cesium3DTilesSelection::TileLoadState::Done)
+          return;
+        const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+        const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+            content.getRenderContent();
+        if (!pRenderContent) {
+          return;
+        }
+
+        UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+            pRenderContent->getRenderResources());
+        if (Gltf && Gltf->IsVisible()) {
+          ++visibleTiles;
+        }
+      });
+
+      TestEqual("visibleTiles", visibleTiles, 1);
+    }
+  };
+
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Adjust", adjustCamera, verifyVisibleTiles});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForMontrealPointCloud,
+      testPasses,
+      512,
+      512);
+}
+
+#endif

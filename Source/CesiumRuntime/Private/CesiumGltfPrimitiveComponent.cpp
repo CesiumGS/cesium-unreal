@@ -1,7 +1,9 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CalcBounds.h"
+#include "CesiumGltf/MeshPrimitive.h"
+#include "CesiumGltf/Model.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"
@@ -11,6 +13,9 @@
 #include "VecMath.h"
 #include <variant>
 
+// Prevent deprecation warnings while initializing deprecated metadata structs.
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   PrimaryComponentTick.bCanEverTick = false;
@@ -19,14 +24,12 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   pTilesetActor = nullptr;
 }
 
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 
 void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
-  this->SetUsingAbsoluteLocation(true);
-  this->SetUsingAbsoluteRotation(true);
-  this->SetUsingAbsoluteScale(true);
-
   const FTransform transform = FTransform(VecMath::createMatrix(
       CesiumToUnrealTransform * this->HighPrecisionNodeTransform));
 
@@ -47,7 +50,7 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
     // too, so in a relative sense the object isn't actually moving. This isn't
     // a perfect assumption, of course.
     this->SetRelativeTransform_Direct(transform);
-    this->SetComponentToWorld(transform);
+    this->UpdateComponentToWorld();
     this->MarkRenderTransformDirty();
     this->SendPhysicsTransform(ETeleportType::ResetPhysics);
   }
@@ -131,19 +134,24 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
       }
     }
 
-    CesiumEncodedMetadataUtility::destroyEncodedMetadataPrimitive(
-        this->EncodedMetadata);
+    CesiumEncodedFeaturesMetadata::destroyEncodedPrimitiveFeatures(
+        this->EncodedFeatures);
+
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (this->EncodedMetadata_DEPRECATED) {
+      CesiumEncodedMetadataUtility::destroyEncodedMetadataPrimitive(
+          *this->EncodedMetadata_DEPRECATED);
+      this->EncodedMetadata_DEPRECATED = std::nullopt;
+    }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     CesiumLifetime::destroy(pMaterial);
   }
 
   UStaticMesh* pMesh = this->GetStaticMesh();
   if (pMesh) {
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-    UBodySetup* pBodySetup = pMesh->BodySetup;
-#else
     UBodySetup* pBodySetup = pMesh->GetBodySetup();
-#endif
+
     if (pBodySetup) {
       CesiumLifetime::destroy(pBodySetup);
     }

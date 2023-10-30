@@ -1,13 +1,14 @@
 {
   "name": "cesium-unreal",
-  "version": "1.31.2",
+  "version": "2.0.0-preview1",
   "description": "Cesium for Unreal",
   "main": "index.js",
   "directories": {
     "doc": "Documentation"
   },
   "scripts": {
-    "format": "clang-format -i \"--glob=Source/@(Cesium*)/**/*.@(cpp|h|hpp)\""
+    "format": "clang-format -i \"--glob=Source/@(Cesium*)/**/*.@(cpp|h|hpp)\"",
+    "doxygen": "doxygen ./Documentation/Doxyfile"
   },
   "repository": {
     "type": "git",
@@ -26,6 +27,5 @@
   "homepage": "https://github.com/CesiumGS/cesium-unreal#readme",
   "devDependencies": {
     "clang-format": "^1.5.0"
-  },
-  "dependencies": {}
+  }
 }

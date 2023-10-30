@@ -45,11 +45,9 @@ private:
       const TSharedRef<STableViewBase>& list);
 
   void AddItemToLevel(TSharedRef<QuickAddItem> item);
-  void AddBlankTilesetToLevel();
   void AddIonTilesetToLevel(TSharedRef<QuickAddItem> item);
   void AddCesiumSunSkyToLevel();
   void AddDynamicPawnToLevel();
-  void AddCartographicPolygonToLevel();
 
   TArray<TSharedRef<QuickAddItem>> _quickAddItems;
   std::unordered_set<std::string> _itemsBeingAdded;

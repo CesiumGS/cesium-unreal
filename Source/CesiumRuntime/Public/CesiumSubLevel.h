@@ -8,6 +8,11 @@
 
 class ULevelStreaming;
 
+struct UE_DEPRECATED(
+    5.0,
+    "The FCesiumSubLevel struct has been deprecated. Use Level Instance Actors and UCesiumSubLevelComponent instead.")
+    FCesiumSubLevel;
+
 /*
  * Sublevels can be georeferenced to the globe by filling out this struct.
  */

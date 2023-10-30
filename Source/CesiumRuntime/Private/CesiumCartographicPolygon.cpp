@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumCartographicPolygon.h"
+#include "CesiumActors.h"
 #include "CesiumUtility/Math.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
@@ -8,7 +9,7 @@
 
 using namespace CesiumGeospatial;
 
-ACesiumCartographicPolygon::ACesiumCartographicPolygon() {
+ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   PrimaryActorTick.bCanEverTick = false;
 
   this->Polygon = CreateDefaultSubobject<USplineComponent>(TEXT("Selection"));
@@ -25,7 +26,9 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() {
       ESplineCoordinateSpace::Local);
 
   this->MakeLinear();
-
+#if WITH_EDITOR
+  this->SetIsSpatiallyLoaded(false);
+#endif
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
 }
@@ -40,7 +43,8 @@ void ACesiumCartographicPolygon::BeginPlay() {
 }
 
 CesiumGeospatial::CartographicPolygon
-ACesiumCartographicPolygon::CreateCartographicPolygon() const {
+ACesiumCartographicPolygon::CreateCartographicPolygon(
+    const FTransform& worldToTileset) const {
   int32 splinePointsCount = this->Polygon->GetNumberOfSplinePoints();
 
   if (splinePointsCount < 3) {
@@ -49,18 +53,22 @@ ACesiumCartographicPolygon::CreateCartographicPolygon() const {
 
   std::vector<glm::dvec2> polygon(splinePointsCount);
 
+  // The spline points should be located in the tileset _exactly where they
+  // appear to be_. The way we do that is by getting their world position, and
+  // then transforming that world position to a Cesium3DTileset local position.
+  // That way if the tileset is transformed relative to the globe, the polygon
+  // will still affect the tileset where the user thinks it should.
+
   for (size_t i = 0; i < splinePointsCount; ++i) {
-    const FVector& unrealPosition = this->Polygon->GetLocationAtSplinePoint(
-        i,
-        ESplineCoordinateSpace::World);
-    glm::dvec3 cartographic =
+    const FVector& unrealPosition = worldToTileset.TransformPosition(
+        this->Polygon->GetLocationAtSplinePoint(
+            i,
+            ESplineCoordinateSpace::World));
+    FVector cartographic =
         this->GlobeAnchor->ResolveGeoreference()
-            ->TransformUnrealToLongitudeLatitudeHeight(glm::dvec3(
-                unrealPosition.X,
-                unrealPosition.Y,
-                unrealPosition.Z));
+            ->TransformUnrealPositionToLongitudeLatitudeHeight(unrealPosition);
     polygon[i] =
-        glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
+        glm::dvec2(glm::radians(cartographic.X), glm::radians(cartographic.Y));
   }
 
   return CartographicPolygon(polygon);
@@ -71,4 +79,11 @@ void ACesiumCartographicPolygon::MakeLinear() {
   for (size_t i = 0; i < this->Polygon->GetNumberOfSplinePoints(); ++i) {
     this->Polygon->SetSplinePointType(i, ESplinePointType::Linear);
   }
+}
+
+void ACesiumCartographicPolygon::PostLoad() {
+  Super::PostLoad();
+
+  if (CesiumActors::shouldValidateFlags(this))
+    CesiumActors::validateActorFlags(this);
 }

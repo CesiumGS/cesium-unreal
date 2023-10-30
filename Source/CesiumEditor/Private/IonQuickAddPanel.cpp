@@ -254,18 +254,6 @@ void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
   }
 }
 
-void IonQuickAddPanel::AddCartographicPolygonToLevel() {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-  GEditor->AddActor(
-      pCurrentLevel,
-      ACesiumCartographicPolygon::StaticClass(),
-      FTransform(),
-      false,
-      RF_Transactional);
-}
-
 namespace {
 /**
  * Set a byte property value in the given object.
@@ -330,18 +318,6 @@ void IonQuickAddPanel::AddDynamicPawnToLevel() {
   }
 }
 
-void IonQuickAddPanel::AddBlankTilesetToLevel() {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-  GEditor->AddActor(
-      pCurrentLevel,
-      ACesium3DTileset::StaticClass(),
-      FTransform(),
-      false,
-      RF_Transactional);
-}
-
 void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
   if (this->_itemsBeingAdded.find(item->name) != this->_itemsBeingAdded.end()) {
     // Add is already in progress.
@@ -357,7 +333,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     bool isBlankTileset = item->type == QuickAddItemType::TILESET &&
                           item->tilesetID == -1 && item->overlayID == -1;
     if (isBlankTileset) {
-      AddBlankTilesetToLevel();
+      FCesiumEditorModule::SpawnBlankTileset();
       this->_itemsBeingAdded.erase(item->name);
     } else {
       AddIonTilesetToLevel(item);
@@ -369,7 +345,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     AddDynamicPawnToLevel();
     this->_itemsBeingAdded.erase(item->name);
   } else if (item->type == QuickAddItemType::CARTOGRAPHIC_POLYGON) {
-    AddCartographicPolygonToLevel();
+    FCesiumEditorModule::SpawnCartographicPolygon();
     this->_itemsBeingAdded.erase(item->name);
   }
 }

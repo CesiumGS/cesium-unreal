@@ -61,6 +61,20 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
   AActor* DefaultCreditSystem = *DefaultCreditSystemPtr;
   return Cast<ACesiumCreditSystem>(DefaultCreditSystem);
 }
+
+bool checkIfInSubLevel(ACesiumCreditSystem* pCreditSystem) {
+  if (pCreditSystem->GetLevel() != pCreditSystem->GetWorld()->PersistentLevel) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumCreditSystem should only exist in the Persistent Level. Adding it to a sub-level may cause credits to be lost."));
+    return true;
+  } else {
+    return false;
+  }
+}
+
 } // namespace
 
 FName ACesiumCreditSystem::DEFAULT_CREDITSYSTEM_TAG =
@@ -105,7 +119,8 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
        actorIterator;
        ++actorIterator) {
     AActor* actor = *actorIterator;
-    if (actor->ActorHasTag(DEFAULT_CREDITSYSTEM_TAG)) {
+    if (actor->GetLevel() == world->PersistentLevel &&
+        actor->ActorHasTag(DEFAULT_CREDITSYSTEM_TAG)) {
       pCreditSystem = Cast<ACesiumCreditSystem>(actor);
       break;
     }
@@ -131,6 +146,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    spawnParameters.OverrideLevel = world->PersistentLevel;
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
         Cast<UClass>(CesiumCreditSystemBP),
         spawnParameters);
@@ -151,13 +167,21 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem()
-    : _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
+    : AActor(),
+      _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
       _lastCreditsCount(0) {
   PrimaryActorTick.bCanEverTick = true;
+#if WITH_EDITOR
+  this->SetIsSpatiallyLoaded(false);
+#endif
 }
 
 void ACesiumCreditSystem::BeginPlay() {
   Super::BeginPlay();
+
+  if (checkIfInSubLevel(this))
+    return;
+
   this->updateCreditsViewport(true);
 }
 
@@ -170,6 +194,9 @@ static const FName LevelEditorName("LevelEditor");
 
 void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
+
+  if (checkIfInSubLevel(this))
+    return;
 
   this->updateCreditsViewport(false);
 

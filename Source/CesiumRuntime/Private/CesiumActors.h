@@ -5,6 +5,13 @@
 #include "GameFramework/Actor.h"
 #include <glm/glm.hpp>
 
+#define CESIUM_POST_EDIT_CHANGE(changedPropertyName, ClassName, PropertyName)  \
+  if (changedPropertyName ==                                                   \
+      GET_MEMBER_NAME_CHECKED(ClassName, PropertyName)) {                      \
+    this->Set##PropertyName(this->PropertyName);                               \
+    return;                                                                    \
+  }
+
 /**
  * @brief Utility functions related to Unreal actors
  */
@@ -21,4 +28,11 @@ public:
    * @return The world origin
    */
   static glm::dvec4 getWorldOrigin4D(const AActor* actor);
+
+  static bool shouldValidateFlags(UObject* object);
+  static void validateActorFlags(AActor* actor);
+  static void validateActorComponentFlags(UActorComponent* component);
+
+private:
+  static void validatePublicFlag(UObject* object, const FString& label);
 };
