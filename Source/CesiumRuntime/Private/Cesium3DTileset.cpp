@@ -22,6 +22,7 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumIonClient/Connection.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
@@ -1148,20 +1149,20 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAccessToken.IsEmpty()
             ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
             : this->IonAccessToken;
+
+    std::string ionAssetEndpointUrl;
     if (!IonAssetEndpointUrl.IsEmpty()) {
-      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-          externals,
-          static_cast<uint32_t>(this->IonAssetID),
-          TCHAR_TO_UTF8(*token),
-          options,
-          TCHAR_TO_UTF8(*IonAssetEndpointUrl));
+      ionAssetEndpointUrl = TCHAR_TO_UTF8(*IonAssetEndpointUrl);
     } else {
-      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-          externals,
-          static_cast<uint32_t>(this->IonAssetID),
-          TCHAR_TO_UTF8(*token),
-          options);
+      ionAssetEndpointUrl =
+          TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonApiUrl);
     }
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+        externals,
+        static_cast<uint32_t>(this->IonAssetID),
+        TCHAR_TO_UTF8(*token),
+        options,
+        ionAssetEndpointUrl);
     break;
   }
 

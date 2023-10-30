@@ -1,12 +1,13 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumIonSession.h"
+#include "CesiumEditor.h"
 #include "CesiumEditorSettings.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
+#include "CesiumUtility/Uri.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
-#include <CesiumUtility/Uri.h>
 
 using namespace CesiumAsync;
 using namespace CesiumIonClient;
@@ -39,7 +40,7 @@ void CesiumIonSession::connect() {
 
   std::string ionServerUrl =
       GetDefault<UCesiumRuntimeSettings>()->IonServerUrl.IsEmpty()
-          ? "https://api.cesium.com/"
+          ? "https://ion.cesium.com/"
           : TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonServerUrl);
 
   Connection::getApiUrl(this->_asyncSystem, this->_pAssetAccessor, ionServerUrl)
@@ -49,8 +50,27 @@ void CesiumIonSession::connect() {
           this->_isConnecting = false;
           this->_connection = std::nullopt;
           this->ConnectionUpdated.Broadcast();
+          UE_LOG(
+              LogCesiumEditor,
+              Error,
+              TEXT(
+                  "Failed to retrieve API URL from the config.json file at the specified Ion server URL: %s"),
+              UTF8_TO_TCHAR(ionServerUrl.c_str()));
           return;
         }
+
+        UCesiumRuntimeSettings* pSettings =
+            GetMutableDefault<UCesiumRuntimeSettings>();
+        CesiumSourceControl::PromptToCheckoutConfigFile(
+            pSettings->GetDefaultConfigFilename());
+        pSettings->IonApiUrl = UTF8_TO_TCHAR(ionApiUrl->c_str());
+        pSettings->Modify();
+
+#if ENGINE_MAJOR_VERSION >= 5
+        pSettings->TryUpdateDefaultConfigFile();
+#else
+        pSettings->UpdateDefaultConfigFile();
+#endif
 
         int64_t clientID = GetDefault<UCesiumRuntimeSettings>()->IonClientId;
 
@@ -119,7 +139,8 @@ void CesiumIonSession::resume() {
   this->_connection = Connection(
       this->_asyncSystem,
       this->_pAssetAccessor,
-      TCHAR_TO_UTF8(*GetDefault<UCesiumEditorSettings>()->UserAccessToken));
+      TCHAR_TO_UTF8(*GetDefault<UCesiumEditorSettings>()->UserAccessToken),
+      TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonApiUrl));
 
   // Verify that the connection actually works.
   this->_connection.value()

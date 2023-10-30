@@ -6,6 +6,7 @@
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumRuntimeSettings.h"
+#include "CesiumUtility/Uri.h"
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
 #include "ScopedTransaction.h"
@@ -689,7 +690,12 @@ bool CesiumIonTokenTroubleshooting::canOpenCesiumIon() const {
 
 void CesiumIonTokenTroubleshooting::openCesiumIon() {
   FPlatformProcess::LaunchURL(
-      TEXT("https://cesium.com/ion/tokens"),
+      UTF8_TO_TCHAR(
+          CesiumUtility::Uri::resolve(
+              TCHAR_TO_UTF8(
+                  *GetDefault<UCesiumRuntimeSettings>()->IonServerUrl),
+              "tokens")
+              .c_str()),
       NULL,
       NULL);
 }

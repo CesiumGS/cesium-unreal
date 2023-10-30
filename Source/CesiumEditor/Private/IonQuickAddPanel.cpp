@@ -6,6 +6,8 @@
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumRuntimeSettings.h"
+#include "CesiumUtility/Uri.h"
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "SelectCesiumIonToken.h"
@@ -122,7 +124,7 @@ void showAssetDepotConfirmWindow(
               .OnNavigate_Lambda([missingAsset]() {
                 FPlatformProcess::LaunchURL(
                     UTF8_TO_TCHAR(
-                        ("https://cesium.com/ion/assetdepot/" +
+                        CesiumUtility::Uri::resolve(TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonServerUrl), "assetdepot/" +
                           std::to_string(missingAsset))
                             .c_str()),
                     NULL,

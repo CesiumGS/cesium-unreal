@@ -5,6 +5,8 @@
 #include "CesiumCommands.h"
 #include "CesiumEditor.h"
 #include "CesiumIonPanel.h"
+#include "CesiumRuntimeSettings.h"
+#include "CesiumUtility/Uri.h"
 #include "Editor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IonLoginPanel.h"
@@ -218,13 +220,21 @@ void CesiumPanel::addFromIon() {
 
 void CesiumPanel::uploadToIon() {
   FPlatformProcess::LaunchURL(
-      TEXT("https://cesium.com/ion/addasset"),
+      UTF8_TO_TCHAR(
+          CesiumUtility::Uri::resolve(
+              TCHAR_TO_UTF8(
+                  *GetDefault<UCesiumRuntimeSettings>()->IonServerUrl),
+              "addasset")
+              .c_str()),
       NULL,
       NULL);
 }
 
 void CesiumPanel::visitIon() {
-  FPlatformProcess::LaunchURL(TEXT("https://cesium.com/ion"), NULL, NULL);
+  FPlatformProcess::LaunchURL(
+      *GetDefault<UCesiumRuntimeSettings>()->IonServerUrl,
+      NULL,
+      NULL);
 }
 
 void CesiumPanel::signOut() { FCesiumEditorModule::ion().disconnect(); }

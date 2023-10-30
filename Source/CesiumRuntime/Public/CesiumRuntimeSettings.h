@@ -50,9 +50,13 @@ public:
       meta = (DisplayName = "Base URL of the Cesium ion Server"))
   FString IonServerUrl;
 
+  UPROPERTY(Config)
+  FString IonApiUrl;
+
   /**
-   * The client ID that is provided by Cesium ion when you register an
-   * application.
+   * The client ID that is specified by Cesium ion when you register an
+   * application that uses this plugin. The associated Redirect URI must be
+   * exactly http://127.0.0.1/cesium-for-unreal/oauth2/callback
    */
   UPROPERTY(
       Config,
