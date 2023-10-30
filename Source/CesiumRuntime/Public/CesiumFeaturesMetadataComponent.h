@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
 #include "Components/ActorComponent.h"
@@ -16,11 +17,6 @@
 #include "CesiumFeaturesMetadataComponent.generated.h"
 
 #pragma region Features descriptions
-
-enum class ECesiumFeatureIdSetType : uint8;
-enum class ECesiumEncodedMetadataType : uint8;
-enum class ECesiumEncodedMetadataComponentType : uint8;
-enum class ECesiumEncodedMetadataConversion : uint8;
 
 /**
  * @brief Description of a feature ID set from EXT_mesh_features.
@@ -55,7 +51,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
    * The type of the feature ID set.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumFeatureIdSetType Type;
+  ECesiumFeatureIdSetType Type = ECesiumFeatureIdSetType::None;
 
   /**
    * The name of the property table that this feature ID set corresponds to.
@@ -70,7 +66,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
    * unnecessarily included in the generated material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  bool bHasNullFeatureId;
+  bool bHasNullFeatureId = false;
 };
 
 /**
