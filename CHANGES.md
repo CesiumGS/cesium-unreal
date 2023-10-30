@@ -1,6 +1,22 @@
 # Change Log
 
-### ? - ?
+### v2.0.0 - ?
+
+##### Breaking Changes :mega:
+
+- Removed `FCesiumIntegerColor`, `FCesiumFloatColor`, `UCesiumFeatureTexturePropertyBlueprintLibrary::GetIntegerColorFromTextureCoordinates` and `UCesiumFeatureTexturePropertyBlueprintLibrary::GetFloatColorFromTextureCoordinates`. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
+- Renamed `GetTextureCoordinateIndex` to `GetUnrealUVChannel` in both `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary`. Contrary to what the documentation claimed, this function retrieved the index of the texture coordinate set in the *Unreal static mesh*, which is not necessarily equal to the texture coordinate set index in the *glTF primitive*. For the latter value, use `GetGltfTextureCoordinateSetIndex` instead.
+
+##### Additions :tada:
+
+- Added new functions to `UCesiumPropertyTexturePropertyBlueprintLibrary` to retrieve detailed property information and get the values of the property as a certain type. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit`, which computes the UV coordinates from a line trace hit without requiring "Support UV Hit Info" to be enabled. This can used to retrieve more accurate feature IDs or metadata values by sampling at an intermediary point on the face.
+- Added `GetPropertyTableValuesFromHit` and `GetPropertyTextureValuesFromHit` to `UCesiumMetadataPickingBlueprintLibrary` to retrieve the respective metadata from a line trace hit. For both functions, the target to sample is specified by index.
+- Added `UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive containing the feature ID set. This returns more accurate values for feature ID textures than `GetFeatureIDForVertex`.
+- Added `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive, where the desired feature ID set is specified by index. For feature ID textures, this returns more accurate values than `GetFeatureIDFromFace`. 
+- Added `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV`, which samples a feature ID texture with `FVector2D` UV coordinates.
+- Added `GetGltfTextureCoordinateSetIndex` to `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary` to avoid ambiguity with `GetUnrealUVChannel`.
+- Added `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert a map of `FCesiumMetadataValues` to their string representations.
 
 ##### Additions :tada:
 
@@ -14,6 +30,14 @@
 - Fixed a crash that occurred when a `LevelSequenceActor` in the level did not have a `LevelSequencePlayer` assigned.
 - Fixed a bug that would spam Georeference-related messages to the log when editing a globe anchor component that is not embedded in a world. For example, when editing a Blueprint asset with a globe anchor.
 - Fixed several problems that could cause tilesets in sub-levels to be misaligned with the rest of the globe.
+
+##### Deprecated :hourglass:
+
+- `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForTextureCoordinates` has been deprecated. Use `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV` instead.
+- `UCesiumPropertyTexturePropertyBlueprintLibrary::GetSwizzle` and `UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount` have been deprecated, since they are no longer necessary to handle property texture property values in the plugin. Use `UCesiumPropertyTexturePropertyBlueprintLibrary::GetChannels` instead.
+- `UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFace` has been deprecated. Use `UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesForHit` instead.
+- `UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFaceAsStrings` has been deprecated. Use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesForHit` instead.
+- `UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings` has been deprecated. Use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature` instead.
 
 ### v2.0.0 Preview 1 - 2023-10-02
 

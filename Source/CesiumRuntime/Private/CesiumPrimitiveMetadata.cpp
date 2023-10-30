@@ -1,6 +1,7 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveMetadata.h"
+#include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -8,7 +9,6 @@
 static FCesiumPrimitiveMetadata EmptyPrimitiveMetadata;
 
 FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
-    const CesiumGltf::Model& InModel,
     const CesiumGltf::MeshPrimitive& Primitive,
     const CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata& Metadata)
     : _propertyTextureIndices(), _propertyAttributeIndices() {

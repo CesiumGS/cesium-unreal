@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
@@ -9,36 +9,6 @@ using namespace CesiumGltf;
 
 static FCesiumPrimitiveFeatures EmptyPrimitiveFeatures;
 
-namespace {
-struct VertexIndexFromAccessor {
-  int64 operator()(std::monostate) {
-    const int64 vertexIndex = faceIndex * 3;
-    if (vertexIndex < vertexCount) {
-      return vertexIndex;
-    }
-    return -1;
-  }
-
-  template <typename T> int64 operator()(const AccessorView<T>& value) {
-    if (value.status() != AccessorViewStatus::Valid) {
-      // Invalid accessor.
-      return -1;
-    }
-
-    const int64 vertexIndex = faceIndex * 3;
-    if (vertexIndex >= value.size()) {
-      // Invalid face index.
-      return -1;
-    }
-
-    return static_cast<int64>(value[vertexIndex].value[0]);
-  }
-
-  int64 faceIndex;
-  int64 vertexCount;
-};
-} // namespace
-
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     const Model& Model,
     const MeshPrimitive& Primitive,
@@ -48,16 +18,13 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
       Model.getSafe(Model.accessors, Primitive.indices);
   switch (indicesAccessor.componentType) {
   case Accessor::ComponentType::UNSIGNED_BYTE:
-    _vertexIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint8_t>>(Model, indicesAccessor);
+    _vertexIDAccessor = AccessorView<uint8_t>(Model, indicesAccessor);
     break;
   case Accessor::ComponentType::UNSIGNED_SHORT:
-    _vertexIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint16_t>>(Model, indicesAccessor);
+    _vertexIDAccessor = AccessorView<uint16_t>(Model, indicesAccessor);
     break;
   case Accessor::ComponentType::UNSIGNED_INT:
-    _vertexIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint32_t>>(Model, indicesAccessor);
+    _vertexIDAccessor = AccessorView<uint32_t>(Model, indicesAccessor);
     break;
   default:
     break;
@@ -121,9 +88,13 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
     return -1;
   }
 
-  return std::visit(
-      VertexIndexFromAccessor{FaceIndex, PrimitiveFeatures._vertexCount},
+  std::array<int64, 3> faceIndices = std::visit(
+      CesiumFaceVertexIndicesFromAccessor{
+          FaceIndex,
+          PrimitiveFeatures._vertexCount},
       PrimitiveFeatures._vertexIDAccessor);
+
+  return faceIndices[0];
 }
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
@@ -140,4 +111,18 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
           PrimitiveFeatures,
           FaceIndex));
+}
+
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit(
+    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+    const FHitResult& Hit,
+    int64 FeatureIDSetIndex) {
+  if (FeatureIDSetIndex < 0 ||
+      FeatureIDSetIndex >= PrimitiveFeatures._featureIDSets.Num()) {
+    return -1;
+  }
+
+  return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
+      PrimitiveFeatures._featureIDSets[FeatureIDSetIndex],
+      Hit);
 }
