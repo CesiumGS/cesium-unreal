@@ -421,6 +421,11 @@ void ACesiumGeoreference::CreateSubLevelHere() {
     return;
   }
 
+  // Deactivate any previous sub-levels, so that setting the georeference origin
+  // doesn't change their origin, too.
+  this->SubLevelSwitcher->SetTargetSubLevel(nullptr);
+
+  // Update the georeference origin so that the new sub-level inherits it.
   this->PlaceGeoreferenceOriginHere();
 
   // Create a dummy Actor to add to the new sub-level, because
@@ -453,6 +458,12 @@ void ACesiumGeoreference::CreateSubLevelHere() {
       Cast<AActor>(LevelInstanceSubsystem->CreateLevelInstanceFrom(
           SubLevelActors,
           LevelInstanceParams));
+  if (!IsValid(LevelInstance)) {
+    // User canceled creation of the sub-level, so delete the placeholder we
+    // created.
+    PlaceholderActor->Destroy();
+    return;
+  }
 
   UCesiumSubLevelComponent* LevelComponent =
       Cast<UCesiumSubLevelComponent>(LevelInstance->AddComponentByClass(
