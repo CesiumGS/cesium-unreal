@@ -265,6 +265,15 @@ protected:
    */
   virtual void OnUnregister() override;
 
+#if WITH_EDITOR
+  /**
+   * Called by the Editor to check if it's ok to edit a property on this object.
+   * Used to disable all fields on this component when editing the sub-level
+   * instance that this component is attached to.
+   */
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
+#endif
+
 private:
   /**
    * Whether this sub-level is enabled. An enabled sub-level will be

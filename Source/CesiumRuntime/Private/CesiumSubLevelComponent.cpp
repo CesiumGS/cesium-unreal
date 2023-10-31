@@ -223,6 +223,15 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
     return;
   }
 
+  if (pOwner->IsEditing()) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "The georeference origin cannot be moved while the sub-level is being edited."));
+    return;
+  }
+
   // Another sub-level might be active right now, so we construct the correct
   // GeoTransforms instead of using the CesiumGeoreference's.
   const Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
@@ -517,6 +526,15 @@ void UCesiumSubLevelComponent::OnUnregister() {
   if (pSwitcher)
     pSwitcher->UnregisterSubLevel(pOwner);
 }
+
+#if WITH_EDITOR
+bool UCesiumSubLevelComponent::CanEditChange(
+    const FProperty* InProperty) const {
+  // Don't allow editing this property if the parent Actor isn't editable.
+  return Super::CanEditChange(InProperty) &&
+         (!IsValid(GetOwner()) || GetOwner()->CanEditChange(InProperty));
+}
+#endif
 
 UCesiumSubLevelSwitcherComponent*
 UCesiumSubLevelComponent::_getSwitcher() noexcept {
