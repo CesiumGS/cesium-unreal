@@ -90,6 +90,14 @@ TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
           });
   quickAddPanel->AddItem(
       {QuickAddItemType::TILESET,
+       "Google Photorealistic 3D Tiles",
+       "Photorealistic 3D Tiles from Google Maps Platform.",
+       "Google Photorealistic 3D Tiles",
+       2275207,
+       "",
+       -1});
+  quickAddPanel->AddItem(
+      {QuickAddItemType::TILESET,
        "Cesium World Terrain + Bing Maps Aerial imagery",
        "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery.",
        "Cesium World Terrain",
