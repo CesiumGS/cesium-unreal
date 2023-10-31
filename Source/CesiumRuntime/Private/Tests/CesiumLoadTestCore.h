@@ -5,6 +5,7 @@
 #if WITH_EDITOR
 
 #include <functional>
+#include <variant>
 
 #include "CesiumSceneGeneration.h"
 

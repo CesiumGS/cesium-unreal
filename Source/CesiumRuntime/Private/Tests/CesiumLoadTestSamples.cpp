@@ -6,8 +6,10 @@
 
 #include "Misc/AutomationTest.h"
 
+#include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
 #include "GlobeAwareDefaultPawn.h"
 
