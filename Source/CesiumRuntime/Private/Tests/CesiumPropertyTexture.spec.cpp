@@ -11,7 +11,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTextureSpec,
-    "Cesium.PropertyTexture",
+    "Cesium.Unit.PropertyTexture",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;
