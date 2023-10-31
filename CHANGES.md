@@ -18,6 +18,8 @@
 - Added `GetGltfTextureCoordinateSetIndex` to `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary` to avoid ambiguity with `GetUnrealUVChannel`.
 - Added `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert a map of `FCesiumMetadataValues` to their string representations.
 - Added support for `file:///` URLs across all platforms and Unreal Engine versions.
+- Added "Create Sub Level Here" button on `CesiumGeoreference`.
+- Added "Please Georeference Origin Here" button to `CesiumSubLevelComponent`.
 - Added "Google Photorealistic 3D Tiles" to the Quick Add panel.
 
 ##### Fixes :wrench:
@@ -25,6 +27,7 @@
 - Fixed a bug that could cause tiles in a `Cesium3DTileset` to have an incorrect transformation.
 - Fixed a crash that occurred when a `LevelSequenceActor` in the level did not have a `LevelSequencePlayer` assigned.
 - Fixed a bug that would spam Georeference-related messages to the log when editing a globe anchor component that is not embedded in a world. For example, when editing a Blueprint asset with a globe anchor.
+- Fixed several problems that could cause tilesets in sub-levels to be misaligned with the rest of the globe.
 
 ##### Deprecated :hourglass:
 
