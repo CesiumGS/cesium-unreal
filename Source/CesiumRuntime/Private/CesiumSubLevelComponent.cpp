@@ -267,12 +267,16 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
   ULevelStreaming* LevelStreaming = getLevelStreamingForSubLevel(pOwner);
   ULevel* Level =
       IsValid(LevelStreaming) ? LevelStreaming->GetLoadedLevel() : nullptr;
+
   bool bHasTilesets = Level && IsValid(Level) &&
                       Level->Actors.FindByPredicate([](AActor* Actor) {
                         return Cast<ACesium3DTileset>(Actor) != nullptr;
                       }) != nullptr;
 
-  FTransform OldLevelTransform = LevelStreaming->LevelTransform;
+  FTransform OldLevelTransform;
+  if (bHasTilesets) {
+    OldLevelTransform = LevelStreaming->LevelTransform;
+  }
 
   pOwner->Modify();
   pOwner->SetActorTransform(
