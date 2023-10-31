@@ -6,6 +6,7 @@
 
 - Removed `FCesiumIntegerColor`, `FCesiumFloatColor`, `UCesiumFeatureTexturePropertyBlueprintLibrary::GetIntegerColorFromTextureCoordinates` and `UCesiumFeatureTexturePropertyBlueprintLibrary::GetFloatColorFromTextureCoordinates`. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
 - Renamed `GetTextureCoordinateIndex` to `GetUnrealUVChannel` in both `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary`. Contrary to what the documentation claimed, this function retrieved the index of the texture coordinate set in the *Unreal static mesh*, which is not necessarily equal to the texture coordinate set index in the *glTF primitive*. For the latter value, use `GetGltfTextureCoordinateSetIndex` instead.
+- Removed the old "exclusion zones" feature, which has been deprecated since v1.11.0. Use `CesiumCartographicPolygon` or `CesiumTileExcluder` instead.
 
 ##### Additions :tada:
 

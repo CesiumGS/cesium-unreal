@@ -1659,51 +1659,6 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 
 namespace {
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-/**
- * @brief Check if the given tile is contained in one of the given exclusion
- * zones.
- *
- * TODO Add details here what that means
- * Old comment:
- * Consider Exclusion zone to drop this tile... Ideally, should be
- * considered in Cesium3DTilesSelection::ViewState to avoid loading the tile
- * first...
- *
- * @param exclusionZones The exclusion zones
- * @param tile The tile
- * @return The result of the test
- */
-bool isInExclusionZone(
-    const TArray<FCesiumExclusionZone>& exclusionZones,
-    Cesium3DTilesSelection::Tile const* tile) {
-  if (exclusionZones.Num() == 0) {
-    return false;
-  }
-  // Apparently, only tiles with bounding REGIONS are
-  // checked for the exclusion...
-  const CesiumGeospatial::BoundingRegion* pRegion =
-      std::get_if<CesiumGeospatial::BoundingRegion>(&tile->getBoundingVolume());
-  if (!pRegion) {
-    return false;
-  }
-  for (FCesiumExclusionZone ExclusionZone : exclusionZones) {
-    CesiumGeospatial::GlobeRectangle cgExclusionZone =
-        CesiumGeospatial::GlobeRectangle::fromDegrees(
-            ExclusionZone.West,
-            ExclusionZone.South,
-            ExclusionZone.East,
-            ExclusionZone.North);
-    if (cgExclusionZone.computeIntersection(pRegion->getRectangle())) {
-      return true;
-    }
-  }
-  return false;
-}
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
 void removeVisibleTilesFromList(
     std::vector<Cesium3DTilesSelection::Tile*>& list,
     const std::vector<Cesium3DTilesSelection::Tile*>& visibleTiles) {
@@ -1913,12 +1868,6 @@ void ACesium3DTileset::showTilesToRender(
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
-
-    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
-      continue;
-    }
-    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     // That looks like some reeeally entertaining debug session...:
     // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();

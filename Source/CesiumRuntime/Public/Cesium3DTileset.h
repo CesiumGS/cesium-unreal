@@ -8,7 +8,6 @@
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumEncodedMetadataComponent.h"
-#include "CesiumExclusionZone.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGeoreference.h"
 #include "CesiumPointCloudShading.h"
@@ -474,33 +473,6 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-  /**
-   * A list of rectangles that are excluded from this tileset. Any tiles that
-   * overlap any of these rectangles are not shown. This is a crude method to
-   * avoid overlapping geometry coming from different tilesets. For example, to
-   * exclude Cesium OSM Buildings where there are photogrammetry assets.
-   *
-   * Note that in the current version, excluded tiles are still loaded, they're
-   * just not displayed. Also, because the tiles shown when zoomed out cover a
-   * large area, using an exclusion zone often means the tileset won't be shown
-   * at all when zoomed out.
-   *
-   * This property is currently only supported for 3D Tiles that use "region"
-   * for their bounding volumes. For other tilesets it is silently ignored.
-   *
-   * This is an experimental feature and may change in future versions.
-   */
-  UPROPERTY(
-      meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead."))
-  TArray<FCesiumExclusionZone> ExclusionZones_DEPRECATED;
-
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * The screen-space error to be enforced for tiles that are outside the view
