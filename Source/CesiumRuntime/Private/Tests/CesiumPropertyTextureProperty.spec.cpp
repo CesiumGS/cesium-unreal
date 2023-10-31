@@ -8,7 +8,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTexturePropertySpec,
-    "Cesium.PropertyTextureProperty",
+    "Cesium.Unit.PropertyTextureProperty",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 const std::vector<FVector2D> texCoords{
