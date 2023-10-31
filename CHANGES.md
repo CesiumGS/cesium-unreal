@@ -17,9 +17,6 @@
 - Added `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV`, which samples a feature ID texture with `FVector2D` UV coordinates.
 - Added `GetGltfTextureCoordinateSetIndex` to `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary` to avoid ambiguity with `GetUnrealUVChannel`.
 - Added `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert a map of `FCesiumMetadataValues` to their string representations.
-
-##### Additions :tada:
-
 - Added support for `file:///` URLs across all platforms and Unreal Engine versions.
 - Added "Google Photorealistic 3D Tiles" to the Quick Add panel.
 
