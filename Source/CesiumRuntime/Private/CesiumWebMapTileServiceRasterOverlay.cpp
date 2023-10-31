@@ -49,13 +49,25 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
         RootTilesX,
         RootTilesY);
   }
-
-  if (!TileMatrixSetLabels.IsEmpty()) {
-    std::vector<std::string> labels;
-    for (const auto& label : this->TileMatrixSetLabels) {
-      labels.emplace_back(TCHAR_TO_UTF8(*label));
+  if (bSpecifyTileMatrixSetLabels) {
+    if (!TileMatrixSetLabels.IsEmpty()) {
+      std::vector<std::string> labels;
+      for (const auto& label : this->TileMatrixSetLabels) {
+        labels.emplace_back(TCHAR_TO_UTF8(*label));
+      }
+      wmtsOptions.tileMatrixLabels = labels;
     }
-    wmtsOptions.tileMatrixLabels = labels;
+  } else {
+    if (!TileMatrixSetLabelPrefix.IsEmpty()) {
+      std::vector<std::string> labels;
+      for (size_t level = 0; level <= 25; ++level) {
+        FString label(TileMatrixSetLabelPrefix);
+        label.AppendInt(level);
+        labels.emplace_back(
+            TCHAR_TO_UTF8(*label));
+      }
+      wmtsOptions.tileMatrixLabels = labels;
+    }
   }
   return std::make_unique<
       Cesium3DTilesSelection::WebMapTileServiceRasterOverlay>(

@@ -19,7 +19,7 @@ class CESIUMRUNTIME_API UCesiumWebMapTileServiceRasterOverlay
 
 public:
   /**
-   * The base URL of the Tile Map Service (TMS).
+   * The base URL of the Web Map Tile Service (WMTS).
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString Url;
@@ -49,9 +49,32 @@ public:
   FString TileMatrixSetID;
 
   /**
-   * Tile Matrix Set Labels.
+   * True to specify tile matrix set labels manually, or false to
+   * automatically determine from level and prefix.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool bSpecifyTileMatrixSetLabels = false;
+
+  /**
+   * Prefix for tile matrix set labels. For instance, setting "EPSG:4326:" as
+   * prefix generates label list ["EPSG:4326:0", "EPSG:4326:1", "EPSG:4326:2",
+   * ...]
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "!bSpecifyTileMatrixSetLabels"))
+  FString TileMatrixSetLabelPrefix;
+
+  /**
+   * Tile Matrix Set Labels.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "bSpecifyTileMatrixSetLabels"))
   TArray<FString> TileMatrixSetLabels;
 
   /**
@@ -167,7 +190,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium",
       meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
-  int32 MaximumLevel = 10;
+  int32 MaximumLevel = 25;
 
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
