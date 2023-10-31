@@ -146,7 +146,7 @@ DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
 bool TestCleanupCommand::Update() {
   // Tag the fastest pass
   if (context.testPasses.size() > 0) {
-    size_t fastestPass;
+    size_t fastestPass = 0;
     double fastestTime = -1.0;
     for (size_t index = 0; index < context.testPasses.size(); ++index) {
       const TestPass& pass = context.testPasses[index];
