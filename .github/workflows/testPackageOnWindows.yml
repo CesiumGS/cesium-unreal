@@ -59,7 +59,7 @@ jobs:
         run: |
           md download
           cd download
-          Invoke-WebRequest -Uri "https://github.com/CesiumGS/cesium-unreal/releases/download/v2.0.0/CesiumForUnreal-53-v2.0.0.zip"
+          Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/CesiumGS/cesium-unreal/releases/download/v2.0.0/CesiumForUnreal-53-v2.0.0.zip"
       - name: Unzip plugin artifact
         shell: cmd
         run: |
