@@ -60,7 +60,7 @@ jobs:
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           run_id: 6714268278
-          name: CesiumForUnreal-53-windows-v2.0.0-preview1-209-g2bfef7a3.zip
+          name: CesiumForUnreal-53-windows-v2.0.0-preview1-209-g2bfef7a3
           path: download          
       - name: Install plugin to Unreal Engine
         run: |
