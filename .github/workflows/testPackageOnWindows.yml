@@ -55,19 +55,13 @@ jobs:
           echo UNREAL_COOK_PARAM=$env:UNREAL_COOK_PARAM
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
       - name: Download plugin artifact
-        shell: powershell
-        run: |
-          md download
-          cd download
-          Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/CesiumGS/cesium-unreal/releases/download/v2.0.0/CesiumForUnreal-53-v2.0.0.zip"
-      - name: Unzip plugin artifact
-        shell: cmd
-        run: |
-          cd download
-          dir
-          7z x -y CesiumForUnreal-53-v2.0.0.zip
-          del CesiumForUnreal-53-v2.0.0.zip   
-          dir
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          commit: 84ba3a1
+          name: CesiumForUnreal-53-v2.0.0.zip
+          path: download          
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
