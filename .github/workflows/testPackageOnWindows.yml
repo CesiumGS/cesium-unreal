@@ -59,8 +59,8 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
-          commit: 84ba3a1
-          name: CesiumForUnreal-53-v2.0.0.zip
+          run_id: 6714268278
+          name: CesiumForUnreal-53-windows-v2.0.0-preview1-209-g2bfef7a3.zip
           path: download          
       - name: Install plugin to Unreal Engine
         run: |
