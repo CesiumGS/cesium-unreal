@@ -57,7 +57,7 @@ jobs:
       - name: Download plugin artifact
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.PLUGIN_PACKAGE_NAME}}
+          name: CesiumForUnreal-53-v2.0.0.zip
           path: download          
       - name: Install plugin to Unreal Engine
         run: |
