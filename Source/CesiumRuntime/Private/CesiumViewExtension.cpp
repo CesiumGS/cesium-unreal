@@ -1,8 +1,8 @@
 
 #include "CesiumViewExtension.h"
 
-#include "CesiumCommon.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCommon.h"
 #include "Runtime/Launch/Resources/Version.h"
 
 using namespace Cesium3DTilesSelection;
