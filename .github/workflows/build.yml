@@ -12,7 +12,6 @@ jobs:
           npm install
           npm run format -- --dry-run -Werror
   TestPackage53:
-    needs: [Combine53]
     uses: ./.github/workflows/testPackageOnWindows.yml
     with:
       unreal-engine-association: "5.3"
