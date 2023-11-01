@@ -1,6 +1,8 @@
 # Change Log
 
-### v2.0.0 - ?
+### v2.0.0 - 2023-11-01
+
+This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or v5.3 is required.
 
 ##### Breaking Changes :mega:
 
@@ -37,6 +39,8 @@
 - `UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFace` has been deprecated. Use `UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesForHit` instead.
 - `UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFaceAsStrings` has been deprecated. Use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesForHit` instead.
 - `UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings` has been deprecated. Use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature` instead.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.28.1 to v0.29.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.31.2 - 2023-10-26
 
