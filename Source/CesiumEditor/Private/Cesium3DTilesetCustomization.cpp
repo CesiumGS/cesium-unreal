@@ -32,5 +32,7 @@ void FCesium3DTilesetCustomization::CustomizeDetails(
 
 void FCesium3DTilesetCustomization::SortCustomDetailsCategories(const TMap<FName, IDetailCategoryBuilder*>& AllCategoryMap)
 {
-  (*AllCategoryMap.Find(FName("Cesium")))->SetSortOrder(0);
+  (*AllCategoryMap.Find(FName("Transform")))->SetSortOrder(0);
+  (*AllCategoryMap.Find(FName("Cesium")))->SetSortOrder(2000);
+  (*AllCategoryMap.Find(FName("Rendering")))->SetSortOrder(4000);
 }
