@@ -4,6 +4,7 @@
 #include "Async/Async.h"
 #include "Async/Future.h"
 #include "Async/TaskGraphInterfaces.h"
+#include "CesiumCommon.h"
 #include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
 #include "Containers/ResourceArray.h"
@@ -272,7 +273,7 @@ public:
 
   uint32 GetSizeY() const override { return this->_height; }
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override {
 #else
   virtual void InitRHI() override {
@@ -344,7 +345,7 @@ public:
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
       rhiTexture = RHICreateTexture(
           FRHITextureCreateDesc::Create2D(createInfo.DebugName)
               .SetExtent(int32(this->_width), int32(this->_height))
@@ -413,7 +414,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
     ETextureCreateFlags Flags,
     void** InitialMipData,
     uint32 NumInitialMips) {
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
   FGraphEventRef CompletionEvent;
 
   FTexture2DRHIRef result = RHIAsyncCreateTexture2D(

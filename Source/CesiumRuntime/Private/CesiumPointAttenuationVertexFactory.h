@@ -20,7 +20,7 @@ public:
       const int32& NumPoints,
       const bool bAttenuationSupported)
       : NumPoints(NumPoints), bAttenuationSupported(bAttenuationSupported) {}
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 #else
   virtual void InitRHI() override;
@@ -67,7 +67,7 @@ public:
       const FVertexFactoryShaderPermutationParameters& Parameters);
 
 private:
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 #else
   virtual void InitRHI() override;
