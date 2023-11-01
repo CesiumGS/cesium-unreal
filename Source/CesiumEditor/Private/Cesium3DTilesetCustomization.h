@@ -18,5 +18,6 @@ public:
 
   static TSharedRef<IDetailCustomization> MakeInstance();
 
-  static void SortCustomDetailsCategories(const TMap<FName, IDetailCategoryBuilder*>& AllCategoryMap);
+  static void SortCustomDetailsCategories(
+      const TMap<FName, IDetailCategoryBuilder*>& AllCategoryMap);
 };
