@@ -8,8 +8,6 @@
   (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3)
 #define ENGINE_VERSION_5_2_OR_HIGHER                                           \
   (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2)
-#define ENGINE_VERSION_5_1_OR_HIGHER                                           \
-  (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 1)
 
 #define CESIUM_UNREAL_ENGINE_DOUBLE 1
 
