@@ -55,19 +55,10 @@ jobs:
           echo UNREAL_COOK_PARAM=$env:UNREAL_COOK_PARAM
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
       - name: Download plugin artifact
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          run_id: 6714268278
-          name: CesiumForUnreal-53-windows-v2.0.0-preview1-209-g2bfef7a3
-          path: download   
-      - name: Add intentional error
-        run: |
-          cd download/CesiumForUnreal
-          $content = Get-Content "Config/Engine.ini"
-          $content[122] = ($content[122] -replace "FunctionRedirects=","FunctionRedirects")
-          $content | Set-Content "Config/Engine.ini"       
+          name: ${{ env.PLUGIN_PACKAGE_NAME}}
+          path: download         
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
