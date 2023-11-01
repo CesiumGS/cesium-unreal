@@ -57,7 +57,7 @@ jobs:
       - name: Download plugin artifact
         shell: powershell
         run: Invoke-WebRequest -Uri "https://github.com/CesiumGS/cesium-unreal/releases/download/v2.0.0/CesiumForUnreal-53-v2.0.0.zip" -OutFile "download/CesiumForUnreal.zip"
-     - name: Unzip plugin artifact
+      - name: Unzip plugin artifact
         shell: cmd
         run: |
           cd download
