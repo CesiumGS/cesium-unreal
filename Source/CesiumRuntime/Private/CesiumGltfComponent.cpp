@@ -1478,9 +1478,6 @@ static void loadPrimitive(
   LODResources.bHasDepthOnlyIndices = false;
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
-#if ENGINE_MAJOR_VERSION < 5
-  LODResources.bHasAdjacencyInfo = false;
-#endif
 
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
@@ -2624,19 +2621,7 @@ static void loadPrimitiveGameThreadPart(
     const FStaticParameterSet& parameters =
         pBaseAsMaterialInstance->GetStaticParameters();
 
-#if ENGINE_MAJOR_VERSION >= 5
     bool hasLayers = parameters.bHasMaterialLayers;
-#else
-    const TArray<FStaticMaterialLayersParameter>& layerParameters =
-        parameters.MaterialLayersParameters;
-    const FStaticMaterialLayersParameter* pCesiumLayers =
-        layerParameters.FindByPredicate(
-            [](const FStaticMaterialLayersParameter& layerParameter) {
-              return layerParameter.ParameterInfo.Name == "Cesium";
-            });
-    bool hasLayers = pCesiumLayers != nullptr;
-#endif
-
     if (hasLayers) {
 #if WITH_EDITOR
       FScopedTransaction transaction(

@@ -265,11 +265,7 @@ public:
 
   virtual ~FCesiumTextureResource() {
     check(this->_pTexture != nullptr);
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-    this->_pTexture->Resource = nullptr;
-#else
     this->_pTexture->SetResource(nullptr);
-#endif
   }
 
   uint32 GetSizeX() const override { return this->_width; }
@@ -554,11 +550,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
             "CesiumRuntimeTexture"),
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-#if ENGINE_MAJOR_VERSION >= 5
     pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
-#else
-    pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
-#endif
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;

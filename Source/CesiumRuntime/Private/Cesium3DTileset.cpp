@@ -954,18 +954,6 @@ void ACesium3DTileset::LoadTileset() {
         *this->Url);
   }
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
-  if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
-    pWorldSettings->bEnableLargeWorlds = true;
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Cesium for Unreal has enabled the \"Enable Large Worlds\" option in this world's settings, as it is required in order to avoid serious culling problems with Cesium3DTilesets in Unreal Engine 5."),
-        *this->Url);
-  }
-#endif
-
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
       cesiumViewExtension = getCesiumViewExtension();
   const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor =
@@ -1377,13 +1365,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     }
 
     if (useStereoRendering) {
-#if ENGINE_MAJOR_VERSION >= 5
       const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
       const auto rightEye = EStereoscopicEye::eSSE_RIGHT_EYE;
-#else
-      const auto leftEye = EStereoscopicPass::eSSP_LEFT_EYE;
-      const auto rightEye = EStereoscopicPass::eSSP_RIGHT_EYE;
-#endif
 
       uint32 stereoLeftSizeX = static_cast<uint32>(sizeX);
       uint32 stereoLeftSizeY = static_cast<uint32>(sizeY);
