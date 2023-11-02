@@ -104,7 +104,6 @@ public class CesiumRuntime : ModuleRules
             "turbojpeg",
             "uriparser",
             "webpdecoder",
-            "ktx_read",
         };
 
         // Use our own copy of MikkTSpace on Android.
