@@ -58,7 +58,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ env.PLUGIN_PACKAGE_NAME}}
-          path: download         
+          path: download       
+      - name: Add intentional error
+        run: |
+          cd download/CesiumForUnreal
+          $content = Get-Content "Config/Engine.ini"
+          $content[87] = ($content[87] -replace "ValueChanges=","ValueChanges=`n")
+          $content | Set-Content "Config/Engine.ini"                   
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
