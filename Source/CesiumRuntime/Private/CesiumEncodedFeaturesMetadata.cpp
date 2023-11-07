@@ -315,15 +315,16 @@ FString getMaterialNameForPropertyTableProperty(
     const FString& propertyTableName,
     const FString& propertyName) {
   // Example: "PTABLE_houses_roofColor"
-  return MaterialPropertyTablePrefix + propertyTableName + "_" + propertyName;
+  return createHlslSafeName(
+      MaterialPropertyTablePrefix + propertyTableName + "_" + propertyName);
 }
 
 FString getMaterialNameForPropertyTextureProperty(
     const FString& propertyTextureName,
     const FString& propertyName) {
   // Example: "PTEXTURE_house_temperature"
-  return MaterialPropertyTexturePrefix + propertyTextureName + "_" +
-         propertyName;
+  return createHlslSafeName(
+      MaterialPropertyTexturePrefix + propertyTextureName + "_" + propertyName);
 }
 
 namespace {
@@ -700,9 +701,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
 
       const TArray<int64>& channels =
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetChannels(property);
-      const int32 channelCount = FMath::Max(
-          channels.Num(),
-          static_cast<int32>(encodedProperty.channels.size()));
+      const int32 channelCount = channels.Num();
       for (int32 i = 0; i < channelCount; i++) {
         encodedProperty.channels[i] = channels[i];
       }
@@ -749,6 +748,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
         }
 
         encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
+        // TODO: linear?
 
         if (!encodedProperty.pTexture->pTextureData) {
           UE_LOG(
@@ -810,20 +810,20 @@ EncodedPrimitiveMetadata encodePrimitiveMetadataAnyThreadPart(
 
   EncodedPrimitiveMetadata result;
 
-  const TArray<FCesiumPropertyTexture>& propertyTextures =
-      UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(modelMetadata);
-  result.propertyTextureIndices.Reserve(
-      metadataDescription.PropertyTextureNames.Num());
+  // const TArray<FCesiumPropertyTexture>& propertyTextures =
+  //    UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(modelMetadata);
+  // result.propertyTextureIndices.Reserve(
+  //    metadataDescription.PropertyTextureNames.Num());
 
-  for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
-    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-    int32 index =
-        metadataDescription.PropertyTextureNames.Find(propertyTextureName);
-    // Confirm that the named property texture is actually present.
-    if (index != INDEX_NONE) {
-      result.propertyTextureIndices.Add(index);
-    }
-  }
+  // for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
+  //  FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
+  //  const FString* pName =
+  //      metadataDescription.PropertyTextureNames.Find(propertyTextureName);
+  //  // Confirm that the named property texture is actually present.
+  //  if (pName) {
+  //    result.propertyTextureIndices.Add(index);
+  //  }
+  //}
 
   return result;
 }
@@ -887,6 +887,7 @@ EncodedModelMetadata encodeModelMetadataAnyThreadPart(
               *pExpectedPropertyTexture,
               propertyTexture,
               propertyTexturePropertyMap));
+      encodedPropertyTexture.name = propertyTextureName;
     }
   }
 
