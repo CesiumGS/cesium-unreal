@@ -2932,15 +2932,7 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
 
-#if CESIUM_UNREAL_ENGINE_DOUBLE
   FVector4 translationAndScale(translation.x, translation.y, scale.x, scale.y);
-#else
-  FLinearColor translationAndScale(
-      translation.x,
-      translation.y,
-      scale.x,
-      scale.y);
-#endif
 
   forEachPrimitiveComponent(
       this,
