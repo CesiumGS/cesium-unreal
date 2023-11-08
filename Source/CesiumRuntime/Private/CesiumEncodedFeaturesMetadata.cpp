@@ -692,7 +692,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     EncodedPropertyTextureProperty& encodedProperty =
         encodedPropertyTexture.properties.Emplace_GetRef();
     encodedProperty.name = createHlslSafeName(pDescription->Name);
-    encodedProperty.type = pDescription->PropertyDetails.Type;
+    encodedProperty.type =
+        CesiumMetadataTypeToEncodingType(pDescription->PropertyDetails.Type);
     encodedProperty.textureCoordinateSetIndex = property.getTexCoordSetIndex();
 
     if (UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -747,8 +748,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
           encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
         }
 
+        // TODO: account for texture filter
         encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
-        // TODO: linear?
 
         if (!encodedProperty.pTexture->pTextureData) {
           UE_LOG(

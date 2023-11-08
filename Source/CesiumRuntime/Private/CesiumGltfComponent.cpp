@@ -485,6 +485,8 @@ static void applyWaterMask(
   }
 }
 
+#pragma region Features Metadata helper functions(load thread)
+
 static FCesiumPrimitiveFeatures
 loadPrimitiveFeatures(const Model& model, const MeshPrimitive& primitive) {
   const ExtensionExtMeshFeatures* pExtension =
@@ -507,6 +509,11 @@ loadPrimitiveMetadata(const MeshPrimitive& primitive) {
   return FCesiumPrimitiveMetadata(primitive, *pMetadata);
 }
 
+/**
+ * Creates texture coordinate accessors for the feature ID sets and metadata in
+ * the primitive. This enables feature ID texture / property texture picking
+ * without requiring UVs in the physics bodies.
+ */
 static void createTexCoordAccessorsForFeaturesMetadata(
     const Model& model,
     const MeshPrimitive& primitive,
@@ -519,10 +526,12 @@ static void createTexCoordAccessorsForFeaturesMetadata(
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           primitiveFeatures,
           ECesiumFeatureIdSetType::Texture);
+
   for (const FCesiumFeatureIdSet& featureIdSet : featureIdTextures) {
     FCesiumFeatureIdTexture featureIdTexture =
         UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
             featureIdSet);
+
     int64 gltfTexCoordSetIndex = UCesiumFeatureIdTextureBlueprintLibrary::
         GetGltfTextureCoordinateSetIndex(featureIdTexture);
     if (gltfTexCoordSetIndex < 0 ||
@@ -539,7 +548,6 @@ static void createTexCoordAccessorsForFeaturesMetadata(
   auto propertyTextureIndices =
       UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
           primitiveMetadata);
-
   auto propertyTextures =
       UCesiumModelMetadataBlueprintLibrary::GetPropertyTexturesAtIndices(
           modelMetadata,
@@ -548,6 +556,7 @@ static void createTexCoordAccessorsForFeaturesMetadata(
   for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
     auto properties =
         UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture);
+
     for (const auto& propertyIt : properties) {
       int64 gltfTexCoordSetIndex =
           UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -565,6 +574,12 @@ static void createTexCoordAccessorsForFeaturesMetadata(
   }
 }
 
+/**
+ * Updates the primitive's information for the texture coordinates required for
+ * features and metadata styling. This processes existing texture coordinate
+ * sets for feature ID textures and property textures, and generates new texture
+ * coordinates for attribute and implicit feature ID sets.
+ */
 static void updateTextureCoordinatesForFeaturesMetadata(
     const Model& model,
     const MeshPrimitive& primitive,
@@ -627,6 +642,8 @@ static void updateTextureCoordinatesForFeaturesMetadata(
 
   for (const CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet&
            encodedFeatureIDSet : encodedPrimitiveFeatures.featureIdSets) {
+    FString SafeName = CesiumEncodedFeaturesMetadata::createHlslSafeName(
+        encodedFeatureIDSet.name);
     if (encodedFeatureIDSet.attribute) {
       int32_t attribute = *encodedFeatureIDSet.attribute;
       std::string attributeName = "_FEATURE_ID_" + std::to_string(attribute);
@@ -641,7 +658,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
       gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
       featuresMetadataTexcoordParameters.Emplace(
-          encodedFeatureIDSet.name,
+          SafeName,
           textureCoordinateIndex);
 
       const FCesiumFeatureIdSet& featureIDSet =
@@ -686,8 +703,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       const CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture&
           encodedFeatureIDTexture = *encodedFeatureIDSet.texture;
       featuresMetadataTexcoordParameters.Emplace(
-          encodedFeatureIDSet.name +
-              CesiumEncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
+          SafeName + CesiumEncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           updateTextureCoordinates(
               model,
               primitive,
@@ -706,7 +722,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
       gltfToUnrealTexCoordMap[-1] = textureCoordinateIndex;
       featuresMetadataTexcoordParameters.Emplace(
-          encodedFeatureIDSet.name,
+          SafeName,
           textureCoordinateIndex);
       if (duplicateVertices) {
         for (int64_t i = 0; i < indices.Num(); ++i) {
@@ -726,6 +742,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
   }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 static void updateTextureCoordinatesForMetadata_DEPRECATED(
     const Model& model,
     const MeshPrimitive& primitive,
@@ -842,6 +859,8 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
     }
   }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#pragma endregion
 
 namespace {
 
@@ -1897,6 +1916,8 @@ bool applyTexture(
   return true;
 }
 
+#pragma region Material Parameter setters
+
 static void SetGltfParameterValues(
     const CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
@@ -2271,11 +2292,13 @@ static void SetFeaturesMetadataParameterValues(
   if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
     for (CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet&
              encodedFeatureIdSet : loadResult.EncodedFeatures.featureIdSets) {
+      FString SafeName = CesiumEncodedFeaturesMetadata::createHlslSafeName(
+          encodedFeatureIdSet.name);
       if (encodedFeatureIdSet.nullFeatureId) {
         pMaterial->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
                 FName(
-                    encodedFeatureIdSet.name +
+                    SafeName +
                     CesiumEncodedFeaturesMetadata::MaterialNullFeatureIdSuffix),
                 association,
                 index),
@@ -2292,7 +2315,7 @@ static void SetFeaturesMetadataParameterValues(
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(
               FName(
-                  encodedFeatureIdSet.name +
+                  SafeName +
                   CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
               association,
               index),
@@ -2302,7 +2325,7 @@ static void SetFeaturesMetadataParameterValues(
       pMaterial->SetScalarParameterValueByInfo(
           FMaterialParameterInfo(
               FName(
-                  encodedFeatureIdSet.name +
+                  SafeName +
                   CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
               association,
               index),
@@ -2317,7 +2340,7 @@ static void SetFeaturesMetadataParameterValues(
       pMaterial->SetVectorParameterValueByInfo(
           FMaterialParameterInfo(
               FName(
-                  encodedFeatureIdSet.name +
+                  SafeName +
                   CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
               association,
               index),
@@ -2359,6 +2382,7 @@ static void SetMetadataFeatureTableParameterValues_DEPRECATED(
   }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 static void SetMetadataParameterValues_DEPRECATED(
     const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
@@ -2500,6 +2524,8 @@ static void SetMetadataParameterValues_DEPRECATED(
     }
   }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#pragma endregion
 
 static void loadPrimitiveGameThreadPart(
     const CesiumGltf::Model& model,
