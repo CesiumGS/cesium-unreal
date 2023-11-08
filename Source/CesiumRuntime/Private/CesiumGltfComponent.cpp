@@ -525,10 +525,12 @@ static void createTexCoordAccessorsForFeaturesMetadata(
             featureIdSet);
     int64 gltfTexCoordSetIndex = UCesiumFeatureIdTextureBlueprintLibrary::
         GetGltfTextureCoordinateSetIndex(featureIdTexture);
-    if (gltfTexCoordSetIndex < 0) {
+    if (gltfTexCoordSetIndex < 0 ||
+        texCoordAccessorsMap.find(gltfTexCoordSetIndex) !=
+            texCoordAccessorsMap.end()) {
+      // Skip if the index is invalid or if it has already been accounted for.
       continue;
     }
-
     texCoordAccessorsMap.emplace(
         gltfTexCoordSetIndex,
         GetTexCoordAccessorView(model, primitive, gltfTexCoordSetIndex));
@@ -556,7 +558,6 @@ static void createTexCoordAccessorsForFeaturesMetadata(
         // Skip if the index is invalid or if it has already been accounted for.
         continue;
       }
-
       texCoordAccessorsMap.emplace(
           gltfTexCoordSetIndex,
           GetTexCoordAccessorView(model, primitive, gltfTexCoordSetIndex));
@@ -591,10 +592,17 @@ static void updateTextureCoordinatesForFeaturesMetadata(
     const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
         encodedPropertyTexture =
             encodedModelMetadata.propertyTextures[propertyTextureIndex];
+
     for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTextureProperty&
              encodedProperty : encodedPropertyTexture.properties) {
+
+      FString fullPropertyName = CesiumEncodedFeaturesMetadata::
+          getMaterialNameForPropertyTextureProperty(
+              encodedPropertyTexture.name,
+              encodedProperty.name);
+
       featuresMetadataTexcoordParameters.Emplace(
-          encodedProperty.name +
+          fullPropertyName +
               CesiumEncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           updateTextureCoordinates(
               model,
@@ -2248,17 +2256,19 @@ static void SetFeaturesMetadataParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-  if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
-    for (const auto& textureCoordinateSet :
-         loadResult.FeaturesMetadataTexCoordParameters) {
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(textureCoordinateSet.Key),
-              association,
-              index),
-          textureCoordinateSet.Value);
-    }
+  // This handles texture coordinate indices for both attribute feature ID sets
+  // and property textures.
+  for (const auto& textureCoordinateSet :
+       loadResult.FeaturesMetadataTexCoordParameters) {
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(textureCoordinateSet.Key),
+            association,
+            index),
+        textureCoordinateSet.Value);
+  }
 
+  if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
     for (CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet&
              encodedFeatureIdSet : loadResult.EncodedFeatures.featureIdSets) {
       if (encodedFeatureIdSet.nullFeatureId) {

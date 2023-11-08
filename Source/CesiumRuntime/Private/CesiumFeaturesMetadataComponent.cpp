@@ -1058,10 +1058,10 @@ FString GenerateCodeForPropertyTextureProperty(
     const FString& PropertyDataName,
     const FString& PropertyChannelsName,
     const FCesiumMetadataPropertyDetails& PropertyDetails) {
-  // Example: sampledColor = Height_DATA.Sample(Height_DATASampler, Height_UV);
+  // Example: sampleColor = Height_DATA.Sample(Height_DATASampler, Height_UV);
   // clang-format off
   FString code =
-    "sampledColor = " +
+    "sampleColor = " +
     PropertyDataName + ".Sample(" + PropertyDataName + "Sampler, " + PropertyUVName + ");\n";
 
   // clang-format on

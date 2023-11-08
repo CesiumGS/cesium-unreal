@@ -810,20 +810,23 @@ EncodedPrimitiveMetadata encodePrimitiveMetadataAnyThreadPart(
 
   EncodedPrimitiveMetadata result;
 
-  // const TArray<FCesiumPropertyTexture>& propertyTextures =
-  //    UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(modelMetadata);
-  // result.propertyTextureIndices.Reserve(
-  //    metadataDescription.PropertyTextureNames.Num());
+  const TArray<FCesiumPropertyTexture>& propertyTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(modelMetadata);
+  result.propertyTextureIndices.Reserve(
+      metadataDescription.PropertyTextureNames.Num());
 
-  // for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
-  //  FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-  //  const FString* pName =
-  //      metadataDescription.PropertyTextureNames.Find(propertyTextureName);
-  //  // Confirm that the named property texture is actually present.
-  //  if (pName) {
-  //    result.propertyTextureIndices.Add(index);
-  //  }
-  //}
+  for (int32 i = 0; i < propertyTextures.Num(); i++) {
+    const FCesiumPropertyTexture& propertyTexture = propertyTextures[i];
+    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
+    const FString* pName =
+        metadataDescription.PropertyTextureNames.Find(propertyTextureName);
+    // Confirm that the named property texture is actually present. This
+    // indicates that it is acceptable to pass the texture coordinate index to
+    // the material layer.
+    if (pName) {
+      result.propertyTextureIndices.Add(i);
+    }
+  }
 
   return result;
 }
