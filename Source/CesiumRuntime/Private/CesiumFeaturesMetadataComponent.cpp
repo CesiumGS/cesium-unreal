@@ -1395,7 +1395,7 @@ void GenerateNodesForMetadataPropertyTransforms(
     }
 
     if (PropertyDetails.bHasScale) {
-      NodeY += 0.75f * Incr;
+      NodeY += Incr;
       UMaterialExpressionParameter* Parameter =
           GenerateParameterNodeWithGivenType(
               Type,
@@ -1420,7 +1420,7 @@ void GenerateNodesForMetadataPropertyTransforms(
     }
 
     if (PropertyDetails.bHasOffset) {
-      NodeY += 0.75f * Incr;
+      NodeY += Incr;
       UMaterialExpressionParameter* Parameter =
           GenerateParameterNodeWithGivenType(
               Type,
@@ -1459,7 +1459,7 @@ void GenerateNodesForMetadataPropertyTransforms(
   FString swizzle = GetSwizzleForEncodedType(Type);
 
   if (PropertyDetails.bHasNoDataValue) {
-    NodeY += 0.75 * Incr;
+    NodeY += Incr;
     UMaterialExpressionParameter* Parameter =
         GenerateParameterNodeWithGivenType(
             Type,
@@ -1480,7 +1480,7 @@ void GenerateNodesForMetadataPropertyTransforms(
       UMaterialExpressionCustom* CustomFunction =
           NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
       CustomFunction->Description = "Get No Data Value For " + PropertyName;
-      CustomFunction->MaterialExpressionEditorX = NameLength + 0.5 * Incr;
+      CustomFunction->MaterialExpressionEditorX = BeginSectionX + 0.5 * Incr;
       CustomFunction->MaterialExpressionEditorY = NodeY;
 
       CustomFunction->Outputs.Reset(1);
@@ -1501,12 +1501,11 @@ void GenerateNodesForMetadataPropertyTransforms(
       CustomFunction->Code = "return " + InputName + swizzle + ";\n";
       GetNoDataValueNode = CustomFunction;
 
-      NodeY += 0.5 * Incr;
       NameLength += GetNameLengthScalar(CustomFunction->Description) * Incr;
     }
 
     MaximumParameterSectionX =
-        FMath::Max(MaximumParameterSectionX, NameLength + 0.25 * Incr);
+        FMath::Max(MaximumParameterSectionX, 0.25 * Incr);
   }
 
   if (PropertyDetails.bHasDefaultValue) {
@@ -1531,7 +1530,7 @@ void GenerateNodesForMetadataPropertyTransforms(
       UMaterialExpressionCustom* CustomFunction =
           NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
       CustomFunction->Description = "Get Default Value For " + PropertyName;
-      CustomFunction->MaterialExpressionEditorX = NameLength + 0.25 * Incr;
+      CustomFunction->MaterialExpressionEditorX = BeginSectionX + 0.5 * Incr;
       CustomFunction->MaterialExpressionEditorY = NodeY;
 
       CustomFunction->Outputs.Reset(1);
@@ -1554,8 +1553,6 @@ void GenerateNodesForMetadataPropertyTransforms(
 
       GetDefaultValueNode = CustomFunction;
       NameLength += GetNameLengthScalar(CustomFunction->Description) * Incr;
-
-      NodeY += 0.5 * Incr;
     }
 
     MaximumParameterSectionX = FMath::Max(
