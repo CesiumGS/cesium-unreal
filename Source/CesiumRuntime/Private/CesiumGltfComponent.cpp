@@ -2185,24 +2185,6 @@ static void SetPropertyTextureParameterValues(
             encodedProperty.channels[2],
             encodedProperty.channels[3]));
 
-    ECesiumEncodedMetadataType type = ECesiumEncodedMetadataType::None;
-    switch (encodedProperty.type) {
-    case ECesiumMetadataType::Scalar:
-      type = ECesiumEncodedMetadataType::Scalar;
-      break;
-    case ECesiumMetadataType::Vec2:
-      type = ECesiumEncodedMetadataType::Vec2;
-      break;
-    case ECesiumMetadataType::Vec3:
-      type = ECesiumEncodedMetadataType::Vec3;
-      break;
-    case ECesiumMetadataType::Vec4:
-      type = ECesiumEncodedMetadataType::Vec4;
-      break;
-    default:
-      break;
-    }
-
     if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
             encodedProperty.offset)) {
       FString parameterName =
@@ -2210,7 +2192,7 @@ static void SetPropertyTextureParameterValues(
           CesiumEncodedFeaturesMetadata::MaterialPropertyOffsetSuffix;
       SetPropertyParameterValue(
           parameterName,
-          type,
+          encodedProperty.type,
           encodedProperty.offset,
           0.0f,
           pMaterial,
@@ -2224,7 +2206,7 @@ static void SetPropertyTextureParameterValues(
           CesiumEncodedFeaturesMetadata::MaterialPropertyScaleSuffix;
       SetPropertyParameterValue(
           parameterName,
-          type,
+          encodedProperty.type,
           encodedProperty.offset,
           1.0f,
           pMaterial,
@@ -2239,7 +2221,7 @@ static void SetPropertyTextureParameterValues(
           CesiumEncodedFeaturesMetadata::MaterialPropertyNoDataSuffix;
       SetPropertyParameterValue(
           parameterName,
-          type,
+          encodedProperty.type,
           encodedProperty.offset,
           0.0f,
           pMaterial,
@@ -2254,7 +2236,7 @@ static void SetPropertyTextureParameterValues(
           CesiumEncodedFeaturesMetadata::MaterialPropertyDefaultValueSuffix;
       SetPropertyParameterValue(
           parameterName,
-          type,
+          encodedProperty.type,
           encodedProperty.offset,
           0.0f,
           pMaterial,
