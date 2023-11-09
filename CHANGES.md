@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+ - Added support for styling with property textures in `EXT_structural_metadata`.
+
 ### v2.0.0 - 2023-11-01
 
 This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or v5.3 is required.
