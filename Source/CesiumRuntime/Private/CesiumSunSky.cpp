@@ -62,15 +62,11 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
   DirectionalLight->CascadeDistributionExponent = 2.0;
   DirectionalLight->DynamicShadowDistanceMovableLight = 500000.f;
 
-#if ENGINE_MAJOR_VERSION >= 5
   // We need to set both of these, because in the case of a pre-UE5 asset, UE5
   // will replace the normal atmosphere sun light flag with the value of the
   // deprecated one on load.
   DirectionalLight->bUsedAsAtmosphereSunLight_DEPRECATED = true;
   DirectionalLight->SetAtmosphereSunLight(true);
-#else
-  DirectionalLight->bUsedAsAtmosphereSunLight = true;
-#endif
 
   DirectionalLight->SetRelativeLocation(FVector(0, 0, 0));
 
@@ -91,11 +87,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
   SkyLight->bTransmission = true;
   SkyLight->SamplesPerPixel = 2;
 
-#if ENGINE_MAJOR_VERSION >= 5
   SkyLight->CastRaytracedShadow = ECastRayTracedShadow::Enabled;
-#else
-  SkyLight->bCastRaytracedShadow = true;
-#endif
 
   // Initially put the SkyLight at the world origin.
   // This is updated in UpdateSun.
