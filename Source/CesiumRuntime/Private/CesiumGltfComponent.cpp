@@ -2,7 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
-#include "Cesium3DTilesSelection/GltfUtilities.h"
+#include "Cesium3DTilesContent/GltfUtilities.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
@@ -1832,7 +1832,7 @@ static void loadModelAnyThreadPart(
   glm::dmat4x4 rootTransform = transform;
 
   {
-    rootTransform = Cesium3DTilesSelection::GltfUtilities::applyRtcCenter(
+    rootTransform = Cesium3DTilesContent::GltfUtilities::applyRtcCenter(
         model,
         rootTransform);
     applyGltfUpAxisTransform(model, rootTransform);

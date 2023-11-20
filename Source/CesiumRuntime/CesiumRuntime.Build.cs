@@ -83,6 +83,7 @@ public class CesiumRuntime : ModuleRules
         {
             "async++",
             "Cesium3DTiles",
+            "Cesium3DTilesContent",
             "Cesium3DTilesReader",
             "Cesium3DTilesSelection",
             "CesiumAsync",
