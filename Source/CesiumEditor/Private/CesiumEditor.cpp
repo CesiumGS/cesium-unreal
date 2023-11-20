@@ -111,6 +111,7 @@ void registerDetailCustomization() {
 
   FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
+  FCesium3DTilesetCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -126,6 +127,7 @@ void unregisterDetailCustomization() {
 
     FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
+    FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
   }
 }
 
