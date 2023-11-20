@@ -53,6 +53,12 @@ void SceneGenerationContext::setSuspendUpdate(bool suspend) {
     (*it)->SuspendUpdate = suspend;
 }
 
+void SceneGenerationContext::setMaximumSimultaneousTileLoads(int value) {
+  std::vector<ACesium3DTileset*>::iterator it;
+  for (it = tilesets.begin(); it != tilesets.end(); ++it)
+    (*it)->MaximumSimultaneousTileLoads = value;
+}
+
 bool SceneGenerationContext::areTilesetsDoneLoading() {
   if (tilesets.empty())
     return false;

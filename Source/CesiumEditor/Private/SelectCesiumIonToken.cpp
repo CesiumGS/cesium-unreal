@@ -459,11 +459,7 @@ FReply SelectCesiumIonToken::UseOrCreate() {
               UTF8_TO_TCHAR(response.value->token.c_str());
           pSettings->Modify();
 
-#if ENGINE_MAJOR_VERSION >= 5
           pSettings->TryUpdateDefaultConfigFile();
-#else
-          pSettings->UpdateDefaultConfigFile();
-#endif
 
           // Refresh all tilesets and overlays that are using the project
           // default token.

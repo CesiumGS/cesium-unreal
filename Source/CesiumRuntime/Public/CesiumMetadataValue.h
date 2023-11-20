@@ -784,4 +784,19 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|Value")
   static bool IsEmpty(UPARAM(ref) const FCesiumMetadataValue& Value);
+
+  /**
+   * Gets the given map of metadata values as a new map of strings, mapped by
+   * name. This is useful for displaying the values from a property table or
+   * property texture as strings in a user interface.
+   *
+   * Array properties cannot be converted to strings, so empty strings
+   * will be returned for their values.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static TMap<FString, FString>
+  GetValuesAsStrings(const TMap<FString, FCesiumMetadataValue>& Values);
 };

@@ -8,49 +8,53 @@
 #include "Misc/AutomationTest.h"
 
 #include "Cesium3DTileset.h"
+#include "CesiumAsync/ICacheDatabase.h"
+#include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
 
 using namespace Cesium;
 
-namespace Cesium {
-FString testGoogleUrl(
-    "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCaIL-JEK2Tw9MMBVKSTIu8dPkwfzfqAbU");
-}
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesPompidou,
-    "Cesium.Performance.GoogleTiles.Pompidou",
+    "Cesium.Performance.GoogleTiles.LocalePompidou",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesChrysler,
-    "Cesium.Performance.GoogleTiles.Chrysler",
+    "Cesium.Performance.GoogleTiles.LocaleChrysler",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesGuggenheim,
-    "Cesium.Performance.GoogleTiles.Guggenheim",
+    "Cesium.Performance.GoogleTiles.LocaleGuggenheim",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesDeathValley,
-    "Cesium.Performance.GoogleTiles.DeathValley",
+    "Cesium.Performance.GoogleTiles.LocaleDeathValley",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesTokyo,
-    "Cesium.Performance.GoogleTiles.Tokyo",
+    "Cesium.Performance.GoogleTiles.LocaleTokyo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesGoogleplex,
-    "Cesium.Performance.GoogleTiles.Googleplex",
+    "Cesium.Performance.GoogleTiles.LocaleGoogleplex",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FGoogleTilesMaxTileLoads,
+    "Cesium.Performance.GoogleTiles.VaryMaxTileLoads",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 #define TEST_SCREEN_WIDTH 1280
 #define TEST_SCREEN_HEIGHT 720
 
-void googleWarmCacheSetup(SceneGenerationContext& context) {
+void googleWarmCacheSetup(
+    SceneGenerationContext& context,
+    TestPass::TestingParameter parameter) {
   context.refreshTilesets();
 }
 
@@ -65,8 +69,9 @@ void setupForPompidou(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Center Pompidou, Paris, France"));
   context.tilesets.push_back(tileset);
 }
@@ -82,8 +87,9 @@ void setupForChrysler(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Chrysler Building, NYC"));
   context.tilesets.push_back(tileset);
 }
@@ -99,8 +105,9 @@ void setupForGuggenheim(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Guggenheim Museum, Bilbao, Spain"));
   context.tilesets.push_back(tileset);
 }
@@ -116,8 +123,9 @@ void setupForDeathValley(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(
       TEXT("Zabriskie Point, Death Valley National Park, California"));
   context.tilesets.push_back(tileset);
@@ -134,8 +142,9 @@ void setupForTokyo(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Tokyo Tower, Tokyo, Japan"));
   context.tilesets.push_back(tileset);
 }
@@ -148,8 +157,9 @@ void setupForGoogleplex(SceneGenerationContext& context) {
       90.0f);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetUrl(Cesium::testGoogleUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2275207);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   tileset->SetActorLabel(TEXT("Google Photorealistic 3D Tiles"));
 
   context.tilesets.push_back(tileset);
@@ -227,6 +237,37 @@ bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
   return RunLoadTest(
       GetBeautifiedTestName(),
       setupForGoogleplex,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
+bool FGoogleTilesMaxTileLoads::RunTest(const FString& Parameters) {
+
+  auto setupPass = [this](
+                       SceneGenerationContext& context,
+                       TestPass::TestingParameter parameter) {
+    std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+        getCacheDatabase();
+    pCacheDatabase->clearAll();
+
+    int maxLoadsTarget = std::get<int>(parameter);
+    context.setMaximumSimultaneousTileLoads(maxLoadsTarget);
+
+    context.refreshTilesets();
+  };
+
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Default", NULL, NULL});
+  testPasses.push_back(TestPass{"12", setupPass, NULL, 12});
+  testPasses.push_back(TestPass{"16", setupPass, NULL, 16});
+  testPasses.push_back(TestPass{"20", setupPass, NULL, 20});
+  testPasses.push_back(TestPass{"24", setupPass, NULL, 24});
+  testPasses.push_back(TestPass{"28", setupPass, NULL, 28});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForChrysler,
       testPasses,
       TEST_SCREEN_WIDTH,
       TEST_SCREEN_HEIGHT);

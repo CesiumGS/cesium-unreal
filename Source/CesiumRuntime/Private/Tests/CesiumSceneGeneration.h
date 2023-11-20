@@ -34,6 +34,7 @@ struct SceneGenerationContext {
 
   void refreshTilesets();
   void setSuspendUpdate(bool suspend);
+  void setMaximumSimultaneousTileLoads(int32 value);
   bool areTilesetsDoneLoading();
 
   void trackForPlay();

@@ -653,7 +653,8 @@ public:
   /**
    * Places the georeference origin at the camera's current location. Rotates
    * the globe so the current longitude/latitude/height of the camera is at the
-   * Unreal origin. The camera is also teleported to the Unreal origin.
+   * Unreal origin. The camera is also teleported to the new Unreal origin and
+   * rotated so that the view direction is maintained.
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
@@ -662,6 +663,19 @@ public:
    */
   UFUNCTION(Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
+
+  /**
+   * Creates a new Level Instance Actor at the current viewport location, and
+   * attaches the Cesium Sub Level Component to it. You will be prompted for
+   * where to store the new level.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sub-levels.
+   */
+  UFUNCTION(Category = "Cesium")
+  void CreateSubLevelHere();
 #endif
 
 private:

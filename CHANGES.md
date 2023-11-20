@@ -1,11 +1,54 @@
 # Change Log
 
-### ? - ?
+### v2.0.0 - 2023-11-01
+
+This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or v5.3 is required.
+
+##### Breaking Changes :mega:
+
+- Removed `FCesiumIntegerColor`, `FCesiumFloatColor`, `UCesiumFeatureTexturePropertyBlueprintLibrary::GetIntegerColorFromTextureCoordinates` and `UCesiumFeatureTexturePropertyBlueprintLibrary::GetFloatColorFromTextureCoordinates`. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
+- Renamed `GetTextureCoordinateIndex` to `GetUnrealUVChannel` in both `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary`. Contrary to what the documentation claimed, this function retrieved the index of the texture coordinate set in the *Unreal static mesh*, which is not necessarily equal to the texture coordinate set index in the *glTF primitive*. For the latter value, use `GetGltfTextureCoordinateSetIndex` instead.
+- Removed the old "exclusion zones" feature, which has been deprecated since v1.11.0. Use `CesiumCartographicPolygon` or `CesiumTileExcluder` instead.
+
+##### Additions :tada:
+
+- Added new functions to `UCesiumPropertyTexturePropertyBlueprintLibrary` to retrieve detailed property information and get the values of the property as a certain type. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit`, which computes the UV coordinates from a line trace hit without requiring "Support UV Hit Info" to be enabled. This can used to retrieve more accurate feature IDs or metadata values by sampling at an intermediary point on the face.
+- Added `GetPropertyTableValuesFromHit` and `GetPropertyTextureValuesFromHit` to `UCesiumMetadataPickingBlueprintLibrary` to retrieve the respective metadata from a line trace hit. For both functions, the target to sample is specified by index.
+- Added `UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive containing the feature ID set. This returns more accurate values for feature ID textures than `GetFeatureIDForVertex`.
+- Added `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive, where the desired feature ID set is specified by index. For feature ID textures, this returns more accurate values than `GetFeatureIDFromFace`.
+- Added `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV`, which samples a feature ID texture with `FVector2D` UV coordinates.
+- Added `GetGltfTextureCoordinateSetIndex` to `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary` to avoid ambiguity with `GetUnrealUVChannel`.
+- Added `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert a map of `FCesiumMetadataValues` to their string representations.
+- Added support for `file:///` URLs across all platforms and Unreal Engine versions.
+- Added "Create Sub Level Here" button on `CesiumGeoreference`.
+- Added "Please Georeference Origin Here" button to `CesiumSubLevelComponent`.
+- Added "Google Photorealistic 3D Tiles" to the Quick Add panel.
 
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause tiles in a `Cesium3DTileset` to have an incorrect transformation.
 - Fixed a crash that occurred when a `LevelSequenceActor` in the level did not have a `LevelSequencePlayer` assigned.
+- Fixed a bug that would spam Georeference-related messages to the log when editing a globe anchor component that is not embedded in a world. For example, when editing a Blueprint asset with a globe anchor.
+- Fixed several problems that could cause tilesets in sub-levels to be misaligned with the rest of the globe.
+
+##### Deprecated :hourglass:
+
+- `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForTextureCoordinates` has been deprecated. Use `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV` instead.
+- `UCesiumPropertyTexturePropertyBlueprintLibrary::GetSwizzle` and `UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount` have been deprecated, since they are no longer necessary to handle property texture property values in the plugin. Use `UCesiumPropertyTexturePropertyBlueprintLibrary::GetChannels` instead.
+- `UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFace` has been deprecated. Use `UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesForHit` instead.
+- `UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFaceAsStrings` has been deprecated. Use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesForHit` instead.
+- `UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings` has been deprecated. Use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature` instead.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.28.1 to v0.29.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.31.2 - 2023-10-26
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.0. Future versions will require Unreal Engine v5.1+.
+
+##### Additions :tada:
+
+- Added "Google Photorealistic 3D Tiles" to the Quick Add panel.
 
 ### v2.0.0 Preview 1 - 2023-10-02
 

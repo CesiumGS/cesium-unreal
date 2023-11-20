@@ -37,8 +37,10 @@
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
 #include "Editor.h"
+#include "EditorLevelUtils.h"
 #include "EditorViewportClient.h"
 #include "GameFramework/Pawn.h"
+#include "LevelInstance/LevelInstanceEditorLevelStreaming.h"
 #include "Slate/SceneViewport.h"
 #endif
 
@@ -364,7 +366,7 @@ FMatrix ACesiumGeoreference::ComputeUnrealToEastSouthUpTransformation(
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
   UWorld* pWorld = this->GetWorld();
-  if (!GEditor || pWorld->IsGameWorld()) {
+  if (!pWorld || !GEditor || pWorld->IsGameWorld()) {
     return;
   }
 
@@ -375,22 +377,32 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   FEditorViewportClient* pEditorViewportClient =
       static_cast<FEditorViewportClient*>(pViewportClient);
 
-  FRotator newViewRotation = this->TransformUnrealRotatorToEastSouthUp(
-      pEditorViewportClient->GetViewRotation(),
-      pEditorViewportClient->GetViewLocation());
+  // The viewport location / rotation is Unreal world coordinates. Transform
+  // into the georeference's reference frame. This way we'll compute the correct
+  // globe position even if the globe is transformed into the Unreal world.
+  FVector ViewLocation = pEditorViewportClient->GetViewLocation();
+  FQuat ViewRotation = pEditorViewportClient->GetViewRotation().Quaternion();
+
+  ViewLocation =
+      this->GetActorTransform().InverseTransformPosition(ViewLocation);
+  ViewRotation =
+      this->GetActorTransform().InverseTransformRotation(ViewRotation);
+
+  FRotator NewViewRotation = this->TransformUnrealRotatorToEastSouthUp(
+      ViewRotation.Rotator(),
+      ViewLocation);
 
   // camera local space to ECEF
-  FVector cameraEcefPosition =
-      this->TransformUnrealPositionToEarthCenteredEarthFixed(
-          pEditorViewportClient->GetViewLocation());
+  FVector CameraEcefPosition =
+      this->TransformUnrealPositionToEarthCenteredEarthFixed(ViewLocation);
 
   // Long/Lat/Height camera location, in degrees/meters (also our new target
   // georeference origin) When the location is too close to the center of the
   // earth, the result will be (0,0,0)
-  this->SetOriginEarthCenteredEarthFixed(cameraEcefPosition);
+  this->SetOriginEarthCenteredEarthFixed(CameraEcefPosition);
 
   // TODO: check for degeneracy ?
-  FVector cameraFront = newViewRotation.RotateVector(FVector::XAxisVector);
+  FVector cameraFront = NewViewRotation.RotateVector(FVector::XAxisVector);
   FVector cameraRight =
       FVector::CrossProduct(FVector::ZAxisVector, cameraFront).GetSafeNormal();
   FVector cameraUp =
@@ -399,7 +411,75 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   pEditorViewportClient->SetViewRotation(
       FMatrix(cameraFront, cameraRight, cameraUp, FVector::ZeroVector)
           .Rotator());
-  pEditorViewportClient->SetViewLocation(FVector::ZeroVector);
+  pEditorViewportClient->SetViewLocation(
+      this->GetActorTransform().TransformPosition(FVector::ZeroVector));
+}
+
+void ACesiumGeoreference::CreateSubLevelHere() {
+  UWorld* World = GetWorld();
+  if (!World || !GEditor || World->IsGameWorld()) {
+    return;
+  }
+
+  // Deactivate any previous sub-levels, so that setting the georeference origin
+  // doesn't change their origin, too.
+  this->SubLevelSwitcher->SetTargetSubLevel(nullptr);
+
+  // Update the georeference origin so that the new sub-level inherits it.
+  this->PlaceGeoreferenceOriginHere();
+
+  // Create a dummy Actor to add to the new sub-level, because
+  // CreateLevelInstanceFrom forbids an empty array for some reason.
+  TArray<AActor*> SubLevelActors;
+
+  FActorSpawnParameters SpawnParameters{};
+  SpawnParameters.NameMode =
+      FActorSpawnParameters::ESpawnActorNameMode::Requested;
+  SpawnParameters.Name = TEXT("Placeholder");
+  SpawnParameters.ObjectFlags = RF_Transactional;
+
+  AActor* PlaceholderActor = World->SpawnActor<AActor>(
+      FVector::ZeroVector,
+      FRotator::ZeroRotator,
+      SpawnParameters);
+  PlaceholderActor->SetActorLabel(TEXT("Placeholder"));
+
+  SubLevelActors.Add(PlaceholderActor);
+
+  // Create the new Level Instance Actor and corresponding streaming level.
+  FNewLevelInstanceParams LevelInstanceParams{};
+  LevelInstanceParams.PivotType = ELevelInstancePivotType::WorldOrigin;
+  LevelInstanceParams.Type = ELevelInstanceCreationType::LevelInstance;
+  LevelInstanceParams.SetExternalActors(false);
+
+  ULevelInstanceSubsystem* LevelInstanceSubsystem =
+      World->GetSubsystem<ULevelInstanceSubsystem>();
+  AActor* LevelInstance =
+      Cast<AActor>(LevelInstanceSubsystem->CreateLevelInstanceFrom(
+          SubLevelActors,
+          LevelInstanceParams));
+  if (!IsValid(LevelInstance)) {
+    // User canceled creation of the sub-level, so delete the placeholder we
+    // created.
+    PlaceholderActor->Destroy();
+    return;
+  }
+
+  UCesiumSubLevelComponent* LevelComponent =
+      Cast<UCesiumSubLevelComponent>(LevelInstance->AddComponentByClass(
+          UCesiumSubLevelComponent::StaticClass(),
+          false,
+          FTransform::Identity,
+          false));
+  LevelComponent->SetFlags(RF_Transactional);
+  LevelInstance->AddInstanceComponent(LevelComponent);
+
+  // Move the new level instance under the CesiumGeoreference.
+  LevelInstance->GetRootComponent()->SetMobility(
+      this->GetRootComponent()->Mobility);
+  LevelInstance->AttachToActor(
+      this,
+      FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void ACesiumGeoreference::_showSubLevelLoadRadii() const {
@@ -661,6 +741,8 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
 
     FActorSpawnParameters spawnParameters{};
     spawnParameters.Name = FName(pFound->LevelName);
+    spawnParameters.NameMode =
+        FActorSpawnParameters::ESpawnActorNameMode::Requested;
     spawnParameters.ObjectFlags = RF_Transactional;
 
     ALevelInstance* pLevelInstance = pWorld->SpawnActor<ALevelInstance>(

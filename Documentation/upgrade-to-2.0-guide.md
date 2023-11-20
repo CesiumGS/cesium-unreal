@@ -190,9 +190,10 @@ Additionally, `UCesiumFeatureTableBlueprintLibrary` has been renamed to `UCesium
 
 - Renamed `GetNumberOfFeatures` to `GetPropertyTableSize`.
 - Renamed `GetMetadataValuesForFeatureID` to `GetMetadataValuesForFeature`. Only values from valid properties are retrieved.
-- Renamed `GetMetadataValuesAsStringForFeatureID` to `GetMetadataValuesForFeatureAsStrings`. Only strings from valid properties are retrieved.
 - Added the `GetPropertyNames` function to retrieve the names of all properties, including invalid ones.
 - Added the `FindProperty` function to retrieve a property of a specific name from the property table. Returns an invalid instance if no property in the property table has that name.
+
+Note that `GetMetadataValuesForFeatureAsStrings`, which was previously renamed from `GetMetadataValuesAsStringForFeatureID` in the v2.0 preview release, has been deprecated. Instead, use `UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings` to convert the output of `GetMetadataValuesForFeature`.
 
 Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumPropertyTablePropertyBlueprintLibrary` with the following changes:
 
@@ -209,7 +210,46 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
   - `GetVector4`
   - `GetMatrix`
 
-### Metadata Picking
+In the `EXT_structural_metadata` specification, properties may contain *transformations* that affect the interpretation of their values in some way. These include `offset`, `scale`, `noData`, and `defaultValue`. A `min` and `max` value may also be specified if the property is a numeric type. To retrieve these values in Unreal Engine, use the `GetOffset`, `GetScale`, `GetNoDataValue`, `GetDefaultValue`,  `GetMinimumValue`, and `GetMaximumValue` functions respectively. These return the value as a `FCesiumMetadataValue`, which can later be converted to the appropriate type. 
+
+### Property Textures
+
+Property textures in `EXT_structural_metadata` are derived from the feature textures in `EXT_feature_metadata`. As such, `FCesiumFeatureTexture` has been renamed to `FCesiumPropertyTexture`, and `UCesiumFeatureTextureBlueprintLibrary` to `UCesiumPropertyTextureBlueprintLibrary`. Additionally, `UCesiumFeatureTextureBlueprintLibrary::GetPropertyKeys` is now `UCesiumPropertyTextureBlueprintLibrary::GetPropertyNames`.
+
+In previous versions of Cesium for Unreal, `FCesiumFeatureTextureProperty` did not preserve the type information of the properties. Instead, it used specialized structs &ndash; `FCesiumIntegerColor` and `FCesiumFloatColor` &ndash; to hold the channel values of a pixel in the texture. These structs required the user to determine the property's type and manually construct the correct metadata value from the pixel. To remove this extra work on the user, the newly-renamed `FCesiumPropertyTextureProperty` now interprets the texture channels on the user's behalf and returns the values as the property's specified type.
+
+The `ECesiumPropertyTextureStatus` has been added to indicate whether a property texture is valid. Invalid property textures will not have any metadata properties. Additionally, a `FCesiumPropertyTextureProperty` can now report its `ECesiumPropertyTexturePropertyStatus`, indicating when it has experienced an error. 
+
+Finally, `UCesiumFeatureTexturePropertyBlueprintLibrary` has been renamed to `UCesiumPropertyTexturePropertyBlueprintLibrary`, and its functionality now mirrors that of `UCesiumPropertyTablePropertyBlueprintLibrary` with the following changes:
+
+- Added `GetValueType`, `GetBlueprintType`, `GetArrayElementBlueprintType`, and `GetArraySize` to retrieve accurate type information from a property texture property.
+- Added `GetOffset`, `GetScale`, `GetMinimumValue`, `GetMaximumValue`, `GetNoDataValue`, and `GetDefaultValue` to retrieve the property's more granular details.
+- Added `GetChannels` to retrieve the texture channel information of a property texture property. This contains the indices of the channels that are used to construct the property's value from the texture.
+- Added `Get` functions to `UCesiumPropertyTexturePropertyBlueprintLibrary` to retrieve values of the property as a certain type from the given UV coordinates. This is a subset of the functions available on `UCesiumPropertyTablePropertyBlueprintLibrary`, since property texture properties are more limited in type. This includes:
+  - `GetByte`
+  - `GetInteger`
+  - `GetFloat`
+  - `GetFloat64`
+  - `GetIntPoint`
+  - `GetVector2D`
+  - `GetIntVector`
+  - `GetVector`
+  - `GetVector4`
+  - `GetArray`
+  - `GetValue`
+  - `GetRawValue`
+
+Unfortunately, there is no easy way to implement backwards compatibility for the older API, so `FCesiumIntegerColor` and `FCesiumFloatColor` have been **removed** without replacement. Consequently, the `GetIntegerColorFromTextureCoordinates` and `GetFloatColorFromTextureCoordinates` that were previously in `UCesiumFeatureTexturePropertyBlueprintLibrary` are also removed.
+
+TODO picking functions here
+
+### Metadata Access
+
+For both `EXT_feature_metadata` and `EXT_structural_metadata`, the extensions use different specifications based on which glTF component it is extending. They could extend the individual glTF primitives as well the glTF model itself. Previously, the `FCesiumMetadataModel` and `FCesiumMetadataPrimitive` structs were used to differentiate between the placements of the `EXT_feature_metadata` extension. In Cesium for Unreal v2.0, the `FCesiumModelMetadata` and `FCesiumPrimitiveMetadata` struts are used for `EXT_structural_metadata`.
+
+`FCesiumMetadataModel` has simply been renamed to `FCesiumModelMetadata`, representing the metadata specified by the `EXT_structural_metadata` extension on the root glTF model. However, `FCesiumMetadataPrimitive` was not so simple to rename. In `EXT_feature_metadata`, the primitive extension stored both metadata *and* feature IDs, whereas the `EXT_structural_metadata` primitive extension only indicated metadata. To handle this distinction, the `FCesiumMetadataPrimitive` is treated as separate from the newer `FCesiumPrimitiveMetadata` struct. `FCesiumMetadataPrimitive` is still deprecated, so instead use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
+
+### TODO: Metadata Picking
 
 *Picking* refers to the act of selecting a feature (e.g., selecting by mouse click) and querying it for information. Typically, picking is used to access the metadata of a particular feature.
 
@@ -225,16 +265,6 @@ To retrieve the values as strings, use **"Get Metadata Values For Face As String
 
 ![Get Metadata Values For Face](Images/getMetadataValuesForFaceAsStrings.jpeg)
 
-### TODO: Feature Textures -> Property Textures
-
-- Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
-- Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
-- Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` is now `GetPropertyNames`.
-- Added `FCesiumPropertyArray`, which represents an array retrieved from the `EXT_structural_metadata` extension.
-- Renamed `FCesiumMetadataModel` to `FCesiumModelMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on the root glTF model.
-- Added `FCesiumPrimitiveMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on a glTF mesh primitive.
-- `FCesiumMetadataPrimitive` has been deprecated. Instead, use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
-
 <h2 id="styling">Styling with EXT_mesh_features and EXT_structural_metadata</h2>
 
 *Styling* refers to the visual modification of data based on some information – usually metadata – and rules built around it by the developer. Previous versions of Cesium for Unreal allowed styling with the `UCesiumEncodedMetadataComponent`, which made `EXT_feature_metadata` accessible in Unreal materials. In this way, Unreal's material editor and rendering systems could be leveraged to visually alter tilesets based on their metadata.
@@ -242,6 +272,9 @@ To retrieve the values as strings, use **"Get Metadata Values For Face As String
 In Cesium for Unreal v2.0, `UCesiumEncodedMetadataComponent` has been deprecated and replaced by `UCesiumFeaturesMetadataComponent`. The new component is functionally similar, but it handles the `EXT_mesh_features` and `EXT_structural_metadata` extensions instead. Styling with `EXT_feature_metadata` is no longer supported.
 
 ![CesiumFeaturesMetadataComponent](Images/cesiumFeaturesMetadataComponent.jpeg)
+
+- Added `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit` to retrieve the feature ID from a line trace hit on a primitive, where the desired feature ID set is specified by index. For feature ID textures, this returns more accurate values than `GetFeatureIDFromFace`.
+- Added `UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit` to retrieve the property texture property values from a line trace hit on the primitive. Each property may specify a different texture coordinate set, so this function accounts for each property's specified set.
 
 ### Auto Fill 
 

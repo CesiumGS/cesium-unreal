@@ -955,18 +955,6 @@ void ACesium3DTileset::LoadTileset() {
         *this->Url);
   }
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
-  if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
-    pWorldSettings->bEnableLargeWorlds = true;
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Cesium for Unreal has enabled the \"Enable Large Worlds\" option in this world's settings, as it is required in order to avoid serious culling problems with Cesium3DTilesets in Unreal Engine 5."),
-        *this->Url);
-  }
-#endif
-
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
       cesiumViewExtension = getCesiumViewExtension();
   const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor =
@@ -1378,13 +1366,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     }
 
     if (useStereoRendering) {
-#if ENGINE_MAJOR_VERSION >= 5
       const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
       const auto rightEye = EStereoscopicEye::eSSE_RIGHT_EYE;
-#else
-      const auto leftEye = EStereoscopicPass::eSSP_LEFT_EYE;
-      const auto rightEye = EStereoscopicPass::eSSP_RIGHT_EYE;
-#endif
 
       uint32 stereoLeftSizeX = static_cast<uint32>(sizeX);
       uint32 stereoLeftSizeY = static_cast<uint32>(sizeY);
@@ -1421,9 +1404,9 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             pStereoRendering->GetStereoProjectionMatrix(leftEye);
 
         // TODO: consider assymetric frustums using 4 fovs
-        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
+        double one_over_tan_half_hfov = projection.M[0][0];
 
-        CesiumReal hfov =
+        double hfov =
             glm::degrees(2.0 * glm::atan(1.0 / one_over_tan_half_hfov));
 
         cameras.emplace_back(
@@ -1445,9 +1428,9 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         FMatrix projection =
             pStereoRendering->GetStereoProjectionMatrix(rightEye);
 
-        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
+        double one_over_tan_half_hfov = projection.M[0][0];
 
-        CesiumReal hfov =
+        double hfov =
             glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
         cameras.emplace_back(
@@ -1660,51 +1643,6 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 
 namespace {
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-/**
- * @brief Check if the given tile is contained in one of the given exclusion
- * zones.
- *
- * TODO Add details here what that means
- * Old comment:
- * Consider Exclusion zone to drop this tile... Ideally, should be
- * considered in Cesium3DTilesSelection::ViewState to avoid loading the tile
- * first...
- *
- * @param exclusionZones The exclusion zones
- * @param tile The tile
- * @return The result of the test
- */
-bool isInExclusionZone(
-    const TArray<FCesiumExclusionZone>& exclusionZones,
-    Cesium3DTilesSelection::Tile const* tile) {
-  if (exclusionZones.Num() == 0) {
-    return false;
-  }
-  // Apparently, only tiles with bounding REGIONS are
-  // checked for the exclusion...
-  const CesiumGeospatial::BoundingRegion* pRegion =
-      std::get_if<CesiumGeospatial::BoundingRegion>(&tile->getBoundingVolume());
-  if (!pRegion) {
-    return false;
-  }
-  for (FCesiumExclusionZone ExclusionZone : exclusionZones) {
-    CesiumGeospatial::GlobeRectangle cgExclusionZone =
-        CesiumGeospatial::GlobeRectangle::fromDegrees(
-            ExclusionZone.West,
-            ExclusionZone.South,
-            ExclusionZone.East,
-            ExclusionZone.North);
-    if (cgExclusionZone.computeIntersection(pRegion->getRectangle())) {
-      return true;
-    }
-  }
-  return false;
-}
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
 void removeVisibleTilesFromList(
     std::vector<Cesium3DTilesSelection::Tile*>& list,
     const std::vector<Cesium3DTilesSelection::Tile*>& visibleTiles) {
@@ -1914,12 +1852,6 @@ void ACesium3DTileset::showTilesToRender(
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
-
-    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
-      continue;
-    }
-    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     // That looks like some reeeally entertaining debug session...:
     // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
