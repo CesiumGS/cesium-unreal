@@ -18,6 +18,7 @@
 #include <CesiumAsync/AsyncSystem.h>
 #include <CesiumAsync/IAssetAccessor.h>
 #include <Modules/ModuleManager.h>
+#include "EncryptAssetAccessor.h"
 #include <spdlog/spdlog.h>
 
 #if CESIUM_TRACING_ENABLED
@@ -116,12 +117,21 @@ std::shared_ptr<CesiumAsync::ICacheDatabase>& getCacheDatabase() {
 const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   static int RequestsPerCachePrune =
       GetDefault<UCesiumRuntimeSettings>()->RequestsPerCachePrune;
-  static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
+  /*static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::GunzipAssetAccessor>(
           std::make_shared<CesiumAsync::CachingAssetAccessor>(
               spdlog::default_logger(),
               std::make_shared<UnrealAssetAccessor>(),
               getCacheDatabase(),
-              RequestsPerCachePrune));
+              RequestsPerCachePrune));*/
+  static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor=
+    std::make_shared<CesiumAsync::GunzipAssetAccessor>(
+      std::make_shared<EncryptAssetAccessor>(
+        std::make_shared<CesiumAsync::CachingAssetAccessor>(
+          spdlog::default_logger(),
+          std::make_shared<UnrealAssetAccessor>(),
+          getCacheDatabase(),
+          RequestsPerCachePrune)));
+
   return pAssetAccessor;
 }

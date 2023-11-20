@@ -22,6 +22,7 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   pModel = nullptr;
   pMeshPrimitive = nullptr;
   pTilesetActor = nullptr;
+  bCanEverAffectNavigation=0;
 }
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

@@ -60,7 +60,7 @@ public:
 
   virtual gsl::span<const std::byte> data() const override {
     const TArray<uint8>& content = this->_pResponse->GetContent();
-    return gsl::span(
+    return gsl::span<const std::byte>(
         reinterpret_cast<const std::byte*>(content.GetData()),
         content.Num());
   }

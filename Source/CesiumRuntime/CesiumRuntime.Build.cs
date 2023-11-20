@@ -104,7 +104,7 @@ public class CesiumRuntime : ModuleRules
             "turbojpeg",
             "uriparser",
             "webpdecoder",
-            "ktx_read",
+            "ktx_read"
         };
 
         // Use our own copy of MikkTSpace on Android.
@@ -116,7 +116,8 @@ public class CesiumRuntime : ModuleRules
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            libs = libs.Concat(new string[] { "tidy_static", "zlibstatic" }).ToArray();
+            libs = libs.Concat(new string[] { "tidy_static", "zlibstatic","cryptolib" }).ToArray();
+            bUseRTTI = true;
         }
         else
         {
@@ -208,5 +209,6 @@ public class CesiumRuntime : ModuleRules
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
+        bEnableUndefinedIdentifierWarnings = false;
     }
 }
