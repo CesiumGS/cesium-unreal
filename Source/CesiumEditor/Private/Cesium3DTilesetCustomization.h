@@ -6,7 +6,7 @@
 
 /**
  * An implementation of the IDetailCustomization interface that customizes
- * the Details View of a CesiumGeoreference. It is registered in
+ * the Details View of a Cesium3DTileset. It is registered in
  * FCesiumEditorModule::StartupModule.
  */
 class FCesium3DTilesetCustomization : public IDetailCustomization {
