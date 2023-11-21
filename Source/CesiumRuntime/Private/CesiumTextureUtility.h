@@ -23,11 +23,7 @@ namespace CesiumTextureUtility {
  * @brief A texture that has already been asynchronously created.
  */
 struct AsyncCreatedTexture {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
-  FTexture2DRHIRef rhiTextureRef{};
-#else
   FTextureRHIRef rhiTextureRef{};
-#endif
 };
 
 /**

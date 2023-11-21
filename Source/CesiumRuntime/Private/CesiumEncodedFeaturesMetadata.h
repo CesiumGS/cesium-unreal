@@ -38,8 +38,9 @@ struct FCesiumPrimitiveMetadataDescription;
  * the feature IDs / metadata specified in the description.
  */
 namespace CesiumEncodedFeaturesMetadata {
+
 /**
- * Naming convention for feature ID texture parameters:
+ * Naming convention for feature ID texture parameters nodes:
  *  - Texture: FeatureIDTextureName + "_TX"
  *  - Texture Coordinate Index: FeatureIDTextureName + "_UV_INDEX"
  *  - Channels: FeatureIDTextureName + "_CHANNELS"
@@ -51,31 +52,37 @@ static const FString MaterialChannelsSuffix = "_CHANNELS";
 static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
 
 /**
- * - Null Feature ID: FeatureIDSetName + "_NULL_ID"
+ * - Null Feature ID node: FeatureIDSetName + "_NULL_ID"
  */
 static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
 
 /**
- * Naming convention for metadata parameters
+ * Naming convention for metadata parameter nodes
  * - Property Table: "PTABLE_" + PropertyTableName
- * - Property Texture: "PTEXTURE_" + PropertyTableName
  * - Property Table Property: "PTABLE_" + PropertyTableName + PropertyName
+ */
+static const FString MaterialPropertyTablePrefix = "PTABLE_";
+
+/**
+ * - Property Texture: "PTEXTURE_" + PropertyTableName
  * - Property Texture Property: "PTEXTURE_" + PropertyTextureName + PropertyName
  * - Property Texture Property UV Index: "PTEXTURE_" + PropertyTextureName +
  * PropertyName + "_UV_INDEX"
  * - Property Texture Property Channels: "PTEXTURE_" + PropertyTextureName +
  * PropertyName + "_CHANNELS"
  */
-static const FString MaterialPropertyTablePrefix = "PTABLE_";
 static const FString MaterialPropertyTexturePrefix = "PTEXTURE_";
 
 /**
- * - Property Offset: Prefix + PropertyTableName + PropertyName + "_OFFSET"
- * - Property Scale: Prefix + PropertyTableName + PropertyName + "_SCALE"
- * - Property NoData: Prefix + PropertyTableName + PropertyName + "_NO_DATA"
- * - Property Default Value: Prefix + PropertyTableName + PropertyName +
+ * Below, "PropertyEntityName" represents the name of either a property table or
+ * property texture.
+ *
+ * - Property Offset: Prefix + PropertyEntityName + PropertyName + "_OFFSET"
+ * - Property Scale: Prefix + PropertyEntityName + PropertyName + "_SCALE"
+ * - Property NoData: Prefix + PropertyEntityName + PropertyName + "_NO_DATA"
+ * - Property Default Value: Prefix + PropertyEntityName + PropertyName +
  * "_DEFAULT"
- * - Property Has Value Qualifier: Prefix + PropertyTableName + PropertyName
+ * - Property Has Value Qualifier: Prefix + PropertyEntityName + PropertyName
  * + "_HAS_VALUE"
  */
 static const FString MaterialPropertyOffsetSuffix = "_OFFSET";
@@ -85,11 +92,12 @@ static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
 static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
 
 /**
- * - Property Data (node parameter name): PropertyName + "_DATA"
- * - Property Raw Value (output name): PropertyName + "_RAW"
- * - Property Transform Value (node parameter name): TransformName +
+ * Naming convention for material inputs (for use in custom functions):
+ * - Property Data: PropertyName + "_DATA"
+ * - Property Raw Value: PropertyName + "_RAW"
+ * - Property Transform Value: TransformName +
  * "_VALUE"
- * - Property UV Value (node parameter name): PropertyName = "_UV"
+ * - Property UV Value: PropertyName = "_UV"
  */
 static const FString MaterialPropertyDataSuffix = "_DATA";
 static const FString MaterialPropertyRawSuffix = "_RAW";
@@ -115,7 +123,7 @@ static const FString MaterialPropertyUVSuffix = "_UV";
  * so any additional implicit feature ID sets across the primitives are
  * counted by this one.
  *
- * This is also used by FCesiumFeatureIdSetDescription to display the names of
+ * This is used by FCesiumFeatureIdSetDescription to display the names of
  * the feature ID sets across a tileset.
  *
  * @param FeatureIDSet The feature ID set
@@ -126,6 +134,16 @@ static const FString MaterialPropertyUVSuffix = "_UV";
 FString getNameForFeatureIDSet(
     const FCesiumFeatureIdSet& FeatureIDSet,
     int32& FeatureIDTextureCounter);
+/**
+ * @brief Generates a HLSL-safe name for a feature ID set. This is used by the
+ * material for parameter nodes.
+ *
+ * @param FeatureIDSet The feature ID set
+ * @param FeatureIDTextureCounter The counter representing how many feature ID
+ * textures have been seen in the primitive thus far. Will be incremented by
+ * this function if the given feature ID set is a texture.
+ */
+FString getMaterialNameForFeatureIDSet();
 
 /**
  * @brief A feature ID texture that has been encoded for access on the GPU.
@@ -253,8 +271,8 @@ FString
 getNameForPropertyTexture(const FCesiumPropertyTexture& PropertyTexture);
 
 /**
- * @brief Generates a name for a property table property in a glTF model's
- * EXT_structural_metadata. This is formatted like so:
+ * @brief Generates an HLSL-safe name for a property table property in a glTF
+ * model's EXT_structural_metadata. This is formatted like so:
  *
  * "PTABLE_<table name>_<property name>"
  *
@@ -266,8 +284,8 @@ FString getMaterialNameForPropertyTableProperty(
     const FString& propertyName);
 
 /**
- * @brief Generates a name for a property texture property in a glTF model's
- * EXT_structural_metadata. This is formatted like so:
+ * @brief Generates an HLSL-safe name for a property texture property in a glTF
+ * model's EXT_structural_metadata. This is formatted like so:
  *
  * "PTEXTURE_<texture name>_<property name>"
  *
@@ -352,7 +370,7 @@ struct EncodedPropertyTextureProperty {
   /**
    * @brief The type that of the metadata encoded in the texture.
    */
-  ECesiumMetadataType type;
+  ECesiumEncodedMetadataType type;
 
   /**
    * @brief The set index of the texture coordinates from the glTF primitive
