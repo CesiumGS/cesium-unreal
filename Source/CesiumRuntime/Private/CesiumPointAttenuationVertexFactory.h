@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumCommon.h"
 #include "Engine/StaticMesh.h"
 #include "LocalVertexFactory.h"
 #include "RHIDefinitions.h"

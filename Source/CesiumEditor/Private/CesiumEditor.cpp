@@ -3,6 +3,7 @@
 #include "CesiumEditor.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetCustomization.h"
 #include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
 #include "CesiumGeoreferenceCustomization.h"
