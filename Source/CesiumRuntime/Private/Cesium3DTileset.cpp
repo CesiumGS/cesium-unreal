@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
 #include "Async/Async.h"
@@ -989,7 +989,11 @@ void ACesium3DTileset::LoadTileset() {
     FCesiumFeaturesMetadataDescription& description =
         this->_featuresMetadataDescription.emplace();
     description.Features = {pFeaturesMetadataComponent->FeatureIdSets};
-    description.ModelMetadata = {pFeaturesMetadataComponent->PropertyTables};
+    description.PrimitiveMetadata = {
+        pFeaturesMetadataComponent->PropertyTextureNames};
+    description.ModelMetadata = {
+        pFeaturesMetadataComponent->PropertyTables,
+        pFeaturesMetadataComponent->PropertyTextures};
   } else if (pEncodedMetadataComponent) {
     UE_LOG(
         LogCesium,

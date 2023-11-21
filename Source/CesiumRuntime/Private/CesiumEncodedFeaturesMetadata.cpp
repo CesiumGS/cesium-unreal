@@ -315,15 +315,16 @@ FString getMaterialNameForPropertyTableProperty(
     const FString& propertyTableName,
     const FString& propertyName) {
   // Example: "PTABLE_houses_roofColor"
-  return MaterialPropertyTablePrefix + propertyTableName + "_" + propertyName;
+  return createHlslSafeName(
+      MaterialPropertyTablePrefix + propertyTableName + "_" + propertyName);
 }
 
 FString getMaterialNameForPropertyTextureProperty(
     const FString& propertyTextureName,
     const FString& propertyName) {
   // Example: "PTEXTURE_house_temperature"
-  return MaterialPropertyTexturePrefix + propertyTextureName + "_" +
-         propertyName;
+  return createHlslSafeName(
+      MaterialPropertyTexturePrefix + propertyTextureName + "_" + propertyName);
 }
 
 namespace {
@@ -691,7 +692,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     EncodedPropertyTextureProperty& encodedProperty =
         encodedPropertyTexture.properties.Emplace_GetRef();
     encodedProperty.name = createHlslSafeName(pDescription->Name);
-    encodedProperty.type = pDescription->PropertyDetails.Type;
+    encodedProperty.type =
+        CesiumMetadataTypeToEncodingType(pDescription->PropertyDetails.Type);
     encodedProperty.textureCoordinateSetIndex = property.getTexCoordSetIndex();
 
     if (UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -700,9 +702,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
 
       const TArray<int64>& channels =
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetChannels(property);
-      const int32 channelCount = FMath::Max(
-          channels.Num(),
-          static_cast<int32>(encodedProperty.channels.size()));
+      const int32 channelCount = channels.Num();
       for (int32 i = 0; i < channelCount; i++) {
         encodedProperty.channels[i] = channels[i];
       }
@@ -748,6 +748,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
           encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
         }
 
+        // TODO: account for texture filter
         encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
 
         if (!encodedProperty.pTexture->pTextureData) {
@@ -815,13 +816,16 @@ EncodedPrimitiveMetadata encodePrimitiveMetadataAnyThreadPart(
   result.propertyTextureIndices.Reserve(
       metadataDescription.PropertyTextureNames.Num());
 
-  for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
+  for (int32 i = 0; i < propertyTextures.Num(); i++) {
+    const FCesiumPropertyTexture& propertyTexture = propertyTextures[i];
     FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-    int32 index =
+    const FString* pName =
         metadataDescription.PropertyTextureNames.Find(propertyTextureName);
-    // Confirm that the named property texture is actually present.
-    if (index != INDEX_NONE) {
-      result.propertyTextureIndices.Add(index);
+    // Confirm that the named property texture is actually present. This
+    // indicates that it is acceptable to pass the texture coordinate index to
+    // the material layer.
+    if (pName) {
+      result.propertyTextureIndices.Add(i);
     }
   }
 
@@ -887,6 +891,7 @@ EncodedModelMetadata encodeModelMetadataAnyThreadPart(
               *pExpectedPropertyTexture,
               propertyTexture,
               propertyTexturePropertyMap));
+      encodedPropertyTexture.name = propertyTextureName;
     }
   }
 
