@@ -4,6 +4,8 @@
 
 #include "IDetailCustomization.h"
 
+class IDetailCategoryBuilder;
+
 /**
  * An implementation of the IDetailCustomization interface that customizes
  * the Details View of a Cesium3DTileset. It is registered in
