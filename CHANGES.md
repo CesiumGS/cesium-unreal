@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
  - Added support for styling with property textures in `EXT_structural_metadata`.
+ - Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
 
 ### v2.0.0 - 2023-11-01
 
