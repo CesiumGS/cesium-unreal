@@ -73,6 +73,7 @@ void FUnrealAssetAccessorSpec::Define() {
     FString Uri = TEXT("file:///") + Filename;
     Uri.ReplaceCharInline('\\', '/');
     Uri.ReplaceInline(TEXT(" "), TEXT("%20"));
+    Uri.Append("?version=4.27.1");
 
     TestAccessorRequest(Uri, randomText);
   });
