@@ -795,7 +795,7 @@ private:
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
       Category = "Cesium|Rendering",
-      meta = (EditCondition = "bIsMac"))
+      meta = (EditCondition = "!bIsMac"))
   bool EnableWaterMask = false;
 
   /**
