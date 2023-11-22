@@ -66,11 +66,7 @@ void CesiumIonSession::connect() {
         pSettings->IonApiUrl = UTF8_TO_TCHAR(ionApiUrl->c_str());
         pSettings->Modify();
 
-#if ENGINE_MAJOR_VERSION >= 5
         pSettings->TryUpdateDefaultConfigFile();
-#else
-        pSettings->UpdateDefaultConfigFile();
-#endif
 
         int64_t clientID = GetDefault<UCesiumRuntimeSettings>()->IonClientId;
 
