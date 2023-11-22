@@ -10,6 +10,7 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGeoreference.h"
+#include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
@@ -80,9 +81,11 @@ public:
   ACesium3DTileset();
   virtual ~ACesium3DTileset();
 
+  UPROPERTY(EditAnywhere)
+  UCesiumIonServer* CesiumIonServer;
+
 private:
-  UPROPERTY(VisibleAnywhere, Category = "Cesium")
-  USceneComponent* Root;
+  UPROPERTY(VisibleAnywhere, Category = "Cesium") USceneComponent* Root;
 
   UPROPERTY(
       Meta =

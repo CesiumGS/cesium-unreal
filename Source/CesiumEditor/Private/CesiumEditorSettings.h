@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumIonServer.h"
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "CesiumEditorSettings.generated.h"
@@ -26,4 +27,11 @@ public:
       Category = "Cesium ion",
       meta = (DisplayName = "User Access Token"))
   FString UserAccessToken;
+
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cesium ion",
+      meta = (DisplayName = "Server"))
+  TSoftObjectPtr<UCesiumIonServer> Server;
 };
