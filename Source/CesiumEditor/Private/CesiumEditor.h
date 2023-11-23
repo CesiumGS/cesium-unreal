@@ -17,6 +17,7 @@ class UCesiumRasterOverlay;
 class UCesiumIonRasterOverlay;
 struct FCesium3DTilesetLoadFailureDetails;
 struct FCesiumRasterOverlayLoadFailureDetails;
+class UCesiumIonServer;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesiumEditor, Log, All);
 
@@ -34,7 +35,7 @@ public:
 
   static FCesiumEditorModule* get() { return _pModule; }
 
-  static CesiumIonSession& ion() {
+  static CesiumIonSession& ion(UCesiumIonServer* Server = nullptr) {
     assert(_pModule);
     return *_pModule->_pIonSession;
   }
@@ -109,6 +110,8 @@ private:
   void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
 
+  TMap<TWeakObjectPtr<UCesiumIonServer>, std::shared_ptr<CesiumIonSession>>
+      _pIonSessions;
   std::shared_ptr<CesiumIonSession> _pIonSession;
   FDelegateHandle _tilesetLoadFailureSubscription;
   FDelegateHandle _rasterOverlayLoadFailureSubscription;

@@ -34,4 +34,11 @@ public:
       Category = "Cesium ion",
       meta = (DisplayName = "Server"))
   TSoftObjectPtr<UCesiumIonServer> Server;
+
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cesium ion",
+      meta = (DisplayName = "Token Map"))
+  TMap<TSoftObjectPtr<UCesiumIonServer>, FString> UserAccessTokenMap;
 };

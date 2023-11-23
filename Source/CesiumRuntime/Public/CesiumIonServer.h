@@ -7,10 +7,21 @@
 #include "CesiumIonServer.generated.h"
 
 UCLASS()
-class UCesiumIonServer : public UDataAsset {
+class CESIUMRUNTIME_API UCesiumIonServer : public UDataAsset {
   GENERATED_BODY()
 
 public:
+  static UCesiumIonServer* GetOrCreateDefault();
+
+  /**
+   * The name to display for this server.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      AssetRegistrySearchable,
+      meta = (DisplayName = "Display Name"))
+  FString DisplayName;
+
   /**
    * The main URL of the Cesium ion server. For example, the server URL for the
    * public Cesium ion is https://ion.cesium.com.

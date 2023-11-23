@@ -1,10 +1,12 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumPanel.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Cesium3DTileset.h"
 #include "CesiumCommands.h"
 #include "CesiumEditor.h"
 #include "CesiumIonPanel.h"
+#include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Uri.h"
 #include "Editor.h"
@@ -14,12 +16,15 @@
 #include "LevelEditor.h"
 #include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SScrollBox.h"
 
 void CesiumPanel::Construct(const FArguments& InArgs) {
   ChildSlot
-      [SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight()[Toolbar()] +
+      [SNew(SVerticalBox) +
+       SVerticalBox::Slot().AutoHeight()[ServerSelector()] +
+       SVerticalBox::Slot().AutoHeight()[Toolbar()] +
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +
             SScrollBox::Slot()[LoginPanel()] +
@@ -39,6 +44,72 @@ void CesiumPanel::Tick(
 }
 
 static bool isSignedIn() { return FCesiumEditorModule::ion().isConnected(); }
+
+TSharedRef<SWidget> CesiumPanel::ServerSelector() {
+  FAssetRegistryModule& AssetRegistryModule =
+      FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
+  TArray<FAssetData> CesiumIonServers;
+  AssetRegistryModule.Get().GetAssetsByClass(
+      UCesiumIonServer::StaticClass()->GetFName(),
+      CesiumIonServers);
+
+  this->_servers.Empty();
+
+  for (const FAssetData& ServerAsset : CesiumIonServers) {
+    this->_servers.Emplace(MakeShared<FAssetData>(ServerAsset));
+  }
+
+  TSharedPtr<SComboBox<TSharedPtr<FAssetData>>> Selector =
+      SNew(SComboBox<TSharedPtr<FAssetData>>)
+          .OptionsSource(&this->_servers)
+          .OnGenerateWidget(this, &CesiumPanel::OnGenerateServerEntry)
+          .OnSelectionChanged(
+              this,
+              &CesiumPanel::OnServerSelectionChanged,
+              &this->_selectedServer)
+          .Content()[SNew(STextBlock)
+                         .Text(
+                             this,
+                             &CesiumPanel::GetServerValueAsText,
+                             &this->_selectedServer)];
+  return Selector.ToSharedRef();
+}
+
+namespace {
+
+FText GetNameFromCesiumIonServerAsset(
+    const TSharedPtr<FAssetData>& pAssetData) {
+  FAssetTagValueRef valueRef = pAssetData->TagsAndValues.FindTag(
+      GET_MEMBER_NAME_CHECKED(UCesiumIonServer, DisplayName));
+  if (valueRef.IsSet())
+    return valueRef.AsText();
+  else
+    return FText::FromName(pAssetData->AssetName);
+}
+
+} // namespace
+
+FText CesiumPanel::GetServerValueAsText(
+    TSharedPtr<FAssetData>* pSelectedServer) const {
+  if (pSelectedServer && *pSelectedServer) {
+    return GetNameFromCesiumIonServerAsset(*pSelectedServer);
+  } else {
+    return FText();
+  }
+}
+
+TSharedRef<SWidget>
+CesiumPanel::OnGenerateServerEntry(TSharedPtr<FAssetData> pServerAsset) {
+  return SNew(STextBlock).Text(GetNameFromCesiumIonServerAsset(pServerAsset));
+}
+
+void CesiumPanel::OnServerSelectionChanged(
+    TSharedPtr<FAssetData> InItem,
+    ESelectInfo::Type InSeletionInfo,
+    TSharedPtr<FAssetData>* pOutSelectedServer) {
+  *pOutSelectedServer = InItem;
+}
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
   TSharedRef<FUICommandList> commandList = MakeShared<FUICommandList>();

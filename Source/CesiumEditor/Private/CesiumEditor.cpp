@@ -10,6 +10,7 @@
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
@@ -265,6 +266,8 @@ void FCesiumEditorModule::StartupModule() {
   _pModule = this;
 
   IModuleInterface::StartupModule();
+
+  UCesiumIonServer::GetOrCreateDefault();
 
   registerDetailCustomization();
 
