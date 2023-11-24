@@ -445,7 +445,9 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 }
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
-  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+  SelectCesiumIonToken::SelectAndAuthorizeToken(
+      FCesiumEditorModule::serverManager().GetCurrent(),
+      {item->id})
       .thenInMainThread([item](const std::optional<Token>& /*maybeToken*/) {
         // If token selection was canceled, or if an error occurred while
         // selecting the token, ignore it and create the tileset anyway. It's
@@ -462,7 +464,9 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
 void CesiumIonPanel::AddOverlayToTerrain(
     TSharedPtr<CesiumIonClient::Asset> item,
     bool useAsBaseLayer) {
-  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+  SelectCesiumIonToken::SelectAndAuthorizeToken(
+      FCesiumEditorModule::serverManager().GetCurrent(),
+      {item->id})
       .thenInMainThread([useAsBaseLayer, item](const std::optional<Token>&) {
         UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
         ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();

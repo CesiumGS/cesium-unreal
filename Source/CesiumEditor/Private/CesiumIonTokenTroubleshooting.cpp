@@ -700,8 +700,8 @@ void CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken() {
   TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
       StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
 
-  SelectCesiumIonToken::SelectNewToken().thenInMainThread(
-      [pPanel](const std::optional<Token>& newToken) {
+  SelectCesiumIonToken::SelectNewToken(getCesiumIonServer(this->_pIonObject))
+      .thenInMainThread([pPanel](const std::optional<Token>& newToken) {
         if (!newToken) {
           return;
         }

@@ -314,5 +314,6 @@ void CesiumPanel::openSupport() {
 }
 
 void CesiumPanel::openTokenSelector() {
-  SelectCesiumIonToken::SelectNewToken();
+  SelectCesiumIonToken::SelectNewToken(
+      FCesiumEditorModule::serverManager().GetCurrent());
 }
