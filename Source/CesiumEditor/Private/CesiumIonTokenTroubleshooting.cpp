@@ -274,6 +274,33 @@ bool isUsingCesiumIon(const CesiumIonObject& o) {
   return std::visit(Operation(), o);
 }
 
+UCesiumIonServer* getCesiumIonServer(const CesiumIonObject& o) {
+  struct Operation {
+    UCesiumIonServer* operator()(const ACesium3DTileset* pTileset) noexcept {
+      return pTileset->GetCesiumIonServer();
+    }
+
+    UCesiumIonServer*
+    operator()(const UCesiumRasterOverlay* pRasterOverlay) noexcept {
+      const UCesiumIonRasterOverlay* pIon =
+          Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
+      return pIon ? pIon->CesiumIonServer : nullptr;
+    }
+  };
+
+  UCesiumIonServer* pServer = std::visit(Operation{}, o);
+  if (!IsValid(pServer)) {
+    pServer = UCesiumIonServer::GetOrCreateDefault();
+  }
+
+  return pServer;
+}
+
+CesiumIonSession& getSession(const CesiumIonObject& o) {
+  return *FCesiumEditorModule::serverManager().GetSession(
+      getCesiumIonServer(o));
+}
+
 } // namespace
 
 void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
@@ -339,7 +366,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   this->_projectDefaultTokenState.name = TEXT("Project Default Access Token");
   this->_projectDefaultTokenState.token =
-      FCesiumEditorModule::serverManager().GetCurrent()->DefaultIonAccessToken;
+      getCesiumIonServer(pIonObject)->DefaultIonAccessToken;
 
   pDiagnosticColumns->AddSlot()
       .Padding(5.0f, 20.0f, 5.0f, 5.0f)
@@ -348,13 +375,13 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
       .FillWidth(0.5f)
           [this->createTokenPanel(pIonObject, this->_projectDefaultTokenState)];
 
-  if (FCesiumEditorModule::ion().isConnected()) {
+  if (getSession(this->_pIonObject).isConnected()) {
     // Don't let this panel be destroyed while the async operations below are in
     // progress.
     TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
         StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
 
-    FCesiumEditorModule::ion()
+    getSession(this->_pIonObject)
         .getConnection()
         ->asset(getIonAssetID(pIonObject))
         .thenInMainThread([pPanel](Response<Asset>&& asset) {
@@ -483,7 +510,7 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createDiagnosticPanel(
 TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
     const CesiumIonObject& pIonObject,
     TokenState& state) {
-  CesiumIonSession& ionSession = FCesiumEditorModule::ion();
+  CesiumIonSession& ionSession = getSession(pIonObject);
 
   int64 assetID = getIonAssetID(pIonObject);
 
@@ -514,7 +541,7 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
         if (pPanel->IsVisible()) {
           // Query the tokens using the user's connection (_not_ the token
           // connection created above).
-          CesiumIonSession& ionSession = FCesiumEditorModule::ion();
+          CesiumIonSession& ionSession = getSession(pPanel->_pIonObject);
           ionSession.resume();
 
           const std::optional<Connection>& userConnection =
@@ -581,7 +608,7 @@ void CesiumIonTokenTroubleshooting::addRemedyButton(
 }
 
 bool CesiumIonTokenTroubleshooting::canConnectToCesiumIon() const {
-  return !FCesiumEditorModule::ion().isConnected();
+  return !getSession(this->_pIonObject).isConnected();
 }
 
 void CesiumIonTokenTroubleshooting::connectToCesiumIon() {
@@ -595,7 +622,7 @@ void CesiumIonTokenTroubleshooting::connectToCesiumIon() {
   pTabManager->TryInvokeTab(FTabId(TEXT("Cesium")));
 
   // Pop up a browser window to sign in to ion.
-  FCesiumEditorModule::ion().connect();
+  getSession(this->_pIonObject).connect();
 }
 
 bool CesiumIonTokenTroubleshooting::canUseProjectDefaultToken() const {
@@ -637,7 +664,7 @@ bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
 }
 
 void CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken() {
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  UCesiumIonServer* pServer = getCesiumIonServer(this->_pIonObject);
   this->authorizeToken(pServer->DefaultIonAccessToken, true);
 }
 
@@ -647,7 +674,7 @@ bool CesiumIonTokenTroubleshooting::canSelectNewProjectDefaultToken() const {
   }
 
   const TokenState& state = this->_projectDefaultTokenState;
-  return FCesiumEditorModule::ion().isConnected() &&
+  return getSession(this->_pIonObject).isConnected() &&
          (state.isValid == false || (state.allowsAccessToAsset == false &&
                                      state.associatedWithUserAccount == false));
 }
@@ -657,7 +684,7 @@ void CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken() {
     return;
   }
 
-  CesiumIonSession& session = FCesiumEditorModule::ion();
+  CesiumIonSession& session = getSession(this->_pIonObject);
   const std::optional<Connection>& maybeConnection = session.getConnection();
   if (!session.isConnected() || !maybeConnection) {
     UE_LOG(
@@ -684,11 +711,11 @@ void CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken() {
 }
 
 bool CesiumIonTokenTroubleshooting::canOpenCesiumIon() const {
-  return FCesiumEditorModule::ion().isConnected();
+  return getSession(this->_pIonObject).isConnected();
 }
 
 void CesiumIonTokenTroubleshooting::openCesiumIon() {
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  UCesiumIonServer* pServer = getCesiumIonServer(this->_pIonObject);
   FPlatformProcess::LaunchURL(
       UTF8_TO_TCHAR(CesiumUtility::Uri::resolve(
                         TCHAR_TO_UTF8(*pServer->ServerUrl),
@@ -705,7 +732,7 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
     return;
   }
 
-  CesiumIonSession& session = FCesiumEditorModule::ion();
+  CesiumIonSession& session = getSession(this->_pIonObject);
   const std::optional<Connection>& maybeConnection = session.getConnection();
   if (!session.isConnected() || !maybeConnection) {
     UE_LOG(
