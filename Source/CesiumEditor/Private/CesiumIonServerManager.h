@@ -13,6 +13,7 @@ DECLARE_MULTICAST_DELEGATE(FCesiumIonServerChanged);
 class CESIUMEDITOR_API CesiumIonServerManager {
 public:
   std::shared_ptr<CesiumIonSession> GetSession(UCesiumIonServer* Server);
+  std::shared_ptr<CesiumIonSession> GetCurrentSession();
 
   const TArray<TObjectPtr<UCesiumIonServer>>& GetServerList();
 

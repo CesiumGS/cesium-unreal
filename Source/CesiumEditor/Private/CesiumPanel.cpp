@@ -43,7 +43,11 @@ void CesiumPanel::Tick(
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
-static bool isSignedIn() { return FCesiumEditorModule::ion().isConnected(); }
+static bool isSignedIn() {
+  return FCesiumEditorModule::serverManager()
+      .GetCurrentSession()
+      ->isConnected();
+}
 
 TSharedRef<SWidget> CesiumPanel::ServerSelector() {
   TSharedPtr<SComboBox<TObjectPtr<UCesiumIonServer>>> Selector =
@@ -229,8 +233,10 @@ TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
 TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
 
   auto linkVisibility = []() {
-    FCesiumEditorModule::ion().refreshProfileIfNeeded();
-    if (!FCesiumEditorModule::ion().isProfileLoaded()) {
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetCurrentSession();
+    pSession->refreshProfileIfNeeded();
+    if (!pSession->isProfileLoaded()) {
       return EVisibility::Collapsed;
     }
     if (!isSignedIn()) {
@@ -239,14 +245,17 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
     return EVisibility::Visible;
   };
   auto linkText = []() {
-    auto& profile = FCesiumEditorModule::ion().getProfile();
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetCurrentSession();
+    auto& profile = pSession->getProfile();
     std::string s = "Connected to Cesium ion as " + profile.username;
     return FText::FromString(UTF8_TO_TCHAR(s.c_str()));
   };
   auto loadingMessageVisibility = []() {
-    return FCesiumEditorModule::ion().isLoadingProfile()
-               ? EVisibility::Visible
-               : EVisibility::Collapsed;
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetCurrentSession();
+    return pSession->isLoadingProfile() ? EVisibility::Visible
+                                        : EVisibility::Collapsed;
   };
   return SNew(SVerticalBox) +
          SVerticalBox::Slot()
@@ -291,7 +300,9 @@ void CesiumPanel::visitIon() {
       NULL);
 }
 
-void CesiumPanel::signOut() { FCesiumEditorModule::ion().disconnect(); }
+void CesiumPanel::signOut() {
+  FCesiumEditorModule::serverManager().GetCurrentSession()->disconnect();
+}
 
 void CesiumPanel::openDocumentation() {
   FPlatformProcess::LaunchURL(TEXT("https://cesium.com/docs"), NULL, NULL);

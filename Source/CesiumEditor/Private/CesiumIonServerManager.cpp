@@ -31,6 +31,10 @@ CesiumIonServerManager::GetSession(UCesiumIonServer* Server) {
   return Found->Session;
 }
 
+std::shared_ptr<CesiumIonSession> CesiumIonServerManager::GetCurrentSession() {
+  return this->GetSession(this->GetCurrent());
+}
+
 const TArray<TObjectPtr<UCesiumIonServer>>&
 CesiumIonServerManager::GetServerList() {
   this->_servers.Empty();

@@ -118,9 +118,10 @@ void CesiumIonSession::connect() {
 
               UCesiumEditorSettings* pSettings =
                   GetMutableDefault<UCesiumEditorSettings>();
-              pSettings->UserAccessTokenMap[thiz->_pServer.Get()] =
+              pSettings->UserAccessTokenMap.Add(
+                  thiz->_pServer.Get(),
                   UTF8_TO_TCHAR(
-                      thiz->_connection.value().getAccessToken().c_str());
+                      thiz->_connection.value().getAccessToken().c_str()));
               pSettings->Save();
 
               thiz->ConnectionUpdated.Broadcast();

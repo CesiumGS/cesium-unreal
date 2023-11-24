@@ -24,13 +24,19 @@ using namespace CesiumIonClient;
 void IonLoginPanel::Construct(const FArguments& InArgs) {
 
   auto visibleWhenConnecting = [this]() {
-    return FCesiumEditorModule::ion().isConnecting() ? EVisibility::Visible
-                                                     : EVisibility::Hidden;
+    return FCesiumEditorModule::serverManager()
+                   .GetCurrentSession()
+                   ->isConnecting()
+               ? EVisibility::Visible
+               : EVisibility::Hidden;
   };
 
   auto visibleWhenResuming = [this]() {
-    return FCesiumEditorModule::ion().isResuming() ? EVisibility::Visible
-                                                   : EVisibility::Hidden;
+    return FCesiumEditorModule::serverManager()
+                   .GetCurrentSession()
+                   ->isResuming()
+               ? EVisibility::Visible
+               : EVisibility::Hidden;
   };
 
   // TODO Format this, and disable clang format here
@@ -70,10 +76,11 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                    SBorder)[SNew(SEditableText)
                                 .IsReadOnly(true)
                                 .Text_Lambda([this]() {
-                                  return FText::FromString(
-                                      UTF8_TO_TCHAR(FCesiumEditorModule::ion()
-                                                        .getAuthorizeUrl()
-                                                        .c_str()));
+                                  return FText::FromString(UTF8_TO_TCHAR(
+                                      FCesiumEditorModule::serverManager()
+                                          .GetCurrentSession()
+                                          ->getAuthorizeUrl()
+                                          .c_str()));
                                 })]] +
                SHorizontalBox::Slot()
                    .VAlign(VAlign_Center)
@@ -107,8 +114,12 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                    .OnClicked(this, &IonLoginPanel::SignIn)
                    .Text(FText::FromString(TEXT("Connect to Cesium ion")))
                    .IsEnabled_Lambda([this]() {
-                     return !FCesiumEditorModule::ion().isConnecting() &&
-                            !FCesiumEditorModule::ion().isResuming();
+                     return !FCesiumEditorModule::serverManager()
+                                 .GetCurrentSession()
+                                 ->isConnecting() &&
+                            !FCesiumEditorModule::serverManager()
+                                 .GetCurrentSession()
+                                 ->isResuming();
                    })] +
       SVerticalBox::Slot()
           .VAlign(VAlign_Top)
@@ -120,8 +131,12 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                    .Text(FText::FromString(TEXT(
                        "You can now sign in with your Epic Games account!")))
                    .IsEnabled_Lambda([this]() {
-                     return !FCesiumEditorModule::ion().isConnecting() &&
-                            !FCesiumEditorModule::ion().isResuming();
+                     return !FCesiumEditorModule::serverManager()
+                                 .GetCurrentSession()
+                                 ->isConnecting() &&
+                            !FCesiumEditorModule::serverManager()
+                                 .GetCurrentSession()
+                                 ->isResuming();
                    })] +
       SVerticalBox::Slot()
           .VAlign(VAlign_Top)
@@ -161,20 +176,26 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
 }
 
 FReply IonLoginPanel::SignIn() {
-  FCesiumEditorModule::ion().connect();
+  FCesiumEditorModule::serverManager().GetCurrentSession()->connect();
   return FReply::Handled();
 }
 
 FReply IonLoginPanel::CopyAuthorizeUrlToClipboard() {
-  FText url = FText::FromString(
-      UTF8_TO_TCHAR(FCesiumEditorModule::ion().getAuthorizeUrl().c_str()));
+  FText url =
+      FText::FromString(UTF8_TO_TCHAR(FCesiumEditorModule::serverManager()
+                                          .GetCurrentSession()
+                                          ->getAuthorizeUrl()
+                                          .c_str()));
   FPlatformApplicationMisc::ClipboardCopy(*url.ToString());
   return FReply::Handled();
 }
 
 void IonLoginPanel::LaunchBrowserAgain() {
   FPlatformProcess::LaunchURL(
-      UTF8_TO_TCHAR(FCesiumEditorModule::ion().getAuthorizeUrl().c_str()),
+      UTF8_TO_TCHAR(FCesiumEditorModule::serverManager()
+                        .GetCurrentSession()
+                        ->getAuthorizeUrl()
+                        .c_str()),
       NULL,
       NULL);
 }
@@ -182,7 +203,9 @@ void IonLoginPanel::LaunchBrowserAgain() {
 void IonLoginPanel::CancelLogin() {
   TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
       FHttpModule::Get().CreateRequest();
-  pRequest->SetURL(
-      UTF8_TO_TCHAR(FCesiumEditorModule::ion().getRedirectUrl().c_str()));
+  pRequest->SetURL(UTF8_TO_TCHAR(FCesiumEditorModule::serverManager()
+                                     .GetCurrentSession()
+                                     ->getRedirectUrl()
+                                     .c_str()));
   pRequest->ProcessRequest();
 }
