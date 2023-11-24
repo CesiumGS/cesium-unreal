@@ -5,6 +5,7 @@
 #include "Widgets/SCompoundWidget.h"
 
 class FArguments;
+class UCesiumIonServer;
 
 class CesiumPanel : public SCompoundWidget {
   SLATE_BEGIN_ARGS(CesiumPanel) {}
@@ -25,12 +26,11 @@ private:
   TSharedRef<SWidget> BasicQuickAddPanel();
   TSharedRef<SWidget> ConnectionStatus();
   TSharedRef<SWidget>
-  OnGenerateServerEntry(TSharedPtr<FAssetData> pServerAsset);
-  FText GetServerValueAsText(TSharedPtr<FAssetData>* pSelectedServer) const;
+  OnGenerateServerEntry(TObjectPtr<UCesiumIonServer> pServer);
+  FText GetServerValueAsText() const;
   void OnServerSelectionChanged(
-      TSharedPtr<FAssetData> InItem,
-      ESelectInfo::Type InSeletionInfo,
-      TSharedPtr<FAssetData>* pOutSelectedServer);
+      TObjectPtr<UCesiumIonServer> InItem,
+      ESelectInfo::Type InSeletionInfo);
 
   void addFromIon();
   void uploadToIon();
@@ -39,7 +39,4 @@ private:
   void openDocumentation();
   void openSupport();
   void openTokenSelector();
-
-  TArray<TSharedPtr<FAssetData>> _servers;
-  TSharedPtr<FAssetData> _selectedServer;
 };

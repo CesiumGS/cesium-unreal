@@ -46,69 +46,44 @@ void CesiumPanel::Tick(
 static bool isSignedIn() { return FCesiumEditorModule::ion().isConnected(); }
 
 TSharedRef<SWidget> CesiumPanel::ServerSelector() {
-  FAssetRegistryModule& AssetRegistryModule =
-      FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-
-  TArray<FAssetData> CesiumIonServers;
-  AssetRegistryModule.Get().GetAssetsByClass(
-      UCesiumIonServer::StaticClass()->GetFName(),
-      CesiumIonServers);
-
-  this->_servers.Empty();
-
-  for (const FAssetData& ServerAsset : CesiumIonServers) {
-    this->_servers.Emplace(MakeShared<FAssetData>(ServerAsset));
-  }
-
-  TSharedPtr<SComboBox<TSharedPtr<FAssetData>>> Selector =
-      SNew(SComboBox<TSharedPtr<FAssetData>>)
-          .OptionsSource(&this->_servers)
+  TSharedPtr<SComboBox<TObjectPtr<UCesiumIonServer>>> Selector =
+      SNew(SComboBox<TObjectPtr<UCesiumIonServer>>)
+          .OptionsSource(&FCesiumEditorModule::serverManager().GetServerList())
           .OnGenerateWidget(this, &CesiumPanel::OnGenerateServerEntry)
-          .OnSelectionChanged(
-              this,
-              &CesiumPanel::OnServerSelectionChanged,
-              &this->_selectedServer)
+          .OnSelectionChanged(this, &CesiumPanel::OnServerSelectionChanged)
           .Content()[SNew(STextBlock)
-                         .Text(
-                             this,
-                             &CesiumPanel::GetServerValueAsText,
-                             &this->_selectedServer)];
+                         .Text(this, &CesiumPanel::GetServerValueAsText)];
   return Selector.ToSharedRef();
 }
 
 namespace {
 
 FText GetNameFromCesiumIonServerAsset(
-    const TSharedPtr<FAssetData>& pAssetData) {
-  FAssetTagValueRef valueRef = pAssetData->TagsAndValues.FindTag(
-      GET_MEMBER_NAME_CHECKED(UCesiumIonServer, DisplayName));
-  if (valueRef.IsSet())
-    return valueRef.AsText();
-  else
-    return FText::FromName(pAssetData->AssetName);
+    const TObjectPtr<UCesiumIonServer>& pServer) {
+  if (!pServer)
+    return FText();
+
+  return FText::FromString(
+      pServer->DisplayName.IsEmpty() ? pServer->GetPackage()->GetName()
+                                     : pServer->DisplayName);
 }
 
 } // namespace
 
-FText CesiumPanel::GetServerValueAsText(
-    TSharedPtr<FAssetData>* pSelectedServer) const {
-  if (pSelectedServer && *pSelectedServer) {
-    return GetNameFromCesiumIonServerAsset(*pSelectedServer);
-  } else {
-    return FText();
-  }
+FText CesiumPanel::GetServerValueAsText() const {
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  return GetNameFromCesiumIonServerAsset(pServer);
 }
 
 TSharedRef<SWidget>
-CesiumPanel::OnGenerateServerEntry(TSharedPtr<FAssetData> pServerAsset) {
+CesiumPanel::OnGenerateServerEntry(TObjectPtr<UCesiumIonServer> pServerAsset) {
   return SNew(STextBlock).Text(GetNameFromCesiumIonServerAsset(pServerAsset));
 }
 
 void CesiumPanel::OnServerSelectionChanged(
-    TSharedPtr<FAssetData> InItem,
-    ESelectInfo::Type InSeletionInfo,
-    TSharedPtr<FAssetData>* pOutSelectedServer) {
-  *pOutSelectedServer = InItem;
+    TObjectPtr<UCesiumIonServer> InItem,
+    ESelectInfo::Type InSeletionInfo) {
+  FCesiumEditorModule::serverManager().SetCurrent(InItem);
 }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {

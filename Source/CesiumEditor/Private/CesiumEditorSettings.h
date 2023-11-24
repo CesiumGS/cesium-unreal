@@ -28,12 +28,15 @@ public:
       meta = (DisplayName = "User Access Token"))
   FString UserAccessToken;
 
+  /**
+   * The Cesium ion server that is currently selected in the user interface.
+   */
   UPROPERTY(
       Config,
       EditAnywhere,
       Category = "Cesium ion",
-      meta = (DisplayName = "Server"))
-  TSoftObjectPtr<UCesiumIonServer> Server;
+      meta = (DisplayName = "Current Cesium ion Server"))
+  TSoftObjectPtr<UCesiumIonServer> CurrentCesiumIonServer;
 
   UPROPERTY(
       Config,
@@ -41,4 +44,6 @@ public:
       Category = "Cesium ion",
       meta = (DisplayName = "Token Map"))
   TMap<TSoftObjectPtr<UCesiumIonServer>, FString> UserAccessTokenMap;
+
+  void Save();
 };

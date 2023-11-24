@@ -11,11 +11,14 @@
 
 DECLARE_MULTICAST_DELEGATE(FIonUpdated);
 
-class CesiumIonSession {
+class UCesiumIonServer;
+
+class CesiumIonSession : public std::enable_shared_from_this<CesiumIonSession> {
 public:
   CesiumIonSession(
       CesiumAsync::AsyncSystem& asyncSystem,
-      const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor);
+      const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
+      TWeakObjectPtr<UCesiumIonServer> pServer);
 
   const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() const {
     return this->_pAssetAccessor;
@@ -96,6 +99,7 @@ public:
 private:
   CesiumAsync::AsyncSystem _asyncSystem;
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
+  TWeakObjectPtr<UCesiumIonServer> _pServer;
 
   std::optional<CesiumIonClient::Connection> _connection;
   std::optional<CesiumIonClient::Profile> _profile;

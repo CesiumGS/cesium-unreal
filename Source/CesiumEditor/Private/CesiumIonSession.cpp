@@ -3,6 +3,7 @@
 #include "CesiumIonSession.h"
 #include "CesiumEditor.h"
 #include "CesiumEditorSettings.h"
+#include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
 #include "CesiumUtility/Uri.h"
@@ -14,9 +15,11 @@ using namespace CesiumIonClient;
 
 CesiumIonSession::CesiumIonSession(
     CesiumAsync::AsyncSystem& asyncSystem,
-    const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor)
+    const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
+    TWeakObjectPtr<UCesiumIonServer> pServer)
     : _asyncSystem(asyncSystem),
       _pAssetAccessor(pAssetAccessor),
+      _pServer(pServer),
       _connection(std::nullopt),
       _profile(std::nullopt),
       _assets(std::nullopt),
@@ -32,24 +35,42 @@ CesiumIonSession::CesiumIonSession(
       _authorizeUrl() {}
 
 void CesiumIonSession::connect() {
-  if (this->isConnecting() || this->isConnected() || this->isResuming()) {
+  if (!this->_pServer.IsValid() || this->isConnecting() ||
+      this->isConnected() || this->isResuming()) {
     return;
   }
 
+  UCesiumIonServer* pServer = this->_pServer.Get();
+
   this->_isConnecting = true;
 
-  std::string ionServerUrl =
-      GetDefault<UCesiumRuntimeSettings>()->IonServerUrl.IsEmpty()
-          ? "https://ion.cesium.com/"
-          : TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonServerUrl);
+  std::string ionServerUrl = TCHAR_TO_UTF8(*pServer->ServerUrl);
 
-  Connection::getApiUrl(this->_asyncSystem, this->_pAssetAccessor, ionServerUrl)
-      .thenInMainThread([ionServerUrl,
-                         this](const std::optional<std::string>&& ionApiUrl) {
+  Future<std::optional<std::string>> futureApiUrl =
+      !pServer->ApiUrl.IsEmpty()
+          ? this->_asyncSystem.createResolvedFuture<std::optional<std::string>>(
+                TCHAR_TO_UTF8(*pServer->ApiUrl))
+          : Connection::getApiUrl(
+                this->_asyncSystem,
+                this->_pAssetAccessor,
+                ionServerUrl);
+
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
+
+  std::move(futureApiUrl)
+      .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer](
+                            std::optional<std::string>&& ionApiUrl) {
+        if (!pServer.IsValid()) {
+          thiz->_isConnecting = false;
+          thiz->_connection = std::nullopt;
+          thiz->ConnectionUpdated.Broadcast();
+          return;
+        }
+
         if (!ionApiUrl) {
-          this->_isConnecting = false;
-          this->_connection = std::nullopt;
-          this->ConnectionUpdated.Broadcast();
+          thiz->_isConnecting = false;
+          thiz->_connection = std::nullopt;
+          thiz->ConnectionUpdated.Broadcast();
           UE_LOG(
               LogCesiumEditor,
               Error,
@@ -59,20 +80,16 @@ void CesiumIonSession::connect() {
           return;
         }
 
-        UCesiumRuntimeSettings* pSettings =
-            GetMutableDefault<UCesiumRuntimeSettings>();
-        CesiumSourceControl::PromptToCheckoutConfigFile(
-            pSettings->GetDefaultConfigFilename());
-        pSettings->IonApiUrl = UTF8_TO_TCHAR(ionApiUrl->c_str());
-        pSettings->Modify();
+        if (pServer->ApiUrl.IsEmpty()) {
+          pServer->ApiUrl = UTF8_TO_TCHAR(ionApiUrl->c_str());
+          pServer->Modify();
+        }
 
-        pSettings->TryUpdateDefaultConfigFile();
-
-        int64_t clientID = GetDefault<UCesiumRuntimeSettings>()->IonClientId;
+        int64_t clientID = pServer->OAuth2ApplicationID;
 
         Connection::authorize(
-            this->_asyncSystem,
-            this->_pAssetAccessor,
+            thiz->_asyncSystem,
+            thiz->_pAssetAccessor,
             "Cesium for Unreal",
             clientID,
             "/cesium-for-unreal/oauth2/callback",
@@ -82,50 +99,51 @@ void CesiumIonSession::connect() {
              "tokens:read",
              "tokens:write",
              "geocode"},
-            [this](const std::string& url) {
-              this->_authorizeUrl = url;
+            [thiz](const std::string& url) {
+              thiz->_authorizeUrl = url;
 
-              this->_redirectUrl =
+              thiz->_redirectUrl =
                   CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
 
               FPlatformProcess::LaunchURL(
-                  UTF8_TO_TCHAR(this->_authorizeUrl.c_str()),
+                  UTF8_TO_TCHAR(thiz->_authorizeUrl.c_str()),
                   NULL,
                   NULL);
             },
             *ionApiUrl,
             CesiumUtility::Uri::resolve(ionServerUrl, "oauth"))
-            .thenInMainThread([this](CesiumIonClient::Connection&& connection) {
-              this->_isConnecting = false;
-              this->_connection = std::move(connection);
+            .thenInMainThread([thiz](CesiumIonClient::Connection&& connection) {
+              thiz->_isConnecting = false;
+              thiz->_connection = std::move(connection);
 
               UCesiumEditorSettings* pSettings =
                   GetMutableDefault<UCesiumEditorSettings>();
-              pSettings->UserAccessToken = UTF8_TO_TCHAR(
-                  this->_connection.value().getAccessToken().c_str());
+              pSettings->UserAccessTokenMap[thiz->_pServer.Get()] =
+                  UTF8_TO_TCHAR(
+                      thiz->_connection.value().getAccessToken().c_str());
+              pSettings->Save();
 
-              CesiumSourceControl::PromptToCheckoutConfigFile(
-                  pSettings->GetClass()->GetConfigName());
-
-              pSettings->SaveConfig();
-
-              this->ConnectionUpdated.Broadcast();
+              thiz->ConnectionUpdated.Broadcast();
             })
-            .catchInMainThread([this](std::exception&& e) {
-              this->_isConnecting = false;
-              this->_connection = std::nullopt;
-              this->ConnectionUpdated.Broadcast();
+            .catchInMainThread([thiz](std::exception&& e) {
+              thiz->_isConnecting = false;
+              thiz->_connection = std::nullopt;
+              thiz->ConnectionUpdated.Broadcast();
             });
       });
 }
 
 void CesiumIonSession::resume() {
-  if (this->isConnecting() || this->isConnected() || this->isResuming()) {
+  if (!this->_pServer.IsValid() || this->isConnecting() ||
+      this->isConnected() || this->isResuming()) {
     return;
   }
 
   const UCesiumEditorSettings* pSettings = GetDefault<UCesiumEditorSettings>();
-  if (pSettings->UserAccessToken.IsEmpty()) {
+  const FString* pUserAccessToken =
+      pSettings->UserAccessTokenMap.Find(this->_pServer.Get());
+
+  if (!pUserAccessToken || pUserAccessToken->IsEmpty()) {
     // No existing session to resume.
     return;
   }
@@ -135,22 +153,24 @@ void CesiumIonSession::resume() {
   this->_connection = Connection(
       this->_asyncSystem,
       this->_pAssetAccessor,
-      TCHAR_TO_UTF8(*GetDefault<UCesiumEditorSettings>()->UserAccessToken),
-      TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonApiUrl));
+      TCHAR_TO_UTF8(**pUserAccessToken),
+      TCHAR_TO_UTF8(*this->_pServer->ApiUrl));
+
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
 
   // Verify that the connection actually works.
   this->_connection.value()
       .me()
-      .thenInMainThread([this](Response<Profile>&& response) {
+      .thenInMainThread([thiz](Response<Profile>&& response) {
         if (!response.value.has_value()) {
-          this->_connection.reset();
+          thiz->_connection.reset();
         }
-        this->_isResuming = false;
-        this->ConnectionUpdated.Broadcast();
+        thiz->_isResuming = false;
+        thiz->ConnectionUpdated.Broadcast();
       })
-      .catchInMainThread([this](std::exception&& e) {
-        this->_isResuming = false;
-        this->_connection.reset();
+      .catchInMainThread([thiz](std::exception&& e) {
+        thiz->_isResuming = false;
+        thiz->_connection.reset();
       });
 }
 
@@ -161,11 +181,8 @@ void CesiumIonSession::disconnect() {
   this->_tokens.reset();
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
-  pSettings->UserAccessToken.Empty();
-
-  CesiumSourceControl::PromptToCheckoutConfigFile(
-      pSettings->GetClass()->GetConfigName());
-  pSettings->SaveConfig();
+  pSettings->UserAccessTokenMap.Remove(this->_pServer.Get());
+  pSettings->Save();
 
   this->ConnectionUpdated.Broadcast();
   this->ProfileUpdated.Broadcast();
@@ -182,18 +199,20 @@ void CesiumIonSession::refreshProfile() {
   this->_isLoadingProfile = true;
   this->_loadProfileQueued = false;
 
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
+
   this->_connection->me()
-      .thenInMainThread([this](Response<Profile>&& profile) {
-        this->_isLoadingProfile = false;
-        this->_profile = std::move(profile.value);
-        this->ProfileUpdated.Broadcast();
-        this->refreshProfileIfNeeded();
+      .thenInMainThread([thiz](Response<Profile>&& profile) {
+        thiz->_isLoadingProfile = false;
+        thiz->_profile = std::move(profile.value);
+        thiz->ProfileUpdated.Broadcast();
+        thiz->refreshProfileIfNeeded();
       })
-      .catchInMainThread([this](std::exception&& e) {
-        this->_isLoadingProfile = false;
-        this->_profile = std::nullopt;
-        this->ProfileUpdated.Broadcast();
-        this->refreshProfileIfNeeded();
+      .catchInMainThread([thiz](std::exception&& e) {
+        thiz->_isLoadingProfile = false;
+        thiz->_profile = std::nullopt;
+        thiz->ProfileUpdated.Broadcast();
+        thiz->refreshProfileIfNeeded();
       });
 }
 
@@ -205,18 +224,20 @@ void CesiumIonSession::refreshAssets() {
   this->_isLoadingAssets = true;
   this->_loadAssetsQueued = false;
 
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
+
   this->_connection->assets()
-      .thenInMainThread([this](Response<Assets>&& assets) {
-        this->_isLoadingAssets = false;
-        this->_assets = std::move(assets.value);
-        this->AssetsUpdated.Broadcast();
-        this->refreshAssetsIfNeeded();
+      .thenInMainThread([thiz](Response<Assets>&& assets) {
+        thiz->_isLoadingAssets = false;
+        thiz->_assets = std::move(assets.value);
+        thiz->AssetsUpdated.Broadcast();
+        thiz->refreshAssetsIfNeeded();
       })
-      .catchInMainThread([this](std::exception&& e) {
-        this->_isLoadingAssets = false;
-        this->_assets = std::nullopt;
-        this->AssetsUpdated.Broadcast();
-        this->refreshAssetsIfNeeded();
+      .catchInMainThread([thiz](std::exception&& e) {
+        thiz->_isLoadingAssets = false;
+        thiz->_assets = std::nullopt;
+        thiz->AssetsUpdated.Broadcast();
+        thiz->refreshAssetsIfNeeded();
       });
 }
 
@@ -228,20 +249,22 @@ void CesiumIonSession::refreshTokens() {
   this->_isLoadingTokens = true;
   this->_loadTokensQueued = false;
 
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
+
   this->_connection->tokens()
-      .thenInMainThread([this](Response<TokenList>&& tokens) {
-        this->_isLoadingTokens = false;
-        this->_tokens = tokens.value
+      .thenInMainThread([thiz](Response<TokenList>&& tokens) {
+        thiz->_isLoadingTokens = false;
+        thiz->_tokens = tokens.value
                             ? std::make_optional(std::move(tokens.value->items))
                             : std::nullopt;
-        this->TokensUpdated.Broadcast();
-        this->refreshTokensIfNeeded();
+        thiz->TokensUpdated.Broadcast();
+        thiz->refreshTokensIfNeeded();
       })
-      .catchInMainThread([this](std::exception&& e) {
-        this->_isLoadingTokens = false;
-        this->_tokens = std::nullopt;
-        this->TokensUpdated.Broadcast();
-        this->refreshTokensIfNeeded();
+      .catchInMainThread([thiz](std::exception&& e) {
+        thiz->_isLoadingTokens = false;
+        thiz->_tokens = std::nullopt;
+        thiz->TokensUpdated.Broadcast();
+        thiz->refreshTokensIfNeeded();
       });
 }
 

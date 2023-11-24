@@ -4,6 +4,7 @@
 
 #include "CesiumEditorReparentHandler.h"
 #include "CesiumEditorSubLevelMutex.h"
+#include "CesiumIonServerManager.h"
 #include "CesiumIonSession.h"
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -34,6 +35,11 @@ public:
   static const FName& GetStyleSetName();
 
   static FCesiumEditorModule* get() { return _pModule; }
+
+  static CesiumIonServerManager& serverManager() {
+    assert(_pModule);
+    return get()->_serverManager;
+  }
 
   static CesiumIonSession& ion(UCesiumIonServer* Server = nullptr) {
     assert(_pModule);
@@ -110,8 +116,7 @@ private:
   void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
 
-  TMap<TWeakObjectPtr<UCesiumIonServer>, std::shared_ptr<CesiumIonSession>>
-      _pIonSessions;
+  CesiumIonServerManager _serverManager;
   std::shared_ptr<CesiumIonSession> _pIonSession;
   FDelegateHandle _tilesetLoadFailureSubscription;
   FDelegateHandle _rasterOverlayLoadFailureSubscription;

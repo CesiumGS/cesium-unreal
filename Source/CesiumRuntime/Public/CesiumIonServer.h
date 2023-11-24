@@ -20,14 +20,14 @@ public:
       EditAnywhere,
       AssetRegistrySearchable,
       meta = (DisplayName = "Display Name"))
-  FString DisplayName;
+  FString DisplayName = "ion.cesium.com";
 
   /**
    * The main URL of the Cesium ion server. For example, the server URL for the
    * public Cesium ion is https://ion.cesium.com.
    */
   UPROPERTY(EditAnywhere, meta = (DisplayName = "Server URL"))
-  FString ServerUrl;
+  FString ServerUrl = "https://ion.cesium.com";
 
   /**
    * The URL of the main API endpoint of the Cesium ion server. For example, for
@@ -35,7 +35,7 @@ public:
    * left blank, the API URL is automatically inferred from the Server URL.
    */
   UPROPERTY(EditAnywhere, meta = (DisplayName = "API URL"))
-  FString ApiUrl;
+  FString ApiUrl = "https://api.cesium.com";
 
   /**
    * The application ID to use to log in to this server using OAuth2. This
@@ -43,7 +43,7 @@ public:
    * `http://127.0.0.1/cesium-for-unreal/oauth2/callback`.
    */
   UPROPERTY(EditAnywhere, meta = (DisplayName = "OAuth Application ID"))
-  int64 OAuth2ApplicationID;
+  int64 OAuth2ApplicationID = 190;
 
   /**
    * The ID of the default access token to use to access Cesium ion assets at
