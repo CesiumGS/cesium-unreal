@@ -81,9 +81,6 @@ public:
   ACesium3DTileset();
   virtual ~ACesium3DTileset();
 
-  UPROPERTY(EditAnywhere)
-  UCesiumIonServer* CesiumIonServer;
-
 private:
   UPROPERTY(VisibleAnywhere, Category = "Cesium") USceneComponent* Root;
 
@@ -712,6 +709,18 @@ private:
   FString IonAssetEndpointUrl;
 
   /**
+   * The Cesium ion Server from which this tileset is loaded.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetCesiumIonServer,
+      BlueprintSetter = SetCesiumIonServer,
+      Category = "Cesium",
+      AdvancedDisplay,
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
+  UCesiumIonServer* CesiumIonServer;
+
+  /**
    * Check if the Cesium ion token used to access this tileset is working
    * correctly, and fix it if necessary.
    */
@@ -931,6 +940,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetCesiumIonServer(UCesiumIonServer* Server);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   double GetMaximumScreenSpaceError() { return MaximumScreenSpaceError; }

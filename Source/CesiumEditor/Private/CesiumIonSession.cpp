@@ -346,39 +346,42 @@ CesiumIonSession::findToken(const FString& token) const {
 
 namespace {
 
-Token tokenFromSettings() {
+Token tokenFromSettings(UCesiumIonServer* pServer) {
   Token result;
-  result.token = TCHAR_TO_UTF8(
-      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
+
+  if (pServer) {
+    result.token = TCHAR_TO_UTF8(*pServer->DefaultIonAccessToken);
+  }
+
   return result;
 }
 
 Future<Token> getTokenFuture(const CesiumIonSession& session) {
-  if (!GetDefault<UCesiumRuntimeSettings>()
-           ->DefaultIonAccessTokenId.IsEmpty()) {
+  std::shared_ptr<const CesiumIonSession> pSession = session.shared_from_this();
+  TWeakObjectPtr<UCesiumIonServer> pServer = session.getServer();
+
+  if (pServer.IsValid() && !pServer->DefaultIonAccessTokenId.IsEmpty()) {
     return session.getConnection()
-        ->token(TCHAR_TO_UTF8(
-            *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId))
-        .thenImmediately([](Response<Token>&& tokenResponse) {
+        ->token(TCHAR_TO_UTF8(*pServer->DefaultIonAccessTokenId))
+        .thenImmediately([pServer](Response<Token>&& tokenResponse) {
           if (tokenResponse.value) {
             return *tokenResponse.value;
           } else {
-            return tokenFromSettings();
+            return tokenFromSettings(pServer.Get());
           }
         });
-  } else if (!GetDefault<UCesiumRuntimeSettings>()
-                  ->DefaultIonAccessToken.IsEmpty()) {
-    return session
-        .findToken(GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken)
-        .thenImmediately([](Response<Token>&& response) {
+  } else if (!pServer->DefaultIonAccessToken.IsEmpty()) {
+    return session.findToken(pServer->DefaultIonAccessToken)
+        .thenImmediately([pServer](Response<Token>&& response) {
           if (response.value) {
             return *response.value;
           } else {
-            return tokenFromSettings();
+            return tokenFromSettings(pServer.Get());
           }
         });
   } else {
-    return session.getAsyncSystem().createResolvedFuture(tokenFromSettings());
+    return session.getAsyncSystem().createResolvedFuture(
+        tokenFromSettings(pServer.Get()));
   }
 }
 
@@ -391,8 +394,7 @@ SharedFuture<Token> CesiumIonSession::getProjectDefaultTokenDetails() {
     // new token.
     if (this->_projectDefaultTokenDetailsFuture->isReady() &&
         this->_projectDefaultTokenDetailsFuture->wait().token !=
-            TCHAR_TO_UTF8(
-                *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken)) {
+            TCHAR_TO_UTF8(*this->_pServer->DefaultIonAccessToken)) {
       this->_projectDefaultTokenDetailsFuture.reset();
     } else {
       return *this->_projectDefaultTokenDetailsFuture;
@@ -401,7 +403,7 @@ SharedFuture<Token> CesiumIonSession::getProjectDefaultTokenDetails() {
 
   if (!this->isConnected()) {
     return this->getAsyncSystem()
-        .createResolvedFuture(tokenFromSettings())
+        .createResolvedFuture(tokenFromSettings(this->_pServer.Get()))
         .share();
   }
 

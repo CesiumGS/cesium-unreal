@@ -14,56 +14,21 @@ class CESIUMRUNTIME_API UCesiumRuntimeSettings : public UDeveloperSettings {
   GENERATED_UCLASS_BODY()
 
 public:
-  /**
-   * The ID of the default access token to use to access Cesium ion assets at
-   * runtime. This property may be an empty string, in which case the ID is
-   * found by searching the logged-in Cesium ion account for the
-   * DefaultIonAccessToken.
-   */
   UPROPERTY(
       Config,
-      EditAnywhere,
-      Category = "Cesium ion",
-      meta = (DisplayName = "Default Cesium ion Access Token ID"))
-  FString DefaultIonAccessTokenId;
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Tokens are now configured on CesiumIonServer data assets."))
+  FString DefaultIonAccessTokenId_DEPRECATED;
 
-  /**
-   * The default token used to access Cesium ion assets at runtime. This token
-   * is embedded in packaged games for use at runtime.
-   */
   UPROPERTY(
       Config,
-      EditAnywhere,
-      Category = "Cesium ion",
-      meta = (DisplayName = "Default Cesium ion Access Token"))
-  FString DefaultIonAccessToken;
-
-  /**
-   * The base URL of the Cesium ion server to connect to. This can be a local or
-   * remote server. Example: "https://ion.cesium.com/" or
-   * "http://localhost:8070/".
-   */
-  UPROPERTY(
-      Config,
-      EditAnywhere,
-      Category = "Cesium ion",
-      meta = (DisplayName = "Base URL of the Cesium ion Server"))
-  FString IonServerUrl;
-
-  UPROPERTY(Config)
-  FString IonApiUrl;
-
-  /**
-   * The client ID that is specified by Cesium ion when you register an
-   * application that uses this plugin. The associated Redirect URI must be
-   * exactly http://127.0.0.1/cesium-for-unreal/oauth2/callback
-   */
-  UPROPERTY(
-      Config,
-      EditAnywhere,
-      Category = "Cesium ion",
-      meta = (DisplayName = "Unique Identifier for Your ion Application"))
-  int IonClientId = 190;
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Tokens are now configured on CesiumIonServer data assets."))
+  FString DefaultIonAccessToken_DEPRECATED;
 
   UPROPERTY(
       Config,

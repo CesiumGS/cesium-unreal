@@ -4,6 +4,7 @@
 #include "Cesium3DTilesSelection/IonRasterOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "CesiumActors.h"
+#include "CesiumIonServer.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 
@@ -19,24 +20,26 @@ UCesiumIonRasterOverlay::CreateOverlay(
     return nullptr;
   }
 
-  FString token =
-      this->IonAccessToken.IsEmpty()
-          ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
-          : this->IonAccessToken;
-
-  if (!IonAssetEndpointUrl.IsEmpty()) {
-    IonAssetEndpointUrl = TCHAR_TO_UTF8(*IonAssetEndpointUrl);
-  } else {
-    IonAssetEndpointUrl =
-        TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonApiUrl);
+  // Make sure we have a valid Cesium ion server.
+  if (!IsValid(this->CesiumIonServer)) {
+    this->CesiumIonServer = UCesiumIonServer::GetOrCreateDefault();
   }
+
+  FString token = this->IonAccessToken.IsEmpty()
+                      ? this->CesiumIonServer->DefaultIonAccessToken
+                      : this->IonAccessToken;
+
+  // Make sure the URL ends with a slash
+  std::string apiUrl = TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
+  if (!apiUrl.empty() && *apiUrl.rbegin() != '/')
+    apiUrl += '/';
 
   return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->IonAssetID,
       TCHAR_TO_UTF8(*token),
       options,
-      TCHAR_TO_UTF8(*this->IonAssetEndpointUrl));
+      apiUrl);
 }
 
 void UCesiumIonRasterOverlay::PostLoad() {

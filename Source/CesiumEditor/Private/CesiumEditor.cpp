@@ -267,11 +267,9 @@ void FCesiumEditorModule::StartupModule() {
 
   IModuleInterface::StartupModule();
 
-  UCesiumIonServer* DefaultCesiumIonServer =
-      UCesiumIonServer::GetOrCreateDefault();
-
   registerDetailCustomization();
 
+  this->_serverManager.Initialize();
   this->_serverManager.GetCurrentSession()->resume();
 
   // Only register style once

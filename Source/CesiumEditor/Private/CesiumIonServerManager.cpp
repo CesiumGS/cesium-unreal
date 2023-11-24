@@ -6,6 +6,34 @@
 #include "CesiumIonServer.h"
 #include "CesiumIonSession.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettings.h"
+#include "CesiumSourceControl.h"
+
+void CesiumIonServerManager::Initialize() {
+  UCesiumRuntimeSettings* pSettings =
+      GetMutableDefault<UCesiumRuntimeSettings>();
+  if (pSettings) {
+    if (!pSettings->DefaultIonAccessTokenId_DEPRECATED.IsEmpty() ||
+        !pSettings->DefaultIonAccessToken_DEPRECATED.IsEmpty()) {
+      UCesiumIonServer* pServer = UCesiumIonServer::GetOrCreateDefault();
+      pServer->Modify();
+
+      pServer->DefaultIonAccessTokenId =
+          std::move(pSettings->DefaultIonAccessTokenId_DEPRECATED);
+      pSettings->DefaultIonAccessTokenId_DEPRECATED.Empty();
+
+      pServer->DefaultIonAccessToken =
+          std::move(pSettings->DefaultIonAccessToken_DEPRECATED);
+      pSettings->DefaultIonAccessToken_DEPRECATED.Empty();
+
+      CesiumSourceControl::PromptToCheckoutConfigFile(
+          pSettings->GetDefaultConfigFilename());
+
+      pSettings->Modify();
+      pSettings->TryUpdateDefaultConfigFile();
+    }
+  }
+}
 
 std::shared_ptr<CesiumIonSession>
 CesiumIonServerManager::GetSession(UCesiumIonServer* Server) {

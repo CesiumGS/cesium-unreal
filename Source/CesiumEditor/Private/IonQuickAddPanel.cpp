@@ -6,6 +6,7 @@
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Uri.h"
 #include "Editor.h"
@@ -100,6 +101,11 @@ void showAssetDepotConfirmWindow(
     const FString& itemName,
     int64_t missingAsset) {
 
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  std::string url = CesiumUtility::Uri::resolve(
+      TCHAR_TO_UTF8(*pServer->ServerUrl),
+      "assetdepot/" + std::to_string(missingAsset));
+
   // clang-format off
   TSharedRef<SWindow> AssetDepotConfirmWindow =
     SNew(SWindow)
@@ -121,12 +127,9 @@ void showAssetDepotConfirmWindow(
             .Padding(10.0f, 5.0f)
           [
             SNew(SHyperlink)
-              .OnNavigate_Lambda([missingAsset]() {
+              .OnNavigate_Lambda([url]() {
                 FPlatformProcess::LaunchURL(
-                    UTF8_TO_TCHAR(
-                        CesiumUtility::Uri::resolve(TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonServerUrl), "assetdepot/" +
-                          std::to_string(missingAsset))
-                            .c_str()),
+                    UTF8_TO_TCHAR(url.c_str()),
                     NULL,
                     NULL);
               })

@@ -88,6 +88,7 @@ void CesiumPanel::OnServerSelectionChanged(
     TObjectPtr<UCesiumIonServer> InItem,
     ESelectInfo::Type InSeletionInfo) {
   FCesiumEditorModule::serverManager().SetCurrent(InItem);
+  FCesiumEditorModule::serverManager().GetCurrentSession()->resume();
 }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
@@ -282,22 +283,19 @@ void CesiumPanel::addFromIon() {
 }
 
 void CesiumPanel::uploadToIon() {
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
   FPlatformProcess::LaunchURL(
-      UTF8_TO_TCHAR(
-          CesiumUtility::Uri::resolve(
-              TCHAR_TO_UTF8(
-                  *GetDefault<UCesiumRuntimeSettings>()->IonServerUrl),
-              "addasset")
-              .c_str()),
+      UTF8_TO_TCHAR(CesiumUtility::Uri::resolve(
+                        TCHAR_TO_UTF8(*pServer->ServerUrl),
+                        "addasset")
+                        .c_str()),
       NULL,
       NULL);
 }
 
 void CesiumPanel::visitIon() {
-  FPlatformProcess::LaunchURL(
-      *GetDefault<UCesiumRuntimeSettings>()->IonServerUrl,
-      NULL,
-      NULL);
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  FPlatformProcess::LaunchURL(*pServer->ServerUrl, NULL, NULL);
 }
 
 void CesiumPanel::signOut() {

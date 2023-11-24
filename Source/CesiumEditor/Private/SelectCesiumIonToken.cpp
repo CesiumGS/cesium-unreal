@@ -211,18 +211,18 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       });
   pLoaderOrContent->AddSlot().AutoHeight()[pMainVerticalBox];
 
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+
   this->_createNewToken.name =
       FString(FApp::GetProjectName()) + TEXT(" (Created by Cesium for Unreal)");
-  this->_useExistingToken.token.id = TCHAR_TO_UTF8(
-      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId);
-  this->_useExistingToken.token.token = TCHAR_TO_UTF8(
-      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
-  this->_specifyToken.token =
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken;
-  this->_tokenSource =
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken.IsEmpty()
-          ? TokenSource::Create
-          : TokenSource::Specify;
+  this->_useExistingToken.token.id =
+      TCHAR_TO_UTF8(*pServer->DefaultIonAccessTokenId);
+  this->_useExistingToken.token.token =
+      TCHAR_TO_UTF8(*pServer->DefaultIonAccessToken);
+  this->_specifyToken.token = pServer->DefaultIonAccessToken;
+  this->_tokenSource = pServer->DefaultIonAccessToken.IsEmpty()
+                           ? TokenSource::Create
+                           : TokenSource::Specify;
 
   this->createRadioButton(
       pMainVerticalBox,
@@ -446,20 +446,19 @@ FReply SelectCesiumIonToken::UseOrCreate() {
         if (response.value) {
           FCesiumEditorModule::ion().invalidateProjectDefaultTokenDetails();
 
-          UCesiumRuntimeSettings* pSettings =
-              GetMutableDefault<UCesiumRuntimeSettings>();
-          CesiumSourceControl::PromptToCheckoutConfigFile(
-              pSettings->GetDefaultConfigFilename());
+          const UCesiumRuntimeSettings* pSettings =
+              GetDefault<UCesiumRuntimeSettings>();
+
+          UCesiumIonServer* pServer =
+              FCesiumEditorModule::serverManager().GetCurrent();
 
           FScopedTransaction transaction(
               FText::FromString("Set Project Default Token"));
-          pSettings->DefaultIonAccessTokenId =
+          pServer->DefaultIonAccessTokenId =
               UTF8_TO_TCHAR(response.value->id.c_str());
-          pSettings->DefaultIonAccessToken =
+          pServer->DefaultIonAccessToken =
               UTF8_TO_TCHAR(response.value->token.c_str());
-          pSettings->Modify();
-
-          pSettings->TryUpdateDefaultConfigFile();
+          pServer->Modify();
 
           // Refresh all tilesets and overlays that are using the project
           // default token.

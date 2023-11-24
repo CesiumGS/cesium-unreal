@@ -318,6 +318,15 @@ void ACesium3DTileset::SetIonAssetEndpointUrl(
   }
 }
 
+void ACesium3DTileset::SetCesiumIonServer(UCesiumIonServer* Server) {
+  if (this->CesiumIonServer != Server) {
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->DestroyTileset();
+    }
+    this->CesiumIonServer = Server;
+  }
+}
+
 void ACesium3DTileset::SetMaximumScreenSpaceError(
     double InMaximumScreenSpaceError) {
   if (MaximumScreenSpaceError != InMaximumScreenSpaceError) {
@@ -955,6 +964,12 @@ void ACesium3DTileset::LoadTileset() {
         *this->Url);
   }
 
+  // Make sure we have a valid Cesium ion server if we need one.
+  if (this->TilesetSource == ETilesetSource::FromCesiumIon &&
+      !IsValid(this->CesiumIonServer)) {
+    this->CesiumIonServer = UCesiumIonServer::GetOrCreateDefault();
+  }
+
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
       cesiumViewExtension = getCesiumViewExtension();
   const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor =
@@ -1137,18 +1152,17 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
-    FString token =
-        this->IonAccessToken.IsEmpty()
-            ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
-            : this->IonAccessToken;
+    FString token = this->IonAccessToken.IsEmpty()
+                        ? this->CesiumIonServer->DefaultIonAccessToken
+                        : this->IonAccessToken;
 
-    std::string ionAssetEndpointUrl;
-    if (!IonAssetEndpointUrl.IsEmpty()) {
-      ionAssetEndpointUrl = TCHAR_TO_UTF8(*IonAssetEndpointUrl);
-    } else {
-      ionAssetEndpointUrl =
-          TCHAR_TO_UTF8(*GetDefault<UCesiumRuntimeSettings>()->IonApiUrl);
-    }
+    std::string ionAssetEndpointUrl =
+        TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
+
+    // Make sure the URL ends with a slash
+    if (!ionAssetEndpointUrl.empty() && *ionAssetEndpointUrl.rbegin() != '/')
+      ionAssetEndpointUrl += '/';
+
     this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
         externals,
         static_cast<uint32_t>(this->IonAssetID),
@@ -2142,6 +2156,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Root) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CesiumIonServer) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

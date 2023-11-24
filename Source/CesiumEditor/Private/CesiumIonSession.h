@@ -28,6 +28,8 @@ public:
   }
   CesiumAsync::AsyncSystem& getAsyncSystem() { return this->_asyncSystem; }
 
+  TWeakObjectPtr<UCesiumIonServer> getServer() const { return this->_pServer; }
+
   bool isConnected() const { return this->_connection.has_value(); }
   bool isConnecting() const { return this->_isConnecting; }
   bool isResuming() const { return this->_isResuming; }

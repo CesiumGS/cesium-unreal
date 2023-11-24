@@ -339,7 +339,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   this->_projectDefaultTokenState.name = TEXT("Project Default Access Token");
   this->_projectDefaultTokenState.token =
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken;
+      FCesiumEditorModule::serverManager().GetCurrent()->DefaultIonAccessToken;
 
   pDiagnosticColumns->AddSlot()
       .Padding(5.0f, 20.0f, 5.0f, 5.0f)
@@ -637,9 +637,8 @@ bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
 }
 
 void CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken() {
-  this->authorizeToken(
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken,
-      true);
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  this->authorizeToken(pServer->DefaultIonAccessToken, true);
 }
 
 bool CesiumIonTokenTroubleshooting::canSelectNewProjectDefaultToken() const {
@@ -689,13 +688,12 @@ bool CesiumIonTokenTroubleshooting::canOpenCesiumIon() const {
 }
 
 void CesiumIonTokenTroubleshooting::openCesiumIon() {
+  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
   FPlatformProcess::LaunchURL(
-      UTF8_TO_TCHAR(
-          CesiumUtility::Uri::resolve(
-              TCHAR_TO_UTF8(
-                  *GetDefault<UCesiumRuntimeSettings>()->IonServerUrl),
-              "tokens")
-              .c_str()),
+      UTF8_TO_TCHAR(CesiumUtility::Uri::resolve(
+                        TCHAR_TO_UTF8(*pServer->ServerUrl),
+                        "tokens")
+                        .c_str()),
       NULL,
       NULL);
 }
