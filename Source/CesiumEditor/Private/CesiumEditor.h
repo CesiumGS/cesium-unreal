@@ -41,9 +41,8 @@ public:
     return get()->_serverManager;
   }
 
-  static CesiumIonSession& ion(UCesiumIonServer* Server = nullptr) {
-    assert(_pModule);
-    return *_pModule->_pIonSession;
+  static CesiumIonSession& ion() {
+    return *serverManager().GetCurrentSession();
   }
 
   static ACesium3DTileset* FindFirstTilesetSupportingOverlays();
@@ -117,7 +116,6 @@ private:
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
 
   CesiumIonServerManager _serverManager;
-  std::shared_ptr<CesiumIonSession> _pIonSession;
   FDelegateHandle _tilesetLoadFailureSubscription;
   FDelegateHandle _rasterOverlayLoadFailureSubscription;
   FDelegateHandle _tilesetIonTroubleshootingSubscription;

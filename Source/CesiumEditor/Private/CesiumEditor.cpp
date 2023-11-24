@@ -272,11 +272,7 @@ void FCesiumEditorModule::StartupModule() {
 
   registerDetailCustomization();
 
-  this->_pIonSession = std::make_shared<CesiumIonSession>(
-      getAsyncSystem(),
-      getAssetAccessor(),
-      DefaultCesiumIonServer);
-  this->_pIonSession->resume();
+  this->_serverManager.GetCurrentSession()->resume();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
