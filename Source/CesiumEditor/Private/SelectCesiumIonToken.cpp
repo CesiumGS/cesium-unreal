@@ -220,7 +220,8 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
   this->_specifyToken.token =
       GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken;
   this->_tokenSource =
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken.IsEmpty()
+      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken.IsEmpty() &&
+              FCesiumEditorModule::ion().isConnected()
           ? TokenSource::Create
           : TokenSource::Specify;
 

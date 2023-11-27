@@ -7,6 +7,10 @@
  - Added support for styling with property textures in `EXT_structural_metadata`.
  - Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
 
+##### Fixes :wrench:
+
+ - Fixed a bug in the "Select New Token" dialog that caused an error when trying to create a new token without being connected.
+
 ### v2.0.0 - 2023-11-01
 
 This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or v5.3 is required.
