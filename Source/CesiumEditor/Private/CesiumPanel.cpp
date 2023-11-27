@@ -8,6 +8,7 @@
 #include "CesiumIonPanel.h"
 #include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
+#include "CesiumServerSelector.h"
 #include "CesiumUtility/Uri.h"
 #include "Editor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -23,7 +24,7 @@
 void CesiumPanel::Construct(const FArguments& InArgs) {
   ChildSlot
       [SNew(SVerticalBox) +
-       SVerticalBox::Slot().AutoHeight()[ServerSelector()] +
+       SVerticalBox::Slot().AutoHeight()[SNew(CesiumServerSelector)] +
        SVerticalBox::Slot().AutoHeight()[Toolbar()] +
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +
@@ -47,48 +48,6 @@ static bool isSignedIn() {
   return FCesiumEditorModule::serverManager()
       .GetCurrentSession()
       ->isConnected();
-}
-
-TSharedRef<SWidget> CesiumPanel::ServerSelector() {
-  TSharedPtr<SComboBox<TObjectPtr<UCesiumIonServer>>> Selector =
-      SNew(SComboBox<TObjectPtr<UCesiumIonServer>>)
-          .OptionsSource(&FCesiumEditorModule::serverManager().GetServerList())
-          .OnGenerateWidget(this, &CesiumPanel::OnGenerateServerEntry)
-          .OnSelectionChanged(this, &CesiumPanel::OnServerSelectionChanged)
-          .Content()[SNew(STextBlock)
-                         .Text(this, &CesiumPanel::GetServerValueAsText)];
-  return Selector.ToSharedRef();
-}
-
-namespace {
-
-FText GetNameFromCesiumIonServerAsset(
-    const TObjectPtr<UCesiumIonServer>& pServer) {
-  if (!pServer)
-    return FText();
-
-  return FText::FromString(
-      pServer->DisplayName.IsEmpty() ? pServer->GetPackage()->GetName()
-                                     : pServer->DisplayName);
-}
-
-} // namespace
-
-FText CesiumPanel::GetServerValueAsText() const {
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
-  return GetNameFromCesiumIonServerAsset(pServer);
-}
-
-TSharedRef<SWidget>
-CesiumPanel::OnGenerateServerEntry(TObjectPtr<UCesiumIonServer> pServerAsset) {
-  return SNew(STextBlock).Text(GetNameFromCesiumIonServerAsset(pServerAsset));
-}
-
-void CesiumPanel::OnServerSelectionChanged(
-    TObjectPtr<UCesiumIonServer> InItem,
-    ESelectInfo::Type InSeletionInfo) {
-  FCesiumEditorModule::serverManager().SetCurrent(InItem);
-  FCesiumEditorModule::serverManager().GetCurrentSession()->resume();
 }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {

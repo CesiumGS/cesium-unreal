@@ -7,6 +7,7 @@
 #include "CesiumCommands.h"
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumServerSelector.h"
 #include "Editor.h"
 #include "EditorModeManager.h"
 #include "EngineUtils.h"
@@ -30,31 +31,27 @@ static FName ColumnName_Type = "Type";
 static FName ColumnName_DateAdded = "DateAdded";
 
 CesiumIonPanel::CesiumIonPanel()
-    : _connectionUpdatedDelegateHandle(),
-      _assetsUpdatedDelegateHandle(),
-      _pListView(nullptr),
+    : _pListView(nullptr),
       _assets(),
-      _pSelection(nullptr) {
-  this->_connectionUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().ConnectionUpdated.AddRaw(
+      _pSelection(nullptr),
+      _pLastServer(nullptr) {
+  this->_serverChangedDelegateHandle =
+      FCesiumEditorModule::serverManager().CurrentChanged.AddRaw(
           this,
-          &CesiumIonPanel::Refresh);
-  this->_assetsUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().AssetsUpdated.AddRaw(
-          this,
-          &CesiumIonPanel::Refresh);
+          &CesiumIonPanel::OnServerChanged);
   this->_sortColumnName = ColumnName_DateAdded;
   this->_sortMode = EColumnSortMode::Type::Descending;
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
-  FCesiumEditorModule::ion().AssetsUpdated.Remove(
-      this->_assetsUpdatedDelegateHandle);
-  FCesiumEditorModule::ion().ConnectionUpdated.Remove(
-      this->_connectionUpdatedDelegateHandle);
+  this->Subscribe(nullptr);
+  FCesiumEditorModule::serverManager().CurrentChanged.Remove(
+      this->_serverChangedDelegateHandle);
 }
 
 void CesiumIonPanel::Construct(const FArguments& InArgs) {
+  this->Subscribe(FCesiumEditorModule::serverManager().GetCurrent());
+
   // A function that returns the lambda that is used for rendering
   // the sort mode indicator of the header column: If sorting is
   // currently done based on the given name, then this will
@@ -111,6 +108,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
             SVerticalBox::Slot().AutoHeight()
             [
               SNew(SHorizontalBox) +
+                SHorizontalBox::Slot().Padding(5.0f)[SNew(CesiumServerSelector)] +
                 // Add the refresh button at the upper left
                 SHorizontalBox::Slot().HAlign(HAlign_Left).Padding(5.0f)
                 [
@@ -426,6 +424,33 @@ void CesiumIonPanel::AssetSelected(
     TSharedPtr<CesiumIonClient::Asset> item,
     ESelectInfo::Type selectionType) {
   this->_pSelection = item;
+}
+
+void CesiumIonPanel::Subscribe(UCesiumIonServer* pNewServer) {
+  if (this->_pLastServer) {
+    std::shared_ptr<CesiumIonSession> pLastSession =
+        FCesiumEditorModule::serverManager().GetSession(this->_pLastServer);
+    if (pLastSession) {
+      pLastSession->ConnectionUpdated.RemoveAll(this);
+      pLastSession->AssetsUpdated.RemoveAll(this);
+    }
+  }
+
+  this->_pLastServer = pNewServer;
+
+  if (pNewServer) {
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetSession(pNewServer);
+    pSession->ConnectionUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
+    pSession->AssetsUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
+  }
+}
+
+void CesiumIonPanel::OnServerChanged() {
+  UCesiumIonServer* pNewServer =
+      FCesiumEditorModule::serverManager().GetCurrent();
+  this->Subscribe(pNewServer);
+  this->Refresh();
 }
 
 void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {

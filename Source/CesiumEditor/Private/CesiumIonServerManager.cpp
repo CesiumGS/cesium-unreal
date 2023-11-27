@@ -9,6 +9,26 @@
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
 
+CesiumIonServerManager::CesiumIonServerManager() noexcept {
+  FAssetRegistryModule& AssetRegistryModule =
+      FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+  AssetRegistryModule.GetRegistry().OnAssetAdded().AddRaw(
+      this,
+      &CesiumIonServerManager::OnAssetAddedOrRemoved);
+  AssetRegistryModule.GetRegistry().OnAssetRemoved().AddRaw(
+      this,
+      &CesiumIonServerManager::OnAssetAddedOrRemoved);
+}
+
+CesiumIonServerManager::~CesiumIonServerManager() noexcept {
+  FAssetRegistryModule* pAssetRegistryModule =
+      FModuleManager::GetModulePtr<FAssetRegistryModule>("AssetRegistry");
+  if (pAssetRegistryModule) {
+    pAssetRegistryModule->GetRegistry().OnAssetAdded().RemoveAll(this);
+    pAssetRegistryModule->GetRegistry().OnAssetRemoved().RemoveAll(this);
+  }
+}
+
 void CesiumIonServerManager::Initialize() {
   UCesiumRuntimeSettings* pSettings =
       GetMutableDefault<UCesiumRuntimeSettings>();
@@ -65,20 +85,23 @@ std::shared_ptr<CesiumIonSession> CesiumIonServerManager::GetCurrentSession() {
 
 const TArray<TObjectPtr<UCesiumIonServer>>&
 CesiumIonServerManager::GetServerList() {
+  this->RefreshServerList();
+  return this->_servers;
+}
+
+void CesiumIonServerManager::RefreshServerList() {
   this->_servers.Empty();
 
   TArray<FAssetData> CesiumIonServers;
   FAssetRegistryModule& AssetRegistryModule =
       FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
   AssetRegistryModule.Get().GetAssetsByClass(
-      UCesiumIonServer::StaticClass()->GetFName(),
+      UCesiumIonServer::StaticClass()->GetClassPathName(),
       CesiumIonServers);
 
   for (const FAssetData& ServerAsset : CesiumIonServers) {
     this->_servers.Add(Cast<UCesiumIonServer>(ServerAsset.GetAsset()));
   }
-
-  return this->_servers;
 }
 
 UCesiumIonServer* CesiumIonServerManager::GetCurrent() {
@@ -105,4 +128,9 @@ void CesiumIonServerManager::SetCurrent(UCesiumIonServer* pServer) {
     pSettings->CurrentCesiumIonServer = pServer;
     CurrentChanged.Broadcast();
   }
+}
+
+void CesiumIonServerManager::OnAssetAddedOrRemoved(const FAssetData& asset) {
+  this->RefreshServerList();
+  this->ServerListChanged.Broadcast();
 }

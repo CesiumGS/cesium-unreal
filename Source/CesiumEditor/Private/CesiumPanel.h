@@ -19,18 +19,11 @@ class CesiumPanel : public SCompoundWidget {
       const float InDeltaTime) override;
 
 private:
-  TSharedRef<SWidget> ServerSelector();
   TSharedRef<SWidget> Toolbar();
   TSharedRef<SWidget> LoginPanel();
   TSharedRef<SWidget> MainIonQuickAddPanel();
   TSharedRef<SWidget> BasicQuickAddPanel();
   TSharedRef<SWidget> ConnectionStatus();
-  TSharedRef<SWidget>
-  OnGenerateServerEntry(TObjectPtr<UCesiumIonServer> pServer);
-  FText GetServerValueAsText() const;
-  void OnServerSelectionChanged(
-      TObjectPtr<UCesiumIonServer> InItem,
-      ESelectInfo::Type InSeletionInfo);
 
   void addFromIon();
   void uploadToIon();
