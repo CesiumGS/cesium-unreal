@@ -33,6 +33,7 @@ void CesiumIonServerManager::Initialize() {
   UCesiumRuntimeSettings* pSettings =
       GetMutableDefault<UCesiumRuntimeSettings>();
   if (pSettings) {
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     if (!pSettings->DefaultIonAccessTokenId_DEPRECATED.IsEmpty() ||
         !pSettings->DefaultIonAccessToken_DEPRECATED.IsEmpty()) {
       UCesiumIonServer* pServer = UCesiumIonServer::GetOrCreateDefault();
@@ -52,6 +53,22 @@ void CesiumIonServerManager::Initialize() {
       pSettings->Modify();
       pSettings->TryUpdateDefaultConfigFile();
     }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
+  }
+
+  UCesiumEditorSettings* pEditorSettings =
+      GetMutableDefault<UCesiumEditorSettings>();
+  if (pEditorSettings) {
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (!pEditorSettings->UserAccessToken_DEPRECATED.IsEmpty()) {
+      UCesiumIonServer* pServer = UCesiumIonServer::GetOrCreateDefault();
+      pEditorSettings->UserAccessTokenMap.Add(
+          pServer,
+          pEditorSettings->UserAccessToken_DEPRECATED);
+      pEditorSettings->UserAccessTokenMap.Empty();
+      pEditorSettings->Save();
+    }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
   }
 }
 
