@@ -23,6 +23,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       AssetRegistrySearchable,
+      Category = "Cesium",
       meta = (DisplayName = "Display Name"))
   FString DisplayName = "ion.cesium.com";
 
@@ -30,7 +31,10 @@ public:
    * The main URL of the Cesium ion server. For example, the server URL for the
    * public Cesium ion is https://ion.cesium.com.
    */
-  UPROPERTY(EditAnywhere, meta = (DisplayName = "Server URL"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (DisplayName = "Server URL"))
   FString ServerUrl = "https://ion.cesium.com";
 
   /**
@@ -38,7 +42,7 @@ public:
    * the default, public Cesium ion server, this is `https://api.cesium.com`. If
    * left blank, the API URL is automatically inferred from the Server URL.
    */
-  UPROPERTY(EditAnywhere, meta = (DisplayName = "API URL"))
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (DisplayName = "API URL"))
   FString ApiUrl = "https://api.cesium.com";
 
   /**
@@ -46,7 +50,10 @@ public:
    * OAuth2 application must be configured on the server with the exact URL
    * `http://127.0.0.1/cesium-for-unreal/oauth2/callback`.
    */
-  UPROPERTY(EditAnywhere, meta = (DisplayName = "OAuth Application ID"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (DisplayName = "OAuth Application ID"))
   int64 OAuth2ApplicationID = 190;
 
   /**
@@ -57,6 +64,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      Category = "Cesium",
       meta = (DisplayName = "Default Cesium ion Access Token ID"))
   FString DefaultIonAccessTokenId;
 
@@ -66,6 +74,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      Category = "Cesium",
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
 };
