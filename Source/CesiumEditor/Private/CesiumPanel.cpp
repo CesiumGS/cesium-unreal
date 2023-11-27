@@ -33,11 +33,7 @@ void CesiumPanel::Construct(const FArguments& InArgs) {
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +
             SScrollBox::Slot()[LoginPanel()] +
-            SScrollBox::Slot()[MainIonQuickAddPanel()]] +
-       SVerticalBox::Slot()
-           .AutoHeight()
-           .VAlign(VAlign_Bottom)
-           .HAlign(HAlign_Right)[ConnectionStatus()]];
+            SScrollBox::Slot()[MainIonQuickAddPanel()]]];
 }
 
 void CesiumPanel::Tick(
@@ -192,47 +188,6 @@ TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
       "",
       -1});
   return quickAddPanel.ToSharedRef();
-}
-
-TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
-
-  auto linkVisibility = []() {
-    std::shared_ptr<CesiumIonSession> pSession =
-        FCesiumEditorModule::serverManager().GetCurrentSession();
-    pSession->refreshProfileIfNeeded();
-    if (!pSession->isProfileLoaded()) {
-      return EVisibility::Collapsed;
-    }
-    if (!isSignedIn()) {
-      return EVisibility::Collapsed;
-    }
-    return EVisibility::Visible;
-  };
-  auto linkText = []() {
-    std::shared_ptr<CesiumIonSession> pSession =
-        FCesiumEditorModule::serverManager().GetCurrentSession();
-    auto& profile = pSession->getProfile();
-    std::string s = "Connected to Cesium ion as " + profile.username;
-    return FText::FromString(UTF8_TO_TCHAR(s.c_str()));
-  };
-  auto loadingMessageVisibility = []() {
-    std::shared_ptr<CesiumIonSession> pSession =
-        FCesiumEditorModule::serverManager().GetCurrentSession();
-    return pSession->isLoadingProfile() ? EVisibility::Visible
-                                        : EVisibility::Collapsed;
-  };
-  return SNew(SVerticalBox) +
-         SVerticalBox::Slot()
-             [SNew(SHyperlink)
-                  .Visibility_Lambda(linkVisibility)
-                  .Text_Lambda(linkText)
-                  .ToolTipText(FText::FromString(
-                      TEXT("Open your Cesium ion account in your browser")))
-                  .OnNavigate(this, &CesiumPanel::visitIon)] +
-         SVerticalBox::Slot()[SNew(STextBlock)
-                                  .Visibility_Lambda(loadingMessageVisibility)
-                                  .Text(FText::FromString(
-                                      TEXT("Loading user information...")))];
 }
 
 void CesiumPanel::addFromIon() {
