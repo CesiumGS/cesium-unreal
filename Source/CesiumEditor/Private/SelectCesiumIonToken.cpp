@@ -212,7 +212,8 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
            .Padding(5.0f)[PropertyCustomizationHelpers::MakeBrowseButton(
                FSimpleDelegate::
                    CreateSP(this, &SelectCesiumIonToken::OnBrowseForServer),
-               FText::FromString("Show this Cesium ion Server in the Content Browser."),
+               FText::FromString(
+                   "Show this Cesium ion Server in the Content Browser."),
                true,
                false)]];
 
