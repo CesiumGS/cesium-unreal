@@ -7,6 +7,7 @@
 #include "CesiumEditor.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonServer.h"
+#include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumServerSelector.h"
 #include "CesiumUtility/Uri.h"
@@ -22,6 +23,8 @@
 #include "Widgets/Layout/SScrollBox.h"
 
 void CesiumPanel::Construct(const FArguments& InArgs) {
+  FCesiumEditorModule::serverManager().ResumeAll();
+
   ChildSlot
       [SNew(SVerticalBox) +
        SVerticalBox::Slot().AutoHeight()[SNew(CesiumServerSelector)] +
@@ -40,7 +43,7 @@ void CesiumPanel::Tick(
     const FGeometry& AllottedGeometry,
     const double InCurrentTime,
     const float InDeltaTime) {
-  FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+  getAsyncSystem().dispatchMainThreadTasks();
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 

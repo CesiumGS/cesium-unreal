@@ -16,6 +16,7 @@ public:
   ~CesiumIonServerManager() noexcept;
 
   void Initialize();
+  void ResumeAll();
 
   std::shared_ptr<CesiumIonSession> GetSession(UCesiumIonServer* Server);
   std::shared_ptr<CesiumIonSession> GetCurrentSession();

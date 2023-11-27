@@ -55,6 +55,15 @@ void CesiumIonServerManager::Initialize() {
   }
 }
 
+void CesiumIonServerManager::ResumeAll() {
+  const TArray<TObjectPtr<UCesiumIonServer>>& servers = this->GetServerList();
+  for (const TObjectPtr<UCesiumIonServer>& pServer : servers) {
+    std::shared_ptr<CesiumIonSession> pSession = this->GetSession(pServer);
+    pSession->resume();
+    pSession->refreshProfileIfNeeded();
+  }
+}
+
 std::shared_ptr<CesiumIonSession>
 CesiumIonServerManager::GetSession(UCesiumIonServer* Server) {
   if (Server == nullptr)

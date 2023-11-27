@@ -270,7 +270,6 @@ void FCesiumEditorModule::StartupModule() {
   registerDetailCustomization();
 
   this->_serverManager.Initialize();
-  this->_serverManager.GetCurrentSession()->resume();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
