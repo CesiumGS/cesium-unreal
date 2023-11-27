@@ -14,10 +14,10 @@ CesiumIonServerManager::CesiumIonServerManager() noexcept {
       FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
   AssetRegistryModule.GetRegistry().OnAssetAdded().AddRaw(
       this,
-      &CesiumIonServerManager::OnAssetAddedOrRemoved);
+      &CesiumIonServerManager::OnAssetAdded);
   AssetRegistryModule.GetRegistry().OnAssetRemoved().AddRaw(
       this,
-      &CesiumIonServerManager::OnAssetAddedOrRemoved);
+      &CesiumIonServerManager::OnAssetRemoved);
 }
 
 CesiumIonServerManager::~CesiumIonServerManager() noexcept {
@@ -111,6 +111,8 @@ void CesiumIonServerManager::RefreshServerList() {
   for (const FAssetData& ServerAsset : CesiumIonServers) {
     this->_servers.Add(Cast<UCesiumIonServer>(ServerAsset.GetAsset()));
   }
+
+  this->ServerListChanged.Broadcast();
 }
 
 UCesiumIonServer* CesiumIonServerManager::GetCurrent() {
@@ -139,7 +141,32 @@ void CesiumIonServerManager::SetCurrent(UCesiumIonServer* pServer) {
   }
 }
 
-void CesiumIonServerManager::OnAssetAddedOrRemoved(const FAssetData& asset) {
+void CesiumIonServerManager::OnAssetAdded(const FAssetData& asset) {
+  if (asset.AssetClassPath !=
+      UCesiumIonServer::StaticClass()->GetClassPathName())
+    return;
+
   this->RefreshServerList();
-  this->ServerListChanged.Broadcast();
+}
+
+void CesiumIonServerManager::OnAssetRemoved(const FAssetData& asset) {
+  if (asset.AssetClassPath !=
+      UCesiumIonServer::StaticClass()->GetClassPathName())
+    return;
+
+  this->RefreshServerList();
+
+  UCesiumIonServer* pServer = Cast<UCesiumIonServer>(asset.GetAsset());
+  if (pServer && this->GetCurrent() == pServer) {
+    // Current server is being removed, so select a different one.
+    TObjectPtr<UCesiumIonServer>* ppNewServer = this->_servers.FindByPredicate(
+        [pServer](const TObjectPtr<UCesiumIonServer>& pCandidate) {
+          return pCandidate != pServer;
+        });
+    if (ppNewServer != nullptr) {
+      this->SetCurrent(*ppNewServer);
+    } else {
+      this->SetCurrent(nullptr);
+    }
+  }
 }

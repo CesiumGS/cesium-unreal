@@ -27,7 +27,8 @@ void CesiumPanel::Construct(const FArguments& InArgs) {
 
   ChildSlot
       [SNew(SVerticalBox) +
-       SVerticalBox::Slot().AutoHeight()[SNew(CesiumServerSelector)] +
+       SVerticalBox::Slot().AutoHeight().Padding(
+           5.0f)[SNew(CesiumServerSelector)] +
        SVerticalBox::Slot().AutoHeight()[Toolbar()] +
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +

@@ -31,7 +31,8 @@ public:
   FCesiumIonServerChanged CurrentChanged;
 
 private:
-  void OnAssetAddedOrRemoved(const FAssetData& asset);
+  void OnAssetAdded(const FAssetData& asset);
+  void OnAssetRemoved(const FAssetData& asset);
 
   struct ServerSession {
     TWeakObjectPtr<UCesiumIonServer> Server;

@@ -95,6 +95,7 @@ private:
       ESelectInfo::Type type);
   FText GetSpecifiedToken() const;
   void SetSpecifiedToken(const FText& text);
+  void OnBrowseForServer();
 
   static TSharedPtr<SelectCesiumIonToken> _pExistingPanel;
 

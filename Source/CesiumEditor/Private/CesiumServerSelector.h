@@ -22,4 +22,5 @@ private:
   void OnServerSelectionChanged(
       TObjectPtr<UCesiumIonServer> InItem,
       ESelectInfo::Type InSeletionInfo);
+  void OnBrowseForServer();
 };

@@ -13,6 +13,7 @@
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/App.h"
+#include "PropertyCustomizationHelpers.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SThrobber.h"
@@ -191,6 +192,30 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
            .Text(FText::FromString(TEXT(
                "Cesium for Unreal embeds a Cesium ion token in your project in order to allow it to access the assets you add to your levels. Select the Cesium ion token to use.")))];
 
+  pLoaderOrContent->AddSlot().AutoHeight().Padding(5.0f)
+      [SNew(SHorizontalBox) +
+       SHorizontalBox::Slot()
+           .AutoWidth()
+           .VAlign(EVerticalAlignment::VAlign_Center)
+           .Padding(5.0f)[SNew(STextBlock)
+                              .Text(FText::FromString("Cesium ion Server:"))] +
+       SHorizontalBox::Slot()
+           .AutoWidth()
+           .VAlign(EVerticalAlignment::VAlign_Center)
+           .Padding(5.0f)[SNew(SEditableTextBox)
+                              .IsEnabled(false)
+                              .Padding(5.0f)
+                              .Text(FText::FromString(pServer->DisplayName))] +
+       SHorizontalBox::Slot()
+           .AutoWidth()
+           .VAlign(EVerticalAlignment::VAlign_Center)
+           .Padding(5.0f)[PropertyCustomizationHelpers::MakeBrowseButton(
+               FSimpleDelegate::
+                   CreateSP(this, &SelectCesiumIonToken::OnBrowseForServer),
+               FText::FromString("Show this Cesium ion Server in the Content Browser."),
+               true,
+               false)]];
+
   pLoaderOrContent->AddSlot()
       .Padding(0.0f, 10.0f, 0.0, 10.0f)
       .AutoHeight()
@@ -346,10 +371,9 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
           .Title(FText::FromString(TEXT("Select a Cesium ion Token")))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
-          .ClientSize(FVector2D(635, 450))
+          .ClientSize(FVector2D(635, 500))
               [SNew(SBorder)
                    .Visibility(EVisibility::Visible)
-                   .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
                    .Padding(
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pLoaderOrContent]]);
 
@@ -378,7 +402,7 @@ void SelectCesiumIonToken::createRadioButton(
       [SNew(SCheckBox)
            .Visibility_Lambda(visibility)
            .Padding(5.0f)
-           .Style(FCoreStyle::Get(), "RadioButton")
+           .Style(FAppStyle::Get(), "RadioButton")
            .IsChecked_Lambda([&tokenSource, thisValue]() {
              return tokenSource == thisValue ? ECheckBoxState::Checked
                                              : ECheckBoxState::Unchecked;
@@ -574,4 +598,10 @@ FText SelectCesiumIonToken::GetSpecifiedToken() const {
 
 void SelectCesiumIonToken::SetSpecifiedToken(const FText& text) {
   this->_specifyToken.token = text.ToString();
+}
+
+void SelectCesiumIonToken::OnBrowseForServer() {
+  TArray<UObject*> Objects;
+  Objects.Add(this->_pServer.Get());
+  GEditor->SyncBrowserToObjects(Objects);
 }

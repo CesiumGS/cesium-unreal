@@ -3,18 +3,37 @@
 #include "CesiumServerSelector.h"
 #include "CesiumEditor.h"
 #include "CesiumIonServer.h"
+#include "Editor.h"
+#include "PropertyCustomizationHelpers.h"
 
 void CesiumServerSelector::Construct(const FArguments& InArgs) {
   ChildSlot
-      [SNew(SComboBox<TObjectPtr<UCesiumIonServer>>)
-           .OptionsSource(&FCesiumEditorModule::serverManager().GetServerList())
-           .OnGenerateWidget(this, &CesiumServerSelector::OnGenerateServerEntry)
-           .OnSelectionChanged(
-               this,
-               &CesiumServerSelector::OnServerSelectionChanged)
-           .Content()
-               [SNew(STextBlock)
-                    .Text(this, &CesiumServerSelector::GetServerValueAsText)]];
+      [SNew(SHorizontalBox) +
+       SHorizontalBox::Slot().FillWidth(1.0f).VAlign(
+           EVerticalAlignment::VAlign_Center)
+           [SNew(SComboBox<TObjectPtr<UCesiumIonServer>>)
+                .OptionsSource(
+                    &FCesiumEditorModule::serverManager().GetServerList())
+                .OnGenerateWidget(
+                    this,
+                    &CesiumServerSelector::OnGenerateServerEntry)
+                .OnSelectionChanged(
+                    this,
+                    &CesiumServerSelector::OnServerSelectionChanged)
+                .Content()
+                    [SNew(STextBlock)
+                         .Text(
+                             this,
+                             &CesiumServerSelector::GetServerValueAsText)]] +
+       SHorizontalBox::Slot().AutoWidth().VAlign(
+           EVerticalAlignment::VAlign_Center)
+           [PropertyCustomizationHelpers::MakeBrowseButton(
+               FSimpleDelegate::
+                   CreateSP(this, &CesiumServerSelector::OnBrowseForServer),
+               FText::FromString(
+                   "Show this Cesium ion Server in the Content Browser."),
+               true,
+               false)]];
 }
 
 namespace {
@@ -67,4 +86,10 @@ void CesiumServerSelector::OnServerSelectionChanged(
     ESelectInfo::Type InSeletionInfo) {
   FCesiumEditorModule::serverManager().SetCurrent(InItem);
   FCesiumEditorModule::serverManager().GetCurrentSession()->resume();
+}
+
+void CesiumServerSelector::OnBrowseForServer() {
+  TArray<UObject*> Objects;
+  Objects.Add(FCesiumEditorModule::serverManager().GetCurrent());
+  GEditor->SyncBrowserToObjects(Objects);
 }
