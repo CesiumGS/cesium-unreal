@@ -82,6 +82,7 @@ UCesiumIonServer::GetOrCreateForApiUrl(const FString& apiUrl) {
     Package = FindPackage(nullptr, *PackagePath);
     if (Package == nullptr) {
       Package = CreatePackage(*PackagePath);
+      break;
     }
   }
 
