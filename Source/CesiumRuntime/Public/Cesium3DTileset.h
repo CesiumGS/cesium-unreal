@@ -695,18 +695,11 @@ private:
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
 
-  /**
-   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
-   * endpoint can be specified.
-   */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetIonAssetEndpointUrl,
-      BlueprintSetter = SetIonAssetEndpointUrl,
-      Category = "Cesium",
-      AdvancedDisplay,
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
-  FString IonAssetEndpointUrl;
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage = "Use CesiumIonServer instead."))
+  FString IonAssetEndpointUrl_DEPRECATED;
 
   /**
    * The Cesium ion Server from which this tileset is loaded.
@@ -934,12 +927,6 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(const FString& InAccessToken);
-
-  UFUNCTION(BlueprintGetter, Category = "Cesium")
-  FString GetIonAssetEndpointUrl() const { return IonAssetEndpointUrl; }
-
-  UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }

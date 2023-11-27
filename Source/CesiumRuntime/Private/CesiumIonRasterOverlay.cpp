@@ -4,6 +4,7 @@
 #include "Cesium3DTilesSelection/IonRasterOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "CesiumActors.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumIonServer.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
@@ -47,4 +48,17 @@ void UCesiumIonRasterOverlay::PostLoad() {
 
   if (CesiumActors::shouldValidateFlags(this))
     CesiumActors::validateActorComponentFlags(this);
+
+#if WITH_EDITOR
+  const int32 CesiumVersion =
+      this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  if (CesiumVersion < FCesiumCustomVersion::CesiumIonServer &&
+      !this->IonAssetEndpointUrl_DEPRECATED.IsEmpty()) {
+    this->CesiumIonServer = UCesiumIonServer::GetOrCreateForApiUrl(
+        this->IonAssetEndpointUrl_DEPRECATED);
+  }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#endif
 }

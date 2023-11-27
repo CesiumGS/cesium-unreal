@@ -2,10 +2,15 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- Deprecated `IonAssetEndpointUrl` on `Cesium3DTileset` and `CesiumIonRasterOverlay`. Use the new `CesiumIonServer` property instead.
+
 ##### Additions :tada:
 
  - Added support for styling with property textures in `EXT_structural_metadata`.
  - Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
+ - Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
 
 ### v2.0.0 - 2023-11-01
 

@@ -308,16 +308,6 @@ void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   }
 }
 
-void ACesium3DTileset::SetIonAssetEndpointUrl(
-    const FString& InIonAssetEndpointUrl) {
-  if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
-    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
-      this->DestroyTileset();
-    }
-    this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
-  }
-}
-
 void ACesium3DTileset::SetCesiumIonServer(UCesiumIonServer* Server) {
   if (this->CesiumIonServer != Server) {
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
@@ -2091,6 +2081,19 @@ void ACesium3DTileset::PostLoad() {
 
   if (CesiumActors::shouldValidateFlags(this))
     CesiumActors::validateActorFlags(this);
+
+#if WITH_EDITOR
+  const int32 CesiumVersion =
+      this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  if (CesiumVersion < FCesiumCustomVersion::CesiumIonServer &&
+      !this->IonAssetEndpointUrl_DEPRECATED.IsEmpty()) {
+    this->CesiumIonServer = UCesiumIonServer::GetOrCreateForApiUrl(
+        this->IonAssetEndpointUrl_DEPRECATED);
+  }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 void ACesium3DTileset::Serialize(FArchive& Ar) {
@@ -2131,8 +2134,6 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
-      PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetEndpointUrl) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==

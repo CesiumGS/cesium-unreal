@@ -39,11 +39,10 @@ public:
    * endpoint can be specified.
    */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium",
-      AdvancedDisplay)
-  FString IonAssetEndpointUrl;
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage = "Use CesiumIonServer instead."))
+  FString IonAssetEndpointUrl_DEPRECATED;
 
   /**
    * The Cesium ion Server from which this raster overlay is loaded.

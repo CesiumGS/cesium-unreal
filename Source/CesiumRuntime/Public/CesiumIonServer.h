@@ -13,6 +13,10 @@ class CESIUMRUNTIME_API UCesiumIonServer : public UDataAsset {
 public:
   static UCesiumIonServer* GetOrCreateDefault();
 
+#if WITH_EDITOR
+  static UCesiumIonServer* GetOrCreateForApiUrl(const FString& apiUrl);
+#endif
+
   /**
    * The name to display for this server.
    */
