@@ -341,6 +341,13 @@ std::string convertFileUriToFilename(const std::string& url) {
     result.resize(end);
   }
 
+  // Remove query parameters from the URL if present, as they are no longer
+  // ignored by Unreal.
+  size_t pos = result.find("?");
+  if (pos != std::string::npos) {
+    result.erase(pos);
+  }
+
   return result;
 }
 
