@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
+#include "Misc/Paths.h"
 #include "CesiumRuntimeSettings.generated.h"
 
 /**
@@ -74,4 +75,42 @@ public:
       Category = "Cache",
       meta = (ConfigRestartRequired = true))
   int MaxCacheItems = 4096;
+
+  UPROPERTY(
+    Config,
+    EditAnywhere,
+    Category= "Crypto")
+  FString RSAPrivateKeyPath=FPaths::ProjectDir()+TEXT("/priv.pem");
+
+  UPROPERTY(
+    Config,
+    EditAnywhere,
+    Category= "Crypto")
+  FString RSAPublicKeyPath=FPaths::ProjectDir()+TEXT("/pub.pem");
+
+  UPROPERTY(
+    Config,
+    EditAnywhere,
+    Category= "Crypto")
+  bool UseAesKeyFile=false;
+
+  UPROPERTY(
+    Config,
+    EditAnywhere,
+    Category= "Crypto",
+    meta=(EditCondition="!UseAesKeyFile"))
+  FString AesKey="123456";
+
+  UPROPERTY(
+    Config,
+    EditAnywhere,
+    Category= "Crypto",
+    meta=(EditCondition="UseAesKeyFile"))
+  FString AESKeyPath=FPaths::ProjectDir()+TEXT("/aes.pem");
+
+  UPROPERTY(
+    Config,
+    EditAnywhere,
+    Category= "Crypto")
+  FString IV="123456";
 };

@@ -4,6 +4,7 @@
 #include "CesiumAsync/IAssetResponse.h"
 #include "EncryptionUtility.h"
 #include "Misc/Paths.h"
+#include "CesiumRuntimeSettings.h"
 
 namespace  {
 
@@ -34,38 +35,38 @@ private:
   std::string SData;
   gsl::span<const std::byte>_decryptedData;
   bool _dataValid=false;
-  FString AESKey="123456";
-  FString IV="123456";
-  const FString AESKeyPath = FPaths::ProjectDir()+TEXT("/typ2.pem");
-  const FString RSAPrivKeyPath = FPaths::ProjectDir()+TEXT("/typ2.pem");
+  FString AESKey=GetMutableDefault<UCesiumRuntimeSettings>()->AesKey;
+  FString IV= GetMutableDefault<UCesiumRuntimeSettings>()->IV;
+  const FString AESKeyPath = GetMutableDefault<UCesiumRuntimeSettings>()->AESKeyPath;
+  const FString RSAPrivKeyPath = GetMutableDefault<UCesiumRuntimeSettings>()->RSAPrivateKeyPath;
   void Decrypt() {
-    if (this->headers().find("Encrypted") != headers().end()) {
-      if(AESKey=="") {
+    auto encryptedHeader=this->headers().find("Encrypted");
+    if (encryptedHeader != headers().end()) {
+      if(GetMutableDefault<UCesiumRuntimeSettings>()->UseAesKeyFile) {
         AESKey=UEncryptionUtility::GetAESKeyByFile(AESKeyPath);
       }
       _dataValid = true;
-      if(this->headers().find("Encrypted")->second=="1") {
+      switch(auto s=encryptedHeader->second.at(0))
+      {
+      case '1':
         SData=UEncryptionUtility::S_RSADecryptData(_pAssetResponse->data(),RSAPrivKeyPath);
-        _decryptedData=gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(SData.data()),SData.size());
-      }
-      else if(this->headers().find("Encrypted")->second=="2") {
+        break;
+      case '2':
         SData=UEncryptionUtility::S_CBC_AESDecryptData(_pAssetResponse->data(),AESKey,IV);
-        _decryptedData=gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(SData.data()),SData.size());
-      }
-      else if(this->headers().find("Encrypted")->second=="3") {
+        break;
+      case '3':
         SData=UEncryptionUtility::S_ECB_AESDecryptData(_pAssetResponse->data(),AESKey);
-        _decryptedData=gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(SData.data()),SData.size());
-      }
-      else {
+        break;
+      default:
         _dataValid=false;
       }
-    }
-    else {
-      _dataValid = false;
+      if(_dataValid) {
+        _decryptedData=gsl::span<const std::byte>(reinterpret_cast<const std::byte*>(SData.data()),SData.size());
+      }
+    }else {
+      _dataValid=false;
     }
   }
-
-
 };
 
 class DecryptAssetRequest:public CesiumAsync::IAssetRequest {
@@ -140,6 +141,6 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> EncryptAssetAcc
 }
 
 void EncryptAssetAccessor::tick() noexcept {
-
+  _pAssetAccessor->tick();
 }
 

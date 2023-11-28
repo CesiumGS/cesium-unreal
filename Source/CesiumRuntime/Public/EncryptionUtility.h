@@ -25,10 +25,11 @@ public:
   static FString RSADecryptData(FString Input,FString KeyPath);
   UFUNCTION(BlueprintCallable, Category = "EncryptionUtility")
   static FString GetAESKeyByFile(FString Path);
-
-  static std::string S_RSADecryptData(gsl::span<const std::byte> Input,FString KeyPath);
-  static std::string S_ECB_AESDecryptData(gsl::span<const std::byte> Input,FString Key);
-  static std::string S_CBC_AESDecryptData(gsl::span<const std::byte> Input,FString Key,FString IV);
+  UFUNCTION(BlueprintCallable, Category = "EncryptionUtility")
+  static bool GenerateRSAKeyPair();
+  static std::string S_RSADecryptData(const gsl::span<const std::byte>& Input,FString KeyPath);
+  static std::string S_ECB_AESDecryptData(const gsl::span<const std::byte>& Input,FString Key);
+  static std::string S_CBC_AESDecryptData(const gsl::span<const std::byte>& Input,FString Key,FString IV);
 private:
   static CryptoPP::AutoSeededRandomPool& getRng();
 

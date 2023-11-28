@@ -5,11 +5,32 @@
 #include "CryptoPP/filters.h"
 #include "CryptoPP/modes.h"
 #include "CryptoPP/rsa.h"
+#include "Misc/Paths.h"
 
 
 CryptoPP::AutoSeededRandomPool& UEncryptionUtility::getRng() {
   static CryptoPP::AutoSeededRandomPool m_rng;
   return m_rng;
+}
+
+bool UEncryptionUtility::GenerateRSAKeyPair() {
+  const unsigned int KeyLength =1024;
+  const FString PrivKeyPath=FPaths::ProjectDir()+TEXT("/PrivKey.pem");
+  const FString PubKeyPath=FPaths::ProjectDir()+TEXT("/PubKey.pem");
+  try{CryptoPP::RSAES_PKCS1v15_Decryptor priv(getRng(),KeyLength);
+    CryptoPP::Base64Encoder privFile(new CryptoPP::FileSink(TCHAR_TO_UTF8(*PrivKeyPath)));
+    priv.AccessMaterial().Save(privFile);
+    privFile.MessageEnd();
+    CryptoPP::RSAES_PKCS1v15_Encryptor pub(priv);
+    CryptoPP::Base64Encoder pubFile(new CryptoPP::FileSink(TCHAR_TO_UTF8(*PubKeyPath)));
+    pub.AccessMaterial().Save(pubFile);
+    pubFile.MessageEnd();
+  }
+  catch(CryptoPP::Exception &e) {
+    UE_LOG(LogTemp,Warning,TEXT("GENERATE RSA KEY PAIR FAILED!ERROR:%hs"),e.what());
+    return false;
+  }
+  return true;
 }
 
 FString UEncryptionUtility::GetAESKeyByFile(FString Path) {
@@ -31,8 +52,8 @@ FString UEncryptionUtility::RSAEncryptData(FString Input,FString KeyPath) {
   CryptoPP::RSA::PublicKey PubRSAKey;
   CryptoPP::ByteQueue queue;
   try {
-    CryptoPP::FileSource privFile(TCHAR_TO_ANSI(*KeyPath),true,new CryptoPP::Base64Decoder);
-    privFile.TransferTo(queue);
+    CryptoPP::FileSource pubFile(TCHAR_TO_ANSI(*KeyPath),true,new CryptoPP::Base64Decoder);
+    pubFile.TransferTo(queue);
     queue.MessageEnd();
     PubRSAKey.BERDecodePublicKey(queue,false,queue.MaxRetrievable());
   }
@@ -201,7 +222,7 @@ FString UEncryptionUtility::ECB_AESEncryptData(FString Input,FString Key) {
   return UTF8_TO_TCHAR(Base64EncodeCipher.c_str());
 }
 
-std::string UEncryptionUtility::S_RSADecryptData(gsl::span<const std::byte> Input, FString KeyPath) {
+std::string UEncryptionUtility::S_RSADecryptData(const gsl::span<const std::byte>& Input, FString KeyPath) {
   std::string Plain;
   CryptoPP::RSA::PrivateKey PrivRSAKey;
   CryptoPP::ByteQueue queue;
@@ -230,7 +251,7 @@ std::string UEncryptionUtility::S_RSADecryptData(gsl::span<const std::byte> Inpu
   return Plain;
 }
 
-std::string UEncryptionUtility::S_ECB_AESDecryptData(gsl::span<const std::byte> Input, FString Key) {
+std::string UEncryptionUtility::S_ECB_AESDecryptData(const gsl::span<const std::byte>& Input, FString Key) {
   const std::string CipherText(reinterpret_cast<const char*>(Input.data()),Input.size());
   const std::string SAESKey=TCHAR_TO_UTF8(*Key);
   CryptoPP::SecByteBlock key(CryptoPP::AES::MAX_KEYLENGTH);
@@ -258,7 +279,7 @@ std::string UEncryptionUtility::S_ECB_AESDecryptData(gsl::span<const std::byte> 
   return Plain;
 }
 
-std::string UEncryptionUtility::S_CBC_AESDecryptData(gsl::span<const std::byte> Input, FString Key, FString IV) {
+std::string UEncryptionUtility::S_CBC_AESDecryptData(const gsl::span<const std::byte>& Input, FString Key, FString IV) {
   const std::string CipherText(reinterpret_cast<const char*>(Input.data()),Input.size());
   const std::string SAESKey=TCHAR_TO_UTF8(*Key);
   const std::string SIV=TCHAR_TO_UTF8(*IV);
