@@ -795,7 +795,7 @@ private:
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
       Category = "Cesium|Rendering",
-      meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
+      meta = (EditCondition = "!bIsMac"))
   bool EnableWaterMask = false;
 
   /**
@@ -888,6 +888,11 @@ private:
 protected:
   UPROPERTY()
   FString PlatformName;
+
+#if WITH_EDITORONLY_DATA
+  UPROPERTY()
+  bool bIsMac;
+#endif
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
