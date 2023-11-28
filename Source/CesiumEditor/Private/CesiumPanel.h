@@ -23,6 +23,7 @@ private:
   TSharedRef<SWidget> LoginPanel();
   TSharedRef<SWidget> MainIonQuickAddPanel();
   TSharedRef<SWidget> BasicQuickAddPanel();
+  TSharedRef<SWidget> Version();
 
   void addFromIon();
   void uploadToIon();

@@ -13,6 +13,7 @@
 #include "CesiumUtility/Uri.h"
 #include "Editor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Interfaces/IPluginManager.h"
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
 #include "LevelEditor.h"
@@ -33,7 +34,11 @@ void CesiumPanel::Construct(const FArguments& InArgs) {
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +
             SScrollBox::Slot()[LoginPanel()] +
-            SScrollBox::Slot()[MainIonQuickAddPanel()]]];
+            SScrollBox::Slot()[MainIonQuickAddPanel()]] +
+       SVerticalBox::Slot()
+           .AutoHeight()
+           .VAlign(VAlign_Bottom)
+           .HAlign(HAlign_Right)[Version()]];
 }
 
 void CesiumPanel::Tick(
@@ -188,6 +193,27 @@ TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
       "",
       -1});
   return quickAddPanel.ToSharedRef();
+}
+
+TSharedRef<SWidget> CesiumPanel::Version() {
+  IPluginManager& PluginManager = IPluginManager::Get();
+  TSharedPtr<IPlugin> Plugin =
+      PluginManager.FindPlugin(TEXT("CesiumForUnreal"));
+
+  FString Version = Plugin ? TEXT("v") + Plugin->GetDescriptor().VersionName
+                           : TEXT("Unknown Version");
+
+  return SNew(SHyperlink)
+      .Text(FText::FromString(Version))
+      .ToolTipText(FText::FromString(
+          TEXT("Open the Cesium for Unreal changelog in your browser")))
+      .OnNavigate_Lambda([]() {
+        FPlatformProcess::LaunchURL(
+            TEXT(
+                "https://github.com/CesiumGS/cesium-unreal/blob/main/CHANGES.md"),
+            NULL,
+            NULL);
+      });
 }
 
 void CesiumPanel::addFromIon() {
