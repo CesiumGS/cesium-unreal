@@ -46,6 +46,10 @@ FText GetNameFromCesiumIonServerAsset(
   std::shared_ptr<CesiumIonSession> pSession =
       FCesiumEditorModule::serverManager().GetSession(pServer);
 
+  // Get the profile here, which will trigger it to load if it hasn't been
+  // loaded already.
+  const CesiumIonClient::Profile& profile = pSession->getProfile();
+
   FString prefix;
   FString suffix;
 
@@ -54,7 +58,7 @@ FText GetNameFromCesiumIonServerAsset(
   } else if (pSession->isLoadingProfile()) {
     suffix = " (loading profile...)";
   } else if (pSession->isConnected() && pSession->isProfileLoaded()) {
-    prefix = FString(UTF8_TO_TCHAR(pSession->getProfile().username.c_str()));
+    prefix = FString(UTF8_TO_TCHAR(profile.username.c_str()));
     prefix += " @ ";
   } else {
     suffix = " (not connected)";
