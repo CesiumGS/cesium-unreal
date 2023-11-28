@@ -84,5 +84,5 @@ void FUnrealAssetAccessorSpec::Define() {
     Uri.Append("?version=4.27.1");
 
     TestAccessorRequest(Uri, randomText);
-    });
+  });
 }
