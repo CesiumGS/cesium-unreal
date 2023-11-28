@@ -9,6 +9,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug in the "Select New Token" dialog that caused an error when trying to create a new token without being connected.
 - Fixed a bug where an EditCondition was not parsed correctly and caused Output Log window errors.
 - Removed query parameters from filepaths if present, as they are no longer ignored by Unreal. This fixes a bug where the URL would not load correctly in some cases.
 - Fixed a Tile Excluder bug that computed incorrect tile bounds, making tiles invisible when moving the tileset in the sample scene.
