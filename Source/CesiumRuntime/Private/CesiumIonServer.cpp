@@ -2,6 +2,7 @@
 
 #include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
+#include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
 #if WITH_EDITOR
