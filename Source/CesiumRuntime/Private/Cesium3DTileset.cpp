@@ -57,6 +57,7 @@ FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 #if WITH_EDITOR
 #include "Editor.h"
 #include "EditorViewportClient.h"
+#include "FileHelpers.h"
 #include "LevelEditorViewport.h"
 #endif
 
@@ -102,8 +103,6 @@ ACesium3DTileset::ACesium3DTileset()
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->Root = this->RootComponent;
-
-  this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -959,7 +958,8 @@ void ACesium3DTileset::LoadTileset() {
   // Make sure we have a valid Cesium ion server if we need one.
   if (this->TilesetSource == ETilesetSource::FromCesiumIon &&
       !IsValid(this->CesiumIonServer)) {
-    this->CesiumIonServer = UCesiumIonServer::GetDefault();
+    this->Modify();
+    this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
   }
 
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
@@ -2095,6 +2095,19 @@ void ACesium3DTileset::PostLoad() {
           TEXT("https://api.ion.cesium.com/")) {
     this->CesiumIonServer = UCesiumIonServer::GetOrCreateForApiUrl(
         this->IonAssetEndpointUrl_DEPRECATED);
+
+    // In previous versions, the custom IonAssetEndpointUrl would still use the
+    // project default token.
+    UCesiumIonServer* pDefault = UCesiumIonServer::GetDefault();
+    this->CesiumIonServer->DefaultIonAccessTokenId =
+        pDefault->DefaultIonAccessTokenId;
+    this->CesiumIonServer->DefaultIonAccessToken =
+        pDefault->DefaultIonAccessToken;
+
+    this->CesiumIonServer->Modify();
+    UEditorLoadingAndSavingUtils::SavePackages(
+        {this->CesiumIonServer->GetPackage()},
+        true);
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #endif

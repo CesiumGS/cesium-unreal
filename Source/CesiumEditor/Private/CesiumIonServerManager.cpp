@@ -8,6 +8,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
+#include "FileHelpers.h"
 
 CesiumIonServerManager::CesiumIonServerManager() noexcept {
   FAssetRegistryModule& AssetRegistryModule =
@@ -47,6 +48,8 @@ void CesiumIonServerManager::Initialize() {
           std::move(pSettings->DefaultIonAccessToken_DEPRECATED);
       pSettings->DefaultIonAccessToken_DEPRECATED.Empty();
 
+      UEditorLoadingAndSavingUtils::SavePackages({pServer->GetPackage()}, true);
+
       CesiumSourceControl::PromptToCheckoutConfigFile(
           pSettings->GetDefaultConfigFilename());
 
@@ -65,7 +68,7 @@ void CesiumIonServerManager::Initialize() {
       pEditorSettings->UserAccessTokenMap.Add(
           pServer,
           pEditorSettings->UserAccessToken_DEPRECATED);
-      pEditorSettings->UserAccessTokenMap.Empty();
+      pEditorSettings->UserAccessToken_DEPRECATED.Empty();
       pEditorSettings->Save();
     }
     PRAGMA_ENABLE_DEPRECATION_WARNINGS

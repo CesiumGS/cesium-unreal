@@ -9,9 +9,9 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 
-UCesiumIonRasterOverlay::UCesiumIonRasterOverlay() {
-  this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
-}
+#if WITH_EDITOR
+#include "FileHelpers.h"
+#endif
 
 void UCesiumIonRasterOverlay::TroubleshootToken() {
   OnCesiumRasterOverlayIonTroubleshooting.Broadcast(this);
@@ -27,7 +27,7 @@ UCesiumIonRasterOverlay::CreateOverlay(
 
   // Make sure we have a valid Cesium ion server.
   if (!IsValid(this->CesiumIonServer)) {
-    this->CesiumIonServer = UCesiumIonServer::GetDefault();
+    this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
   }
 
   FString token = this->IonAccessToken.IsEmpty()
@@ -64,6 +64,19 @@ void UCesiumIonRasterOverlay::PostLoad() {
           TEXT("https://api.ion.cesium.com/")) {
     this->CesiumIonServer = UCesiumIonServer::GetOrCreateForApiUrl(
         this->IonAssetEndpointUrl_DEPRECATED);
+
+    // In previous versions, the custom IonAssetEndpointUrl would still use the
+    // project default token.
+    UCesiumIonServer* pDefault = UCesiumIonServer::GetDefault();
+    this->CesiumIonServer->DefaultIonAccessTokenId =
+        pDefault->DefaultIonAccessTokenId;
+    this->CesiumIonServer->DefaultIonAccessToken =
+        pDefault->DefaultIonAccessToken;
+
+    this->CesiumIonServer->Modify();
+    UEditorLoadingAndSavingUtils::SavePackages(
+        {this->CesiumIonServer->GetPackage()},
+        true);
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #endif
