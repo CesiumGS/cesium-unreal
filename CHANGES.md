@@ -9,7 +9,8 @@
 
 ##### Fixes :wrench:
 
- - Removed query parameters from filepaths if present, as they are no longer ignored by Unreal. This fixes a bug where the URL would not load correctly in some cases.
+- Removed query parameters from filepaths if present, as they are no longer ignored by Unreal. This fixes a bug where the URL would not load correctly in some cases.
+- Fixed a Tile Excluder bug that computed incorrect tile bounds, making tiles invisible when moving the tileset in the sample scene.
 
 ### v2.0.0 - 2023-11-01
 
