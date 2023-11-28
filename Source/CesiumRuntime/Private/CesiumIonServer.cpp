@@ -11,6 +11,8 @@
 #include "FileHelpers.h"
 #endif
 
+/*static*/ UCesiumIonServer* UCesiumIonServer::_pDefaultForNewObjects = nullptr;
+
 /*static*/ UCesiumIonServer* UCesiumIonServer::GetOrCreateDefault() {
   UPackage* Package = CreatePackage(
       TEXT("/Game/CesiumSettings/CesiumIonServers/CesiumIonSaaS"));
@@ -43,6 +45,19 @@
 #endif
 
   return Server;
+}
+
+/*static*/ UCesiumIonServer* UCesiumIonServer::GetDefaultForNewObjects() {
+  if (IsValid(_pDefaultForNewObjects)) {
+    return _pDefaultForNewObjects;
+  } else {
+    return GetOrCreateDefault();
+  }
+}
+
+/*static*/ void
+UCesiumIonServer::SetDefaultForNewObjects(UCesiumIonServer* Server) {
+  _pDefaultForNewObjects = Server;
 }
 
 #if WITH_EDITOR

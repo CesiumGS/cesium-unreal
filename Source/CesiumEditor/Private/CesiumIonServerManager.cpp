@@ -154,6 +154,7 @@ void CesiumIonServerManager::SetCurrent(UCesiumIonServer* pServer) {
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   if (pSettings) {
     pSettings->CurrentCesiumIonServer = pServer;
+    UCesiumIonServer::SetDefaultForNewObjects(pServer);
     CurrentChanged.Broadcast();
   }
 }

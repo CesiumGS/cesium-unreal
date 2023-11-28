@@ -9,6 +9,10 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 
+UCesiumIonRasterOverlay::UCesiumIonRasterOverlay() {
+  this->CesiumIonServer = UCesiumIonServer::GetDefaultForNewObjects();
+}
+
 void UCesiumIonRasterOverlay::TroubleshootToken() {
   OnCesiumRasterOverlayIonTroubleshooting.Broadcast(this);
 }

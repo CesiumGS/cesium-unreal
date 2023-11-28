@@ -13,6 +13,9 @@ class CESIUMRUNTIME_API UCesiumIonServer : public UDataAsset {
 public:
   static UCesiumIonServer* GetOrCreateDefault();
 
+  static UCesiumIonServer* GetDefaultForNewObjects();
+  static void SetDefaultForNewObjects(UCesiumIonServer* Server);
+
 #if WITH_EDITOR
   static UCesiumIonServer* GetOrCreateForApiUrl(const FString& apiUrl);
 #endif
@@ -77,4 +80,7 @@ public:
       Category = "Cesium",
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
+
+private:
+  static UCesiumIonServer* _pDefaultForNewObjects;
 };

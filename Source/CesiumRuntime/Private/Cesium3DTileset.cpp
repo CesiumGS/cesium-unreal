@@ -103,6 +103,8 @@ ACesium3DTileset::ACesium3DTileset()
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->Root = this->RootComponent;
 
+  this->CesiumIonServer = UCesiumIonServer::GetDefaultForNewObjects();
+
   PlatformName = UGameplayStatics::GetPlatformName();
 }
 

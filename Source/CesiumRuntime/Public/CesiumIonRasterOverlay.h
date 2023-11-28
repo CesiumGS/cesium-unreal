@@ -19,6 +19,8 @@ class CESIUMRUNTIME_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay {
   GENERATED_BODY()
 
 public:
+  UCesiumIonRasterOverlay();
+
   /**
    * The ID of the Cesium ion asset to use.
    *
