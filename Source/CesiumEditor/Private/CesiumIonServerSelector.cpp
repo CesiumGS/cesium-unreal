@@ -1,12 +1,12 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
-#include "CesiumServerSelector.h"
+#include "CesiumIonServerSelector.h"
 #include "CesiumEditor.h"
 #include "CesiumIonServer.h"
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 
-void CesiumServerSelector::Construct(const FArguments& InArgs) {
+void CesiumIonServerSelector::Construct(const FArguments& InArgs) {
   ChildSlot
       [SNew(SHorizontalBox) +
        SHorizontalBox::Slot().FillWidth(1.0f).VAlign(
@@ -16,20 +16,20 @@ void CesiumServerSelector::Construct(const FArguments& InArgs) {
                     &FCesiumEditorModule::serverManager().GetServerList())
                 .OnGenerateWidget(
                     this,
-                    &CesiumServerSelector::OnGenerateServerEntry)
+                    &CesiumIonServerSelector::OnGenerateServerEntry)
                 .OnSelectionChanged(
                     this,
-                    &CesiumServerSelector::OnServerSelectionChanged)
+                    &CesiumIonServerSelector::OnServerSelectionChanged)
                 .Content()
                     [SNew(STextBlock)
                          .Text(
                              this,
-                             &CesiumServerSelector::GetServerValueAsText)]] +
+                             &CesiumIonServerSelector::GetServerValueAsText)]] +
        SHorizontalBox::Slot().AutoWidth().VAlign(
            EVerticalAlignment::VAlign_Center)
            [PropertyCustomizationHelpers::MakeBrowseButton(
                FSimpleDelegate::
-                   CreateSP(this, &CesiumServerSelector::OnBrowseForServer),
+                   CreateSP(this, &CesiumIonServerSelector::OnBrowseForServer),
                FText::FromString(
                    "Show this Cesium ion Server in the Content Browser."),
                true,
@@ -73,26 +73,26 @@ FText GetNameFromCesiumIonServerAsset(
 
 } // namespace
 
-FText CesiumServerSelector::GetServerValueAsText() const {
+FText CesiumIonServerSelector::GetServerValueAsText() const {
   UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
   return GetNameFromCesiumIonServerAsset(pServer);
 }
 
-TSharedRef<SWidget> CesiumServerSelector::OnGenerateServerEntry(
+TSharedRef<SWidget> CesiumIonServerSelector::OnGenerateServerEntry(
     TObjectPtr<UCesiumIonServer> pServerAsset) {
   return SNew(STextBlock).Text_Lambda([pServerAsset]() {
     return GetNameFromCesiumIonServerAsset(pServerAsset);
   });
 }
 
-void CesiumServerSelector::OnServerSelectionChanged(
+void CesiumIonServerSelector::OnServerSelectionChanged(
     TObjectPtr<UCesiumIonServer> InItem,
     ESelectInfo::Type InSeletionInfo) {
   FCesiumEditorModule::serverManager().SetCurrent(InItem);
   FCesiumEditorModule::serverManager().GetCurrentSession()->resume();
 }
 
-void CesiumServerSelector::OnBrowseForServer() {
+void CesiumIonServerSelector::OnBrowseForServer() {
   TArray<UObject*> Objects;
   Objects.Add(FCesiumEditorModule::serverManager().GetCurrent());
   GEditor->SyncBrowserToObjects(Objects);

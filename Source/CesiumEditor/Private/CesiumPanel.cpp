@@ -7,9 +7,9 @@
 #include "CesiumEditor.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonServer.h"
+#include "CesiumIonServerSelector.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
-#include "CesiumServerSelector.h"
 #include "CesiumUtility/Uri.h"
 #include "Editor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -29,7 +29,7 @@ void CesiumPanel::Construct(const FArguments& InArgs) {
   ChildSlot
       [SNew(SVerticalBox) +
        SVerticalBox::Slot().AutoHeight().Padding(
-           5.0f)[SNew(CesiumServerSelector)] +
+           5.0f)[SNew(CesiumIonServerSelector)] +
        SVerticalBox::Slot().AutoHeight()[Toolbar()] +
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +

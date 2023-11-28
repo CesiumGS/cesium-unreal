@@ -7,8 +7,8 @@
 class FArguments;
 class UCesiumIonServer;
 
-class CesiumServerSelector : public SCompoundWidget {
-  SLATE_BEGIN_ARGS(CesiumServerSelector) {}
+class CesiumIonServerSelector : public SCompoundWidget {
+  SLATE_BEGIN_ARGS(CesiumIonServerSelector) {}
   SLATE_END_ARGS()
 
   void Construct(const FArguments& InArgs);

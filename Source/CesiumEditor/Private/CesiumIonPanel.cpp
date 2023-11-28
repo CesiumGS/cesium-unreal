@@ -7,7 +7,7 @@
 #include "CesiumCommands.h"
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
-#include "CesiumServerSelector.h"
+#include "CesiumIonServerSelector.h"
 #include "Editor.h"
 #include "EditorModeManager.h"
 #include "EngineUtils.h"
@@ -108,7 +108,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
             SVerticalBox::Slot().AutoHeight()
             [
               SNew(SHorizontalBox) +
-                SHorizontalBox::Slot().Padding(5.0f)[SNew(CesiumServerSelector)] +
+                SHorizontalBox::Slot().Padding(5.0f)[SNew(CesiumIonServerSelector)] +
                 // Add the refresh button at the upper left
                 SHorizontalBox::Slot().HAlign(HAlign_Left).Padding(5.0f)
                 [

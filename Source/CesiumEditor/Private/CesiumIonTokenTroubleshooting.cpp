@@ -5,6 +5,7 @@
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServerDisplay.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Uri.h"
 #include "EditorStyleSet.h"
@@ -348,6 +349,10 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
     pMainVerticalBox->AddSlot().AutoHeight()
         [SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(preamble))];
   }
+
+  pMainVerticalBox->AddSlot().AutoHeight().Padding(
+      5.0f)[SNew(CesiumIonServerDisplay)
+                .Server(getCesiumIonServer(pIonObject))];
 
   TSharedRef<SHorizontalBox> pDiagnosticColumns = SNew(SHorizontalBox);
 

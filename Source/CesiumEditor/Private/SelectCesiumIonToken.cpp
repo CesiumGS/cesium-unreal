@@ -4,6 +4,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServerDisplay.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
@@ -192,30 +193,8 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
            .Text(FText::FromString(TEXT(
                "Cesium for Unreal embeds a Cesium ion token in your project in order to allow it to access the assets you add to your levels. Select the Cesium ion token to use.")))];
 
-  pLoaderOrContent->AddSlot().AutoHeight().Padding(5.0f)
-      [SNew(SHorizontalBox) +
-       SHorizontalBox::Slot()
-           .AutoWidth()
-           .VAlign(EVerticalAlignment::VAlign_Center)
-           .Padding(5.0f)[SNew(STextBlock)
-                              .Text(FText::FromString("Cesium ion Server:"))] +
-       SHorizontalBox::Slot()
-           .AutoWidth()
-           .VAlign(EVerticalAlignment::VAlign_Center)
-           .Padding(5.0f)[SNew(SEditableTextBox)
-                              .IsEnabled(false)
-                              .Padding(5.0f)
-                              .Text(FText::FromString(pServer->DisplayName))] +
-       SHorizontalBox::Slot()
-           .AutoWidth()
-           .VAlign(EVerticalAlignment::VAlign_Center)
-           .Padding(5.0f)[PropertyCustomizationHelpers::MakeBrowseButton(
-               FSimpleDelegate::
-                   CreateSP(this, &SelectCesiumIonToken::OnBrowseForServer),
-               FText::FromString(
-                   "Show this Cesium ion Server in the Content Browser."),
-               true,
-               false)]];
+  pLoaderOrContent->AddSlot().AutoHeight().Padding(
+      5.0f)[SNew(CesiumIonServerDisplay).Server(pServer)];
 
   pLoaderOrContent->AddSlot()
       .Padding(0.0f, 10.0f, 0.0, 10.0f)
