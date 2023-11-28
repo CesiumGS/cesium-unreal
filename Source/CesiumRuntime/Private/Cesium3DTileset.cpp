@@ -103,7 +103,7 @@ ACesium3DTileset::ACesium3DTileset()
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->Root = this->RootComponent;
 
-  this->CesiumIonServer = UCesiumIonServer::GetDefaultForNewObjects();
+  this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -959,7 +959,7 @@ void ACesium3DTileset::LoadTileset() {
   // Make sure we have a valid Cesium ion server if we need one.
   if (this->TilesetSource == ETilesetSource::FromCesiumIon &&
       !IsValid(this->CesiumIonServer)) {
-    this->CesiumIonServer = UCesiumIonServer::GetOrCreateDefault();
+    this->CesiumIonServer = UCesiumIonServer::GetDefault();
   }
 
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&

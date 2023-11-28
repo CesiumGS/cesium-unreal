@@ -6,17 +6,46 @@
 #include "UObject/Object.h"
 #include "CesiumIonServer.generated.h"
 
+/**
+ * Defines a Cesium ion Server. This may be the public (SaaS) Cesium ion server
+ * at ion.cesium.com, or it may be a self-hosted instance.
+ */
 UCLASS()
 class CESIUMRUNTIME_API UCesiumIonServer : public UDataAsset {
   GENERATED_BODY()
 
 public:
-  static UCesiumIonServer* GetOrCreateDefault();
+  /**
+   * Gets the default Cesium ion Server (ion.cesium.com).
+   *
+   * It is expected to be found at
+   * `/Game/CesiumSettings/CesiumIonServers/CesiumIonSaaS`. In the Editor, it
+   * will be created if it does not already exist, so this method always returns
+   * a valid instance. At runtime, this method returns nullptr if the object
+   * does not exist.
+   */
+  static UCesiumIonServer* GetDefault();
 
-  static UCesiumIonServer* GetDefaultForNewObjects();
-  static void SetDefaultForNewObjects(UCesiumIonServer* Server);
+  /**
+   * Gets the current server to be assigned to new objects. In the Editor, this
+   * is the server that is currently selected on the Cesium panel. At runtime,
+   * this returns `GetDefault`, unless `SetCurrentForNewObjects` has been called
+   * to set it to something different.
+   */
+  static UCesiumIonServer* GetCurrentForNewObjects();
+
+  /**
+   * Sets the current server to be assigned to new objects. If set to nullptr,
+   * the value of `GetDefault` will be returned from `GetCurrentForNewObjects`.
+   */
+  static void SetCurrentForNewObjects(UCesiumIonServer* Server);
 
 #if WITH_EDITOR
+  /**
+   * Gets or creates a new server from a given API URL. This is primarily useful
+   * for backward compatibility with the old IonAssetEndpointUrl property. The
+   * new server is created in `/Game/CesiumSettings/CesiumIonServers`.
+   */
   static UCesiumIonServer* GetOrCreateForApiUrl(const FString& apiUrl);
 #endif
 

@@ -10,7 +10,7 @@
 #include "CesiumRuntimeSettings.h"
 
 UCesiumIonRasterOverlay::UCesiumIonRasterOverlay() {
-  this->CesiumIonServer = UCesiumIonServer::GetDefaultForNewObjects();
+  this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
 }
 
 void UCesiumIonRasterOverlay::TroubleshootToken() {
@@ -27,7 +27,7 @@ UCesiumIonRasterOverlay::CreateOverlay(
 
   // Make sure we have a valid Cesium ion server.
   if (!IsValid(this->CesiumIonServer)) {
-    this->CesiumIonServer = UCesiumIonServer::GetOrCreateDefault();
+    this->CesiumIonServer = UCesiumIonServer::GetDefault();
   }
 
   FString token = this->IonAccessToken.IsEmpty()

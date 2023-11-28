@@ -13,7 +13,7 @@
 
 /*static*/ UCesiumIonServer* UCesiumIonServer::_pDefaultForNewObjects = nullptr;
 
-/*static*/ UCesiumIonServer* UCesiumIonServer::GetOrCreateDefault() {
+/*static*/ UCesiumIonServer* UCesiumIonServer::GetDefault() {
   UPackage* Package = CreatePackage(
       TEXT("/Game/CesiumSettings/CesiumIonServers/CesiumIonSaaS"));
   Package->FullyLoad();
@@ -47,16 +47,16 @@
   return Server;
 }
 
-/*static*/ UCesiumIonServer* UCesiumIonServer::GetDefaultForNewObjects() {
+/*static*/ UCesiumIonServer* UCesiumIonServer::GetCurrentForNewObjects() {
   if (IsValid(_pDefaultForNewObjects)) {
     return _pDefaultForNewObjects;
   } else {
-    return GetOrCreateDefault();
+    return GetDefault();
   }
 }
 
 /*static*/ void
-UCesiumIonServer::SetDefaultForNewObjects(UCesiumIonServer* Server) {
+UCesiumIonServer::SetCurrentForNewObjects(UCesiumIonServer* Server) {
   _pDefaultForNewObjects = Server;
 }
 
