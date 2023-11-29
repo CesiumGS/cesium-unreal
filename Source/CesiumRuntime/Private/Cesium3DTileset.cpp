@@ -105,6 +105,10 @@ ACesium3DTileset::ACesium3DTileset()
   this->Root = this->RootComponent;
 
   PlatformName = UGameplayStatics::GetPlatformName();
+
+#if WITH_EDITOR
+  bIsMac = PlatformName == TEXT("Mac");
+#endif
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }

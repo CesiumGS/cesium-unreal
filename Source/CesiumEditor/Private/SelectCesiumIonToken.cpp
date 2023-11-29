@@ -228,9 +228,10 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
   this->_useExistingToken.token.token =
       TCHAR_TO_UTF8(*pServer->DefaultIonAccessToken);
   this->_specifyToken.token = pServer->DefaultIonAccessToken;
-  this->_tokenSource = pServer->DefaultIonAccessToken.IsEmpty()
-                           ? TokenSource::Create
-                           : TokenSource::Specify;
+  this->_tokenSource =
+      pServer->DefaultIonAccessToken.IsEmpty() && pSession->isConnected()
+          ? TokenSource::Create
+          : TokenSource::Specify;
 
   this->createRadioButton(
       pSession,

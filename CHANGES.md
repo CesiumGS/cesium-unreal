@@ -12,6 +12,13 @@
  - Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
  - Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
 
+##### Fixes :wrench:
+
+- Fixed a bug in the "Select New Token" dialog that caused an error when trying to create a new token without being connected.
+- Fixed a bug where an EditCondition was not parsed correctly and caused Output Log window errors.
+- Removed query parameters from filepaths if present, as they are no longer ignored by Unreal. This fixes a bug where the URL would not load correctly in some cases.
+- Fixed a Tile Excluder bug that computed incorrect tile bounds, making tiles invisible when moving the tileset in the sample scene.
+
 ### v2.0.0 - 2023-11-01
 
 This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or v5.3 is required.
