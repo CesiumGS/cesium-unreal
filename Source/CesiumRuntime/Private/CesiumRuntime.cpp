@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRuntime.h"
-#include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
+#include "Cesium3DTilesContent/registerAllTileContentTypes.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/GunzipAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
@@ -29,7 +29,7 @@
 DEFINE_LOG_CATEGORY(LogCesium);
 
 void FCesiumRuntimeModule::StartupModule() {
-  Cesium3DTilesSelection::registerAllTileContentTypes();
+  Cesium3DTilesContent::registerAllTileContentTypes();
 
   std::shared_ptr<spdlog::logger> pLogger = spdlog::default_logger();
   pLogger->sinks() = {std::make_shared<SpdlogUnrealLoggerSink>()};
