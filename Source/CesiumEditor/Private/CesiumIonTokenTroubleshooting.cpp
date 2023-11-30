@@ -522,7 +522,8 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
   auto pConnection = std::make_shared<Connection>(
       ionSession.getAsyncSystem(),
       ionSession.getAssetAccessor(),
-      TCHAR_TO_UTF8(*state.token));
+      TCHAR_TO_UTF8(*state.token),
+      TCHAR_TO_UTF8(*getCesiumIonServer(pIonObject)->ApiUrl));
 
   // Don't let this panel be destroyed while the async operations below are in
   // progress.
