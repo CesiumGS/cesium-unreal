@@ -160,19 +160,20 @@ void CesiumIonSession::resume() {
   std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
 
   // Verify that the connection actually works.
-  this->_connection.value()
-      .me()
-      .thenInMainThread([thiz](Response<Profile>&& response) {
-        if (!response.value.has_value()) {
-          thiz->_connection.reset();
+  bool connected = false;
+  this->_connection.value().me().thenInMainThread(
+      [thiz, &connected](Response<Profile>&& response) {
+        if (response.value.has_value()) {
+          connected = true;
+          thiz->_isResuming = false;
+          thiz->ConnectionUpdated.Broadcast();
         }
-        thiz->_isResuming = false;
-        thiz->ConnectionUpdated.Broadcast();
-      })
-      .catchInMainThread([thiz](std::exception&& e) {
-        thiz->_isResuming = false;
-        thiz->_connection.reset();
       });
+  if (!connected) {
+    thiz->_isResuming = false;
+    thiz->_connection.reset();
+    thiz->ConnectionUpdated.Broadcast();
+  }
 }
 
 void CesiumIonSession::disconnect() {
