@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Fixes :wrench:
+
+- Fixed a bug where viewports could appear wider than configured in the Dynamic Pawn's Camera Field of View. Noticed in Unreal Engine v5.3 when in Play-In-Editor mode, or a packaged game. In extreme cases, tiles would be missing near the edges of the view
+
 ##### Additions :tada:
 
  - Added support for styling with property textures in `EXT_structural_metadata`.
