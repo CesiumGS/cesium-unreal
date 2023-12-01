@@ -783,7 +783,7 @@ public:
   }
 
   virtual void* prepareRasterInMainThread(
-      Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      CesiumRasterOverlays::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult) override {
 
     TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
@@ -814,7 +814,7 @@ public:
   }
 
   virtual void freeRaster(
-      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
     if (pLoadThreadResult) {
@@ -835,7 +835,7 @@ public:
   virtual void attachRasterInMainThread(
       const Cesium3DTilesSelection::Tile& tile,
       int32_t overlayTextureCoordinateID,
-      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
@@ -861,7 +861,7 @@ public:
   virtual void detachRasterInMainThread(
       const Cesium3DTilesSelection::Tile& tile,
       int32_t overlayTextureCoordinateID,
-      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources) noexcept override {
     const Cesium3DTilesSelection::TileContent& content = tile.getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =

@@ -2,9 +2,6 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
-#include "Cesium3DTilesContent/GltfUtilities.h"
-#include "Cesium3DTilesSelection/RasterOverlay.h"
-#include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
 #include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
@@ -20,10 +17,13 @@
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
+#include "CesiumGltfContent/GltfUtilities.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
+#include "CesiumRasterOverlays/RasterOverlay.h"
+#include "CesiumRasterOverlays/RasterOverlayTile.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
@@ -1859,9 +1859,8 @@ static void loadModelAnyThreadPart(
   glm::dmat4x4 rootTransform = transform;
 
   {
-    rootTransform = Cesium3DTilesContent::GltfUtilities::applyRtcCenter(
-        model,
-        rootTransform);
+    rootTransform =
+        CesiumGltfContent::GltfUtilities::applyRtcCenter(model, rootTransform);
     applyGltfUpAxisTransform(model, rootTransform);
   }
 
@@ -2944,7 +2943,7 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
 
 void UCesiumGltfComponent::AttachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
-    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+    const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture,
     const glm::dvec2& translation,
     const glm::dvec2& scale,
@@ -3012,7 +3011,7 @@ void UCesiumGltfComponent::AttachRasterTile(
 
 void UCesiumGltfComponent::DetachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
-    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+    const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture) {
 
   forEachPrimitiveComponent(

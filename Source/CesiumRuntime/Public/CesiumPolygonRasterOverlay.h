@@ -55,16 +55,15 @@ public:
   bool ExcludeSelectedTiles = true;
 
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
-      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
-      override;
+  virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
+      const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
 
   virtual void OnAdd(
       Cesium3DTilesSelection::Tileset* pTileset,
-      Cesium3DTilesSelection::RasterOverlay* pOverlay) override;
+      CesiumRasterOverlays::RasterOverlay* pOverlay) override;
   virtual void OnRemove(
       Cesium3DTilesSelection::Tileset* pTileset,
-      Cesium3DTilesSelection::RasterOverlay* pOverlay) override;
+      CesiumRasterOverlays::RasterOverlay* pOverlay) override;
 
 private:
   std::shared_ptr<Cesium3DTilesSelection::RasterizedPolygonsTileExcluder>

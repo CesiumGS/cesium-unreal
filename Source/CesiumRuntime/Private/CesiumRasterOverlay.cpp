@@ -2,10 +2,10 @@
 
 #include "CesiumRasterOverlay.h"
 #include "Async/Async.h"
-#include "Cesium3DTilesSelection/RasterOverlayLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "CesiumAsync/IAssetResponse.h"
+#include "CesiumRasterOverlays/RasterOverlayLoadFailureDetails.h"
 #include "CesiumRuntime.h"
 
 FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
@@ -43,7 +43,7 @@ void UCesiumRasterOverlay::AddToTileset() {
     return;
   }
 
-  Cesium3DTilesSelection::RasterOverlayOptions options{};
+  CesiumRasterOverlays::RasterOverlayOptions options{};
   options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.maximumTextureSize = this->MaximumTextureSize;
@@ -51,18 +51,17 @@ void UCesiumRasterOverlay::AddToTileset() {
   options.showCreditsOnScreen = this->ShowCreditsOnScreen;
   options.rendererOptions = &this->rendererOptions;
   options.loadErrorCallback =
-      [this](const Cesium3DTilesSelection::RasterOverlayLoadFailureDetails&
+      [this](const CesiumRasterOverlays::RasterOverlayLoadFailureDetails&
                  details) {
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::CesiumIon) ==
-            uint8_t(Cesium3DTilesSelection::RasterOverlayLoadType::CesiumIon));
+            uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::CesiumIon));
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::TileProvider) ==
-            uint8_t(
-                Cesium3DTilesSelection::RasterOverlayLoadType::TileProvider));
+            uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::TileProvider));
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::Unknown) ==
-            uint8_t(Cesium3DTilesSelection::RasterOverlayLoadType::Unknown));
+            uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::Unknown));
 
         uint8_t typeValue = uint8_t(details.type);
         assert(
@@ -90,7 +89,7 @@ void UCesiumRasterOverlay::AddToTileset() {
             });
       };
 
-  std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
+  std::unique_ptr<CesiumRasterOverlays::RasterOverlay> pOverlay =
       this->CreateOverlay(options);
 
   if (pOverlay) {
