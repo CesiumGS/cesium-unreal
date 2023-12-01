@@ -1,9 +1,9 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumCreditSystem.h"
-#include "Cesium3DTilesSelection/CreditSystem.h"
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
+#include "CesiumUtility/CreditSystem.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "ScreenCreditsWidget.h"
@@ -168,7 +168,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
 
 ACesiumCreditSystem::ACesiumCreditSystem()
     : AActor(),
-      _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
+      _pCreditSystem(std::make_shared<CesiumUtility::CreditSystem>()),
       _lastCreditsCount(0) {
   PrimaryActorTick.bCanEverTick = true;
 #if WITH_EDITOR
@@ -326,7 +326,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     return;
   }
 
-  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
+  const std::vector<CesiumUtility::Credit>& creditsToShowThisFrame =
       _pCreditSystem->getCreditsToShowThisFrame();
 
   // if the credit list has changed, we want to reformat the credits
@@ -342,7 +342,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
     bool firstCreditOnScreen = true;
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      const Cesium3DTilesSelection::Credit& credit = creditsToShowThisFrame[i];
+      const CesiumUtility::Credit& credit = creditsToShowThisFrame[i];
 
       FString CreditRtf;
       const std::string& html = _pCreditSystem->getHtml(credit);
