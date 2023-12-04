@@ -41,10 +41,6 @@ public:
     return get()->_serverManager;
   }
 
-  static CesiumIonSession& ion() {
-    return *serverManager().GetCurrentSession();
-  }
-
   static ACesium3DTileset* FindFirstTilesetSupportingOverlays();
   static ACesium3DTileset* FindFirstTilesetWithAssetID(int64_t assetID);
   static ACesium3DTileset*

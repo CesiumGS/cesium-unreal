@@ -175,7 +175,7 @@ void showAssetDepotConfirmWindow(
 
 void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
   const std::optional<CesiumIonClient::Connection>& connection =
-      FCesiumEditorModule::ion().getConnection();
+      FCesiumEditorModule::serverManager().GetCurrentSession()->getConnection();
   if (!connection) {
     UE_LOG(
         LogCesiumEditor,
@@ -230,7 +230,7 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
                 item->tilesetID);
           }
 
-          FCesiumEditorModule::ion().getAssets();
+          FCesiumEditorModule::serverManager().GetCurrentSession()->getAssets();
 
           if (item->overlayID > 0) {
             FCesiumEditorModule::AddBaseOverlay(

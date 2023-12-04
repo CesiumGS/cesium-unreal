@@ -8,6 +8,7 @@
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServerSelector.h"
+#include "CesiumRuntime.h"
 #include "Editor.h"
 #include "EditorModeManager.h"
 #include "EngineUtils.h"
@@ -121,7 +122,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
                     .Text(FText::FromString(TEXT("Refresh")))
                     .ToolTipText(FText::FromString(TEXT("Refresh the asset list")))
                     .OnClicked_Lambda([this]() {
-                      FCesiumEditorModule::ion().refreshAssets();
+                      FCesiumEditorModule::serverManager().GetCurrentSession()->refreshAssets();
                       Refresh();
                       return FReply::Handled();
                     })
@@ -154,7 +155,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
         ];
   // clang-format on
 
-  FCesiumEditorModule::ion().refreshAssets();
+  FCesiumEditorModule::serverManager().GetCurrentSession()->refreshAssets();
 }
 
 void CesiumIonPanel::OnSortChange(
@@ -400,7 +401,8 @@ void CesiumIonPanel::ApplySorting() {
 }
 
 void CesiumIonPanel::Refresh() {
-  const Assets& assets = FCesiumEditorModule::ion().getAssets();
+  const Assets& assets =
+      FCesiumEditorModule::serverManager().GetCurrentSession()->getAssets();
 
   this->_assets.SetNum(assets.items.size());
 
@@ -416,7 +418,7 @@ void CesiumIonPanel::Tick(
     const FGeometry& AllottedGeometry,
     const double InCurrentTime,
     const float InDeltaTime) {
-  FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+  getAsyncSystem().dispatchMainThreadTasks();
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
