@@ -4,6 +4,7 @@
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonClient/Token.h"
+#include "CesiumIonServer.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
@@ -25,8 +26,11 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
 
   auto visibleWhenConnecting = [this]() {
     return FCesiumEditorModule::serverManager()
-                   .GetCurrentSession()
-                   ->isConnecting()
+                       .GetCurrentSession()
+                       ->isConnecting() &&
+                   !FCesiumEditorModule::serverManager()
+                        .GetCurrent()
+                        ->ApiUrl.IsEmpty()
                ? EVisibility::Visible
                : EVisibility::Hidden;
   };
