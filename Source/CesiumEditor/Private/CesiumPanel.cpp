@@ -23,6 +23,20 @@
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SScrollBox.h"
 
+CesiumPanel::CesiumPanel() : _pQuickAddPanel(nullptr), _pLastServer(nullptr) {
+  this->_serverChangedDelegateHandle =
+      FCesiumEditorModule::serverManager().CurrentChanged.AddRaw(
+          this,
+          &CesiumPanel::OnServerChanged);
+  this->OnServerChanged();
+}
+
+CesiumPanel::~CesiumPanel() {
+  this->Subscribe(nullptr);
+  FCesiumEditorModule::serverManager().CurrentChanged.Remove(
+      this->_serverChangedDelegateHandle);
+}
+
 void CesiumPanel::Construct(const FArguments& InArgs) {
   FCesiumEditorModule::serverManager().ResumeAll();
 
@@ -47,6 +61,58 @@ void CesiumPanel::Tick(
     const float InDeltaTime) {
   getAsyncSystem().dispatchMainThreadTasks();
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+}
+
+void CesiumPanel::Refresh() {
+  if (!this->_pQuickAddPanel)
+    return;
+
+  const CesiumIonClient::Defaults& defaults =
+      FCesiumEditorModule::serverManager().GetCurrentSession()->getDefaults();
+
+  this->_pQuickAddPanel->ClearItems();
+  for (const CesiumIonClient::QuickAddAsset& asset : defaults.quickAddAssets) {
+    if (asset.type == "3DTILES" ||
+        (asset.type == "TERRAIN" && !asset.rasterOverlays.empty())) {
+      this->_pQuickAddPanel->AddItem(QuickAddItem{
+          QuickAddItemType::TILESET,
+          asset.name,
+          asset.description,
+          asset.objectName,
+          asset.assetId,
+          asset.rasterOverlays.empty() ? "" : asset.rasterOverlays[0].name,
+          asset.rasterOverlays.empty() ? -1 : asset.rasterOverlays[0].assetId});
+    }
+  }
+
+  this->_pQuickAddPanel->Refresh();
+}
+
+void CesiumPanel::Subscribe(UCesiumIonServer* pNewServer) {
+  if (this->_pLastServer) {
+    std::shared_ptr<CesiumIonSession> pLastSession =
+        FCesiumEditorModule::serverManager().GetSession(this->_pLastServer);
+    if (pLastSession) {
+      pLastSession->ConnectionUpdated.RemoveAll(this);
+      pLastSession->DefaultsUpdated.RemoveAll(this);
+    }
+  }
+
+  this->_pLastServer = pNewServer;
+
+  if (pNewServer) {
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetSession(pNewServer);
+    pSession->ConnectionUpdated.AddRaw(this, &CesiumPanel::Refresh);
+    pSession->DefaultsUpdated.AddRaw(this, &CesiumPanel::Refresh);
+  }
+}
+
+void CesiumPanel::OnServerChanged() {
+  UCesiumIonServer* pNewServer =
+      FCesiumEditorModule::serverManager().GetCurrent();
+  this->Subscribe(pNewServer);
+  this->Refresh();
 }
 
 static bool isSignedIn() {
@@ -99,62 +165,20 @@ TSharedRef<SWidget> CesiumPanel::LoginPanel() {
 }
 
 TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
-  TSharedPtr<IonQuickAddPanel> quickAddPanel =
+  FCesiumEditorModule::serverManager()
+      .GetCurrentSession()
+      ->refreshDefaultsIfNeeded();
+
+  this->_pQuickAddPanel =
       SNew(IonQuickAddPanel)
           .Title(FText::FromString("Quick Add Cesium ion Assets"))
           .Visibility_Lambda([]() {
             return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed;
           });
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Google Photorealistic 3D Tiles",
-       "Photorealistic 3D Tiles from Google Maps Platform.",
-       "Google Photorealistic 3D Tiles",
-       2275207,
-       "",
-       -1});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Bing Maps Aerial imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery.",
-       "Cesium World Terrain",
-       1,
-       "Bing Maps Aerial",
-       2});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Bing Maps Aerial with Labels imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with labeled Bing Maps satellite imagery.",
-       "Cesium World Terrain",
-       1,
-       "Bing Maps Aerial with Labels",
-       3});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Bing Maps Road imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps imagery.",
-       "Cesium World Terrain",
-       1,
-       "Bing Maps Road",
-       4});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Sentinel-2 imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with high-resolution satellite imagery from the Sentinel-2 project.",
-       "Cesium World Terrain",
-       1,
-       "Sentinel-2 imagery",
-       3954});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium OSM Buildings",
-       "A 3D buildings layer derived from OpenStreetMap covering the entire world.",
-       "Cesium OSM Buildings",
-       96188,
-       "",
-       -1});
 
-  return quickAddPanel.ToSharedRef();
+  this->Refresh();
+
+  return this->_pQuickAddPanel.ToSharedRef();
 }
 
 TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
@@ -206,7 +230,7 @@ TSharedRef<SWidget> CesiumPanel::Version() {
   return SNew(SHyperlink)
       .Text(FText::FromString(Version))
       .ToolTipText(FText::FromString(
-          TEXT("Open the Cesium for Unreal changelog in your browser")))
+          TEXT("Open the Cesium for Unreal changelog in your web browser")))
       .OnNavigate_Lambda([]() {
         FPlatformProcess::LaunchURL(
             TEXT(

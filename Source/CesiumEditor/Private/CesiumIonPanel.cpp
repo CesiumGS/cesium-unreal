@@ -42,6 +42,7 @@ CesiumIonPanel::CesiumIonPanel()
           &CesiumIonPanel::OnServerChanged);
   this->_sortColumnName = ColumnName_DateAdded;
   this->_sortMode = EColumnSortMode::Type::Descending;
+  this->OnServerChanged();
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
@@ -401,6 +402,9 @@ void CesiumIonPanel::ApplySorting() {
 }
 
 void CesiumIonPanel::Refresh() {
+  if (!this->_pListView)
+    return;
+
   const Assets& assets =
       FCesiumEditorModule::serverManager().GetCurrentSession()->getAssets();
 

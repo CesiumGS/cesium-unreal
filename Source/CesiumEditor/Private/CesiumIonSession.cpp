@@ -24,14 +24,17 @@ CesiumIonSession::CesiumIonSession(
       _profile(std::nullopt),
       _assets(std::nullopt),
       _tokens(std::nullopt),
+      _defaults(std::nullopt),
       _isConnecting(false),
       _isResuming(false),
       _isLoadingProfile(false),
       _isLoadingAssets(false),
       _isLoadingTokens(false),
+      _isLoadingDefaults(false),
       _loadProfileQueued(false),
       _loadAssetsQueued(false),
       _loadTokensQueued(false),
+      _loadDefaultsQueued(false),
       _authorizeUrl() {}
 
 void CesiumIonSession::connect() {
@@ -177,6 +180,7 @@ void CesiumIonSession::disconnect() {
   this->_profile.reset();
   this->_assets.reset();
   this->_tokens.reset();
+  this->_defaults.reset();
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   pSettings->UserAccessTokenMap.Remove(this->_pServer.Get());
@@ -186,6 +190,7 @@ void CesiumIonSession::disconnect() {
   this->ProfileUpdated.Broadcast();
   this->AssetsUpdated.Broadcast();
   this->TokensUpdated.Broadcast();
+  this->DefaultsUpdated.Broadcast();
 }
 
 void CesiumIonSession::refreshProfile() {
@@ -266,6 +271,31 @@ void CesiumIonSession::refreshTokens() {
       });
 }
 
+void CesiumIonSession::refreshDefaults() {
+  if (!this->_connection || this->_isLoadingDefaults) {
+    return;
+  }
+
+  this->_isLoadingDefaults = true;
+  this->_loadDefaultsQueued = false;
+
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
+
+  this->_connection->defaults()
+      .thenInMainThread([thiz](Response<Defaults>&& defaults) {
+        thiz->_isLoadingDefaults = false;
+        thiz->_defaults = std::move(defaults.value);
+        thiz->DefaultsUpdated.Broadcast();
+        thiz->refreshDefaultsIfNeeded();
+      })
+      .catchInMainThread([thiz](std::exception&& e) {
+        thiz->_isLoadingDefaults = false;
+        thiz->_defaults = std::nullopt;
+        thiz->DefaultsUpdated.Broadcast();
+        thiz->refreshDefaultsIfNeeded();
+      });
+}
+
 const std::optional<CesiumIonClient::Connection>&
 CesiumIonSession::getConnection() const {
   return this->_connection;
@@ -301,6 +331,16 @@ const std::vector<CesiumIonClient::Token>& CesiumIonSession::getTokens() {
   }
 }
 
+const CesiumIonClient::Defaults& CesiumIonSession::getDefaults() {
+  static const CesiumIonClient::Defaults empty;
+  if (this->_defaults) {
+    return *this->_defaults;
+  } else {
+    this->refreshDefaults();
+    return empty;
+  }
+}
+
 bool CesiumIonSession::refreshProfileIfNeeded() {
   if (this->_loadProfileQueued || !this->_profile.has_value()) {
     this->refreshProfile();
@@ -320,6 +360,13 @@ bool CesiumIonSession::refreshTokensIfNeeded() {
     this->refreshTokens();
   }
   return this->isTokenListLoaded();
+}
+
+bool CesiumIonSession::refreshDefaultsIfNeeded() {
+  if (this->_loadDefaultsQueued || !this->_defaults.has_value()) {
+    this->refreshDefaults();
+  }
+  return this->isDefaultsLoaded();
 }
 
 Future<Response<Token>>

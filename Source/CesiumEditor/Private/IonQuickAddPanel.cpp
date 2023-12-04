@@ -36,6 +36,14 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
                     [SNew(STextBlock)
                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                          .Text(InArgs._Title)]] +
+       SVerticalBox::Slot()[SNew(STextBlock)
+                                .Visibility_Lambda([this]() {
+                                  return this->_quickAddItems.IsEmpty()
+                                             ? EVisibility::Visible
+                                             : EVisibility::Collapsed;
+                                })
+                                .Text(FText::FromString(TEXT("Loading...")))
+                                .AutoWrapText(true)] +
        SVerticalBox::Slot()
            .VAlign(VAlign_Top)
            .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))[this->QuickAddList()]];
@@ -45,12 +53,27 @@ void IonQuickAddPanel::AddItem(const QuickAddItem& item) {
   _quickAddItems.Add(MakeShared<QuickAddItem>(item));
 }
 
+void IonQuickAddPanel::ClearItems() { this->_quickAddItems.Empty(); }
+
+void IonQuickAddPanel::Refresh() {
+  if (!this->_pQuickAddList)
+    return;
+
+  this->_pQuickAddList->RequestListRefresh();
+}
+
 TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
-  return SNew(SListView<TSharedRef<QuickAddItem>>)
-      .SelectionMode(ESelectionMode::None)
-      .ListItemsSource(&_quickAddItems)
-      .OnMouseButtonDoubleClick(this, &IonQuickAddPanel::AddItemToLevel)
-      .OnGenerateRow(this, &IonQuickAddPanel::CreateQuickAddItemRow);
+  this->_pQuickAddList =
+      SNew(SListView<TSharedRef<QuickAddItem>>)
+          .Visibility_Lambda([this]() {
+            return this->_quickAddItems.IsEmpty() ? EVisibility::Collapsed
+                                                  : EVisibility::Visible;
+          })
+          .SelectionMode(ESelectionMode::None)
+          .ListItemsSource(&_quickAddItems)
+          .OnMouseButtonDoubleClick(this, &IonQuickAddPanel::AddItemToLevel)
+          .OnGenerateRow(this, &IonQuickAddPanel::CreateQuickAddItemRow);
+  return this->_pQuickAddList.ToSharedRef();
 }
 
 TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(
