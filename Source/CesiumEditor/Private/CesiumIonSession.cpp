@@ -151,7 +151,7 @@ void CesiumIonSession::resume() {
 
   this->_isResuming = true;
 
-  this->_connection = Connection(
+  std::shared_ptr<Connection> pConnection = std::make_shared<Connection>(
       this->_asyncSystem,
       this->_pAssetAccessor,
       TCHAR_TO_UTF8(**pUserAccessToken),
@@ -160,19 +160,16 @@ void CesiumIonSession::resume() {
   std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
 
   // Verify that the connection actually works.
-  this->_connection.value()
-      .me()
-      .thenInMainThread([thiz](Response<Profile>&& response) {
-        if (!response.value.has_value()) {
-          thiz->_connection.reset();
+  pConnection->me()
+      .thenInMainThread([thiz, pConnection](Response<Profile>&& response) {
+        if (response.value.has_value()) {
+          thiz->_connection = std::move(*pConnection);
         }
         thiz->_isResuming = false;
         thiz->ConnectionUpdated.Broadcast();
       })
-      .catchInMainThread([thiz](std::exception&& e) {
-        thiz->_isResuming = false;
-        thiz->_connection.reset();
-      });
+      .catchInMainThread(
+          [thiz](std::exception&& e) { thiz->_isResuming = false; });
 }
 
 void CesiumIonSession::disconnect() {
