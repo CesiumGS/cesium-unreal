@@ -14,8 +14,8 @@ class IonLoginPanel : public SCompoundWidget {
 
 private:
   void LaunchBrowserAgain();
-  void CancelLogin();
 
   FReply SignIn();
+  FReply CancelSignIn();
   FReply CopyAuthorizeUrlToClipboard();
 };
