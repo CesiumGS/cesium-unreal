@@ -451,7 +451,7 @@ CesiumIonSession::findToken(const FString& token) const {
 
 namespace {
 
-Token tokenFromSettings(UCesiumIonServer* pServer) {
+Token tokenFromServer(UCesiumIonServer* pServer) {
   Token result;
 
   if (pServer) {
@@ -472,7 +472,7 @@ Future<Token> getTokenFuture(const CesiumIonSession& session) {
           if (tokenResponse.value) {
             return *tokenResponse.value;
           } else {
-            return tokenFromSettings(pServer.Get());
+            return tokenFromServer(pServer.Get());
           }
         });
   } else if (!pServer->DefaultIonAccessToken.IsEmpty()) {
@@ -481,12 +481,12 @@ Future<Token> getTokenFuture(const CesiumIonSession& session) {
           if (response.value) {
             return *response.value;
           } else {
-            return tokenFromSettings(pServer.Get());
+            return tokenFromServer(pServer.Get());
           }
         });
   } else {
     return session.getAsyncSystem().createResolvedFuture(
-        tokenFromSettings(pServer.Get()));
+        tokenFromServer(pServer.Get()));
   }
 }
 
@@ -508,7 +508,7 @@ SharedFuture<Token> CesiumIonSession::getProjectDefaultTokenDetails() {
 
   if (!this->isConnected()) {
     return this->getAsyncSystem()
-        .createResolvedFuture(tokenFromSettings(this->_pServer.Get()))
+        .createResolvedFuture(tokenFromServer(this->_pServer.Get()))
         .share();
   }
 

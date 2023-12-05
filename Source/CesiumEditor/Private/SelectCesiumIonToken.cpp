@@ -579,9 +579,3 @@ FText SelectCesiumIonToken::GetSpecifiedToken() const {
 void SelectCesiumIonToken::SetSpecifiedToken(const FText& text) {
   this->_specifyToken.token = text.ToString();
 }
-
-void SelectCesiumIonToken::OnBrowseForServer() {
-  TArray<UObject*> Objects;
-  Objects.Add(this->_pServer.Get());
-  GEditor->SyncBrowserToObjects(Objects);
-}
