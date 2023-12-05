@@ -457,9 +457,6 @@ SelectCesiumIonToken::UseOrCreate(std::shared_ptr<CesiumIonSession> pSession) {
     if (response.value) {
       pSession->invalidateProjectDefaultTokenDetails();
 
-      const UCesiumRuntimeSettings* pSettings =
-          GetDefault<UCesiumRuntimeSettings>();
-
       UCesiumIonServer* pServer = pPanel->_pServer.Get();
 
       FScopedTransaction transaction(
@@ -475,7 +472,8 @@ SelectCesiumIonToken::UseOrCreate(std::shared_ptr<CesiumIonSession> pSession) {
       UWorld* pWorld = GEditor->GetEditorWorldContext().World();
       for (auto it = TActorIterator<ACesium3DTileset>(pWorld); it; ++it) {
         if (it->GetTilesetSource() == ETilesetSource::FromCesiumIon &&
-            it->GetIonAccessToken().IsEmpty()) {
+            it->GetIonAccessToken().IsEmpty() &&
+            it->GetCesiumIonServer() == pServer) {
           it->RefreshTileset();
         } else {
           // Tileset itself does not need to be refreshed, but maybe some
@@ -484,7 +482,8 @@ SelectCesiumIonToken::UseOrCreate(std::shared_ptr<CesiumIonSession> pSession) {
           it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
 
           for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
-            if (pOverlay->IonAccessToken.IsEmpty()) {
+            if (pOverlay->IonAccessToken.IsEmpty() &&
+                pOverlay->CesiumIonServer == pServer) {
               pOverlay->Refresh();
             }
           }
