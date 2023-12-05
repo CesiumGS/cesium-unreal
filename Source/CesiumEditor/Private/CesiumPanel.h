@@ -33,6 +33,9 @@ private:
   TSharedRef<SWidget> BasicQuickAddPanel();
   TSharedRef<SWidget> Version();
 
+  void OnConnectionUpdated();
+  void OnDefaultsUpdated();
+
   void addFromIon();
   void uploadToIon();
   void visitIon();

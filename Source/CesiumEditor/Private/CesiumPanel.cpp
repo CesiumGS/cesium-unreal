@@ -40,6 +40,10 @@ CesiumPanel::~CesiumPanel() {
 void CesiumPanel::Construct(const FArguments& InArgs) {
   FCesiumEditorModule::serverManager().ResumeAll();
 
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetCurrentSession();
+  pSession->refreshDefaultsIfNeeded();
+
   ChildSlot
       [SNew(SVerticalBox) +
        SVerticalBox::Slot().AutoHeight().Padding(
@@ -67,21 +71,35 @@ void CesiumPanel::Refresh() {
   if (!this->_pQuickAddPanel)
     return;
 
-  const CesiumIonClient::Defaults& defaults =
-      FCesiumEditorModule::serverManager().GetCurrentSession()->getDefaults();
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetCurrentSession();
 
   this->_pQuickAddPanel->ClearItems();
-  for (const CesiumIonClient::QuickAddAsset& asset : defaults.quickAddAssets) {
-    if (asset.type == "3DTILES" ||
-        (asset.type == "TERRAIN" && !asset.rasterOverlays.empty())) {
-      this->_pQuickAddPanel->AddItem(QuickAddItem{
-          QuickAddItemType::TILESET,
-          asset.name,
-          asset.description,
-          asset.objectName,
-          asset.assetId,
-          asset.rasterOverlays.empty() ? "" : asset.rasterOverlays[0].name,
-          asset.rasterOverlays.empty() ? -1 : asset.rasterOverlays[0].assetId});
+
+  if (pSession->isLoadingDefaults()) {
+    this->_pQuickAddPanel->SetMessage(FText::FromString("Loading..."));
+  } else if (!pSession->isDefaultsLoaded()) {
+    this->_pQuickAddPanel->SetMessage(
+        FText::FromString("This server does not define any Quick Add assets."));
+  } else {
+    const CesiumIonClient::Defaults& defaults = pSession->getDefaults();
+
+    this->_pQuickAddPanel->SetMessage(FText());
+
+    for (const CesiumIonClient::QuickAddAsset& asset :
+         defaults.quickAddAssets) {
+      if (asset.type == "3DTILES" ||
+          (asset.type == "TERRAIN" && !asset.rasterOverlays.empty())) {
+        this->_pQuickAddPanel->AddItem(QuickAddItem{
+            QuickAddItemType::TILESET,
+            asset.name,
+            asset.description,
+            asset.objectName,
+            asset.assetId,
+            asset.rasterOverlays.empty() ? "" : asset.rasterOverlays[0].name,
+            asset.rasterOverlays.empty() ? -1
+                                         : asset.rasterOverlays[0].assetId});
+      }
     }
   }
 
@@ -103,8 +121,8 @@ void CesiumPanel::Subscribe(UCesiumIonServer* pNewServer) {
   if (pNewServer) {
     std::shared_ptr<CesiumIonSession> pSession =
         FCesiumEditorModule::serverManager().GetSession(pNewServer);
-    pSession->ConnectionUpdated.AddRaw(this, &CesiumPanel::Refresh);
-    pSession->DefaultsUpdated.AddRaw(this, &CesiumPanel::Refresh);
+    pSession->ConnectionUpdated.AddRaw(this, &CesiumPanel::OnConnectionUpdated);
+    pSession->DefaultsUpdated.AddRaw(this, &CesiumPanel::OnDefaultsUpdated);
   }
 }
 
@@ -239,6 +257,13 @@ TSharedRef<SWidget> CesiumPanel::Version() {
             NULL);
       });
 }
+
+void CesiumPanel::OnConnectionUpdated() {
+  FCesiumEditorModule::serverManager().GetCurrentSession()->refreshDefaults();
+  this->Refresh();
+}
+
+void CesiumPanel::OnDefaultsUpdated() { this->Refresh(); }
 
 void CesiumPanel::addFromIon() {
   FLevelEditorModule* pLevelEditorModule =

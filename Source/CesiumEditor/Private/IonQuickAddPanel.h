@@ -40,6 +40,9 @@ class IonQuickAddPanel : public SCompoundWidget {
   void ClearItems();
   void Refresh();
 
+  const FText& GetMessage() const;
+  void SetMessage(const FText& message);
+
 private:
   TSharedRef<SWidget> QuickAddList();
   TSharedRef<ITableRow> CreateQuickAddItemRow(
@@ -54,4 +57,5 @@ private:
   TArray<TSharedRef<QuickAddItem>> _quickAddItems;
   std::unordered_set<std::string> _itemsBeingAdded;
   TSharedPtr<SListView<TSharedRef<QuickAddItem>>> _pQuickAddList;
+  FText _message;
 };

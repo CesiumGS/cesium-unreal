@@ -36,14 +36,16 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
                     [SNew(STextBlock)
                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                          .Text(InArgs._Title)]] +
-       SVerticalBox::Slot()[SNew(STextBlock)
-                                .Visibility_Lambda([this]() {
-                                  return this->_quickAddItems.IsEmpty()
-                                             ? EVisibility::Visible
-                                             : EVisibility::Collapsed;
-                                })
-                                .Text(FText::FromString(TEXT("Loading...")))
-                                .AutoWrapText(true)] +
+       SVerticalBox::Slot()
+           .VAlign(VAlign_Top)
+           .AutoHeight()[SNew(STextBlock)
+                             .Visibility_Lambda([this]() {
+                               return this->_message.IsEmpty()
+                                          ? EVisibility::Collapsed
+                                          : EVisibility::Visible;
+                             })
+                             .Text_Lambda([this]() { return this->_message; })
+                             .AutoWrapText(true)] +
        SVerticalBox::Slot()
            .VAlign(VAlign_Top)
            .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))[this->QuickAddList()]];
@@ -62,13 +64,15 @@ void IonQuickAddPanel::Refresh() {
   this->_pQuickAddList->RequestListRefresh();
 }
 
+const FText& IonQuickAddPanel::GetMessage() const { return this->_message; }
+
+void IonQuickAddPanel::SetMessage(const FText& message) {
+  this->_message = message;
+}
+
 TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
   this->_pQuickAddList =
       SNew(SListView<TSharedRef<QuickAddItem>>)
-          .Visibility_Lambda([this]() {
-            return this->_quickAddItems.IsEmpty() ? EVisibility::Collapsed
-                                                  : EVisibility::Visible;
-          })
           .SelectionMode(ESelectionMode::None)
           .ListItemsSource(&_quickAddItems)
           .OnMouseButtonDoubleClick(this, &IonQuickAddPanel::AddItemToLevel)

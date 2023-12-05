@@ -13,6 +13,41 @@
 using namespace CesiumAsync;
 using namespace CesiumIonClient;
 
+namespace {
+
+template <typename T> void logResponseErrors(const Response<T>& response) {
+  if (!response.errorCode.empty() && !response.errorMessage.empty()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT("%s (Code %s)"),
+        UTF8_TO_TCHAR(response.errorMessage.c_str()),
+        UTF8_TO_TCHAR(response.errorCode.c_str()));
+  } else if (!response.errorCode.empty()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT("Code %s"),
+        UTF8_TO_TCHAR(response.errorCode.c_str()));
+  } else if (!response.errorMessage.empty()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT("%s"),
+        UTF8_TO_TCHAR(response.errorMessage.c_str()));
+  }
+}
+
+void logResponseErrors(const std::exception& exception) {
+  UE_LOG(
+      LogCesiumEditor,
+      Error,
+      TEXT("Exception: %s"),
+      UTF8_TO_TCHAR(exception.what()));
+}
+
+} // namespace
+
 CesiumIonSession::CesiumIonSession(
     CesiumAsync::AsyncSystem& asyncSystem,
     const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
@@ -128,6 +163,8 @@ void CesiumIonSession::connect() {
               pSettings->Save();
 
               thiz->ConnectionUpdated.Broadcast();
+
+              thiz->startQueuedLoads();
             })
             .catchInMainThread([thiz](std::exception&& e) {
               thiz->_isConnecting = false;
@@ -165,14 +202,19 @@ void CesiumIonSession::resume() {
   // Verify that the connection actually works.
   pConnection->me()
       .thenInMainThread([thiz, pConnection](Response<Profile>&& response) {
+        logResponseErrors(response);
         if (response.value.has_value()) {
           thiz->_connection = std::move(*pConnection);
         }
         thiz->_isResuming = false;
         thiz->ConnectionUpdated.Broadcast();
+
+        thiz->startQueuedLoads();
       })
-      .catchInMainThread(
-          [thiz](std::exception&& e) { thiz->_isResuming = false; });
+      .catchInMainThread([thiz](std::exception&& e) {
+        logResponseErrors(e);
+        thiz->_isResuming = false;
+      });
 }
 
 void CesiumIonSession::disconnect() {
@@ -206,21 +248,26 @@ void CesiumIonSession::refreshProfile() {
 
   this->_connection->me()
       .thenInMainThread([thiz](Response<Profile>&& profile) {
+        logResponseErrors(profile);
         thiz->_isLoadingProfile = false;
         thiz->_profile = std::move(profile.value);
         thiz->ProfileUpdated.Broadcast();
-        thiz->refreshProfileIfNeeded();
+        if (thiz->_loadProfileQueued)
+          thiz->refreshProfile();
       })
       .catchInMainThread([thiz](std::exception&& e) {
+        logResponseErrors(e);
         thiz->_isLoadingProfile = false;
         thiz->_profile = std::nullopt;
         thiz->ProfileUpdated.Broadcast();
-        thiz->refreshProfileIfNeeded();
+        if (thiz->_loadProfileQueued)
+          thiz->refreshProfile();
       });
 }
 
 void CesiumIonSession::refreshAssets() {
   if (!this->_connection || this->_isLoadingAssets) {
+    this->_loadAssetsQueued = true;
     return;
   }
 
@@ -231,21 +278,26 @@ void CesiumIonSession::refreshAssets() {
 
   this->_connection->assets()
       .thenInMainThread([thiz](Response<Assets>&& assets) {
+        logResponseErrors(assets);
         thiz->_isLoadingAssets = false;
         thiz->_assets = std::move(assets.value);
         thiz->AssetsUpdated.Broadcast();
-        thiz->refreshAssetsIfNeeded();
+        if (thiz->_loadAssetsQueued)
+          thiz->refreshAssets();
       })
       .catchInMainThread([thiz](std::exception&& e) {
+        logResponseErrors(e);
         thiz->_isLoadingAssets = false;
         thiz->_assets = std::nullopt;
         thiz->AssetsUpdated.Broadcast();
-        thiz->refreshAssetsIfNeeded();
+        if (thiz->_loadAssetsQueued)
+          thiz->refreshAssets();
       });
 }
 
 void CesiumIonSession::refreshTokens() {
   if (!this->_connection || this->_isLoadingTokens) {
+    this->_loadTokensQueued = true;
     return;
   }
 
@@ -256,23 +308,28 @@ void CesiumIonSession::refreshTokens() {
 
   this->_connection->tokens()
       .thenInMainThread([thiz](Response<TokenList>&& tokens) {
+        logResponseErrors(tokens);
         thiz->_isLoadingTokens = false;
         thiz->_tokens = tokens.value
                             ? std::make_optional(std::move(tokens.value->items))
                             : std::nullopt;
         thiz->TokensUpdated.Broadcast();
-        thiz->refreshTokensIfNeeded();
+        if (thiz->_loadTokensQueued)
+          thiz->refreshTokens();
       })
       .catchInMainThread([thiz](std::exception&& e) {
+        logResponseErrors(e);
         thiz->_isLoadingTokens = false;
         thiz->_tokens = std::nullopt;
         thiz->TokensUpdated.Broadcast();
-        thiz->refreshTokensIfNeeded();
+        if (thiz->_loadTokensQueued)
+          thiz->refreshTokens();
       });
 }
 
 void CesiumIonSession::refreshDefaults() {
   if (!this->_connection || this->_isLoadingDefaults) {
+    this->_loadDefaultsQueued = true;
     return;
   }
 
@@ -283,16 +340,20 @@ void CesiumIonSession::refreshDefaults() {
 
   this->_connection->defaults()
       .thenInMainThread([thiz](Response<Defaults>&& defaults) {
+        logResponseErrors(defaults);
         thiz->_isLoadingDefaults = false;
         thiz->_defaults = std::move(defaults.value);
         thiz->DefaultsUpdated.Broadcast();
-        thiz->refreshDefaultsIfNeeded();
+        if (thiz->_loadDefaultsQueued)
+          thiz->refreshDefaults();
       })
       .catchInMainThread([thiz](std::exception&& e) {
+        logResponseErrors(e);
         thiz->_isLoadingDefaults = false;
         thiz->_defaults = std::nullopt;
         thiz->DefaultsUpdated.Broadcast();
-        thiz->refreshDefaultsIfNeeded();
+        if (thiz->_loadDefaultsQueued)
+          thiz->refreshDefaults();
       });
 }
 
@@ -457,4 +518,15 @@ SharedFuture<Token> CesiumIonSession::getProjectDefaultTokenDetails() {
 
 void CesiumIonSession::invalidateProjectDefaultTokenDetails() {
   this->_projectDefaultTokenDetailsFuture.reset();
+}
+
+void CesiumIonSession::startQueuedLoads() {
+  if (this->_loadProfileQueued)
+    this->refreshProfile();
+  if (this->_loadAssetsQueued)
+    this->refreshAssets();
+  if (this->_loadTokensQueued)
+    this->refreshTokens();
+  if (this->_loadDefaultsQueued)
+    this->refreshDefaults();
 }

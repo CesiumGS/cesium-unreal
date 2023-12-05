@@ -60,8 +60,10 @@ void UCesiumIonRasterOverlay::PostLoad() {
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   if (CesiumVersion < FCesiumCustomVersion::CesiumIonServer &&
       !this->IonAssetEndpointUrl_DEPRECATED.IsEmpty() &&
-      this->IonAssetEndpointUrl_DEPRECATED !=
-          TEXT("https://api.ion.cesium.com/")) {
+      !this->IonAssetEndpointUrl_DEPRECATED.StartsWith(
+          TEXT("https://api.ion.cesium.com")) &&
+      !this->IonAssetEndpointUrl_DEPRECATED.StartsWith(
+          TEXT("https://api.cesium.com"))) {
     this->CesiumIonServer = UCesiumIonServer::GetOrCreateForApiUrl(
         this->IonAssetEndpointUrl_DEPRECATED);
 

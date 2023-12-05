@@ -106,6 +106,8 @@ public:
   void invalidateProjectDefaultTokenDetails();
 
 private:
+  void startQueuedLoads();
+
   CesiumAsync::AsyncSystem _asyncSystem;
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
   TWeakObjectPtr<UCesiumIonServer> _pServer;
