@@ -29,7 +29,7 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                        .GetCurrentSession()
                        ->isConnecting() &&
                    !FCesiumEditorModule::serverManager()
-                        .GetCurrent()
+                        .GetCurrentServer()
                         ->ApiUrl.IsEmpty()
                ? EVisibility::Visible
                : EVisibility::Collapsed;
@@ -144,7 +144,8 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                    .Visibility_Lambda([visibleWhenNotConnectingOrResuming]() {
                      // Only show this message for the SaaS server.
                      UCesiumIonServer* Server =
-                         FCesiumEditorModule::serverManager().GetCurrent();
+                         FCesiumEditorModule::serverManager()
+                             .GetCurrentServer();
                      if (Server->GetName() != TEXT("CesiumIonSaaS"))
                        return EVisibility::Collapsed;
 

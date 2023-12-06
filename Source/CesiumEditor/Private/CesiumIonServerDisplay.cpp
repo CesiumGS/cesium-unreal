@@ -38,6 +38,6 @@ void CesiumIonServerDisplay::Construct(const FArguments& InArgs) {
 
 void CesiumIonServerDisplay::OnBrowseForServer() {
   TArray<UObject*> Objects;
-  Objects.Add(FCesiumEditorModule::serverManager().GetCurrent());
+  Objects.Add(FCesiumEditorModule::serverManager().GetCurrentServer());
   GEditor->SyncBrowserToObjects(Objects);
 }

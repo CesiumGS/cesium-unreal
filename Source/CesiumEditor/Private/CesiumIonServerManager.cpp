@@ -73,6 +73,8 @@ void CesiumIonServerManager::Initialize() {
     }
     PRAGMA_ENABLE_DEPRECATION_WARNINGS
   }
+
+  UCesiumIonServer::SetServerForNewObjects(this->GetCurrentServer());
 }
 
 void CesiumIonServerManager::ResumeAll() {
@@ -109,7 +111,7 @@ CesiumIonServerManager::GetSession(UCesiumIonServer* Server) {
 }
 
 std::shared_ptr<CesiumIonSession> CesiumIonServerManager::GetCurrentSession() {
-  return this->GetSession(this->GetCurrent());
+  return this->GetSession(this->GetCurrentServer());
 }
 
 const TArray<TObjectPtr<UCesiumIonServer>>&
@@ -135,7 +137,7 @@ void CesiumIonServerManager::RefreshServerList() {
   this->ServerListChanged.Broadcast();
 }
 
-UCesiumIonServer* CesiumIonServerManager::GetCurrent() {
+UCesiumIonServer* CesiumIonServerManager::GetCurrentServer() {
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
 
   if (!pSettings) {
@@ -153,12 +155,13 @@ UCesiumIonServer* CesiumIonServerManager::GetCurrent() {
   return pServer;
 }
 
-void CesiumIonServerManager::SetCurrent(UCesiumIonServer* pServer) {
+void CesiumIonServerManager::SetCurrentServer(UCesiumIonServer* pServer) {
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   if (pSettings) {
     pSettings->CurrentCesiumIonServer = pServer;
+    pSettings->Save();
     UCesiumIonServer::SetServerForNewObjects(pServer);
-    CurrentChanged.Broadcast();
+    CurrentServerChanged.Broadcast();
   }
 }
 
@@ -178,16 +181,16 @@ void CesiumIonServerManager::OnAssetRemoved(const FAssetData& asset) {
   this->RefreshServerList();
 
   UCesiumIonServer* pServer = Cast<UCesiumIonServer>(asset.GetAsset());
-  if (pServer && this->GetCurrent() == pServer) {
+  if (pServer && this->GetCurrentServer() == pServer) {
     // Current server is being removed, so select a different one.
     TObjectPtr<UCesiumIonServer>* ppNewServer = this->_servers.FindByPredicate(
         [pServer](const TObjectPtr<UCesiumIonServer>& pCandidate) {
           return pCandidate != pServer;
         });
     if (ppNewServer != nullptr) {
-      this->SetCurrent(*ppNewServer);
+      this->SetCurrentServer(*ppNewServer);
     } else {
-      this->SetCurrent(nullptr);
+      this->SetCurrentServer(nullptr);
     }
   }
 }

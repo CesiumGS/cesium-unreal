@@ -37,7 +37,7 @@ CesiumIonPanel::CesiumIonPanel()
       _pSelection(nullptr),
       _pLastServer(nullptr) {
   this->_serverChangedDelegateHandle =
-      FCesiumEditorModule::serverManager().CurrentChanged.AddRaw(
+      FCesiumEditorModule::serverManager().CurrentServerChanged.AddRaw(
           this,
           &CesiumIonPanel::OnServerChanged);
   this->_sortColumnName = ColumnName_DateAdded;
@@ -47,12 +47,12 @@ CesiumIonPanel::CesiumIonPanel()
 
 CesiumIonPanel::~CesiumIonPanel() {
   this->Subscribe(nullptr);
-  FCesiumEditorModule::serverManager().CurrentChanged.Remove(
+  FCesiumEditorModule::serverManager().CurrentServerChanged.Remove(
       this->_serverChangedDelegateHandle);
 }
 
 void CesiumIonPanel::Construct(const FArguments& InArgs) {
-  this->Subscribe(FCesiumEditorModule::serverManager().GetCurrent());
+  this->Subscribe(FCesiumEditorModule::serverManager().GetCurrentServer());
 
   // A function that returns the lambda that is used for rendering
   // the sort mode indicator of the header column: If sorting is
@@ -454,7 +454,7 @@ void CesiumIonPanel::Subscribe(UCesiumIonServer* pNewServer) {
 
 void CesiumIonPanel::OnServerChanged() {
   UCesiumIonServer* pNewServer =
-      FCesiumEditorModule::serverManager().GetCurrent();
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   this->Subscribe(pNewServer);
   this->Refresh();
 }
@@ -477,7 +477,7 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
   SelectCesiumIonToken::SelectAndAuthorizeToken(
-      FCesiumEditorModule::serverManager().GetCurrent(),
+      FCesiumEditorModule::serverManager().GetCurrentServer(),
       {item->id})
       .thenInMainThread([item](const std::optional<Token>& /*maybeToken*/) {
         // If token selection was canceled, or if an error occurred while
@@ -496,7 +496,7 @@ void CesiumIonPanel::AddOverlayToTerrain(
     TSharedPtr<CesiumIonClient::Asset> item,
     bool useAsBaseLayer) {
   SelectCesiumIonToken::SelectAndAuthorizeToken(
-      FCesiumEditorModule::serverManager().GetCurrent(),
+      FCesiumEditorModule::serverManager().GetCurrentServer(),
       {item->id})
       .thenInMainThread([useAsBaseLayer, item](const std::optional<Token>&) {
         UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();

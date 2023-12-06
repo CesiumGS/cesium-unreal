@@ -25,7 +25,7 @@
 
 CesiumPanel::CesiumPanel() : _pQuickAddPanel(nullptr), _pLastServer(nullptr) {
   this->_serverChangedDelegateHandle =
-      FCesiumEditorModule::serverManager().CurrentChanged.AddRaw(
+      FCesiumEditorModule::serverManager().CurrentServerChanged.AddRaw(
           this,
           &CesiumPanel::OnServerChanged);
   this->OnServerChanged();
@@ -33,7 +33,7 @@ CesiumPanel::CesiumPanel() : _pQuickAddPanel(nullptr), _pLastServer(nullptr) {
 
 CesiumPanel::~CesiumPanel() {
   this->Subscribe(nullptr);
-  FCesiumEditorModule::serverManager().CurrentChanged.Remove(
+  FCesiumEditorModule::serverManager().CurrentServerChanged.Remove(
       this->_serverChangedDelegateHandle);
 }
 
@@ -128,7 +128,7 @@ void CesiumPanel::Subscribe(UCesiumIonServer* pNewServer) {
 
 void CesiumPanel::OnServerChanged() {
   UCesiumIonServer* pNewServer =
-      FCesiumEditorModule::serverManager().GetCurrent();
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   this->Subscribe(pNewServer);
   this->Refresh();
 }
@@ -276,7 +276,8 @@ void CesiumPanel::addFromIon() {
 }
 
 void CesiumPanel::uploadToIon() {
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  UCesiumIonServer* pServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   FPlatformProcess::LaunchURL(
       UTF8_TO_TCHAR(CesiumUtility::Uri::resolve(
                         TCHAR_TO_UTF8(*pServer->ServerUrl),
@@ -287,7 +288,8 @@ void CesiumPanel::uploadToIon() {
 }
 
 void CesiumPanel::visitIon() {
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  UCesiumIonServer* pServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   FPlatformProcess::LaunchURL(*pServer->ServerUrl, NULL, NULL);
 }
 
@@ -308,5 +310,5 @@ void CesiumPanel::openSupport() {
 
 void CesiumPanel::openTokenSelector() {
   SelectCesiumIonToken::SelectNewToken(
-      FCesiumEditorModule::serverManager().GetCurrent());
+      FCesiumEditorModule::serverManager().GetCurrentServer());
 }

@@ -128,7 +128,8 @@ void showAssetDepotConfirmWindow(
     const FString& itemName,
     int64_t missingAsset) {
 
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  UCesiumIonServer* pServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   std::string url = CesiumUtility::Uri::resolve(
       TCHAR_TO_UTF8(*pServer->ServerUrl),
       "assetdepot/" + std::to_string(missingAsset));
@@ -217,7 +218,7 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
   }
 
   SelectCesiumIonToken::SelectAndAuthorizeToken(
-      FCesiumEditorModule::serverManager().GetCurrent(),
+      FCesiumEditorModule::serverManager().GetCurrentServer(),
       assetIDs)
       .thenInMainThread([connection, tilesetID = item->tilesetID](
                             const std::optional<Token>& /*maybeToken*/) {

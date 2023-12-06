@@ -24,11 +24,11 @@ public:
   const TArray<TObjectPtr<UCesiumIonServer>>& GetServerList();
   void RefreshServerList();
 
-  UCesiumIonServer* GetCurrent();
-  void SetCurrent(UCesiumIonServer* pServer);
+  UCesiumIonServer* GetCurrentServer();
+  void SetCurrentServer(UCesiumIonServer* pServer);
 
   FCesiumIonServerChanged ServerListChanged;
-  FCesiumIonServerChanged CurrentChanged;
+  FCesiumIonServerChanged CurrentServerChanged;
 
 private:
   void OnAssetAdded(const FAssetData& asset);

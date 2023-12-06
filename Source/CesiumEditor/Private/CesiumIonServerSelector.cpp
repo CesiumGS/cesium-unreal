@@ -74,7 +74,8 @@ FText GetNameFromCesiumIonServerAsset(
 } // namespace
 
 FText CesiumIonServerSelector::GetServerValueAsText() const {
-  UCesiumIonServer* pServer = FCesiumEditorModule::serverManager().GetCurrent();
+  UCesiumIonServer* pServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   return GetNameFromCesiumIonServerAsset(pServer);
 }
 
@@ -88,12 +89,12 @@ TSharedRef<SWidget> CesiumIonServerSelector::OnGenerateServerEntry(
 void CesiumIonServerSelector::OnServerSelectionChanged(
     TObjectPtr<UCesiumIonServer> InItem,
     ESelectInfo::Type InSeletionInfo) {
-  FCesiumEditorModule::serverManager().SetCurrent(InItem);
+  FCesiumEditorModule::serverManager().SetCurrentServer(InItem);
   FCesiumEditorModule::serverManager().GetCurrentSession()->resume();
 }
 
 void CesiumIonServerSelector::OnBrowseForServer() {
   TArray<UObject*> Objects;
-  Objects.Add(FCesiumEditorModule::serverManager().GetCurrent());
+  Objects.Add(FCesiumEditorModule::serverManager().GetCurrentServer());
   GEditor->SyncBrowserToObjects(Objects);
 }
