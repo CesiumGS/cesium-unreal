@@ -2093,27 +2093,9 @@ void ACesium3DTileset::PostLoad() {
       this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (CesiumVersion < FCesiumCustomVersion::CesiumIonServer &&
-      !this->IonAssetEndpointUrl_DEPRECATED.IsEmpty() &&
-      !this->IonAssetEndpointUrl_DEPRECATED.StartsWith(
-          TEXT("https://api.ion.cesium.com")) &&
-      !this->IonAssetEndpointUrl_DEPRECATED.StartsWith(
-          TEXT("https://api.cesium.com"))) {
-    this->CesiumIonServer = UCesiumIonServer::GetOrCreateForApiUrl(
+  if (CesiumVersion < FCesiumCustomVersion::CesiumIonServer) {
+    this->CesiumIonServer = UCesiumIonServer::GetBackwardCompatibleServer(
         this->IonAssetEndpointUrl_DEPRECATED);
-
-    // In previous versions, the custom IonAssetEndpointUrl would still use the
-    // project default token.
-    UCesiumIonServer* pDefault = UCesiumIonServer::GetDefault();
-    this->CesiumIonServer->DefaultIonAccessTokenId =
-        pDefault->DefaultIonAccessTokenId;
-    this->CesiumIonServer->DefaultIonAccessToken =
-        pDefault->DefaultIonAccessToken;
-
-    this->CesiumIonServer->Modify();
-    UEditorLoadingAndSavingUtils::SavePackages(
-        {this->CesiumIonServer->GetPackage()},
-        true);
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #endif

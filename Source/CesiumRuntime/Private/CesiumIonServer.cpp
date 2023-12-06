@@ -62,8 +62,16 @@ UCesiumIonServer::SetCurrentForNewObjects(UCesiumIonServer* Server) {
 
 #if WITH_EDITOR
 UCesiumIonServer*
-UCesiumIonServer::GetOrCreateForApiUrl(const FString& apiUrl) {
-  // Find an equivalent server.
+UCesiumIonServer::GetBackwardCompatibleServer(const FString& apiUrl) {
+  // Return the default server if the API URL is unspecified or if it's the
+  // standard SaaS API URL.
+  if (apiUrl.IsEmpty() ||
+      apiUrl.StartsWith(TEXT("https://api.ion.cesium.com")) ||
+      apiUrl.StartsWith(TEXT("https://api.cesium.com"))) {
+    return UCesiumIonServer::GetDefault();
+  }
+
+  // Find a server with this API URL.
   TArray<FAssetData> CesiumIonServers;
   FAssetRegistryModule& AssetRegistryModule =
       FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
@@ -81,7 +89,7 @@ UCesiumIonServer::GetOrCreateForApiUrl(const FString& apiUrl) {
     return Cast<UCesiumIonServer>(pFound->GetAsset());
   }
 
-  // Create a new server asset.
+  // Not found - create a new server asset.
   UDataAssetFactory* Factory = NewObject<UDataAssetFactory>();
 
   UPackage* Package = nullptr;
@@ -119,6 +127,12 @@ UCesiumIonServer::GetOrCreateForApiUrl(const FString& apiUrl) {
   Server->ServerUrl = apiUrl;
   Server->ApiUrl = apiUrl;
   Server->OAuth2ApplicationID = 190;
+
+  // Adopt the token from the default server, consistent with the behavior in
+  // old versions of Cesium for Unreal.
+  UCesiumIonServer* pDefault = UCesiumIonServer::GetDefault();
+  Server->DefaultIonAccessTokenId = pDefault->DefaultIonAccessTokenId;
+  Server->DefaultIonAccessToken = pDefault->DefaultIonAccessToken;
 
   FAssetRegistryModule::AssetCreated(Server);
 

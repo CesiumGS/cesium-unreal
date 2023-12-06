@@ -42,11 +42,11 @@ public:
 
 #if WITH_EDITOR
   /**
-   * Gets or creates a new server from a given API URL. This is primarily useful
-   * for backward compatibility with the old IonAssetEndpointUrl property. The
-   * new server is created in `/Game/CesiumSettings/CesiumIonServers`.
+   * Gets or creates a server from a given API URL. This is used for backward
+   * compatibility with the old `IonAssetEndpointUrl` property. The new server,
+   * if needed, is created in `/Game/CesiumSettings/CesiumIonServers`.
    */
-  static UCesiumIonServer* GetOrCreateForApiUrl(const FString& apiUrl);
+  static UCesiumIonServer* GetBackwardCompatibleServer(const FString& apiUrl);
 #endif
 
   /**
