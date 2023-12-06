@@ -12,6 +12,7 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
+#include "CesiumGltf/ExtensionKhrTextureTransform.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
@@ -1987,6 +1988,20 @@ static void SetGltfParameterValues(
       pMaterial,
       FMaterialParameterInfo("occlusionTexture", association, index),
       loadResult.occlusionTexture.Get());
+
+  if (pbr.baseColorTexture) {
+    const ExtensionKhrTextureTransform* pTextureTransform =
+        pbr.baseColorTexture->getExtension<ExtensionKhrTextureTransform>();
+    if (pTextureTransform) {
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo("baseColorScaleOffset", association, index),
+          FLinearColor(
+              pTextureTransform->scale[0],
+              pTextureTransform->scale[1],
+              pTextureTransform->offset[0],
+              pTextureTransform->offset[1]));
+    }
+  }
 
   if (material.emissiveFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(

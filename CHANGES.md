@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Apply `KHR_texture_transform` texture coordinate transformation in UMaterial instead of in native.
+
 ### v2.1.0 - 2023-12-01
 
 ##### Additions :tada:
