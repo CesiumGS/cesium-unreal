@@ -291,7 +291,7 @@ UCesiumIonServer* getCesiumIonServer(const CesiumIonObject& o) {
 
   UCesiumIonServer* pServer = std::visit(Operation{}, o);
   if (!IsValid(pServer)) {
-    pServer = UCesiumIonServer::GetDefault();
+    pServer = UCesiumIonServer::GetDefaultServer();
   }
 
   return pServer;

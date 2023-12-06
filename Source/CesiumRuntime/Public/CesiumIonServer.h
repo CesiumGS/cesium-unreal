@@ -24,7 +24,7 @@ public:
    * a valid instance. At runtime, this method returns nullptr if the object
    * does not exist.
    */
-  static UCesiumIonServer* GetDefault();
+  static UCesiumIonServer* GetDefaultServer();
 
   /**
    * Gets the current server to be assigned to new objects. In the Editor, this
@@ -32,13 +32,13 @@ public:
    * this returns `GetDefault`, unless `SetCurrentForNewObjects` has been called
    * to set it to something different.
    */
-  static UCesiumIonServer* GetCurrentForNewObjects();
+  static UCesiumIonServer* GetServerForNewObjects();
 
   /**
    * Sets the current server to be assigned to new objects. If set to nullptr,
    * the value of `GetDefault` will be returned from `GetCurrentForNewObjects`.
    */
-  static void SetCurrentForNewObjects(UCesiumIonServer* Server);
+  static void SetServerForNewObjects(UCesiumIonServer* Server);
 
 #if WITH_EDITOR
   /**

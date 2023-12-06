@@ -13,7 +13,7 @@
 
 /*static*/ UCesiumIonServer* UCesiumIonServer::_pDefaultForNewObjects = nullptr;
 
-/*static*/ UCesiumIonServer* UCesiumIonServer::GetDefault() {
+/*static*/ UCesiumIonServer* UCesiumIonServer::GetDefaultServer() {
   UPackage* Package = CreatePackage(
       TEXT("/Game/CesiumSettings/CesiumIonServers/CesiumIonSaaS"));
   Package->FullyLoad();
@@ -47,16 +47,16 @@
   return Server;
 }
 
-/*static*/ UCesiumIonServer* UCesiumIonServer::GetCurrentForNewObjects() {
+/*static*/ UCesiumIonServer* UCesiumIonServer::GetServerForNewObjects() {
   if (IsValid(_pDefaultForNewObjects)) {
     return _pDefaultForNewObjects;
   } else {
-    return GetDefault();
+    return GetDefaultServer();
   }
 }
 
 /*static*/ void
-UCesiumIonServer::SetCurrentForNewObjects(UCesiumIonServer* Server) {
+UCesiumIonServer::SetServerForNewObjects(UCesiumIonServer* Server) {
   _pDefaultForNewObjects = Server;
 }
 
@@ -68,7 +68,7 @@ UCesiumIonServer::GetBackwardCompatibleServer(const FString& apiUrl) {
   if (apiUrl.IsEmpty() ||
       apiUrl.StartsWith(TEXT("https://api.ion.cesium.com")) ||
       apiUrl.StartsWith(TEXT("https://api.cesium.com"))) {
-    return UCesiumIonServer::GetDefault();
+    return UCesiumIonServer::GetDefaultServer();
   }
 
   // Find a server with this API URL.
@@ -130,7 +130,7 @@ UCesiumIonServer::GetBackwardCompatibleServer(const FString& apiUrl) {
 
   // Adopt the token from the default server, consistent with the behavior in
   // old versions of Cesium for Unreal.
-  UCesiumIonServer* pDefault = UCesiumIonServer::GetDefault();
+  UCesiumIonServer* pDefault = UCesiumIonServer::GetDefaultServer();
   Server->DefaultIonAccessTokenId = pDefault->DefaultIonAccessTokenId;
   Server->DefaultIonAccessToken = pDefault->DefaultIonAccessToken;
 

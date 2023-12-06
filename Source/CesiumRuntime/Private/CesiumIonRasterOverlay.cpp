@@ -27,7 +27,7 @@ UCesiumIonRasterOverlay::CreateOverlay(
 
   // Make sure we have a valid Cesium ion server.
   if (!IsValid(this->CesiumIonServer)) {
-    this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
+    this->CesiumIonServer = UCesiumIonServer::GetServerForNewObjects();
   }
 
   FString token = this->IonAccessToken.IsEmpty()

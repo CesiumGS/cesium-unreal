@@ -37,7 +37,7 @@ void CesiumIonServerManager::Initialize() {
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
     if (!pSettings->DefaultIonAccessTokenId_DEPRECATED.IsEmpty() ||
         !pSettings->DefaultIonAccessToken_DEPRECATED.IsEmpty()) {
-      UCesiumIonServer* pServer = UCesiumIonServer::GetDefault();
+      UCesiumIonServer* pServer = UCesiumIonServer::GetDefaultServer();
       pServer->Modify();
 
       pServer->DefaultIonAccessTokenId =
@@ -64,7 +64,7 @@ void CesiumIonServerManager::Initialize() {
   if (pEditorSettings) {
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
     if (!pEditorSettings->UserAccessToken_DEPRECATED.IsEmpty()) {
-      UCesiumIonServer* pServer = UCesiumIonServer::GetDefault();
+      UCesiumIonServer* pServer = UCesiumIonServer::GetDefaultServer();
       pEditorSettings->UserAccessTokenMap.Add(
           pServer,
           pEditorSettings->UserAccessToken_DEPRECATED);
@@ -139,13 +139,13 @@ UCesiumIonServer* CesiumIonServerManager::GetCurrent() {
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
 
   if (!pSettings) {
-    return UCesiumIonServer::GetDefault();
+    return UCesiumIonServer::GetDefaultServer();
   }
 
   UCesiumIonServer* pServer =
       pSettings->CurrentCesiumIonServer.LoadSynchronous();
   if (pServer == nullptr) {
-    pServer = UCesiumIonServer::GetDefault();
+    pServer = UCesiumIonServer::GetDefaultServer();
     pSettings->CurrentCesiumIonServer = pServer;
     pSettings->Save();
   }
@@ -157,7 +157,7 @@ void CesiumIonServerManager::SetCurrent(UCesiumIonServer* pServer) {
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   if (pSettings) {
     pSettings->CurrentCesiumIonServer = pServer;
-    UCesiumIonServer::SetCurrentForNewObjects(pServer);
+    UCesiumIonServer::SetServerForNewObjects(pServer);
     CurrentChanged.Broadcast();
   }
 }

@@ -963,7 +963,7 @@ void ACesium3DTileset::LoadTileset() {
   if (this->TilesetSource == ETilesetSource::FromCesiumIon &&
       !IsValid(this->CesiumIonServer)) {
     this->Modify();
-    this->CesiumIonServer = UCesiumIonServer::GetCurrentForNewObjects();
+    this->CesiumIonServer = UCesiumIonServer::GetServerForNewObjects();
   }
 
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
