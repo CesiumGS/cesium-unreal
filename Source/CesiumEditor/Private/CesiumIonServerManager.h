@@ -33,6 +33,7 @@ public:
 private:
   void OnAssetAdded(const FAssetData& asset);
   void OnAssetRemoved(const FAssetData& asset);
+  void OnAssetUpdated(const FAssetData& asset);
 
   struct ServerSession {
     TWeakObjectPtr<UCesiumIonServer> Server;

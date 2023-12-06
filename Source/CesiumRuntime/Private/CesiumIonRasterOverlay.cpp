@@ -34,9 +34,16 @@ UCesiumIonRasterOverlay::CreateOverlay(
                       ? this->CesiumIonServer->DefaultIonAccessToken
                       : this->IonAccessToken;
 
+#if WITH_EDITOR
+  this->CesiumIonServer->ResolveApiUrl();
+#endif
+
   // Make sure the URL ends with a slash
   std::string apiUrl = TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
-  if (!apiUrl.empty() && *apiUrl.rbegin() != '/')
+  if (apiUrl.empty())
+    return nullptr;
+
+  if (*apiUrl.rbegin() != '/')
     apiUrl += '/';
 
   return std::make_unique<CesiumRasterOverlays::IonRasterOverlay>(

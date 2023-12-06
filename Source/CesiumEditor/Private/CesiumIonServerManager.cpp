@@ -2,12 +2,16 @@
 
 #include "CesiumIonServerManager.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Cesium3DTileset.h"
 #include "CesiumEditorSettings.h"
+#include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServer.h"
 #include "CesiumIonSession.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
+#include "Editor.h"
+#include "EngineUtils.h"
 #include "FileHelpers.h"
 
 CesiumIonServerManager::CesiumIonServerManager() noexcept {
@@ -19,6 +23,9 @@ CesiumIonServerManager::CesiumIonServerManager() noexcept {
   AssetRegistryModule.GetRegistry().OnAssetRemoved().AddRaw(
       this,
       &CesiumIonServerManager::OnAssetRemoved);
+  AssetRegistryModule.GetRegistry().OnAssetUpdated().AddRaw(
+      this,
+      &CesiumIonServerManager::OnAssetUpdated);
 }
 
 CesiumIonServerManager::~CesiumIonServerManager() noexcept {
@@ -27,6 +34,7 @@ CesiumIonServerManager::~CesiumIonServerManager() noexcept {
   if (pAssetRegistryModule) {
     pAssetRegistryModule->GetRegistry().OnAssetAdded().RemoveAll(this);
     pAssetRegistryModule->GetRegistry().OnAssetRemoved().RemoveAll(this);
+    pAssetRegistryModule->GetRegistry().OnAssetUpdated().RemoveAll(this);
   }
 }
 
@@ -191,6 +199,39 @@ void CesiumIonServerManager::OnAssetRemoved(const FAssetData& asset) {
       this->SetCurrentServer(*ppNewServer);
     } else {
       this->SetCurrentServer(nullptr);
+    }
+  }
+}
+
+void CesiumIonServerManager::OnAssetUpdated(const FAssetData& asset) {
+  if (!GEditor)
+    return;
+
+  if (asset.AssetClassPath !=
+      UCesiumIonServer::StaticClass()->GetClassPathName())
+    return;
+
+  // When a Cesium ion Server definition changes, refresh any objects that use
+  // it.
+  UCesiumIonServer* pServer = Cast<UCesiumIonServer>(asset.GetAsset());
+  if (!pServer)
+    return;
+
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  if (!pCurrentWorld)
+    return;
+
+  for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); it; ++it) {
+    if (it->GetCesiumIonServer() == pServer) {
+      it->RefreshTileset();
+    } else {
+      TArray<UCesiumIonRasterOverlay*> rasterOverlays;
+      it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
+
+      for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
+        if (pOverlay->CesiumIonServer == pServer)
+          pOverlay->Refresh();
+      }
     }
   }
 }

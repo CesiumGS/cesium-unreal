@@ -6,6 +6,10 @@
 #include "UObject/Object.h"
 #include "CesiumIonServer.generated.h"
 
+namespace CesiumAsync {
+template <typename T> class Future;
+}
+
 /**
  * Defines a Cesium ion Server. This may be the public (SaaS) Cesium ion server
  * at ion.cesium.com, or it may be a self-hosted instance.
@@ -65,6 +69,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      AssetRegistrySearchable,
       Category = "Cesium",
       meta = (DisplayName = "Server URL"))
   FString ServerUrl = "https://ion.cesium.com";
@@ -74,7 +79,11 @@ public:
    * the default, public Cesium ion server, this is `https://api.cesium.com`. If
    * left blank, the API URL is automatically inferred from the Server URL.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (DisplayName = "API URL"))
+  UPROPERTY(
+      EditAnywhere,
+      AssetRegistrySearchable,
+      Category = "Cesium",
+      meta = (DisplayName = "API URL"))
   FString ApiUrl = "https://api.cesium.com";
 
   /**
@@ -84,6 +93,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      AssetRegistrySearchable,
       Category = "Cesium",
       meta = (DisplayName = "OAuth Application ID"))
   int64 OAuth2ApplicationID = 190;
@@ -106,9 +116,19 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      AssetRegistrySearchable,
       Category = "Cesium",
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
+
+#if WITH_EDITOR
+  /**
+   * If the `ApiUrl` property is blank, this method asynchronously resolves it
+   * by consulting with the `ServerUrl`. If the `ApiUrl` is not blank, this
+   * method returns an already-resolved future.
+   */
+  CesiumAsync::Future<void> ResolveApiUrl();
+#endif
 
 private:
   static UCesiumIonServer* _pDefaultForNewObjects;

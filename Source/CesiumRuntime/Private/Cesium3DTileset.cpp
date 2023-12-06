@@ -1152,19 +1152,25 @@ void ACesium3DTileset::LoadTileset() {
                         ? this->CesiumIonServer->DefaultIonAccessToken
                         : this->IonAccessToken;
 
+#if WITH_EDITOR
+    this->CesiumIonServer->ResolveApiUrl();
+#endif
+
     std::string ionAssetEndpointUrl =
         TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
 
-    // Make sure the URL ends with a slash
-    if (!ionAssetEndpointUrl.empty() && *ionAssetEndpointUrl.rbegin() != '/')
-      ionAssetEndpointUrl += '/';
+    if (!ionAssetEndpointUrl.empty()) {
+      // Make sure the URL ends with a slash
+      if (!ionAssetEndpointUrl.empty() && *ionAssetEndpointUrl.rbegin() != '/')
+        ionAssetEndpointUrl += '/';
 
-    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-        externals,
-        static_cast<uint32_t>(this->IonAssetID),
-        TCHAR_TO_UTF8(*token),
-        options,
-        ionAssetEndpointUrl);
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options,
+          ionAssetEndpointUrl);
+    }
     break;
   }
 

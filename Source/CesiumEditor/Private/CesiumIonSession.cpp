@@ -7,6 +7,7 @@
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
 #include "CesiumUtility/Uri.h"
+#include "FileHelpers.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
 
@@ -121,6 +122,9 @@ void CesiumIonSession::connect() {
         if (pServer->ApiUrl.IsEmpty()) {
           pServer->ApiUrl = UTF8_TO_TCHAR(ionApiUrl->c_str());
           pServer->Modify();
+          UEditorLoadingAndSavingUtils::SavePackages(
+              {pServer->GetPackage()},
+              true);
         }
 
         int64_t clientID = pServer->OAuth2ApplicationID;
