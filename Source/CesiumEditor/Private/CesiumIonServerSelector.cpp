@@ -11,7 +11,7 @@ void CesiumIonServerSelector::Construct(const FArguments& InArgs) {
       [SNew(SHorizontalBox) +
        SHorizontalBox::Slot().FillWidth(1.0f).VAlign(
            EVerticalAlignment::VAlign_Center)
-           [SNew(SComboBox<TObjectPtr<UCesiumIonServer>>)
+           [SNew(SComboBox<TWeakObjectPtr<UCesiumIonServer>>)
                 .OptionsSource(
                     &FCesiumEditorModule::serverManager().GetServerList())
                 .OnGenerateWidget(
@@ -39,12 +39,12 @@ void CesiumIonServerSelector::Construct(const FArguments& InArgs) {
 namespace {
 
 FText GetNameFromCesiumIonServerAsset(
-    const TObjectPtr<UCesiumIonServer>& pServer) {
-  if (!pServer)
+    const TWeakObjectPtr<UCesiumIonServer>& pServer) {
+  if (!pServer.IsValid())
     return FText::FromString("Error: No Cesium ion server configured.");
 
   std::shared_ptr<CesiumIonSession> pSession =
-      FCesiumEditorModule::serverManager().GetSession(pServer);
+      FCesiumEditorModule::serverManager().GetSession(pServer.Get());
 
   // Get the profile here, which will trigger it to load if it hasn't been
   // loaded already.
@@ -80,16 +80,16 @@ FText CesiumIonServerSelector::GetServerValueAsText() const {
 }
 
 TSharedRef<SWidget> CesiumIonServerSelector::OnGenerateServerEntry(
-    TObjectPtr<UCesiumIonServer> pServerAsset) {
+    TWeakObjectPtr<UCesiumIonServer> pServerAsset) {
   return SNew(STextBlock).Text_Lambda([pServerAsset]() {
     return GetNameFromCesiumIonServerAsset(pServerAsset);
   });
 }
 
 void CesiumIonServerSelector::OnServerSelectionChanged(
-    TObjectPtr<UCesiumIonServer> InItem,
+    TWeakObjectPtr<UCesiumIonServer> InItem,
     ESelectInfo::Type InSeletionInfo) {
-  FCesiumEditorModule::serverManager().SetCurrentServer(InItem);
+  FCesiumEditorModule::serverManager().SetCurrentServer(InItem.Get());
   FCesiumEditorModule::serverManager().GetCurrentSession()->resume();
 }
 

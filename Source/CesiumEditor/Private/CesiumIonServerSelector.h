@@ -15,12 +15,12 @@ class CesiumIonServerSelector : public SCompoundWidget {
 
 private:
   TSharedRef<SWidget>
-  OnGenerateServerEntry(TObjectPtr<UCesiumIonServer> pServer);
+  OnGenerateServerEntry(TWeakObjectPtr<UCesiumIonServer> pServerAsset);
 
   FText GetServerValueAsText() const;
 
   void OnServerSelectionChanged(
-      TObjectPtr<UCesiumIonServer> InItem,
+      TWeakObjectPtr<UCesiumIonServer> InItem,
       ESelectInfo::Type InSeletionInfo);
   void OnBrowseForServer();
 };

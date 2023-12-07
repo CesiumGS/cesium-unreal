@@ -21,7 +21,7 @@ public:
   std::shared_ptr<CesiumIonSession> GetSession(UCesiumIonServer* Server);
   std::shared_ptr<CesiumIonSession> GetCurrentSession();
 
-  const TArray<TObjectPtr<UCesiumIonServer>>& GetServerList();
+  const TArray<TWeakObjectPtr<UCesiumIonServer>>& GetServerList();
   void RefreshServerList();
 
   UCesiumIonServer* GetCurrentServer();
@@ -41,5 +41,5 @@ private:
   };
 
   TArray<ServerSession> _sessions;
-  TArray<TObjectPtr<UCesiumIonServer>> _servers;
+  TArray<TWeakObjectPtr<UCesiumIonServer>> _servers;
 };

@@ -86,11 +86,15 @@ void CesiumIonServerManager::Initialize() {
 }
 
 void CesiumIonServerManager::ResumeAll() {
-  const TArray<TObjectPtr<UCesiumIonServer>>& servers = this->GetServerList();
-  for (const TObjectPtr<UCesiumIonServer>& pServer : servers) {
-    std::shared_ptr<CesiumIonSession> pSession = this->GetSession(pServer);
-    pSession->resume();
-    pSession->refreshProfileIfNeeded();
+  const TArray<TWeakObjectPtr<UCesiumIonServer>>& servers =
+      this->GetServerList();
+  for (const TWeakObjectPtr<UCesiumIonServer>& pWeakServer : servers) {
+    UCesiumIonServer* pServer = pWeakServer.Get();
+    if (pServer) {
+      std::shared_ptr<CesiumIonSession> pSession = this->GetSession(pServer);
+      pSession->resume();
+      pSession->refreshProfileIfNeeded();
+    }
   }
 }
 
@@ -122,7 +126,7 @@ std::shared_ptr<CesiumIonSession> CesiumIonServerManager::GetCurrentSession() {
   return this->GetSession(this->GetCurrentServer());
 }
 
-const TArray<TObjectPtr<UCesiumIonServer>>&
+const TArray<TWeakObjectPtr<UCesiumIonServer>>&
 CesiumIonServerManager::GetServerList() {
   this->RefreshServerList();
   return this->_servers;
@@ -191,12 +195,13 @@ void CesiumIonServerManager::OnAssetRemoved(const FAssetData& asset) {
   UCesiumIonServer* pServer = Cast<UCesiumIonServer>(asset.GetAsset());
   if (pServer && this->GetCurrentServer() == pServer) {
     // Current server is being removed, so select a different one.
-    TObjectPtr<UCesiumIonServer>* ppNewServer = this->_servers.FindByPredicate(
-        [pServer](const TObjectPtr<UCesiumIonServer>& pCandidate) {
-          return pCandidate != pServer;
-        });
+    TWeakObjectPtr<UCesiumIonServer>* ppNewServer =
+        this->_servers.FindByPredicate(
+            [pServer](const TWeakObjectPtr<UCesiumIonServer>& pCandidate) {
+              return pCandidate.Get() != pServer;
+            });
     if (ppNewServer != nullptr) {
-      this->SetCurrentServer(*ppNewServer);
+      this->SetCurrentServer(ppNewServer->Get());
     } else {
       this->SetCurrentServer(nullptr);
     }
