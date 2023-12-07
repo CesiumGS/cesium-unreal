@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused nav mesh creation to be slow due to creating duplicate physics meshes.
+
 ### v2.1.0 - 2023-12-01
 
 ##### Additions :tada:
