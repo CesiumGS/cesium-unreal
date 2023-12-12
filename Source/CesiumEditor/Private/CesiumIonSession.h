@@ -11,11 +11,14 @@
 
 DECLARE_MULTICAST_DELEGATE(FIonUpdated);
 
-class CesiumIonSession {
+class UCesiumIonServer;
+
+class CesiumIonSession : public std::enable_shared_from_this<CesiumIonSession> {
 public:
   CesiumIonSession(
       CesiumAsync::AsyncSystem& asyncSystem,
-      const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor);
+      const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
+      TWeakObjectPtr<UCesiumIonServer> pServer);
 
   const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() const {
     return this->_pAssetAccessor;
@@ -24,6 +27,8 @@ public:
     return this->_asyncSystem;
   }
   CesiumAsync::AsyncSystem& getAsyncSystem() { return this->_asyncSystem; }
+
+  TWeakObjectPtr<UCesiumIonServer> getServer() const { return this->_pServer; }
 
   bool isConnected() const { return this->_connection.has_value(); }
   bool isConnecting() const { return this->_isConnecting; }
@@ -38,6 +43,9 @@ public:
   bool isTokenListLoaded() const { return this->_tokens.has_value(); }
   bool isLoadingTokenList() const { return this->_isLoadingTokens; }
 
+  bool isDefaultsLoaded() const { return this->_defaults.has_value(); }
+  bool isLoadingDefaults() const { return this->_isLoadingDefaults; }
+
   void connect();
   void resume();
   void disconnect();
@@ -45,22 +53,27 @@ public:
   void refreshProfile();
   void refreshAssets();
   void refreshTokens();
+  void refreshDefaults();
 
   FIonUpdated ConnectionUpdated;
   FIonUpdated ProfileUpdated;
   FIonUpdated AssetsUpdated;
   FIonUpdated TokensUpdated;
+  FIonUpdated DefaultsUpdated;
 
   const std::optional<CesiumIonClient::Connection>& getConnection() const;
   const CesiumIonClient::Profile& getProfile();
   const CesiumIonClient::Assets& getAssets();
   const std::vector<CesiumIonClient::Token>& getTokens();
+  const CesiumIonClient::Defaults& getDefaults();
 
   const std::string& getAuthorizeUrl() const { return this->_authorizeUrl; }
+  const std::string& getRedirectUrl() const { return this->_redirectUrl; }
 
   bool refreshProfileIfNeeded();
   bool refreshAssetsIfNeeded();
   bool refreshTokensIfNeeded();
+  bool refreshDefaultsIfNeeded();
 
   /**
    * Finds the details of the specified token in the user's account.
@@ -93,13 +106,17 @@ public:
   void invalidateProjectDefaultTokenDetails();
 
 private:
+  void startQueuedLoads();
+
   CesiumAsync::AsyncSystem _asyncSystem;
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
+  TWeakObjectPtr<UCesiumIonServer> _pServer;
 
   std::optional<CesiumIonClient::Connection> _connection;
   std::optional<CesiumIonClient::Profile> _profile;
   std::optional<CesiumIonClient::Assets> _assets;
   std::optional<std::vector<CesiumIonClient::Token>> _tokens;
+  std::optional<CesiumIonClient::Defaults> _defaults;
 
   std::optional<CesiumAsync::SharedFuture<CesiumIonClient::Token>>
       _projectDefaultTokenDetailsFuture;
@@ -109,10 +126,13 @@ private:
   bool _isLoadingProfile;
   bool _isLoadingAssets;
   bool _isLoadingTokens;
+  bool _isLoadingDefaults;
 
   bool _loadProfileQueued;
   bool _loadAssetsQueued;
   bool _loadTokensQueued;
+  bool _loadDefaultsQueued;
 
   std::string _authorizeUrl;
+  std::string _redirectUrl;
 };

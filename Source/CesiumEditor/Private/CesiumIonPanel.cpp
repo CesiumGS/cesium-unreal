@@ -7,6 +7,8 @@
 #include "CesiumCommands.h"
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServerSelector.h"
+#include "CesiumRuntime.h"
 #include "Editor.h"
 #include "EditorModeManager.h"
 #include "EngineUtils.h"
@@ -30,31 +32,28 @@ static FName ColumnName_Type = "Type";
 static FName ColumnName_DateAdded = "DateAdded";
 
 CesiumIonPanel::CesiumIonPanel()
-    : _connectionUpdatedDelegateHandle(),
-      _assetsUpdatedDelegateHandle(),
-      _pListView(nullptr),
+    : _pListView(nullptr),
       _assets(),
-      _pSelection(nullptr) {
-  this->_connectionUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().ConnectionUpdated.AddRaw(
+      _pSelection(nullptr),
+      _pLastServer(nullptr) {
+  this->_serverChangedDelegateHandle =
+      FCesiumEditorModule::serverManager().CurrentServerChanged.AddRaw(
           this,
-          &CesiumIonPanel::Refresh);
-  this->_assetsUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().AssetsUpdated.AddRaw(
-          this,
-          &CesiumIonPanel::Refresh);
+          &CesiumIonPanel::OnServerChanged);
   this->_sortColumnName = ColumnName_DateAdded;
   this->_sortMode = EColumnSortMode::Type::Descending;
+  this->OnServerChanged();
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
-  FCesiumEditorModule::ion().AssetsUpdated.Remove(
-      this->_assetsUpdatedDelegateHandle);
-  FCesiumEditorModule::ion().ConnectionUpdated.Remove(
-      this->_connectionUpdatedDelegateHandle);
+  this->Subscribe(nullptr);
+  FCesiumEditorModule::serverManager().CurrentServerChanged.Remove(
+      this->_serverChangedDelegateHandle);
 }
 
 void CesiumIonPanel::Construct(const FArguments& InArgs) {
+  this->Subscribe(FCesiumEditorModule::serverManager().GetCurrentServer());
+
   // A function that returns the lambda that is used for rendering
   // the sort mode indicator of the header column: If sorting is
   // currently done based on the given name, then this will
@@ -111,6 +110,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
             SVerticalBox::Slot().AutoHeight()
             [
               SNew(SHorizontalBox) +
+                SHorizontalBox::Slot().Padding(5.0f)[SNew(CesiumIonServerSelector)] +
                 // Add the refresh button at the upper left
                 SHorizontalBox::Slot().HAlign(HAlign_Left).Padding(5.0f)
                 [
@@ -123,7 +123,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
                     .Text(FText::FromString(TEXT("Refresh")))
                     .ToolTipText(FText::FromString(TEXT("Refresh the asset list")))
                     .OnClicked_Lambda([this]() {
-                      FCesiumEditorModule::ion().refreshAssets();
+                      FCesiumEditorModule::serverManager().GetCurrentSession()->refreshAssets();
                       Refresh();
                       return FReply::Handled();
                     })
@@ -156,7 +156,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
         ];
   // clang-format on
 
-  FCesiumEditorModule::ion().refreshAssets();
+  FCesiumEditorModule::serverManager().GetCurrentSession()->refreshAssets();
 }
 
 void CesiumIonPanel::OnSortChange(
@@ -402,7 +402,11 @@ void CesiumIonPanel::ApplySorting() {
 }
 
 void CesiumIonPanel::Refresh() {
-  const Assets& assets = FCesiumEditorModule::ion().getAssets();
+  if (!this->_pListView)
+    return;
+
+  const Assets& assets =
+      FCesiumEditorModule::serverManager().GetCurrentSession()->getAssets();
 
   this->_assets.SetNum(assets.items.size());
 
@@ -418,7 +422,7 @@ void CesiumIonPanel::Tick(
     const FGeometry& AllottedGeometry,
     const double InCurrentTime,
     const float InDeltaTime) {
-  FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+  getAsyncSystem().dispatchMainThreadTasks();
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
@@ -426,6 +430,33 @@ void CesiumIonPanel::AssetSelected(
     TSharedPtr<CesiumIonClient::Asset> item,
     ESelectInfo::Type selectionType) {
   this->_pSelection = item;
+}
+
+void CesiumIonPanel::Subscribe(UCesiumIonServer* pNewServer) {
+  if (this->_pLastServer) {
+    std::shared_ptr<CesiumIonSession> pLastSession =
+        FCesiumEditorModule::serverManager().GetSession(this->_pLastServer);
+    if (pLastSession) {
+      pLastSession->ConnectionUpdated.RemoveAll(this);
+      pLastSession->AssetsUpdated.RemoveAll(this);
+    }
+  }
+
+  this->_pLastServer = pNewServer;
+
+  if (pNewServer) {
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetSession(pNewServer);
+    pSession->ConnectionUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
+    pSession->AssetsUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
+  }
+}
+
+void CesiumIonPanel::OnServerChanged() {
+  UCesiumIonServer* pNewServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
+  this->Subscribe(pNewServer);
+  this->Refresh();
 }
 
 void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
@@ -445,7 +476,9 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 }
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
-  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+  SelectCesiumIonToken::SelectAndAuthorizeToken(
+      FCesiumEditorModule::serverManager().GetCurrentServer(),
+      {item->id})
       .thenInMainThread([item](const std::optional<Token>& /*maybeToken*/) {
         // If token selection was canceled, or if an error occurred while
         // selecting the token, ignore it and create the tileset anyway. It's
@@ -462,7 +495,9 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
 void CesiumIonPanel::AddOverlayToTerrain(
     TSharedPtr<CesiumIonClient::Asset> item,
     bool useAsBaseLayer) {
-  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+  SelectCesiumIonToken::SelectAndAuthorizeToken(
+      FCesiumEditorModule::serverManager().GetCurrentServer(),
+      {item->id})
       .thenInMainThread([useAsBaseLayer, item](const std::optional<Token>&) {
         UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
         ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
