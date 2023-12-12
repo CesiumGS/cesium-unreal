@@ -44,8 +44,9 @@ using namespace CesiumIonClient;
 
   // If this is a tileset, close any already-open panels associated with its
   // overlays. Overlays won't appear until the tileset is working anyway.
-  ACesium3DTileset** ppTileset = std::get_if<ACesium3DTileset*>(&ionObject);
-  if (ppTileset && *ppTileset) {
+  TWeakObjectPtr<ACesium3DTileset>* ppTileset =
+      std::get_if<TWeakObjectPtr<ACesium3DTileset>>(&ionObject);
+  if (ppTileset && ppTileset->IsValid()) {
     TArray<UCesiumRasterOverlay*> rasterOverlays;
     (*ppTileset)->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
@@ -66,9 +67,9 @@ using namespace CesiumIonClient;
 
   // If this is a raster overlay and this panel is already open for its attached
   // tileset, don't open the panel for the overlay for the same reason as above.
-  UCesiumRasterOverlay** ppRasterOverlay =
-      std::get_if<UCesiumRasterOverlay*>(&ionObject);
-  if (ppRasterOverlay && *ppRasterOverlay) {
+  TWeakObjectPtr<UCesiumRasterOverlay>* ppRasterOverlay =
+      std::get_if<TWeakObjectPtr<UCesiumRasterOverlay>>(&ionObject);
+  if (ppRasterOverlay && ppRasterOverlay->IsValid()) {
     ACesium3DTileset* pOwner =
         Cast<ACesium3DTileset>((*ppRasterOverlay)->GetOwner());
     if (pOwner) {
@@ -148,12 +149,13 @@ bool isNull(const CesiumIonObject& o) {
 
 FString getLabel(const CesiumIonObject& o) {
   struct Operation {
-    FString operator()(ACesium3DTileset* pTileset) {
-      return pTileset ? pTileset->GetActorLabel() : TEXT("Unknown");
+    FString operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) {
+      return pTileset.IsValid() ? pTileset->GetActorLabel() : TEXT("Unknown");
     }
 
-    FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
-      return pRasterOverlay ? pRasterOverlay->GetName() : TEXT("Unknown");
+    FString operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) {
+      return pRasterOverlay.IsValid() ? pRasterOverlay->GetName()
+                                      : TEXT("Unknown");
     }
   };
 
@@ -166,7 +168,9 @@ FString getName(const CesiumIonObject& o) {
 
 int64 getIonAssetID(const CesiumIonObject& o) {
   struct Operation {
-    int64 operator()(ACesium3DTileset* pTileset) {
+    int64 operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) {
+      if (!pTileset.IsValid())
+        return 0;
       if (pTileset->GetTilesetSource() != ETilesetSource::FromCesiumIon) {
         return 0;
       } else {
@@ -174,7 +178,9 @@ int64 getIonAssetID(const CesiumIonObject& o) {
       }
     }
 
-    int64 operator()(UCesiumRasterOverlay* pRasterOverlay) {
+    int64 operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) {
+      if (!pRasterOverlay.IsValid())
+        return 0;
       UCesiumIonRasterOverlay* pIon =
           Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
       if (!pIon) {
@@ -190,7 +196,9 @@ int64 getIonAssetID(const CesiumIonObject& o) {
 
 FString getIonAccessToken(const CesiumIonObject& o) {
   struct Operation {
-    FString operator()(ACesium3DTileset* pTileset) {
+    FString operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) {
+      if (!pTileset.IsValid())
+        return FString();
       if (pTileset->GetTilesetSource() != ETilesetSource::FromCesiumIon) {
         return FString();
       } else {
@@ -198,7 +206,9 @@ FString getIonAccessToken(const CesiumIonObject& o) {
       }
     }
 
-    FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
+    FString operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) {
+      if (!pRasterOverlay.IsValid())
+        return FString();
       UCesiumIonRasterOverlay* pIon =
           Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
       if (!pIon) {
@@ -216,7 +226,9 @@ void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
   struct Operation {
     const FString& newToken;
 
-    void operator()(ACesium3DTileset* pTileset) {
+    void operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) {
+      if (!pTileset.IsValid())
+        return;
       if (pTileset->GetIonAccessToken() != newToken) {
         pTileset->Modify();
         pTileset->SetIonAccessToken(newToken);
@@ -225,7 +237,9 @@ void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
       }
     }
 
-    void operator()(UCesiumRasterOverlay* pRasterOverlay) {
+    void operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) {
+      if (!pRasterOverlay.IsValid())
+        return;
       UCesiumIonRasterOverlay* pIon =
           Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
       if (!pIon) {
@@ -245,9 +259,11 @@ void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
 
 FString getObjectType(const CesiumIonObject& o) {
   struct Operation {
-    FString operator()(ACesium3DTileset* pTileset) { return TEXT("Tileset"); }
+    FString operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) {
+      return TEXT("Tileset");
+    }
 
-    FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
+    FString operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) {
       return TEXT("Raster Overlay");
     }
   };
@@ -256,16 +272,21 @@ FString getObjectType(const CesiumIonObject& o) {
 }
 
 UObject* asUObject(const CesiumIonObject& o) {
-  return std::visit([](auto p) -> UObject* { return p; }, o);
+  return std::visit(
+      [](auto p) -> UObject* { return p.IsValid() ? p.Get() : nullptr; },
+      o);
 }
 
 bool isUsingCesiumIon(const CesiumIonObject& o) {
   struct Operation {
-    bool operator()(ACesium3DTileset* pTileset) {
-      return pTileset->GetTilesetSource() == ETilesetSource::FromCesiumIon;
+    bool operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) {
+      return pTileset.IsValid() &&
+             pTileset->GetTilesetSource() == ETilesetSource::FromCesiumIon;
     }
 
-    bool operator()(UCesiumRasterOverlay* pRasterOverlay) {
+    bool operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) {
+      if (!pRasterOverlay.IsValid())
+        return false;
       UCesiumIonRasterOverlay* pIon =
           Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
       return pIon != nullptr;
@@ -277,12 +298,15 @@ bool isUsingCesiumIon(const CesiumIonObject& o) {
 
 UCesiumIonServer* getCesiumIonServer(const CesiumIonObject& o) {
   struct Operation {
-    UCesiumIonServer* operator()(const ACesium3DTileset* pTileset) noexcept {
-      return pTileset->GetCesiumIonServer();
+    UCesiumIonServer*
+    operator()(TWeakObjectPtr<ACesium3DTileset> pTileset) noexcept {
+      return pTileset.IsValid() ? pTileset->GetCesiumIonServer() : nullptr;
     }
 
     UCesiumIonServer*
-    operator()(const UCesiumRasterOverlay* pRasterOverlay) noexcept {
+    operator()(TWeakObjectPtr<UCesiumRasterOverlay> pRasterOverlay) noexcept {
+      if (!pRasterOverlay.IsValid())
+        return nullptr;
       const UCesiumIonRasterOverlay* pIon =
           Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
       return pIon ? pIon->CesiumIonServer : nullptr;
