@@ -2,17 +2,17 @@
 
 #include "CesiumWebMapTileServiceRasterOverlay.h"
 
-#include "Cesium3DTilesSelection/WebMapTileServiceRasterOverlay.h"
+#include "CesiumRasterOverlays/WebMapTileServiceRasterOverlay.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
 #include "CesiumGeometry/QuadtreeTilingScheme.h"
 
 #include "CesiumRuntime.h"
 
-std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
+std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
-    const Cesium3DTilesSelection::RasterOverlayOptions& options) {
-  Cesium3DTilesSelection::WebMapTileServiceRasterOverlayOptions wmtsOptions;
+    const CesiumRasterOverlays::RasterOverlayOptions& options) {
+  CesiumRasterOverlays::WebMapTileServiceRasterOverlayOptions wmtsOptions;
   if (!TileMatrixSetID.IsEmpty()) {
     wmtsOptions.tileMatrixSetID = TCHAR_TO_UTF8(*this->TileMatrixSetID);
   }
@@ -69,8 +69,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
       wmtsOptions.tileMatrixLabels = labels;
     }
   }
-  return std::make_unique<
-      Cesium3DTilesSelection::WebMapTileServiceRasterOverlay>(
+  return std::make_unique<CesiumRasterOverlays::WebMapTileServiceRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       TCHAR_TO_UTF8(*this->Url),
       std::vector<CesiumAsync::IAssetAccessor::THeader>(),
