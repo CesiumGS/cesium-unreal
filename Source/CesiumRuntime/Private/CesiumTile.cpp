@@ -26,9 +26,7 @@ bool UCesiumTile::PrimitiveBoxFullyContainsTileBounds(
 
 FBoxSphereBounds UCesiumTile::CalcBounds(const FTransform& LocalToWorld) const {
   FBoxSphereBounds bounds = std::visit(
-      CalcBoundsOperation{
-          LocalToWorld * this->GetComponentTransform(),
-          this->_tileTransform},
+      CalcBoundsOperation{LocalToWorld, this->_tileTransform},
       _tileBounds);
   return bounds;
 }

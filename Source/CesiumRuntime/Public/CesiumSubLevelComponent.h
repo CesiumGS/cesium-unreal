@@ -192,6 +192,11 @@ public:
    * Level Instance's Location to (0,0,0). This improves the precision of the
    * objects in the sub-level as well as makes the Load Radius more sensible.
    *
+   * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
+   * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
+   * be updated based on the new georeference origin. You should Commit this
+   * change.
+   *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
    * or attached to an actor with that component. Ensure that static actors only
@@ -199,6 +204,30 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginAtSubLevelOrigin();
+
+  /**
+   * Places the sub-level's origin at the camera's current location. Rotates
+   * the globe so the current longitude/latitude/height of the camera is at the
+   * Unreal origin of this sub-level. The camera is also teleported to the new
+   * Unreal origin and rotated so that the view direction is maintained.
+   *
+   * This function is similar to "Place Georeference Origin Here" on the
+   * CesiumGeoreference, except that this moves the georeference origin while
+   * also ensuring that the sub-level content stays in the same place on the
+   * globe by adjusting the Level Instance's transform.
+   *
+   * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
+   * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
+   * be updated based on the new georeference origin. You should Commit this
+   * change.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sub-levels.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void PlaceGeoreferenceOriginHere();
 #endif
 
   /**
@@ -235,6 +264,15 @@ protected:
    * changes to properties.
    */
   virtual void OnUnregister() override;
+
+#if WITH_EDITOR
+  /**
+   * Called by the Editor to check if it's ok to edit a property on this object.
+   * Used to disable all fields on this component when editing the sub-level
+   * instance that this component is attached to.
+   */
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
+#endif
 
 private:
   /**
@@ -365,4 +403,6 @@ private:
    * Georeference will be re-resolved and re-subscribed.
    */
   void _invalidateResolvedGeoreference();
+
+  void PlaceOriginAtEcef(const FVector& NewOriginEcef);
 };

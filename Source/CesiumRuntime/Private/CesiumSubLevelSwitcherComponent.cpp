@@ -355,11 +355,7 @@ UCesiumSubLevelSwitcherComponent::_getLevelStreamingForSubLevel(
             if (!pInstanceStreaming)
               return false;
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION > 0
             return pInstanceStreaming->GetLevelInstance() == SubLevel;
-#else
-            return pInstanceStreaming->GetLevelInstanceActor() == SubLevel;
-#endif
           });
 
   return ppStreaming ? *ppStreaming : nullptr;

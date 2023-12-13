@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumGltf/Accessor.h"
@@ -6,43 +6,13 @@
 
 using namespace CesiumGltf;
 
-namespace {
-
-struct FeatureIDFromAccessor {
-  int64 operator()(std::monostate) { return -1; }
-
-  int64 operator()(const AccessorView<float>& value) {
-    if (vertexIndex < 0 || vertexIndex >= value.size()) {
-      return -1;
-    }
-    return static_cast<int64>(glm::round(value[vertexIndex]));
-  }
-
-  template <typename T> int64 operator()(const AccessorView<T>& value) {
-    if (vertexIndex < 0 || vertexIndex >= value.size()) {
-      return -1;
-    }
-    return static_cast<int64>(value[vertexIndex]);
-  }
-
-  int64 vertexIndex;
-};
-
-struct VertexCountFromAccessor {
-  int64 operator()(std::monostate) { return 0; }
-
-  template <typename T> int64 operator()(const AccessorView<T>& value) {
-    return static_cast<int64>(value.size());
-  }
-};
-} // namespace
-
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     const Model& Model,
     const MeshPrimitive& Primitive,
     const int64 FeatureIDAttribute,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
+      _featureIDAccessor(),
       _attributeIndex(FeatureIDAttribute),
       _propertyTableName(PropertyTableName) {
   const std::string attributeName =
@@ -98,7 +68,7 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return std::visit(
-      VertexCountFromAccessor{},
+      CesiumCountFromAccessor{},
       FeatureIDAttribute._featureIDAccessor);
 }
 
@@ -106,6 +76,6 @@ int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 VertexIndex) {
   return std::visit(
-      FeatureIDFromAccessor{VertexIndex},
+      CesiumFeatureIDFromAccessor{VertexIndex},
       FeatureIDAttribute._featureIDAccessor);
 }

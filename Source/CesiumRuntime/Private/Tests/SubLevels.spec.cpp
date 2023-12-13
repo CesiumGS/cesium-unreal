@@ -15,7 +15,7 @@
 
 BEGIN_DEFINE_SPEC(
     FSubLevelsSpec,
-    "Cesium.SubLevels",
+    "Cesium.Unit.SubLevels",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 

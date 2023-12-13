@@ -5,6 +5,7 @@
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/FeatureId.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 using namespace CesiumGltf;
 
@@ -124,6 +125,49 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
         std::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
     return UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
         texture,
+        VertexIndex);
+  }
+
+  if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Implicit) {
+    return (VertexIndex >= 0 && VertexIndex < FeatureIDSet._featureCount)
+               ? VertexIndex
+               : -1;
+  }
+
+  return -1;
+}
+
+int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
+    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
+    const FHitResult& Hit) {
+  if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Texture) {
+    FCesiumFeatureIdTexture texture =
+        std::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
+    return UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+        texture,
+        Hit);
+  }
+
+  // Find the first vertex of the face.
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(Hit.Component);
+  if (!IsValid(pGltfComponent)) {
+    return -1;
+  }
+
+  auto faceIndices = std::visit(
+      CesiumFaceVertexIndicesFromAccessor{
+          Hit.FaceIndex,
+          pGltfComponent->PositionAccessor.size()},
+      pGltfComponent->IndexAccessor);
+
+  int64 VertexIndex = faceIndices[0];
+
+  if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
+    FCesiumFeatureIdAttribute attribute =
+        std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
+    return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+        attribute,
         VertexIndex);
   }
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -22,7 +22,7 @@ class UStaticMeshComponent;
 
 namespace CreateGltfOptions {
 struct CreateModelOptions;
-} // namespace CreateGltfOptions
+}
 
 namespace CesiumGltf {
 struct Model;
@@ -30,8 +30,11 @@ struct Model;
 
 namespace Cesium3DTilesSelection {
 class Tile;
+}
+
+namespace CesiumRasterOverlays {
 class RasterOverlayTile;
-} // namespace Cesium3DTilesSelection
+}
 
 namespace CesiumGeometry {
 struct Rectangle;
@@ -104,7 +107,7 @@ public:
 
   void AttachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
-      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
       const glm::dvec2& Translation,
       const glm::dvec2& Scale,
@@ -112,7 +115,7 @@ public:
 
   void DetachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
-      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& RasterTile,
       UTexture2D* Texture);
 
   UFUNCTION(BlueprintCallable, Category = "Collision")

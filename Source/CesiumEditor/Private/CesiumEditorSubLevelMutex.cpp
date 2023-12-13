@@ -6,6 +6,7 @@
 #include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "Components/ActorComponent.h"
+#include "Engine/World.h"
 #include "LevelInstance/LevelInstanceActor.h"
 
 CesiumEditorSubLevelMutex::CesiumEditorSubLevelMutex() {

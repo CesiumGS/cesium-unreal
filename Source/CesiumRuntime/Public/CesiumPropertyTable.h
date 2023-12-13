@@ -151,6 +151,7 @@ public:
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
    * @param featureID The ID of the feature.
+   * @return The property values mapped by property name.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -160,6 +161,7 @@ public:
       UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
       int64 FeatureID);
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets all of the property values for a given feature as strings, mapped by
    * property name. This will only include values from valid property table
@@ -171,12 +173,18 @@ public:
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
    * @param FeatureID The ID of the feature.
+   * @return The property values as strings mapped by property name.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|PropertyTable")
+      Category = "Cesium|Metadata|PropertyTable",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use GetValuesAsStrings to convert the output of GetMetadataValuesForFeature instead."))
   static TMap<FString, FString> GetMetadataValuesForFeatureAsStrings(
       UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
       int64 FeatureID);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

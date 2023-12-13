@@ -86,12 +86,16 @@ UCesiumGlobeAnchorComponent::GetResolvedGeoreference() const {
 FVector
 UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedPosition() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
+          *this->GetName());
+    }
     return FVector(0.0);
   }
 
@@ -304,12 +308,16 @@ createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
 
 FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+          *this->GetName());
+    }
     return FQuat::Identity;
   }
 
@@ -370,12 +378,16 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
 
 FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+          *this->GetName());
+    }
     return FQuat::Identity;
   }
 

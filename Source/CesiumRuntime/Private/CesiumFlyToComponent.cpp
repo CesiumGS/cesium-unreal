@@ -7,6 +7,8 @@
 #include "GameFramework/Pawn.h"
 #include "UObject/ConstructorHelpers.h"
 
+#include <glm/gtx/quaternion.hpp>
+
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
@@ -62,9 +64,23 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   this->_destinationEcef = EarthCenteredEarthFixedDestination;
 
   // Compute axis/Angle transform
-  FQuat flyQuat = FQuat::FindBetween(ecefSource, this->_destinationEcef);
-  flyQuat.ToAxisAndAngle(this->_rotationAxis, this->_totalAngle);
+  glm::dvec3 glmEcefSource(ecefSource.X, ecefSource.Y, ecefSource.Z);
+  glm::dvec3 glmEcefDestination(
+      _destinationEcef.X,
+      _destinationEcef.Y,
+      _destinationEcef.Z);
 
+  glm::dquat flyQuat = glm::rotation(
+      glm::normalize(glmEcefSource),
+      glm::normalize(glmEcefDestination));
+
+  glm::dvec3 flyToRotationAxis = glm::axis(flyQuat);
+  this->_rotationAxis.Set(
+      flyToRotationAxis.x,
+      flyToRotationAxis.y,
+      flyToRotationAxis.z);
+
+  this->_totalAngle = glm::angle(flyQuat);
   this->_totalAngle = CesiumUtility::Math::radiansToDegrees(this->_totalAngle);
 
   this->_currentFlyTime = 0.0f;

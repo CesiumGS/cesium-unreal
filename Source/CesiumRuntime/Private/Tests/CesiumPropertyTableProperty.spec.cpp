@@ -8,7 +8,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTablePropertySpec,
-    "Cesium.PropertyTableProperty",
+    "Cesium.Unit.PropertyTableProperty",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumPropertyTablePropertySpec)
@@ -2767,7 +2767,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       }
     });
 
-    It("gets from glm::i8vec3 property", [this]() {
+    It("gets from normalized glm::i8vec3 property", [this]() {
       PropertyTableProperty propertyTableProperty;
       ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;

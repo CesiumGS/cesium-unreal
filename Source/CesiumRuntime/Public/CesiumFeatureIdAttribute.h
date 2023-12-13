@@ -1,8 +1,8 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
-#include "CesiumGltf/AccessorView.h"
+#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdAttribute.generated.h"
 
@@ -33,15 +33,6 @@ enum class ECesiumFeatureIdAttributeStatus : uint8 {
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
   GENERATED_USTRUCT_BODY()
-
-  using FeatureIDAccessorType = std::variant<
-      std::monostate,
-      CesiumGltf::AccessorView<int8_t>,
-      CesiumGltf::AccessorView<uint8_t>,
-      CesiumGltf::AccessorView<int16_t>,
-      CesiumGltf::AccessorView<uint16_t>,
-      CesiumGltf::AccessorView<uint32_t>,
-      CesiumGltf::AccessorView<float>>;
 
 public:
   /**
@@ -77,7 +68,7 @@ public:
 
 private:
   ECesiumFeatureIdAttributeStatus _status;
-  FeatureIDAccessorType _featureIDAccessor;
+  CesiumFeatureIDAccessorType _featureIDAccessor;
   int64 _attributeIndex;
 
   // For backwards compatibility.

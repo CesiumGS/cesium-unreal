@@ -1,23 +1,54 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumPanel.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Cesium3DTileset.h"
 #include "CesiumCommands.h"
 #include "CesiumEditor.h"
 #include "CesiumIonPanel.h"
+#include "CesiumIonServer.h"
+#include "CesiumIonServerSelector.h"
+#include "CesiumRuntime.h"
+#include "CesiumRuntimeSettings.h"
+#include "CesiumUtility/Uri.h"
 #include "Editor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Interfaces/IPluginManager.h"
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
 #include "LevelEditor.h"
 #include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SScrollBox.h"
 
+CesiumPanel::CesiumPanel() : _pQuickAddPanel(nullptr), _pLastServer(nullptr) {
+  this->_serverChangedDelegateHandle =
+      FCesiumEditorModule::serverManager().CurrentServerChanged.AddRaw(
+          this,
+          &CesiumPanel::OnServerChanged);
+  this->OnServerChanged();
+}
+
+CesiumPanel::~CesiumPanel() {
+  this->Subscribe(nullptr);
+  FCesiumEditorModule::serverManager().CurrentServerChanged.Remove(
+      this->_serverChangedDelegateHandle);
+}
+
 void CesiumPanel::Construct(const FArguments& InArgs) {
+  FCesiumEditorModule::serverManager().ResumeAll();
+
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetCurrentSession();
+  pSession->refreshDefaultsIfNeeded();
+
   ChildSlot
-      [SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight()[Toolbar()] +
+      [SNew(SVerticalBox) +
+       SVerticalBox::Slot().AutoHeight().Padding(
+           5.0f)[SNew(CesiumIonServerSelector)] +
+       SVerticalBox::Slot().AutoHeight()[Toolbar()] +
        SVerticalBox::Slot().VAlign(VAlign_Fill)
            [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +
             SScrollBox::Slot()[LoginPanel()] +
@@ -25,18 +56,88 @@ void CesiumPanel::Construct(const FArguments& InArgs) {
        SVerticalBox::Slot()
            .AutoHeight()
            .VAlign(VAlign_Bottom)
-           .HAlign(HAlign_Right)[ConnectionStatus()]];
+           .HAlign(HAlign_Right)[Version()]];
 }
 
 void CesiumPanel::Tick(
     const FGeometry& AllottedGeometry,
     const double InCurrentTime,
     const float InDeltaTime) {
-  FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+  getAsyncSystem().dispatchMainThreadTasks();
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
-static bool isSignedIn() { return FCesiumEditorModule::ion().isConnected(); }
+void CesiumPanel::Refresh() {
+  if (!this->_pQuickAddPanel)
+    return;
+
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetCurrentSession();
+
+  this->_pQuickAddPanel->ClearItems();
+
+  if (pSession->isLoadingDefaults()) {
+    this->_pQuickAddPanel->SetMessage(FText::FromString("Loading..."));
+  } else if (!pSession->isDefaultsLoaded()) {
+    this->_pQuickAddPanel->SetMessage(
+        FText::FromString("This server does not define any Quick Add assets."));
+  } else {
+    const CesiumIonClient::Defaults& defaults = pSession->getDefaults();
+
+    this->_pQuickAddPanel->SetMessage(FText());
+
+    for (const CesiumIonClient::QuickAddAsset& asset :
+         defaults.quickAddAssets) {
+      if (asset.type == "3DTILES" ||
+          (asset.type == "TERRAIN" && !asset.rasterOverlays.empty())) {
+        this->_pQuickAddPanel->AddItem(QuickAddItem{
+            QuickAddItemType::TILESET,
+            asset.name,
+            asset.description,
+            asset.objectName,
+            asset.assetId,
+            asset.rasterOverlays.empty() ? "" : asset.rasterOverlays[0].name,
+            asset.rasterOverlays.empty() ? -1
+                                         : asset.rasterOverlays[0].assetId});
+      }
+    }
+  }
+
+  this->_pQuickAddPanel->Refresh();
+}
+
+void CesiumPanel::Subscribe(UCesiumIonServer* pNewServer) {
+  if (this->_pLastServer) {
+    std::shared_ptr<CesiumIonSession> pLastSession =
+        FCesiumEditorModule::serverManager().GetSession(this->_pLastServer);
+    if (pLastSession) {
+      pLastSession->ConnectionUpdated.RemoveAll(this);
+      pLastSession->DefaultsUpdated.RemoveAll(this);
+    }
+  }
+
+  this->_pLastServer = pNewServer;
+
+  if (pNewServer) {
+    std::shared_ptr<CesiumIonSession> pSession =
+        FCesiumEditorModule::serverManager().GetSession(pNewServer);
+    pSession->ConnectionUpdated.AddRaw(this, &CesiumPanel::OnConnectionUpdated);
+    pSession->DefaultsUpdated.AddRaw(this, &CesiumPanel::OnDefaultsUpdated);
+  }
+}
+
+void CesiumPanel::OnServerChanged() {
+  UCesiumIonServer* pNewServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
+  this->Subscribe(pNewServer);
+  this->Refresh();
+}
+
+static bool isSignedIn() {
+  return FCesiumEditorModule::serverManager()
+      .GetCurrentSession()
+      ->isConnected();
+}
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
   TSharedRef<FUICommandList> commandList = MakeShared<FUICommandList>();
@@ -82,54 +183,20 @@ TSharedRef<SWidget> CesiumPanel::LoginPanel() {
 }
 
 TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
-  TSharedPtr<IonQuickAddPanel> quickAddPanel =
+  FCesiumEditorModule::serverManager()
+      .GetCurrentSession()
+      ->refreshDefaultsIfNeeded();
+
+  this->_pQuickAddPanel =
       SNew(IonQuickAddPanel)
           .Title(FText::FromString("Quick Add Cesium ion Assets"))
           .Visibility_Lambda([]() {
             return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed;
           });
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Bing Maps Aerial imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery.",
-       "Cesium World Terrain",
-       1,
-       "Bing Maps Aerial",
-       2});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Bing Maps Aerial with Labels imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with labeled Bing Maps satellite imagery.",
-       "Cesium World Terrain",
-       1,
-       "Bing Maps Aerial with Labels",
-       3});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Bing Maps Road imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps imagery.",
-       "Cesium World Terrain",
-       1,
-       "Bing Maps Road",
-       4});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium World Terrain + Sentinel-2 imagery",
-       "High-resolution global terrain tileset curated from several data sources, textured with high-resolution satellite imagery from the Sentinel-2 project.",
-       "Cesium World Terrain",
-       1,
-       "Sentinel-2 imagery",
-       3954});
-  quickAddPanel->AddItem(
-      {QuickAddItemType::TILESET,
-       "Cesium OSM Buildings",
-       "A 3D buildings layer derived from OpenStreetMap covering the entire world.",
-       "Cesium OSM Buildings",
-       96188,
-       "",
-       -1});
 
-  return quickAddPanel.ToSharedRef();
+  this->Refresh();
+
+  return this->_pQuickAddPanel.ToSharedRef();
 }
 
 TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
@@ -170,41 +237,33 @@ TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
   return quickAddPanel.ToSharedRef();
 }
 
-TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
+TSharedRef<SWidget> CesiumPanel::Version() {
+  IPluginManager& PluginManager = IPluginManager::Get();
+  TSharedPtr<IPlugin> Plugin =
+      PluginManager.FindPlugin(TEXT("CesiumForUnreal"));
 
-  auto linkVisibility = []() {
-    FCesiumEditorModule::ion().refreshProfileIfNeeded();
-    if (!FCesiumEditorModule::ion().isProfileLoaded()) {
-      return EVisibility::Collapsed;
-    }
-    if (!isSignedIn()) {
-      return EVisibility::Collapsed;
-    }
-    return EVisibility::Visible;
-  };
-  auto linkText = []() {
-    auto& profile = FCesiumEditorModule::ion().getProfile();
-    std::string s = "Connected to Cesium ion as " + profile.username;
-    return FText::FromString(UTF8_TO_TCHAR(s.c_str()));
-  };
-  auto loadingMessageVisibility = []() {
-    return FCesiumEditorModule::ion().isLoadingProfile()
-               ? EVisibility::Visible
-               : EVisibility::Collapsed;
-  };
-  return SNew(SVerticalBox) +
-         SVerticalBox::Slot()
-             [SNew(SHyperlink)
-                  .Visibility_Lambda(linkVisibility)
-                  .Text_Lambda(linkText)
-                  .ToolTipText(FText::FromString(
-                      TEXT("Open your Cesium ion account in your browser")))
-                  .OnNavigate(this, &CesiumPanel::visitIon)] +
-         SVerticalBox::Slot()[SNew(STextBlock)
-                                  .Visibility_Lambda(loadingMessageVisibility)
-                                  .Text(FText::FromString(
-                                      TEXT("Loading user information...")))];
+  FString Version = Plugin ? TEXT("v") + Plugin->GetDescriptor().VersionName
+                           : TEXT("Unknown Version");
+
+  return SNew(SHyperlink)
+      .Text(FText::FromString(Version))
+      .ToolTipText(FText::FromString(
+          TEXT("Open the Cesium for Unreal changelog in your web browser")))
+      .OnNavigate_Lambda([]() {
+        FPlatformProcess::LaunchURL(
+            TEXT(
+                "https://github.com/CesiumGS/cesium-unreal/blob/main/CHANGES.md"),
+            NULL,
+            NULL);
+      });
 }
+
+void CesiumPanel::OnConnectionUpdated() {
+  FCesiumEditorModule::serverManager().GetCurrentSession()->refreshDefaults();
+  this->Refresh();
+}
+
+void CesiumPanel::OnDefaultsUpdated() { this->Refresh(); }
 
 void CesiumPanel::addFromIon() {
   FLevelEditorModule* pLevelEditorModule =
@@ -217,17 +276,26 @@ void CesiumPanel::addFromIon() {
 }
 
 void CesiumPanel::uploadToIon() {
+  UCesiumIonServer* pServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
   FPlatformProcess::LaunchURL(
-      TEXT("https://cesium.com/ion/addasset"),
+      UTF8_TO_TCHAR(CesiumUtility::Uri::resolve(
+                        TCHAR_TO_UTF8(*pServer->ServerUrl),
+                        "addasset")
+                        .c_str()),
       NULL,
       NULL);
 }
 
 void CesiumPanel::visitIon() {
-  FPlatformProcess::LaunchURL(TEXT("https://cesium.com/ion"), NULL, NULL);
+  UCesiumIonServer* pServer =
+      FCesiumEditorModule::serverManager().GetCurrentServer();
+  FPlatformProcess::LaunchURL(*pServer->ServerUrl, NULL, NULL);
 }
 
-void CesiumPanel::signOut() { FCesiumEditorModule::ion().disconnect(); }
+void CesiumPanel::signOut() {
+  FCesiumEditorModule::serverManager().GetCurrentSession()->disconnect();
+}
 
 void CesiumPanel::openDocumentation() {
   FPlatformProcess::LaunchURL(TEXT("https://cesium.com/docs"), NULL, NULL);
@@ -241,5 +309,6 @@ void CesiumPanel::openSupport() {
 }
 
 void CesiumPanel::openTokenSelector() {
-  SelectCesiumIonToken::SelectNewToken();
+  SelectCesiumIonToken::SelectNewToken(
+      FCesiumEditorModule::serverManager().GetCurrentServer());
 }

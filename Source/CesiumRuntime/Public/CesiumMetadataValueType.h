@@ -208,3 +208,47 @@ static FCesiumMetadataValueType TypeToMetadataValueType() {
 
   return {type, componentType, isArray};
 }
+
+/**
+ * Gets the size in bytes of the represented metadata type. Returns 0 for enums
+ * and strings.
+ */
+static size_t GetMetadataTypeByteSize(
+    ECesiumMetadataType Type,
+    ECesiumMetadataComponentType ComponentType) {
+  size_t componentByteSize = 0;
+  if (ComponentType != ECesiumMetadataComponentType::None)
+    componentByteSize = CesiumGltf::getSizeOfComponentType(
+        CesiumGltf::PropertyComponentType(ComponentType));
+
+  size_t byteSize = componentByteSize;
+  switch (Type) {
+  case ECesiumMetadataType::Boolean:
+    byteSize = sizeof(bool);
+    break;
+  case ECesiumMetadataType::Scalar:
+    break;
+  case ECesiumMetadataType::Vec2:
+    byteSize *= 2;
+    break;
+  case ECesiumMetadataType::Vec3:
+    byteSize *= 3;
+    break;
+  case ECesiumMetadataType::Vec4:
+    byteSize *= 4;
+    break;
+  case ECesiumMetadataType::Mat2:
+    byteSize *= 4;
+    break;
+  case ECesiumMetadataType::Mat3:
+    byteSize *= 9;
+    break;
+  case ECesiumMetadataType::Mat4:
+    byteSize *= 16;
+    break;
+  default:
+    return 0;
+  }
+
+  return byteSize;
+}

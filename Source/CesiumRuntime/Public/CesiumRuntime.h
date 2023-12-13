@@ -12,6 +12,7 @@ class UCesiumRasterOverlay;
 namespace CesiumAsync {
 class AsyncSystem;
 class IAssetAccessor;
+class ICacheDatabase;
 } // namespace CesiumAsync
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesium, Log, All);
@@ -48,3 +49,6 @@ CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
 CESIUMRUNTIME_API CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
 CESIUMRUNTIME_API const std::shared_ptr<CesiumAsync::IAssetAccessor>&
 getAssetAccessor();
+
+CESIUMRUNTIME_API std::shared_ptr<CesiumAsync::ICacheDatabase>&
+getCacheDatabase();

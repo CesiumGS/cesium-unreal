@@ -1,5 +1,6 @@
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
 
@@ -7,11 +8,17 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdTextureSpec,
-    "Cesium.FeatureIdTexture",
+    "Cesium.Unit.FeatureIdTexture",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;
 MeshPrimitive* pPrimitive;
+const std::vector<glm::vec2> texCoords{
+    glm::vec2(0, 0),
+    glm::vec2(0.5, 0),
+    glm::vec2(0, 0.5),
+    glm::vec2(0.5, 0.5)};
+TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
 END_DEFINE_SPEC(FCesiumFeatureIdTextureSpec)
 
 void FCesiumFeatureIdTextureSpec::Define() {
@@ -92,11 +99,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("constructs valid instance", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -235,11 +237,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("returns correct value for valid attribute", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -310,11 +307,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("returns -1 for out-of-bounds index", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -355,11 +347,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("returns correct value for valid texture", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -393,7 +380,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
     });
 
     It("returns correct value for primitive with multiple texcoords", [this]() {
-      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoord0{
           glm::vec2(0, 0),
           glm::vec2(0.5, 0),
@@ -407,8 +393,8 @@ void FCesiumFeatureIdTextureSpec::Define() {
           model,
           *pPrimitive,
           "TEXCOORD_0",
-          AccessorSpec::Type::SCALAR,
-          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          AccessorSpec::Type::VEC2,
+          AccessorSpec::ComponentType::FLOAT,
           std::move(values));
 
       const std::vector<glm::vec2> texCoord1{
@@ -417,6 +403,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0.5, 0),
           glm::vec2(0.0, 0.5)};
 
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,
@@ -446,6 +433,405 @@ void FCesiumFeatureIdTextureSpec::Define() {
                 featureIDTexture,
                 static_cast<int64>(i));
         TestEqual("FeatureIDForVertex", featureID, expected[i]);
+      }
+    });
+  });
+
+  Describe("GetFeatureIDFromHit", [this]() {
+    BeforeEach([this]() {
+      model = Model();
+      Mesh& mesh = model.meshes.emplace_back();
+      pPrimitive = &mesh.primitives.emplace_back();
+      pPrimitiveComponent = NewObject<UCesiumGltfPrimitiveComponent>();
+
+      std::vector<glm::vec3> positions{
+          glm::vec3(-1, 0, 0),
+          glm::vec3(0, 1, 0),
+          glm::vec3(1, 0, 0),
+          glm::vec3(-1, 3, 0),
+          glm::vec3(0, 4, 0),
+          glm::vec3(1, 3, 0),
+      };
+
+      CreateAttributeForPrimitive(
+          model,
+          *pPrimitive,
+          "POSITION",
+          AccessorSpec::Type::VEC3,
+          AccessorSpec::ComponentType::FLOAT,
+          positions);
+    });
+
+    It("returns -1 for invalid texture", [this]() {
+      FeatureIdTexture texture;
+      texture.index = -1;
+      texture.texCoord = 0;
+      texture.channels = {0};
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          texture,
+          "PropertyTableName");
+
+      TestNotEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      FHitResult Hit;
+      Hit.Location = FVector_NetQuantize::Zero();
+      Hit.Component = pPrimitiveComponent;
+      Hit.FaceIndex = 0;
+
+      TestEqual(
+          "FeatureIDFromHit",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+              featureIDTexture,
+              Hit),
+          -1);
+    });
+
+    It("returns -1 if hit has no valid component", [this]() {
+      int32 positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      // For convenience when testing, the UVs are the same as the positions
+      // they correspond to. This means that the interpolated UV value should be
+      // directly equal to the barycentric coordinates of the triangle.
+      std::vector<glm::vec2> texCoords0{
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0),
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0)};
+
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords0,
+          0);
+
+      pPrimitiveComponent->PositionAccessor =
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          0,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              static_cast<int32_t>(model.accessors.size() - 1)));
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      FHitResult Hit;
+      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.FaceIndex = 0;
+      Hit.Component = nullptr;
+
+      TestEqual(
+          "FeatureIDFromHit",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+              featureIDTexture,
+              Hit),
+          -1);
+    });
+
+    It("returns -1 if specified texcoord set does not exist", [this]() {
+      int32 positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      // For convenience when testing, the UVs are the same as the positions
+      // they correspond to. This means that the interpolated UV value should be
+      // directly equal to the barycentric coordinates of the triangle.
+      std::vector<glm::vec2> texCoords0{
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0),
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0)};
+
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords0,
+          0);
+
+      pPrimitiveComponent->PositionAccessor =
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          1,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              static_cast<int32_t>(model.accessors.size() - 1)));
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      FHitResult Hit;
+      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.FaceIndex = 0;
+      Hit.Component = pPrimitiveComponent;
+
+      TestEqual(
+          "FeatureIDFromHit",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+              featureIDTexture,
+              Hit),
+          -1);
+    });
+
+    It("returns correct value for valid texture", [this]() {
+      int32 positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      // For convenience when testing, the UVs are the same as the positions
+      // they correspond to. This means that the interpolated UV value should be
+      // directly equal to the barycentric coordinates of the triangle.
+      std::vector<glm::vec2> texCoords0{
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0),
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0)};
+
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords0,
+          0);
+
+      pPrimitiveComponent->PositionAccessor =
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          0,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              static_cast<int32_t>(model.accessors.size() - 1)));
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      FHitResult Hit;
+      Hit.FaceIndex = 0;
+      Hit.Component = pPrimitiveComponent;
+
+      std::array<FVector_NetQuantize, 3> locations{
+          FVector_NetQuantize(1, 0, 0),
+          FVector_NetQuantize(0, -1, 0),
+          FVector_NetQuantize(0.0, -0.25, 0)};
+      std::array<int64, 3> expected{3, 1, 0};
+
+      for (size_t i = 0; i < locations.size(); i++) {
+        Hit.Location = locations[i];
+        int64 featureID =
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+                featureIDTexture,
+                Hit);
+        TestEqual("FeatureIDFromHit", featureID, expected[i]);
+      }
+    });
+
+    It("returns correct value for different face", [this]() {
+      int32 positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      // For convenience when testing, the UVs are the same as the positions
+      // they correspond to. This means that the interpolated UV value should be
+      // directly equal to the barycentric coordinates of the triangle.
+      std::vector<glm::vec2> texCoords0{
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0),
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0)};
+
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords0,
+          0);
+
+      pPrimitiveComponent->PositionAccessor =
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          0,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              static_cast<int32_t>(model.accessors.size() - 1)));
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      FHitResult Hit;
+      Hit.FaceIndex = 1;
+      Hit.Component = pPrimitiveComponent;
+
+      std::array<FVector_NetQuantize, 3> locations{
+          FVector_NetQuantize(1, 3, 0),
+          FVector_NetQuantize(0, -4, 0),
+          FVector_NetQuantize(0.0, -3.25, 0)};
+      std::array<int64, 3> expected{3, 1, 0};
+
+      for (size_t i = 0; i < locations.size(); i++) {
+        Hit.Location = locations[i];
+        int64 featureID =
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+                featureIDTexture,
+                Hit);
+        TestEqual("FeatureIDFromHit", featureID, expected[i]);
+      }
+    });
+
+    It("returns correct value for primitive with multiple texcoords", [this]() {
+      int32 positionAccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      // For convenience when testing, the UVs are the same as the positions
+      // they correspond to. This means that the interpolated UV value should be
+      // directly equal to the barycentric coordinates of the triangle.
+      std::vector<glm::vec2> texCoords0{
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0),
+          glm::vec2(-1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 0)};
+
+      CreateAttributeForPrimitive(
+          model,
+          *pPrimitive,
+          "TEXCOORD_0",
+          AccessorSpec::Type::VEC2,
+          AccessorSpec::ComponentType::FLOAT,
+          GetValuesAsBytes(texCoords0));
+      int32 texCoord0AccessorIndex =
+          static_cast<int32_t>(model.accessors.size() - 1);
+
+      std::vector<glm::vec2> texCoords1{
+          glm::vec2(0.5, 0.5),
+          glm::vec2(0, 1.0),
+          glm::vec2(1, 0),
+          glm::vec2(0.5, 0.5),
+          glm::vec2(0, 1.0),
+          glm::vec2(1, 0),
+      };
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords1,
+          1);
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      pPrimitiveComponent->PositionAccessor =
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          0,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              texCoord0AccessorIndex));
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          0,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(model, 1));
+      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+          1,
+          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+              model,
+              static_cast<int32_t>(model.accessors.size() - 1)));
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      FHitResult Hit;
+      Hit.FaceIndex = 0;
+      Hit.Component = pPrimitiveComponent;
+
+      std::array<FVector_NetQuantize, 3> locations{
+          FVector_NetQuantize(1, 0, 0),
+          FVector_NetQuantize(0, -1, 0),
+          FVector_NetQuantize(-1, 0, 0)};
+      std::array<int64, 3> expected{3, 1, 2};
+
+      for (size_t i = 0; i < locations.size(); i++) {
+        Hit.Location = locations[i];
+        int64 featureID =
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
+                featureIDTexture,
+                Hit);
+        TestEqual("FeatureIDFromHit", featureID, expected[i]);
       }
     });
   });

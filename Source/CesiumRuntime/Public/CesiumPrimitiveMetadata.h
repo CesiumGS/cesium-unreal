@@ -1,7 +1,8 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
+#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
@@ -10,14 +11,15 @@
 namespace CesiumGltf {
 struct Model;
 struct MeshPrimitive;
+struct ExtensionModelExtStructuralMetadata;
 struct ExtensionMeshPrimitiveExtStructuralMetadata;
 } // namespace CesiumGltf
 
 /**
  * A Blueprint-accessible wrapper for a glTF Primitive's EXT_structural_metadata
  * extension. It holds the indices of the property textures / attributes
- * associated with this primitive. These indices index into the respective
- * arrays in the model's EXT_structural_metadata extension.
+ * associated with this primitive, which index into the respective arrays in the
+ * model's EXT_structural_metadata extension.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveMetadata {
@@ -32,13 +34,11 @@ public:
   /**
    * Constructs a primitive metadata instance.
    *
-   * @param model The model containing a EXT_structural_metadata extension
-   * @param primitive The mesh primitive containing the EXT_feature_metadata
+   * @param Primitive The mesh primitive containing the EXT_structural_metadata
    * extension
-   * @param metadata The EXT_structural_metadata of the glTF mesh primitive.
+   * @param Metadata The EXT_structural_metadata of the glTF mesh primitive.
    */
   FCesiumPrimitiveMetadata(
-      const CesiumGltf::Model& InModel,
       const CesiumGltf::MeshPrimitive& Primitive,
       const CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata& Metadata);
 

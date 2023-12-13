@@ -8,9 +8,9 @@
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumEncodedMetadataComponent.h"
-#include "CesiumExclusionZone.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGeoreference.h"
+#include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
@@ -82,8 +82,7 @@ public:
   virtual ~ACesium3DTileset();
 
 private:
-  UPROPERTY(VisibleAnywhere, Category = "Cesium")
-  USceneComponent* Root;
+  UPROPERTY(VisibleAnywhere, Category = "Cesium") USceneComponent* Root;
 
   UPROPERTY(
       Meta =
@@ -475,33 +474,6 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-  /**
-   * A list of rectangles that are excluded from this tileset. Any tiles that
-   * overlap any of these rectangles are not shown. This is a crude method to
-   * avoid overlapping geometry coming from different tilesets. For example, to
-   * exclude Cesium OSM Buildings where there are photogrammetry assets.
-   *
-   * Note that in the current version, excluded tiles are still loaded, they're
-   * just not displayed. Also, because the tiles shown when zoomed out cover a
-   * large area, using an exclusion zone often means the tileset won't be shown
-   * at all when zoomed out.
-   *
-   * This property is currently only supported for 3D Tiles that use "region"
-   * for their bounding volumes. For other tilesets it is silently ignored.
-   *
-   * This is an experimental feature and may change in future versions.
-   */
-  UPROPERTY(
-      meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead."))
-  TArray<FCesiumExclusionZone> ExclusionZones_DEPRECATED;
-
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
   /**
    * The screen-space error to be enforced for tiles that are outside the view
    * frustum or hidden in fog.
@@ -723,18 +695,23 @@ private:
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
 
+  UPROPERTY(
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage = "Use CesiumIonServer instead."))
+  FString IonAssetEndpointUrl_DEPRECATED;
+
   /**
-   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
-   * endpoint can be specified.
+   * The Cesium ion Server from which this tileset is loaded.
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintGetter = GetIonAssetEndpointUrl,
-      BlueprintSetter = SetIonAssetEndpointUrl,
+      BlueprintGetter = GetCesiumIonServer,
+      BlueprintSetter = SetCesiumIonServer,
       Category = "Cesium",
       AdvancedDisplay,
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
-  FString IonAssetEndpointUrl;
+  UCesiumIonServer* CesiumIonServer;
 
   /**
    * Check if the Cesium ion token used to access this tileset is working
@@ -823,7 +800,7 @@ private:
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
       Category = "Cesium|Rendering",
-      meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
+      meta = (EditCondition = "!bIsMac"))
   bool EnableWaterMask = false;
 
   /**
@@ -917,6 +894,11 @@ protected:
   UPROPERTY()
   FString PlatformName;
 
+#if WITH_EDITORONLY_DATA
+  UPROPERTY()
+  bool bIsMac;
+#endif
+
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   float GetLoadProgress() const { return LoadProgress; }
@@ -952,10 +934,10 @@ public:
   void SetIonAccessToken(const FString& InAccessToken);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  FString GetIonAssetEndpointUrl() const { return IonAssetEndpointUrl; }
+  UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
+  void SetCesiumIonServer(UCesiumIonServer* Server);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   double GetMaximumScreenSpaceError() { return MaximumScreenSpaceError; }
@@ -1211,7 +1193,6 @@ private:
   uint32_t _lastTilesRendered;
   uint32_t _lastWorkerThreadTileLoadQueueLength;
   uint32_t _lastMainThreadTileLoadQueueLength;
-  bool _activeLoading;
 
   uint32_t _lastTilesVisited;
   uint32_t _lastCulledTilesVisited;

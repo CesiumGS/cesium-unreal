@@ -3,12 +3,14 @@
 #include "CesiumEditor.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetCustomization.h"
 #include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
@@ -54,6 +56,9 @@ TSharedPtr<FSlateStyleSet> FCesiumEditorModule::StyleSet = nullptr;
 FCesiumEditorModule* FCesiumEditorModule::_pModule = nullptr;
 
 namespace {
+
+AActor* SpawnActorWithClass(UClass* actorClass);
+
 /**
  * Register an icon in the StyleSet, using the given property
  * name and relative resource path.
@@ -108,6 +113,7 @@ void registerDetailCustomization() {
 
   FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
+  FCesium3DTilesetCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -123,6 +129,7 @@ void unregisterDetailCustomization() {
 
     FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
+    FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
   }
 }
 
@@ -262,9 +269,7 @@ void FCesiumEditorModule::StartupModule() {
 
   registerDetailCustomization();
 
-  this->_pIonSession =
-      std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
-  this->_pIonSession->resume();
+  this->_serverManager.Initialize();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
@@ -518,31 +523,13 @@ FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
 
 ACesium3DTileset*
 FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-  ACesiumGeoreference* Georeference =
-      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
-
-  AActor* pNewActor = GEditor->AddActor(
-      pCurrentLevel,
-      ACesium3DTileset::StaticClass(),
-      FTransform(),
-      false,
-      RF_Transactional);
-
-  // Make the new Tileset a child of the CesiumGeoreference. Unless they're in
-  // different levels.
-  if (Georeference->GetLevel() == pCurrentLevel) {
-    pNewActor->AttachToActor(
-        Georeference,
-        FAttachmentTransformRules::KeepRelativeTransform);
-  }
-
+  AActor* pNewActor = SpawnActorWithClass(ACesium3DTileset::StaticClass());
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
-  pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
-  if (assetID != -1) {
-    pTilesetActor->SetIonAssetID(assetID);
+  if (pTilesetActor) {
+    pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
+    if (assetID != -1) {
+      pTilesetActor->SetIonAssetID(assetID);
+    }
   }
   return pTilesetActor;
 }
@@ -673,10 +660,21 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   ACesiumGeoreference* Georeference =
       ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
 
+  // Spawn the new Actor with the same world transform as the
+  // CesiumGeoreference. This way it will match the existing globe. The user may
+  // transform it from there (e.g., to offset one tileset from another).
+
+  // When we're spawning this Actor in a sub-level, the transform specified here
+  // is a world transform relative to the _persistent level_. It's not relative
+  // to the sub-level's origin. Strange but true! But it's helpful in this case
+  // because we're able to correctly spawn things like tilesets into sub-levels
+  // where the sub-level origin and the persistent-level origin don't coincide
+  // due to a LevelTransform.
+
   AActor* NewActor = GEditor->AddActor(
       pCurrentLevel,
       actorClass,
-      FTransform(),
+      Georeference->GetActorTransform(),
       false,
       RF_Transactional);
 
@@ -685,7 +683,7 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   if (Georeference->GetLevel() == pCurrentLevel) {
     NewActor->AttachToActor(
         Georeference,
-        FAttachmentTransformRules::KeepRelativeTransform);
+        FAttachmentTransformRules::KeepWorldTransform);
   }
 
   return NewActor;

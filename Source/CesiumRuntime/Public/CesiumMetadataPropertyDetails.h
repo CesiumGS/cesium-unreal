@@ -30,7 +30,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
    * The type of the metadata property.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumMetadataType Type;
+  ECesiumMetadataType Type = ECesiumMetadataType::Invalid;
 
   /**
    * The component of the metadata property. Only applies when the type is a
@@ -42,14 +42,15 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
       Meta =
           (EditCondition =
                "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
-  ECesiumMetadataComponentType ComponentType;
+  ECesiumMetadataComponentType ComponentType =
+      ECesiumMetadataComponentType::None;
 
   /**
    * Whether or not this represents an array containing elements of the
    * specified types.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  bool bIsArray;
+  bool bIsArray = false;
 
   /**
    * The size of the arrays in the metadata property. If the property contains

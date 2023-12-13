@@ -15,7 +15,7 @@
 
 BEGIN_DEFINE_SPEC(
     FCesiumOriginShiftComponentSpec,
-    "Cesium.OriginShiftComponent",
+    "Cesium.Unit.OriginShiftComponent",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 

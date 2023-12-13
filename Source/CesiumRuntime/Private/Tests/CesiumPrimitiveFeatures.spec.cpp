@@ -7,7 +7,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPrimitiveFeaturesSpec,
-    "Cesium.PrimitiveFeatures",
+    "Cesium.Unit.PrimitiveFeatures",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 Model model;
@@ -227,7 +227,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::Type::SCALAR,
           AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
@@ -272,7 +271,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::Type::SCALAR,
           AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
@@ -309,7 +307,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::Type::SCALAR,
           AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
@@ -343,7 +340,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::Type::SCALAR,
           AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
@@ -383,7 +379,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::Type::SCALAR,
             AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
@@ -440,7 +435,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::Type::SCALAR,
             AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
@@ -485,7 +479,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::Type::SCALAR,
             AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
@@ -573,7 +566,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::Type::SCALAR,
             AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
@@ -657,7 +649,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::Type::SCALAR,
             AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
@@ -699,7 +690,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
          CreateIndicesForPrimitive(
              model,
              *pPrimitive,
-             AccessorSpec::Type::SCALAR,
              AccessorSpec::ComponentType::UNSIGNED_BYTE,
              indices);
 

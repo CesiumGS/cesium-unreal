@@ -8,7 +8,7 @@
 
 BEGIN_DEFINE_SPEC(
     FCesiumGlobeAnchorSpec,
-    "Cesium.GlobeAnchor",
+    "Cesium.Unit.GlobeAnchor",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 

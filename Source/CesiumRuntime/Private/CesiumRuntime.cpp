@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRuntime.h"
-#include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
+#include "Cesium3DTilesContent/registerAllTileContentTypes.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/GunzipAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
@@ -29,7 +29,7 @@
 DEFINE_LOG_CATEGORY(LogCesium);
 
 void FCesiumRuntimeModule::StartupModule() {
-  Cesium3DTilesSelection::registerAllTileContentTypes();
+  Cesium3DTilesContent::registerAllTileContentTypes();
 
   std::shared_ptr<spdlog::logger> pLogger = spdlog::default_logger();
   pLogger->sinks() = {std::make_shared<SpdlogUnrealLoggerSink>()};
@@ -100,20 +100,28 @@ std::string getCacheDatabaseName() {
 
 } // namespace
 
+std::shared_ptr<CesiumAsync::ICacheDatabase>& getCacheDatabase() {
+  static int MaxCacheItems =
+      GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
+
+  static std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+      std::make_shared<CesiumAsync::SqliteCache>(
+          spdlog::default_logger(),
+          getCacheDatabaseName(),
+          MaxCacheItems);
+
+  return pCacheDatabase;
+}
+
 const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   static int RequestsPerCachePrune =
       GetDefault<UCesiumRuntimeSettings>()->RequestsPerCachePrune;
-  static int MaxCacheItems =
-      GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::GunzipAssetAccessor>(
           std::make_shared<CesiumAsync::CachingAssetAccessor>(
               spdlog::default_logger(),
               std::make_shared<UnrealAssetAccessor>(),
-              std::make_shared<CesiumAsync::SqliteCache>(
-                  spdlog::default_logger(),
-                  getCacheDatabaseName(),
-                  MaxCacheItems),
+              getCacheDatabase(),
               RequestsPerCachePrune));
   return pAssetAccessor;
 }

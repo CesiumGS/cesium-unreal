@@ -77,6 +77,23 @@ GetBestFittingEncodedComponentType(ECesiumMetadataComponentType ComponentType) {
 }
 } // namespace
 
+ECesiumEncodedMetadataType
+
+CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type) {
+  switch (Type) {
+  case ECesiumMetadataType::Scalar:
+    return ECesiumEncodedMetadataType::Scalar;
+  case ECesiumMetadataType::Vec2:
+    return ECesiumEncodedMetadataType::Vec2;
+  case ECesiumMetadataType::Vec3:
+    return ECesiumEncodedMetadataType::Vec3;
+  case ECesiumMetadataType::Vec4:
+    return ECesiumEncodedMetadataType::Vec4;
+  default:
+    return ECesiumEncodedMetadataType::None;
+  }
+}
+
 FCesiumMetadataEncodingDetails CesiumMetadataPropertyDetailsToEncodingDetails(
     FCesiumMetadataPropertyDetails PropertyDetails) {
   ECesiumEncodedMetadataType type = GetBestFittingEncodedType(PropertyDetails);
@@ -96,8 +113,8 @@ FCesiumMetadataEncodingDetails CesiumMetadataPropertyDetailsToEncodingDetails(
 }
 
 size_t
-CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType type) {
-  switch (type) {
+CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType Type) {
+  switch (Type) {
   case ECesiumEncodedMetadataType::Scalar:
     return 1;
   case ECesiumEncodedMetadataType::Vec2:

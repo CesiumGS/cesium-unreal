@@ -8,7 +8,7 @@ using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataValueSpec,
-    "Cesium.MetadataValue",
+    "Cesium.Unit.MetadataValue",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumMetadataValueSpec)
@@ -1199,6 +1199,39 @@ void FCesiumMetadataValueSpec::Define() {
       TestFalse(
           "IsEmpty",
           UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+  });
+
+  Describe("GetValuesAsStrings", [this]() {
+    It("returns empty map if input is empty", [this]() {
+      TMap<FString, FCesiumMetadataValue> values;
+      const auto strings =
+          UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(values);
+      TestTrue("values map is empty", strings.IsEmpty());
+    });
+
+    It("returns values as strings", [this]() {
+      TMap<FString, FCesiumMetadataValue> values;
+      values.Add({"scalar", FCesiumMetadataValue(-1)});
+      values.Add({"vec2", FCesiumMetadataValue(glm::u8vec2(2, 3))});
+      values.Add(
+          {"array", FCesiumMetadataValue(PropertyArrayView<uint8>({1, 2, 3}))});
+
+      const auto strings =
+          UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(values);
+      TestEqual("map count", values.Num(), strings.Num());
+
+      const FString* pString = strings.Find(FString("scalar"));
+      TestTrue("has scalar value", pString != nullptr);
+      TestEqual("scalar value as string", *pString, FString("-1"));
+
+      pString = strings.Find(FString("vec2"));
+      TestTrue("has vec2 value", pString != nullptr);
+      TestEqual("vec2 value as string", *pString, FString("X=2 Y=3"));
+
+      pString = strings.Find(FString("array"));
+      TestTrue("has array value", pString != nullptr);
+      TestEqual("array value as string", *pString, FString());
     });
   });
 }

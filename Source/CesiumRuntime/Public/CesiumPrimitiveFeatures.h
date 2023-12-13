@@ -1,8 +1,9 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumFeatureIdSet.h"
+#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
@@ -20,12 +21,6 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
   GENERATED_USTRUCT_BODY()
 
-  using IndexAccessorType = std::variant<
-      std::monostate,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>>;
-
 public:
   /**
    * Constructs an empty primitive features instance.
@@ -38,7 +33,7 @@ public:
    * @param Model The model that contains the EXT_mesh_features extension
    * @param Primitive The mesh primitive that stores EXT_mesh_features
    * extension
-   * @param Features The EXT_mesh_features of the gltf mesh primitive.
+   * @param Features The EXT_mesh_features of the glTF mesh primitive.
    * primitive
    */
   FCesiumPrimitiveFeatures(
@@ -48,7 +43,7 @@ public:
 
 private:
   TArray<FCesiumFeatureIdSet> _featureIDSets;
-  IndexAccessorType _vertexIDAccessor;
+  CesiumIndexAccessorType _vertexIDAccessor;
   int64_t _vertexCount;
 
   friend class UCesiumPrimitiveFeaturesBlueprintLibrary;
@@ -134,5 +129,23 @@ public:
   static int64 GetFeatureIDFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
       int64 FaceIndex,
+      int64 FeatureIDSetIndex = 0);
+
+  /**
+   * Gets the feature ID from the given line trace hit, assuming it
+   * has hit a glTF primitive component containing this CesiumPrimitiveFeatures.
+   *
+   * A primitive may have multiple feature ID sets, so this allows a feature ID
+   * set to be specified by index. This value should index into the array of
+   * CesiumFeatureIdSets in the CesiumPrimitiveFeatures. If the specified
+   * feature ID set index is invalid, this returns -1.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|Features")
+  static int64 GetFeatureIDFromHit(
+      UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+      const FHitResult& Hit,
       int64 FeatureIDSetIndex = 0);
 };

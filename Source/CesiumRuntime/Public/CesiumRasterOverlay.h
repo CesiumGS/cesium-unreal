@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "CesiumRasterOverlayLoadFailureDetails.h"
+#include "CesiumRasterOverlays/RasterOverlay.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/Texture.h"
@@ -207,18 +207,18 @@ protected:
 
   Cesium3DTilesSelection::Tileset* FindTileset() const;
 
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
-      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
+  virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
+  CreateOverlay(const CesiumRasterOverlays::RasterOverlayOptions& options = {})
       PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
 
   virtual void OnAdd(
       Cesium3DTilesSelection::Tileset* pTileset,
-      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
+      CesiumRasterOverlays::RasterOverlay* pOverlay) {}
   virtual void OnRemove(
       Cesium3DTilesSelection::Tileset* pTileset,
-      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
+      CesiumRasterOverlays::RasterOverlay* pOverlay) {}
 
 private:
-  Cesium3DTilesSelection::RasterOverlay* _pOverlay;
+  CesiumRasterOverlays::RasterOverlay* _pOverlay;
   int32 _overlaysBeingDestroyed;
 };

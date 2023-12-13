@@ -231,3 +231,17 @@ bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
   return std::holds_alternative<std::monostate>(Value._value);
 }
+
+TMap<FString, FString> UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(
+    const TMap<FString, FCesiumMetadataValue>& Values) {
+  TMap<FString, FString> strings;
+  for (auto valuesIt : Values) {
+    strings.Add(
+        valuesIt.Key,
+        UCesiumMetadataValueBlueprintLibrary::GetString(
+            valuesIt.Value,
+            FString()));
+  }
+
+  return strings;
+}

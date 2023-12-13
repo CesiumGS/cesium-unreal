@@ -16,7 +16,7 @@ jobs:
     with:
       unreal-engine-version: "5.1.0"
       unreal-runner-label: "unreal-51"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
+      unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
     secrets: inherit
   TestWindows51:
@@ -54,6 +54,10 @@ jobs:
         run: |
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+      - name: Compress debug sections
+        run: |
+          dir packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
+          dir packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -91,6 +95,12 @@ jobs:
           $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
+      - name: Compress debug sections
+        run: |
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
+          $ENV:UNREAL_ENGINE_COMPILER_DIR="${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
+          dir packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:UNREAL_ENGINE_COMPILER_DIR/bin/x86_64-unknown-linux-gnu-objcopy.exe --compress-debug-sections $_.FullName }
+          dir packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:UNREAL_ENGINE_COMPILER_DIR/bin/x86_64-unknown-linux-gnu-objcopy.exe --compress-debug-sections $_.FullName }
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -262,7 +272,7 @@ jobs:
     with:
       unreal-engine-version: "5.2.0"
       unreal-runner-label: "unreal-52"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
+      unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-windows"
   TestWindows52:
     needs: [Windows52]
@@ -300,6 +310,10 @@ jobs:
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "5.2.0"') | Set-Content -Path CesiumForUnreal.uplugin
           cd "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+      - name: Compress debug sections
+        run: |
+          dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
+          dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -338,6 +352,8 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
+          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"5.2.0\"/g' CesiumForUnreal.uplugin
           export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7/"
           cd /opt/ue52/Engine/Build/BatchFiles
@@ -352,6 +368,12 @@ jobs:
           patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
           patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
+      - name: Compress debug sections
+        run: |
+          for f in packages/CesiumForUnreal/Binaries/Linux/*.so; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -531,7 +553,7 @@ jobs:
     with:
       unreal-engine-version: "5.3.0"
       unreal-runner-label: "unreal-53"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Build/BatchFiles"
+      unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-windows"
   TestWindows53:
     needs: [Windows53]
@@ -569,6 +591,10 @@ jobs:
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "5.3.0"') | Set-Content -Path CesiumForUnreal.uplugin
           cd "C:/Program Files/Epic Games/UE_5.3/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+      - name: Compress debug sections
+        run: |
+          dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
+          dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -607,6 +633,8 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
+          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"5.3.0\"/g' CesiumForUnreal.uplugin
           export LINUX_MULTIARCH_ROOT="/opt/ue53/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v22_clang-16.0.6-centos7/"
           cd /opt/ue53/Engine/Build/BatchFiles
@@ -621,6 +649,12 @@ jobs:
           patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
           patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
+      - name: Compress debug sections
+        run: |
+          for f in packages/CesiumForUnreal/Binaries/Linux/*.so; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
