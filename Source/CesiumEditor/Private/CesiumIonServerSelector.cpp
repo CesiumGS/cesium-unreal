@@ -6,12 +6,22 @@
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 
+CesiumIonServerSelector::CesiumIonServerSelector() {
+  FCesiumEditorModule::serverManager().CurrentServerChanged.AddRaw(
+      this,
+      &CesiumIonServerSelector::OnCurrentServerChanged);
+}
+
+CesiumIonServerSelector::~CesiumIonServerSelector() {
+  FCesiumEditorModule::serverManager().CurrentServerChanged.RemoveAll(this);
+}
+
 void CesiumIonServerSelector::Construct(const FArguments& InArgs) {
   ChildSlot
       [SNew(SHorizontalBox) +
        SHorizontalBox::Slot().FillWidth(1.0f).VAlign(
            EVerticalAlignment::VAlign_Center)
-           [SNew(SComboBox<TWeakObjectPtr<UCesiumIonServer>>)
+           [SAssignNew(_pCombo, SComboBox<TWeakObjectPtr<UCesiumIonServer>>)
                 .OptionsSource(
                     &FCesiumEditorModule::serverManager().GetServerList())
                 .OnGenerateWidget(
@@ -97,4 +107,11 @@ void CesiumIonServerSelector::OnBrowseForServer() {
   TArray<UObject*> Objects;
   Objects.Add(FCesiumEditorModule::serverManager().GetCurrentServer());
   GEditor->SyncBrowserToObjects(Objects);
+}
+
+void CesiumIonServerSelector::OnCurrentServerChanged() {
+  if (this->_pCombo) {
+    this->_pCombo->SetSelectedItem(
+        FCesiumEditorModule::serverManager().GetCurrentServer());
+  }
 }

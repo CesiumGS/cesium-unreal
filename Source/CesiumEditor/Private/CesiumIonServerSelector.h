@@ -11,6 +11,9 @@ class CesiumIonServerSelector : public SCompoundWidget {
   SLATE_BEGIN_ARGS(CesiumIonServerSelector) {}
   SLATE_END_ARGS()
 
+  CesiumIonServerSelector();
+  virtual ~CesiumIonServerSelector();
+
   void Construct(const FArguments& InArgs);
 
 private:
@@ -23,4 +26,7 @@ private:
       TWeakObjectPtr<UCesiumIonServer> InItem,
       ESelectInfo::Type InSeletionInfo);
   void OnBrowseForServer();
+  void OnCurrentServerChanged();
+
+  TSharedPtr<SComboBox<TWeakObjectPtr<UCesiumIonServer>>> _pCombo;
 };
