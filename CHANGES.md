@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v2.2.0 - 2023-12-14
 
 ##### Breaking Changes :mega:
 
@@ -9,6 +9,8 @@
 ##### Additions :tada:
 
  - Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.30.0 to v0.31.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.1.0 - 2023-12-01
 
