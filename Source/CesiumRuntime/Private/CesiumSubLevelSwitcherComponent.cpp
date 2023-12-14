@@ -102,6 +102,12 @@ void UCesiumSubLevelSwitcherComponent::SetTargetSubLevel(
   }
 }
 
+#if ENGINE_VERSION_5_3_OR_HIGHER
+#define StreamState ELevelStreamingState
+#else
+#define StreamState ULevelStreaming::ECurrentState
+#endif
+
 void UCesiumSubLevelSwitcherComponent::TickComponent(
     float DeltaTime,
     enum ELevelTick TickType,
@@ -129,25 +135,32 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
         if (pSubLevel == this->_pCurrent || pSubLevel == this->_pTarget)
           continue;
 
+
         ULevelStreaming* pStreaming =
             this->_getLevelStreamingForSubLevel(pSubLevel);
-        ULevelStreaming::ECurrentState state =
-            IsValid(pStreaming) ? pStreaming->GetCurrentState()
-                                : ULevelStreaming::ECurrentState::Unloaded;
+        StreamState state =
+            IsValid(pStreaming)
+#if ENGINE_VERSION_5_3_OR_HIGHER
+                ? pStreaming->GetLevelStreamingState() //->GetCurrentState()
+#else
+                ? pStreaming->GetCurrentState()
+#endif
+                : StreamState::Unloaded;
+
         switch (state) {
-        case ULevelStreaming::ECurrentState::Loading:
-        case ULevelStreaming::ECurrentState::MakingInvisible:
-        case ULevelStreaming::ECurrentState::MakingVisible:
+        case StreamState::Loading:
+        case StreamState::MakingInvisible:
+        case StreamState::MakingVisible:
           anyLevelsStillLoaded = true;
           break;
-        case ULevelStreaming::ECurrentState::FailedToLoad:
-        case ULevelStreaming::ECurrentState::LoadedNotVisible:
-        case ULevelStreaming::ECurrentState::LoadedVisible:
+        case StreamState::FailedToLoad:
+        case StreamState::LoadedNotVisible:
+        case StreamState::LoadedVisible:
           pSubLevel->UnloadLevelInstance();
           anyLevelsStillLoaded = true;
           break;
-        case ULevelStreaming::ECurrentState::Removed:
-        case ULevelStreaming::ECurrentState::Unloaded:
+        case StreamState::Removed:
+        case StreamState::Unloaded:
           break;
         }
       }
@@ -196,10 +209,14 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     ULevelStreaming* pStreaming =
         this->_getLevelStreamingForSubLevel(this->_pCurrent.Get());
 
-    ULevelStreaming::ECurrentState state =
-        ULevelStreaming::ECurrentState::Unloaded;
+    StreamState state = StreamState::Unloaded;
     if (IsValid(pStreaming)) {
+#if ENGINE_VERSION_5_3_OR_HIGHER
+      state = pStreaming->GetLevelStreamingState();
+      #else
       state = pStreaming->GetCurrentState();
+      #endif
+      
     } else if (this->_pCurrent->GetWorldAsset().IsNull()) {
       // There is no level associated with the target at all, so mark it
       // unloaded but also deactivate it for the benefit of the Editor UI.
@@ -207,9 +224,9 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     }
 
     switch (state) {
-    case ULevelStreaming::ECurrentState::Loading:
-    case ULevelStreaming::ECurrentState::MakingInvisible:
-    case ULevelStreaming::ECurrentState::MakingVisible:
+    case StreamState::Loading:
+    case StreamState::MakingInvisible:
+    case StreamState::MakingVisible:
       // Wait for these transitions to finish before doing anything further.
       // TODO: maybe we can cancel these transitions somehow?
       UE_LOG(
@@ -220,9 +237,9 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           *GetActorLabel(this->_pCurrent.Get()));
       this->_isTransitioningSubLevels = true;
       break;
-    case ULevelStreaming::ECurrentState::FailedToLoad:
-    case ULevelStreaming::ECurrentState::LoadedNotVisible:
-    case ULevelStreaming::ECurrentState::LoadedVisible:
+    case StreamState::FailedToLoad:
+    case StreamState::LoadedNotVisible:
+    case StreamState::LoadedVisible:
       UE_LOG(
           LogCesium,
           Display,
@@ -231,8 +248,8 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       this->_isTransitioningSubLevels = true;
       this->_pCurrent->UnloadLevelInstance();
       break;
-    case ULevelStreaming::ECurrentState::Removed:
-    case ULevelStreaming::ECurrentState::Unloaded:
+    case StreamState::Removed:
+    case StreamState::Unloaded:
       UE_LOG(
           LogCesium,
           Display,
@@ -259,20 +276,24 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     ULevelStreaming* pStreaming =
         this->_getLevelStreamingForSubLevel(this->_pTarget.Get());
 
-    ULevelStreaming::ECurrentState state =
-        ULevelStreaming::ECurrentState::Unloaded;
+    StreamState state = StreamState::Unloaded;
     if (IsValid(pStreaming)) {
+#if ENGINE_VERSION_5_3_OR_HIGHER 
+      state = pStreaming->GetLevelStreamingState();
+      #else
+
       state = pStreaming->GetCurrentState();
+      #endif
     } else if (this->_pTarget.Get()->GetWorldAsset().IsNull()) {
       // There is no level associated with the target at all, so mark it failed
       // to load because this is as loaded as it will ever be.
-      state = ULevelStreaming::ECurrentState::FailedToLoad;
+      state = StreamState::FailedToLoad;
     }
 
     switch (state) {
-    case ULevelStreaming::ECurrentState::Loading:
-    case ULevelStreaming::ECurrentState::MakingInvisible:
-    case ULevelStreaming::ECurrentState::MakingVisible:
+    case StreamState::Loading:
+    case StreamState::MakingInvisible:
+    case StreamState::MakingVisible:
       // Wait for these transitions to finish before doing anything further.
       UE_LOG(
           LogCesium,
@@ -282,9 +303,9 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           *GetActorLabel(this->_pTarget.Get()));
       this->_isTransitioningSubLevels = true;
       break;
-    case ULevelStreaming::ECurrentState::FailedToLoad:
-    case ULevelStreaming::ECurrentState::LoadedNotVisible:
-    case ULevelStreaming::ECurrentState::LoadedVisible:
+    case StreamState::FailedToLoad:
+    case StreamState::LoadedNotVisible:
+    case StreamState::LoadedVisible:
       // Loading complete!
       UE_LOG(
           LogCesium,
@@ -301,8 +322,8 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
         this->_isTransitioningSubLevels = true;
       }
       break;
-    case ULevelStreaming::ECurrentState::Removed:
-    case ULevelStreaming::ECurrentState::Unloaded:
+    case StreamState::Removed:
+    case StreamState::Unloaded:
       // Start loading this level
       UE_LOG(
           LogCesium,
