@@ -172,6 +172,9 @@ void CesiumIonServerManager::SetCurrentServer(UCesiumIonServer* pServer) {
   if (pSettings) {
     pSettings->CurrentCesiumIonServer = pServer;
     pSettings->Save();
+  }
+
+  if (UCesiumIonServer::GetServerForNewObjects() != pServer) {
     UCesiumIonServer::SetServerForNewObjects(pServer);
     CurrentServerChanged.Broadcast();
   }

@@ -130,6 +130,12 @@ void CesiumPanel::OnServerChanged() {
   UCesiumIonServer* pNewServer =
       FCesiumEditorModule::serverManager().GetCurrentServer();
   this->Subscribe(pNewServer);
+
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetCurrentSession();
+  if (pSession) {
+    pSession->refreshDefaultsIfNeeded();
+  }
   this->Refresh();
 }
 
