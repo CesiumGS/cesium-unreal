@@ -58,6 +58,9 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
       - name: Download Unreal Engine
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           mkdir -p "C:/Program Files/Epic Games"
           aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip"
