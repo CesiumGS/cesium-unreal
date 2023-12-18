@@ -78,6 +78,8 @@ jobs:
           cd extern
           cmake -B build -S . -A x64 -G "${{ inputs.cmake-generator }}"
           cmake --build build --config Release --target install -j8
+          cd ..
+          rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
