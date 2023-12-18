@@ -18,6 +18,7 @@ jobs:
       unreal-runner-label: "unreal-51"
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
+      extra-choco-packages: visualstudio2019professional visualstudio2019-workload-nativegame visualstudio2019-workload-netcoretools visualstudio2019-workload-nativedesktop
     secrets: inherit
   TestWindows51:
     needs: [Windows51]
@@ -274,6 +275,7 @@ jobs:
       unreal-runner-label: "unreal-52"
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-windows"
+      extra-choco-packages: visualstudio2019professional visualstudio2019-workload-nativegame visualstudio2019-workload-netcoretools visualstudio2019-workload-nativedesktop
   TestWindows52:
     needs: [Windows52]
     uses: ./.github/workflows/testWindows.yml
