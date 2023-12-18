@@ -21,7 +21,7 @@ on:
         default: ''
 jobs:
   build:
-    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    runs-on: windows-latest-l
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
