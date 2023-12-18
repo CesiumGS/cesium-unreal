@@ -20,6 +20,7 @@ jobs:
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
       extra-choco-packages: visualstudio2019professional visualstudio2019-workload-nativegame visualstudio2019-workload-netcoretools visualstudio2019-workload-nativedesktop
+      cmake-generator: "Visual Studio 16 2019"
     secrets: inherit
   # TestWindows51:
   #   needs: [Windows51]

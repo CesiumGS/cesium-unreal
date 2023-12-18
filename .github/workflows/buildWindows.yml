@@ -23,6 +23,9 @@ on:
         required: false
         type: string
         default: ''
+      cmake-generator:
+        required: true
+        type: string
 jobs:
   build:
     runs-on: windows-latest-l
@@ -69,7 +72,7 @@ jobs:
       - name: Build cesium-native
         run: |
           cd extern
-          cmake -B build -S . -A x64
+          cmake -B build -S . -A x64 -G ${{ inputs.cmake-generator }}
           cmake --build build --config Release --target install -j8
       - name: Overwrite plugin engine version
         run: |
