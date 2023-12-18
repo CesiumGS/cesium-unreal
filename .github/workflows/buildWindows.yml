@@ -6,9 +6,13 @@ on:
       unreal-engine-version:
         required: true
         type: string
-      unreal-runner-label:
+      unreal-engine-zip:
         required: true
         type: string
+      unreal-linux-toolchain:
+        required: false
+        type: string
+        default: ""
       unreal-program-name:
         required: true
         type: string
@@ -32,6 +36,17 @@ jobs:
         if: ${{ inputs.extra-choco-packages }}
         run: |
           choco install -y ${{ inputs.extra-choco-packages }}
+      - name: Download Unreal Engine
+        run: |
+          mkdir -p "C:/Program Files/Epic Games"
+          aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip"
+      - name: Unzip Unreal Engine
+        run: |
+          7z x "C:/Program Files/Epic Games/UE.zip" "-oC:/Program Files/Epic Games/"
+          del "C:/Program Files/Epic Games/UE.zip"
+      - name: Install Unreal Engine
+        run: |
+          Start-Process "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe" -Args "-q" -Wait
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
