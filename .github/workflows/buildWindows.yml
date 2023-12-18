@@ -39,22 +39,16 @@ jobs:
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
 
-          # Store temp files on the D drive, which is much faster than the EBS-backed C drive.
-          mkdir -p d:\cesium\temp
-          $env:TEMP="d:\cesium\temp"
-
           # Make these available to subsequent steps
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_PATH=${env:BUILD_CESIUM_UNREAL_PACKAGE_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
-          echo "TEMP=${env:TEMP}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
           echo ""
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
-          echo TEMP=$env:TEMP
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
@@ -68,7 +62,6 @@ jobs:
       - name: Build CesiumForUnreal plugin
         timeout-minutes: 120
         run: |
-          echo "Temp directory: $env:TEMP"
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
           echo LastExitCode=$LASTEXITCODE
