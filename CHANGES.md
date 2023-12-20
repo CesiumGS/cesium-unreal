@@ -1,5 +1,35 @@
 # Change Log
 
+### v2.2.0 - 2023-12-14
+
+##### Breaking Changes :mega:
+
+- Deprecated `IonAssetEndpointUrl` on `Cesium3DTileset` and `CesiumIonRasterOverlay`. Use the new `CesiumIonServer` property instead.
+
+##### Additions :tada:
+
+ - Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.30.0 to v0.31.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.1.0 - 2023-12-01
+
+##### Additions :tada:
+
+ - Added support for styling with property textures in `EXT_structural_metadata`.
+ - Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
+- Added `HttpMaxConnectionsPerServer=40` to `Engine.ini`. By default, only 16 connections are allowed, which limits the performance when downloading tiles.
+
+##### Fixes :wrench:
+
+- Fixed a bug in the "Select New Token" dialog that caused an error when trying to create a new token without being connected.
+- Fixed a bug where an `EditConditio`n was not parsed correctly and caused Output Log window errors.
+- Removed query parameters from filepaths if present, as they are no longer ignored by Unreal. This fixes a bug where the URL would not load correctly in some cases.
+- Fixed a Tile Excluder bug that computed incorrect tile bounds, making tiles invisible when moving the tileset in the sample scene.
+- Fixed a bug where viewports could appear wider than configured in the Dynamic Pawn's Camera Field of View. Noticed in Unreal Engine v5.3 when in Play-In-Editor mode, or a packaged game. In extreme cases, tiles would be missing near the edges of the view.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.29.0 to v0.30.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.0.0 - 2023-11-01
 
 This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or v5.3 is required.

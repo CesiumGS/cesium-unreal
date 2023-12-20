@@ -2,6 +2,7 @@
 #include "CesiumViewExtension.h"
 
 #include "Cesium3DTileset.h"
+#include "CesiumCommon.h"
 #include "Runtime/Launch/Resources/Version.h"
 
 using namespace Cesium3DTilesSelection;
@@ -96,7 +97,7 @@ namespace {
 
 const TSet<FPrimitiveOcclusionHistory, FPrimitiveOcclusionHistoryKeyFuncs>&
 getOcclusionHistorySet(const FSceneViewState* pViewState) {
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
   return pViewState->Occlusion.PrimitiveOcclusionHistorySet;
 #else
   return pViewState->PrimitiveOcclusionHistorySet;

@@ -8,12 +8,12 @@
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION > 1
+#if ENGINE_VERSION_5_2_OR_HIGHER
 #include "DataDrivenShaderPlatformInfo.h"
 #include "MaterialDomain.h"
 #endif
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
 void FCesiumPointAttenuationIndexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
 #else
@@ -126,14 +126,14 @@ private:
  */
 class FCesiumPointAttenuationDummyVertexBuffer : public FVertexBuffer {
 public:
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 #else
   virtual void InitRHI() override;
 #endif
 };
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
 void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
 #else
@@ -177,7 +177,7 @@ bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
          Parameters.MaterialParameters.bIsSpecialEngineMaterial;
 }
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#if ENGINE_VERSION_5_3_OR_HIGHER
 void FCesiumPointAttenuationVertexFactory::InitRHI(
     FRHICommandListBase& RHICmdList) {
 #else

@@ -113,8 +113,8 @@ FCesiumMetadataEncodingDetails CesiumMetadataPropertyDetailsToEncodingDetails(
 }
 
 size_t
-CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType type) {
-  switch (type) {
+CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType Type) {
+  switch (Type) {
   case ECesiumEncodedMetadataType::Scalar:
     return 1;
   case ECesiumEncodedMetadataType::Vec2:

@@ -4,14 +4,7 @@
 
 #include "Runtime/Launch/Resources/Version.h"
 
-#if ENGINE_MAJOR_VERSION >= 5
-#define CESIUM_UNREAL_ENGINE_DOUBLE 1
-#else
-#define CESIUM_UNREAL_ENGINE_DOUBLE 0
-#endif
-
-#if CESIUM_UNREAL_ENGINE_DOUBLE
-using CesiumReal = double;
-#else
-using CesiumReal = float;
-#endif
+#define ENGINE_VERSION_5_3_OR_HIGHER                                           \
+  (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3)
+#define ENGINE_VERSION_5_2_OR_HIGHER                                           \
+  (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2)

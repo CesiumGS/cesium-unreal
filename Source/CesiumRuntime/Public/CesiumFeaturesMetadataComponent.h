@@ -234,7 +234,7 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveMetadataDescription {
       EditAnywhere,
       Category = "Metadata",
       Meta = (TitleProperty = "Name"))
-  TArray<FString> PropertyTextureNames;
+  TSet<FString> PropertyTextureNames;
 };
 
 /**

@@ -76,4 +76,13 @@ void FUnrealAssetAccessorSpec::Define() {
 
     TestAccessorRequest(Uri, randomText);
   });
+
+  It("Can access file:/// URLs with unnecessary query params", [this]() {
+    FString Uri = TEXT("file:///") + Filename;
+    Uri.ReplaceCharInline('\\', '/');
+    Uri.ReplaceInline(TEXT(" "), TEXT("%20"));
+    Uri.Append("?version=4.27.1");
+
+    TestAccessorRequest(Uri, randomText);
+  });
 }

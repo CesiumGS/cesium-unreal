@@ -3,12 +3,14 @@
 #include "CesiumEditor.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetCustomization.h"
 #include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
@@ -111,6 +113,7 @@ void registerDetailCustomization() {
 
   FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
+  FCesium3DTilesetCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -126,6 +129,7 @@ void unregisterDetailCustomization() {
 
     FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
+    FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
   }
 }
 
@@ -265,9 +269,7 @@ void FCesiumEditorModule::StartupModule() {
 
   registerDetailCustomization();
 
-  this->_pIonSession =
-      std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
-  this->_pIonSession->resume();
+  this->_serverManager.Initialize();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
