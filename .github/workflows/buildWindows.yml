@@ -23,6 +23,11 @@ jobs:
   build:
     runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
     steps:
+      - name: Initialize volume
+        run: |
+          choco install -y dd
+          wmic diskdrive get size,deviceid
+          dd if=\\.\PHYSICALDRIVE0 of=/dev/null bs=1M --progress --size
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
