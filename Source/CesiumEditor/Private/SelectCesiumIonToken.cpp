@@ -4,6 +4,8 @@
 #include "Cesium3DTileset.h"
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServerDisplay.h"
+#include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
 #include "CesiumUtility/joinToString.h"
@@ -12,6 +14,7 @@
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/App.h"
+#include "PropertyCustomizationHelpers.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SThrobber.h"
@@ -29,16 +32,15 @@ using namespace CesiumUtility;
     SelectCesiumIonToken::_pExistingPanel{};
 
 /*static*/ SharedFuture<std::optional<Token>>
-SelectCesiumIonToken::SelectNewToken() {
+SelectCesiumIonToken::SelectNewToken(UCesiumIonServer* pServer) {
   if (SelectCesiumIonToken::_pExistingPanel.IsValid()) {
     SelectCesiumIonToken::_pExistingPanel->BringToFront();
   } else {
-    TSharedRef<SelectCesiumIonToken> Panel = SNew(SelectCesiumIonToken);
+    TSharedRef<SelectCesiumIonToken> Panel =
+        SNew(SelectCesiumIonToken).Server(pServer);
     SelectCesiumIonToken::_pExistingPanel = Panel;
 
-    Panel->_promise = FCesiumEditorModule::ion()
-                          .getAsyncSystem()
-                          .createPromise<std::optional<Token>>();
+    Panel->_promise = getAsyncSystem().createPromise<std::optional<Token>>();
     Panel->_future = Panel->_promise->getFuture().share();
 
     Panel->GetOnWindowClosedEvent().AddLambda(
@@ -56,19 +58,20 @@ SelectCesiumIonToken::SelectNewToken() {
   return *SelectCesiumIonToken::_pExistingPanel->_future;
 }
 
-Future<std::optional<Token>> SelectCesiumIonToken::SelectTokenIfNecessary() {
-  return FCesiumEditorModule::ion()
-      .getProjectDefaultTokenDetails()
-      .thenInMainThread([](const Token& token) {
+Future<std::optional<Token>>
+SelectCesiumIonToken::SelectTokenIfNecessary(UCesiumIonServer* pServer) {
+  return FCesiumEditorModule::serverManager()
+      .GetSession(pServer)
+      ->getProjectDefaultTokenDetails()
+      .thenInMainThread([pServer](const Token& token) {
         if (token.token.empty()) {
-          return SelectCesiumIonToken::SelectNewToken().thenImmediately(
+          return SelectCesiumIonToken::SelectNewToken(pServer).thenImmediately(
               [](const std::optional<Token>& maybeToken) {
                 return maybeToken;
               });
         } else {
-          return FCesiumEditorModule::ion()
-              .getAsyncSystem()
-              .createResolvedFuture(std::make_optional(token));
+          return getAsyncSystem().createResolvedFuture(
+              std::make_optional(token));
         }
       });
 }
@@ -94,12 +97,16 @@ std::vector<int64_t> findUnauthorizedAssets(
 } // namespace
 
 Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
+    UCesiumIonServer* pServer,
     const std::vector<int64_t>& assetIDs) {
-  return SelectTokenIfNecessary().thenInMainThread([assetIDs](
-                                                       const std::optional<
-                                                           Token>& maybeToken) {
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetSession(pServer);
+  return SelectTokenIfNecessary(pServer).thenInMainThread([pSession, assetIDs](
+                                                              const std::optional<
+                                                                  Token>&
+                                                                  maybeToken) {
     const std::optional<Connection>& maybeConnection =
-        FCesiumEditorModule::ion().getConnection();
+        pSession->getConnection();
     if (maybeConnection && maybeToken && !maybeToken->id.empty() &&
         maybeToken->assetIds) {
       std::vector<int64_t> missingAssets =
@@ -108,8 +115,8 @@ Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
         // Refresh the token details. We don't want to update the token based
         // on stale information.
         return maybeConnection->token(maybeToken->id)
-            .thenInMainThread([maybeToken,
-                               assetIDs](Response<Token>&& response) {
+            .thenInMainThread([pSession, maybeToken, assetIDs](
+                                  Response<Token>&& response) {
               if (response.value) {
                 std::vector<int64_t> missingAssets =
                     findUnauthorizedAssets(*maybeToken->assetIds, assetIDs);
@@ -136,8 +143,7 @@ Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
                       missingAssets.end(),
                       newToken.assetIds->begin() + destinationIndex);
 
-                  return FCesiumEditorModule::ion()
-                      .getConnection()
+                  return pSession->getConnection()
                       ->modifyToken(
                           newToken.id,
                           newToken.name,
@@ -150,31 +156,35 @@ Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
                 }
               }
 
-              return FCesiumEditorModule::ion()
-                  .getAsyncSystem()
-                  .createResolvedFuture(std::optional<Token>(maybeToken));
+              return getAsyncSystem().createResolvedFuture(
+                  std::optional<Token>(maybeToken));
             });
       }
     }
 
-    return FCesiumEditorModule::ion().getAsyncSystem().createResolvedFuture(
+    return getAsyncSystem().createResolvedFuture(
         std::optional<Token>(maybeToken));
   });
 }
 
-SelectCesiumIonToken::SelectCesiumIonToken() {
-  this->_tokensUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().TokensUpdated.AddRaw(
-          this,
-          &SelectCesiumIonToken::RefreshTokens);
-}
-
-SelectCesiumIonToken::~SelectCesiumIonToken() {
-  FCesiumEditorModule::ion().TokensUpdated.Remove(
-      this->_tokensUpdatedDelegateHandle);
-}
-
 void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
+  UCesiumIonServer* pServer = InArgs._Server;
+
+  if (this->_pServer.IsValid() &&
+      this->_tokensUpdatedDelegateHandle.IsValid()) {
+    FCesiumEditorModule::serverManager()
+        .GetSession(this->_pServer.Get())
+        ->TokensUpdated.Remove(this->_tokensUpdatedDelegateHandle);
+  }
+
+  this->_pServer = pServer;
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetSession(this->_pServer.Get());
+
+  this->_tokensUpdatedDelegateHandle = pSession->TokensUpdated.AddRaw(
+      this,
+      &SelectCesiumIonToken::RefreshTokens);
+
   TSharedRef<SVerticalBox> pLoaderOrContent = SNew(SVerticalBox);
 
   pLoaderOrContent->AddSlot().AutoHeight()
@@ -183,49 +193,48 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
            .Text(FText::FromString(TEXT(
                "Cesium for Unreal embeds a Cesium ion token in your project in order to allow it to access the assets you add to your levels. Select the Cesium ion token to use.")))];
 
+  pLoaderOrContent->AddSlot().AutoHeight().Padding(
+      5.0f)[SNew(CesiumIonServerDisplay).Server(pServer)];
+
   pLoaderOrContent->AddSlot()
       .Padding(0.0f, 10.0f, 0.0, 10.0f)
       .AutoHeight()
           [SNew(STextBlock)
-               .Visibility_Lambda([]() {
-                 return FCesiumEditorModule::ion().isConnected()
-                            ? EVisibility::Collapsed
-                            : EVisibility::Visible;
+               .Visibility_Lambda([pSession]() {
+                 return pSession->isConnected() ? EVisibility::Collapsed
+                                                : EVisibility::Visible;
                })
                .AutoWrapText(true)
                .Text(FText::FromString(TEXT(
                    "Please connect to Cesium ion to select a token from your account or to create a new token.")))];
 
   pLoaderOrContent->AddSlot()
-      .AutoHeight()[SNew(SThrobber).Visibility_Lambda([]() {
-        return FCesiumEditorModule::ion().isLoadingTokenList()
-                   ? EVisibility::Visible
-                   : EVisibility::Collapsed;
+      .AutoHeight()[SNew(SThrobber).Visibility_Lambda([pSession]() {
+        return pSession->isLoadingTokenList() ? EVisibility::Visible
+                                              : EVisibility::Collapsed;
       })];
 
   TSharedRef<SVerticalBox> pMainVerticalBox =
-      SNew(SVerticalBox).Visibility_Lambda([]() {
-        return FCesiumEditorModule::ion().isLoadingTokenList()
-                   ? EVisibility::Collapsed
-                   : EVisibility::Visible;
+      SNew(SVerticalBox).Visibility_Lambda([pSession]() {
+        return pSession->isLoadingTokenList() ? EVisibility::Collapsed
+                                              : EVisibility::Visible;
       });
   pLoaderOrContent->AddSlot().AutoHeight()[pMainVerticalBox];
 
   this->_createNewToken.name =
       FString(FApp::GetProjectName()) + TEXT(" (Created by Cesium for Unreal)");
-  this->_useExistingToken.token.id = TCHAR_TO_UTF8(
-      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId);
-  this->_useExistingToken.token.token = TCHAR_TO_UTF8(
-      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
-  this->_specifyToken.token =
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken;
+  this->_useExistingToken.token.id =
+      TCHAR_TO_UTF8(*pServer->DefaultIonAccessTokenId);
+  this->_useExistingToken.token.token =
+      TCHAR_TO_UTF8(*pServer->DefaultIonAccessToken);
+  this->_specifyToken.token = pServer->DefaultIonAccessToken;
   this->_tokenSource =
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken.IsEmpty() &&
-              FCesiumEditorModule::ion().isConnected()
+      pServer->DefaultIonAccessToken.IsEmpty() && pSession->isConnected()
           ? TokenSource::Create
           : TokenSource::Specify;
 
   this->createRadioButton(
+      pSession,
       pMainVerticalBox,
       this->_tokenSource,
       TokenSource::Create,
@@ -264,6 +273,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       })];
 
   this->createRadioButton(
+      pSession,
       pMainVerticalBox,
       this->_tokenSource,
       TokenSource::UseExisting,
@@ -282,6 +292,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
               .AutoWidth()[this->_pTokensCombo.ToSharedRef()]);
 
   this->createRadioButton(
+      pSession,
       pMainVerticalBox,
       this->_tokenSource,
       TokenSource::Specify,
@@ -317,7 +328,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
                              ? EVisibility::Collapsed
                              : EVisibility::Visible;
                 })
-                .OnClicked(this, &SelectCesiumIonToken::UseOrCreate)
+                .OnClicked(this, &SelectCesiumIonToken::UseOrCreate, pSession)
                 .Text(FText::FromString(TEXT("Use as Project Default Token")))];
 
   pMainVerticalBox->AddSlot().AutoHeight().Padding(
@@ -332,7 +343,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
                              ? EVisibility::Visible
                              : EVisibility::Collapsed;
                 })
-                .OnClicked(this, &SelectCesiumIonToken::UseOrCreate)
+                .OnClicked(this, &SelectCesiumIonToken::UseOrCreate, pSession)
                 .Text(FText::FromString(
                     TEXT("Create New Project Default Token")))];
 
@@ -341,27 +352,27 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
           .Title(FText::FromString(TEXT("Select a Cesium ion Token")))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
-          .ClientSize(FVector2D(635, 450))
+          .ClientSize(FVector2D(635, 500))
               [SNew(SBorder)
                    .Visibility(EVisibility::Visible)
-                   .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
                    .Padding(
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pLoaderOrContent]]);
 
-  FCesiumEditorModule::ion().refreshTokens();
+  pSession->refreshTokens();
 }
 
 void SelectCesiumIonToken::createRadioButton(
+    const std::shared_ptr<CesiumIonSession>& pSession,
     const TSharedRef<SVerticalBox>& pVertical,
     TokenSource& tokenSource,
     TokenSource thisValue,
     const FString& label,
     bool requiresIonConnection,
     const TSharedRef<SWidget>& pWidget) {
-  auto visibility = [requiresIonConnection]() {
+  auto visibility = [pSession, requiresIonConnection]() {
     if (!requiresIonConnection) {
       return EVisibility::Visible;
-    } else if (FCesiumEditorModule::ion().isConnected()) {
+    } else if (pSession->isConnected()) {
       return EVisibility::Visible;
     } else {
       return EVisibility::Collapsed;
@@ -372,7 +383,7 @@ void SelectCesiumIonToken::createRadioButton(
       [SNew(SCheckBox)
            .Visibility_Lambda(visibility)
            .Padding(5.0f)
-           .Style(FCoreStyle::Get(), "RadioButton")
+           .Style(FAppStyle::Get(), "RadioButton")
            .IsChecked_Lambda([&tokenSource, thisValue]() {
              return tokenSource == thisValue ? ECheckBoxState::Checked
                                              : ECheckBoxState::Unchecked;
@@ -393,7 +404,8 @@ void SelectCesiumIonToken::createRadioButton(
                    SVerticalBox::Slot().Padding(5.0f).AutoHeight()[pWidget]]]];
 }
 
-FReply SelectCesiumIonToken::UseOrCreate() {
+FReply
+SelectCesiumIonToken::UseOrCreate(std::shared_ptr<CesiumIonSession> pSession) {
   if (!this->_promise || !this->_future) {
     return FReply::Handled();
   }
@@ -404,35 +416,33 @@ FReply SelectCesiumIonToken::UseOrCreate() {
   TSharedRef<SelectCesiumIonToken> pPanel =
       StaticCastSharedRef<SelectCesiumIonToken>(this->AsShared());
 
-  auto getToken = [this]() {
-    const AsyncSystem& asyncSystem =
-        FCesiumEditorModule::ion().getAsyncSystem();
+  auto getToken = [pPanel, pSession]() {
+    const AsyncSystem& asyncSystem = getAsyncSystem();
 
-    if (this->_tokenSource == TokenSource::Create) {
-      if (this->_createNewToken.name.IsEmpty()) {
+    if (pPanel->_tokenSource == TokenSource::Create) {
+      if (pPanel->_createNewToken.name.IsEmpty()) {
         return asyncSystem.createResolvedFuture(Response<Token>());
       }
 
       // Create a new token, initially only with access to asset ID 1 (Cesium
       // World Terrain).
-      return FCesiumEditorModule::ion().getConnection()->createToken(
-          TCHAR_TO_UTF8(*this->_createNewToken.name),
+      return pSession->getConnection()->createToken(
+          TCHAR_TO_UTF8(*pPanel->_createNewToken.name),
           {"assets:read"},
           std::vector<int64_t>{1},
           std::nullopt);
-    } else if (this->_tokenSource == TokenSource::UseExisting) {
+    } else if (pPanel->_tokenSource == TokenSource::UseExisting) {
       return asyncSystem.createResolvedFuture(
-          Response<Token>(Token(this->_useExistingToken.token), 200, "", ""));
-    } else if (this->_tokenSource == TokenSource::Specify) {
+          Response<Token>(Token(pPanel->_useExistingToken.token), 200, "", ""));
+    } else if (pPanel->_tokenSource == TokenSource::Specify) {
       // Check if this is a known token, and use it if so.
-      return FCesiumEditorModule::ion()
-          .findToken(this->_specifyToken.token)
-          .thenInMainThread([this](Response<Token>&& response) {
+      return pSession->findToken(pPanel->_specifyToken.token)
+          .thenInMainThread([pPanel](Response<Token>&& response) {
             if (response.value) {
               return std::move(response);
             } else {
               Token t;
-              t.token = TCHAR_TO_UTF8(*this->_specifyToken.token);
+              t.token = TCHAR_TO_UTF8(*pPanel->_specifyToken.token);
               return Response(std::move(t), 200, "", "");
             }
           });
@@ -442,69 +452,68 @@ FReply SelectCesiumIonToken::UseOrCreate() {
     }
   };
 
-  getToken().thenInMainThread(
-      [pPanel, promise = std::move(promise)](Response<Token>&& response) {
-        if (response.value) {
-          FCesiumEditorModule::ion().invalidateProjectDefaultTokenDetails();
+  getToken().thenInMainThread([pPanel, pSession, promise = std::move(promise)](
+                                  Response<Token>&& response) {
+    if (response.value) {
+      pSession->invalidateProjectDefaultTokenDetails();
 
-          UCesiumRuntimeSettings* pSettings =
-              GetMutableDefault<UCesiumRuntimeSettings>();
-          CesiumSourceControl::PromptToCheckoutConfigFile(
-              pSettings->GetDefaultConfigFilename());
+      UCesiumIonServer* pServer = pPanel->_pServer.Get();
 
-          FScopedTransaction transaction(
-              FText::FromString("Set Project Default Token"));
-          pSettings->DefaultIonAccessTokenId =
-              UTF8_TO_TCHAR(response.value->id.c_str());
-          pSettings->DefaultIonAccessToken =
-              UTF8_TO_TCHAR(response.value->token.c_str());
-          pSettings->Modify();
+      FScopedTransaction transaction(
+          FText::FromString("Set Project Default Token"));
+      pServer->DefaultIonAccessTokenId =
+          UTF8_TO_TCHAR(response.value->id.c_str());
+      pServer->DefaultIonAccessToken =
+          UTF8_TO_TCHAR(response.value->token.c_str());
+      pServer->Modify();
 
-          pSettings->TryUpdateDefaultConfigFile();
+      // Refresh all tilesets and overlays that are using the project
+      // default token.
+      UWorld* pWorld = GEditor->GetEditorWorldContext().World();
+      for (auto it = TActorIterator<ACesium3DTileset>(pWorld); it; ++it) {
+        if (it->GetTilesetSource() == ETilesetSource::FromCesiumIon &&
+            it->GetIonAccessToken().IsEmpty() &&
+            it->GetCesiumIonServer() == pServer) {
+          it->RefreshTileset();
+        } else {
+          // Tileset itself does not need to be refreshed, but maybe some
+          // overlays do.
+          TArray<UCesiumIonRasterOverlay*> rasterOverlays;
+          it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
 
-          // Refresh all tilesets and overlays that are using the project
-          // default token.
-          UWorld* pWorld = GEditor->GetEditorWorldContext().World();
-          for (auto it = TActorIterator<ACesium3DTileset>(pWorld); it; ++it) {
-            if (it->GetTilesetSource() == ETilesetSource::FromCesiumIon &&
-                it->GetIonAccessToken().IsEmpty()) {
-              it->RefreshTileset();
-            } else {
-              // Tileset itself does not need to be refreshed, but maybe some
-              // overlays do.
-              TArray<UCesiumIonRasterOverlay*> rasterOverlays;
-              it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
-
-              for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
-                if (pOverlay->IonAccessToken.IsEmpty()) {
-                  pOverlay->Refresh();
-                }
-              }
+          for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
+            if (pOverlay->IonAccessToken.IsEmpty() &&
+                pOverlay->CesiumIonServer == pServer) {
+              pOverlay->Refresh();
             }
           }
-        } else {
-          UE_LOG(
-              LogCesiumEditor,
-              Error,
-              TEXT("An error occurred while selecting a token: %s"),
-              UTF8_TO_TCHAR(response.errorMessage.c_str()));
         }
+      }
+    } else {
+      UE_LOG(
+          LogCesiumEditor,
+          Error,
+          TEXT("An error occurred while selecting a token: %s"),
+          UTF8_TO_TCHAR(response.errorMessage.c_str()));
+    }
 
-        promise.resolve(std::move(response.value));
+    promise.resolve(std::move(response.value));
 
-        pPanel->RequestDestroyWindow();
-      });
+    pPanel->RequestDestroyWindow();
+  });
 
   while (!this->_future->isReady()) {
-    FCesiumEditorModule::ion().getAssetAccessor()->tick();
-    FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+    getAssetAccessor()->tick();
+    getAsyncSystem().dispatchMainThreadTasks();
   }
 
   return FReply::Handled();
 }
 
 void SelectCesiumIonToken::RefreshTokens() {
-  const std::vector<Token>& tokens = FCesiumEditorModule::ion().getTokens();
+  const std::vector<Token>& tokens = FCesiumEditorModule::serverManager()
+                                         .GetSession(this->_pServer.Get())
+                                         ->getTokens();
   this->_tokens.SetNum(tokens.size());
 
   std::string createName = TCHAR_TO_UTF8(*this->_createNewToken.name);

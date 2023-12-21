@@ -6,6 +6,19 @@
 
 - Apply `KHR_texture_transform` texture coordinate transformation in UMaterial instead of in native.
 
+### v2.2.0 - 2023-12-14
+
+##### Breaking Changes :mega:
+
+- Deprecated `IonAssetEndpointUrl` on `Cesium3DTileset` and `CesiumIonRasterOverlay`. Use the new `CesiumIonServer` property instead.
+
+##### Additions :tada:
+
+ - Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.30.0 to v0.31.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+>>>>>>> main
+
 ### v2.1.0 - 2023-12-01
 
 ##### Additions :tada:

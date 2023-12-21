@@ -10,6 +10,7 @@
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
@@ -268,9 +269,7 @@ void FCesiumEditorModule::StartupModule() {
 
   registerDetailCustomization();
 
-  this->_pIonSession =
-      std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
-  this->_pIonSession->resume();
+  this->_serverManager.Initialize();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
