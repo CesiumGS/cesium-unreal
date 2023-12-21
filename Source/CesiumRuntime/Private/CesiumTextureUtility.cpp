@@ -889,12 +889,13 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
-    #if ENGINE_VERSION_5_3_OR_HIGHER 
-    pCesiumTextureResource->InitResource(FRHICommandListImmediate::Get()); //Init Resource now requires a command list.
-    #else
+#if ENGINE_VERSION_5_3_OR_HIGHER
+    pCesiumTextureResource->InitResource(
+        FRHICommandListImmediate::Get()); // Init Resource now requires a
+                                          // command list.
+#else
     pCesiumTextureResource->InitResource();
-    #endif
-
+#endif
   });
 
   return pTexture;
