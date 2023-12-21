@@ -27,7 +27,7 @@ jobs:
         run: |
           choco install -y dd
           wmic diskdrive get size,deviceid
-          dd if=\\.\PHYSICALDRIVE0 of=/dev/null bs=1M --progress --size
+          dd if=\\.\PHYSICALDRIVE0 of=nul bs=1M --progress --size
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
