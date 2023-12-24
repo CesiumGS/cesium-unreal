@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0 # so that `git describe` works.
           sparse-checkout: |
             .github
-            TestsProject      
+            TestsProject
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
@@ -51,19 +51,19 @@ jobs:
           echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
           echo unreal-batch-files-path="${{ inputs.unreal-batch-files-path }}"
           echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
-          echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
+          echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME
           echo UNREAL_COOK_PARAM=$env:UNREAL_COOK_PARAM
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
       - name: Download plugin artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.PLUGIN_PACKAGE_NAME}}
-          path: download          
+          path: download
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
           md "${{ inputs.unreal-plugins-path }}/Marketplace"
-          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r      
+          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r
       - name: Overwrite tests project engine association
         run: |
           ((Get-Content -path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -Raw) -replace '"EngineAssociation": "5.0"','"EngineAssociation": "${{ inputs.unreal-engine-association }}"') | Set-Content -Path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject"
