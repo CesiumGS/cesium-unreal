@@ -67,7 +67,8 @@ enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from the specified Url.
    */
-  FromUrl UMETA(DisplayName = "From Url")
+  FromUrl UMETA(DisplayName = "From Url"),
+  Custom
 };
 
 UENUM(BlueprintType)
@@ -1072,6 +1073,10 @@ public:
   virtual void Serialize(FArchive& Ar) override;
 
   void UpdateLoadStatus();
+
+  virtual TUniquePtr<Cesium3DTilesSelection::Tileset> CreateCustomTileset(
+      Cesium3DTilesSelection::TilesetExternals&,
+      Cesium3DTilesSelection::TilesetOptions& options) {return nullptr;}
 
   // UObject overrides
 #if WITH_EDITOR

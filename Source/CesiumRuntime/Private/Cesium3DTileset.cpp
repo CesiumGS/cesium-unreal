@@ -1135,6 +1135,10 @@ void ACesium3DTileset::LoadTileset() {
       CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
 
   switch (this->TilesetSource) {
+  case ETilesetSource::Custom:
+  this->_pTileset = CreateCustomTileset(externals,options);
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from custom"));
+  break;
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
     this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
