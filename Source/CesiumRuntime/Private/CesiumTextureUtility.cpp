@@ -273,7 +273,7 @@ public:
 
   uint32 GetSizeY() const override { return this->_height; }
 
-#if ENGINE_VERSION_5_3_OR_HIGHER
+#ifdef ENGINE_VERSION_5_3_OR_HIGHER
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override {
 #else
   virtual void InitRHI() override {
@@ -345,7 +345,7 @@ public:
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_VERSION_5_2_OR_HIGHER
+#ifdef ENGINE_VERSION_5_2_OR_HIGHER
       rhiTexture = RHICreateTexture(
           FRHITextureCreateDesc::Create2D(createInfo.DebugName)
               .SetExtent(int32(this->_width), int32(this->_height))
@@ -414,7 +414,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
     ETextureCreateFlags Flags,
     void** InitialMipData,
     uint32 NumInitialMips) {
-#if ENGINE_VERSION_5_3_OR_HIGHER
+#ifdef ENGINE_VERSION_5_3_OR_HIGHER
   FGraphEventRef CompletionEvent;
 
   FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
@@ -889,7 +889,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
-    #if ENGINE_VERSION_5_3_OR_HIGHER 
+    #ifdef ENGINE_VERSION_5_3_OR_HIGHER 
     pCesiumTextureResource->InitResource(FRHICommandListImmediate::Get()); //Init Resource now requires a command list.
     #else
     pCesiumTextureResource->InitResource();
