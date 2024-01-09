@@ -102,7 +102,7 @@ void UCesiumSubLevelSwitcherComponent::SetTargetSubLevel(
   }
 }
 
-#ifdef ENGINE_VERSION_5_3_OR_HIGHER
+#if ENGINE_VERSION_5_3_OR_HIGHER
 #define StreamState ELevelStreamingState
 #else
 #define StreamState ULevelStreaming::ECurrentState
@@ -140,7 +140,7 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
             this->_getLevelStreamingForSubLevel(pSubLevel);
         StreamState state =
             IsValid(pStreaming)
-#ifdef ENGINE_VERSION_5_3_OR_HIGHER
+#if ENGINE_VERSION_5_3_OR_HIGHER
                 ? pStreaming->GetLevelStreamingState() //->GetCurrentState()
 #else
                 ? pStreaming->GetCurrentState()
@@ -174,7 +174,7 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
     this->_doExtraChecksOnNextTick = false;
   }
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
   UWorld* pWorld = this->GetWorld();
   if (!IsValid(pWorld))
     return;
@@ -211,7 +211,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
 
     StreamState state = StreamState::Unloaded;
     if (IsValid(pStreaming)) {
-#ifdef ENGINE_VERSION_5_3_OR_HIGHER
+#if ENGINE_VERSION_5_3_OR_HIGHER
       state = pStreaming->GetLevelStreamingState();
       #else
       state = pStreaming->GetCurrentState();
@@ -278,7 +278,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
 
     StreamState state = StreamState::Unloaded;
     if (IsValid(pStreaming)) {
-#ifdef ENGINE_VERSION_5_3_OR_HIGHER 
+#if ENGINE_VERSION_5_3_OR_HIGHER 
       state = pStreaming->GetLevelStreamingState();
       #else
 
