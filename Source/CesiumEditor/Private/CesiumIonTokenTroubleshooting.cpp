@@ -18,6 +18,7 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Text/STextBlock.h"
+#include "CesiumCommon.h"
 
 using namespace CesiumIonClient;
 
