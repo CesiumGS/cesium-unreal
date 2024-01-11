@@ -691,6 +691,10 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     pResult->textureSource = LegacyTextureSource{};
   }
 
+  // Clear the pixel data in the glTF in order to free up memory.
+  std::vector<std::byte> empty{};
+  pImage->pixelData.swap(empty);
+
   return pResult;
 }
 
