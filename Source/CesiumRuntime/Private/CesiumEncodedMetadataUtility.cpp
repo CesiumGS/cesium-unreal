@@ -291,6 +291,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
   }
 
   return encodedFeatureTable;
@@ -572,6 +573,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
               pFeatureIdImage->pixelData.size());
 
           pMip->BulkData.Unlock();
+          pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
         }
 
         encodedFeatureIdTexture.featureTableName = featureTableName;

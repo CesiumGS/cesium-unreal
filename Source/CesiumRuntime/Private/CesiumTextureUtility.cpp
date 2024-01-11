@@ -58,6 +58,7 @@ void legacy_populateMips(
     FMemory::Memcpy(pDest, image.pixelData.data(), image.pixelData.size());
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
 
     return;
   }
@@ -77,6 +78,7 @@ void legacy_populateMips(
         mipPos.byteSize);
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
 
     if (!generateMipMaps) {
       // Only populate mip 0 if we don't want the full mip chain.
