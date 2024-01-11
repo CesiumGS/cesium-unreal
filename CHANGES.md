@@ -6,6 +6,10 @@
 
 - Fixed a bug in `MLB_DitherFade` that made glTF materials with an `alphaMode` of `MASK` incorrectly appear as fully opaque.
 
+##### Additions :tada:
+
+- Significantly reduced CPU memory usage by textures on non-Windows systems.
+
 ### v2.2.0 - 2023-12-14
 
 ##### Breaking Changes :mega:
