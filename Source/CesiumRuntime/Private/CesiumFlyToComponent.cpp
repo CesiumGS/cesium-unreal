@@ -6,6 +6,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "UObject/ConstructorHelpers.h"
+#include "VecMath.h"
 
 #include <glm/gtx/quaternion.hpp>
 
@@ -64,11 +65,10 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   this->_destinationEcef = EarthCenteredEarthFixedDestination;
 
   // Compute axis/Angle transform
-  glm::dvec3 glmEcefSource(ecefSource.X, ecefSource.Y, ecefSource.Z);
-  glm::dvec3 glmEcefDestination(
-      _destinationEcef.X,
-      _destinationEcef.Y,
-      _destinationEcef.Z);
+  glm::dvec3 glmEcefSource = VecMath::createVector3D(
+      UCesiumWgs84Ellipsoid::ScaleToGeodeticSurface(ecefSource));
+  glm::dvec3 glmEcefDestination = VecMath::createVector3D(
+      UCesiumWgs84Ellipsoid::ScaleToGeodeticSurface(this->_destinationEcef));
 
   glm::dquat flyQuat = glm::rotation(
       glm::normalize(glmEcefSource),
