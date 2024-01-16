@@ -262,6 +262,8 @@ public:
       this->TextureRHI = pAsyncTexture->rhiTextureRef;
       pAsyncTexture->rhiTextureRef.SafeRelease();
     }
+
+    STAT(this->_lodGroupStatName = TextureGroupStatFNames[pTexture->LODGroup]);
   }
 
   virtual ~FCesiumTextureResource() {
@@ -278,6 +280,30 @@ public:
 #else
   virtual void InitRHI() override {
 #endif
+
+#if STATS
+    ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+    if (this->bSRGB) {
+      textureFlags |= TexCreate_SRGB;
+    }
+
+    const FIntPoint MipExtents =
+        CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
+    uint32 alignment;
+    this->_textureSize = RHICalcTexture2DPlatformSize(
+        MipExtents.X,
+        MipExtents.Y,
+        this->_format,
+        this->GetCurrentMipCount(),
+        1,
+        textureFlags,
+        FRHIResourceCreateInfo(this->_platformExtData),
+        alignment);
+
+    INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+#endif
+
     FSamplerStateInitializerRHI samplerStateInitializer(
         this->_filter,
         this->_addressX,
@@ -385,10 +411,17 @@ public:
   }
 
   virtual void ReleaseRHI() override {
+    DEC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    DEC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
 
     FTextureResource::ReleaseRHI();
   }
+
+#if STATS
+  static FName TextureGroupStatFNames[TEXTUREGROUP_MAX];
+#endif
 
 private:
   UTexture* _pTexture;
@@ -402,7 +435,37 @@ private:
   ESamplerAddressMode _addressY;
 
   uint32 _platformExtData;
+
+  FName _lodGroupStatName;
+  uint64 _textureSize;
 };
+
+#if STATS
+
+// This is copied from TextureResource.cpp. Unfortunately we can't use
+// FTextureResource::TextureGroupStatFNames, even though it's static and public,
+// because, inexplicably, it isn't DLL exported. So instead we duplicate it
+// here.
+namespace {
+DECLARE_STATS_GROUP(
+    TEXT("Texture Group"),
+    STATGROUP_TextureGroup,
+    STATCAT_Advanced);
+
+// Declare the stats for each Texture Group.
+#define DECLARETEXTUREGROUPSTAT(Group)                                         \
+  DECLARE_MEMORY_STAT(TEXT(#Group), STAT_##Group, STATGROUP_TextureGroup);
+FOREACH_ENUM_TEXTUREGROUP(DECLARETEXTUREGROUPSTAT)
+#undef DECLARETEXTUREGROUPSTAT
+} // namespace
+
+FName FCesiumTextureResource::TextureGroupStatFNames[TEXTUREGROUP_MAX] = {
+#define ASSIGNTEXTUREGROUPSTATNAME(Group) GET_STATFNAME(STAT_##Group),
+    FOREACH_ENUM_TEXTUREGROUP(ASSIGNTEXTUREGROUPSTATNAME)
+#undef ASSIGNTEXTUREGROUPSTATNAME
+};
+
+#endif
 
 namespace {
 
