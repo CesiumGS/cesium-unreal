@@ -575,7 +575,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const TextureFilter& filter,
     const TextureGroup& group,
     bool generateMipMaps,
-    bool sRGB) {
+    bool sRGB,
+    int32_t textureIndex) {
 
   CesiumGltf::ImageCesium* pImage =
       std::visit(GetImageFromSource{}, imageSource);
@@ -584,7 +585,9 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   CesiumGltf::ImageCesium& image = *pImage;
 
   if (image.pixelData.empty() || image.width == 0 || image.height == 0) {
-    return nullptr;
+    TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
+    pResult->textureIndex = textureIndex;
+    return pResult;
   }
 
   if (generateMipMaps) {
@@ -695,13 +698,16 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   std::vector<std::byte> empty{};
   pImage->pixelData.swap(empty);
 
+  pResult->textureIndex = textureIndex;
+
   return pResult;
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture,
-    bool sRGB) {
+    bool sRGB,
+    int32_t textureIndex) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
 
@@ -848,7 +854,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       filter,
       TextureGroup::TEXTUREGROUP_World,
       useMipMaps,
-      sRGB);
+      sRGB,
+      textureIndex);
 
   // Replace the image pointer with an index, in case the pointer gets
   // invalidated before the main thread loading continues.
@@ -901,8 +908,20 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   return pTexture;
 }
 
+namespace {
+
+// Associate an Unreal UTexture2D with a glTF Texture.
+struct ExtensionUnrealTexture {
+  static inline constexpr const char* TypeName = "ExtensionUnrealTexture";
+  static inline constexpr const char* ExtensionName = "PRIVATE_unreal_texture";
+
+  TWeakObjectPtr<UTexture2D> pTexture;
+};
+
+} // namespace
+
 UTexture2D* loadTextureGameThreadPart(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
     return nullptr;
@@ -914,7 +933,26 @@ UTexture2D* loadTextureGameThreadPart(
     pHalfLoadedTexture->textureSource = pImageIndex->resolveImage(model);
   }
 
-  return loadTextureGameThreadPart(pHalfLoadedTexture);
+  if (pHalfLoadedTexture->textureIndex >= 0) {
+    // If a UTexture2D already exists for this glTF texture, no need to create
+    // one again. In fact, it might not be possible, because the image data may
+    // have already been unloaded from memory.
+    ExtensionUnrealTexture* pExtension =
+        model.textures[pHalfLoadedTexture->textureIndex]
+            .getExtension<ExtensionUnrealTexture>();
+    if (pExtension && pExtension->pTexture.IsValid()) {
+      return pExtension->pTexture.Get();
+    }
+  }
+
+  UTexture2D* pResult = loadTextureGameThreadPart(pHalfLoadedTexture);
+
+  if (pHalfLoadedTexture->textureIndex >= 0) {
+    Texture& texture = model.textures[pHalfLoadedTexture->textureIndex];
+    texture.addExtension<ExtensionUnrealTexture>().pTexture = pResult;
+  }
+
+  return pResult;
 }
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded) {

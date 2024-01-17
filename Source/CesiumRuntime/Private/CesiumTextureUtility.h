@@ -89,6 +89,7 @@ struct LoadedTextureResult {
   bool sRGB{true};
   TWeakObjectPtr<UTexture2D> pTexture;
   CesiumTextureSource textureSource;
+  int32_t textureIndex = -1;
 };
 
 TUniquePtr<FTexturePlatformData>
@@ -116,7 +117,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const TextureFilter& filter,
     const TextureGroup& group,
     bool generateMipMaps,
-    bool sRGB);
+    bool sRGB,
+    int32_t textureIndex = -1);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for this
@@ -131,7 +133,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture,
-    bool sRGB);
+    bool sRGB,
+    int32_t textureIndex = -1);
 
 /**
  * @brief Does the main-thread part of render resource preparation for this
@@ -157,7 +160,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
  * @return The Unreal texture result.
  */
 UTexture2D* loadTextureGameThreadPart(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     LoadedTextureResult* pHalfLoadedTexture);
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded);

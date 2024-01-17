@@ -425,10 +425,9 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const CesiumGltf::Texture& texture =
-      model.textures[gltfTexture.value().index];
-
-  return loadTextureAnyThreadPart(model, texture, sRGB);
+  int32_t textureIndex = gltfTexture.value().index;
+  const CesiumGltf::Texture& texture = model.textures[textureIndex];
+  return loadTextureAnyThreadPart(model, texture, sRGB, textureIndex);
 }
 
 static void applyWaterMask(
@@ -1897,7 +1896,7 @@ static void loadModelAnyThreadPart(
 }
 
 bool applyTexture(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
@@ -1915,7 +1914,7 @@ bool applyTexture(
 #pragma region Material Parameter setters
 
 static void SetGltfParameterValues(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
     const Material& material,
     const MaterialPBRMetallicRoughness& pbr,
@@ -2006,7 +2005,7 @@ static void SetGltfParameterValues(
 }
 
 void SetWaterParameterValues(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
@@ -2506,7 +2505,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
 static void loadPrimitiveGameThreadPart(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
@@ -2790,7 +2789,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     ACesium3DTileset* pTilesetActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,

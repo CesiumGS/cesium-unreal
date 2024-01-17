@@ -719,12 +719,12 @@ public:
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    Cesium3DTilesSelection::TileContent& content = tile.getContent();
     if (content.isRenderContent()) {
       TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
-      const Cesium3DTilesSelection::TileRenderContent& renderContent =
+      Cesium3DTilesSelection::TileRenderContent& renderContent =
           *content.getRenderContent();
       return UCesiumGltfComponent::CreateOnGameThread(
           renderContent.getModel(),
