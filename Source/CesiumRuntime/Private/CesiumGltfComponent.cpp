@@ -289,8 +289,7 @@ static void setUniformNormals(
   }
 }
 
-static void computeFlatNormals(
-    TArray<FStaticMeshBuildVertex>& vertices) {
+static void computeFlatNormals(TArray<FStaticMeshBuildVertex>& vertices) {
   // Compute flat normals
   for (int i = 0; i < vertices.Num(); i += 3) {
     FStaticMeshBuildVertex& v0 = vertices[i];
