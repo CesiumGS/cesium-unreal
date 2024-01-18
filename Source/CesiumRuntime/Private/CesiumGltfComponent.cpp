@@ -280,21 +280,18 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
 }
 
 static void setUniformNormals(
-    const TArray<uint32_t>& indices,
     TArray<FStaticMeshBuildVertex>& vertices,
     TMeshVector3 normal) {
-  for (int i = 0; i < indices.Num(); i++) {
+  for (int i = 0; i < vertices.Num(); i++) {
     FStaticMeshBuildVertex& v = vertices[i];
     v.TangentX = v.TangentY = TMeshVector3(0.0f);
     v.TangentZ = normal;
   }
 }
 
-static void computeFlatNormals(
-    const TArray<uint32_t>& indices,
-    TArray<FStaticMeshBuildVertex>& vertices) {
+static void computeFlatNormals(TArray<FStaticMeshBuildVertex>& vertices) {
   // Compute flat normals
-  for (int i = 0; i < indices.Num(); i += 3) {
+  for (int i = 0; i < vertices.Num(); i += 3) {
     FStaticMeshBuildVertex& v0 = vertices[i];
     FStaticMeshBuildVertex& v1 = vertices[i + 1];
     FStaticMeshBuildVertex& v2 = vertices[i + 2];
@@ -1405,10 +1402,10 @@ static void loadPrimitive(
                   glm::dvec3(ecefCenter)),
               0.0)));
       upDir.Y *= -1;
-      setUniformNormals(indices, StaticMeshBuildVertices, upDir);
+      setUniformNormals(StaticMeshBuildVertices, upDir);
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-      computeFlatNormals(indices, StaticMeshBuildVertices);
+      computeFlatNormals(StaticMeshBuildVertices);
     }
   }
 
