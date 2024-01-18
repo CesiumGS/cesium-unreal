@@ -315,7 +315,7 @@ public:
       // unsafe. Currently we should never hit this code. Remove this in the
       // future when images from tiles and raster tiles can be safely accessed
       // from the render thread.
-      checkNoEntry();
+      // checkNoEntry();
 
       // Asynchronous RHI texture creation was not available. So create it now
       // directly from the in-memory cesium mips.
@@ -340,15 +340,12 @@ public:
       uint32 mipCount =
           FMath::Max(1, static_cast<int32>(pImage->mipPositions.size()));
 
-      FTexture2DRHIRef rhiTexture;
-
       // Copies over mip0, allocates the rest of the mips if needed.
 
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_VERSION_5_3_OR_HIGHER
-      rhiTexture = RHICreateTexture(
+      FTexture2DRHIRef rhiTexture = RHICreateTexture(
           FRHITextureCreateDesc::Create2D(createInfo.DebugName)
               .SetExtent(int32(this->_width), int32(this->_height))
               .SetFormat(this->_format)
@@ -357,22 +354,12 @@ public:
               .SetFlags(textureFlags)
               .SetInitialState(ERHIAccess::Unknown)
               .SetExtData(createInfo.ExtData)
-              .SetBulkData(createInfo.BulkData)
+              //.SetBulkData(createInfo.BulkData)
               .SetGPUMask(createInfo.GPUMask)
               .SetClearValue(createInfo.ClearValueBinding));
-#else
-      rhiTexture = RHICreateTexture2D(
-          this->_width,
-          this->_height,
-          this->_format,
-          mipCount,
-          1,
-          textureFlags,
-          createInfo);
-#endif
 
       // Copies over rest of the mips
-      for (uint32 i = 1; i < mipCount; ++i) {
+      for (uint32 i = 0; i < mipCount; ++i) {
         uint32 DestPitch;
         void* pDestination =
             RHILockTexture2D(rhiTexture, i, RLM_WriteOnly, DestPitch, false);
@@ -384,6 +371,9 @@ public:
     }
 
     RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
+
+    // Once the texture is uploaded, we no longer need the _textureSource.
+    this->_textureSource = CesiumTextureUtility::GltfImagePtr{nullptr};
   }
 
   virtual void ReleaseRHI() override {
@@ -554,6 +544,14 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
     pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
+    // FTexturePlatformData* pData = new FTexturePlatformData();
+    // pData->PixelFormat = pHalfLoadedTexture->pTextureData->PixelFormat;
+    // pData->Mips.Reserve(pHalfLoadedTexture->pTextureData->Mips.Num());
+    // for (int32 i = 0; i < pHalfLoadedTexture->pTextureData->Mips.Num(); ++i)
+    // {
+    //   pData->Mips.Add(new FTexture2DMipMap{});
+    // }
+    // pTexture->SetPlatformData(pData);
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
@@ -561,6 +559,9 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
 
     pTexture->NeverStream = true;
+    // pTexture->UpdateResource();
+
+    // pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
 
     pHalfLoadedTexture->pTexture = pTexture;
   }
@@ -681,22 +682,22 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   } else {
     // The RHI texture will be created later on the render thread, directly
     // from this texture source.
-    // pResult->textureSource = std::move(imageSource);
+    pResult->textureSource = std::move(imageSource);
 
     // TODO: Use the above texture creation path instead when the image source
     // becomes render-thread safe in the future. Currently that is not the
     // case for any `CesiumGltf::ImageCesium` from tiles or raster tiles.
 
     // Legacy texture creation copies mip data into the FTexturePlatformData.
-    legacy_populateMips(*pResult->pTextureData, image, generateMipMaps);
+    // legacy_populateMips(*pResult->pTextureData, image, generateMipMaps);
     // Mark the image source as legacy, so we later know where to look for image
     // data.
-    pResult->textureSource = LegacyTextureSource{};
+    // pResult->textureSource = LegacyTextureSource{};
   }
 
   // Clear the pixel data in the glTF in order to free up memory.
-  std::vector<std::byte> empty{};
-  pImage->pixelData.swap(empty);
+  // std::vector<std::byte> empty{};
+  // pImage->pixelData.swap(empty);
 
   pResult->textureIndex = textureIndex;
 
@@ -847,8 +848,9 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     }
   }
 
+  // Transfer ownership of the image to the LoadedTextureResult.
   TUniquePtr<LoadedTextureResult> result = loadTextureAnyThreadPart(
-      GltfImagePtr{&image},
+      EmbeddedImageSource{std::move(image)},
       addressX,
       addressY,
       filter,
@@ -884,6 +886,10 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return pTexture;
   }
 
+  // It should be possible to create this on a worker thread instead, before we
+  // even have a UTexture2D. The UTexture2D is only used at destruction, so we
+  // can set it later. Err except for the SetTextureReference part. Plus
+  // creating this object doesn't take much time at all.
   FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
       pTexture,
       std::move(pHalfLoadedTexture->textureSource),
