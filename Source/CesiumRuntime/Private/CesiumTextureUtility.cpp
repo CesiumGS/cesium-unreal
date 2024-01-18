@@ -283,29 +283,6 @@ public:
   virtual void InitRHI() override {
 #endif
 
-#if STATS
-    ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
-    if (this->bSRGB) {
-      textureFlags |= TexCreate_SRGB;
-    }
-
-    const FIntPoint MipExtents =
-        CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
-    uint32 alignment;
-    this->_textureSize = RHICalcTexture2DPlatformSize(
-        MipExtents.X,
-        MipExtents.Y,
-        this->_format,
-        this->GetCurrentMipCount(),
-        1,
-        textureFlags,
-        FRHIResourceCreateInfo(this->_platformExtData),
-        alignment);
-
-    INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
-    INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
-#endif
-
     FSamplerStateInitializerRHI samplerStateInitializer(
         this->_filter,
         this->_addressX,
@@ -400,6 +377,29 @@ public:
 
     // Once the texture is uploaded, we no longer need the _textureSource.
     this->_textureSource = CesiumTextureUtility::GltfImagePtr{nullptr};
+
+#if STATS
+    ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+    if (this->bSRGB) {
+      textureFlags |= TexCreate_SRGB;
+    }
+
+    const FIntPoint MipExtents =
+        CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
+    uint32 alignment;
+    this->_textureSize = RHICalcTexture2DPlatformSize(
+        MipExtents.X,
+        MipExtents.Y,
+        this->_format,
+        this->GetCurrentMipCount(),
+        1,
+        textureFlags,
+        FRHIResourceCreateInfo(this->_platformExtData),
+        alignment);
+
+    INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+#endif
   }
 
   virtual void ReleaseRHI() override {
