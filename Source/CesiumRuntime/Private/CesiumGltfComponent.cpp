@@ -1029,7 +1029,11 @@ static void loadPrimitive(
   // We can't calculate flat normals for points or lines, so we have to force
   // them to be unlit if no normals are specified. Otherwise this causes a
   // crash when attempting to calculate flat normals.
-  if (primitive.mode < MeshPrimitive::Mode::TRIANGLES && !hasNormals) {
+  bool isTriangles = primitive.mode == MeshPrimitive::Mode::TRIANGLES ||
+                     primitive.mode == MeshPrimitive::Mode::TRIANGLE_FAN ||
+                     primitive.mode == MeshPrimitive::Mode::TRIANGLE_STRIP;
+
+  if (!isTriangles && !hasNormals) {
     primitiveResult.isUnlit = true;
   }
 
