@@ -28,7 +28,7 @@ on:
         type: string
 jobs:
   build:
-    runs-on: windows-latest-l
+    runs-on: windows-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
