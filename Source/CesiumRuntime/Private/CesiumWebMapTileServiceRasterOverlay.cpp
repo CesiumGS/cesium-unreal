@@ -2,10 +2,10 @@
 
 #include "CesiumWebMapTileServiceRasterOverlay.h"
 
-#include "CesiumRasterOverlays/WebMapTileServiceRasterOverlay.h"
+#include "CesiumGeometry/QuadtreeTilingScheme.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
-#include "CesiumGeometry/QuadtreeTilingScheme.h"
+#include "CesiumRasterOverlays/WebMapTileServiceRasterOverlay.h"
 
 #include "CesiumRuntime.h"
 
@@ -63,8 +63,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
       for (size_t level = 0; level <= 25; ++level) {
         FString label(TileMatrixSetLabelPrefix);
         label.AppendInt(level);
-        labels.emplace_back(
-            TCHAR_TO_UTF8(*label));
+        labels.emplace_back(TCHAR_TO_UTF8(*label));
       }
       wmtsOptions.tileMatrixLabels = labels;
     }
