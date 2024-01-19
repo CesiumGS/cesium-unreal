@@ -171,6 +171,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
         pFeatureIdImage->pixelData.size());
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
   }
 
   return result;
@@ -609,6 +610,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
             encodedFormat.pixelSize);
       }
       pMip->BulkData.Unlock();
+      pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
     }
 
     if (pDescription->PropertyDetails.bHasOffset) {
@@ -774,6 +776,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
             pImage->pixelData.size());
 
         pMip->BulkData.Unlock();
+        pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
       }
     };
 
