@@ -1,5 +1,13 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug in `MLB_DitherFade` that made glTF materials with an `alphaMode` of `MASK` incorrectly appear as fully opaque.
+- Fixed a bug in `CesiumFlyToComponent` that could cause the position of the object to shift suddenly at the very end of the flight.
+- Fixed a bug in `CesiumActors` that would cause the editor to crash when running in Standalone mode.
+
 ### v2.2.0 - 2023-12-14
 
 ##### Breaking Changes :mega:
