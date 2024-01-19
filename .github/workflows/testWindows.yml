@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0 # so that `git describe` works.
           sparse-checkout: |
             .github
-            TestsProject      
+            TestsProject
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
@@ -42,35 +42,35 @@ jobs:
           echo ""
           echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
           echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
-          echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
+          echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
           echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
       - name: Download plugin artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ env.PLUGIN_PACKAGE_NAME}}
-          path: download          
+          path: download
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
           md "${{ inputs.unreal-plugins-path }}/Marketplace"
-          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r      
+          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r
       - name: Show plugin engine version
         run: |
           cd download/CesiumForUnreal
           dir
           Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Run Cesium tests
-        timeout-minutes: 60      
+        timeout-minutes: 60
         run: |
           cd "${{ inputs.unreal-binaries-path }}"
           ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.Unit.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
-      - name: Display tests log 
+      - name: Display tests log
         if: always()
         run: |
-          cd "$env:TESTS_PROJECT_LOGS"  
-          dir 
-          Get-Content TestsProject.log          
+          cd "$env:TESTS_PROJECT_LOGS"
+          dir
+          Get-Content TestsProject.log
       - name: Display tests report
         if: always()
         run: |
@@ -93,7 +93,7 @@ jobs:
                 if($name -eq "fullTestPath") {
                   $currTestName = $value
                 }
-                
+
                 if($name -eq "state") {
                    if ($value -eq "Success") {
                      $global:succeededTests += $currTestName + "`n"
@@ -121,7 +121,7 @@ jobs:
 
           $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
           Parse-Json -jsonObject $json # Parse json
-          
+
           echo " "
           if ($failedTests.Length -eq 0) {
             echo "All tests passed:"
