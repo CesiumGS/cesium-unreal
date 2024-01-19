@@ -8,9 +8,9 @@
 #include "CesiumWebMapTileServiceRasterOverlay.generated.h"
 
 /**
- * A raster overlay that directly accesses a Tile Map Service (TMS) server. If
- * you're using a Tile Map Service via Cesium ion, use the "Cesium ion Raster
- * Overlay" component instead.
+ * A raster overlay that directly accesses a Web Map Tile Service (WMTS) server.
+ * If you're using a Web Map Tile Service via Cesium ion, use the "Cesium ion
+ * Raster Overlay" component instead.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumWebMapTileServiceRasterOverlay
@@ -133,7 +133,8 @@ public:
       Category = "Cesium",
       EditAnywhere,
       BlueprintReadWrite,
-      meta = (EditCondition = "bSpecifyTilingScheme",
+      meta =
+          (EditCondition = "bSpecifyTilingScheme",
            ClampMin = -90.0,
            ClampMax = 90.0))
   double South = -90;
@@ -194,6 +195,5 @@ public:
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
-      const CesiumRasterOverlays::RasterOverlayOptions& options = {})
-      override;
+      const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
 };
