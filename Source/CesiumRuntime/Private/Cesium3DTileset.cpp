@@ -677,15 +677,6 @@ class UnrealResourcePreparer
 public:
   UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
 
-  // Associate an Unreal UTexture2D with a glTF Texture.
-  struct ExtensionUnrealLoadRenderFence {
-    static inline constexpr const char* TypeName =
-        "ExtensionUnrealLoadRenderFence";
-    static inline constexpr const char* ExtensionName =
-        "PRIVATE_unreal_load_render_fence";
-    FRenderCommandFence renderFence;
-  };
-
   virtual CesiumAsync::Future<
       Cesium3DTilesSelection::TileLoadResultAndRenderResources>
   prepareInLoadThread(
@@ -720,10 +711,6 @@ public:
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
 
-    // ExtensionUnrealLoadRenderFence& extension =
-    //     pModel->addExtension<ExtensionUnrealLoadRenderFence>();
-    // extension.renderFence.BeginFence();
-
     return asyncSystem.createResolvedFuture(
         Cesium3DTilesSelection::TileLoadResultAndRenderResources{
             std::move(tileLoadResult),
@@ -740,7 +727,7 @@ public:
               pLoadThreadResult));
       Cesium3DTilesSelection::TileRenderContent& renderContent =
           *content.getRenderContent();
-      void* pResult = UCesiumGltfComponent::CreateOnGameThread(
+      return UCesiumGltfComponent::CreateOnGameThread(
           renderContent.getModel(),
           this->_pActor,
           std::move(pHalf),
@@ -751,13 +738,6 @@ public:
           this->_pActor->GetCustomDepthParameters(),
           tile,
           this->_pActor->GetCreateNavCollision());
-
-      // ExtensionUnrealLoadRenderFence& extension =
-      //     renderContent.getModel()
-      //         .addExtension<ExtensionUnrealLoadRenderFence>();
-      // extension.renderFence.BeginFence();
-
-      return pResult;
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -767,22 +747,6 @@ public:
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
-    // Wait for the render thread to catch up before freeing this tile.
-    // Cesium3DTilesSelection::TileContent& content = tile.getContent();
-    // if (content.isRenderContent() && content.getRenderContent()) {
-    //  ExtensionUnrealLoadRenderFence* pExtension =
-    //      content.getRenderContent()
-    //          ->getModel()
-    //          .getExtension<ExtensionUnrealLoadRenderFence>();
-    //  if (pExtension) {
-    //    if (!pExtension->renderFence.IsFenceComplete()) {
-    //      UE_LOG(LogCesium, Warning, TEXT("coulda crashed but didn't"));
-    //      pExtension->renderFence.Wait();
-    //      UE_LOG(LogCesium, Warning, TEXT("done waiting"));
-    //    }
-    //  }
-    //}
-
     if (pLoadThreadResult) {
       UCesiumGltfComponent::HalfConstructed* pHalf =
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
@@ -932,16 +896,16 @@ void ACesium3DTileset::UpdateLoadStatus() {
   }
 
   // Native tileset is 100% loaded, but there might be a few frames where
-  // nothing needs to be loaded as we are waiting for occlusion results to
-  // come back, which means we are not done with loading all the tiles in the
-  // tileset yet. Interpret this as 99% (almost) done
+  // nothing needs to be loaded as we are waiting for occlusion results to come
+  // back, which means we are not done with loading all the tiles in the tileset
+  // yet. Interpret this as 99% (almost) done
   if (this->_lastTilesWaitingForOcclusionResults > 0) {
     this->LoadProgress = 99;
     return;
   }
 
-  // If we have tiles to hide next frame, we haven't completely finished
-  // loading yet. We need to tick once more. We're really close to done.
+  // If we have tiles to hide next frame, we haven't completely finished loading
+  // yet. We need to tick once more. We're really close to done.
   if (!this->_tilesToHideNextFrame.empty()) {
     this->LoadProgress = glm::min(this->LoadProgress, 99.9999f);
     return;
@@ -1009,9 +973,8 @@ void ACesium3DTileset::LoadTileset() {
       getAssetAccessor();
   const CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
 
-  // Both the feature flag and the CesiumViewExtension are global, not owned
-  // by the Tileset. We're just applying one to the other here out of
-  // convenience.
+  // Both the feature flag and the CesiumViewExtension are global, not owned by
+  // the Tileset. We're just applying one to the other here out of convenience.
   cesiumViewExtension->SetEnabled(
       GetDefault<UCesiumRuntimeSettings>()
           ->EnableExperimentalOcclusionCullingFeature);
@@ -1631,8 +1594,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
     return {};
   }
 
-  // Do not include editor cameras when running in a game world (which
-  // includes Play-in-Editor)
+  // Do not include editor cameras when running in a game world (which includes
+  // Play-in-Editor)
   if (pWorld->IsGameWorld()) {
     return {};
   }
@@ -2020,8 +1983,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   if (!this->_pTileset) {
     LoadTileset();
 
-    // In the unlikely event that we _still_ don't have a tileset, stop here
-    // so we don't crash below. This shouldn't happen.
+    // In the unlikely event that we _still_ don't have a tileset, stop here so
+    // we don't crash below. This shouldn't happen.
     if (!this->_pTileset) {
       assert(false);
       return;
@@ -2235,9 +2198,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       pTileExcluder->Refresh();
     }
 
-    // Maximum Screen Space Error can affect how attenuated points are
-    // rendered, so propagate the new value to the render proxies for this
-    // tileset.
+    // Maximum Screen Space Error can affect how attenuated points are rendered,
+    // so propagate the new value to the render proxies for this tileset.
     FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }

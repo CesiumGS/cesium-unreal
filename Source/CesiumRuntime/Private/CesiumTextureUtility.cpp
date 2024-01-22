@@ -314,12 +314,6 @@ public:
         GetOrCreateSamplerState(deferredSamplerStateInitializer);
 
     if (!this->TextureRHI) {
-      // TODO: Currently copying from `ImageCesium` on the render-thread is
-      // unsafe. Currently we should never hit this code. Remove this in the
-      // future when images from tiles and raster tiles can be safely accessed
-      // from the render thread.
-      // checkNoEntry();
-
       // Asynchronous RHI texture creation was not available. So create it now
       // directly from the in-memory cesium mips.
       CesiumGltf::ImageCesium* pImage =
@@ -327,11 +321,8 @@ public:
 
       check(pImage != nullptr);
 
-      // Wrap mip0 as a bulk data source.
-      FCesiumTextureData bulkData(*pImage);
-
       FRHIResourceCreateInfo createInfo{TEXT("CesiumTextureUtility")};
-      createInfo.BulkData = &bulkData;
+      createInfo.BulkData = nullptr;
       createInfo.ExtData = _platformExtData;
 
       ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
@@ -357,7 +348,6 @@ public:
               .SetFlags(textureFlags)
               .SetInitialState(ERHIAccess::Unknown)
               .SetExtData(createInfo.ExtData)
-              //.SetBulkData(createInfo.BulkData)
               .SetGPUMask(createInfo.GPUMask)
               .SetClearValue(createInfo.ClearValueBinding));
 
@@ -607,14 +597,6 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
     pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
-    // FTexturePlatformData* pData = new FTexturePlatformData();
-    // pData->PixelFormat = pHalfLoadedTexture->pTextureData->PixelFormat;
-    // pData->Mips.Reserve(pHalfLoadedTexture->pTextureData->Mips.Num());
-    // for (int32 i = 0; i < pHalfLoadedTexture->pTextureData->Mips.Num(); ++i)
-    // {
-    //   pData->Mips.Add(new FTexture2DMipMap{});
-    // }
-    // pTexture->SetPlatformData(pData);
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
@@ -622,9 +604,6 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
 
     pTexture->NeverStream = true;
-    // pTexture->UpdateResource();
-
-    // pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
 
     pHalfLoadedTexture->pTexture = pTexture;
   }
@@ -746,21 +725,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     // The RHI texture will be created later on the render thread, directly
     // from this texture source.
     pResult->textureSource = std::move(imageSource);
-
-    // TODO: Use the above texture creation path instead when the image source
-    // becomes render-thread safe in the future. Currently that is not the
-    // case for any `CesiumGltf::ImageCesium` from tiles or raster tiles.
-
-    // Legacy texture creation copies mip data into the FTexturePlatformData.
-    // legacy_populateMips(*pResult->pTextureData, image, generateMipMaps);
-    // Mark the image source as legacy, so we later know where to look for image
-    // data.
-    // pResult->textureSource = LegacyTextureSource{};
   }
-
-  // Clear the pixel data in the glTF in order to free up memory.
-  // std::vector<std::byte> empty{};
-  // pImage->pixelData.swap(empty);
 
   pResult->textureIndex = textureIndex;
 
@@ -949,10 +914,6 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return pTexture;
   }
 
-  // It should be possible to create this on a worker thread instead, before we
-  // even have a UTexture2D. The UTexture2D is only used at destruction, so we
-  // can set it later. Err except for the SetTextureReference part. Plus
-  // creating this object doesn't take much time at all.
   FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
       pTexture,
       std::move(pHalfLoadedTexture->textureSource),
