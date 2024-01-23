@@ -11,6 +11,7 @@
 #include "DynamicRHI.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "PixelFormat.h"
+#include "RHICommandList.h"
 #include "RHIDefinitions.h"
 #include "RHIResources.h"
 #include "RenderUtils.h"
@@ -313,7 +314,48 @@ public:
     this->DeferredPassSamplerStateRHI =
         GetOrCreateSamplerState(deferredSamplerStateInitializer);
 
-    if (!this->TextureRHI) {
+    TWeakObjectPtr<UTexture2D>* pSourceTextureWeak =
+        std::get_if<TWeakObjectPtr<UTexture2D>>(&this->_textureSource);
+    UTexture2D* pSourceTexture =
+        pSourceTextureWeak ? pSourceTextureWeak->Get() : nullptr;
+    if (pSourceTexture) {
+      FRHIResourceCreateInfo createInfo{TEXT("CesiumTextureUtility")};
+      createInfo.BulkData = nullptr;
+      createInfo.ExtData = _platformExtData;
+
+      ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+
+      if (this->bSRGB) {
+        textureFlags |= TexCreate_SRGB;
+      }
+
+      const FRHITextureDesc& desc =
+          pSourceTexture->TextureReference.TextureReferenceRHI->GetDesc();
+      uint32 mipCount = desc.NumMips;
+
+      // Create a new texture
+      FTexture2DRHIRef rhiTexture = RHICreateTexture(
+          FRHITextureCreateDesc::Create2D(createInfo.DebugName)
+              .SetExtent(int32(this->_width), int32(this->_height))
+              .SetFormat(this->_format)
+              .SetNumMips(uint8(mipCount))
+              .SetNumSamples(1)
+              .SetFlags(textureFlags)
+              .SetInitialState(ERHIAccess::Unknown)
+              .SetExtData(createInfo.ExtData)
+              .SetGPUMask(createInfo.GPUMask)
+              .SetClearValue(createInfo.ClearValueBinding));
+
+      // Copy the contents of the source texture to the new one.
+      FRHICopyTextureInfo copyInfo;
+      copyInfo.NumMips = mipCount;
+      FRHICommandListExecutor::GetImmediateCommandList().CopyTexture(
+          pSourceTexture->TextureReference.TextureReferenceRHI,
+          rhiTexture,
+          copyInfo);
+
+      this->TextureRHI = std::move(rhiTexture);
+    } else if (!this->TextureRHI) {
       // Asynchronous RHI texture creation was not available. So create it now
       // directly from the in-memory cesium mips.
       CesiumGltf::ImageCesium* pImage =
@@ -627,13 +669,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   assert(pImage != nullptr);
   CesiumGltf::ImageCesium& image = *pImage;
 
-  if (image.pixelData.empty() || image.width == 0 || image.height == 0) {
-    TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
-    pResult->textureIndex = textureIndex;
-    return pResult;
-  }
-
-  if (generateMipMaps) {
+  if (generateMipMaps && !image.pixelData.empty()) {
     std::optional<std::string> errorMessage =
         CesiumGltfReader::GltfReader::generateMipMaps(image);
     if (errorMessage) {
@@ -715,7 +751,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->sRGB = sRGB;
   pResult->generateMipMaps = generateMipMaps;
 
-  if (GRHISupportsAsyncTextureCreation) {
+  if (GRHISupportsAsyncTextureCreation && !image.pixelData.empty()) {
     // Create RHI texture resource asynchronously.
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
 
@@ -908,6 +944,9 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   }
 
   UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
+  if (pTexture == nullptr) {
+    return nullptr;
+  }
 
   if (std::get_if<LegacyTextureSource>(&pHalfLoadedTexture->textureSource)) {
     pTexture->UpdateResource();
@@ -963,15 +1002,30 @@ UTexture2D* loadTextureGameThreadPart(
     pHalfLoadedTexture->textureSource = pImageIndex->resolveImage(model);
   }
 
-  if (pHalfLoadedTexture->textureIndex >= 0) {
+  Image* pImage = nullptr;
+
+  if (pHalfLoadedTexture->textureIndex >= 0 &&
+      pHalfLoadedTexture->textureIndex < model.textures.size()) {
     // If a UTexture2D already exists for this glTF texture, no need to create
     // one again. In fact, it might not be possible, because the image data may
     // have already been unloaded from memory.
-    ExtensionUnrealTexture* pExtension =
-        model.textures[pHalfLoadedTexture->textureIndex]
-            .getExtension<ExtensionUnrealTexture>();
+    const Texture& texture = model.textures[pHalfLoadedTexture->textureIndex];
+    const ExtensionUnrealTexture* pExtension =
+        texture.getExtension<ExtensionUnrealTexture>();
     if (pExtension && pExtension->pTexture.IsValid()) {
       return pExtension->pTexture.Get();
+    }
+
+    // It's also possible that the texture refers to an Image for which we have
+    // already created a UTexture2D based on a different Texture instance. In
+    // that case, too, the glTF pixelData has already been cleared. So we'll
+    // create this new texture with a GPU copy from the old textrure.
+    pImage = model.getSafe(&model.images, texture.source);
+    if (pImage) {
+      pExtension = pImage->getExtension<ExtensionUnrealTexture>();
+      if (pExtension && pExtension->pTexture.IsValid()) {
+        pHalfLoadedTexture->textureSource = pExtension->pTexture;
+      }
     }
   }
 
@@ -980,6 +1034,10 @@ UTexture2D* loadTextureGameThreadPart(
   if (pHalfLoadedTexture->textureIndex >= 0) {
     Texture& texture = model.textures[pHalfLoadedTexture->textureIndex];
     texture.addExtension<ExtensionUnrealTexture>().pTexture = pResult;
+
+    if (pImage) {
+      pImage->addExtension<ExtensionUnrealTexture>().pTexture = pResult;
+    }
   }
 
   return pResult;

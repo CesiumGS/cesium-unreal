@@ -72,7 +72,8 @@ typedef std::variant<
     GltfImagePtr,
     GltfImageIndex,
     EmbeddedImageSource,
-    LegacyTextureSource>
+    LegacyTextureSource,
+    TWeakObjectPtr<UTexture2D>>
     CesiumTextureSource;
 
 /**
