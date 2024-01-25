@@ -325,7 +325,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->sRGB = sRGB;
   pResult->generateMipMaps = generateMipMaps;
 
-  if (false && GRHISupportsAsyncTextureCreation && !image.pixelData.empty()) {
+  if (GRHISupportsAsyncTextureCreation && !image.pixelData.empty()) {
     // Create RHI texture resource on this worker thread, and then hand it off
     // to the renderer thread.
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
