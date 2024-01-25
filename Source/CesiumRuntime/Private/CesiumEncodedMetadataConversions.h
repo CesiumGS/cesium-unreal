@@ -79,7 +79,7 @@ struct CesiumEncodedMetadataCoerce {
   static void encode(
       const FCesiumPropertyTablePropertyDescription& propertyDescription,
       const FCesiumPropertyTableProperty& property,
-      gsl::span<std::byte>& pTextureData,
+      const gsl::span<std::byte>& pTextureData,
       size_t pixelSize);
 };
 
@@ -112,6 +112,6 @@ struct CesiumEncodedMetadataParseColorFromString {
   static void encode(
       const FCesiumPropertyTablePropertyDescription& propertyDescription,
       const FCesiumPropertyTableProperty& property,
-      gsl::span<std::byte>& textureData,
+      const gsl::span<std::byte>& textureData,
       size_t pixelSize);
 };

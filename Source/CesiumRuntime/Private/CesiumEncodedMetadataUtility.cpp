@@ -203,7 +203,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
     encodedProperty.pTexture->sRGB = false;
     // TODO: upgrade to new texture creation path.
-    encodedProperty.pTexture->textureSource = LegacyTextureSource{};
+    // encodedProperty.pTexture->textureSource = LegacyTextureSource{};
     encodedProperty.pTexture->pTextureData = createTexturePlatformData(
         ceilSqrtFeatureCount,
         ceilSqrtFeatureCount,
@@ -532,8 +532,8 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
           encodedFeatureIdTexture.pTexture->sRGB = false;
           // TODO: upgrade to new texture creation path
-          encodedFeatureIdTexture.pTexture->textureSource =
-              LegacyTextureSource{};
+          // encodedFeatureIdTexture.pTexture->textureSource =
+          //    LegacyTextureSource{};
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);

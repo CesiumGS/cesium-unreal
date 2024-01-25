@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataValueType.h"
+#include "CesiumTextureResource.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureDefines.h"
@@ -72,7 +73,6 @@ typedef std::variant<
     GltfImagePtr,
     GltfImageIndex,
     EmbeddedImageSource,
-    LegacyTextureSource,
     TWeakObjectPtr<UTexture2D>>
     CesiumTextureSource;
 
@@ -91,6 +91,7 @@ struct LoadedTextureResult {
   TWeakObjectPtr<UTexture2D> pTexture;
   CesiumTextureSource textureSource;
   int32_t textureIndex = -1;
+  TUniquePtr<FCesiumTextureResourceBase> pTextureResource;
 };
 
 TUniquePtr<FTexturePlatformData>

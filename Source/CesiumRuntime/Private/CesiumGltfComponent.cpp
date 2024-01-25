@@ -35,6 +35,7 @@
 #include "CreateGltfOptions.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
+#include "ExtensionUnrealImageData.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "LoadGltfResult.h"
@@ -1836,7 +1837,17 @@ static void loadModelAnyThreadPart(
     const CreateModelOptions& options) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
-  const Model& model = *options.pModel;
+  Model& model = *options.pModel;
+
+  // Move all ImageCesium instances into a reference-counted extension. This
+  // allows us to free the memory used by the textures in the glTF once we have
+  // created all of the necessary renderer resources.
+  for (Image& image : model.images) {
+    ExtensionUnrealImageData& extension =
+        image.addExtension<ExtensionUnrealImageData>();
+    extension.pImage = new ImageCesiumRefCounted();
+    extension.pImage->image = std::move(image.cesium);
+  }
 
   const ExtensionModelExtStructuralMetadata* pMetadataExtension =
       model.getExtension<ExtensionModelExtStructuralMetadata>();
