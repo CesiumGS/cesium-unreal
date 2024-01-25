@@ -772,14 +772,15 @@ public:
     auto pOptions = *ppOptions;
 
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        CesiumTextureUtility::GltfImagePtr{&image},
+        std::move(image),
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,
-        pOptions->group,
         pOptions->useMipmaps,
-        true); // TODO: sRGB should probably be configurable on the raster
-               // overlay
+        pOptions->group,
+        // TODO: sRGB should probably be configurable on the raster overlay.
+        true,
+        nullptr);
     return texture.Release();
   }
 
@@ -793,15 +794,6 @@ public:
 
     if (!pLoadedTexture) {
       return nullptr;
-    }
-
-    // The image source pointer during loading may have been invalidated,
-    // so replace it.
-    CesiumTextureUtility::GltfImagePtr* pImageSource =
-        std::get_if<CesiumTextureUtility::GltfImagePtr>(
-            &pLoadedTexture->textureSource);
-    if (pImageSource) {
-      pImageSource->pImage = &rasterTile.getImage();
     }
 
     UTexture2D* pTexture =

@@ -133,14 +133,15 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     pFeatureIdImage->width,
         encodedFeatureIdTexture.pTexture =
             MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-                EmbeddedImageSource{CesiumGltf::ImageCesium(*pFeatureIdImage)},
+                // Copy the image, so that we can keep a copy of it in the glTF.
+                CesiumGltf::ImageCesium(*pFeatureIdImage),
                 TextureAddress::TA_Clamp,
                 TextureAddress::TA_Clamp,
                 TextureFilter::TF_Nearest,
+                false,
                 TEXTUREGROUP_8BitData,
                 false,
-                false,
-                -1)));
+                nullptr)));
     featureIdTextureMap.Emplace(
         pFeatureIdImage,
         encodedFeatureIdTexture.pTexture);
@@ -556,14 +557,14 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       }
 
       encodedProperty.pTexture = loadTextureAnyThreadPart(
-          EmbeddedImageSource{std::move(image)},
+          std::move(image),
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
           TextureFilter::TF_Nearest,
+          false,
           TEXTUREGROUP_8BitData,
           false,
-          false,
-          -1);
+          nullptr);
     }
 
     if (pDescription->PropertyDetails.bHasOffset) {
@@ -697,15 +698,16 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
 
         encodedProperty.pTexture =
             MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-                EmbeddedImageSource{CesiumGltf::ImageCesium(*pImage)},
+                // Copy the image, so that we can keep a copy of it in the glTF.
+                CesiumGltf::ImageCesium(*pImage),
                 addressX,
                 addressY,
                 // TODO: account for texture filter
                 TextureFilter::TF_Nearest,
+                false,
                 TEXTUREGROUP_8BitData,
                 false,
-                false,
-                -1)));
+                nullptr)));
         propertyTexturePropertyMap.Emplace(pImage, encodedProperty.pTexture);
       }
     };

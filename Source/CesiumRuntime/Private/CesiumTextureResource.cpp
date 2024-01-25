@@ -47,20 +47,29 @@ void CopyMip(
     EPixelFormat format,
     const CesiumGltf::ImageCesium& src,
     uint32 mipIndex) {
-  const CesiumGltf::ImageCesiumMipPosition& mipPos = src.mipPositions[mipIndex];
+  size_t byteOffset = 0;
+  size_t byteSize = 0;
+  if (src.mipPositions.empty()) {
+    byteOffset = 0;
+    byteSize = src.pixelData.size();
+  } else {
+    const CesiumGltf::ImageCesiumMipPosition& mipPos =
+        src.mipPositions[mipIndex];
+    byteOffset = mipPos.byteOffset;
+    byteSize = mipPos.byteSize;
+  }
   uint32 mipWidth =
       FMath::Max<uint32>(static_cast<uint32>(src.width) >> mipIndex, 1);
   uint32 mipHeight =
       FMath::Max<uint32>(static_cast<uint32>(src.height) >> mipIndex, 1);
 
-  const void* pSrcData =
-      static_cast<const void*>(&src.pixelData[mipPos.byteOffset]);
+  const void* pSrcData = static_cast<const void*>(&src.pixelData[byteOffset]);
 
   // for platforms that returned 0 pitch from Lock, we need to just use the bulk
   // data directly, never do runtime block size checking, conversion, or the
   // like
   if (destPitch == 0) {
-    FMemory::Memcpy(pDest, pSrcData, mipPos.byteSize);
+    FMemory::Memcpy(pDest, pSrcData, byteSize);
   } else {
     const uint32 blockSizeX =
         GPixelFormats[format].BlockSizeX; // Block width in pixels
@@ -116,6 +125,9 @@ void FCesiumTextureResourceBase::InitRHI(FRHICommandListBase& RHICmdList) {
 #else
 void FCesiumTextureResourceBase::InitRHI() {
 #endif
+  // TODO: for textures that aren't supposed to use mipmaps, even though the
+  // underlying RHI Texture has them, we need to pass 1 for the InMaxMipLevel
+  // parameter.
   FSamplerStateInitializerRHI samplerStateInitializer(
       this->_filter,
       this->_addressX,
@@ -296,6 +308,12 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
 
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
 
+  // TODO: what if a texture is treated as sRGB in one context but not another?
+  // In glTF, whether or not a texture should be treated as sRGB depends on how
+  // it's _used_. A texture used for baseColorFactor or emissiveFactor should be
+  // sRGB, while all others should be linear. It's unlikely - but not impossible
+  // - for a single glTF Texture or Image to be used in one context where it
+  // must be sRGB, and another where it must be linear.
   if (this->bSRGB) {
     textureFlags |= TexCreate_SRGB;
   }

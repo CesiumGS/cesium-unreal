@@ -89,7 +89,6 @@ struct LoadedTextureResult {
   bool generateMipMaps;
   bool sRGB{true};
   TWeakObjectPtr<UTexture2D> pTexture;
-  CesiumTextureSource textureSource;
   int32_t textureIndex = -1;
   TUniquePtr<FCesiumTextureResourceBase> pTextureResource;
 };
@@ -98,12 +97,60 @@ TUniquePtr<FTexturePlatformData>
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format);
 
 /**
- * @brief Does the asynchronous part of renderer resource preparation for this
- * image. Should be called in a background thread. May generate mip-maps for
- * this image within the given glTF, if needed.
+ * Does the asynchronous part of renderer resource preparation for a `Texture`
+ * in a glTF. Should be called in a worker thread.
  *
- * @param imageSource The source for this image. This function may add mip-maps
- * to the image if needed.
+ * The `cesium.pixelData` will be removed from the image associated with the
+ * texture so that it can be passed to Unreal's renderer thread without copying
+ * it.
+ *
+ * @param model The glTF Model for which to load this texture.
+ * @param texture The glTF Texture to load.
+ * @param sRGB True if the texture should be treated as sRGB; false if it should
+ * be treated as linear.
+ * @param textureResources Unreal RHI texture resources that have already been
+ * created for this model. This array must have the same size as `model`'s
+ * {@link CesiumGltf::Model::images}, and all pointers must be initialized to
+ * nullptr before the first call to `loadTextureFromModelAnyThreadPart` during
+ * the glTF load process.
+ */
+TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
+    CesiumGltf::Model& model,
+    const CesiumGltf::Texture& texture,
+    bool sRGB,
+    std::vector<FCesiumTextureResourceBase*>& textureResources);
+
+/**
+ * Does the asynchronous part of renderer resource preparation for a glTF
+ * `Image` with the given `Sampler` settings.
+ *
+ * The `cesium.pixelData` will be removed from the image so that it can be
+ * passed to Unreal's renderer thread without copying it.
+ *
+ * @param image The glTF image for each to create a texture.
+ * @param sampler The sampler settings to use with the texture.
+ * @param sRGB True if the texture should be treated as sRGB; false if it should
+ * be treated as linear.
+ * @param pExistingImageResource An existing RHI texture resource that has been
+ * created for this image, or nullptr if one hasn't been created yet. When this
+ * parameter is not nullptr, the provided image's `pixelData` is not required
+ * and can be empty.
+ */
+TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
+    CesiumGltf::Image& image,
+    const CesiumGltf::Sampler& sampler,
+    bool sRGB,
+    FCesiumTextureResourceBase* pExistingImageResource);
+
+/**
+ * @brief Does the asynchronous part of renderer resource preparation for
+ * this image. Should be called in a background thread.
+ *
+ * The `pixelData` will be removed from the image so that it can be
+ * passed to Unreal's renderer thread without copying it.
+ * 
+ * @param imageSource The source for this image. This function may add
+ * mip-maps to the image if needed.
  * @param addressX The X addressing mode.
  * @param addressY The Y addressing mode.
  * @param filter The sampler filtering to use for this texture.
@@ -113,30 +160,14 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format);
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumTextureSource&& imageSource,
-    const TextureAddress& addressX,
-    const TextureAddress& addressY,
-    const TextureFilter& filter,
-    const TextureGroup& group,
-    bool generateMipMaps,
+    CesiumGltf::ImageCesium&& imageCesium,
+    TextureAddress addressX,
+    TextureAddress addressY,
+    TextureFilter filter,
+    bool useMipMapsIfAvailable,
+    TextureGroup group,
     bool sRGB,
-    int32_t textureIndex = -1);
-
-/**
- * @brief Does the asynchronous part of renderer resource preparation for this
- * image. Should be called in a background thread. May generate mip-maps for
- * this image within the given glTF, if needed.
- *
- * @param model The model.
- * @param texture The texture to load.
- * @param sRGB Whether this texture uses a sRGB color space.
- * @return The loaded texture.
- */
-TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::Model& model,
-    const CesiumGltf::Texture& texture,
-    bool sRGB,
-    int32_t textureIndex = -1);
+    FCesiumTextureResourceBase* pExistingImageResource);
 
 /**
  * @brief Does the main-thread part of render resource preparation for this
@@ -150,20 +181,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
  * @return The Unreal texture result.
  */
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
-
-/**
- * @brief Does the main-thread part of render resource preparation for this
- * image and queues up any required render-thread tasks to finish preparing the
- * image. Resolves the textureSource to a GltfImagePtr, if it is currently
- * GltfImageIndex.
- *
- * @param model The glTF model, containing the image.
- * @param pHalfLoadedTexture The half-loaded renderer texture.
- * @return The Unreal texture result.
- */
-UTexture2D* loadTextureGameThreadPart(
-    CesiumGltf::Model& model,
-    LoadedTextureResult* pHalfLoadedTexture);
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded);
 void destroyTexture(UTexture* pTexture);
