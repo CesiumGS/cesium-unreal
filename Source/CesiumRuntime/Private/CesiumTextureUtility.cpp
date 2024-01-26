@@ -28,30 +28,8 @@
 #include <CesiumGltfReader/GltfReader.h>
 #include <CesiumUtility/IntrusivePointer.h>
 #include <CesiumUtility/ReferenceCountedThreadSafe.h>
-#include <CesiumUtility/Tracing.h>
-#include <memory>
-#include <stb_image_resize.h>
-#include <variant>
 
 using namespace CesiumGltf;
-
-namespace {
-struct GetImageFromSource {
-  CesiumGltf::ImageCesium*
-  operator()(CesiumTextureUtility::GltfImagePtr& imagePtr) {
-    return imagePtr.pImage;
-  }
-
-  CesiumGltf::ImageCesium*
-  operator()(CesiumTextureUtility::EmbeddedImageSource& embeddedImage) {
-    return &embeddedImage.image;
-  }
-
-  template <typename TSource>
-  CesiumGltf::ImageCesium* operator()(TSource& /*source*/) {
-    return nullptr;
-  }
-};
 
 namespace {
 
@@ -92,8 +70,6 @@ FTexture2DRHIRef createAsyncTextureAndWait(
       NumInitialMips);
 #endif
 }
-
-} // namespace
 
 /**
  * @brief Create an RHI texture on this thread. This requires
@@ -163,37 +139,6 @@ CesiumGltf::ImageCesium& getImageCesium(CesiumGltf::Image& image) {
 } // namespace
 
 namespace CesiumTextureUtility {
-
-GltfImagePtr
-GltfImageIndex::resolveImage(const CesiumGltf::Model& model) const {
-  // Almost certainly a developer error otherwise.
-  assert(this->imageIndex >= 0 && this->imageIndex < model.images.size());
-
-  // It's not worth making const-specializations of CesiumTextureSource, so we
-  // just const-cast.
-  CesiumGltf::ImageCesium* pImage =
-      &getImageCesium(const_cast<CesiumGltf::Image&>(
-          model.images[static_cast<size_t>(this->index)]));
-
-  return GltfImagePtr{pImage};
-}
-
-TUniquePtr<FTexturePlatformData>
-createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
-  if (sizeX > 0 && sizeY > 0 &&
-      (sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
-      (sizeY % GPixelFormats[format].BlockSizeY) == 0) {
-    TUniquePtr<FTexturePlatformData> pTexturePlatformData =
-        MakeUnique<FTexturePlatformData>();
-    pTexturePlatformData->SizeX = sizeX;
-    pTexturePlatformData->SizeY = sizeY;
-    pTexturePlatformData->PixelFormat = format;
-
-    return pTexturePlatformData;
-  } else {
-    return nullptr;
-  }
-}
 
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
@@ -382,7 +327,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
   }
 
   UTexture2D* pTexture = pHalfLoadedTexture->pTexture.Get();
-  if (!pTexture && pHalfLoadedTexture->pTextureData) {
+  if (!pTexture) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
         MakeUniqueObjectName(
@@ -391,7 +336,6 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
             "CesiumRuntimeTexture"),
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
@@ -488,14 +432,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   }
 
   TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
-  pResult->pTextureData = createTexturePlatformData(
-      imageCesium.width,
-      imageCesium.height,
-      pixelFormat);
-
-  if (!pResult->pTextureData) {
-    return nullptr;
-  }
 
   pResult->addressX = addressX;
   pResult->addressY = addressY;

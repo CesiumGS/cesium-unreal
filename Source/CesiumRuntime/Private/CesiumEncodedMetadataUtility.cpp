@@ -204,26 +204,27 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     encodedProperty.pTexture->sRGB = false;
     // TODO: upgrade to new texture creation path.
     // encodedProperty.pTexture->textureSource = LegacyTextureSource{};
-    encodedProperty.pTexture->pTextureData = createTexturePlatformData(
-        ceilSqrtFeatureCount,
-        ceilSqrtFeatureCount,
-        encodedFormat.format);
+    // encodedProperty.pTexture->pTextureData = createTexturePlatformData(
+    //    ceilSqrtFeatureCount,
+    //    ceilSqrtFeatureCount,
+    //    encodedFormat.format);
 
     encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
     encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
     encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
 
-    if (!encodedProperty.pTexture->pTextureData) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT(
-              "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-      continue;
-    }
+    // if (!encodedProperty.pTexture->pTextureData) {
+    //   UE_LOG(
+    //       LogCesium,
+    //       Error,
+    //       TEXT(
+    //           "Error encoding a feature table property. Most likely could not
+    //           allocate enough texture memory."));
+    //   continue;
+    // }
 
     FTexture2DMipMap* pMip = new FTexture2DMipMap();
-    encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
+    // encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
     pMip->SizeX = ceilSqrtFeatureCount;
     pMip->SizeY = ceilSqrtFeatureCount;
     pMip->BulkData.Lock(LOCK_READ_WRITE);
@@ -537,29 +538,31 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);
-          encodedFeatureIdTexture.pTexture->pTextureData =
-              createTexturePlatformData(
-                  pFeatureIdImage->width,
-                  pFeatureIdImage->height,
-                  // TODO: currently this is always the case, but doesn't have
-                  // to be
-                  EPixelFormat::PF_R8G8B8A8_UINT);
+          // encodedFeatureIdTexture.pTexture->pTextureData =
+          //     createTexturePlatformData(
+          //         pFeatureIdImage->width,
+          //         pFeatureIdImage->height,
+          //         // TODO: currently this is always the case, but doesn't
+          //         have
+          //         // to be
+          //         EPixelFormat::PF_R8G8B8A8_UINT);
 
           encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
           encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
           encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
 
-          if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-            UE_LOG(
-                LogCesium,
-                Error,
-                TEXT(
-                    "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-            continue;
-          }
+          // if (!encodedFeatureIdTexture.pTexture->pTextureData) {
+          //   UE_LOG(
+          //       LogCesium,
+          //       Error,
+          //       TEXT(
+          //           "Error encoding a feature table property. Most likely
+          //           could not allocate enough texture memory."));
+          //   continue;
+          // }
 
           FTexture2DMipMap* pMip = new FTexture2DMipMap();
-          encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
+          // encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
           pMip->SizeX = pFeatureIdImage->width;
           pMip->SizeY = pFeatureIdImage->height;
           pMip->BulkData.Lock(LOCK_READ_WRITE);
