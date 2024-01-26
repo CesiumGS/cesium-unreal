@@ -126,16 +126,6 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
   }
 }
 
-CesiumGltf::ImageCesium& getImageCesium(CesiumGltf::Image& image) {
-  ExtensionUnrealImageData* pExtension =
-      image.getExtension<ExtensionUnrealImageData>();
-  if (pExtension && pExtension->pImage) {
-    return pExtension->pImage->image;
-  } else {
-    return image.cesium;
-  }
-}
-
 } // namespace
 
 namespace CesiumTextureUtility {
@@ -474,6 +464,14 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
         // UTexture2D::GetPlatformData()->GetExtData(). But we don't have a
         // UTexture2D yet. Do we really need it?
         0);
+
+    // Clear the now-unnecessary copy of the pixel data. Calling clear() isn't
+    // good enough because it won't actually release the memory.
+    std::vector<std::byte> pixelData;
+    imageCesium.pixelData.swap(pixelData);
+
+    std::vector<CesiumGltf::ImageCesiumMipPosition> mipPositions;
+    imageCesium.mipPositions.swap(mipPositions);
   } else {
     // The RHI texture will be created later on the render thread, directly
     // from this texture source. We need valid pixelData here, though.

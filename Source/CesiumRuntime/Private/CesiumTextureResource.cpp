@@ -347,5 +347,13 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
     RHIUnlockTexture2D(rhiTexture, i, false);
   }
 
+  // Clear the now-unnecessary copy of the pixel data. Calling clear() isn't
+  // good enough because it won't actually release the memory.
+  std::vector<std::byte> pixelData;
+  this->_image.pixelData.swap(pixelData);
+
+  std::vector<CesiumGltf::ImageCesiumMipPosition> mipPositions;
+  this->_image.mipPositions.swap(mipPositions);
+
   return rhiTexture;
 }
