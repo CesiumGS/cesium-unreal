@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "Engine/Texture.h"
 #include "TextureResource.h"
 #include <CesiumGltf/ImageCesium.h>
 
