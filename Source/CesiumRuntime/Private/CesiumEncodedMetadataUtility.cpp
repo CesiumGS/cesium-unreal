@@ -539,6 +539,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
                   false,
                   TEXTUREGROUP_8BitData,
                   false,
+                  true,
                   nullptr)));
           featureIdTextureMap.Emplace(
               pFeatureIdImage,

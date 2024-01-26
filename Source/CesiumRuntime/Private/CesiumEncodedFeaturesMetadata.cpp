@@ -130,18 +130,18 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
   if (pMappedUnrealImageIt) {
     encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
   } else {
-    pFeatureIdImage->width,
-        encodedFeatureIdTexture.pTexture =
-            MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-                // Copy the image, so that we can keep a copy of it in the glTF.
-                CesiumGltf::ImageCesium(*pFeatureIdImage),
-                TextureAddress::TA_Clamp,
-                TextureAddress::TA_Clamp,
-                TextureFilter::TF_Nearest,
-                false,
-                TEXTUREGROUP_8BitData,
-                false,
-                nullptr)));
+    encodedFeatureIdTexture.pTexture =
+        MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
+            // Copy the image, so that we can keep a copy of it in the glTF.
+            CesiumGltf::ImageCesium(*pFeatureIdImage),
+            TextureAddress::TA_Clamp,
+            TextureAddress::TA_Clamp,
+            TextureFilter::TF_Nearest,
+            false,
+            TEXTUREGROUP_8BitData,
+            false,
+            true,
+            nullptr)));
     featureIdTextureMap.Emplace(
         pFeatureIdImage,
         encodedFeatureIdTexture.pTexture);
@@ -564,6 +564,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
           false,
           TEXTUREGROUP_8BitData,
           false,
+          true,
           nullptr);
     }
 
@@ -707,6 +708,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
                 false,
                 TEXTUREGROUP_8BitData,
                 false,
+                true,
                 nullptr)));
         propertyTexturePropertyMap.Emplace(pImage, encodedProperty.pTexture);
       }

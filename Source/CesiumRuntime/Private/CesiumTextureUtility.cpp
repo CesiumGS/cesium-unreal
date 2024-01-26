@@ -308,6 +308,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
       // TODO: allow texture group to be configured on Cesium3DTileset.
       TEXTUREGROUP_World,
       sRGB,
+      false,
       pExistingImageResource);
 }
 
@@ -348,6 +349,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
+    bool useUintFormat,
     FCesiumTextureResourceBase* pExistingImageResource) {
   // TODO: don't generate mips here. Instead, generate mips if _any_ Texture
   // associated with this Image needs them. That way the RHI texture will have
@@ -409,15 +411,15 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   } else {
     switch (imageCesium.channels) {
     case 1:
-      pixelFormat = PF_R8;
+      pixelFormat = useUintFormat ? PF_R8_UINT : PF_R8;
       break;
     case 2:
-      pixelFormat = PF_R8G8;
+      pixelFormat = useUintFormat ? PF_R8G8_UINT : PF_R8G8;
       break;
     case 3:
     case 4:
     default:
-      pixelFormat = PF_R8G8B8A8;
+      pixelFormat = useUintFormat ? PF_R8G8B8A8_UINT : PF_R8G8B8A8;
     };
   }
 

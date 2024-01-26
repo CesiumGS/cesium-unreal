@@ -780,6 +780,7 @@ public:
         pOptions->group,
         // TODO: sRGB should probably be configurable on the raster overlay.
         true,
+        false,
         nullptr);
     return texture.Release();
   }

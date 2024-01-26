@@ -85,14 +85,20 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * The `pixelData` will be removed from the image so that it can be
  * passed to Unreal's renderer thread without copying it.
  *
- * @param imageSource The source for this image. This function may add
- * mip-maps to the image if needed.
+ * @param imageCesium The image.
  * @param addressX The X addressing mode.
  * @param addressY The Y addressing mode.
  * @param filter The sampler filtering to use for this texture.
+ * @param useMipMapsIfAvailable true to use this image's mipmaps for sampling,
+ * if they exist; false to ignore any mipmaps that might be present.
  * @param group The texture group of this texture.
- * @param generateMipMaps Whether to generate a mipmap for this image.
  * @param sRGB Whether this texture uses a sRGB color space.
+ * @param useUintFormat true to use the `_UINT` pixel formats, such as
+ * `PF_R8G8B8A8_UINT`.
+ * @param pExistingImageResource An existing RHI texture resource that has been
+ * created for this image, or nullptr if one hasn't been created yet. When this
+ * parameter is not nullptr, the provided image's `pixelData` is not required
+ * and can be empty.
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
@@ -103,6 +109,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
+    bool useUintFormat,
     FCesiumTextureResourceBase* pExistingImageResource);
 
 /**
