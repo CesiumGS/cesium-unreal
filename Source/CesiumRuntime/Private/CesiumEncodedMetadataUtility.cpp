@@ -530,53 +530,19 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         if (pMappedUnrealImageIt) {
           encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
         } else {
-          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
-          encodedFeatureIdTexture.pTexture->sRGB = false;
-          // TODO: upgrade to new texture creation path
-          // encodedFeatureIdTexture.pTexture->textureSource =
-          //    LegacyTextureSource{};
+          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
+              std::move(*loadTextureAnyThreadPart(
+                  CesiumGltf::ImageCesium(*pFeatureIdImage),
+                  TextureAddress::TA_Clamp,
+                  TextureAddress::TA_Clamp,
+                  TextureFilter::TF_Nearest,
+                  false,
+                  TEXTUREGROUP_8BitData,
+                  false,
+                  nullptr)));
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);
-          // encodedFeatureIdTexture.pTexture->pTextureData =
-          //     createTexturePlatformData(
-          //         pFeatureIdImage->width,
-          //         pFeatureIdImage->height,
-          //         // TODO: currently this is always the case, but doesn't
-          //         have
-          //         // to be
-          //         EPixelFormat::PF_R8G8B8A8_UINT);
-
-          encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
-          encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
-          encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
-
-          // if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-          //   UE_LOG(
-          //       LogCesium,
-          //       Error,
-          //       TEXT(
-          //           "Error encoding a feature table property. Most likely
-          //           could not allocate enough texture memory."));
-          //   continue;
-          // }
-
-          FTexture2DMipMap* pMip = new FTexture2DMipMap();
-          // encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
-          pMip->SizeX = pFeatureIdImage->width;
-          pMip->SizeY = pFeatureIdImage->height;
-          pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-          void* pTextureData =
-              pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
-
-          FMemory::Memcpy(
-              pTextureData,
-              pFeatureIdImage->pixelData.data(),
-              pFeatureIdImage->pixelData.size());
-
-          pMip->BulkData.Unlock();
-          pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
         }
 
         encodedFeatureIdTexture.featureTableName = featureTableName;
