@@ -10,7 +10,6 @@
 #include "CesiumTextureResource.h"
 #include "Containers/ResourceArray.h"
 #include "DynamicRHI.h"
-#include "ExtensionUnrealImageData.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "PixelFormat.h"
 #include "RHICommandList.h"
@@ -351,23 +350,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool sRGB,
     bool useUintFormat,
     FCesiumTextureResourceBase* pExistingImageResource) {
-  // TODO: don't generate mips here. Instead, generate mips if _any_ Texture
-  // associated with this Image needs them. That way the RHI texture will have
-  // the necessary mips, and the sampler created for other Textures simply won't
-  // use them. There's no need to have two textures, one with and one without
-  // mips.
-  // if (generateMipMaps && !imageCesium.pixelData.empty()) {
-  //  std::optional<std::string> errorMessage =
-  //      CesiumGltfReader::GltfReader::generateMipMaps(imageCesium);
-  //  if (errorMessage) {
-  //    UE_LOG(
-  //        LogCesium,
-  //        Warning,
-  //        TEXT("%s"),
-  //        UTF8_TO_TCHAR(errorMessage->c_str()));
-  //  }
-  //}
-
   EPixelFormat pixelFormat;
   if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
     switch (imageCesium.compressedPixelFormat) {

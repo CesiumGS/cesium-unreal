@@ -771,6 +771,18 @@ public:
 
     auto pOptions = *ppOptions;
 
+    if (pOptions->useMipmaps) {
+      std::optional<std::string> errorMessage =
+          CesiumGltfReader::GltfReader::generateMipMaps(image);
+      if (errorMessage) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("%s"),
+            UTF8_TO_TCHAR(errorMessage->c_str()));
+      }
+    }
+
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         std::move(image),
         TextureAddress::TA_Clamp,

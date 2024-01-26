@@ -1869,6 +1869,48 @@ static void loadModelAnyThreadPart(
 
   Model& model = *options.pModel;
 
+  // Generate mipmaps if needed.
+  // An image needs mipmaps generated for it if:
+  // 1. It is used by a Texture that has a Sampler with a mipmap filtering mode,
+  // and
+  // 2. It does not already have mipmaps.
+  // It's ok if an image has mipmaps even if not all textures will use them.
+  // There's no reason to have two RHI textures, one with and one without mips.
+  for (const Texture& texture : model.textures) {
+    const Sampler& sampler = model.getSafe(model.samplers, texture.sampler);
+
+    bool needsMipmaps;
+    switch (sampler.minFilter.value_or(
+        CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR)) {
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+      needsMipmaps = true;
+      break;
+    default: // LINEAR and NEAREST
+      needsMipmaps = false;
+      break;
+    }
+
+    if (!needsMipmaps)
+      continue;
+
+    Image* pImage = model.getSafe(&model.images, texture.source);
+    if (!pImage || pImage->cesium.pixelData.empty())
+      continue;
+
+    std::optional<std::string> errorMessage =
+        CesiumGltfReader::GltfReader::generateMipMaps(pImage->cesium);
+    if (errorMessage) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s"),
+          UTF8_TO_TCHAR(errorMessage->c_str()));
+    }
+  }
+
   const ExtensionModelExtStructuralMetadata* pMetadataExtension =
       model.getExtension<ExtensionModelExtStructuralMetadata>();
   if (pMetadataExtension) {
