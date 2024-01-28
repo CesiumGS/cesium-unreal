@@ -1,4 +1,5 @@
 #include "CesiumTextureResource.h"
+#include "RenderUtils.h"
 #include "Stats/Stats.h"
 
 namespace {
