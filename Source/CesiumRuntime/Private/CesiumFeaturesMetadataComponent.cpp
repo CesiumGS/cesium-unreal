@@ -6,9 +6,9 @@
 #include "CesiumEncodedMetadataConversions.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
-#include "CesiumMetadataConversions.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumRuntime.h"
+#include "UnrealMetadataConversions.h"
 
 #if WITH_EDITOR
 #include "AssetRegistry/AssetData.h"
