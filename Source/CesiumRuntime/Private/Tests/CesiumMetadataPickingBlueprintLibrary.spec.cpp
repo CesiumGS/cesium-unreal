@@ -113,7 +113,8 @@ void FCesiumMetadataPickingSpec::Define() {
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
-      TestEqual("UV at point", UV, FVector2D(0, 1));
+      TestTrue("UV at point (X)", FMath::IsNearlyEqual(UV[0], 0.0));
+      TestTrue("UV at point (Y)", FMath::IsNearlyEqual(UV[1], 1.0));
 
       Hit.Location = FVector_NetQuantize(0, -0.5, 0);
       TestTrue(
@@ -131,7 +132,8 @@ void FCesiumMetadataPickingSpec::Define() {
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
-      TestEqual("UV at point", UV, FVector2D(0, 1));
+      TestTrue("UV at point (X)", FMath::IsNearlyEqual(UV[0], 0.0));
+      TestTrue("UV at point (Y)", FMath::IsNearlyEqual(UV[1], 1.0));
     });
 
     It("gets hit for primitive with indices", [this]() {
@@ -157,7 +159,8 @@ void FCesiumMetadataPickingSpec::Define() {
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
-      TestEqual("UV at point", UV, FVector2D(0, 1));
+      TestTrue("UV at point (X)", FMath::IsNearlyEqual(UV[0], 0.0));
+      TestTrue("UV at point (Y)", FMath::IsNearlyEqual(UV[1], 1.0));
 
       Hit.Location = FVector_NetQuantize(0, -3.5, 0);
       TestTrue(
@@ -175,7 +178,8 @@ void FCesiumMetadataPickingSpec::Define() {
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
-      TestEqual("UV at point", UV, FVector2D(0, 1));
+      TestTrue("UV at point (X)", FMath::IsNearlyEqual(UV[0], 0.0));
+      TestTrue("UV at point (Y)", FMath::IsNearlyEqual(UV[1], 1.0));
     });
   });
 
