@@ -571,7 +571,10 @@ static void createTexCoordAccessorsForFeaturesMetadata(
       }
       texCoordAccessorsMap.emplace(
           gltfTexCoordSetIndex,
-          CesiumGltf::getTexCoordAccessorView(model, primitive, gltfTexCoordSetIndex));
+          CesiumGltf::getTexCoordAccessorView(
+              model,
+              primitive,
+              gltfTexCoordSetIndex));
     }
   }
 }
