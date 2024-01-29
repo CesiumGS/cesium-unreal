@@ -85,7 +85,7 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     FVector2D& UV) {
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(Hit.Component);
-  if (!IsValid(pGltfComponent)) {
+  if (!IsValid(pGltfComponent) || !pGltfComponent->pMeshPrimitive) {
     return false;
   }
 
@@ -101,19 +101,21 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
   }
 
   std::array<int64, 3> VertexIndices = std::visit(
-      CesiumFaceVertexIndicesFromAccessor{
+      CesiumGltf::IndicesForFaceFromAccessor{
           Hit.FaceIndex,
-          pGltfComponent->PositionAccessor.size()},
+          pGltfComponent->PositionAccessor.size(),
+          pGltfComponent->pMeshPrimitive->mode},
       pGltfComponent->IndexAccessor);
 
   // Adapted from UBodySetup::CalcUVAtLocation. Compute the barycentric
   // coordinates of the point relative to the face, then use those to
   // interpolate the UVs.
   std::array<FVector2D, 3> UVs;
-  const CesiumTexCoordAccessorType& accessor = accessorIt->second;
+  const CesiumGltf::TexCoordAccessorType& accessor = accessorIt->second;
   for (size_t i = 0; i < UVs.size(); i++) {
-    auto maybeTexCoord =
-        std::visit(CesiumTexCoordFromAccessor{VertexIndices[i]}, accessor);
+    auto maybeTexCoord = std::visit(
+        CesiumGltf::TexCoordFromAccessor{VertexIndices[i]},
+        accessor);
     if (!maybeTexCoord) {
       return false;
     }

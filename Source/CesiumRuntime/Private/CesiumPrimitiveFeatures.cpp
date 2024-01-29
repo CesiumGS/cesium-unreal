@@ -13,22 +13,8 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     const Model& Model,
     const MeshPrimitive& Primitive,
     const ExtensionExtMeshFeatures& Features)
-    : _vertexCount(0) {
-  const Accessor& indicesAccessor =
-      Model.getSafe(Model.accessors, Primitive.indices);
-  switch (indicesAccessor.componentType) {
-  case Accessor::ComponentType::UNSIGNED_BYTE:
-    _vertexIDAccessor = AccessorView<uint8_t>(Model, indicesAccessor);
-    break;
-  case Accessor::ComponentType::UNSIGNED_SHORT:
-    _vertexIDAccessor = AccessorView<uint16_t>(Model, indicesAccessor);
-    break;
-  case Accessor::ComponentType::UNSIGNED_INT:
-    _vertexIDAccessor = AccessorView<uint32_t>(Model, indicesAccessor);
-    break;
-  default:
-    break;
-  }
+    : _vertexCount(0), _primitiveMode(Primitive.mode) {
+  this->_vertexIdAccessor = CesiumGltf::getIndexAccessorView(Model, Primitive);
 
   auto positionIt = Primitive.attributes.find("POSITION");
   if (positionIt != Primitive.attributes.end()) {
@@ -38,7 +24,7 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
   }
 
   for (const CesiumGltf::FeatureId& FeatureId : Features.featureIds) {
-    this->_featureIDSets.Add(FCesiumFeatureIdSet(Model, Primitive, FeatureId));
+    this->_featureIdSets.Add(FCesiumFeatureIdSet(Model, Primitive, FeatureId));
   }
 }
 
@@ -57,23 +43,23 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
 const TArray<FCesiumFeatureIdSet>&
 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
-  return PrimitiveFeatures._featureIDSets;
+  return PrimitiveFeatures._featureIdSets;
 }
 
 const TArray<FCesiumFeatureIdSet>
 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
     ECesiumFeatureIdSetType Type) {
-  TArray<FCesiumFeatureIdSet> featureIDSets;
-  for (int32 i = 0; i < PrimitiveFeatures._featureIDSets.Num(); i++) {
-    const FCesiumFeatureIdSet& featureIDSet =
-        PrimitiveFeatures._featureIDSets[i];
+  TArray<FCesiumFeatureIdSet> featureIdSets;
+  for (int32 i = 0; i < PrimitiveFeatures._featureIdSets.Num(); i++) {
+    const FCesiumFeatureIdSet& featureIdSet =
+        PrimitiveFeatures._featureIdSets[i];
     if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
-            featureIDSet) == Type) {
-      featureIDSets.Add(featureIDSet);
+            featureIdSet) == Type) {
+      featureIdSets.Add(featureIdSet);
     }
   }
-  return featureIDSets;
+  return featureIdSets;
 }
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetVertexCount(
@@ -89,10 +75,11 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
   }
 
   std::array<int64, 3> faceIndices = std::visit(
-      CesiumFaceVertexIndicesFromAccessor{
+      CesiumGltf::IndicesForFaceFromAccessor{
           FaceIndex,
-          PrimitiveFeatures._vertexCount},
-      PrimitiveFeatures._vertexIDAccessor);
+          PrimitiveFeatures._vertexCount,
+          PrimitiveFeatures._primitiveMode},
+      PrimitiveFeatures._vertexIdAccessor);
 
   return faceIndices[0];
 }
@@ -102,12 +89,12 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
     int64 FaceIndex,
     int64 FeatureIDSetIndex) {
   if (FeatureIDSetIndex < 0 ||
-      FeatureIDSetIndex >= PrimitiveFeatures._featureIDSets.Num()) {
+      FeatureIDSetIndex >= PrimitiveFeatures._featureIdSets.Num()) {
     return -1;
   }
 
   return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
-      PrimitiveFeatures._featureIDSets[FeatureIDSetIndex],
+      PrimitiveFeatures._featureIdSets[FeatureIDSetIndex],
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
           PrimitiveFeatures,
           FaceIndex));
@@ -118,11 +105,11 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit(
     const FHitResult& Hit,
     int64 FeatureIDSetIndex) {
   if (FeatureIDSetIndex < 0 ||
-      FeatureIDSetIndex >= PrimitiveFeatures._featureIDSets.Num()) {
+      FeatureIDSetIndex >= PrimitiveFeatures._featureIdSets.Num()) {
     return -1;
   }
 
   return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
-      PrimitiveFeatures._featureIDSets[FeatureIDSetIndex],
+      PrimitiveFeatures._featureIdSets[FeatureIDSetIndex],
       Hit);
 }

@@ -3,9 +3,6 @@
 #pragma once
 
 #include "CesiumEncodedFeaturesMetadata.h"
-#include "CesiumGltf/Material.h"
-#include "CesiumGltf/MeshPrimitive.h"
-#include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -17,6 +14,11 @@
 #include "Containers/UnrealString.h"
 #include "StaticMeshResources.h"
 #include "Templates/SharedPointer.h"
+
+#include <CesiumGltf/AccessorUtility.h>
+#include <CesiumGltf/Material.h>
+#include <CesiumGltf/MeshPrimitive.h>
+#include <CesiumGltf/Model.h>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <optional>
@@ -118,7 +120,7 @@ struct LoadPrimitiveResult {
    * accessor views on texture coordinate sets that will be used by feature ID
    * textures or property textures for picking.
    */
-  std::unordered_map<int32_t, CesiumTexCoordAccessorType> TexCoordAccessorMap;
+  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType> TexCoordAccessorMap;
 
   /**
    * The position accessor of the glTF primitive. This is used for computing
@@ -131,7 +133,7 @@ struct LoadPrimitiveResult {
    * The index accessor of the glTF primitive, if one is specified. This is used
    * for computing the UV at a hit location on a primitive.
    */
-  CesiumIndexAccessorType IndexAccessor;
+  CesiumGltf::IndexAccessorType IndexAccessor;
 
 #pragma endregion
 };

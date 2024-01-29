@@ -151,14 +151,15 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
   // Find the first vertex of the face.
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(Hit.Component);
-  if (!IsValid(pGltfComponent)) {
+  if (!IsValid(pGltfComponent) || !pGltfComponent->pMeshPrimitive) {
     return -1;
   }
 
   auto faceIndices = std::visit(
-      CesiumFaceVertexIndicesFromAccessor{
+      CesiumGltf::IndicesForFaceFromAccessor{
           Hit.FaceIndex,
-          pGltfComponent->PositionAccessor.size()},
+          pGltfComponent->PositionAccessor.size(),
+          pGltfComponent->pMeshPrimitive->mode},
       pGltfComponent->IndexAccessor);
 
   int64 VertexIndex = faceIndices[0];
