@@ -102,7 +102,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageCesium&& imageCesium,
+    CesiumGltf::ImageCesium& imageCesium,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,

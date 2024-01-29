@@ -784,7 +784,7 @@ public:
     }
 
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        std::move(image),
+        image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,

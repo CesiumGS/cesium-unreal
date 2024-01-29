@@ -530,9 +530,10 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         if (pMappedUnrealImageIt) {
           encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
         } else {
+          CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
           encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
               std::move(*loadTextureAnyThreadPart(
-                  CesiumGltf::ImageCesium(*pFeatureIdImage),
+                  imageCopy,
                   TextureAddress::TA_Clamp,
                   TextureAddress::TA_Clamp,
                   TextureFilter::TF_Nearest,

@@ -130,10 +130,11 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
   if (pMappedUnrealImageIt) {
     encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
   } else {
+    // Copy the image, so that we can keep a copy of it in the glTF.
+    CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
     encodedFeatureIdTexture.pTexture =
         MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-            // Copy the image, so that we can keep a copy of it in the glTF.
-            CesiumGltf::ImageCesium(*pFeatureIdImage),
+            imageCopy,
             TextureAddress::TA_Clamp,
             TextureAddress::TA_Clamp,
             TextureFilter::TF_Nearest,
@@ -557,7 +558,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       }
 
       encodedProperty.pTexture = loadTextureAnyThreadPart(
-          std::move(image),
+          image,
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
           TextureFilter::TF_Nearest,
@@ -697,10 +698,11 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
           addressY = TextureAddress::TA_Clamp;
         }
 
+        // Copy the image, so that we can keep a copy of it in the glTF.
+        CesiumGltf::ImageCesium imageCopy(*pImage);
         encodedProperty.pTexture =
             MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-                // Copy the image, so that we can keep a copy of it in the glTF.
-                CesiumGltf::ImageCesium(*pImage),
+                imageCopy,
                 addressX,
                 addressY,
                 // TODO: account for texture filter

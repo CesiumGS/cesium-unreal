@@ -26,7 +26,6 @@
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumGltfReader/GltfReader.h>
 #include <CesiumUtility/IntrusivePointer.h>
-#include <CesiumUtility/ReferenceCountedThreadSafe.h>
 
 using namespace CesiumGltf;
 
@@ -299,7 +298,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
   }
 
   return loadTextureAnyThreadPart(
-      std::move(image.cesium),
+      image.cesium,
       addressX,
       addressY,
       filter,
@@ -341,7 +340,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageCesium&& imageCesium,
+    CesiumGltf::ImageCesium& imageCesium,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -412,6 +411,11 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->filter = filter;
   pResult->group = group;
   pResult->sRGB = sRGB;
+
+  // Store the current size of the pixel data, because we're about to clear it
+  // but we still want to have an accurate estimation of the size of the image
+  // for caching purposes.
+  imageCesium.sizeBytes = int64_t(imageCesium.pixelData.size());
 
   if (pExistingImageResource) {
     pResult->pTextureResource = MakeUnique<FCesiumUseExistingTextureResource>(
