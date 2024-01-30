@@ -27,6 +27,7 @@
 #include <memory>
 #include <stb_image_resize.h>
 #include <variant>
+#include "CesiumCommon.h"
 
 using namespace CesiumGltf;
 
@@ -373,7 +374,7 @@ public:
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_VERSION_5_3_OR_HIGHER
+#if ENGINE_VERSION_5_2_OR_HIGHER
       rhiTexture = RHICreateTexture(
           FRHITextureCreateDesc::Create2D(createInfo.DebugName)
               .SetExtent(int32(this->_width), int32(this->_height))
@@ -954,7 +955,12 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
+    #if ENGINE_VERSION_5_3_OR_HIGHER 
+    pCesiumTextureResource->InitResource(FRHICommandListImmediate::Get()); //Init Resource now requires a command list.
+    #else
     pCesiumTextureResource->InitResource();
+    #endif
+
   });
 
   return pTexture;
