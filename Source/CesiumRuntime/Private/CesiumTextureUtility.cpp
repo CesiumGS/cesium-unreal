@@ -27,6 +27,7 @@
 #include <memory>
 #include <stb_image_resize.h>
 #include <variant>
+#include "CesiumCommon.h"
 
 using namespace CesiumGltf;
 

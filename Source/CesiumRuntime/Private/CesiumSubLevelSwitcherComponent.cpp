@@ -7,6 +7,7 @@
 #include "LevelInstance/LevelInstanceLevelStreaming.h"
 #include "LevelInstance/LevelInstanceSubsystem.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "CesiumCommon.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
