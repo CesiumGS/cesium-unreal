@@ -100,7 +100,7 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     return false;
   }
 
-  std::array<int64, 3> VertexIndices = std::visit(
+  std::array<int64_t, 3> VertexIndices = std::visit(
       CesiumGltf::IndicesForFaceFromAccessor{
           Hit.FaceIndex,
           pGltfComponent->PositionAccessor.size(),
