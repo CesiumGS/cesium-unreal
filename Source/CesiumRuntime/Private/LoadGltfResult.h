@@ -120,7 +120,8 @@ struct LoadPrimitiveResult {
    * accessor views on texture coordinate sets that will be used by feature ID
    * textures or property textures for picking.
    */
-  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType> TexCoordAccessorMap;
+  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
+      TexCoordAccessorMap;
 
   /**
    * The position accessor of the glTF primitive. This is used for computing
