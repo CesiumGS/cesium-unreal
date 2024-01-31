@@ -6,6 +6,8 @@
 #include <CesiumGltf/MetadataConversions.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 
+using namespace CesiumGltf;
+
 ECesiumMetadataBlueprintType
 UCesiumMetadataValueBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {

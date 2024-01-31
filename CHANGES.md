@@ -15,6 +15,8 @@
 - Fixed a bug in `CesiumActors` that would cause the editor to crash when running in Standalone mode.
 - Fixed several building warnings when packing in Unreal Engine 5.3.
 - Readded backwards compatibility for feature textures from `EXT_feature_metadata`, which was mistakenly removed.
+- Fixed a bug that caused nav mesh creation to be slow due to creating duplicate physics meshes.
+- `KHR_texture_transform` is now applied in `UMaterial`, instead of being baked directly into texture coordinates.
 
 ##### Additions :tada:
 
