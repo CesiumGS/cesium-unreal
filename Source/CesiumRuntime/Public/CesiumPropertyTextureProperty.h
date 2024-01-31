@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTexturePropertyView.h"
 #include "CesiumMetadataValue.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include <CesiumGltf/PropertyTexturePropertyView.h>
 #include <any>
 #include "CesiumPropertyTextureProperty.generated.h"
 

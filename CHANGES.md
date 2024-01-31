@@ -13,6 +13,8 @@
 - Fixed a bug that caused textures created by Cesium for Unreal on D3D11 and D3D12 (only) to not be counted in the "Texture Memory Used" stat in the "Memory" stat group or in any counter in the "TextureGroup" stat group.
 - Fixed a bug in `CesiumGltfComponent` that would cause a crash if the `Ignore KHR_materials_unlit` setting was enabled on a point cloud.
 - Fixed a bug in `CesiumActors` that would cause the editor to crash when running in Standalone mode.
+- Fixed several building warnings when packing in Unreal Engine 5.3.
+- Readded backwards compatibility for feature textures from `EXT_feature_metadata`, which was mistakenly removed.
 
 ##### Additions :tada:
 
