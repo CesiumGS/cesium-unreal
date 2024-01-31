@@ -16,7 +16,7 @@
 - Fixed several building warnings when packing in Unreal Engine 5.3.
 - Readded backwards compatibility for feature textures from `EXT_feature_metadata`, which was mistakenly removed.
 - Fixed a bug that caused nav mesh creation to be slow due to creating duplicate physics meshes.
-- Apply `KHR_texture_transform` texture coordinate transformation in UMaterial instead of in native.
+- `KHR_texture_transform` is now applied in `UMaterial`, instead of being baked directly into texture coordinates.
 
 ##### Additions :tada:
 
