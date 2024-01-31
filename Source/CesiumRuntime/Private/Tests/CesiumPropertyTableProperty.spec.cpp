@@ -291,11 +291,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      std::vector<uint16_t> offsets{
-          0,
-          1 * sizeof(int32_t),
-          3 * sizeof(int32_t),
-          6 * sizeof(int32_t)};
+      std::vector<uint16_t> offsets{0, 1, 3, 6};
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
       int64_t size = static_cast<int64_t>(offsets.size()) - 1;
@@ -3762,11 +3758,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      std::vector<uint16_t> offsets{
-          0,
-          2 * sizeof(int32_t),
-          3 * sizeof(int32_t),
-          6 * sizeof(int32_t)};
+      std::vector<uint16_t> offsets{0, 2, 3, 6};
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
       int64 size = static_cast<int64_t>(offsets.size() - 1);
 
