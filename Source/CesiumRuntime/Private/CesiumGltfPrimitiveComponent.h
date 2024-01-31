@@ -11,7 +11,7 @@
 #include "CesiumRasterOverlays.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
-#include "GltfAccessors.h"
+#include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
@@ -87,7 +87,8 @@ public:
    * accessor views on texture coordinate sets that will be used by feature ID
    * textures or property textures for picking.
    */
-  std::unordered_map<int32_t, CesiumTexCoordAccessorType> TexCoordAccessorMap;
+  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
+      TexCoordAccessorMap;
 
   /**
    * The position accessor of the glTF primitive. This is used for computing
@@ -100,7 +101,7 @@ public:
    * The index accessor of the glTF primitive, if one is specified. This is used
    * for computing the UV at a hit location on a primitive.
    */
-  CesiumIndexAccessorType IndexAccessor;
+  CesiumGltf::IndexAccessorType IndexAccessor;
 
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 

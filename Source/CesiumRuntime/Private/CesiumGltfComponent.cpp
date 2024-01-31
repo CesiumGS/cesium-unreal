@@ -6,30 +6,13 @@
 #include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
-#include "CesiumGeometry/Axis.h"
-#include "CesiumGeometry/Rectangle.h"
-#include "CesiumGeometry/Transforms.h"
-#include "CesiumGltf/AccessorView.h"
-#include "CesiumGltf/ExtensionExtMeshFeatures.h"
-#include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
-#include "CesiumGltf/ExtensionKhrTextureTransform.h"
-#include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
-#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
-#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
-#include "CesiumGltf/PropertyType.h"
-#include "CesiumGltf/TextureInfo.h"
-#include "CesiumGltfContent/GltfUtilities.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
-#include "CesiumRasterOverlays/RasterOverlay.h"
-#include "CesiumRasterOverlays/RasterOverlayTile.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
-#include "CesiumUtility/Tracing.h"
-#include "CesiumUtility/joinToString.h"
 #include "Chaos/AABBTree.h"
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
@@ -51,6 +34,25 @@
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 #include "mikktspace.h"
+
+#include <CesiumGeometry/Axis.h>
+#include <CesiumGeometry/Rectangle.h>
+#include <CesiumGeometry/Transforms.h>
+#include <CesiumGltf/AccessorUtility.h>
+#include <CesiumGltf/AccessorView.h>
+#include <CesiumGltf/ExtensionExtMeshFeatures.h>
+#include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
+#include <CesiumGltf/ExtensionKhrTextureTransform.h>
+#include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
+#include <CesiumGltf/ExtensionModelExtFeatureMetadata.h>
+#include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
+#include <CesiumGltf/PropertyType.h>
+#include <CesiumGltf/TextureInfo.h>
+#include <CesiumGltfContent/GltfUtilities.h>
+#include <CesiumRasterOverlays/RasterOverlay.h>
+#include <CesiumRasterOverlays/RasterOverlayTile.h>
+#include <CesiumUtility/Tracing.h>
+#include <CesiumUtility/joinToString.h>
 #include <cstddef>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -518,7 +520,7 @@ static void createTexCoordAccessorsForFeaturesMetadata(
     const FCesiumPrimitiveFeatures& primitiveFeatures,
     const FCesiumPrimitiveMetadata& primitiveMetadata,
     const FCesiumModelMetadata& modelMetadata,
-    std::unordered_map<int32_t, CesiumTexCoordAccessorType>&
+    std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>&
         texCoordAccessorsMap) {
   auto featureIdTextures =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
@@ -540,7 +542,10 @@ static void createTexCoordAccessorsForFeaturesMetadata(
     }
     texCoordAccessorsMap.emplace(
         gltfTexCoordSetIndex,
-        GetTexCoordAccessorView(model, primitive, gltfTexCoordSetIndex));
+        CesiumGltf::getTexCoordAccessorView(
+            model,
+            primitive,
+            gltfTexCoordSetIndex));
   }
 
   auto propertyTextureIndices =
@@ -567,7 +572,10 @@ static void createTexCoordAccessorsForFeaturesMetadata(
       }
       texCoordAccessorsMap.emplace(
           gltfTexCoordSetIndex,
-          GetTexCoordAccessorView(model, primitive, gltfTexCoordSetIndex));
+          CesiumGltf::getTexCoordAccessorView(
+              model,
+              primitive,
+              gltfTexCoordSetIndex));
     }
   }
 }

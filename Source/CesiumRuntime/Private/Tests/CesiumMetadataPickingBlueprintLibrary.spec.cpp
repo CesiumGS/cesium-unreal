@@ -32,7 +32,9 @@ void FCesiumMetadataPickingSpec::Define() {
       model = Model();
       Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
+      pPrimitive->mode = CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
       pPrimitiveComponent = NewObject<UCesiumGltfPrimitiveComponent>();
+      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
 
       std::vector<glm::vec3> positions{
           glm::vec3(-1, 0, 0),
@@ -188,6 +190,7 @@ void FCesiumMetadataPickingSpec::Define() {
       model = Model();
       Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
+      pPrimitive->mode = MeshPrimitive::Mode::TRIANGLES;
 
       // Two disconnected triangles.
       std::vector<glm::vec3> positions{
@@ -225,6 +228,7 @@ void FCesiumMetadataPickingSpec::Define() {
       pPrimitiveComponent->AttachToComponent(
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
     });
 
     It("returns empty map for invalid component", [this]() {
@@ -544,6 +548,7 @@ void FCesiumMetadataPickingSpec::Define() {
       model = Model();
       Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
+      pPrimitive->mode = MeshPrimitive::Mode::TRIANGLES;
 
       std::vector<glm::vec3> positions{
           glm::vec3(-1, 0, 0),
@@ -602,10 +607,12 @@ void FCesiumMetadataPickingSpec::Define() {
       pModelComponent = NewObject<UCesiumGltfComponent>();
       pPrimitiveComponent =
           NewObject<UCesiumGltfPrimitiveComponent>(pModelComponent);
+
       pPrimitiveComponent->AttachToComponent(
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
 
+      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
       pPrimitiveComponent->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
       pPrimitiveComponent->TexCoordAccessorMap.emplace(
@@ -686,8 +693,7 @@ void FCesiumMetadataPickingSpec::Define() {
              scalarValues,
              {0});
 
-         pModelComponent->Metadata =
-             FCesiumModelMetadata(model, *pModelMetadata);
+         pModelComponent->Metadata = FCesiumModelMetadata();
 
          pPrimitiveMetadata->propertyTextures.clear();
          pPrimitiveMetadata->propertyTextures.push_back(1);
@@ -699,7 +705,7 @@ void FCesiumMetadataPickingSpec::Define() {
          Hit.Component = pPrimitiveComponent;
 
          const auto values = UCesiumMetadataPickingBlueprintLibrary::
-             GetPropertyTableValuesFromHit(Hit);
+             GetPropertyTextureValuesFromHit(Hit);
          TestTrue("values are empty", values.IsEmpty());
        });
 
