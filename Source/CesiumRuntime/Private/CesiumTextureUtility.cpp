@@ -27,6 +27,7 @@
 #include <memory>
 #include <stb_image_resize.h>
 #include <variant>
+#include "CesiumCommon.h"
 
 using namespace CesiumGltf;
 
@@ -58,6 +59,7 @@ void legacy_populateMips(
     FMemory::Memcpy(pDest, image.pixelData.data(), image.pixelData.size());
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
 
     return;
   }
@@ -77,6 +79,7 @@ void legacy_populateMips(
         mipPos.byteSize);
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
 
     if (!generateMipMaps) {
       // Only populate mip 0 if we don't want the full mip chain.
@@ -262,6 +265,8 @@ public:
       this->TextureRHI = pAsyncTexture->rhiTextureRef;
       pAsyncTexture->rhiTextureRef.SafeRelease();
     }
+
+    STAT(this->_lodGroupStatName = TextureGroupStatFNames[pTexture->LODGroup]);
   }
 
   virtual ~FCesiumTextureResource() {
@@ -278,6 +283,30 @@ public:
 #else
   virtual void InitRHI() override {
 #endif
+
+#if STATS
+    ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+    if (this->bSRGB) {
+      textureFlags |= TexCreate_SRGB;
+    }
+
+    const FIntPoint MipExtents =
+        CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
+    uint32 alignment;
+    this->_textureSize = RHICalcTexture2DPlatformSize(
+        MipExtents.X,
+        MipExtents.Y,
+        this->_format,
+        this->GetCurrentMipCount(),
+        1,
+        textureFlags,
+        FRHIResourceCreateInfo(this->_platformExtData),
+        alignment);
+
+    INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+#endif
+
     FSamplerStateInitializerRHI samplerStateInitializer(
         this->_filter,
         this->_addressX,
@@ -345,7 +374,7 @@ public:
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_VERSION_5_3_OR_HIGHER
+#if ENGINE_VERSION_5_2_OR_HIGHER
       rhiTexture = RHICreateTexture(
           FRHITextureCreateDesc::Create2D(createInfo.DebugName)
               .SetExtent(int32(this->_width), int32(this->_height))
@@ -385,10 +414,17 @@ public:
   }
 
   virtual void ReleaseRHI() override {
+    DEC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    DEC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
 
     FTextureResource::ReleaseRHI();
   }
+
+#if STATS
+  static FName TextureGroupStatFNames[TEXTUREGROUP_MAX];
+#endif
 
 private:
   UTexture* _pTexture;
@@ -402,7 +438,37 @@ private:
   ESamplerAddressMode _addressY;
 
   uint32 _platformExtData;
+
+  FName _lodGroupStatName;
+  uint64 _textureSize;
 };
+
+#if STATS
+
+// This is copied from TextureResource.cpp. Unfortunately we can't use
+// FTextureResource::TextureGroupStatFNames, even though it's static and public,
+// because, inexplicably, it isn't DLL exported. So instead we duplicate it
+// here.
+namespace {
+DECLARE_STATS_GROUP(
+    TEXT("Texture Group"),
+    STATGROUP_TextureGroup,
+    STATCAT_Advanced);
+
+// Declare the stats for each Texture Group.
+#define DECLARETEXTUREGROUPSTAT(Group)                                         \
+  DECLARE_MEMORY_STAT(TEXT(#Group), STAT_##Group, STATGROUP_TextureGroup);
+FOREACH_ENUM_TEXTUREGROUP(DECLARETEXTUREGROUPSTAT)
+#undef DECLARETEXTUREGROUPSTAT
+} // namespace
+
+FName FCesiumTextureResource::TextureGroupStatFNames[TEXTUREGROUP_MAX] = {
+#define ASSIGNTEXTUREGROUPSTATNAME(Group) GET_STATFNAME(STAT_##Group),
+    FOREACH_ENUM_TEXTUREGROUP(ASSIGNTEXTUREGROUPSTATNAME)
+#undef ASSIGNTEXTUREGROUPSTATNAME
+};
+
+#endif
 
 namespace {
 
@@ -889,7 +955,12 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
+    #if ENGINE_VERSION_5_3_OR_HIGHER 
+    pCesiumTextureResource->InitResource(FRHICommandListImmediate::Get()); //Init Resource now requires a command list.
+    #else
     pCesiumTextureResource->InitResource();
+    #endif
+
   });
 
   return pTexture;

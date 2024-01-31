@@ -77,7 +77,9 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
   data.resize(imageWidth * imageHeight);
   std::memcpy(data.data(), featureIDs.data(), data.size());
 
-  model.samplers.emplace_back();
+  Sampler& sampler = model.samplers.emplace_back();
+  sampler.wrapS = Sampler::WrapS::CLAMP_TO_EDGE;
+  sampler.wrapT = Sampler::WrapT::CLAMP_TO_EDGE;
 
   CesiumGltf::Texture& texture = model.textures.emplace_back();
   texture.sampler = 0;
