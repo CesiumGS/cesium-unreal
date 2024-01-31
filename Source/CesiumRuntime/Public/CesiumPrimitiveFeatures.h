@@ -43,7 +43,7 @@ public:
 
 private:
   TArray<FCesiumFeatureIdSet> _featureIdSets;
-  CesiumGltf::IndexAccessorType _vertexIdAccessor;
+  CesiumGltf::IndexAccessorType _indexAccessor;
   int64_t _vertexCount;
   int32_t _primitiveMode;
 

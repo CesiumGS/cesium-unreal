@@ -155,14 +155,14 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
     return -1;
   }
 
-  auto faceIndices = std::visit(
+  auto VertexIndices = std::visit(
       CesiumGltf::IndicesForFaceFromAccessor{
           Hit.FaceIndex,
           pGltfComponent->PositionAccessor.size(),
           pGltfComponent->pMeshPrimitive->mode},
       pGltfComponent->IndexAccessor);
 
-  int64 VertexIndex = faceIndices[0];
+  int64 VertexIndex = VertexIndices[0];
 
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
     FCesiumFeatureIdAttribute attribute =

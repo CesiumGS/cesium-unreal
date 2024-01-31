@@ -14,7 +14,7 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     const MeshPrimitive& Primitive,
     const ExtensionExtMeshFeatures& Features)
     : _vertexCount(0), _primitiveMode(Primitive.mode) {
-  this->_vertexIdAccessor = CesiumGltf::getIndexAccessorView(Model, Primitive);
+  this->_indexAccessor = CesiumGltf::getIndexAccessorView(Model, Primitive);
 
   auto positionIt = Primitive.attributes.find("POSITION");
   if (positionIt != Primitive.attributes.end()) {
@@ -74,14 +74,14 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
     return -1;
   }
 
-  std::array<int64, 3> faceIndices = std::visit(
+  auto VertexIndices = std::visit(
       CesiumGltf::IndicesForFaceFromAccessor{
           FaceIndex,
           PrimitiveFeatures._vertexCount,
           PrimitiveFeatures._primitiveMode},
-      PrimitiveFeatures._vertexIdAccessor);
+      PrimitiveFeatures._indexAccessor);
 
-  return faceIndices[0];
+  return VertexIndices[0];
 }
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
