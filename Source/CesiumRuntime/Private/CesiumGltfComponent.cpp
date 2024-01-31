@@ -2761,10 +2761,6 @@ static void loadPrimitiveGameThreadPart(
 
   pStaticMesh->CreateBodySetup();
 
-  if (createNavCollision) {
-    pStaticMesh->CreateNavCollision(true);
-  }
-
   UBodySetup* pBodySetup = pMesh->GetBodySetup();
 
   // pMesh->UpdateCollisionFromStaticMesh();
@@ -2780,6 +2776,10 @@ static void loadPrimitiveGameThreadPart(
   pBodySetup->bCreatedPhysicsMeshes = true;
   pBodySetup->bSupportUVsAndFaceRemap =
       UPhysicsSettings::Get()->bSupportUVFromHitResults;
+
+  if (createNavCollision) {
+    pStaticMesh->CreateNavCollision(true);
+  }
 
   pMesh->SetMobility(pGltf->Mobility);
 
