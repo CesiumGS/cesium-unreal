@@ -12,6 +12,7 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
+#include "CesiumGltf/ExtensionKhrTextureTransform.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
@@ -1995,6 +1996,131 @@ static void SetGltfParameterValues(
       pMaterial,
       FMaterialParameterInfo("occlusionTexture", association, index),
       loadResult.occlusionTexture.Get());
+
+  const ExtensionKhrTextureTransform* pBaseColorTextureTransform =
+      pbr.baseColorTexture
+          ? pbr.baseColorTexture->getExtension<ExtensionKhrTextureTransform>()
+          : nullptr;
+  const ExtensionKhrTextureTransform* pMetallicRoughnessTextureTransform =
+      pbr.metallicRoughnessTexture
+          ? pbr.metallicRoughnessTexture
+                ->getExtension<ExtensionKhrTextureTransform>()
+          : nullptr;
+
+  if (pBaseColorTextureTransform) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("baseColorScaleOffset", association, index),
+        FLinearColor(
+            pBaseColorTextureTransform->scale[0],
+            pBaseColorTextureTransform->scale[1],
+            pBaseColorTextureTransform->offset[0],
+            pBaseColorTextureTransform->offset[1]));
+  }
+
+  if (pMetallicRoughnessTextureTransform) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            "metallicRoughnessScaleOffset",
+            association,
+            index),
+        FLinearColor(
+            pMetallicRoughnessTextureTransform->scale[0],
+            pMetallicRoughnessTextureTransform->scale[1],
+            pMetallicRoughnessTextureTransform->offset[0],
+            pMetallicRoughnessTextureTransform->offset[1]));
+  }
+
+  if (pBaseColorTextureTransform || pMetallicRoughnessTextureTransform) {
+    FLinearColor rotationValues(0.0f, 1.0f, 0.0f, 1.0f);
+    if (pBaseColorTextureTransform) {
+      rotationValues.R =
+          float(FMath::Sin(pBaseColorTextureTransform->rotation));
+      rotationValues.G =
+          float(FMath::Cos(pBaseColorTextureTransform->rotation));
+    }
+    if (pMetallicRoughnessTextureTransform) {
+      rotationValues.B =
+          float(FMath::Sin(pMetallicRoughnessTextureTransform->rotation));
+      rotationValues.A =
+          float(FMath::Cos(pMetallicRoughnessTextureTransform->rotation));
+    }
+
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            "baseColorMetallicRoughnessRotation",
+            association,
+            index),
+        rotationValues);
+  }
+
+  const ExtensionKhrTextureTransform* pEmissiveTextureTransform =
+      material.emissiveTexture
+          ? material.emissiveTexture
+                ->getExtension<ExtensionKhrTextureTransform>()
+          : nullptr;
+  const ExtensionKhrTextureTransform* pNormalTextureTransform =
+      material.normalTexture
+          ? material.normalTexture->getExtension<ExtensionKhrTextureTransform>()
+          : nullptr;
+
+  if (pEmissiveTextureTransform) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveScaleOffset", association, index),
+        FLinearColor(
+            pEmissiveTextureTransform->scale[0],
+            pEmissiveTextureTransform->scale[1],
+            pEmissiveTextureTransform->offset[0],
+            pEmissiveTextureTransform->offset[1]));
+  }
+
+  if (pNormalTextureTransform) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("normalScaleOffset", association, index),
+        FLinearColor(
+            pNormalTextureTransform->scale[0],
+            pNormalTextureTransform->scale[1],
+            pNormalTextureTransform->offset[0],
+            pNormalTextureTransform->offset[1]));
+  }
+
+  if (pEmissiveTextureTransform || pNormalTextureTransform) {
+    FLinearColor rotationValues(0.0f, 1.0f, 0.0f, 1.0f);
+    if (pEmissiveTextureTransform) {
+      rotationValues.R = float(FMath::Sin(pEmissiveTextureTransform->rotation));
+      rotationValues.G = float(FMath::Cos(pEmissiveTextureTransform->rotation));
+    }
+    if (pNormalTextureTransform) {
+      rotationValues.B = float(FMath::Sin(pNormalTextureTransform->rotation));
+      rotationValues.A = float(FMath::Cos(pNormalTextureTransform->rotation));
+    }
+
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveNormalRotation", association, index),
+        rotationValues);
+  }
+
+  const ExtensionKhrTextureTransform* pOcclusionTransform =
+      material.occlusionTexture
+          ? material.occlusionTexture
+                ->getExtension<ExtensionKhrTextureTransform>()
+          : nullptr;
+
+  if (pOcclusionTransform) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("occlusionScaleOffset", association, index),
+        FLinearColor(
+            pOcclusionTransform->scale[0],
+            pOcclusionTransform->scale[1],
+            pOcclusionTransform->offset[0],
+            pOcclusionTransform->offset[1]));
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("occlusionRotation", association, index),
+        FLinearColor(
+            float(FMath::Sin(pOcclusionTransform->rotation)),
+            float(FMath::Cos(pOcclusionTransform->rotation)),
+            0.0f,
+            1.0f));
+  }
 
   if (material.emissiveFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(
