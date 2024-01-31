@@ -27,7 +27,6 @@
 #include <memory>
 #include <stb_image_resize.h>
 #include <variant>
-#include "CesiumCommon.h"
 
 using namespace CesiumGltf;
 
@@ -955,12 +954,13 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
-    #if ENGINE_VERSION_5_3_OR_HIGHER 
-    pCesiumTextureResource->InitResource(FRHICommandListImmediate::Get()); //Init Resource now requires a command list.
-    #else
+#if ENGINE_VERSION_5_3_OR_HIGHER
+    pCesiumTextureResource->InitResource(
+        FRHICommandListImmediate::Get()); // Init Resource now requires a
+                                          // command list.
+#else
     pCesiumTextureResource->InitResource();
-    #endif
-
+#endif
   });
 
   return pTexture;

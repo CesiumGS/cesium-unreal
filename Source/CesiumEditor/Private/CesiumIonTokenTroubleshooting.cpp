@@ -2,6 +2,7 @@
 
 #include "CesiumIonTokenTroubleshooting.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCommon.h"
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
@@ -18,7 +19,6 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Text/STextBlock.h"
-#include "CesiumCommon.h"
 
 using namespace CesiumIonClient;
 

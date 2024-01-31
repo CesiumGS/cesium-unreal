@@ -1,4 +1,5 @@
 #include "CesiumSubLevelSwitcherComponent.h"
+#include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelComponent.h"
 #include "Engine/LevelStreaming.h"
@@ -7,7 +8,6 @@
 #include "LevelInstance/LevelInstanceLevelStreaming.h"
 #include "LevelInstance/LevelInstanceSubsystem.h"
 #include "Runtime/Launch/Resources/Version.h"
-#include "CesiumCommon.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -136,7 +136,6 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
         if (pSubLevel == this->_pCurrent || pSubLevel == this->_pTarget)
           continue;
 
-
         ULevelStreaming* pStreaming =
             this->_getLevelStreamingForSubLevel(pSubLevel);
         StreamState state =
@@ -214,10 +213,10 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     if (IsValid(pStreaming)) {
 #if ENGINE_VERSION_5_3_OR_HIGHER
       state = pStreaming->GetLevelStreamingState();
-      #else
+#else
       state = pStreaming->GetCurrentState();
-      #endif
-      
+#endif
+
     } else if (this->_pCurrent->GetWorldAsset().IsNull()) {
       // There is no level associated with the target at all, so mark it
       // unloaded but also deactivate it for the benefit of the Editor UI.
@@ -279,12 +278,12 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
 
     StreamState state = StreamState::Unloaded;
     if (IsValid(pStreaming)) {
-#if ENGINE_VERSION_5_3_OR_HIGHER 
+#if ENGINE_VERSION_5_3_OR_HIGHER
       state = pStreaming->GetLevelStreamingState();
-      #else
+#else
 
       state = pStreaming->GetCurrentState();
-      #endif
+#endif
     } else if (this->_pTarget.Get()->GetWorldAsset().IsNull()) {
       // There is no level associated with the target at all, so mark it failed
       // to load because this is as loaded as it will ever be.
