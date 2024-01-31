@@ -1,8 +1,8 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyArrayBlueprintLibrary.h"
-#include "CesiumGltf/PropertyTypeTraits.h"
-#include "CesiumMetadataConversions.h"
+#include "UnrealMetadataConversions.h"
+#include <CesiumGltf/MetadataConversions.h>
 
 ECesiumMetadataBlueprintType
 UCesiumPropertyArrayBlueprintLibrary::GetElementBlueprintType(
@@ -69,9 +69,9 @@ bool UCesiumPropertyArrayBlueprintLibrary::GetBoolean(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumMetadataConversions<bool, decltype(value)>::convert(
-            value,
-            defaultValue);
+        return CesiumGltf::MetadataConversions<bool, decltype(value)>::convert(
+                   value)
+            .value_or(defaultValue);
       },
       array._value);
 }
@@ -86,9 +86,9 @@ uint8 UCesiumPropertyArrayBlueprintLibrary::GetByte(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumMetadataConversions<uint8, decltype(value)>::convert(
-            value,
-            defaultValue);
+        return CesiumGltf::MetadataConversions<uint8, decltype(value)>::convert(
+                   value)
+            .value_or(defaultValue);
       },
       array._value);
 }
@@ -103,9 +103,9 @@ int32 UCesiumPropertyArrayBlueprintLibrary::GetInteger(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumMetadataConversions<int32, decltype(value)>::convert(
-            value,
-            defaultValue);
+        return CesiumGltf::MetadataConversions<int32, decltype(value)>::convert(
+                   value)
+            .value_or(defaultValue);
       },
       array._value);
 }
@@ -120,9 +120,9 @@ int64 UCesiumPropertyArrayBlueprintLibrary::GetInteger64(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumMetadataConversions<int64, decltype(value)>::convert(
-            value,
-            defaultValue);
+        return CesiumGltf::MetadataConversions<int64, decltype(value)>::convert(
+                   value)
+            .value_or(defaultValue);
       },
       array._value);
 }
@@ -137,9 +137,9 @@ float UCesiumPropertyArrayBlueprintLibrary::GetFloat(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumMetadataConversions<float, decltype(value)>::convert(
-            value,
-            defaultValue);
+        return CesiumGltf::MetadataConversions<float, decltype(value)>::convert(
+                   value)
+            .value_or(defaultValue);
       },
       array._value);
 }
@@ -151,9 +151,9 @@ double UCesiumPropertyArrayBlueprintLibrary::GetFloat64(
   return std::visit(
       [index, defaultValue](const auto& v) -> double {
         auto value = v[index];
-        return CesiumMetadataConversions<double, decltype(value)>::convert(
-            value,
-            defaultValue);
+        return CesiumGltf::MetadataConversions<double, decltype(value)>::
+            convert(value)
+                .value_or(defaultValue);
       },
       array._value);
 }
@@ -168,9 +168,12 @@ FString UCesiumPropertyArrayBlueprintLibrary::GetString(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumMetadataConversions<FString, decltype(value)>::convert(
-            value,
-            defaultValue);
+        auto maybeString = CesiumGltf::
+            MetadataConversions<std::string, decltype(value)>::convert(value);
+        if (!maybeString) {
+          return defaultValue;
+        }
+        return UnrealMetadataConversions::toString(*maybeString);
       },
       array._value);
 }

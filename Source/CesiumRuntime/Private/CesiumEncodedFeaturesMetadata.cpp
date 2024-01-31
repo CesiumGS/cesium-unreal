@@ -5,7 +5,6 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumLifetime.h"
-#include "CesiumMetadataConversions.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
@@ -16,6 +15,7 @@
 #include "Containers/Map.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
+#include "UnrealMetadataConversions.h"
 #include <CesiumGltf/FeatureIdTextureView.h>
 #include <CesiumUtility/Tracing.h>
 #include <glm/gtx/integer.hpp>
@@ -171,6 +171,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
         pFeatureIdImage->pixelData.size());
 
     pMip->BulkData.Unlock();
+    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
   }
 
   return result;
@@ -609,6 +610,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
             encodedFormat.pixelSize);
       }
       pMip->BulkData.Unlock();
+      pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
     }
 
     if (pDescription->PropertyDetails.bHasOffset) {
@@ -774,6 +776,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
             pImage->pixelData.size());
 
         pMip->BulkData.Unlock();
+        pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
       }
     };
 

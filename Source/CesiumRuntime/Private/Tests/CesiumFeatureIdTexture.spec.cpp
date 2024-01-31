@@ -136,8 +136,13 @@ void FCesiumFeatureIdTextureSpec::Define() {
          image.cesium.channels = 1;
          image.cesium.pixelData.push_back(std::byte(42));
 
+         Sampler& sampler = model.samplers.emplace_back();
+         sampler.wrapS = Sampler::WrapS::CLAMP_TO_EDGE;
+         sampler.wrapT = Sampler::WrapT::CLAMP_TO_EDGE;
+
          CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
          gltfTexture.source = 0;
+         gltfTexture.sampler = 0;
 
          FeatureIdTexture texture;
          texture.index = 0;
@@ -170,8 +175,13 @@ void FCesiumFeatureIdTextureSpec::Define() {
          image.cesium.channels = 1;
          image.cesium.pixelData.push_back(std::byte(42));
 
+         Sampler& sampler = model.samplers.emplace_back();
+         sampler.wrapS = Sampler::WrapS::CLAMP_TO_EDGE;
+         sampler.wrapT = Sampler::WrapT::CLAMP_TO_EDGE;
+
          CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
          gltfTexture.source = 0;
+         gltfTexture.sampler = 0;
 
          FeatureIdTexture texture;
          texture.index = 0;
