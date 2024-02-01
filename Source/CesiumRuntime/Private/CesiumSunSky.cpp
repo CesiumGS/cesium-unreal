@@ -128,8 +128,10 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
       TEXT("Called OnConstruction for CesiumSunSky %s"),
       *this->GetName());
 
-  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
-      FVector(0.0, 0.0, 0.0));
+  if (IsValid(this->GlobeAnchor)) {
+    this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+        FVector(0.0, 0.0, 0.0));
+  }
 
   UE_LOG(
       LogCesium,
@@ -148,16 +150,18 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumSunSky::_spawnSkySphere() {
-  if (!UseMobileRendering || !IsValid(GetWorld())) {
+  UWorld* world = GetWorld();
+  if (!UseMobileRendering || !IsValid(world)) {
     return;
   }
 
-  if (!IsValid(this->GetGeoreference())) {
+  ACesiumGeoreference* georeference = this->GetGeoreference();
+  if (!IsValid(georeference)) {
     return;
   }
 
   // Create a new Sky Sphere Actor and anchor it to the center of the Earth.
-  this->SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
+  this->SkySphereActor = world->SpawnActor<AActor>(SkySphereClass);
 
   // Anchor it to the center of the Earth.
   UCesiumGlobeAnchorComponent* GlobeAnchorComponent =
@@ -166,7 +170,7 @@ void ACesiumSunSky::_spawnSkySphere() {
           TEXT("GlobeAnchor"));
   this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
   GlobeAnchorComponent->SetAdjustOrientationForGlobeWhenMoving(false);
-  GlobeAnchorComponent->SetGeoreference(this->GlobeAnchor->GetGeoreference());
+  GlobeAnchorComponent->SetGeoreference(georeference);
   GlobeAnchorComponent->MoveToEarthCenteredEarthFixedPosition(
       FVector(0.0, 0.0, 0.0));
 
@@ -182,7 +186,7 @@ double ACesiumSunSky::_computeScale() const {
 }
 
 void ACesiumSunSky::UpdateSkySphere() {
-  if (!UseMobileRendering || !SkySphereActor) {
+  if (!UseMobileRendering || !IsValid(SkySphereActor)) {
     return;
   }
   UFunction* UpdateSkySphere =
@@ -195,8 +199,10 @@ void ACesiumSunSky::UpdateSkySphere() {
 void ACesiumSunSky::BeginPlay() {
   Super::BeginPlay();
 
-  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
-      FVector(0.0, 0.0, 0.0));
+  if (IsValid(this->GlobeAnchor)) {
+    this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+        FVector(0.0, 0.0, 0.0));
+  }
 
   this->_transformUpdatedSubscription =
       this->RootComponent->TransformUpdated.AddUObject(
@@ -489,6 +495,16 @@ FVector getViewLocation(UWorld* pWorld) {
 } // namespace
 
 void ACesiumSunSky::UpdateAtmosphereRadius() {
+  UWorld* world = this->GetWorld();
+  if (!IsValid(world)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("ACesiumSunSky %s GetWorld() returned nullptr"),
+        *this->GetName());
+    return;
+  }
+
   // This Actor is located at the center of the Earth (the CesiumGlobeAnchor
   // keeps it there), so we ignore this Actor's transform and use only its
   // parent transform.
@@ -501,11 +517,20 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     }
   }
 
-  FVector location =
-      transform.TransformPosition(getViewLocation(this->GetWorld()));
+  ACesiumGeoreference* georeference = this->GetGeoreference();
+  if (!IsValid(georeference)) {
+
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("ACesiumSunSky %s can't find an ACesiumGeoreference"),
+        *this->GetName());
+    return;
+  }
+
+  FVector location = transform.TransformPosition(getViewLocation(world));
   FVector llh =
-      this->GetGeoreference()->TransformUnrealPositionToLongitudeLatitudeHeight(
-          location);
+      georeference->TransformUnrealPositionToLongitudeLatitudeHeight(location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
   double maxRadius = 6387000.0;
