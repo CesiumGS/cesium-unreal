@@ -519,7 +519,6 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
 
   ACesiumGeoreference* georeference = this->GetGeoreference();
   if (!IsValid(georeference)) {
-
     UE_LOG(
         LogCesium,
         Error,
