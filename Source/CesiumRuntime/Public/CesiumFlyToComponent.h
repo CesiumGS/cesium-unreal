@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGlobeAnchoredActorComponent.h"
+#include "CesiumGeospatial/SimplePlanarEllipsoidCurve.h"
 #include "CesiumFlyToComponent.generated.h"
 
 class UCurveFloat;
@@ -209,15 +210,12 @@ private:
 
   bool _flightInProgress = false;
   bool _canInterruptByMoving;
+  float _currentFlyTime;
+  double _maxHeight;
   FVector _destinationEcef;
   FQuat _sourceRotation;
   FQuat _destinationRotation;
-  FVector _rotationAxis;
-  double _totalAngle;
-  float _currentFlyTime;
-  double _sourceHeight;
-  double _destinationHeight;
-  FVector _sourceDirection;
-  double _maxHeight;
   FVector _previousPositionEcef;
+  TUniquePtr<CesiumGeospatial::SimplePlanarEllipsoidCurve> _currentCurve;
+  double _length;
 };

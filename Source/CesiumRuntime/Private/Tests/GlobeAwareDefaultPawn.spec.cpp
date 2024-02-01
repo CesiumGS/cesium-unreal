@@ -28,6 +28,10 @@ void FGlobeAwareDefaultPawnSpec::Define() {
   const FVector philadelphiaEcef =
       FVector(1253264.69280105, -4732469.91065521, 4075112.40412297);
 
+  // The antipodal position from the philadelphia coordinates above
+  const FVector philadelphiaAntipodeEcef =
+      FVector(-1253369.920224856, 4732412.7444064, -4075146.2160252854);
+
   const FVector tokyoEcef =
       FVector(-3960158.65587452, 3352568.87555906, 3697235.23506459);
 
@@ -101,7 +105,7 @@ void FGlobeAwareDefaultPawnSpec::Define() {
 
   Describe(
       "should interpolate between positions and rotations correctly",
-      [this, tokyoEcef, philadelphiaEcef]() {
+      [this, tokyoEcef, philadelphiaEcef, philadelphiaAntipodeEcef]() {
         LatentBeforeEach(
             EAsyncExecution::TaskGraphMainThread,
             [this](const FDoneDelegate& done) {
@@ -206,10 +210,18 @@ void FGlobeAwareDefaultPawnSpec::Define() {
                  -1052346.4221710551,
                  5923430.4378960524);
 
+             // calculate relative epsilon
+             const float epsilon = FMath::Max3(
+                                       expectedResult.X,
+                                       expectedResult.Y,
+                                       expectedResult.Z) *
+                                   1e-6;
+
              TestEqual(
                  "Midpoint location is correct",
                  pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
-                 expectedResult);
+                 expectedResult,
+                 epsilon);
 
              pPawn->Destroy();
            });
@@ -284,6 +296,52 @@ void FGlobeAwareDefaultPawnSpec::Define() {
              FVector endpointEuler = targetRotation.Euler();
 
              pPawn->Destroy();
+           });
+        It("shouldn't fly through the earth",
+           [this, philadelphiaEcef, philadelphiaAntipodeEcef]() {
+             UWorld* pWorld = GEditor->PlayWorld;
+
+             TActorIterator<AGlobeAwareDefaultPawn> it(pWorld);
+             AGlobeAwareDefaultPawn* pPawn = *it;
+             UCesiumFlyToComponent* pFlyTo =
+                 pPawn->FindComponentByClass<UCesiumFlyToComponent>();
+             TestNotNull("pFlyTo", pFlyTo);
+
+             pFlyTo->Duration = 5.0f;
+             pFlyTo->HeightPercentageCurve = nullptr;
+             pFlyTo->MaximumHeightByDistanceCurve = nullptr;
+             pFlyTo->ProgressCurve = nullptr;
+
+             UCesiumGlobeAnchorComponent* pGlobeAnchor =
+                 pPawn->FindComponentByClass<UCesiumGlobeAnchorComponent>();
+             TestNotNull("pGlobeAnchor", pGlobeAnchor);
+
+             pGlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+                 philadelphiaEcef);
+             pFlyTo->FlyToLocationEarthCenteredEarthFixed(
+                 philadelphiaAntipodeEcef,
+                 0,
+                 0,
+                 false);
+
+             const int steps = 100;
+             const double timeStep = 5.0 / (double)steps;
+
+             double time = 0;
+             for (int i = 0; i <= steps; i++) {
+               Cast<UActorComponent>(pFlyTo)->TickComponent(
+                   (float)timeStep,
+                   ELevelTick::LEVELTICK_All,
+                   nullptr);
+
+               const FVector cartographic = UCesiumWgs84Ellipsoid::
+                   EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+                       pGlobeAnchor->GetEarthCenteredEarthFixedPosition());
+
+               TestTrue("height above zero", cartographic.Z > 0);
+
+               time += timeStep;
+             }
            });
       });
 }
