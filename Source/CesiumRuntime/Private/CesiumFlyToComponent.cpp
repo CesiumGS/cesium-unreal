@@ -73,7 +73,8 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
     return;
   }
 
-  this->_currentCurve = MakeUnique<CesiumGeospatial::SimplePlanarEllipsoidCurve>(curve.value());
+  this->_currentCurve =
+      MakeUnique<CesiumGeospatial::SimplePlanarEllipsoidCurve>(curve.value());
 
   this->_length = (EarthCenteredEarthFixedDestination - ecefSource).Length();
 

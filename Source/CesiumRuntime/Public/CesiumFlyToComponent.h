@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CesiumGeospatial/SimplePlanarEllipsoidCurve.h"
+#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CesiumFlyToComponent.generated.h"
 
 class UCurveFloat;
