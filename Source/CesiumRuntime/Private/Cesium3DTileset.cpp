@@ -1134,6 +1134,8 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.ktx2TranscodeTargets =
       CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
 
+  options.contentOptions.applyTextureTransform = false;
+
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);

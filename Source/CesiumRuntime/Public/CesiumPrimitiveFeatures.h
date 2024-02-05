@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CesiumFeatureIdSet.h"
-#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
+#include <CesiumGltf/AccessorUtility.h>
 
 #include "CesiumPrimitiveFeatures.generated.h"
 
@@ -42,9 +42,10 @@ public:
       const CesiumGltf::ExtensionExtMeshFeatures& Features);
 
 private:
-  TArray<FCesiumFeatureIdSet> _featureIDSets;
-  CesiumIndexAccessorType _vertexIDAccessor;
+  TArray<FCesiumFeatureIdSet> _featureIdSets;
+  CesiumGltf::IndexAccessorType _indexAccessor;
   int64_t _vertexCount;
+  int32_t _primitiveMode;
 
   friend class UCesiumPrimitiveFeaturesBlueprintLibrary;
 };

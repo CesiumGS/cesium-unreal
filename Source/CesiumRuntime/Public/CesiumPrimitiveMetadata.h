@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 

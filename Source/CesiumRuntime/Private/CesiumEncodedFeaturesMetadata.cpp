@@ -5,7 +5,6 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumLifetime.h"
-#include "CesiumMetadataConversions.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
@@ -16,6 +15,7 @@
 #include "Containers/Map.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
+#include "UnrealMetadataConversions.h"
 #include <CesiumGltf/FeatureIdTextureView.h>
 #include <CesiumUtility/Tracing.h>
 #include <glm/gtx/integer.hpp>
