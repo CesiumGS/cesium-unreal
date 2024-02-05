@@ -711,6 +711,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
                 false,
                 TEXTUREGROUP_8BitData,
                 false,
+                // This assumes that the texture's image only contains one byte
+                // per channel.
                 EPixelFormat::PF_R8G8B8A8_UINT,
                 nullptr)));
         propertyTexturePropertyMap.Emplace(pImage, encodedProperty.pTexture);
