@@ -306,7 +306,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
       // TODO: allow texture group to be configured on Cesium3DTileset.
       TEXTUREGROUP_World,
       sRGB,
-      false,
+      std::nullopt,
       pExistingImageResource);
 }
 
@@ -347,7 +347,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
-    bool useUintFormat,
+    std::optional<EPixelFormat> overridePixelFormat,
     FCesiumTextureResourceBase* pExistingImageResource) {
   EPixelFormat pixelFormat;
   if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
@@ -389,18 +389,20 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       // Unsupported compressed texture format.
       return nullptr;
     };
+  } else if (overridePixelFormat) {
+    pixelFormat = *overridePixelFormat;
   } else {
     switch (imageCesium.channels) {
     case 1:
-      pixelFormat = useUintFormat ? PF_R8_UINT : PF_R8;
+      pixelFormat = PF_R8;
       break;
     case 2:
-      pixelFormat = useUintFormat ? PF_R8G8_UINT : PF_R8G8;
+      pixelFormat = PF_R8G8;
       break;
     case 3:
     case 4:
     default:
-      pixelFormat = useUintFormat ? PF_R8G8B8A8_UINT : PF_R8G8B8A8;
+      pixelFormat = PF_R8G8B8A8;
     };
   }
 
@@ -507,7 +509,13 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
+#if ENGINE_VERSION_5_3_OR_HIGHER
+    pCesiumTextureResource->InitResource(
+        FRHICommandListImmediate::Get()); // Init Resource now requires a
+                                          // command list.
+#else
     pCesiumTextureResource->InitResource();
+#endif
   });
 
   return pTexture;

@@ -1,8 +1,9 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTableProperty.h"
+#include "CesiumGltf/MetadataConversions.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
-#include "CesiumMetadataConversions.h"
+#include "UnrealMetadataConversions.h"
 #include <utility>
 
 using namespace CesiumGltf;
@@ -896,9 +897,9 @@ bool UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumMetadataConversions<bool, decltype(value)>::convert(
-              value,
-              DefaultValue);
+          return CesiumGltf::MetadataConversions<bool, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
         }
         return DefaultValue;
       });
@@ -920,9 +921,9 @@ uint8 UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumMetadataConversions<uint8, decltype(value)>::convert(
-              value,
-              DefaultValue);
+          return CesiumGltf::MetadataConversions<uint8, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
         }
         return DefaultValue;
       });
@@ -944,9 +945,9 @@ int32 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumMetadataConversions<int32, decltype(value)>::convert(
-              value,
-              DefaultValue);
+          return CesiumGltf::MetadataConversions<int32, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
         }
         return DefaultValue;
       });
@@ -968,9 +969,9 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumMetadataConversions<int64, decltype(value)>::convert(
-              value,
-              DefaultValue);
+          return CesiumGltf::MetadataConversions<int64, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
         }
         return DefaultValue;
       });
@@ -992,9 +993,9 @@ float UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumMetadataConversions<float, decltype(value)>::convert(
-              value,
-              DefaultValue);
+          return CesiumGltf::MetadataConversions<float, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
         }
         return DefaultValue;
       });
@@ -1016,9 +1017,9 @@ double UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumMetadataConversions<double, decltype(value)>::convert(
-              value,
-              DefaultValue);
+          return CesiumGltf::MetadataConversions<double, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
         }
         return DefaultValue;
       });
@@ -1032,19 +1033,25 @@ FIntPoint UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FIntPoint {
+      [FeatureID, &DefaultValue](const auto& v) -> FIntPoint {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FIntPoint, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        if constexpr (IsMetadataString<decltype(value)>::value) {
+          return UnrealMetadataConversions::toIntPoint(value, DefaultValue);
+        } else {
+          auto maybeVec2 = CesiumGltf::
+              MetadataConversions<glm::ivec2, decltype(value)>::convert(value);
+          return maybeVec2 ? UnrealMetadataConversions::toIntPoint(*maybeVec2)
+                           : DefaultValue;
+        }
       });
 }
 
@@ -1056,19 +1063,25 @@ FVector2D UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector2D {
+      [FeatureID, &DefaultValue](const auto& v) -> FVector2D {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector2D, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        if constexpr (IsMetadataString<decltype(value)>::value) {
+          return UnrealMetadataConversions::toVector2D(value, DefaultValue);
+        } else {
+          auto maybeVec2 = CesiumGltf::
+              MetadataConversions<glm::dvec2, decltype(value)>::convert(value);
+          return maybeVec2 ? UnrealMetadataConversions::toVector2D(*maybeVec2)
+                           : DefaultValue;
+        }
       });
 }
 
@@ -1080,18 +1093,25 @@ FIntVector UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FIntVector {
+      [FeatureID, &DefaultValue](const auto& v) -> FIntVector {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FIntVector, decltype(value)>::
-              convert(value, DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        if constexpr (IsMetadataString<decltype(value)>::value) {
+          return UnrealMetadataConversions::toIntVector(value, DefaultValue);
+        } else {
+          auto maybeVec3 = CesiumGltf::
+              MetadataConversions<glm::ivec3, decltype(value)>::convert(value);
+          return maybeVec3 ? UnrealMetadataConversions::toIntVector(*maybeVec3)
+                           : DefaultValue;
+        }
       });
 }
 
@@ -1103,19 +1123,25 @@ FVector3f UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector3f {
+      [FeatureID, &DefaultValue](const auto& v) -> FVector3f {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector3f, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        if constexpr (IsMetadataString<decltype(value)>::value) {
+          return UnrealMetadataConversions::toVector3f(value, DefaultValue);
+        } else {
+          auto maybeVec3 = CesiumGltf::
+              MetadataConversions<glm::vec3, decltype(value)>::convert(value);
+          return maybeVec3 ? UnrealMetadataConversions::toVector3f(*maybeVec3)
+                           : DefaultValue;
+        }
       });
 }
 
@@ -1127,19 +1153,25 @@ FVector UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector {
+      [FeatureID, &DefaultValue](const auto& v) -> FVector {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        if constexpr (IsMetadataString<decltype(value)>::value) {
+          return UnrealMetadataConversions::toVector(value, DefaultValue);
+        } else {
+          auto maybeVec3 = CesiumGltf::
+              MetadataConversions<glm::dvec3, decltype(value)>::convert(value);
+          return maybeVec3 ? UnrealMetadataConversions::toVector(*maybeVec3)
+                           : DefaultValue;
+        }
       });
 }
 
@@ -1151,19 +1183,25 @@ FVector4 UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FVector4 {
+      [FeatureID, &DefaultValue](const auto& v) -> FVector4 {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FVector4, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        if constexpr (IsMetadataString<decltype(value)>::value) {
+          return UnrealMetadataConversions::toVector4(value, DefaultValue);
+        } else {
+          auto maybeVec4 = CesiumGltf::
+              MetadataConversions<glm::dvec4, decltype(value)>::convert(value);
+          return maybeVec4 ? UnrealMetadataConversions::toVector4(*maybeVec4)
+                           : DefaultValue;
+        }
       });
 }
 
@@ -1171,24 +1209,27 @@ FMatrix UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID,
     const FMatrix& DefaultValue) {
-  return propertyTablePropertyCallback<FMatrix>(
+  auto maybeMat4 = propertyTablePropertyCallback<std::optional<glm::dmat4>>(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, DefaultValue](const auto& v) -> FMatrix {
+      [FeatureID](const auto& v) -> std::optional<glm::dmat4> {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
-          return DefaultValue;
+          return std::nullopt;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FMatrix, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return std::nullopt;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        return CesiumGltf::MetadataConversions<glm::dmat4, decltype(value)>::
+            convert(value);
       });
+
+  return maybeMat4 ? UnrealMetadataConversions::toMatrix(*maybeMat4)
+                   : DefaultValue;
 }
 
 FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
@@ -1205,13 +1246,25 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
           return DefaultValue;
         }
         auto maybeValue = v.get(FeatureID);
-        if (maybeValue) {
-          auto value = *maybeValue;
-          return CesiumMetadataConversions<FString, decltype(value)>::convert(
-              value,
-              DefaultValue);
+        if (!maybeValue) {
+          return DefaultValue;
         }
-        return DefaultValue;
+
+        auto value = *maybeValue;
+        using ValueType = decltype(value);
+
+        if constexpr (
+            IsMetadataVecN<ValueType>::value ||
+            IsMetadataMatN<ValueType>::value ||
+            IsMetadataString<ValueType>::value) {
+          return UnrealMetadataConversions::toString(value);
+        } else {
+          auto maybeString = CesiumGltf::
+              MetadataConversions<std::string, decltype(value)>::convert(value);
+
+          return maybeString ? UnrealMetadataConversions::toString(*maybeString)
+                             : DefaultValue;
+        }
       });
 }
 

@@ -1,10 +1,10 @@
 #include "CesiumEncodedMetadataConversions.h"
 #include "CesiumFeaturesMetadataComponent.h"
-#include "CesiumMetadataConversions.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "CesiumPropertyTableProperty.h"
+#include <CesiumGltf/MetadataConversions.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -227,7 +227,8 @@ void coerceAndEncodeVec2s(
           FIntPoint(0));
       for (int64 j = 0; j < 2; ++j) {
         *(pWritePos + j) =
-            CesiumMetadataConversions<uint8, int32>::convert(vec2[j], 0);
+            CesiumGltf::MetadataConversions<uint8, int32>::convert(vec2[j])
+                .value_or(0);
       }
     } else if constexpr (std::is_same_v<T, float>) {
       FVector2D vec2 = UCesiumMetadataValueBlueprintLibrary::GetVector2D(
@@ -238,7 +239,8 @@ void coerceAndEncodeVec2s(
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
       for (int64 j = 0; j < 2; ++j) {
         *pWritePosF =
-            CesiumMetadataConversions<float, double>::convert(vec2[j], 0.0f);
+            CesiumGltf::MetadataConversions<float, double>::convert(vec2[j])
+                .value_or(0.0f);
         --pWritePosF;
       }
     }
@@ -271,7 +273,8 @@ void coerceAndEncodeVec3s(
           FIntVector(0));
       for (int64 j = 0; j < 3; ++j) {
         *(pWritePos + j) =
-            CesiumMetadataConversions<uint8, int32>::convert(vec3[j], 0);
+            CesiumGltf::MetadataConversions<uint8, int32>::convert(vec3[j])
+                .value_or(0);
       }
     } else if constexpr (std::is_same_v<T, float>) {
       FVector3f vec3 = UCesiumMetadataValueBlueprintLibrary::GetVector3f(
@@ -314,14 +317,16 @@ void coerceAndEncodeVec4s(
     if constexpr (std::is_same_v<T, uint8>) {
       for (int64 j = 0; j < 4; ++j) {
         *(pWritePos + j) =
-            CesiumMetadataConversions<uint8, double>::convert(vec4[j], 0);
+            CesiumGltf::MetadataConversions<uint8, double>::convert(vec4[j])
+                .value_or(0);
       }
     } else if constexpr (std::is_same_v<T, float>) {
       // Floats are encoded backwards (e.g., ABGR)
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
       for (int64 j = 0; j < 4; ++j) {
         *pWritePosF =
-            CesiumMetadataConversions<float, double>::convert(vec4[j], 0.0f);
+            CesiumGltf::MetadataConversions<float, double>::convert(vec4[j])
+                .value_or(0.0f);
         --pWritePosF;
       }
     }
@@ -459,7 +464,8 @@ glm::u8vec3 getHexColorFromString(const FString& hexString) {
     std::string substr = hexStr.substr(i * substringLength, substringLength);
     int32_t component = std::stoi(substr, 0, 16);
     result[i] =
-        CesiumMetadataConversions<uint8, int32_t>::convert(component, 0);
+        CesiumGltf::MetadataConversions<uint8, int32_t>::convert(component)
+            .value_or(0);
   }
 
   return result;
@@ -524,7 +530,8 @@ void parseAndEncodeColors(
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
       for (int64 j = 0; j < 3; j++) {
         *pWritePosF =
-            CesiumMetadataConversions<float, uint8_t>::convert(color[j], 0.0f);
+            CesiumGltf::MetadataConversions<float, uint8_t>::convert(color[j])
+                .value_or(0.0f);
         --pWritePosF;
       }
     }

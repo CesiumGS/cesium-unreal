@@ -585,6 +585,7 @@ void FCesiumPropertyTextureSpec::Define() {
     BeforeEach([this]() {
       Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
+      pPrimitive->mode = MeshPrimitive::Mode::TRIANGLES;
 
       std::vector<glm::vec3> positions{
           glm::vec3(-1, 0, 0),
@@ -632,6 +633,7 @@ void FCesiumPropertyTextureSpec::Define() {
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
 
+      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
       pPrimitiveComponent->PositionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
       pPrimitiveComponent->TexCoordAccessorMap.emplace(

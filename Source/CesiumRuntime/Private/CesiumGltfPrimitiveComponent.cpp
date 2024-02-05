@@ -2,8 +2,6 @@
 
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CalcBounds.h"
-#include "CesiumGltf/MeshPrimitive.h"
-#include "CesiumGltf/Model.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"
@@ -11,6 +9,9 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "VecMath.h"
+
+#include <CesiumGltf/MeshPrimitive.h>
+#include <CesiumGltf/Model.h>
 #include <variant>
 
 // Prevent deprecation warnings while initializing deprecated metadata structs.

@@ -1,6 +1,6 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
-#include "CesiumMetadataConversions.h"
+#include "UnrealMetadataConversions.h"
 
 ECesiumMetadataBlueprintType
 CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
@@ -157,4 +157,130 @@ CesiumMetadataValueTypeToTrueType(FCesiumMetadataValueType ValueType) {
   }
 
   return ECesiumMetadataTrueType_DEPRECATED::None_DEPRECATED;
+}
+
+/*static*/ FIntPoint
+UnrealMetadataConversions::toIntPoint(const glm::ivec2& vec2) {
+  return FIntPoint(vec2[0], vec2[1]);
+}
+
+/*static*/ FIntPoint UnrealMetadataConversions::toIntPoint(
+    const std::string_view& string,
+    const FIntPoint& defaultValue) {
+  FString unrealString = UnrealMetadataConversions::toString(string);
+
+  // For some reason, FIntPoint doesn't have an InitFromString method, so
+  // copy the one from FVector.
+  int32 X = 0, Y = 0;
+  const bool bSuccessful = FParse::Value(*unrealString, TEXT("X="), X) &&
+                           FParse::Value(*unrealString, TEXT("Y="), Y);
+  return bSuccessful ? FIntPoint(X, Y) : defaultValue;
+}
+
+/*static*/ FVector2D
+UnrealMetadataConversions::toVector2D(const glm::dvec2& vec2) {
+  return FVector2D(vec2[0], vec2[1]);
+}
+
+/*static*/ FVector2D UnrealMetadataConversions::toVector2D(
+    const std::string_view& string,
+    const FVector2D& defaultValue) {
+  FString unrealString = UnrealMetadataConversions::toString(string);
+  FVector2D result;
+  return result.InitFromString(unrealString) ? result : defaultValue;
+}
+
+/*static*/ FIntVector
+UnrealMetadataConversions::toIntVector(const glm::ivec3& vec3) {
+  return FIntVector(vec3[0], vec3[1], vec3[2]);
+}
+
+/*static*/ FIntVector UnrealMetadataConversions::toIntVector(
+    const std::string_view& string,
+    const FIntVector& defaultValue) {
+  FString unrealString = UnrealMetadataConversions::toString(string);
+  // For some reason, FIntVector doesn't have an InitFromString method, so
+  // copy the one from FVector.
+  int32 X = 0, Y = 0, Z = 0;
+  const bool bSuccessful = FParse::Value(*unrealString, TEXT("X="), X) &&
+                           FParse::Value(*unrealString, TEXT("Y="), Y) &&
+                           FParse::Value(*unrealString, TEXT("Z="), Z);
+  return bSuccessful ? FIntVector(X, Y, Z) : defaultValue;
+}
+
+/*static*/ FVector3f
+UnrealMetadataConversions::toVector3f(const glm::vec3& vec3) {
+  return FVector3f(vec3[0], vec3[1], vec3[2]);
+}
+
+/*static*/ FVector3f UnrealMetadataConversions::toVector3f(
+    const std::string_view& string,
+    const FVector3f& defaultValue) {
+  FString unrealString = UnrealMetadataConversions::toString(string);
+  FVector3f result;
+  return result.InitFromString(unrealString) ? result : defaultValue;
+}
+
+/*static*/ FVector UnrealMetadataConversions::toVector(const glm::dvec3& vec3) {
+  return FVector(vec3[0], vec3[1], vec3[2]);
+}
+
+/*static*/ FVector UnrealMetadataConversions::toVector(
+    const std::string_view& string,
+    const FVector& defaultValue) {
+  FString unrealString = UnrealMetadataConversions::toString(string);
+  FVector result;
+  return result.InitFromString(unrealString) ? result : defaultValue;
+}
+
+/*static*/ FVector4
+UnrealMetadataConversions::toVector4(const glm::dvec4& vec4) {
+  return FVector4(vec4[0], vec4[1], vec4[2], vec4[3]);
+}
+
+/*static*/ FVector4 UnrealMetadataConversions::toVector4(
+    const std::string_view& string,
+    const FVector4& defaultValue) {
+  FString unrealString = UnrealMetadataConversions::toString(string);
+  FVector4 result;
+  return result.InitFromString(unrealString) ? result : defaultValue;
+}
+
+/*static*/ FMatrix UnrealMetadataConversions::toMatrix(const glm::dmat4& mat4) {
+  // glm is column major, but Unreal is row major.
+  FPlane4d row1(
+      static_cast<double>(mat4[0][0]),
+      static_cast<double>(mat4[1][0]),
+      static_cast<double>(mat4[2][0]),
+      static_cast<double>(mat4[3][0]));
+
+  FPlane4d row2(
+      static_cast<double>(mat4[0][1]),
+      static_cast<double>(mat4[1][1]),
+      static_cast<double>(mat4[2][1]),
+      static_cast<double>(mat4[3][1]));
+
+  FPlane4d row3(
+      static_cast<double>(mat4[0][2]),
+      static_cast<double>(mat4[1][2]),
+      static_cast<double>(mat4[2][2]),
+      static_cast<double>(mat4[3][2]));
+
+  FPlane4d row4(
+      static_cast<double>(mat4[0][3]),
+      static_cast<double>(mat4[1][3]),
+      static_cast<double>(mat4[2][3]),
+      static_cast<double>(mat4[3][3]));
+
+  return FMatrix(row1, row2, row3, row4);
+}
+
+/*static*/ FString
+UnrealMetadataConversions::toString(const std::string_view& from) {
+  return toString(std::string(from));
+}
+
+/*static*/ FString
+UnrealMetadataConversions::toString(const std::string& from) {
+  return FString(UTF8_TO_TCHAR(from.data()));
 }

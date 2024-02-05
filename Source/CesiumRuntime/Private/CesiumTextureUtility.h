@@ -93,8 +93,8 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * if they exist; false to ignore any mipmaps that might be present.
  * @param group The texture group of this texture.
  * @param sRGB Whether this texture uses a sRGB color space.
- * @param useUintFormat true to use the `_UINT` pixel formats, such as
- * `PF_R8G8B8A8_UINT`.
+ * @param overridePixelFormat The explicit pixel format to use. If std::nullopt,
+ * the pixel format is inferred from the image.
  * @param pExistingImageResource An existing RHI texture resource that has been
  * created for this image, or nullptr if one hasn't been created yet. When this
  * parameter is not nullptr, the provided image's `pixelData` is not required
@@ -109,7 +109,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
-    bool useUintFormat,
+    std::optional<EPixelFormat> overridePixelFormat,
     FCesiumTextureResourceBase* pExistingImageResource);
 
 /**

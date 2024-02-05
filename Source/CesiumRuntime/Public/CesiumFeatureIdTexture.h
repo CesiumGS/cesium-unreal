@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "CesiumGltf/AccessorView.h"
-#include "CesiumGltf/FeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
-#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
+#include <CesiumGltf/AccessorUtility.h>
+#include <CesiumGltf/FeatureIdTextureView.h>
+
 #include "CesiumFeatureIdTexture.generated.h"
 
 namespace CesiumGltf {
@@ -75,7 +76,7 @@ public:
 private:
   ECesiumFeatureIdTextureStatus _status;
   CesiumGltf::FeatureIdTextureView _featureIdTextureView;
-  CesiumTexCoordAccessorType _texCoordAccessor;
+  CesiumGltf::TexCoordAccessorType _texCoordAccessor;
   int64 _textureCoordinateSetIndex;
 
   // For backwards compatibility.

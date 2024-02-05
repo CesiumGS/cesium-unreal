@@ -40,7 +40,7 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   // To maintain this functionality in EXT_mesh_features, the texture view will
   // still be valid if the intended texcoords don't exist. However, feature IDs
   // won't be retrievable by vertex index.
-  this->_texCoordAccessor = GetTexCoordAccessorView(
+  this->_texCoordAccessor = CesiumGltf::getTexCoordAccessorView(
       Model,
       Primitive,
       this->_textureCoordinateSetIndex);
@@ -102,7 +102,7 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
     int64 VertexIndex) {
   const std::optional<glm::dvec2> texCoords = std::visit(
-      CesiumTexCoordFromAccessor{VertexIndex},
+      CesiumGltf::TexCoordFromAccessor{VertexIndex},
       FeatureIDTexture._texCoordAccessor);
   if (!texCoords) {
     return -1;

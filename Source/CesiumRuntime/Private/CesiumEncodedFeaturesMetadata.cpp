@@ -5,7 +5,6 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumLifetime.h"
-#include "CesiumMetadataConversions.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
@@ -16,6 +15,7 @@
 #include "Containers/Map.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
+#include "UnrealMetadataConversions.h"
 #include <CesiumGltf/FeatureIdTextureView.h>
 #include <CesiumUtility/Tracing.h>
 #include <glm/gtx/integer.hpp>
@@ -141,7 +141,8 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
             false,
             TEXTUREGROUP_8BitData,
             false,
-            true,
+            // TODO: currently this is always the case, but doesn't have to be
+            EPixelFormat::PF_R8G8B8A8_UINT,
             nullptr)));
     featureIdTextureMap.Emplace(
         pFeatureIdImage,
@@ -565,7 +566,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
           false,
           TEXTUREGROUP_8BitData,
           false,
-          true,
+          encodedFormat.format,
           nullptr);
     }
 
@@ -710,7 +711,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
                 false,
                 TEXTUREGROUP_8BitData,
                 false,
-                true,
+                EPixelFormat::PF_R8G8B8A8_UINT,
                 nullptr)));
         propertyTexturePropertyMap.Emplace(pImage, encodedProperty.pTexture);
       }

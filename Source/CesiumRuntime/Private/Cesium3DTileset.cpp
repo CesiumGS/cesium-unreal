@@ -792,7 +792,7 @@ public:
         pOptions->group,
         // TODO: sRGB should probably be configurable on the raster overlay.
         true,
-        false,
+        std::nullopt,
         nullptr);
     return texture.Release();
   }
@@ -1139,6 +1139,8 @@ void ACesium3DTileset::LoadTileset() {
 
   options.contentOptions.ktx2TranscodeTargets =
       CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
+
+  options.contentOptions.applyTextureTransform = false;
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
