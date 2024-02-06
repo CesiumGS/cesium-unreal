@@ -124,9 +124,38 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
   }
 }
 
+struct ExtensionUnrealTexture {
+  static inline constexpr const char* TypeName = "ExtensionUnrealTexture";
+  static inline constexpr const char* ExtensionName = "PRIVATE_unreal_texture";
+
+  CesiumUtility::IntrusivePointer<
+      CesiumTextureUtility::ReferenceCountedUnrealTexture>
+      ppTexture;
+};
+
 } // namespace
 
 namespace CesiumTextureUtility {
+
+ReferenceCountedUnrealTexture::ReferenceCountedUnrealTexture(
+    TObjectPtr<UTexture2D> p) noexcept
+    : pTexture(p) {
+  if (this->pTexture) {
+    this->pTexture->AddToRoot();
+  }
+}
+
+ReferenceCountedUnrealTexture::~ReferenceCountedUnrealTexture() noexcept {
+  UTexture2D* pLocal = this->pTexture;
+  this->pTexture = nullptr;
+
+  if (IsValid(pLocal)) {
+    AsyncTask(ENamedThreads::GameThread, [pLocal]() {
+      pLocal->RemoveFromRoot();
+      CesiumLifetime::destroy(pLocal);
+    });
+  }
+}
 
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
@@ -134,6 +163,24 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     bool sRGB,
     std::vector<FCesiumTextureResourceBase*>& textureResources) {
   check(textureResources.size() == model.images.size());
+
+  int64_t textureIndex =
+      model.textures.empty() ? -1 : &texture - &model.textures[0];
+  if (textureIndex < 0 || size_t(textureIndex) >= model.textures.size()) {
+    textureIndex = -1;
+  }
+
+  const ExtensionUnrealTexture* pUnrealTextureExtension =
+      texture.getExtension<ExtensionUnrealTexture>();
+  if (pUnrealTextureExtension && pUnrealTextureExtension->ppTexture) {
+    // There's an existing Unreal texture for this glTF texture.
+    // This will commonly be the case when this model was upsampled from a
+    // parent tile.
+    TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
+    pResult->ppTexture = pUnrealTextureExtension->ppTexture;
+    pResult->textureIndex = textureIndex;
+    return pResult;
+  }
 
   const CesiumGltf::ExtensionKhrTextureBasisu* pKtxExtension =
       texture.getExtension<CesiumGltf::ExtensionKhrTextureBasisu>();
@@ -200,10 +247,15 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
           sampler,
           sRGB,
           pExistingImageResource);
-  if (pResult && source >= 0 && source < textureResources.size()) {
-    // Make the RHI resource known so it can be used by other textures that
-    // reference this same image.
-    textureResources[source] = pResult->pTextureResource.Get();
+  if (pResult) {
+    // Note the index of this texture within the glTF.
+    pResult->textureIndex = textureIndex;
+
+    if (source >= 0 && source < textureResources.size()) {
+      // Make the RHI resource known so it can be used by other textures that
+      // reference this same image.
+      textureResources[source] = pResult->pTextureResource.Get();
+    }
   }
   return pResult;
 }
@@ -332,8 +384,6 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
 
     pTexture->NeverStream = true;
-
-    pHalfLoadedTexture->pTexture = pTexture;
   }
 
   return pTexture;
@@ -484,6 +534,28 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   return pResult;
 }
 
+UTexture2D* loadTextureGameThreadPart(
+    CesiumGltf::Model& model,
+    LoadedTextureResult* pHalfLoadedTexture) {
+  UTexture2D* pResult = loadTextureGameThreadPart(pHalfLoadedTexture);
+
+  if (pResult && pHalfLoadedTexture->textureIndex >= 0 &&
+      size_t(pHalfLoadedTexture->textureIndex) < model.textures.size()) {
+    if (pHalfLoadedTexture && !pHalfLoadedTexture->ppTexture) {
+      pHalfLoadedTexture->ppTexture =
+          new ReferenceCountedUnrealTexture(pResult);
+    }
+
+    CesiumGltf::Texture& texture =
+        model.textures[pHalfLoadedTexture->textureIndex];
+    ExtensionUnrealTexture& extension =
+        texture.addExtension<ExtensionUnrealTexture>();
+    extension.ppTexture = pHalfLoadedTexture->ppTexture;
+  }
+
+  return pResult;
+}
+
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
 
@@ -491,7 +563,11 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return nullptr;
   }
 
-  if (pHalfLoadedTexture->pTexture.Get()) {
+  if (pHalfLoadedTexture->ppTexture) {
+    return pHalfLoadedTexture->ppTexture->pTexture;
+  }
+
+  if (pHalfLoadedTexture->pTexture.IsValid()) {
     return pHalfLoadedTexture->pTexture.Get();
   }
 
@@ -503,6 +579,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   FCesiumTextureResourceBase* pCesiumTextureResource =
       pHalfLoadedTexture->pTextureResource.Release();
 
+  pHalfLoadedTexture->pTexture = pTexture;
   pTexture->SetResource(pCesiumTextureResource);
 
   ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
@@ -520,18 +597,6 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
 
   return pTexture;
 }
-
-namespace {
-
-// Associate an Unreal UTexture2D with a glTF Texture.
-struct ExtensionUnrealTexture {
-  static inline constexpr const char* TypeName = "ExtensionUnrealTexture";
-  static inline constexpr const char* ExtensionName = "PRIVATE_unreal_texture";
-
-  TWeakObjectPtr<UTexture2D> pTexture;
-};
-
-} // namespace
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded) {
   if (halfLoaded.pTextureResource) {

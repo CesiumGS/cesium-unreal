@@ -64,13 +64,13 @@ void destroyMaterialTexture(
     const char* name,
     EMaterialParameterAssociation assocation,
     int32 index) {
-  UTexture* pTexture = nullptr;
-  if (pMaterial->GetTextureParameterValue(
-          FMaterialParameterInfo(name, assocation, index),
-          pTexture,
-          true)) {
-    CesiumTextureUtility::destroyTexture(pTexture);
-  }
+  //UTexture* pTexture = nullptr;
+  //if (pMaterial->GetTextureParameterValue(
+  //        FMaterialParameterInfo(name, assocation, index),
+  //        pTexture,
+  //        true)) {
+  //  CesiumTextureUtility::destroyTexture(pTexture);
+  //}
 }
 
 void destroyGltfParameterValues(

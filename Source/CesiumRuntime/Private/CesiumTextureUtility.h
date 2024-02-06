@@ -11,6 +11,8 @@
 #include "RHI.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Templates/UniquePtr.h"
+#include <CesiumUtility/IntrusivePointer.h>
+#include <CesiumUtility/ReferenceCountedThreadSafe.h>
 
 namespace CesiumGltf {
 struct ImageCesium;
@@ -18,6 +20,14 @@ struct Texture;
 } // namespace CesiumGltf
 
 namespace CesiumTextureUtility {
+
+struct ReferenceCountedUnrealTexture
+    : CesiumUtility::ReferenceCountedThreadSafe<ReferenceCountedUnrealTexture> {
+  ReferenceCountedUnrealTexture(TObjectPtr<UTexture2D> p) noexcept;
+  ~ReferenceCountedUnrealTexture() noexcept;
+  TObjectPtr<UTexture2D> pTexture;
+};
+
 /**
  * @brief Half-loaded Unreal texture with info on how to finish loading the
  * texture on the game thread and render thread.
@@ -28,6 +38,8 @@ struct LoadedTextureResult {
   TextureFilter filter;
   TextureGroup group;
   TWeakObjectPtr<UTexture2D> pTexture;
+  CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture> ppTexture;
+  int64_t textureIndex = -1;
   bool sRGB{true};
   TUniquePtr<FCesiumTextureResourceBase> pTextureResource;
 };
@@ -111,6 +123,21 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool sRGB,
     std::optional<EPixelFormat> overridePixelFormat,
     FCesiumTextureResourceBase* pExistingImageResource);
+
+/**
+ * @brief Does the main-thread part of render resource preparation for this
+ * image and queues up any required render-thread tasks to finish preparing the
+ * image.
+ *
+ * @param model The model with which this texture is associated. This is used to
+ * store a pointer to the created texture in an extension on the glTF texture so
+ * that it can be reused later.
+ * @param pHalfLoadedTexture The half-loaded renderer texture.
+ * @return The Unreal texture result.
+ */
+UTexture2D* loadTextureGameThreadPart(
+    CesiumGltf::Model& model,
+    LoadedTextureResult* pHalfLoadedTexture);
 
 /**
  * @brief Does the main-thread part of render resource preparation for this

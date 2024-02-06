@@ -2003,7 +2003,7 @@ bool applyTexture(
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
   UTexture2D* pTexture =
-      CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+      CesiumTextureUtility::loadTextureGameThreadPart(model, pLoadedTexture);
   if (!pTexture) {
     return false;
   }
