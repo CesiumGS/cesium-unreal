@@ -78,33 +78,9 @@ using TMeshVector4 = FVector4f;
 static uint32_t nextMaterialId = 0;
 
 namespace {
-void destroyHalfLoadedTexture(
-    TUniquePtr<CesiumTextureUtility::LoadedTextureResult>& pHalfLoadedTexture) {
-  if (pHalfLoadedTexture) {
-    CesiumTextureUtility::destroyHalfLoadedTexture(*pHalfLoadedTexture.Get());
-  }
-}
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
   LoadModelResult loadModelResult{};
-
-  virtual ~HalfConstructedReal() {
-    // TODO: deal with metadata case, when metadata uses async texture creation
-    // path See: https://github.com/CesiumGS/cesium-unreal/issues/979
-    for (LoadNodeResult& node : loadModelResult.nodeResults) {
-      if (node.meshResult) {
-        for (LoadPrimitiveResult& primitive :
-             node.meshResult->primitiveResults) {
-          destroyHalfLoadedTexture(primitive.baseColorTexture);
-          destroyHalfLoadedTexture(primitive.metallicRoughnessTexture);
-          destroyHalfLoadedTexture(primitive.normalTexture);
-          destroyHalfLoadedTexture(primitive.emissiveTexture);
-          destroyHalfLoadedTexture(primitive.occlusionTexture);
-          destroyHalfLoadedTexture(primitive.waterMaskTexture);
-        }
-      }
-    }
-  }
 };
 } // namespace
 
@@ -2011,7 +1987,7 @@ bool applyTexture(
     return false;
   }
 
-  pMaterial->SetTextureParameterValueByInfo(info, pTexture->pTexture);
+  pMaterial->SetTextureParameterValueByInfo(info, pTexture->pUnrealTexture);
 
   return true;
 }
@@ -2308,7 +2284,7 @@ static void SetPropertyTableParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture->pTexture);
+          encodedProperty.pTexture->pTexture->pUnrealTexture);
     }
 
     if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
@@ -2394,7 +2370,7 @@ static void SetPropertyTextureParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture->pTexture);
+          encodedProperty.pTexture->pTexture->pUnrealTexture);
     }
 
     pMaterial->SetVectorParameterValueByInfo(
@@ -2526,7 +2502,7 @@ static void SetFeaturesMetadataParameterValues(
                   CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
               association,
               index),
-          texture.pTexture->pTexture->pTexture);
+          texture.pTexture->pTexture->pUnrealTexture);
 
       size_t numChannels = texture.channels.size();
       pMaterial->SetScalarParameterValueByInfo(
@@ -2585,7 +2561,7 @@ static void SetMetadataFeatureTableParameterValues_DEPRECATED(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(FName(encodedProperty.name), association, index),
-        encodedProperty.pTexture->pTexture->pTexture);
+        encodedProperty.pTexture->pTexture->pUnrealTexture);
   }
 }
 
@@ -2654,7 +2630,7 @@ static void SetMetadataParameterValues_DEPRECATED(
                 FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
-            encodedProperty.pTexture->pTexture->pTexture);
+            encodedProperty.pTexture->pTexture->pUnrealTexture);
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -2679,7 +2655,7 @@ static void SetMetadataParameterValues_DEPRECATED(
             FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
-        encodedFeatureIdTexture.pTexture->pTexture->pTexture);
+        encodedFeatureIdTexture.pTexture->pTexture->pUnrealTexture);
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {
@@ -3294,15 +3270,10 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 }
 
 void UCesiumGltfComponent::BeginDestroy() {
-  CesiumEncodedFeaturesMetadata::destroyEncodedModelMetadata(
-      this->EncodedMetadata);
+  this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata{};
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (this->EncodedMetadata_DEPRECATED) {
-    CesiumEncodedMetadataUtility::destroyEncodedMetadata(
-        *this->EncodedMetadata_DEPRECATED);
-    this->EncodedMetadata_DEPRECATED = std::nullopt;
-  }
+  this->EncodedMetadata_DEPRECATED.reset();
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   Super::BeginDestroy();

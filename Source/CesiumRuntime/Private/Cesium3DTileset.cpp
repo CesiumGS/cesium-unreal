@@ -831,7 +831,6 @@ public:
       CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
           static_cast<CesiumTextureUtility::LoadedTextureResult*>(
               pLoadThreadResult);
-      CesiumTextureUtility::destroyHalfLoadedTexture(*pLoadedTexture);
       delete pLoadedTexture;
     }
 
@@ -863,7 +862,7 @@ public:
             rasterTile,
             static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
                 pMainThreadRendererResources)
-                ->pTexture,
+                ->pUnrealTexture,
             translation,
             scale,
             overlayTextureCoordinateID);
@@ -889,7 +888,7 @@ public:
             rasterTile,
             static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
                 pMainThreadRendererResources)
-                ->pTexture);
+                ->pUnrealTexture);
       }
     }
   }

@@ -139,21 +139,26 @@ namespace CesiumTextureUtility {
 
 ReferenceCountedUnrealTexture::ReferenceCountedUnrealTexture(
     TObjectPtr<UTexture2D> p) noexcept
-    : pTexture(p) {
-  if (this->pTexture) {
-    this->pTexture->AddToRoot();
+    : pUnrealTexture(p) {
+  if (this->pUnrealTexture) {
+    this->pUnrealTexture->AddToRoot();
   }
 }
 
 ReferenceCountedUnrealTexture::~ReferenceCountedUnrealTexture() noexcept {
-  UTexture2D* pLocal = this->pTexture;
-  this->pTexture = nullptr;
+  UTexture2D* pLocal = this->pUnrealTexture;
+  this->pUnrealTexture = nullptr;
 
   if (IsValid(pLocal)) {
-    AsyncTask(ENamedThreads::GameThread, [pLocal]() {
+    if (IsInGameThread()) {
       pLocal->RemoveFromRoot();
       CesiumLifetime::destroy(pLocal);
-    });
+    } else {
+      AsyncTask(ENamedThreads::GameThread, [pLocal]() {
+        pLocal->RemoveFromRoot();
+        CesiumLifetime::destroy(pLocal);
+      });
+    }
   }
 }
 
@@ -368,7 +373,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
   }
 
   UTexture2D* pTexture = pHalfLoadedTexture->pTexture
-                             ? pHalfLoadedTexture->pTexture->pTexture
+                             ? pHalfLoadedTexture->pTexture->pUnrealTexture
                              : nullptr;
   if (!pTexture) {
     pTexture = NewObject<UTexture2D>(
@@ -593,18 +598,4 @@ loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   return pHalfLoadedTexture->pTexture;
 }
 
-void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded) {
-  if (halfLoaded.pTextureResource) {
-    ENQUEUE_RENDER_COMMAND(Cesium_ReleaseHalfLoadedTexture)
-    ([pTextureResource = std::move(halfLoaded.pTextureResource)](
-         FRHICommandListImmediate& RHICmdList) mutable {
-      pTextureResource->TextureRHI.SafeRelease();
-    });
-  }
-}
-
-void destroyTexture(UTexture* pTexture) {
-  check(pTexture != nullptr);
-  CesiumLifetime::destroy(pTexture);
-}
 } // namespace CesiumTextureUtility

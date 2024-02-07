@@ -40,7 +40,7 @@ struct ReferenceCountedUnrealTexture
     : CesiumUtility::ReferenceCountedThreadSafe<ReferenceCountedUnrealTexture> {
   ReferenceCountedUnrealTexture(TObjectPtr<UTexture2D> p) noexcept;
   ~ReferenceCountedUnrealTexture() noexcept;
-  TObjectPtr<UTexture2D> pTexture;
+  TObjectPtr<UTexture2D> pUnrealTexture;
 };
 
 /**
@@ -172,6 +172,4 @@ loadTextureGameThreadPart(
 CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
 loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
-void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded);
-void destroyTexture(UTexture* pTexture);
 } // namespace CesiumTextureUtility
