@@ -58,11 +58,31 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
 }
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  this->EncodedFeatures.featureIdSets.Empty();
+  // Clear everything we can in order to reduce memory usage, because this
+  // UObject might not actually get deleted by the garbage collector until much
+  // later.
+  this->Features = FCesiumPrimitiveFeatures();
+  this->Metadata = FCesiumPrimitiveMetadata();
+  this->EncodedFeatures =
+      CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures();
+  this->EncodedMetadata =
+      CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  this->Metadata_DEPRECATED = FCesiumMetadataPrimitive();
   this->EncodedMetadata_DEPRECATED.reset();
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  this->pTilesetActor = nullptr;
+  this->pModel = nullptr;
+  this->pMeshPrimitive = nullptr;
+
+  std::unordered_map<int32_t, uint32_t> emptyTexCoordMap;
+  this->GltfToUnrealTexCoordMap.swap(emptyTexCoordMap);
+
+  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
+      emptyAccessorMap;
+  this->TexCoordAccessorMap.swap(emptyAccessorMap);
 
   UMaterialInstanceDynamic* pMaterial =
       Cast<UMaterialInstanceDynamic>(this->GetMaterial(0));

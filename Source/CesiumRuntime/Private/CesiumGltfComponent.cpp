@@ -3270,7 +3270,11 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 }
 
 void UCesiumGltfComponent::BeginDestroy() {
-  this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata{};
+  // Clear everything we can in order to reduce memory usage, because this
+  // UObject might not actually get deleted by the garbage collector until much
+  // later.
+  this->Metadata = FCesiumModelMetadata();
+  this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   this->EncodedMetadata_DEPRECATED.reset();
