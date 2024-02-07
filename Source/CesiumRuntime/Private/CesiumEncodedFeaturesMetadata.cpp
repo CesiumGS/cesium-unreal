@@ -254,9 +254,8 @@ void destroyEncodedPrimitiveFeatures(
     }
 
     auto& encodedFeatureIdTexture = *encodedFeatureIdSet.texture;
-    if (encodedFeatureIdTexture.pTexture->pTexture.IsValid()) {
-      CesiumLifetime::destroy(encodedFeatureIdTexture.pTexture->pTexture.Get());
-      encodedFeatureIdTexture.pTexture->pTexture.Reset();
+    if (encodedFeatureIdTexture.pTexture) {
+      encodedFeatureIdTexture.pTexture->pTexture = nullptr;
     }
   }
 }
@@ -899,10 +898,8 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {
   for (auto& propertyTable : encodedMetadata.propertyTables) {
     for (EncodedPropertyTableProperty& encodedProperty :
          propertyTable.properties) {
-      if (encodedProperty.pTexture &&
-          encodedProperty.pTexture->pTexture.IsValid()) {
-        CesiumLifetime::destroy(encodedProperty.pTexture->pTexture.Get());
-        encodedProperty.pTexture->pTexture.Reset();
+      if (encodedProperty.pTexture) {
+        encodedProperty.pTexture->pTexture = nullptr;
       }
     }
   }
@@ -910,10 +907,8 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {
   for (auto& encodedPropertyTextureIt : encodedMetadata.propertyTextures) {
     for (EncodedPropertyTextureProperty& encodedPropertyTextureProperty :
          encodedPropertyTextureIt.properties) {
-      if (encodedPropertyTextureProperty.pTexture->pTexture.IsValid()) {
-        CesiumLifetime::destroy(
-            encodedPropertyTextureProperty.pTexture->pTexture.Get());
-        encodedPropertyTextureProperty.pTexture->pTexture.Reset();
+      if (encodedPropertyTextureProperty.pTexture) {
+        encodedPropertyTextureProperty.pTexture->pTexture = nullptr;
       }
     }
   }

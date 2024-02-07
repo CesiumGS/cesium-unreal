@@ -2002,13 +2002,16 @@ bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
-  UTexture2D* pTexture =
-      CesiumTextureUtility::loadTextureGameThreadPart(model, pLoadedTexture);
+  CesiumUtility::IntrusivePointer<
+      CesiumTextureUtility::ReferenceCountedUnrealTexture>
+      pTexture = CesiumTextureUtility::loadTextureGameThreadPart(
+          model,
+          pLoadedTexture);
   if (!pTexture) {
     return false;
   }
 
-  pMaterial->SetTextureParameterValueByInfo(info, pTexture);
+  pMaterial->SetTextureParameterValueByInfo(info, pTexture->pTexture);
 
   return true;
 }
@@ -2305,7 +2308,7 @@ static void SetPropertyTableParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture.Get());
+          encodedProperty.pTexture->pTexture->pTexture);
     }
 
     if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
@@ -2391,7 +2394,7 @@ static void SetPropertyTextureParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture.Get());
+          encodedProperty.pTexture->pTexture->pTexture);
     }
 
     pMaterial->SetVectorParameterValueByInfo(
@@ -2523,7 +2526,7 @@ static void SetFeaturesMetadataParameterValues(
                   CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
               association,
               index),
-          texture.pTexture->pTexture.Get());
+          texture.pTexture->pTexture->pTexture);
 
       size_t numChannels = texture.channels.size();
       pMaterial->SetScalarParameterValueByInfo(
@@ -2582,7 +2585,7 @@ static void SetMetadataFeatureTableParameterValues_DEPRECATED(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(FName(encodedProperty.name), association, index),
-        encodedProperty.pTexture->pTexture.Get());
+        encodedProperty.pTexture->pTexture->pTexture);
   }
 }
 
@@ -2651,7 +2654,7 @@ static void SetMetadataParameterValues_DEPRECATED(
                 FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
-            encodedProperty.pTexture->pTexture.Get());
+            encodedProperty.pTexture->pTexture->pTexture);
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -2676,7 +2679,7 @@ static void SetMetadataParameterValues_DEPRECATED(
             FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
-        encodedFeatureIdTexture.pTexture->pTexture.Get());
+        encodedFeatureIdTexture.pTexture->pTexture->pTexture);
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {

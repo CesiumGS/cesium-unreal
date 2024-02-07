@@ -21,6 +21,21 @@ struct Texture;
 
 namespace CesiumTextureUtility {
 
+// A slightly roundabout way to a hold a UTexture2D.
+//
+// We can't let Unreal's garbage collector be exclusively responsible for the
+// lifetime of our textures because it doesn't run often enough (and not at all
+// in the Editor). And we also need shared ownership of UTexture2Ds when a tile
+// is "upsampled" from its parent for raster overlays. So this class allows us
+// to control the lifetime of a UTexture2D via reference counting.
+//
+// Yes, this means we're controlling the lifetime of a garbage collected
+// `UTexture2D` object via reference counting.
+//
+// Instances of this class are created whenever we create a UTexture2D. A
+// pointer to the instance is held in `LoadedTextureResult` as well as in a
+// private extension added to the glTF `Texture` from which the UTexture2D was
+// created.
 struct ReferenceCountedUnrealTexture
     : CesiumUtility::ReferenceCountedThreadSafe<ReferenceCountedUnrealTexture> {
   ReferenceCountedUnrealTexture(TObjectPtr<UTexture2D> p) noexcept;
@@ -37,10 +52,16 @@ struct LoadedTextureResult {
   TextureAddress addressY;
   TextureFilter filter;
   TextureGroup group;
-  TWeakObjectPtr<UTexture2D> pTexture;
-  CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture> ppTexture;
-  int64_t textureIndex = -1;
   bool sRGB{true};
+
+  // The index of the `CesiumGltf::Texture` instance with the glTF. Or -1 if
+  // this result wasn't created from a texture in a glTF.
+  int64_t textureIndex = -1;
+
+  // The UTexture2D that has already been created, if any.
+  CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture> pTexture;
+
+  // The RHI FTextureResource holding the pixel data.
   TUniquePtr<FCesiumTextureResourceBase> pTextureResource;
 };
 
@@ -135,7 +156,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
  * @param pHalfLoadedTexture The half-loaded renderer texture.
  * @return The Unreal texture result.
  */
-UTexture2D* loadTextureGameThreadPart(
+CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
+loadTextureGameThreadPart(
     CesiumGltf::Model& model,
     LoadedTextureResult* pHalfLoadedTexture);
 
@@ -147,7 +169,8 @@ UTexture2D* loadTextureGameThreadPart(
  * @param pHalfLoadedTexture The half-loaded renderer texture.
  * @return The Unreal texture result.
  */
-UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
+CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
+loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded);
 void destroyTexture(UTexture* pTexture);

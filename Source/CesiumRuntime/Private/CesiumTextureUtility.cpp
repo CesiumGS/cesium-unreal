@@ -130,7 +130,7 @@ struct ExtensionUnrealTexture {
 
   CesiumUtility::IntrusivePointer<
       CesiumTextureUtility::ReferenceCountedUnrealTexture>
-      ppTexture;
+      pTexture;
 };
 
 } // namespace
@@ -172,12 +172,12 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
 
   const ExtensionUnrealTexture* pUnrealTextureExtension =
       texture.getExtension<ExtensionUnrealTexture>();
-  if (pUnrealTextureExtension && pUnrealTextureExtension->ppTexture) {
+  if (pUnrealTextureExtension && pUnrealTextureExtension->pTexture) {
     // There's an existing Unreal texture for this glTF texture.
     // This will commonly be the case when this model was upsampled from a
     // parent tile.
     TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
-    pResult->ppTexture = pUnrealTextureExtension->ppTexture;
+    pResult->pTexture = pUnrealTextureExtension->pTexture;
     pResult->textureIndex = textureIndex;
     return pResult;
   }
@@ -367,7 +367,9 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
     return nullptr;
   }
 
-  UTexture2D* pTexture = pHalfLoadedTexture->pTexture.Get();
+  UTexture2D* pTexture = pHalfLoadedTexture->pTexture
+                             ? pHalfLoadedTexture->pTexture->pTexture
+                             : nullptr;
   if (!pTexture) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
@@ -384,6 +386,8 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
 
     pTexture->NeverStream = true;
+
+    pHalfLoadedTexture->pTexture = new ReferenceCountedUnrealTexture(pTexture);
   }
 
   return pTexture;
@@ -531,45 +535,36 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
         0);
   }
 
+  check(pResult->pTextureResource != nullptr);
+
   return pResult;
 }
 
-UTexture2D* loadTextureGameThreadPart(
+CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
+loadTextureGameThreadPart(
     CesiumGltf::Model& model,
     LoadedTextureResult* pHalfLoadedTexture) {
-  UTexture2D* pResult = loadTextureGameThreadPart(pHalfLoadedTexture);
+  if (pHalfLoadedTexture == nullptr)
+    return nullptr;
 
-  if (pResult && pHalfLoadedTexture->textureIndex >= 0 &&
+  CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture> pResult =
+      loadTextureGameThreadPart(pHalfLoadedTexture);
+
+  if (pResult && pHalfLoadedTexture && pHalfLoadedTexture->textureIndex >= 0 &&
       size_t(pHalfLoadedTexture->textureIndex) < model.textures.size()) {
-    if (pHalfLoadedTexture && !pHalfLoadedTexture->ppTexture) {
-      pHalfLoadedTexture->ppTexture =
-          new ReferenceCountedUnrealTexture(pResult);
-    }
-
     CesiumGltf::Texture& texture =
         model.textures[pHalfLoadedTexture->textureIndex];
     ExtensionUnrealTexture& extension =
         texture.addExtension<ExtensionUnrealTexture>();
-    extension.ppTexture = pHalfLoadedTexture->ppTexture;
+    extension.pTexture = pHalfLoadedTexture->pTexture;
   }
 
-  return pResult;
+  return pHalfLoadedTexture->pTexture;
 }
 
-UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
+CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
+loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
-
-  if (!pHalfLoadedTexture) {
-    return nullptr;
-  }
-
-  if (pHalfLoadedTexture->ppTexture) {
-    return pHalfLoadedTexture->ppTexture->pTexture;
-  }
-
-  if (pHalfLoadedTexture->pTexture.IsValid()) {
-    return pHalfLoadedTexture->pTexture.Get();
-  }
 
   UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
   if (pTexture == nullptr) {
@@ -578,24 +573,24 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
 
   FCesiumTextureResourceBase* pCesiumTextureResource =
       pHalfLoadedTexture->pTextureResource.Release();
+  if (pCesiumTextureResource) {
+    pTexture->SetResource(pCesiumTextureResource);
 
-  pHalfLoadedTexture->pTexture = pTexture;
-  pTexture->SetResource(pCesiumTextureResource);
-
-  ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
-  ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
-    pCesiumTextureResource->SetTextureReference(
-        pTexture->TextureReference.TextureReferenceRHI);
+    ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
+    ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
+      pCesiumTextureResource->SetTextureReference(
+          pTexture->TextureReference.TextureReferenceRHI);
 #if ENGINE_VERSION_5_3_OR_HIGHER
-    pCesiumTextureResource->InitResource(
-        FRHICommandListImmediate::Get()); // Init Resource now requires a
-                                          // command list.
+      pCesiumTextureResource->InitResource(
+          FRHICommandListImmediate::Get()); // Init Resource now requires a
+                                            // command list.
 #else
-    pCesiumTextureResource->InitResource();
+      pCesiumTextureResource->InitResource();
 #endif
-  });
+    });
+  }
 
-  return pTexture;
+  return pHalfLoadedTexture->pTexture;
 }
 
 void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded) {

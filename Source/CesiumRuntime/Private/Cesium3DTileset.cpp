@@ -809,14 +809,18 @@ public:
       return nullptr;
     }
 
-    UTexture2D* pTexture =
-        CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
+    CesiumUtility::IntrusivePointer<
+        CesiumTextureUtility::ReferenceCountedUnrealTexture>
+        pTexture = CesiumTextureUtility::loadTextureGameThreadPart(
+            pLoadedTexture.Get());
     if (!pTexture) {
       return nullptr;
     }
 
-    pTexture->AddToRoot();
-    return pTexture;
+    // Don't let this ReferenceCountedUnrealTexture be destroyed when the
+    // intrusive pointer goes out of scope.
+    pTexture->addReference();
+    return pTexture.get();
   }
 
   virtual void freeRaster(
@@ -832,9 +836,10 @@ public:
     }
 
     if (pMainThreadResult) {
-      UTexture* pTexture = static_cast<UTexture*>(pMainThreadResult);
-      pTexture->RemoveFromRoot();
-      CesiumTextureUtility::destroyTexture(pTexture);
+      CesiumTextureUtility::ReferenceCountedUnrealTexture* pTexture =
+          static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
+              pMainThreadResult);
+      pTexture->releaseReference();
     }
   }
 
@@ -856,7 +861,9 @@ public:
         pGltfContent->AttachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources),
+            static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
+                pMainThreadRendererResources)
+                ->pTexture,
             translation,
             scale,
             overlayTextureCoordinateID);
@@ -880,7 +887,9 @@ public:
         pGltfContent->DetachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources));
+            static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
+                pMainThreadRendererResources)
+                ->pTexture);
       }
     }
   }
