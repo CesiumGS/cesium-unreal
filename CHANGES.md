@@ -1,5 +1,16 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Significantly reduced CPU memory used by glTF and raster overlay textures.
+- Improved texture creation performance on non-D3D platforms.
+
+##### Fixes :wrench:
+
+- Metadata-related textures are now created in `TEXTUREGROUP_8BitData` instead of `TEXTUREGROUP_World`.
+
 ### v2.3.0 - 2024-02-01
 
 ##### Additions :tada:
