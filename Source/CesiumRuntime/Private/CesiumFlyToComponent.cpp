@@ -54,78 +54,45 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   }
 
   PitchAtDestination = glm::clamp(PitchAtDestination, -89.99, 89.99);
+
   // Compute source location in ECEF
   FVector ecefSource = GlobeAnchor->GetEarthCenteredEarthFixedPosition();
+
+  // Create curve
+  std::optional<CesiumGeospatial::SimplePlanarEllipsoidCurve> curve =
+      CesiumGeospatial::SimplePlanarEllipsoidCurve::
+          fromEarthCenteredEarthFixedCoordinates(
+              CesiumGeospatial::Ellipsoid::WGS84,
+              glm::dvec3(ecefSource.X, ecefSource.Y, ecefSource.Z),
+              glm::dvec3(
+                  EarthCenteredEarthFixedDestination.X,
+                  EarthCenteredEarthFixedDestination.Y,
+                  EarthCenteredEarthFixedDestination.Z));
+
+  if (!curve.has_value()) {
+    return;
+  }
+
+  this->_currentCurve =
+      MakeUnique<CesiumGeospatial::SimplePlanarEllipsoidCurve>(curve.value());
+
+  this->_length = (EarthCenteredEarthFixedDestination - ecefSource).Length();
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
   this->_sourceRotation = this->GetCurrentRotationEastSouthUp();
   this->_destinationRotation =
       FRotator(PitchAtDestination, YawAtDestination, 0.0).Quaternion();
-  this->_destinationEcef = EarthCenteredEarthFixedDestination;
-
-  // Compute axis/Angle transform
-  glm::dvec3 glmEcefSource = VecMath::createVector3D(
-      UCesiumWgs84Ellipsoid::ScaleToGeodeticSurface(ecefSource));
-  glm::dvec3 glmEcefDestination = VecMath::createVector3D(
-      UCesiumWgs84Ellipsoid::ScaleToGeodeticSurface(this->_destinationEcef));
-
-  glm::dquat flyQuat = glm::rotation(
-      glm::normalize(glmEcefSource),
-      glm::normalize(glmEcefDestination));
-
-  glm::dvec3 flyToRotationAxis = glm::axis(flyQuat);
-  this->_rotationAxis.Set(
-      flyToRotationAxis.x,
-      flyToRotationAxis.y,
-      flyToRotationAxis.z);
-
-  this->_totalAngle = glm::angle(flyQuat);
-  this->_totalAngle = CesiumUtility::Math::radiansToDegrees(this->_totalAngle);
 
   this->_currentFlyTime = 0.0f;
-
-  // We will not create a curve projected along the ellipsoid as we want to take
-  // altitude while flying. The radius of the current point will evolve as
-  // follows:
-  //  - Project the point on the ellipsoid - Will give a default radius
-  //  depending on ellipsoid location.
-  //  - Interpolate the altitudes : get source/destination altitude, and make a
-  //  linear interpolation between them. This will allow for flying from/to any
-  //  point smoothly.
-  //  - Add as flightProfile offset /-\ defined by a curve.
-
-  // Compute actual altitude at source and destination points by getting their
-  // cartographic height
-  this->_sourceHeight = 0.0;
-  this->_destinationHeight = 0.0;
-
-  FVector cartographicSource =
-      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-          ecefSource);
-  this->_sourceHeight = cartographicSource.Z;
-
-  cartographicSource.Z = 0.0;
-  FVector zeroHeightSource =
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          cartographicSource);
-
-  this->_sourceDirection = zeroHeightSource.GetSafeNormal();
-
-  FVector cartographicDestination =
-      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-          EarthCenteredEarthFixedDestination);
-  this->_destinationHeight = cartographicDestination.Z;
 
   // Compute a wanted height from curve
   this->_maxHeight = 0.0;
   if (this->HeightPercentageCurve != NULL) {
     this->_maxHeight = 30000.0;
     if (this->MaximumHeightByDistanceCurve != NULL) {
-      double flyToDistance =
-          (EarthCenteredEarthFixedDestination - ecefSource).Length();
       this->_maxHeight =
-          this->MaximumHeightByDistanceCurve->GetFloatValue(flyToDistance);
+          this->MaximumHeightByDistanceCurve->GetFloatValue(this->_length);
     }
   }
 
@@ -133,6 +100,7 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   this->_canInterruptByMoving = CanInterruptByMoving;
   this->_previousPositionEcef = ecefSource;
   this->_flightInProgress = true;
+  this->_destinationEcef = EarthCenteredEarthFixedDestination;
 }
 
 void UCesiumFlyToComponent::FlyToLocationLongitudeLatitudeHeight(
@@ -210,6 +178,8 @@ void UCesiumFlyToComponent::TickComponent(
     return;
   }
 
+  check(this->_currentCurve);
+
   UCesiumGlobeAnchorComponent* GlobeAnchor = this->GetGlobeAnchor();
   if (!IsValid(GlobeAnchor)) {
     return;
@@ -242,7 +212,7 @@ void UCesiumFlyToComponent::TickComponent(
   // If we reached the end, set actual destination location and
   // orientation
   if (flyPercentage >= 1.0f ||
-      (this->_totalAngle == 0.0 &&
+      (this->_length == 0.0 &&
        this->_sourceRotation == this->_destinationRotation)) {
     GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(this->_destinationEcef);
     this->SetCurrentRotationEastSouthUp(this->_destinationRotation);
@@ -256,37 +226,25 @@ void UCesiumFlyToComponent::TickComponent(
     return;
   }
 
-  // We're currently in flight. Interpolate the position and orientation:
-
-  // Get the current position by interpolating with flyPercentage
-  // Rotate our normalized source direction, interpolating with time
-  FVector rotatedDirection = this->_sourceDirection.RotateAngleAxis(
-      flyPercentage * this->_totalAngle,
-      this->_rotationAxis);
-
-  // Map the result to a position on our reference ellipsoid
-  FVector geodeticPosition =
-      UCesiumWgs84Ellipsoid::ScaleToGeodeticSurface(rotatedDirection);
-
-  // Calculate the geodetic up at this position
-  FVector geodeticUp =
-      UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(geodeticPosition);
-
-  // Add the altitude offset. Start with linear path between source and
-  // destination If we have a profile curve, use this as well
-  double altitudeOffset =
-      glm::mix(this->_sourceHeight, this->_destinationHeight, flyPercentage);
+  // Get altitude offset from profile curve if one is specified
+  double altitudeOffset = 0.0;
   if (this->_maxHeight != 0.0 && this->HeightPercentageCurve) {
     double curveOffset =
         this->_maxHeight *
         this->HeightPercentageCurve->GetFloatValue(flyPercentage);
-    altitudeOffset += curveOffset;
+    altitudeOffset = curveOffset;
   }
 
-  FVector currentPosition = geodeticPosition + geodeticUp * altitudeOffset;
+  glm::dvec3 currentPositionEcef =
+      _currentCurve->getPosition(flyPercentage, altitudeOffset);
+
+  FVector currentPositionVector(
+      currentPositionEcef.x,
+      currentPositionEcef.y,
+      currentPositionEcef.z);
 
   // Set Location
-  GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(currentPosition);
+  GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(currentPositionVector);
 
   // Interpolate rotation in the ESU frame. The local ESU ControlRotation will
   // be transformed to the appropriate world rotation as we fly.
