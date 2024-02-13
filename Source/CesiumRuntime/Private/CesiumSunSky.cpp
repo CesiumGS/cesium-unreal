@@ -150,18 +150,18 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumSunSky::_spawnSkySphere() {
-  UWorld* world = GetWorld();
-  if (!UseMobileRendering || !IsValid(world)) {
+  UWorld* pWorld = GetWorld();
+  if (!UseMobileRendering || !IsValid(pWorld)) {
     return;
   }
 
-  ACesiumGeoreference* georeference = this->GetGeoreference();
-  if (!IsValid(georeference)) {
+  ACesiumGeoreference* pGeoreference = this->GetGeoreference();
+  if (!IsValid(pGeoreference)) {
     return;
   }
 
   // Create a new Sky Sphere Actor and anchor it to the center of the Earth.
-  this->SkySphereActor = world->SpawnActor<AActor>(SkySphereClass);
+  this->SkySphereActor = pWorld->SpawnActor<AActor>(SkySphereClass);
 
   // Anchor it to the center of the Earth.
   UCesiumGlobeAnchorComponent* GlobeAnchorComponent =
@@ -495,8 +495,8 @@ FVector getViewLocation(UWorld* pWorld) {
 } // namespace
 
 void ACesiumSunSky::UpdateAtmosphereRadius() {
-  UWorld* world = this->GetWorld();
-  if (!IsValid(world)) {
+  UWorld* pWorld = this->GetWorld();
+  if (!IsValid(pWorld)) {
     UE_LOG(
         LogCesium,
         Error,
@@ -517,8 +517,8 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     }
   }
 
-  ACesiumGeoreference* georeference = this->GetGeoreference();
-  if (!IsValid(georeference)) {
+  ACesiumGeoreference* pGeoreference = this->GetGeoreference();
+  if (!IsValid(pGeoreference)) {
     UE_LOG(
         LogCesium,
         Error,
@@ -527,9 +527,9 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     return;
   }
 
-  FVector location = transform.TransformPosition(getViewLocation(world));
+  FVector location = transform.TransformPosition(getViewLocation(pWorld));
   FVector llh =
-      georeference->TransformUnrealPositionToLongitudeLatitudeHeight(location);
+      pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
   double maxRadius = 6387000.0;
