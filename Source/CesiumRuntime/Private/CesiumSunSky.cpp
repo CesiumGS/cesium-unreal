@@ -170,7 +170,7 @@ void ACesiumSunSky::_spawnSkySphere() {
           TEXT("GlobeAnchor"));
   this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
   GlobeAnchorComponent->SetAdjustOrientationForGlobeWhenMoving(false);
-  GlobeAnchorComponent->SetGeoreference(georeference);
+  GlobeAnchorComponent->SetGeoreference(pGeoreference);
   GlobeAnchorComponent->MoveToEarthCenteredEarthFixedPosition(
       FVector(0.0, 0.0, 0.0));
 
