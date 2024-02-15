@@ -13,15 +13,42 @@ jobs:
           npm run format -- --dry-run -Werror
   Windows51:
     uses: ./.github/workflows/buildWindows.yml
+    secrets: inherit
     with:
+      runner-label: windows-2019
       unreal-engine-version: "5.1.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
-      unreal-linux-toolchain: "https://cdn.unrealengine.com/CrossToolchain_Linux/v20_clang-13.0.1-centos7.exe"
+      # unreal-linux-toolchain: "https://cdn.unrealengine.com/CrossToolchain_Linux/v20_clang-13.0.1-centos7.exe"
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
-      extra-choco-packages: visualstudio2019professional visualstudio2019-workload-nativegame visualstudio2019-workload-netcoretools visualstudio2019-workload-nativedesktop
       cmake-generator: "Visual Studio 16 2019"
+  Windows52:
+    uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
+    with:
+      runner-label: windows-2019
+      unreal-engine-version: "5.2.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
+      unreal-program-name: "UE_5.2"
+      upload-package-base-name: "CesiumForUnreal-52-windows"
+      cmake-generator: "Visual Studio 16 2019"
+  Windows53:
+    uses: ./.github/workflows/buildWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-version: "5.3.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.0.zip"
+      unreal-program-name: "UE_5.3"
+      upload-package-base-name: "CesiumForUnreal-53-windows"
+      cmake-generator: "Visual Studio 17 2022"
+  # Windows52:
+  #   uses: ./.github/workflows/buildWindows.yml
+  #   with:
+  #     unreal-engine-version: "5.2.0"
+  #     unreal-runner-label: "unreal-52"
+  #     unreal-program-name: "UE_5.2"
+  #     upload-package-base-name: "CesiumForUnreal-52-windows"
   # TestWindows51:
   #   needs: [Windows51]
   #   uses: ./.github/workflows/testWindows.yml

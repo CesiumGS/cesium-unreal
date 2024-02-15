@@ -3,16 +3,19 @@ name: Build Windows
 on:
   workflow_call:
     inputs:
+      runner-label:
+        required: true
+        type: string
       unreal-engine-version:
         required: true
         type: string
       unreal-engine-zip:
         required: true
         type: string
-      unreal-linux-toolchain:
-        required: false
-        type: string
-        default: ""
+      # unreal-linux-toolchain:
+      #   required: false
+      #   type: string
+      #   default: ""
       unreal-program-name:
         required: true
         type: string
@@ -28,7 +31,7 @@ on:
         type: string
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ inputs.runner-label }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
