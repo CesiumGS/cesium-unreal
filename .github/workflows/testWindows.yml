@@ -60,8 +60,8 @@ jobs:
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
-          md "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace"
-          cp "download/CesiumForUnreal" "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace" -r
+          md "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace"
+          cp "download/CesiumForUnreal" "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace" -r
       - name: Show plugin engine version
         run: |
           cd download/CesiumForUnreal
@@ -70,7 +70,7 @@ jobs:
       - name: Run Cesium tests
         timeout-minutes: 60
         run: |
-          cd "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Binaries/Win64"
+          cd "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Binaries/Win64"
           ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.Unit.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
       - name: Display tests log
         if: always()

@@ -74,7 +74,7 @@ jobs:
           $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
-          $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
+          $env:UNREAL_BATCH_FILES_PATH="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
           $env:AWS_REGION="us-east-1"
 
           # Make these available to subsequent steps
