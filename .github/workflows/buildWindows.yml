@@ -49,6 +49,9 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Check disk space
+        run: |
+          get-psdrive
       - name: Install Visual Studio components
         if: ${{ inputs.visual-studio-version && inputs.visual-studio-components }}
         run: |
