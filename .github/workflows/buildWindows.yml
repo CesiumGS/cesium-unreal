@@ -10,7 +10,7 @@ on:
         required: false
         type: string
         default: ''
-      visual-studio-toolchain-component:
+      visual-studio-components:
         required: false
         type: string
         default: ''
@@ -41,14 +41,23 @@ on:
         required: false
         type: string
         default: ""
+      cmake-platform:
+        required: false
+        type: string
+        default: "x64"
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      - name: Install Visual Studio toolchain
-        if: ${{ inputs.visual-studio-version && inputs.visual-studio-toolchain-component }}
+      - name: Install Visual Studio components
+        if: ${{ inputs.visual-studio-version && inputs.visual-studio-components }}
         run: |
-          Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList 'modify --installPath "C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise" --quiet --add ${{ inputs.visual-studio-toolchain-component }}' -Wait -PassThru
+          $components = "${{ inputs.visual-studio-components }}" -split "," | foreach {"--add $_"}
+          if ($components.Length -gt 0)
+          {
+            $componentcmd = $components -join " "
+            Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet $componentcmd" -Wait -PassThru
+          }
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -88,7 +97,7 @@ jobs:
         run: |
           cd extern
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
-          cmake -B build -S . -A x64 -G "${{ inputs.cmake-generator }}" $toolchainOption
+          cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8
           cd ..
           rm -r -fo extern

@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Check source formatting
         run: |
           npm install
@@ -18,10 +18,15 @@ jobs:
       runner-label: windows-2019
       unreal-engine-version: "5.1.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
-      # unreal-linux-toolchain: "https://cdn.unrealengine.com/CrossToolchain_Linux/v20_clang-13.0.1-centos7.exe"
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
+      # These are specified in the Unreal Engine release notes under "IDE Version the Build farm compiles against"
+      # and using them ensures we're compiling our plugin in the exact same way that Unreal Engine itself is compiled.
       cmake-generator: "Visual Studio 16 2019"
+      cmake-toolchain: "version=14.29"
+      cmake-platform: "x64,version=10.0.18362.0"
+      visual-studio-version: "2019"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.29.16.10.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
   # TestWindows51:
   #   needs: [Windows51]
   #   uses: ./.github/workflows/testWindows.yml
@@ -275,12 +280,18 @@ jobs:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
     with:
-      runner-label: windows-2019
+      runner-label: windows-2022
       unreal-engine-version: "5.2.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-windows"
-      cmake-generator: "Visual Studio 16 2019"
+      # These are specified in the Unreal Engine release notes under "IDE Version the Build farm compiles against"
+      # and using them ensures we're compiling our plugin in the exact same way that Unreal Engine itself is compiled.
+      cmake-generator: "Visual Studio 17 2022"
+      cmake-toolchain: "version=14.34"
+      cmake-platform: "x64,version=10.0.18362.0"
+      visual-studio-version: "2022"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
   # TestWindows52:
   #   needs: [Windows52]
   #   uses: ./.github/workflows/testWindows.yml
@@ -564,12 +575,13 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-windows"
+      # These are specified in the Unreal Engine release notes under "IDE Version the Build farm compiles against"
+      # and using them ensures we're compiling our plugin in the exact same way that Unreal Engine itself is compiled.
       cmake-generator: "Visual Studio 17 2022"
       cmake-toolchain: "version=14.34"
+      cmake-platform: "x64,version=10.0.18362.0"
       visual-studio-version: "2022"
-      visual-studio-toolchain-component: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64"
-      # UE 5.3 requires this specific toolchain version; others already installed won't cut it
-      # extra-choco-packages: "visualstudio2022enterprise --params \"--add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64\""
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
   # TestWindows53:
   #   needs: [Windows53]
   #   uses: ./.github/workflows/testWindows.yml
