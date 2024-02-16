@@ -52,6 +52,9 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
+      - name: Install Ninja
+        run: |
+          choco install -y ninja
       - name: Build cesium-native
         run: |
           # CMake gets confused by the Windows backslashes
