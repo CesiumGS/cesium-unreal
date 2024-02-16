@@ -87,7 +87,7 @@ jobs:
       - name: Build cesium-native
         run: |
           cd extern
-          $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ""${{ inputs.cmake-toolchain }}"""} Else {""}
+          $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
           cmake -B build -S . -A x64 -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8
           cd ..
