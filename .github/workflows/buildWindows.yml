@@ -33,6 +33,9 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Instal Visual Studio 2022 extra component
+        run: |
+          Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList 'modify --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise" --quiet --add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64' -Wait -PassThru
       - name: Check out repository code
         uses: actions/checkout@v4
         with:

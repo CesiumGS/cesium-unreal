@@ -566,7 +566,7 @@ jobs:
       upload-package-base-name: "CesiumForUnreal-53-windows"
       cmake-generator: "Visual Studio 17 2022"
       # UE 5.3 requires this specific toolchain version; others already installed won't cut it
-      extra-choco-packages: "visualstudio2022enterprise --params \"--add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64\""
+      # extra-choco-packages: "visualstudio2022enterprise --params \"--add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64\""
   # TestWindows53:
   #   needs: [Windows53]
   #   uses: ./.github/workflows/testWindows.yml
