@@ -559,12 +559,15 @@ jobs:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
     with:
-      runner-label: windows-2022
+      runner-label: "windows-2022"
       unreal-engine-version: "5.3.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-windows"
       cmake-generator: "Visual Studio 17 2022"
+      cmake-toolchain: "version=14.34"
+      visual-studio-version: "2022"
+      visual-studio-toolchain-component: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64"
       # UE 5.3 requires this specific toolchain version; others already installed won't cut it
       # extra-choco-packages: "visualstudio2022enterprise --params \"--add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64\""
   # TestWindows53:

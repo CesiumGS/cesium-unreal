@@ -6,6 +6,14 @@ on:
       runner-label:
         required: true
         type: string
+      visual-studio-version:
+        required: false
+        type: string
+        default: ''
+      visual-studio-toolchain-component:
+        required: false
+        type: string
+        default: ''
       unreal-engine-version:
         required: true
         type: string
@@ -29,13 +37,18 @@ on:
       cmake-generator:
         required: true
         type: string
+      cmake-toolchain:
+        required: false
+        type: string
+        default: ""
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      - name: Instal Visual Studio 2022 extra component
+      - name: Install Visual Studio toolchain
+        if: ${{ inputs.visual-studio-version && inputs.visual-studio-toolchain-component }}
         run: |
-          Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList 'modify --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" --quiet --add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64' -Wait -PassThru
+          Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList 'modify --installPath "C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise" --quiet --add ${{ inputs.visual-studio-toolchain-component }}' -Wait -PassThru
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -74,7 +87,8 @@ jobs:
       - name: Build cesium-native
         run: |
           cd extern
-          cmake -B build -S . -A x64 -G "${{ inputs.cmake-generator }}" -T "version=14.34"
+          $toolchainOption=If (${{ inputs.cmake-toolchain }}) "-T \"${{ inputs.cmake-toolchain }}\"" Else ""
+          cmake -B build -S . -A x64 -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8
           cd ..
           rm -r -fo extern
