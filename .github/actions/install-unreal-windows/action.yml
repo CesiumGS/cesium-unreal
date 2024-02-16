@@ -22,7 +22,7 @@ runs:
       shell: pwsh
       run: |
         mkdir -p "C:/Program Files/Epic Games"
-        aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip"
+        aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip" --no-progress
     - name: Unzip Unreal Engine
       shell: pwsh
       run: |

@@ -22,42 +22,16 @@ jobs:
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
       cmake-generator: "Visual Studio 16 2019"
-  Windows52:
-    uses: ./.github/workflows/buildWindows.yml
-    secrets: inherit
-    with:
-      runner-label: windows-2019
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-windows"
-      cmake-generator: "Visual Studio 16 2019"
-  Windows53:
-    uses: ./.github/workflows/buildWindows.yml
-    secrets: inherit
-    with:
-      runner-label: windows-2022
-      unreal-engine-version: "5.3.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
-      unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-windows"
-      cmake-generator: "Visual Studio 17 2022"
-  # Windows52:
-  #   uses: ./.github/workflows/buildWindows.yml
-  #   with:
-  #     unreal-engine-version: "5.2.0"
-  #     unreal-runner-label: "unreal-52"
-  #     unreal-program-name: "UE_5.2"
-  #     upload-package-base-name: "CesiumForUnreal-52-windows"
   # TestWindows51:
   #   needs: [Windows51]
   #   uses: ./.github/workflows/testWindows.yml
-  #   with:
-  #     unreal-runner-label: "unreal-51"
-  #     unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64"
-  #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Plugins"
-  #     test-package-base-name: "CesiumForUnreal-51-windows"
   #   secrets: inherit
+  #   with:
+  #     runner-label: windows-2019
+  #     unreal-engine-version: "5.1.0"
+  #     unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
+  #     unreal-program-name: "UE_5.1"
+  #     test-package-base-name: "CesiumForUnreal-51-windows"
   # Android51:
   #   runs-on: ["self-hosted","windows","x64","unreal-51"]
   #   steps:
@@ -297,13 +271,16 @@ jobs:
   #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Plugins"
   #     test-package-base-name: "CesiumForUnreal-51"
   #   secrets: inherit
-  # Windows52:
-  #   uses: ./.github/workflows/buildWindows.yml
-  #   with:
-  #     unreal-engine-version: "5.2.0"
-  #     unreal-runner-label: "unreal-52"
-  #     unreal-program-name: "UE_5.2"
-  #     upload-package-base-name: "CesiumForUnreal-52-windows"
+  Windows52:
+    uses: ./.github/workflows/buildWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2019
+      unreal-engine-version: "5.2.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
+      unreal-program-name: "UE_5.2"
+      upload-package-base-name: "CesiumForUnreal-52-windows"
+      cmake-generator: "Visual Studio 16 2019"
   # TestWindows52:
   #   needs: [Windows52]
   #   uses: ./.github/workflows/testWindows.yml
@@ -578,13 +555,18 @@ jobs:
   #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Plugins"
   #     test-package-base-name: "CesiumForUnreal-52"
   #   secrets: inherit
-  # Windows53:
-  #   uses: ./.github/workflows/buildWindows.yml
-  #   with:
-  #     unreal-engine-version: "5.3.0"
-  #     unreal-runner-label: "unreal-53"
-  #     unreal-program-name: "UE_5.3"
-  #     upload-package-base-name: "CesiumForUnreal-53-windows"
+  Windows53:
+    uses: ./.github/workflows/buildWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-version: "5.3.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
+      unreal-program-name: "UE_5.3"
+      upload-package-base-name: "CesiumForUnreal-53-windows"
+      cmake-generator: "Visual Studio 17 2022"
+      # UE 5.3 requires this specific toolchain version; others already installed won't cut it
+      extra-choco-packages: "visualstudio2022enterprise --params \"--add Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64\""
   # TestWindows53:
   #   needs: [Windows53]
   #   uses: ./.github/workflows/testWindows.yml
