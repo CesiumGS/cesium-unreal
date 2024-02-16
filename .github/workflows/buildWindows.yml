@@ -59,20 +59,14 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
-      - name: Download Unreal Engine
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          mkdir -p "C:/Program Files/Epic Games"
-          aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip"
-      - name: Unzip Unreal Engine
-        run: |
-          7z x -mmt=8 "C:/Program Files/Epic Games/UE.zip" "-oC:/Program Files/Epic Games/"
-          del "C:/Program Files/Epic Games/UE.zip"
       - name: Install Unreal Engine
-        run: |
-          Start-Process "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe" -Args "-q" -Wait
+        uses: ./.github/actions/install-unreal-windows
+        inherit: secrets
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native

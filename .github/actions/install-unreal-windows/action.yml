@@ -1,0 +1,31 @@
+name: Install Unreal Engine
+inputs:
+  unreal-engine-zip:
+    required: true
+    type: string
+  unreal-program-name:
+    required: true
+    type: string
+  aws-access-key-id:
+    required: true
+    type: string
+  aws-secret-access-key:
+    required: true
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Download Unreal Engine
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+      run: |
+        mkdir -p "C:/Program Files/Epic Games"
+        aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip"
+    - name: Unzip Unreal Engine
+      run: |
+        7z x -mmt=8 "C:/Program Files/Epic Games/UE.zip" "-oC:/Program Files/Epic Games/"
+        del "C:/Program Files/Epic Games/UE.zip"
+    - name: Install Unreal Engine
+      run: |
+        Start-Process "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe" -Args "-q" -Wait
