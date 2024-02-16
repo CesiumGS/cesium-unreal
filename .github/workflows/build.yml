@@ -27,16 +27,15 @@ jobs:
       cmake-platform: "x64,version=10.0.18362.0"
       visual-studio-version: "2019"
       visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.29.16.10.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
-  # TestWindows51:
-  #   needs: [Windows51]
-  #   uses: ./.github/workflows/testWindows.yml
-  #   secrets: inherit
-  #   with:
-  #     runner-label: windows-2019
-  #     unreal-engine-version: "5.1.0"
-  #     unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
-  #     unreal-program-name: "UE_5.1"
-  #     test-package-base-name: "CesiumForUnreal-51-windows"
+  TestWindows51:
+    needs: [Windows51]
+    uses: ./.github/workflows/testWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2019
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
+      unreal-program-name: "UE_5.1"
+      test-package-base-name: "CesiumForUnreal-51-windows"
   # Android51:
   #   runs-on: ["self-hosted","windows","x64","unreal-51"]
   #   steps:

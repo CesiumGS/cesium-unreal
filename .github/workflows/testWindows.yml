@@ -3,13 +3,13 @@ name: Test Windows
 on:
   workflow_call:
     inputs:
-      unreal-runner-label:
+      runner-label:
         required: true
         type: string
-      unreal-binaries-path:
+      unreal-engine-zip:
         required: true
         type: string
-      unreal-plugins-path:
+      unreal-program-name:
         required: true
         type: string
       test-package-base-name:
@@ -17,34 +17,41 @@ on:
         type: string
 jobs:
   test:
-    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    runs-on: ${{ inputs.runner-label }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # so that `git describe` works.
           sparse-checkout: |
             .github
             TestsProject
       - name: Set environment variables
         run: |
-          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
           $env:PLUGIN_PACKAGE_NAME="${{ inputs.test-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
           $env:TESTS_PROJECT_LOGS="$env:TESTS_PROJECT_ROOT/Saved/Logs"
+          $env:AWS_REGION="us-east-1"
 
           # Make these available to subsequent steps
           echo "PLUGIN_PACKAGE_NAME=${env:PLUGIN_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_LOGS=${env:TESTS_PROJECT_LOGS}" >> $env:GITHUB_ENV
+          echo "AWS_REGION=${env:AWS_REGION}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
           echo ""
-          echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
-          echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
           echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
           echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
+          echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-windows
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Download plugin artifact
         uses: actions/download-artifact@v4
         with:
@@ -53,8 +60,8 @@ jobs:
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
-          md "${{ inputs.unreal-plugins-path }}/Marketplace"
-          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r
+          md "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace"
+          cp "download/CesiumForUnreal" "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace" -r
       - name: Show plugin engine version
         run: |
           cd download/CesiumForUnreal
@@ -63,7 +70,7 @@ jobs:
       - name: Run Cesium tests
         timeout-minutes: 60
         run: |
-          cd "${{ inputs.unreal-binaries-path }}"
+          cd "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Binaries/Win64"
           ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.Unit.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
       - name: Display tests log
         if: always()
