@@ -19,13 +19,16 @@ runs:
       env:
         AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+      shell: pwsh
       run: |
         mkdir -p "C:/Program Files/Epic Games"
         aws s3 cp "${{ inputs.unreal-engine-zip }}" "C:/Program Files/Epic Games/UE.zip"
     - name: Unzip Unreal Engine
+      shell: pwsh
       run: |
         7z x -mmt=8 "C:/Program Files/Epic Games/UE.zip" "-oC:/Program Files/Epic Games/"
         del "C:/Program Files/Epic Games/UE.zip"
     - name: Install Unreal Engine
+      shell: pwsh
       run: |
         Start-Process "C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe" -Args "-q" -Wait
