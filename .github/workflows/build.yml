@@ -75,6 +75,10 @@ jobs:
         run: |
           cd "D:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+      - name: Print log
+        if: ${{ failure() }}
+        run: |
+          cat "C:\Users\runneradmin\AppData\Roaming\Unreal Engine\AutomationTool\Logs\D+Program+Files+Epic+Games+UE_5.1\UBT-UnrealGame-Android-Development.txt"
       - name: Compress debug sections
         run: |
           dir packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
