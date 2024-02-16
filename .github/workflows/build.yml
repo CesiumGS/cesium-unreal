@@ -50,6 +50,15 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.5.1
+      - name: Build cesium-native
+        run: |
+          # CMake gets confused by the Windows backslashes
+          $env:ANDROID_NDK_ROOT=$env:ANDROID_NDK_ROOT.replace('\', '/')
+          cd extern
+          cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-android --config Release --target install -j8
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-windows
         with:
@@ -57,13 +66,6 @@ jobs:
           unreal-program-name: "UE_5.1"
           aws-access-key-id: "${{ secrets.AWS_ACCESS_KEY_ID }}"
           aws-secret-access-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-      - name: Install nasm
-        uses: ilammy/setup-nasm@v1.5.1
-      - name: Build cesium-native
-        run: |
-          cd extern
-          cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-android --config Release --target install -j8
       - name: Build plugin
         run: |
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
