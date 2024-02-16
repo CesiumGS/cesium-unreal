@@ -34,17 +34,16 @@ jobs:
     runs-on: ${{ inputs.runner-label }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0 # so that `git describe` works.
       - name: Install Extra Dependencies
         if: ${{ inputs.extra-choco-packages }}
         run: |
           choco install -y ${{ inputs.extra-choco-packages }}
       - name: Set environment variables
         run: |
-          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
@@ -98,6 +97,10 @@ jobs:
           else {
             exit -1
           }
+      - name: Print log
+        if: ${{ failure() }}
+        run: |
+          cat "C:\Users\runneradmin\AppData\Roaming\Unreal Engine\AutomationTool\Logs\C+Program+Files+Epic+Games+UE_5.3\UBT-UnrealEditor-Win64-Development.txt"
       - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
