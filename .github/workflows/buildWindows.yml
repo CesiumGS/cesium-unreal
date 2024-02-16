@@ -61,7 +61,6 @@ jobs:
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-windows
-        inherit: secrets
         with:
           unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
           unreal-program-name: ${{ inputs.unreal-program-name }}
