@@ -17,6 +17,7 @@ runs:
   steps:
     - name: Download Unreal Engine
       env:
+        AWS_REGION: us-east-1
         AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
       shell: pwsh
