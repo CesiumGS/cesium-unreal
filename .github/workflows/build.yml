@@ -107,7 +107,7 @@ jobs:
       unreal-engine-version: "5.1.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.1.0/macOS/UE_51_macOS.zip"
       unreal-program-name: "UE_5.1"
-      upload-package-base-name: "CesiumForUnreal-51-macos"
+      upload-package-base-name: "CesiumForUnreal-51-ios"
       xcode-version: "14.3.1"
   # iOS51:
   #   runs-on: macos-12
