@@ -22,16 +22,16 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-macos
         with:
           unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: Check out repository code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set environment variables
         run: |
           export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
