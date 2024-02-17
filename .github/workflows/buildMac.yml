@@ -55,6 +55,10 @@ jobs:
           export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
+      - name: Print log
+        if: ${{ failure() }}
+        run: |
+          cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UnrealEditor-Mac-Development.txt"
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
