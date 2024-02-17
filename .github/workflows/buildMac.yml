@@ -25,9 +25,10 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      - uses: maxim-lobanov/setup-xcode@v1
+      - name: Set XCode version
+        uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '14.3.1'
+          xcode-version: "${{ inputs.xcode-version }}"
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -60,7 +61,7 @@ jobs:
           sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac -Architecture_Mac=x86_64
       - name: Print log
         if: ${{ failure() }}
         run: |
