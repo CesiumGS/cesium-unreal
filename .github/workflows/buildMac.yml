@@ -18,13 +18,17 @@ on:
       upload-package-base-name:
         required: true
         type: string
+      xcode-version:
+        required: true
+        type: string
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      - name: Install XCode
-        run: |
-          xcodes install 13.4.1
+    steps:
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '14.3.1'
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
