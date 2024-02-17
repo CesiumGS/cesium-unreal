@@ -354,6 +354,16 @@ jobs:
   #       with:
   #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
   #         path: packages
+  macOS52:
+    uses: ./.github/workflows/buildMac.yml
+    secrets: inherit
+    with:
+      runner-label: macos-14
+      unreal-engine-version: "5.2.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
+      unreal-program-name: "UE_5.2"
+      upload-package-base-name: "CesiumForUnreal-52-macos"
+      xcode-version: "14.3.1"
   # macOS52:
   #   runs-on: macos-12
   #   env:
@@ -617,6 +627,16 @@ jobs:
   #       with:
   #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
   #         path: packages
+  macOS53:
+    uses: ./.github/workflows/buildMac.yml
+    secrets: inherit
+    with:
+      runner-label: macos-14
+      unreal-engine-version: "5.3.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
+      unreal-program-name: "UE_5.3"
+      upload-package-base-name: "CesiumForUnreal-53-macos"
+      xcode-version: "14.3.1"
   # macOS53:
   #   runs-on: macos-12
   #   env:
