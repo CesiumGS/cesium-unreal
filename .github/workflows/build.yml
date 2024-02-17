@@ -89,6 +89,15 @@ jobs:
   #       with:
   #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
   #         path: packages
+  macOS51:
+    uses: ./.github/workflows/buildMac.yml
+    secrets: inherit
+    with:
+      runner-label: macos-14
+      unreal-engine-version: "5.1.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.1.0/macOS/UE_51_macOS.zip"
+      unreal-program-name: "UE_5.1"
+      upload-package-base-name: "CesiumForUnreal-51-macos"
   # macOS51:
   #   runs-on: macos-12
   #   env:
