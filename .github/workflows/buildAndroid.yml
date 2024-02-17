@@ -29,6 +29,9 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Install Ninja and wget
+        run: |
+          choco install -y ninja wget
       - name: Install Android NDK
         run: |
           wget https://dl.google.com/android/repository/android-ndk-${{ inputs.android-ndk-version }}-windows.zip
@@ -49,9 +52,6 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
-      - name: Install Ninja
-        run: |
-          choco install -y ninja
       - name: Build cesium-native
         run: |
           # CMake gets confused by the Windows backslashes
