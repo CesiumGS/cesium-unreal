@@ -22,6 +22,9 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Install XCode
+        run: |
+          xcodes install 13.4.1
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
