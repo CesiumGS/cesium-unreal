@@ -46,59 +46,6 @@ jobs:
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-android"
       android-ndk-version: "r25b"
-    # runs-on: windows-2022
-    # steps:
-    #   - name: Check out repository code
-    #     uses: actions/checkout@v4
-    #     with:
-    #       submodules: recursive
-    #   - name: Set environment variables
-    #     run: |
-    #       $ENV:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
-    #       $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-android-${ENV:CESIUM_UNREAL_VERSION}"
-    #       # Make these available to subsequent steps
-    #       echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-    #       echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-    #   - name: Install nasm
-    #     uses: ilammy/setup-nasm@v1.5.1
-    #   - name: Install Ninja
-    #     run: |
-    #       choco install -y ninja
-    #   - name: Build cesium-native
-    #     run: |
-    #       # CMake gets confused by the Windows backslashes
-    #       $env:ANDROID_NDK_ROOT=$env:ANDROID_NDK_ROOT.replace('\', '/')
-    #       cd extern
-    #       cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    #       cmake --build build-android --config Release --target install -j8
-    #       cd ..
-    #       rm -r -fo extern
-    #   - name: Install Unreal Engine
-    #     uses: ./.github/actions/install-unreal-windows
-    #     with:
-    #       unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
-    #       unreal-program-name: "UE_5.1"
-    #       aws-access-key-id: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-    #       aws-secret-access-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-    #   - name: Build plugin
-    #     run: |
-    #       $env:NDKROOT=$env:ANDROID_NDK_ROOT
-    #       cd "D:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
-    #       ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-    #   - name: Print log
-    #     if: ${{ failure() }}
-    #     run: |
-    #       cat "C:\Users\runneradmin\AppData\Roaming\Unreal Engine\AutomationTool\Logs\D+Program+Files+Epic+Games+UE_5.1\UBT-UnrealGame-Android-Development.txt"
-    #   - name: Compress debug sections
-    #     run: |
-    #       dir packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
-    #       dir packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
-    #   - name: Publish plugin package artifact
-    #     if: ${{ success() }}
-    #     uses: actions/upload-artifact@v4
-    #     with:
-    #       name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-    #       path: packages
   # Linux51:
   #   runs-on: ["self-hosted","windows","x64","unreal-51"]
   #   steps:
@@ -318,6 +265,15 @@ jobs:
       cmake-platform: "x64,version=10.0.18362.0"
       visual-studio-version: "2022"
       visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
+  TestWindows52:
+    needs: [Windows52]
+    uses: ./.github/workflows/testWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
+      unreal-program-name: "UE_5.2"
+      test-package-base-name: "CesiumForUnreal-52-windows"
   Android52:
     uses: ./.github/workflows/buildAndroid.yml
     secrets: inherit
@@ -328,52 +284,6 @@ jobs:
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-android"
       android-ndk-version: "r25b"
-  # TestWindows52:
-  #   needs: [Windows52]
-  #   uses: ./.github/workflows/testWindows.yml
-  #   with:
-  #     unreal-runner-label: "unreal-52"
-  #     unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64"
-  #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Plugins"
-  #     test-package-base-name: "CesiumForUnreal-52-windows"
-  #   secrets: inherit
-  # Android52:
-  #   runs-on: ["self-hosted","windows","x64","unreal-52"]
-  #   steps:
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: 0 # so that `git describe` works.
-  #     - name: Set environment variables
-  #       run: |
-  #         $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-  #         $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-52-android-${ENV:CESIUM_UNREAL_VERSION}"
-  #         # Make these available to subsequent steps
-  #         echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-  #         echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-  #     - name: Install nasm
-  #       uses: ilammy/setup-nasm@v1.4.0
-  #     - name: Build cesium-native
-  #       run: |
-  #         cd extern
-  #         cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-  #         cmake --build build-android --config Release --target install -j8
-  #     - name: Build plugin
-  #       run: |
-  #         ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "5.2.0"') | Set-Content -Path CesiumForUnreal.uplugin
-  #         cd "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
-  #         ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-  #     - name: Compress debug sections
-  #       run: |
-  #         dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
-  #         dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
-  #     - name: Publish plugin package artifact
-  #       if: ${{ success() }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-  #         path: packages
   # Linux52:
   #   runs-on: ["self-hosted","linux","x64","unreal-52"]
   #   steps:
@@ -618,6 +528,15 @@ jobs:
       cmake-platform: "x64,version=10.0.18362.0"
       visual-studio-version: "2022"
       visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
+  TestWindows53:
+    needs: [Windows53]
+    uses: ./.github/workflows/testWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
+      unreal-program-name: "UE_5.3"
+      test-package-base-name: "CesiumForUnreal-53-windows"
   Android53:
     uses: ./.github/workflows/buildAndroid.yml
     secrets: inherit
@@ -628,52 +547,6 @@ jobs:
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-android"
       android-ndk-version: "r25b"
-  # TestWindows53:
-  #   needs: [Windows53]
-  #   uses: ./.github/workflows/testWindows.yml
-  #   with:
-  #     unreal-runner-label: "unreal-53"
-  #     unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64"
-  #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Plugins"
-  #     test-package-base-name: "CesiumForUnreal-53-windows"
-  #   secrets: inherit
-  # Android53:
-  #   runs-on: ["self-hosted","windows","x64","unreal-53"]
-  #   steps:
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: 0 # so that `git describe` works.
-  #     - name: Set environment variables
-  #       run: |
-  #         $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-  #         $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-53-android-${ENV:CESIUM_UNREAL_VERSION}"
-  #         # Make these available to subsequent steps
-  #         echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-  #         echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-  #     - name: Install nasm
-  #       uses: ilammy/setup-nasm@v1.4.0
-  #     - name: Build cesium-native
-  #       run: |
-  #         cd extern
-  #         cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-  #         cmake --build build-android --config Release --target install -j8
-  #     - name: Build plugin
-  #       run: |
-  #         ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "5.3.0"') | Set-Content -Path CesiumForUnreal.uplugin
-  #         cd "C:/Program Files/Epic Games/UE_5.3/Engine/Build/BatchFiles"
-  #         ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-  #     - name: Compress debug sections
-  #       run: |
-  #         dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Development/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
-  #         dir packages/CesiumForUnreal/Intermediate/Build/Android/a/UnrealGame/Shipping/CesiumRuntime/*.o | Foreach-Object { & $ENV:ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe --compress-debug-sections $_.FullName }
-  #     - name: Publish plugin package artifact
-  #       if: ${{ success() }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-  #         path: packages
   # Linux53:
   #   runs-on: ["self-hosted","linux","x64","unreal-53"]
   #   steps:
