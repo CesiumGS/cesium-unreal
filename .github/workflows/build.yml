@@ -99,51 +99,6 @@ jobs:
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-macos"
       xcode-version: "14.3.1"
-  # macOS51:
-  #   runs-on: macos-12
-  #   env:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_REGION: us-east-1
-  #   steps:
-  #     - name: Get Unreal Engine
-  #       run: |
-  #         aws s3 cp s3://cesium-unreal-engine/5.1.0/macOS/UE_51_macOS.zip .
-  #         unzip -q UE_51_macOS.zip -d $HOME
-  #         rm UE_51_macOS.zip
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: 0 # so that `git describe` works.
-  #     - name: Set environment variables
-  #       run: |
-  #         export CESIUM_UNREAL_VERSION=$(git describe)
-  #         export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-macos-${CESIUM_UNREAL_VERSION}"
-  #         # Make these available to subsequent steps
-  #         echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
-  #         echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
-  #     - name: Install nasm
-  #       uses: ilammy/setup-nasm@v1.4.0
-  #     - name: Build cesium-native
-  #       run: |
-  #         mkdir -p extern/build
-  #         cd extern/build
-  #         cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-  #         cmake --build . -j4 --target install
-  #         cd ../..
-  #         rm -rf extern
-  #     - name: Build plugin
-  #       run: |
-  #         export UNREAL_ENGINE_DIR=$HOME/UE_5.1
-  #         cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-  #         ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
-  #     - name: Publish plugin package artifact
-  #       if: ${{ success() }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-  #         path: packages
   # iOS51:
   #   runs-on: macos-12
   #   env:
@@ -364,62 +319,6 @@ jobs:
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-macos"
       xcode-version: "14.3.1"
-  # macOS52:
-  #   runs-on: macos-12
-  #   env:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_REGION: us-east-1
-  #   steps:
-  #     - name: Get Unreal Engine
-  #       run: |
-  #         aws s3 cp s3://cesium-unreal-engine/UE_52_macOS.zip .
-  #         unzip -q UE_52_macOS.zip -d $HOME
-  #         rm UE_52_macOS.zip
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: 0 # so that `git describe` works.
-  #     - name: Set environment variables
-  #       run: |
-  #         export CESIUM_UNREAL_VERSION=$(git describe)
-  #         export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-52-macos-${CESIUM_UNREAL_VERSION}"
-  #         # Make these available to subsequent steps
-  #         echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
-  #         echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
-  #     - name: Install nasm
-  #       uses: ilammy/setup-nasm@v1.4.0
-  #     - name: Build cesium-native
-  #       run: |
-  #         mkdir -p extern/build
-  #         cd extern/build
-  #         INSTALL_LIBDIR=`cmake .. -LA | grep CMAKE_INSTALL_LIBDIR`
-  #         INSTALL_LIBDIR=${INSTALL_LIBDIR##CMAKE_INSTALL_LIBDIR:PATH=}
-  #         cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64
-  #         cmake --build . -j4 --target install
-  #         mv $INSTALL_LIBDIR ${INSTALL_LIBDIR}-silicon
-  #         cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64
-  #         cmake --build . -j4 --target install
-  #         for f in ${INSTALL_LIBDIR}/*.a
-  #         do
-  #           lipo -create -output $f ${INSTALL_LIBDIR}-silicon/$(basename -- $f) $f
-  #         done
-  #         rm -r -f ${INSTALL_LIBDIR}-silicon
-  #         cd ../..
-  #         rm -rf extern
-  #     - name: Build plugin
-  #       run: |
-  #         sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"5.2.0\"/g' CesiumForUnreal.uplugin
-  #         export UNREAL_ENGINE_DIR=$HOME/UE_5.2
-  #         cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-  #         ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
-  #     - name: Publish plugin package artifact
-  #       if: ${{ success() }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-  #         path: packages
   # iOS52:
   #   runs-on: macos-12
   #   env:
@@ -637,62 +536,6 @@ jobs:
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-macos"
       xcode-version: "14.3.1"
-  # macOS53:
-  #   runs-on: macos-12
-  #   env:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     AWS_REGION: us-east-1
-  #   steps:
-  #     - name: Get Unreal Engine
-  #       run: |
-  #         aws s3 cp s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip .
-  #         unzip -q UE_53_macOS.zip -d $HOME
-  #         rm UE_53_macOS.zip
-  #     - name: Check out repository code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-  #         fetch-depth: 0 # so that `git describe` works.
-  #     - name: Set environment variables
-  #       run: |
-  #         export CESIUM_UNREAL_VERSION=$(git describe)
-  #         export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-53-macos-${CESIUM_UNREAL_VERSION}"
-  #         # Make these available to subsequent steps
-  #         echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
-  #         echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
-  #     - name: Install nasm
-  #       uses: ilammy/setup-nasm@v1.4.0
-  #     - name: Build cesium-native
-  #       run: |
-  #         mkdir -p extern/build
-  #         cd extern/build
-  #         INSTALL_LIBDIR=`cmake .. -LA | grep CMAKE_INSTALL_LIBDIR`
-  #         INSTALL_LIBDIR=${INSTALL_LIBDIR##CMAKE_INSTALL_LIBDIR:PATH=}
-  #         cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64
-  #         cmake --build . -j4 --target install
-  #         mv $INSTALL_LIBDIR ${INSTALL_LIBDIR}-silicon
-  #         cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64
-  #         cmake --build . -j4 --target install
-  #         for f in ${INSTALL_LIBDIR}/*.a
-  #         do
-  #           lipo -create -output $f ${INSTALL_LIBDIR}-silicon/$(basename -- $f) $f
-  #         done
-  #         rm -r -f ${INSTALL_LIBDIR}-silicon
-  #         cd ../..
-  #         rm -rf extern
-  #     - name: Build plugin
-  #       run: |
-  #         sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"5.3.0\"/g' CesiumForUnreal.uplugin
-  #         export UNREAL_ENGINE_DIR=$HOME/UE_5.3
-  #         cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-  #         ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
-  #     - name: Publish plugin package artifact
-  #       if: ${{ success() }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-  #         path: packages
   # iOS53:
   #   runs-on: macos-12
   #   env:
