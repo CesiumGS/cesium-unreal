@@ -52,8 +52,18 @@ jobs:
         run: |
           mkdir -p extern/build
           cd extern/build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DXCODE_VERSION=13.4.1 -DCMAKE_OSX_ARCHITECTURES=x86_64
+          INSTALL_LIBDIR=`cmake .. -LA | grep CMAKE_INSTALL_LIBDIR`
+          INSTALL_LIBDIR=${INSTALL_LIBDIR##CMAKE_INSTALL_LIBDIR:PATH=}
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64
           cmake --build . -j4 --target install
+          mv $INSTALL_LIBDIR ${INSTALL_LIBDIR}-silicon
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64
+          cmake --build . -j4 --target install
+          for f in ${INSTALL_LIBDIR}/*.a
+          do
+            lipo -create -output $f ${INSTALL_LIBDIR}-silicon/$(basename -- $f) $f
+          done
+          rm -r -f ${INSTALL_LIBDIR}-silicon
           cd ../..
           rm -rf extern
       - name: Build plugin
@@ -61,7 +71,7 @@ jobs:
           sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac -Architecture_Mac=x86_64
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
       - name: Print log
         if: ${{ failure() }}
         run: |
