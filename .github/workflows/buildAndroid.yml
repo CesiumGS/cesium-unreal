@@ -22,10 +22,20 @@ on:
         required: false
         type: string
         default: ''
+      android-ndk-version:
+        required: true
+        type: string
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Install Android NDK
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-${{ inputs.android-ndk-version }}-windows.zip
+          7z x android-ndk-${{ inputs.android-ndk-version }}-windows.zip -oc:\
+          del android-ndk-${{ inputs.android-ndk-version }}-windows.zip
+          echo "ANDROID_NDK_ROOT=c:/android-ndk-${{ inputs.android-ndk-version }}" >> $ENV:GITHUB_ENV
+          echo "NDKROOT=c:/android-ndk-${{ inputs.android-ndk-version }}" >> $ENV:GITHUB_ENV
       - name: Check out repository code
         uses: actions/checkout@v4
         with:

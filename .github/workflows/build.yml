@@ -45,6 +45,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-android"
+      android-ndk-version: "r25b"
     # runs-on: windows-2022
     # steps:
     #   - name: Check out repository code
@@ -326,6 +327,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-android"
+      android-ndk-version: "r25b"
   # TestWindows52:
   #   needs: [Windows52]
   #   uses: ./.github/workflows/testWindows.yml
@@ -625,6 +627,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-android"
+      android-ndk-version: "r25b"
   # TestWindows53:
   #   needs: [Windows53]
   #   uses: ./.github/workflows/testWindows.yml
