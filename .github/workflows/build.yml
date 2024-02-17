@@ -73,6 +73,7 @@ jobs:
           aws-secret-access-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
       - name: Build plugin
         run: |
+          $env:NDKROOT=$env:ANDROID_NDK_ROOT
           cd "D:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
       - name: Print log
