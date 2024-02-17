@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p extern/build
           cd extern/build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DXCODE_VERSION=13.4.1
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=12 -DXCODE_VERSION=13.4.1 -DCMAKE_OSX_ARCHITECTURES=x86_64
           cmake --build . -j4 --target install
           cd ../..
           rm -rf extern
