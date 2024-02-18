@@ -34,6 +34,8 @@ jobs:
           df -h
           ls -la /mnt
           sudo mkdir /mnt/work
+          export USER=$(whoami)
+          sudo chown $USER /mnt/work
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -53,7 +55,7 @@ jobs:
         run: |
           echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${{ inputs.upload-package-base-name }}-${CESIUM_UNREAL_VERSION}" >> "$GITHUB_ENV"
-          echo "UNREAL_ENGINE_DIR=/mnt/${{ inputs.unreal-program-name }}" >> "$GITHUB_ENV"
+          echo "UNREAL_ENGINE_DIR=/mnt/work/${{ inputs.unreal-program-name }}" >> "$GITHUB_ENV"
           echo "LINUX_MULTIARCH_ROOT=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/${{ inputs.clang-version }}/" >> "$GITHUB_ENV"
       - name: Build cesium-native
         run: |
