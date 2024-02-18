@@ -28,6 +28,7 @@ on:
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
+    steps:
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
