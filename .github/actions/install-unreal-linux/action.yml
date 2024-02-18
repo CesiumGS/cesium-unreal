@@ -23,5 +23,5 @@ runs:
     - name: Unzip Unreal Engine
       shell: bash
       run: |
-        unzip -q /mnt/ue.zip -d /mnt/work
+        unzip -q /mnt/work/ue.zip -d /mnt/work
         rm /mnt/work/ue.zip
