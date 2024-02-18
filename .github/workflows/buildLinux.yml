@@ -36,7 +36,7 @@ jobs:
       - name: Create some space to work in /mnt
         run: |
           sudo mkdir /mnt/work
-          sudo chown $LOGNAME /mnt/work
+          sudo chown $(whoami) /mnt/work
       - name: List installed packages
         run: |
           apt list --installed
