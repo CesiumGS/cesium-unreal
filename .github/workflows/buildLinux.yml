@@ -43,6 +43,12 @@ jobs:
       - name: List installed packages
         run: |
           apt list --installed
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-linux
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -52,12 +58,6 @@ jobs:
       - name: Install Ninja
         run: |
           sudo apt install -y ninja-build
-      - name: Install Unreal Engine
-        uses: ./.github/actions/install-unreal-linux
-        with:
-          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Set environment variables
         run: |
           echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
