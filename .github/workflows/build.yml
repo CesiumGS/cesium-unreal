@@ -476,6 +476,16 @@ jobs:
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-android"
       android-ndk-version: "r25b"
+  Linux53:
+    uses: ./.github/workflows/buildLinux.yml
+    secrets: inherit
+    with:
+      runner-label: ubuntu-latest
+      unreal-engine-version: "5.3.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/Linux_Unreal_Engine_5.3.0.zip"
+      unreal-program-name: "UE_5.3"
+      upload-package-base-name: "CesiumForUnreal-53-linux"
+      clang-version: "v22_clang-16.0.6-centos7"
   # Linux53:
   #   runs-on: ["self-hosted","linux","x64","unreal-53"]
   #   steps:

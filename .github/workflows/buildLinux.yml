@@ -1,0 +1,87 @@
+name: Build Linux
+
+on:
+  workflow_call:
+    inputs:
+      runner-label:
+        required: true
+        type: string
+      unreal-engine-version:
+        required: true
+        type: string
+      unreal-engine-zip:
+        required: true
+        type: string
+      unreal-program-name:
+        required: true
+        type: string
+      upload-package-base-name:
+        required: true
+        type: string
+      extra-choco-packages:
+        required: false
+        type: string
+        default: ''
+      clang-version:
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ${{ inputs.runner-label }}
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.5.1
+      - name: Install Ninja
+        run: |
+          sudo apt install ninja
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-linux
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Set environment variables
+        run: |
+          echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${{ inputs.upload-package-base-name }}-${CESIUM_UNREAL_VERSION}" >> "$GITHUB_ENV"
+          echo "UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}" >> "$GITHUB_ENV"
+          echo "LINUX_MULTIARCH_ROOT=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/${{ inputs.clang-version }}/" >> "$GITHUB_ENV"
+      - name: Build cesium-native
+        run: |
+          export UNREAL_ENGINE_COMPILER_DIR="${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
+          export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
+          cd extern
+          cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --target install -j8
+          cd ..
+          rm -rf extern
+      - name: Build plugin
+        run: |
+          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
+          sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
+      - name: Fix RPATH
+        run: |
+          sudo yum install -y patchelf
+          cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
+          patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
+          export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
+          patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
+      - name: Compress debug sections
+        run: |
+          for f in packages/CesiumForUnreal/Binaries/Linux/*.so; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
+          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
+      - name: Publish plugin package artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
+          path: packages
