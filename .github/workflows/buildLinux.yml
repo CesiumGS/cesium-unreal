@@ -36,6 +36,9 @@ jobs:
           sudo mkdir /mnt/work
           export USER=$(whoami)
           sudo chown $USER /mnt/work
+      - name: List installed packages
+        run: |
+          apt list --installed
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
