@@ -19,9 +19,9 @@ runs:
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
       shell: bash
       run: |
-        aws s3 cp ${{ inputs.unreal-engine-zip }} ./ue.zip --no-progress
+        aws s3 cp ${{ inputs.unreal-engine-zip }} /mnt/ue.zip --no-progress
     - name: Unzip Unreal Engine
       shell: bash
       run: |
-        unzip -q ue.zip -d $HOME
-        rm ue.zip
+        unzip -q /mnt/ue.zip -d /mnt
+        rm /mnt/ue.zip
