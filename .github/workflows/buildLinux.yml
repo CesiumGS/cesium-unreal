@@ -33,13 +33,10 @@ jobs:
         run: |
           sudo apt remove google-chrome-stable clang-10 clang-11 clang-12 llvm-10-runtime llvm-10-dev llvm-10-tools llvm-10 llvm-11-dev llvm-11-runtime llvm-11-tools llvm-11 llvm-12-dev llvm-12-linker-tools llvm-12-runtime llvm-12-tools llvm-12 x11-common xserver-common aspnetcore-runtime-6.0 aspnetcore-runtime-7.0 aspnetcore-runtime-8.0 aspnetcore-targeting-pack-6.0 aspnetcore-targeting-pack-7.0 aspnetcore-targeting-pack-8.0 docker-ce-cli docker-ce dotnet-apphost-pack-6.0 dotnet-apphost-pack-7.0 dotnet-apphost-pack-8.0 dotnet-host dotnet-hostfxr-6.0 dotnet-hostfxr-7.0 dotnet-hostfxr-8.0 dotnet-runtime-6.0 dotnet-runtime-7.0 dotnet-runtime-8.0 dotnet-runtime-deps-6.0 dotnet-runtime-deps-7.0 dotnet-runtime-deps-8.0 dotnet-sdk-6.0 dotnet-sdk-7.0 dotnet-sdk-8.0 dotnet-targeting-pack-6.0 dotnet-targeting-pack-7.0 dotnet-targeting-pack-8.0 eatmydata emacsen-common firebird3.0-common-doc firebird3.0-common firefox kubectl mercurial-common mercurial microsoft-edge-stable mongodb-database-tools mongodb-mongosh mongodb-org-database-tools-extra mongodb-org-database mongodb-org-mongos mongodb-org-server mongodb-org-shell mongodb-org-tools mongodb-org mssql-tools mysql-client-8.0 mysql-client-core-8.0 mysql-client mysql-common mysql-server-8.0
           sudo apt autoremove
-      - name: Display disk space
+      - name: Create some space to work in /mnt
         run: |
-          df -h
-          ls -la /mnt
           sudo mkdir /mnt/work
-          export USER=$(whoami)
-          sudo chown $USER /mnt/work
+          sudo chown $LOGNAME /mnt/work
       - name: List installed packages
         run: |
           apt list --installed
@@ -56,9 +53,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
-      - name: Install Ninja
+      - name: Install Ninja and patchelf
         run: |
-          sudo apt install -y ninja-build
+          sudo apt install -y ninja-build patchelf
       - name: Set environment variables
         run: |
           echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
@@ -83,7 +80,6 @@ jobs:
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
       - name: Fix RPATH
         run: |
-          sudo yum install -y patchelf
           cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
           patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
@@ -94,10 +90,6 @@ jobs:
           for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
           for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
           for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
-      - name: Print log
-        if: ${{ failure() }}
-        run: |
-          df -h
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
