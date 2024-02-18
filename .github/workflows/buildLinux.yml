@@ -37,7 +37,7 @@ jobs:
         uses: ilammy/setup-nasm@v1.5.1
       - name: Install Ninja
         run: |
-          sudo apt install ninja
+          sudo apt install -y ninja-build
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
