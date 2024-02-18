@@ -29,6 +29,9 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Display disk space
+        run: |
+          df -h
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
