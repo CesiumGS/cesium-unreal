@@ -3,6 +3,9 @@ inputs:
   unreal-engine-zip:
     required: true
     type: string
+  unreal-program-name:
+    required: true
+    type: string
   aws-access-key-id:
     required: true
     type: string
@@ -23,5 +26,6 @@ runs:
     - name: Unzip Unreal Engine
       shell: bash
       run: |
-        unzip -q ./ue.zip -d /mnt/work
+        mkdir -p /mnt/work/${{ inputs.unreal-program-name }}
+        unzip -q ./ue.zip -d /mnt/work/${{ inputs.unreal-program-name }}
         rm ./ue.zip
