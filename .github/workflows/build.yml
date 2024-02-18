@@ -46,6 +46,16 @@ jobs:
       unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-android"
       android-ndk-version: "r25b"
+  Linux51:
+    uses: ./.github/workflows/buildLinux.yml
+    secrets: inherit
+    with:
+      runner-label: ubuntu-22.04
+      unreal-engine-version: "5.1.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.1.0/Linux/Linux_Unreal_Engine_5.1.0.zip"
+      unreal-program-name: "UE_5.1"
+      upload-package-base-name: "CesiumForUnreal-51-linux"
+      clang-version: "v20_clang-13.0.1-centos7"
   # Linux51:
   #   runs-on: ["self-hosted","windows","x64","unreal-51"]
   #   steps:
@@ -259,6 +269,16 @@ jobs:
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-android"
       android-ndk-version: "r25b"
+  Linux52:
+    uses: ./.github/workflows/buildLinux.yml
+    secrets: inherit
+    with:
+      runner-label: ubuntu-22.04
+      unreal-engine-version: "5.2.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/Linux_Unreal_Engine_5.2.0.zip"
+      unreal-program-name: "UE_5.2"
+      upload-package-base-name: "CesiumForUnreal-52-linux"
+      clang-version: "v21_clang-15.0.1-centos7"
   # Linux52:
   #   runs-on: ["self-hosted","linux","x64","unreal-52"]
   #   steps:
