@@ -91,6 +91,10 @@ jobs:
           for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
           for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
           for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
+      - name: Print disk space free
+        if: ${{ failure() }}
+        run: |
+          df -h
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
