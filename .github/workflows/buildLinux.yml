@@ -32,6 +32,8 @@ jobs:
       - name: Display disk space
         run: |
           df -h
+          ls -la /mnt
+          sudo mkdir /mnt/work
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
