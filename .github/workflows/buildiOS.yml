@@ -31,8 +31,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          aws s3 cp s3://cesium-unreal-engine/Xcode/Xcode_13.4.1.xip .
-          xip -x Xcode_13.4.1
+          aws s3 cp s3://cesium-unreal-engine/Xcode/Xcode_13.4.1.xip . --no-progress
+          xip -x ./Xcode_13.4.1.xip
           #xcodes install 13.4.1 --path ./Xcode_13.4.1.xip
           rm ./Xcode_13.4.1.xip
       - name: Set XCode version
