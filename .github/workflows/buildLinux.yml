@@ -31,7 +31,8 @@ jobs:
     steps:
       - name: Removed unneeded packages to gain disk space
         run: |
-          sudo apt uninstall google-chrome-stable clang-10 clang-11 clang-12 llvm-10-runtime llvm-10-dev llvm-10-tools llvm-10 llvm-11-dev llvm-11-runtime llvm-11-tools llvm-11 llvm-12-dev llvm-12-linker-tools llvm-12-runtime llvm-12-tools llvm-12 x11-common xserver-common
+          sudo apt remove google-chrome-stable clang-10 clang-11 clang-12 llvm-10-runtime llvm-10-dev llvm-10-tools llvm-10 llvm-11-dev llvm-11-runtime llvm-11-tools llvm-11 llvm-12-dev llvm-12-linker-tools llvm-12-runtime llvm-12-tools llvm-12 x11-common xserver-common
+          sudo apt autoremove
       - name: Display disk space
         run: |
           df -h
