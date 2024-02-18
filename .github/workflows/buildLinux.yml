@@ -43,16 +43,16 @@ jobs:
       - name: List installed packages
         run: |
           apt list --installed
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
           unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: Check out repository code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
       - name: Install Ninja
