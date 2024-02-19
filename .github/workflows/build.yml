@@ -318,7 +318,7 @@ jobs:
     uses: ./.github/workflows/buildMac.yml
     secrets: inherit
     with:
-      runner-label: macos-14
+      runner-label: macos-12
       unreal-engine-version: "5.3.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
       unreal-program-name: "UE_5.3"
