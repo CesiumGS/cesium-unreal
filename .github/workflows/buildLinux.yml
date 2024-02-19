@@ -45,6 +45,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Monitor disk space
+        run: |
+          while true; do df -h; sleep 1; done &
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
@@ -92,7 +95,6 @@ jobs:
           for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
           for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
       - name: Print disk space free
-        if: ${{ failure() }}
         run: |
           df -h
       - name: Publish plugin package artifact
