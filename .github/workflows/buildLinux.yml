@@ -74,6 +74,14 @@ jobs:
           cmake --build build --config Release --target install -j8
           cd ..
           rm -rf extern
+      - name: Make more swap space available
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 15G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          sudo swapon --show
       - name: Build plugin
         run: |
           while true; do cat /proc/meminfo; sleep 5; done &
