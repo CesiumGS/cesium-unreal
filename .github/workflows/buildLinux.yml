@@ -31,6 +31,7 @@ jobs:
     steps:
       - name: List installed packages
         run: |
+          sudo swapon --show
           apt list --installed
       - name: Removed unneeded packages to gain disk space
         run: |
@@ -74,7 +75,7 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
-          while true; do df -h; sleep 1; done &
+          while true; do cat /proc/meminfo; sleep 5; done &
           mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
           printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>1</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
