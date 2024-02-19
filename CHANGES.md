@@ -1,12 +1,25 @@
 # Change Log
 
-### ? - ?
+### v2.3.0 - 2024-02-01
+
+##### Additions :tada:
+
+- Added support for Web Map Tile Service (WMTS) with `CesiumWebMapTileServiceRasterOverlay`.
+- Significantly reduced CPU memory usage by textures on non-Windows systems.
+- Added support for the `KHR_texture_transform` glTF extension - including rotation - in `baseColorTexture`, `metallicRoughnessTexture`, `emissiveTexture`, `normalTexture`, and `occlusionTexture`. The transformation is now applied on the GPU via nodes in the Material, rather than on the CPU by directly modifying texture coordinates.
 
 ##### Fixes :wrench:
 
 - Fixed a bug in `MLB_DitherFade` that made glTF materials with an `alphaMode` of `MASK` incorrectly appear as fully opaque.
 - Fixed a bug in `CesiumFlyToComponent` that could cause the position of the object to shift suddenly at the very end of the flight.
+- Fixed a bug that caused textures created by Cesium for Unreal on D3D11 and D3D12 (only) to not be counted in the "Texture Memory Used" stat in the "Memory" stat group or in any counter in the "TextureGroup" stat group.
+- Fixed a bug in `CesiumGltfComponent` that would cause a crash if the `Ignore KHR_materials_unlit` setting was enabled on a point cloud.
 - Fixed a bug in `CesiumActors` that would cause the editor to crash when running in Standalone mode.
+- Fixed several build warnings when packing in Unreal Engine 5.3.
+- Readded backwards compatibility for feature textures from `EXT_feature_metadata`, which was mistakenly removed.
+- Fixed a bug that caused nav mesh creation to be slow due to creating duplicate physics meshes.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.31.0 to v0.32.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.2.0 - 2023-12-14
 

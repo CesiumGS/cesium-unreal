@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "GltfAccessors.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include <CesiumGltf/AccessorUtility.h>
 #include "CesiumFeatureIdAttribute.generated.h"
 
 namespace CesiumGltf {
@@ -43,7 +43,7 @@ public:
    */
   FCesiumFeatureIdAttribute()
       : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
-        _featureIDAccessor(),
+        _featureIdAccessor(),
         _attributeIndex(-1) {}
 
   /**
@@ -68,7 +68,7 @@ public:
 
 private:
   ECesiumFeatureIdAttributeStatus _status;
-  CesiumFeatureIDAccessorType _featureIDAccessor;
+  CesiumGltf::FeatureIdAccessorType _featureIdAccessor;
   int64 _attributeIndex;
 
   // For backwards compatibility.
