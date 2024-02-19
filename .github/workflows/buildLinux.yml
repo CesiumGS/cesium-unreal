@@ -32,6 +32,7 @@ jobs:
       - name: List installed packages
         run: |
           sudo swapon --show
+          cat /proc/meminfo
           apt list --installed
       - name: Removed unneeded packages to gain disk space
         run: |
