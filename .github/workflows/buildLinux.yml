@@ -77,7 +77,7 @@ jobs:
       - name: Make more swap space available
         run: |
           sudo swapoff -a
-          sudo fallocate -l 15G /mnt/swapfile
+          sudo fallocate -l 8G /mnt/swapfile
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
