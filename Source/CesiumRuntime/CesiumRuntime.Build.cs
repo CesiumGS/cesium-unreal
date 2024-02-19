@@ -126,7 +126,7 @@ public class CesiumRuntime : ModuleRules
     }
     else
     {
-      libs = libs.Concat(new string[] { "tidy", "z" }).ToArray();
+      libs = libs.Concat(new string[] { "tidy", "z-ng" }).ToArray();
     }
 
     if (preferDebug)
