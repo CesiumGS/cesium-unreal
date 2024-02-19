@@ -29,7 +29,7 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      - name: List installed packages
+      - name: Display system info
         run: |
           sudo swapon --show
           cat /proc/meminfo
@@ -77,16 +77,16 @@ jobs:
       - name: Make more swap space available
         run: |
           sudo swapoff -a
-          sudo fallocate -l 8G /mnt/swapfile
+          sudo fallocate -l 10G /mnt/swapfile
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
           sudo swapon --show
       - name: Build plugin
         run: |
-          while true; do cat /proc/meminfo; sleep 5; done &
+          # while true; do cat /proc/meminfo; sleep 5; done &
           mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
-          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>1</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
@@ -100,8 +100,22 @@ jobs:
         run: |
           for f in packages/CesiumForUnreal/Binaries/Linux/*.so; do objcopy --compress-debug-sections $f; done
           for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
-          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
-          for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do objcopy --compress-debug-sections $f; done
+          if [ -d "packages/CesiumForUnreal/Intermediate/Build/Linux/x64" ]; then
+            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do
+              objcopy --compress-debug-sections $f
+            done
+            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do
+              objcopy --compress-debug-sections $f
+            done
+          fi
+          if [ -d "packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA" ]; then
+            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Development/CesiumRuntime/*.o; do
+              objcopy --compress-debug-sections $f
+            done
+            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Shipping/CesiumRuntime/*.o; do
+              objcopy --compress-debug-sections $f
+            done
+          fi
       - name: Print disk space free
         run: |
           df -h
