@@ -126,6 +126,10 @@ public:
    * This is the index N corresponding to the "TEXCOORD_N" attribute on the glTF
    * primitive that samples this texture.
    *
+   * If the texture contains the `KHR_texture_transform` extension, the original
+   * texture coordinate set index can be overridden by the one provided by the
+   * extension.
+   *
    * If the feature ID texture is invalid, this returns -1.
    */
   UFUNCTION(
@@ -166,7 +170,7 @@ public:
    * retrieve the per-pixel metadata.
    *
    * This assumes the given texture coordinates are from the appropriate
-   * texture coordinate set as indicated by GetTextureCoordinateIndex. If the
+   * texture coordinate set as indicated by GetTextureCoordinateSetIndex. If the
    * feature ID texture is invalid, this returns -1.
    */
   UFUNCTION(

@@ -1,8 +1,10 @@
 #include "CesiumFeatureIdTexture.h"
-#include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
+#include <CesiumGltf/ExtensionExtMeshFeatures.h>
+#include <CesiumGltf/ExtensionKhrTextureTransform.h>
+#include <CesiumUtility/Math.h>
 
 using namespace CesiumGltf;
 
@@ -210,7 +212,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
        });
   });
 
-  Describe("GetFeatureIDForTextureCoordinates", [this]() {
+  Describe("GetFeatureIDForUV", [this]() {
     BeforeEach([this]() {
       model = Model();
       Mesh& mesh = model.meshes.emplace_back();
@@ -240,8 +242,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
       TestEqual(
           "FeatureID",
-          UCesiumFeatureIdTextureBlueprintLibrary::
-              GetFeatureIDForTextureCoordinates(featureIDTexture, 0, 0),
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV(
+              featureIDTexture,
+              FVector2D::Zero()),
           -1);
     });
 
@@ -272,12 +275,66 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
       for (size_t i = 0; i < texCoords.size(); i++) {
         const glm::vec2& texCoord = texCoords[i];
-        int64 featureID = UCesiumFeatureIdTextureBlueprintLibrary::
-            GetFeatureIDForTextureCoordinates(
+        int64 featureID =
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV(
                 featureIDTexture,
-                texCoord[0],
-                texCoord[1]);
+                {texCoord.x, texCoord.y});
         TestEqual("FeatureID", featureID, featureIDs[i]);
+      }
+    });
+
+    It("returns correct value with KHR_texture_transform", [this]() {
+      const std::vector<uint8_t> featureIDs{1, 2, 0, 7};
+      const std::vector<glm::vec2> rawTexCoords{
+          glm::vec2(0, 0),
+          glm::vec2(1, 0),
+          glm::vec2(0, 1),
+          glm::vec2(1, 1)};
+
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          rawTexCoords,
+          0,
+          Sampler::WrapS::REPEAT,
+          Sampler::WrapT::REPEAT);
+
+      assert(featureId.texture != std::nullopt);
+      ExtensionKhrTextureTransform& textureTransform =
+          featureId.texture->addExtension<ExtensionKhrTextureTransform>();
+      textureTransform.offset = {0.5, -0.5};
+      textureTransform.rotation = UE_DOUBLE_HALF_PI;
+      textureTransform.scale = {0.5, 0.5};
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      // (0, 0) -> (0.5, -0.5) -> wraps to (0.5, 0.5)
+      // (1, 0) -> (0.5, -1) -> wraps to (0.5, 0)
+      // (0, 1) -> (1, -0.5) -> wraps to (0, 0.5)
+      // (1, 1) -> (1, -1) -> wraps to (0.0, 0.0)
+      std::vector<uint8_t> expected{7, 2, 0, 1};
+
+      for (size_t i = 0; i < texCoords.size(); i++) {
+        const glm::vec2& texCoord = rawTexCoords[i];
+        int64 featureID =
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForUV(
+                featureIDTexture,
+                {texCoord.x, texCoord.y});
+        TestEqual("FeatureID", featureID, expected[i]);
       }
     });
   });
