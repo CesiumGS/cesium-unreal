@@ -129,17 +129,16 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
-  # TestPackage51:
-  #   needs: [Combine51]
-  #   uses: ./.github/workflows/testPackageOnWindows.yml
-  #   with:
-  #     unreal-engine-association: "5.1"
-  #     unreal-runner-label: "unreal-51"
-  #     unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64"
-  #     unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
-  #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Plugins"
-  #     test-package-base-name: "CesiumForUnreal-51"
-  #   secrets: inherit
+  TestPackage51:
+    needs: [Combine51]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2019
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.1.1/Windows/UE_5.1.1.zip"
+      unreal-program-name: "UE_5.1"
+      unreal-engine-association: "5.1"
+      test-package-base-name: "CesiumForUnreal-51"
   Windows52:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
@@ -258,17 +257,16 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
-  # TestPackage52:
-  #   needs: [Combine52]
-  #   uses: ./.github/workflows/testPackageOnWindows.yml
-  #   with:
-  #     unreal-engine-association: "5.2"
-  #     unreal-runner-label: "unreal-52"
-  #     unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64"
-  #     unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
-  #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Plugins"
-  #     test-package-base-name: "CesiumForUnreal-52"
-  #   secrets: inherit
+  TestPackage52:
+    needs: [Combine52]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
+      unreal-program-name: "UE_5.2"
+      unreal-engine-association: "5.2"
+      test-package-base-name: "CesiumForUnreal-52"
   Windows53:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
@@ -387,14 +385,13 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
-  # TestPackage53:
-  #   needs: [Combine53]
-  #   uses: ./.github/workflows/testPackageOnWindows.yml
-  #   with:
-  #     unreal-engine-association: "5.3"
-  #     unreal-runner-label: "unreal-53"
-  #     unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64"
-  #     unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Build/BatchFiles"
-  #     unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Plugins"
-  #     test-package-base-name: "CesiumForUnreal-53"
-  #   secrets: inherit
+  TestPackage53:
+    needs: [Combine52]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
+      unreal-program-name: "UE_5.3"
+      unreal-engine-association: "5.3"
+      test-package-base-name: "CesiumForUnreal-53"
