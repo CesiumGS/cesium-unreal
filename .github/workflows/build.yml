@@ -139,6 +139,8 @@ jobs:
       unreal-program-name: "UE_5.1"
       unreal-engine-association: "5.1"
       test-package-base-name: "CesiumForUnreal-51"
+      visual-studio-version: "2019"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.29.16.10.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
   Windows52:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
@@ -267,6 +269,8 @@ jobs:
       unreal-program-name: "UE_5.2"
       unreal-engine-association: "5.2"
       test-package-base-name: "CesiumForUnreal-52"
+      visual-studio-version: "2022"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
   Windows53:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
@@ -395,3 +399,5 @@ jobs:
       unreal-program-name: "UE_5.3"
       unreal-engine-association: "5.3"
       test-package-base-name: "CesiumForUnreal-53"
+      visual-studio-version: "2022"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"

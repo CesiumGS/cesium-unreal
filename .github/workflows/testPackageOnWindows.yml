@@ -6,6 +6,14 @@ on:
       runner-label:
         required: true
         type: string
+      visual-studio-version:
+        required: false
+        type: string
+        default: ''
+      visual-studio-components:
+        required: false
+        type: string
+        default: ''
       unreal-engine-zip:
         required: true
         type: string
@@ -22,6 +30,15 @@ jobs:
   test:
     runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Install Visual Studio components
+        if: ${{ inputs.visual-studio-version && inputs.visual-studio-components }}
+        run: |
+          $components = "${{ inputs.visual-studio-components }}" -split "," | foreach {"--add $_"}
+          if ($components.Length -gt 0)
+          {
+            $componentcmd = $components -join " "
+            Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet $componentcmd" -Wait -PassThru
+          }
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
