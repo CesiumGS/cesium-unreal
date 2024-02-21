@@ -386,7 +386,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
   TestPackage53:
-    needs: [Combine52]
+    needs: [Combine53]
     uses: ./.github/workflows/testPackageOnWindows.yml
     secrets: inherit
     with:
