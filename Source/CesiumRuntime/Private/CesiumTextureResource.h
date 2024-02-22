@@ -21,6 +21,7 @@ public:
       TextureAddress addressX,
       TextureAddress addressY,
       bool sRGB,
+      bool useMipsIfAvailable,
       uint32 extData);
 
   uint32 GetSizeX() const override { return this->_width; }
@@ -47,6 +48,7 @@ protected:
   ESamplerFilter _filter;
   ESamplerAddressMode _addressX;
   ESamplerAddressMode _addressY;
+  bool _useMipsIfAvailable;
   uint32 _platformExtData;
   FName _lodGroupStatName;
   uint64 _textureSize;
@@ -73,6 +75,7 @@ public:
       TextureAddress addressX,
       TextureAddress addressY,
       bool sRGB,
+      bool useMipsIfAvailable,
       uint32 extData);
 
   FCesiumUseExistingTextureResource(
@@ -85,6 +88,7 @@ public:
       TextureAddress addressX,
       TextureAddress addressY,
       bool sRGB,
+      bool useMipsIfAvailable,
       uint32 extData);
 
 protected:
@@ -113,6 +117,7 @@ public:
       TextureAddress addressX,
       TextureAddress addressY,
       bool sRGB,
+      bool useMipsIfAvailable,
       uint32 extData);
 
 protected:

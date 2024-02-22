@@ -85,6 +85,12 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
   check(GRHISupportsAsyncTextureCreation);
 
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+
+  // Just like in FCesiumCreateNewTextureResource, we're assuming here that we
+  // can create an FRHITexture as sRGB, and later create another
+  // UTexture2D / FTextureResource pointing to the same FRHITexture that is not
+  // sRGB (or vice-versa), and that Unreal will effectively ignore the flag on
+  // FRHITexture.
   if (sRGB) {
     textureFlags |= TexCreate_SRGB;
   }
@@ -489,6 +495,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
         addressX,
         addressY,
         sRGB,
+        useMipMapsIfAvailable,
         0);
   } else if (
       GRHISupportsAsyncTextureCreation && !imageCesium.pixelData.empty()) {
@@ -508,9 +515,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
         addressX,
         addressY,
         sRGB,
-        // TODO: "ExtData" (whatever that is) usually comes from
-        // UTexture2D::GetPlatformData()->GetExtData(). But we don't have a
-        // UTexture2D yet. Do we really need it?
+        useMipMapsIfAvailable,
         0);
 
     // Clear the now-unnecessary copy of the pixel data. Calling clear() isn't
@@ -537,6 +542,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
         addressX,
         addressY,
         sRGB,
+        useMipMapsIfAvailable,
         0);
   }
 

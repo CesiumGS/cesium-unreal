@@ -107,6 +107,7 @@ FCesiumTextureResourceBase::FCesiumTextureResourceBase(
     TextureAddress addressX,
     TextureAddress addressY,
     bool sRGB,
+    bool useMipsIfAvailable,
     uint32 extData)
     : _textureGroup(textureGroup),
       _width(width),
@@ -115,6 +116,7 @@ FCesiumTextureResourceBase::FCesiumTextureResourceBase(
       _filter(convertFilter(filter)),
       _addressX(convertAddressMode(addressX)),
       _addressY(convertAddressMode(addressY)),
+      _useMipsIfAvailable(useMipsIfAvailable),
       _platformExtData(extData) {
   this->bGreyScaleFormat = (_format == PF_G8) || (_format == PF_BC4);
   this->bSRGB = sRGB;
@@ -126,9 +128,6 @@ void FCesiumTextureResourceBase::InitRHI(FRHICommandListBase& RHICmdList) {
 #else
 void FCesiumTextureResourceBase::InitRHI() {
 #endif
-  // TODO: for textures that aren't supposed to use mipmaps, even though the
-  // underlying RHI Texture has them, we need to pass 1 for the InMaxMipLevel
-  // parameter.
   FSamplerStateInitializerRHI samplerStateInitializer(
       this->_filter,
       this->_addressX,
@@ -137,7 +136,7 @@ void FCesiumTextureResourceBase::InitRHI() {
       0.0f,
       0,
       0.0f,
-      FLT_MAX);
+      this->_useMipsIfAvailable ? FLT_MAX : 1.0f);
   this->SamplerStateRHI = GetOrCreateSamplerState(samplerStateInitializer);
 
   // Create a custom sampler state for using this texture in a deferred pass,
@@ -155,7 +154,7 @@ void FCesiumTextureResourceBase::InitRHI() {
       // artifacts on silhouettes due to ddx / ddy being very large This has
       // the side effect that it increases minification aliasing on light
       // functions
-      2.0f);
+      this->_useMipsIfAvailable ? 2.0f : 1.0f);
   this->DeferredPassSamplerStateRHI =
       GetOrCreateSamplerState(deferredSamplerStateInitializer);
 
@@ -233,6 +232,7 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
     TextureAddress addressX,
     TextureAddress addressY,
     bool sRGB,
+    bool useMipsIfAvailable,
     uint32 extData)
     : FCesiumTextureResourceBase(
           textureGroup,
@@ -243,6 +243,7 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
           addressX,
           addressY,
           sRGB,
+          useMipsIfAvailable,
           extData),
       _pExistingTexture(nullptr) {
   this->TextureRHI = std::move(existingTexture);
@@ -258,6 +259,7 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
     TextureAddress addressX,
     TextureAddress addressY,
     bool sRGB,
+    bool useMipsIfAvailable,
     uint32 extData)
     : FCesiumTextureResourceBase(
           textureGroup,
@@ -268,6 +270,7 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
           addressX,
           addressY,
           sRGB,
+          useMipsIfAvailable,
           extData),
       _pExistingTexture(pExistingTexture) {}
 
@@ -289,6 +292,7 @@ FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
     TextureAddress addressX,
     TextureAddress addressY,
     bool sRGB,
+    bool useMipsIfAvailable,
     uint32 extData)
     : FCesiumTextureResourceBase(
           textureGroup,
@@ -299,6 +303,7 @@ FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
           addressX,
           addressY,
           sRGB,
+          useMipsIfAvailable,
           extData),
       _image(std::move(image)) {}
 
@@ -309,12 +314,18 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
 
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
 
-  // TODO: what if a texture is treated as sRGB in one context but not another?
+  // What if a texture is treated as sRGB in one context but not another?
   // In glTF, whether or not a texture should be treated as sRGB depends on how
   // it's _used_. A texture used for baseColorFactor or emissiveFactor should be
   // sRGB, while all others should be linear. It's unlikely - but not impossible
   // - for a single glTF Texture or Image to be used in one context where it
-  // must be sRGB, and another where it must be linear.
+  // must be sRGB, and another where it must be linear. Unreal also has an sRGB
+  // flag on FTextureResouce and on UTexture2D (neither of which are shared), so
+  // _hopefully_ those will apply even if the underlying FRHITexture (which is
+  // shared) says differently. If not, we'll likely end up treating the second
+  // texture incorrectly. Confirming an answer here will be time consuming, and
+  // the scenario is quite unlikely, so we're strategically leaving this an open
+  // question.
   if (this->bSRGB) {
     textureFlags |= TexCreate_SRGB;
   }
