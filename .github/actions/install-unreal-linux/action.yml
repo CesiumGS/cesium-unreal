@@ -1,0 +1,31 @@
+name: Install Unreal Engine
+inputs:
+  unreal-engine-zip:
+    required: true
+    type: string
+  unreal-program-name:
+    required: true
+    type: string
+  aws-access-key-id:
+    required: true
+    type: string
+  aws-secret-access-key:
+    required: true
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Download Unreal Engine
+      env:
+        AWS_REGION: us-east-1
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+      shell: bash
+      run: |
+        aws s3 cp ${{ inputs.unreal-engine-zip }} ./ue.zip --no-progress
+    - name: Unzip Unreal Engine
+      shell: bash
+      run: |
+        mkdir -p /mnt/work/${{ inputs.unreal-program-name }}
+        unzip -q ./ue.zip -d /mnt/work/${{ inputs.unreal-program-name }}
+        rm ./ue.zip

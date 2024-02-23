@@ -3,12 +3,27 @@ name: Build Windows
 on:
   workflow_call:
     inputs:
+      runner-label:
+        required: true
+        type: string
+      visual-studio-version:
+        required: false
+        type: string
+        default: ''
+      visual-studio-components:
+        required: false
+        type: string
+        default: ''
       unreal-engine-version:
         required: true
         type: string
-      unreal-runner-label:
+      unreal-engine-zip:
         required: true
         type: string
+      # unreal-linux-toolchain:
+      #   required: false
+      #   type: string
+      #   default: ""
       unreal-program-name:
         required: true
         type: string
@@ -19,56 +34,82 @@ on:
         required: false
         type: string
         default: ''
+      cmake-generator:
+        required: true
+        type: string
+      cmake-toolchain:
+        required: false
+        type: string
+        default: ""
+      cmake-platform:
+        required: false
+        type: string
+        default: "x64"
 jobs:
   build:
-    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Check disk space
+        run: |
+          get-psdrive
+      - name: Install Visual Studio components
+        if: ${{ inputs.visual-studio-version && inputs.visual-studio-components }}
+        run: |
+          $components = "${{ inputs.visual-studio-components }}" -split "," | foreach {"--add $_"}
+          if ($components.Length -gt 0)
+          {
+            $componentcmd = $components -join " "
+            Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet $componentcmd" -Wait -PassThru
+          }
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0 # so that `git describe` works.
       - name: Install Extra Dependencies
         if: ${{ inputs.extra-choco-packages }}
         run: |
           choco install -y ${{ inputs.extra-choco-packages }}
       - name: Set environment variables
         run: |
-          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
-          $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
-
-          # Store temp files on the D drive, which is much faster than the EBS-backed C drive.
-          mkdir -p d:\cesium\temp
-          $env:TEMP="d:\cesium\temp"
+          $env:UNREAL_BATCH_FILES_PATH="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
+          $env:AWS_REGION="us-east-1"
 
           # Make these available to subsequent steps
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_PATH=${env:BUILD_CESIUM_UNREAL_PACKAGE_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
-          echo "TEMP=${env:TEMP}" >> $env:GITHUB_ENV
+          echo "AWS_REGION=${env:AWS_REGION}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
-          echo ""
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
-          echo TEMP=$env:TEMP
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-windows
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Install nasm
-        uses: ilammy/setup-nasm@v1.4.0
+        uses: ilammy/setup-nasm@v1.5.1
       - name: Build cesium-native
         run: |
           cd extern
-          cmake -B build -S . -A x64
+          $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
+          cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8
+          cd ..
+          rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Build CesiumForUnreal plugin
         timeout-minutes: 180
         run: |
-          echo "Temp directory: $env:TEMP"
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
           echo LastExitCode=$LASTEXITCODE
@@ -78,6 +119,10 @@ jobs:
           else {
             exit -1
           }
+      - name: Print log
+        if: ${{ failure() }}
+        run: |
+          cat "C:\Users\runneradmin\AppData\Roaming\Unreal Engine\AutomationTool\Logs\C+Program+Files+Epic+Games+UE_5.3\UBT-UnrealEditor-Win64-Development.txt"
       - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
