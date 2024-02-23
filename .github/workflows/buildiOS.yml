@@ -1,0 +1,86 @@
+name: Build iOS
+
+on:
+  workflow_call:
+    inputs:
+      runner-label:
+        required: true
+        type: string
+      unreal-engine-version:
+        required: true
+        type: string
+      unreal-engine-zip:
+        required: true
+        type: string
+      unreal-program-name:
+        required: true
+        type: string
+      upload-package-base-name:
+        required: true
+        type: string
+      xcode-version:
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ${{ inputs.runner-label }}
+    steps:
+      - name: Install XCode ${{ inputs.xcode-version }}
+        env:
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws s3 cp s3://cesium-unreal-engine/Xcode/Xcode_${{ inputs.xcode-version }}.xip . --no-progress
+          export ORIGINAL_DIR=$PWD
+          cd /Applications
+          xip -x $ORIGINAL_DIR/Xcode_${{ inputs.xcode-version }}.xip
+          rm $ORIGINAL_DIR/Xcode_${{ inputs.xcode-version }}.xip
+      - name: Set XCode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "${{ inputs.xcode-version }}"
+          #"${{ inputs.xcode-version }}"
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set environment variables
+        run: |
+          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
+          export BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${CESIUM_UNREAL_VERSION}"
+          # Make these available to subsequent steps
+          echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.5.1
+      - name: Build cesium-native
+        run: |
+          mkdir -p extern/build-ios
+          cd extern
+          cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=15 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-ios -j4 --target install --config Release
+          cd ..
+          rm -rf extern
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-macos
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Build plugin
+        run: |
+          sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
+          cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
+      - name: Print log
+        if: ${{ failure() }}
+        run: |
+          cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UnrealEditor-Mac-Development.txt"
+      - name: Publish plugin package artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
+          path: packages
