@@ -3,19 +3,24 @@ name: Test Package On Windows
 on:
   workflow_call:
     inputs:
+      runner-label:
+        required: true
+        type: string
+      visual-studio-version:
+        required: false
+        type: string
+        default: ''
+      visual-studio-components:
+        required: false
+        type: string
+        default: ''
+      unreal-engine-zip:
+        required: true
+        type: string
+      unreal-program-name:
+        required: true
+        type: string
       unreal-engine-association:
-        required: true
-        type: string
-      unreal-runner-label:
-        required: true
-        type: string
-      unreal-binaries-path:
-        required: true
-        type: string
-      unreal-batch-files-path:
-        required: true
-        type: string
-      unreal-plugins-path:
         required: true
         type: string
       test-package-base-name:
@@ -23,18 +28,26 @@ on:
         type: string
 jobs:
   test:
-    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    runs-on: ${{ inputs.runner-label }}
     steps:
+      - name: Install Visual Studio components
+        if: ${{ inputs.visual-studio-version && inputs.visual-studio-components }}
+        run: |
+          $components = "${{ inputs.visual-studio-components }}" -split "," | foreach {"--add $_"}
+          if ($components.Length -gt 0)
+          {
+            $componentcmd = $components -join " "
+            Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet $componentcmd" -Wait -PassThru
+          }
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # so that `git describe` works.
           sparse-checkout: |
             .github
             TestsProject
       - name: Set environment variables
         run: |
-          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
           $env:PLUGIN_PACKAGE_NAME="${{ inputs.test-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
 
@@ -48,12 +61,16 @@ jobs:
 
           # Confirm vars to the console
           echo ""
-          echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
-          echo unreal-batch-files-path="${{ inputs.unreal-batch-files-path }}"
-          echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
           echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME
           echo UNREAL_COOK_PARAM=$env:UNREAL_COOK_PARAM
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-windows
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Download plugin artifact
         uses: actions/download-artifact@v4
         with:
@@ -62,8 +79,8 @@ jobs:
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
-          md "${{ inputs.unreal-plugins-path }}/Marketplace"
-          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r
+          md "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace"
+          cp "download/CesiumForUnreal" "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Plugins/Marketplace" -r
       - name: Overwrite tests project engine association
         run: |
           ((Get-Content -path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -Raw) -replace '"EngineAssociation": "5.0"','"EngineAssociation": "${{ inputs.unreal-engine-association }}"') | Set-Content -Path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject"
@@ -79,8 +96,8 @@ jobs:
           Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Run packaging test
         run: |
-          cd "${{ inputs.unreal-batch-files-path }}"
-          ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -$env:UNREAL_COOK_PARAM  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="${{ inputs.unreal-binaries-path }}/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:GITHUB_WORKSPACE/TestPackaging" -nocompile
+          cd "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
+          ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -$env:UNREAL_COOK_PARAM  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:GITHUB_WORKSPACE/TestPackaging" -nocompile
       - name: Sanity check output
         run: |
           if (!(Test-Path "$env:GITHUB_WORKSPACE/TestPackaging/Windows/TestsProject.exe") ) { exit -1 }
