@@ -320,7 +320,7 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   // sRGB, while all others should be linear. It's unlikely - but not impossible
   // - for a single glTF Texture or Image to be used in one context where it
   // must be sRGB, and another where it must be linear. Unreal also has an sRGB
-  // flag on FTextureResouce and on UTexture2D (neither of which are shared), so
+  // flag on FTextureResource and on UTexture2D (neither of which are shared), so
   // _hopefully_ those will apply even if the underlying FRHITexture (which is
   // shared) says differently. If not, we'll likely end up treating the second
   // texture incorrectly. Confirming an answer here will be time consuming, and
