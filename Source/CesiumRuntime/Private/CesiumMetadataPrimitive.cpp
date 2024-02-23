@@ -3,7 +3,6 @@
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 #include "CesiumMetadataPrimitive.h"
-#include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/Model.h"
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
