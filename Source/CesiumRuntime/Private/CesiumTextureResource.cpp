@@ -151,7 +151,7 @@ void FCesiumTextureResourceBase::InitRHI() {
       1,
       0.0f,
       // Prevent the less detailed mip levels from being used, which hides
-      // artifacts on silhouettes due to ddx / ddy being very large This has
+      // artifacts on silhouettes due to ddx / ddy being very large. This has
       // the side effect that it increases minification aliasing on light
       // functions
       this->_useMipsIfAvailable ? 2.0f : 1.0f);
