@@ -11,7 +11,7 @@ BEGIN_DEFINE_SPEC(
     CesiumTextureUtilitySpec,
     "Cesium.Unit.CesiumTextureUtility",
     EAutomationTestFlags::ApplicationContextMask |
-        EAutomationTestFlags::ProductFilter)
+        EAutomationTestFlags::ProductFilter | EAutomationTestFlags::NonNullRHI)
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 ImageCesium imageCesium;
