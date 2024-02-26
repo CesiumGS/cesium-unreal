@@ -1,5 +1,18 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Significantly reduced CPU memory used by glTF and raster overlay textures.
+- Improved texture creation performance on non-D3D platforms.
+- Added support for the `KHR_texture_transform` glTF extension - including rotation - for `CesiumFeatureIdTexture`.
+- `CesiumFeaturesMetadataComponent` now generates nodes for `KHR_texture_transform` if the extension is present in a feature ID texture.
+
+##### Fixes :wrench:
+
+- Metadata-related textures are now created in `TEXTUREGROUP_8BitData` instead of `TEXTUREGROUP_World`.
+
 ### v2.3.0 - 2024-02-01
 
 ##### Additions :tada:

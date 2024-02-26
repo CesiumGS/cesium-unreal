@@ -44,8 +44,8 @@
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
-#include <CesiumGltf/ExtensionModelExtFeatureMetadata.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
+#include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/PropertyType.h>
 #include <CesiumGltf/TextureInfo.h>
 #include <CesiumGltfContent/GltfUtilities.h>
@@ -78,33 +78,9 @@ using TMeshVector4 = FVector4f;
 static uint32_t nextMaterialId = 0;
 
 namespace {
-void destroyHalfLoadedTexture(
-    TUniquePtr<CesiumTextureUtility::LoadedTextureResult>& pHalfLoadedTexture) {
-  if (pHalfLoadedTexture) {
-    CesiumTextureUtility::destroyHalfLoadedTexture(*pHalfLoadedTexture.Get());
-  }
-}
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
   LoadModelResult loadModelResult{};
-
-  virtual ~HalfConstructedReal() {
-    // TODO: deal with metadata case, when metadata uses async texture creation
-    // path See: https://github.com/CesiumGS/cesium-unreal/issues/979
-    for (LoadNodeResult& node : loadModelResult.nodeResults) {
-      if (node.meshResult) {
-        for (LoadPrimitiveResult& primitive :
-             node.meshResult->primitiveResults) {
-          destroyHalfLoadedTexture(primitive.baseColorTexture);
-          destroyHalfLoadedTexture(primitive.metallicRoughnessTexture);
-          destroyHalfLoadedTexture(primitive.normalTexture);
-          destroyHalfLoadedTexture(primitive.emissiveTexture);
-          destroyHalfLoadedTexture(primitive.occlusionTexture);
-          destroyHalfLoadedTexture(primitive.waterMaskTexture);
-        }
-      }
-    }
-  }
 };
 } // namespace
 
@@ -411,7 +387,8 @@ template <class T>
 static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture,
-    bool sRGB) {
+    bool sRGB,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
       gltfTexture.value().index >= model.textures.size()) {
     if (gltfTexture && gltfTexture.value().index >= 0) {
@@ -425,16 +402,20 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const CesiumGltf::Texture& texture =
-      model.textures[gltfTexture.value().index];
-
-  return loadTextureAnyThreadPart(model, texture, sRGB);
+  int32_t textureIndex = gltfTexture.value().index;
+  const CesiumGltf::Texture& texture = model.textures[textureIndex];
+  return loadTextureFromModelAnyThreadPart(
+      model,
+      texture,
+      sRGB,
+      textureResources);
 }
 
 static void applyWaterMask(
     Model& model,
     const MeshPrimitive& primitive,
-    LoadPrimitiveResult& primitiveResult) {
+    LoadPrimitiveResult& primitiveResult,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
@@ -456,8 +437,11 @@ static void applyWaterMask(
         waterMaskInfo.index = waterMaskTextureId;
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
-          primitiveResult.waterMaskTexture =
-              loadTexture(model, std::make_optional(waterMaskInfo), false);
+          primitiveResult.waterMaskTexture = loadTexture(
+              model,
+              std::make_optional(waterMaskInfo),
+              false,
+              textureResources);
         }
       }
     }
@@ -934,7 +918,8 @@ static void loadPrimitive(
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
-    const TIndexAccessor& indicesView) {
+    const TIndexAccessor& indicesView,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
@@ -1075,7 +1060,7 @@ static void loadPrimitive(
     }
   }
 
-  applyWaterMask(model, primitive, primitiveResult);
+  applyWaterMask(model, primitive, primitiveResult, textureResources);
 
   // The water effect works by animating the normal, and the normal is
   // expressed in tangent space. So if we have water, we need tangents.
@@ -1220,18 +1205,22 @@ static void loadPrimitive(
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
-    primitiveResult.baseColorTexture =
-        loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
+    primitiveResult.baseColorTexture = loadTexture(
+        model,
+        pbrMetallicRoughness.baseColorTexture,
+        true,
+        textureResources);
     primitiveResult.metallicRoughnessTexture = loadTexture(
         model,
         pbrMetallicRoughness.metallicRoughnessTexture,
-        false);
+        false,
+        textureResources);
     primitiveResult.normalTexture =
-        loadTexture(model, material.normalTexture, false);
+        loadTexture(model, material.normalTexture, false, textureResources);
     primitiveResult.occlusionTexture =
-        loadTexture(model, material.occlusionTexture, false);
+        loadTexture(model, material.occlusionTexture, false, textureResources);
     primitiveResult.emissiveTexture =
-        loadTexture(model, material.emissiveTexture, true);
+        loadTexture(model, material.emissiveTexture, true, textureResources);
   }
 
   {
@@ -1576,8 +1565,8 @@ static void loadIndexedPrimitive(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
-    const AccessorView<TMeshVector3>& positionView) {
-
+    const AccessorView<TMeshVector3>& positionView,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
@@ -1592,7 +1581,8 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor);
+        indexAccessor,
+        textureResources);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1604,7 +1594,8 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor);
+        indexAccessor,
+        textureResources);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1616,7 +1607,8 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor);
+        indexAccessor,
+        textureResources);
     primitiveResult.IndexAccessor = indexAccessor;
   } else {
     UE_LOG(
@@ -1630,7 +1622,8 @@ static void loadIndexedPrimitive(
 static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
-    const CreatePrimitiveOptions& options) {
+    const CreatePrimitiveOptions& options,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
@@ -1665,14 +1658,16 @@ static void loadPrimitive(
         options,
         *pPositionAccessor,
         positionView,
-        syntheticIndexBuffer);
+        syntheticIndexBuffer,
+        textureResources);
   } else {
     loadIndexedPrimitive(
         result,
         transform,
         options,
         *pPositionAccessor,
-        positionView);
+        positionView,
+        textureResources);
   }
   result.PositionAccessor = std::move(positionView);
 }
@@ -1680,7 +1675,8 @@ static void loadPrimitive(
 static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
-    const CreateMeshOptions& options) {
+    const CreateMeshOptions& options,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
@@ -1692,7 +1688,11 @@ static void loadMesh(
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     auto& primitiveResult = result->primitiveResults.emplace_back();
-    loadPrimitive(primitiveResult, transform, primitiveOptions);
+    loadPrimitive(
+        primitiveResult,
+        transform,
+        primitiveOptions,
+        textureResources);
 
     // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
@@ -1704,7 +1704,8 @@ static void loadMesh(
 static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
-    const CreateNodeOptions& options) {
+    const CreateNodeOptions& options,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -1780,7 +1781,7 @@ static void loadNode(
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
-    loadMesh(result.meshResult, nodeTransform, meshOptions);
+    loadMesh(result.meshResult, nodeTransform, meshOptions, textureResources);
   }
 
   for (int childNodeId : node.children) {
@@ -1789,7 +1790,11 @@ static void loadNode(
           options.pModelOptions,
           options.pHalfConstructedModelResult,
           &model.nodes[childNodeId]};
-      loadNode(loadNodeResults, nodeTransform, childNodeOptions);
+      loadNode(
+          loadNodeResults,
+          nodeTransform,
+          childNodeOptions,
+          textureResources);
     }
   }
 }
@@ -1843,10 +1848,53 @@ void applyGltfUpAxisTransform(const Model& model, glm::dmat4x4& rootTransform) {
 static void loadModelAnyThreadPart(
     LoadModelResult& result,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreateModelOptions& options,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
-  const Model& model = *options.pModel;
+  Model& model = *options.pModel;
+
+  // Generate mipmaps if needed.
+  // An image needs mipmaps generated for it if:
+  // 1. It is used by a Texture that has a Sampler with a mipmap filtering mode,
+  // and
+  // 2. It does not already have mipmaps.
+  // It's ok if an image has mipmaps even if not all textures will use them.
+  // There's no reason to have two RHI textures, one with and one without mips.
+  for (const Texture& texture : model.textures) {
+    const Sampler& sampler = model.getSafe(model.samplers, texture.sampler);
+
+    bool needsMipmaps;
+    switch (sampler.minFilter.value_or(
+        CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR)) {
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+      needsMipmaps = true;
+      break;
+    default: // LINEAR and NEAREST
+      needsMipmaps = false;
+      break;
+    }
+
+    if (!needsMipmaps)
+      continue;
+
+    Image* pImage = model.getSafe(&model.images, texture.source);
+    if (!pImage || pImage->cesium.pixelData.empty())
+      continue;
+
+    std::optional<std::string> errorMessage =
+        CesiumGltfReader::GltfReader::generateMipMaps(pImage->cesium);
+    if (errorMessage) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s"),
+          UTF8_TO_TCHAR(errorMessage->c_str()));
+    }
+  }
 
   const ExtensionModelExtStructuralMetadata* pMetadataExtension =
       model.getExtension<ExtensionModelExtStructuralMetadata>();
@@ -1886,19 +1934,27 @@ static void loadModelAnyThreadPart(
     const Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(result.nodeResults, rootTransform, nodeOptions);
+      loadNode(
+          result.nodeResults,
+          rootTransform,
+          nodeOptions,
+          textureResources);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(result.nodeResults, rootTransform, nodeOptions);
+      loadNode(
+          result.nodeResults,
+          rootTransform,
+          nodeOptions,
+          textureResources);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
-    loadNode(result.nodeResults, rootTransform, nodeOptions);
+    loadNode(result.nodeResults, rootTransform, nodeOptions, textureResources);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const Mesh& mesh : model.meshes) {
@@ -1908,23 +1964,30 @@ static void loadModelAnyThreadPart(
           &dummyNodeOptions,
           &dummyNodeResult,
           &mesh};
-      loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
+      loadMesh(
+          dummyNodeResult.meshResult,
+          rootTransform,
+          meshOptions,
+          textureResources);
     }
   }
 }
 
 bool applyTexture(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
-  UTexture2D* pTexture =
-      CesiumTextureUtility::loadTextureGameThreadPart(model, pLoadedTexture);
+  CesiumUtility::IntrusivePointer<
+      CesiumTextureUtility::ReferenceCountedUnrealTexture>
+      pTexture = CesiumTextureUtility::loadTextureGameThreadPart(
+          model,
+          pLoadedTexture);
   if (!pTexture) {
     return false;
   }
 
-  pMaterial->SetTextureParameterValueByInfo(info, pTexture);
+  pMaterial->SetTextureParameterValueByInfo(info, pTexture->pUnrealTexture);
 
   return true;
 }
@@ -1932,7 +1995,7 @@ bool applyTexture(
 #pragma region Material Parameter setters
 
 static void SetGltfParameterValues(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
     const Material& material,
     const MaterialPBRMetallicRoughness& pbr,
@@ -2005,106 +2068,107 @@ static void SetGltfParameterValues(
       FMaterialParameterInfo("occlusionTexture", association, index),
       loadResult.occlusionTexture.Get());
 
+  KhrTextureTransform textureTransform;
+  FLinearColor baseColorMetallicRoughnessRotation(0.0f, 1.0f, 0.0f, 1.0f);
   const ExtensionKhrTextureTransform* pBaseColorTextureTransform =
       pbr.baseColorTexture
           ? pbr.baseColorTexture->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
+
+  if (pBaseColorTextureTransform) {
+    textureTransform = KhrTextureTransform(*pBaseColorTextureTransform);
+    if (textureTransform.status() == KhrTextureTransformStatus::Valid) {
+      const glm::dvec2& scale = textureTransform.scale();
+      const glm::dvec2& offset = textureTransform.offset();
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo("baseColorScaleOffset", association, index),
+          FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+      const glm::dvec2& rotationSineCosine =
+          textureTransform.rotationSineCosine();
+      baseColorMetallicRoughnessRotation.R = rotationSineCosine[0];
+      baseColorMetallicRoughnessRotation.G = rotationSineCosine[1];
+    }
+  }
+
   const ExtensionKhrTextureTransform* pMetallicRoughnessTextureTransform =
       pbr.metallicRoughnessTexture
           ? pbr.metallicRoughnessTexture
                 ->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
 
-  if (pBaseColorTextureTransform) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("baseColorScaleOffset", association, index),
-        FLinearColor(
-            pBaseColorTextureTransform->scale[0],
-            pBaseColorTextureTransform->scale[1],
-            pBaseColorTextureTransform->offset[0],
-            pBaseColorTextureTransform->offset[1]));
-  }
-
   if (pMetallicRoughnessTextureTransform) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            "metallicRoughnessScaleOffset",
-            association,
-            index),
-        FLinearColor(
-            pMetallicRoughnessTextureTransform->scale[0],
-            pMetallicRoughnessTextureTransform->scale[1],
-            pMetallicRoughnessTextureTransform->offset[0],
-            pMetallicRoughnessTextureTransform->offset[1]));
+    textureTransform = KhrTextureTransform(*pMetallicRoughnessTextureTransform);
+    if (textureTransform.status() == KhrTextureTransformStatus::Valid) {
+      const glm::dvec2& scale = textureTransform.scale();
+      const glm::dvec2& offset = textureTransform.offset();
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(
+              "metallicRoughnessScaleOffset",
+              association,
+              index),
+          FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+      const glm::dvec2& rotationSineCosine =
+          textureTransform.rotationSineCosine();
+      baseColorMetallicRoughnessRotation.B = rotationSineCosine[0];
+      baseColorMetallicRoughnessRotation.A = rotationSineCosine[1];
+    }
   }
 
   if (pBaseColorTextureTransform || pMetallicRoughnessTextureTransform) {
-    FLinearColor rotationValues(0.0f, 1.0f, 0.0f, 1.0f);
-    if (pBaseColorTextureTransform) {
-      rotationValues.R =
-          float(FMath::Sin(pBaseColorTextureTransform->rotation));
-      rotationValues.G =
-          float(FMath::Cos(pBaseColorTextureTransform->rotation));
-    }
-    if (pMetallicRoughnessTextureTransform) {
-      rotationValues.B =
-          float(FMath::Sin(pMetallicRoughnessTextureTransform->rotation));
-      rotationValues.A =
-          float(FMath::Cos(pMetallicRoughnessTextureTransform->rotation));
-    }
-
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo(
             "baseColorMetallicRoughnessRotation",
             association,
             index),
-        rotationValues);
+        baseColorMetallicRoughnessRotation);
   }
+
+  FLinearColor emissiveNormalRotation(0.0f, 1.0f, 0.0f, 1.0f);
 
   const ExtensionKhrTextureTransform* pEmissiveTextureTransform =
       material.emissiveTexture
           ? material.emissiveTexture
                 ->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
+
+  if (pEmissiveTextureTransform) {
+    textureTransform = KhrTextureTransform(*pEmissiveTextureTransform);
+    const glm::dvec2& scale = textureTransform.scale();
+    const glm::dvec2& offset = textureTransform.offset();
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveScaleOffset", association, index),
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+    const glm::dvec2& rotationSineCosine =
+        textureTransform.rotationSineCosine();
+    emissiveNormalRotation.R = rotationSineCosine[0];
+    emissiveNormalRotation.G = rotationSineCosine[1];
+  }
+
   const ExtensionKhrTextureTransform* pNormalTextureTransform =
       material.normalTexture
           ? material.normalTexture->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
 
-  if (pEmissiveTextureTransform) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("emissiveScaleOffset", association, index),
-        FLinearColor(
-            pEmissiveTextureTransform->scale[0],
-            pEmissiveTextureTransform->scale[1],
-            pEmissiveTextureTransform->offset[0],
-            pEmissiveTextureTransform->offset[1]));
-  }
-
   if (pNormalTextureTransform) {
+    textureTransform = KhrTextureTransform(*pNormalTextureTransform);
+    const glm::dvec2& scale = textureTransform.scale();
+    const glm::dvec2& offset = textureTransform.offset();
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("normalScaleOffset", association, index),
-        FLinearColor(
-            pNormalTextureTransform->scale[0],
-            pNormalTextureTransform->scale[1],
-            pNormalTextureTransform->offset[0],
-            pNormalTextureTransform->offset[1]));
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+    const glm::dvec2& rotationSineCosine =
+        textureTransform.rotationSineCosine();
+    emissiveNormalRotation.B = rotationSineCosine[0];
+    emissiveNormalRotation.A = rotationSineCosine[1];
   }
 
   if (pEmissiveTextureTransform || pNormalTextureTransform) {
-    FLinearColor rotationValues(0.0f, 1.0f, 0.0f, 1.0f);
-    if (pEmissiveTextureTransform) {
-      rotationValues.R = float(FMath::Sin(pEmissiveTextureTransform->rotation));
-      rotationValues.G = float(FMath::Cos(pEmissiveTextureTransform->rotation));
-    }
-    if (pNormalTextureTransform) {
-      rotationValues.B = float(FMath::Sin(pNormalTextureTransform->rotation));
-      rotationValues.A = float(FMath::Cos(pNormalTextureTransform->rotation));
-    }
-
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("emissiveNormalRotation", association, index),
-        rotationValues);
+        emissiveNormalRotation);
   }
 
   const ExtensionKhrTextureTransform* pOcclusionTransform =
@@ -2114,18 +2178,20 @@ static void SetGltfParameterValues(
           : nullptr;
 
   if (pOcclusionTransform) {
+    textureTransform = KhrTextureTransform(*pOcclusionTransform);
+    const glm::dvec2& scale = textureTransform.scale();
+    const glm::dvec2& offset = textureTransform.offset();
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("occlusionScaleOffset", association, index),
-        FLinearColor(
-            pOcclusionTransform->scale[0],
-            pOcclusionTransform->scale[1],
-            pOcclusionTransform->offset[0],
-            pOcclusionTransform->offset[1]));
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+    const glm::dvec2& rotationSineCosine =
+        textureTransform.rotationSineCosine();
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("occlusionRotation", association, index),
         FLinearColor(
-            float(FMath::Sin(pOcclusionTransform->rotation)),
-            float(FMath::Cos(pOcclusionTransform->rotation)),
+            float(rotationSineCosine[0]),
+            float(rotationSineCosine[1]),
             0.0f,
             1.0f));
   }
@@ -2148,7 +2214,7 @@ static void SetGltfParameterValues(
 }
 
 void SetWaterParameterValues(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
@@ -2175,6 +2241,79 @@ void SetWaterParameterValues(
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
 }
+
+static void SetFeatureIdTextureParameterValues(
+    const CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture&
+        encodedFeatureIdTexture,
+    const FString& name,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index) {
+
+  pMaterial->SetTextureParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(name + CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
+          association,
+          index),
+      encodedFeatureIdTexture.pTexture->pTexture->pUnrealTexture);
+
+  size_t numChannels = encodedFeatureIdTexture.channels.size();
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(
+              name + CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
+          association,
+          index),
+      static_cast<float>(numChannels));
+
+  std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
+  for (size_t i = 0; i < numChannels; i++) {
+    channelsAsFloats[i] =
+        static_cast<float>(encodedFeatureIdTexture.channels[i]);
+  }
+
+  FLinearColor channels{
+      channelsAsFloats[0],
+      channelsAsFloats[1],
+      channelsAsFloats[2],
+      channelsAsFloats[3],
+  };
+
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(name + CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
+          association,
+          index),
+      channels);
+
+  if (!encodedFeatureIdTexture.textureTransform) {
+    return;
+  }
+
+  glm::dvec2 scale = encodedFeatureIdTexture.textureTransform->scale();
+  glm::dvec2 offset = encodedFeatureIdTexture.textureTransform->offset();
+
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(
+              name +
+              CesiumEncodedFeaturesMetadata::MaterialTextureScaleOffsetSuffix),
+          association,
+          index),
+      FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+  glm::dvec2 rotation =
+      encodedFeatureIdTexture.textureTransform->rotationSineCosine();
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(
+              name +
+              CesiumEncodedFeaturesMetadata::MaterialTextureRotationSuffix),
+          association,
+          index),
+      FLinearColor(rotation[0], rotation[1], 0.0f, 1.0f));
+}
+
 static void SetPropertyParameterValue(
     const FString& name,
     ECesiumEncodedMetadataType type,
@@ -2221,7 +2360,7 @@ static void SetPropertyTableParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture.Get());
+          encodedProperty.pTexture->pTexture->pUnrealTexture);
     }
 
     if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
@@ -2307,7 +2446,7 @@ static void SetPropertyTextureParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture.Get());
+          encodedProperty.pTexture->pTexture->pUnrealTexture);
     }
 
     pMaterial->SetVectorParameterValueByInfo(
@@ -2425,65 +2564,33 @@ static void SetFeaturesMetadataParameterValues(
             static_cast<float>(*encodedFeatureIdSet.nullFeatureId));
       }
 
-      if (!encodedFeatureIdSet.texture) {
-        continue;
+      if (encodedFeatureIdSet.texture) {
+        SetFeatureIdTextureParameterValues(
+            *encodedFeatureIdSet.texture,
+            SafeName,
+            pMaterial,
+            association,
+            index);
       }
-
-      CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture& texture =
-          *encodedFeatureIdSet.texture;
-
-      pMaterial->SetTextureParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(
-                  SafeName +
-                  CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
-              association,
-              index),
-          texture.pTexture->pTexture.Get());
-
-      size_t numChannels = texture.channels.size();
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(
-                  SafeName +
-                  CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
-              association,
-              index),
-          static_cast<float>(numChannels));
-
-      std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
-      for (size_t i = 0; i < numChannels; i++) {
-        channelsAsFloats[i] = static_cast<float>(texture.channels[i]);
-      }
-
-      FLinearColor channels;
-      pMaterial->SetVectorParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(
-                  SafeName +
-                  CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
-              association,
-              index),
-          channels);
     }
-  }
 
-  for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
-           propertyTexture : gltfComponent.EncodedMetadata.propertyTextures) {
-    SetPropertyTextureParameterValues(
-        propertyTexture,
-        pMaterial,
-        association,
-        index);
-  }
+    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
+             propertyTexture : gltfComponent.EncodedMetadata.propertyTextures) {
+      SetPropertyTextureParameterValues(
+          propertyTexture,
+          pMaterial,
+          association,
+          index);
+    }
 
-  for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
-           propertyTable : gltfComponent.EncodedMetadata.propertyTables) {
-    SetPropertyTableParameterValues(
-        propertyTable,
-        pMaterial,
-        association,
-        index);
+    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
+             propertyTable : gltfComponent.EncodedMetadata.propertyTables) {
+      SetPropertyTableParameterValues(
+          propertyTable,
+          pMaterial,
+          association,
+          index);
+    }
   }
 }
 
@@ -2498,7 +2605,7 @@ static void SetMetadataFeatureTableParameterValues_DEPRECATED(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(FName(encodedProperty.name), association, index),
-        encodedProperty.pTexture->pTexture.Get());
+        encodedProperty.pTexture->pTexture->pUnrealTexture);
   }
 }
 
@@ -2567,7 +2674,7 @@ static void SetMetadataParameterValues_DEPRECATED(
                 FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
-            encodedProperty.pTexture->pTexture.Get());
+            encodedProperty.pTexture->pTexture->pUnrealTexture);
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -2592,7 +2699,7 @@ static void SetMetadataParameterValues_DEPRECATED(
             FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
-        encodedFeatureIdTexture.pTexture->pTexture.Get());
+        encodedFeatureIdTexture.pTexture->pTexture->pUnrealTexture);
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {
@@ -2648,7 +2755,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
 static void loadPrimitiveGameThreadPart(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
@@ -2925,14 +3032,21 @@ static void loadPrimitiveGameThreadPart(
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
+  std::vector<FCesiumTextureResourceBase*> textureResources;
+  textureResources.resize(Options.pModel->images.size(), nullptr);
+
   auto pResult = MakeUnique<HalfConstructedReal>();
-  loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
+  loadModelAnyThreadPart(
+      pResult->loadModelResult,
+      Transform,
+      Options,
+      textureResources);
 
   return pResult;
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     ACesium3DTileset* pTilesetActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
@@ -3200,15 +3314,14 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 }
 
 void UCesiumGltfComponent::BeginDestroy() {
-  CesiumEncodedFeaturesMetadata::destroyEncodedModelMetadata(
-      this->EncodedMetadata);
+  // Clear everything we can in order to reduce memory usage, because this
+  // UObject might not actually get deleted by the garbage collector until much
+  // later.
+  this->Metadata = FCesiumModelMetadata();
+  this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (this->EncodedMetadata_DEPRECATED) {
-    CesiumEncodedMetadataUtility::destroyEncodedMetadata(
-        *this->EncodedMetadata_DEPRECATED);
-    this->EncodedMetadata_DEPRECATED = std::nullopt;
-  }
+  this->EncodedMetadata_DEPRECATED.reset();
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   Super::BeginDestroy();

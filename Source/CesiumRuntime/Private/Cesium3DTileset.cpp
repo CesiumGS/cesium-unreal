@@ -710,6 +710,7 @@ public:
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
+
     return asyncSystem.createResolvedFuture(
         Cesium3DTilesSelection::TileLoadResultAndRenderResources{
             std::move(tileLoadResult),
@@ -719,12 +720,12 @@ public:
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    Cesium3DTilesSelection::TileContent& content = tile.getContent();
     if (content.isRenderContent()) {
       TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
-      const Cesium3DTilesSelection::TileRenderContent& renderContent =
+      Cesium3DTilesSelection::TileRenderContent& renderContent =
           *content.getRenderContent();
       return UCesiumGltfComponent::CreateOnGameThread(
           renderContent.getModel(),
@@ -770,15 +771,29 @@ public:
 
     auto pOptions = *ppOptions;
 
+    if (pOptions->useMipmaps) {
+      std::optional<std::string> errorMessage =
+          CesiumGltfReader::GltfReader::generateMipMaps(image);
+      if (errorMessage) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("%s"),
+            UTF8_TO_TCHAR(errorMessage->c_str()));
+      }
+    }
+
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        CesiumTextureUtility::GltfImagePtr{&image},
+        image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,
-        pOptions->group,
         pOptions->useMipmaps,
-        true); // TODO: sRGB should probably be configurable on the raster
-               // overlay
+        pOptions->group,
+        // TODO: sRGB should probably be configurable on the raster overlay.
+        true,
+        std::nullopt,
+        nullptr);
     return texture.Release();
   }
 
@@ -794,23 +809,18 @@ public:
       return nullptr;
     }
 
-    // The image source pointer during loading may have been invalidated,
-    // so replace it.
-    CesiumTextureUtility::GltfImagePtr* pImageSource =
-        std::get_if<CesiumTextureUtility::GltfImagePtr>(
-            &pLoadedTexture->textureSource);
-    if (pImageSource) {
-      pImageSource->pImage = &rasterTile.getImage();
-    }
-
-    UTexture2D* pTexture =
-        CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
+    CesiumUtility::IntrusivePointer<
+        CesiumTextureUtility::ReferenceCountedUnrealTexture>
+        pTexture = CesiumTextureUtility::loadTextureGameThreadPart(
+            pLoadedTexture.Get());
     if (!pTexture) {
       return nullptr;
     }
 
-    pTexture->AddToRoot();
-    return pTexture;
+    // Don't let this ReferenceCountedUnrealTexture be destroyed when the
+    // intrusive pointer goes out of scope.
+    pTexture->addReference();
+    return pTexture.get();
   }
 
   virtual void freeRaster(
@@ -821,14 +831,14 @@ public:
       CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
           static_cast<CesiumTextureUtility::LoadedTextureResult*>(
               pLoadThreadResult);
-      CesiumTextureUtility::destroyHalfLoadedTexture(*pLoadedTexture);
       delete pLoadedTexture;
     }
 
     if (pMainThreadResult) {
-      UTexture* pTexture = static_cast<UTexture*>(pMainThreadResult);
-      pTexture->RemoveFromRoot();
-      CesiumTextureUtility::destroyTexture(pTexture);
+      CesiumTextureUtility::ReferenceCountedUnrealTexture* pTexture =
+          static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
+              pMainThreadResult);
+      pTexture->releaseReference();
     }
   }
 
@@ -850,7 +860,9 @@ public:
         pGltfContent->AttachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources),
+            static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
+                pMainThreadRendererResources)
+                ->pUnrealTexture,
             translation,
             scale,
             overlayTextureCoordinateID);
@@ -874,7 +886,9 @@ public:
         pGltfContent->DetachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources));
+            static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
+                pMainThreadRendererResources)
+                ->pUnrealTexture);
       }
     }
   }
