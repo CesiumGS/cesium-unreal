@@ -2526,6 +2526,33 @@ static void SetPropertyTextureParameterValues(
           FMaterialParameterInfo(FName(hasValueName), association, index),
           encodedProperty.pTexture ? 1.0 : 0.0);
     }
+
+    if (!encodedProperty.textureTransform) {
+      continue;
+    }
+
+    glm::dvec2 scale = encodedProperty.textureTransform->scale();
+    glm::dvec2 offset = encodedProperty.textureTransform->offset();
+
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(
+                fullPropertyName + CesiumEncodedFeaturesMetadata::
+                                       MaterialTextureScaleOffsetSuffix),
+            association,
+            index),
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+    glm::dvec2 rotation =
+        encodedProperty.textureTransform->rotationSineCosine();
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(
+                fullPropertyName +
+                CesiumEncodedFeaturesMetadata::MaterialTextureRotationSuffix),
+            association,
+            index),
+        FLinearColor(rotation[0], rotation[1], 0.0f, 1.0f));
   }
 }
 
@@ -2536,8 +2563,8 @@ static void SetFeaturesMetadataParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-  // This handles texture coordinate indices for both attribute feature ID sets
-  // and property textures.
+  // This handles texture coordinate indices for both attribute feature ID
+  // sets and property textures.
   for (const auto& textureCoordinateSet :
        loadResult.FeaturesMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
@@ -3315,8 +3342,8 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 
 void UCesiumGltfComponent::BeginDestroy() {
   // Clear everything we can in order to reduce memory usage, because this
-  // UObject might not actually get deleted by the garbage collector until much
-  // later.
+  // UObject might not actually get deleted by the garbage collector until
+  // much later.
   this->Metadata = FCesiumModelMetadata();
   this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata();
 

@@ -733,6 +733,10 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
               property);
     }
+
+    if (pDescription->bHasKhrTextureTransform) {
+      encodedProperty.textureTransform = property.getTextureTransform();
+    }
   }
 
   return encodedPropertyTexture;
