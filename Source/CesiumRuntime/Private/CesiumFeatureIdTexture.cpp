@@ -16,7 +16,7 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const FeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
-      _featureIdTextureView(Model, FeatureIdTexture),
+      _featureIdTextureView(Model, FeatureIdTexture, true),
       _texCoordAccessor(),
       _textureCoordinateSetIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
@@ -59,7 +59,7 @@ UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetGltfTextureCoordinateSetIndex(
     UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
-  return FeatureIDTexture.getFeatureIdTextureView().getTexCoordSetIndex();
+  return FeatureIDTexture._featureIdTextureView.getTexCoordSetIndex();
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetUnrealUVChannel(
@@ -108,8 +108,7 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
     return -1;
   }
 
-  return GetFeatureIDForTextureCoordinates(
-      FeatureIDTexture,
+  return FeatureIDTexture._featureIdTextureView.getFeatureID(
       (*texCoords)[0],
       (*texCoords)[1]);
 }
