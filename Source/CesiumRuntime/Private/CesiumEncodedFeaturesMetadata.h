@@ -12,6 +12,10 @@
 #include "Templates/UniquePtr.h"
 #include <variant>
 
+namespace CesiumGltf {
+class KhrTextureTransform;
+}
+
 struct FCesiumFeatureIdSet;
 struct FCesiumPrimitiveFeatures;
 struct FCesiumModelMetadata;
@@ -58,13 +62,11 @@ static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
 
 /**
  * Naming convention for metadata parameter nodes
- * - Property Table: "PTABLE_" + PropertyTableName
  * - Property Table Property: "PTABLE_" + PropertyTableName + PropertyName
  */
 static const FString MaterialPropertyTablePrefix = "PTABLE_";
 
 /**
- * - Property Texture: "PTEXTURE_" + PropertyTableName
  * - Property Texture Property: "PTEXTURE_" + PropertyTextureName + PropertyName
  * - Property Texture Property UV Index: "PTEXTURE_" + PropertyTextureName +
  * PropertyName + "_UV_INDEX"
@@ -104,32 +106,40 @@ static const FString MaterialPropertyRawSuffix = "_RAW";
 static const FString MaterialPropertyValueSuffix = "_VALUE";
 static const FString MaterialPropertyUVSuffix = "_UV";
 
+/**
+ * Naming convention for KHR_texture_transform inputs:
+ *  - Texture Scale + Offset: TextureName + "_TX_SCALE_OFFSET"
+ *  - Texture Rotation: TextureName + "_TX_ROTATION"
+ */
+static const FString MaterialTextureScaleOffsetSuffix = "_TX_SCALE_OFFSET";
+static const FString MaterialTextureRotationSuffix = "_TX_ROTATION";
+
 #pragma region Encoded Primitive Features
 
 /**
  * @brief Generates a name for a feature ID set in a glTF primitive's
  * EXT_mesh_features. If the feature ID set already has a label, this will
- * return the label. Otherwise, if the feature ID set is unlabeled, a name will
- * be generated like so:
+ * return the label. Otherwise, if the feature ID set is unlabeled, a name
+ * will be generated like so:
  *
  * - If the feature ID set is an attribute, this will appear as
  * "_FEATURE_ID_<index>", where <index> is the set index specified in
  * the attribute.
  * - If the feature ID set is a texture, this will appear as
- * "_FEATURE_ID_TEXTURE_<index>", where <index> increments with the number of
- * feature ID textures seen in an individual primitive.
+ * "_FEATURE_ID_TEXTURE_<index>", where <index> increments with the number
+ * of feature ID textures seen in an individual primitive.
  * - If the feature ID set is an implicit set, this will appear as
- * "_IMPLICIT_FEATURE_ID". Implicit feature ID sets don't vary in definition,
- * so any additional implicit feature ID sets across the primitives are
- * counted by this one.
+ * "_IMPLICIT_FEATURE_ID". Implicit feature ID sets don't vary in
+ * definition, so any additional implicit feature ID sets across the
+ * primitives are counted by this one.
  *
  * This is used by FCesiumFeatureIdSetDescription to display the names of
  * the feature ID sets across a tileset.
  *
  * @param FeatureIDSet The feature ID set
- * @param FeatureIDTextureCounter The counter representing how many feature ID
- * textures have been seen in the primitive thus far. Will be incremented by
- * this function if the given feature ID set is a texture.
+ * @param FeatureIDTextureCounter The counter representing how many feature
+ * ID textures have been seen in the primitive thus far. Will be incremented
+ * by this function if the given feature ID set is a texture.
  */
 FString getNameForFeatureIDSet(
     const FCesiumFeatureIdSet& FeatureIDSet,
@@ -164,6 +174,12 @@ struct EncodedFeatureIdTexture {
    * ID texture.
    */
   int64 textureCoordinateSetIndex;
+
+  /**
+   * @brief The KHR_texture_transform extension on this feature ID texture, if
+   * it exists.
+   */
+  std::optional<CesiumGltf::KhrTextureTransform> textureTransform;
 };
 
 /**

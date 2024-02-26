@@ -44,8 +44,8 @@
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
-#include <CesiumGltf/ExtensionModelExtFeatureMetadata.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
+#include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/PropertyType.h>
 #include <CesiumGltf/TextureInfo.h>
 #include <CesiumGltfContent/GltfUtilities.h>
@@ -2068,106 +2068,107 @@ static void SetGltfParameterValues(
       FMaterialParameterInfo("occlusionTexture", association, index),
       loadResult.occlusionTexture.Get());
 
+  KhrTextureTransform textureTransform;
+  FLinearColor baseColorMetallicRoughnessRotation(0.0f, 1.0f, 0.0f, 1.0f);
   const ExtensionKhrTextureTransform* pBaseColorTextureTransform =
       pbr.baseColorTexture
           ? pbr.baseColorTexture->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
+
+  if (pBaseColorTextureTransform) {
+    textureTransform = KhrTextureTransform(*pBaseColorTextureTransform);
+    if (textureTransform.status() == KhrTextureTransformStatus::Valid) {
+      const glm::dvec2& scale = textureTransform.scale();
+      const glm::dvec2& offset = textureTransform.offset();
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo("baseColorScaleOffset", association, index),
+          FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+      const glm::dvec2& rotationSineCosine =
+          textureTransform.rotationSineCosine();
+      baseColorMetallicRoughnessRotation.R = rotationSineCosine[0];
+      baseColorMetallicRoughnessRotation.G = rotationSineCosine[1];
+    }
+  }
+
   const ExtensionKhrTextureTransform* pMetallicRoughnessTextureTransform =
       pbr.metallicRoughnessTexture
           ? pbr.metallicRoughnessTexture
                 ->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
 
-  if (pBaseColorTextureTransform) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("baseColorScaleOffset", association, index),
-        FLinearColor(
-            pBaseColorTextureTransform->scale[0],
-            pBaseColorTextureTransform->scale[1],
-            pBaseColorTextureTransform->offset[0],
-            pBaseColorTextureTransform->offset[1]));
-  }
-
   if (pMetallicRoughnessTextureTransform) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            "metallicRoughnessScaleOffset",
-            association,
-            index),
-        FLinearColor(
-            pMetallicRoughnessTextureTransform->scale[0],
-            pMetallicRoughnessTextureTransform->scale[1],
-            pMetallicRoughnessTextureTransform->offset[0],
-            pMetallicRoughnessTextureTransform->offset[1]));
+    textureTransform = KhrTextureTransform(*pMetallicRoughnessTextureTransform);
+    if (textureTransform.status() == KhrTextureTransformStatus::Valid) {
+      const glm::dvec2& scale = textureTransform.scale();
+      const glm::dvec2& offset = textureTransform.offset();
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(
+              "metallicRoughnessScaleOffset",
+              association,
+              index),
+          FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+      const glm::dvec2& rotationSineCosine =
+          textureTransform.rotationSineCosine();
+      baseColorMetallicRoughnessRotation.B = rotationSineCosine[0];
+      baseColorMetallicRoughnessRotation.A = rotationSineCosine[1];
+    }
   }
 
   if (pBaseColorTextureTransform || pMetallicRoughnessTextureTransform) {
-    FLinearColor rotationValues(0.0f, 1.0f, 0.0f, 1.0f);
-    if (pBaseColorTextureTransform) {
-      rotationValues.R =
-          float(FMath::Sin(pBaseColorTextureTransform->rotation));
-      rotationValues.G =
-          float(FMath::Cos(pBaseColorTextureTransform->rotation));
-    }
-    if (pMetallicRoughnessTextureTransform) {
-      rotationValues.B =
-          float(FMath::Sin(pMetallicRoughnessTextureTransform->rotation));
-      rotationValues.A =
-          float(FMath::Cos(pMetallicRoughnessTextureTransform->rotation));
-    }
-
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo(
             "baseColorMetallicRoughnessRotation",
             association,
             index),
-        rotationValues);
+        baseColorMetallicRoughnessRotation);
   }
+
+  FLinearColor emissiveNormalRotation(0.0f, 1.0f, 0.0f, 1.0f);
 
   const ExtensionKhrTextureTransform* pEmissiveTextureTransform =
       material.emissiveTexture
           ? material.emissiveTexture
                 ->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
+
+  if (pEmissiveTextureTransform) {
+    textureTransform = KhrTextureTransform(*pEmissiveTextureTransform);
+    const glm::dvec2& scale = textureTransform.scale();
+    const glm::dvec2& offset = textureTransform.offset();
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveScaleOffset", association, index),
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+    const glm::dvec2& rotationSineCosine =
+        textureTransform.rotationSineCosine();
+    emissiveNormalRotation.R = rotationSineCosine[0];
+    emissiveNormalRotation.G = rotationSineCosine[1];
+  }
+
   const ExtensionKhrTextureTransform* pNormalTextureTransform =
       material.normalTexture
           ? material.normalTexture->getExtension<ExtensionKhrTextureTransform>()
           : nullptr;
 
-  if (pEmissiveTextureTransform) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("emissiveScaleOffset", association, index),
-        FLinearColor(
-            pEmissiveTextureTransform->scale[0],
-            pEmissiveTextureTransform->scale[1],
-            pEmissiveTextureTransform->offset[0],
-            pEmissiveTextureTransform->offset[1]));
-  }
-
   if (pNormalTextureTransform) {
+    textureTransform = KhrTextureTransform(*pNormalTextureTransform);
+    const glm::dvec2& scale = textureTransform.scale();
+    const glm::dvec2& offset = textureTransform.offset();
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("normalScaleOffset", association, index),
-        FLinearColor(
-            pNormalTextureTransform->scale[0],
-            pNormalTextureTransform->scale[1],
-            pNormalTextureTransform->offset[0],
-            pNormalTextureTransform->offset[1]));
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+    const glm::dvec2& rotationSineCosine =
+        textureTransform.rotationSineCosine();
+    emissiveNormalRotation.B = rotationSineCosine[0];
+    emissiveNormalRotation.A = rotationSineCosine[1];
   }
 
   if (pEmissiveTextureTransform || pNormalTextureTransform) {
-    FLinearColor rotationValues(0.0f, 1.0f, 0.0f, 1.0f);
-    if (pEmissiveTextureTransform) {
-      rotationValues.R = float(FMath::Sin(pEmissiveTextureTransform->rotation));
-      rotationValues.G = float(FMath::Cos(pEmissiveTextureTransform->rotation));
-    }
-    if (pNormalTextureTransform) {
-      rotationValues.B = float(FMath::Sin(pNormalTextureTransform->rotation));
-      rotationValues.A = float(FMath::Cos(pNormalTextureTransform->rotation));
-    }
-
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("emissiveNormalRotation", association, index),
-        rotationValues);
+        emissiveNormalRotation);
   }
 
   const ExtensionKhrTextureTransform* pOcclusionTransform =
@@ -2177,18 +2178,20 @@ static void SetGltfParameterValues(
           : nullptr;
 
   if (pOcclusionTransform) {
+    textureTransform = KhrTextureTransform(*pOcclusionTransform);
+    const glm::dvec2& scale = textureTransform.scale();
+    const glm::dvec2& offset = textureTransform.offset();
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("occlusionScaleOffset", association, index),
-        FLinearColor(
-            pOcclusionTransform->scale[0],
-            pOcclusionTransform->scale[1],
-            pOcclusionTransform->offset[0],
-            pOcclusionTransform->offset[1]));
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+    const glm::dvec2& rotationSineCosine =
+        textureTransform.rotationSineCosine();
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("occlusionRotation", association, index),
         FLinearColor(
-            float(FMath::Sin(pOcclusionTransform->rotation)),
-            float(FMath::Cos(pOcclusionTransform->rotation)),
+            float(rotationSineCosine[0]),
+            float(rotationSineCosine[1]),
             0.0f,
             1.0f));
   }
@@ -2238,6 +2241,79 @@ void SetWaterParameterValues(
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
 }
+
+static void SetFeatureIdTextureParameterValues(
+    const CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture&
+        encodedFeatureIdTexture,
+    const FString& name,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index) {
+
+  pMaterial->SetTextureParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(name + CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
+          association,
+          index),
+      encodedFeatureIdTexture.pTexture->pTexture->pUnrealTexture);
+
+  size_t numChannels = encodedFeatureIdTexture.channels.size();
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(
+              name + CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
+          association,
+          index),
+      static_cast<float>(numChannels));
+
+  std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
+  for (size_t i = 0; i < numChannels; i++) {
+    channelsAsFloats[i] =
+        static_cast<float>(encodedFeatureIdTexture.channels[i]);
+  }
+
+  FLinearColor channels{
+      channelsAsFloats[0],
+      channelsAsFloats[1],
+      channelsAsFloats[2],
+      channelsAsFloats[3],
+  };
+
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(name + CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
+          association,
+          index),
+      channels);
+
+  if (!encodedFeatureIdTexture.textureTransform) {
+    return;
+  }
+
+  glm::dvec2 scale = encodedFeatureIdTexture.textureTransform->scale();
+  glm::dvec2 offset = encodedFeatureIdTexture.textureTransform->offset();
+
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(
+              name +
+              CesiumEncodedFeaturesMetadata::MaterialTextureScaleOffsetSuffix),
+          association,
+          index),
+      FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+  glm::dvec2 rotation =
+      encodedFeatureIdTexture.textureTransform->rotationSineCosine();
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          FName(
+              name +
+              CesiumEncodedFeaturesMetadata::MaterialTextureRotationSuffix),
+          association,
+          index),
+      FLinearColor(rotation[0], rotation[1], 0.0f, 1.0f));
+}
+
 static void SetPropertyParameterValue(
     const FString& name,
     ECesiumEncodedMetadataType type,
@@ -2488,65 +2564,33 @@ static void SetFeaturesMetadataParameterValues(
             static_cast<float>(*encodedFeatureIdSet.nullFeatureId));
       }
 
-      if (!encodedFeatureIdSet.texture) {
-        continue;
+      if (encodedFeatureIdSet.texture) {
+        SetFeatureIdTextureParameterValues(
+            *encodedFeatureIdSet.texture,
+            SafeName,
+            pMaterial,
+            association,
+            index);
       }
-
-      CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture& texture =
-          *encodedFeatureIdSet.texture;
-
-      pMaterial->SetTextureParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(
-                  SafeName +
-                  CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
-              association,
-              index),
-          texture.pTexture->pTexture->pUnrealTexture);
-
-      size_t numChannels = texture.channels.size();
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(
-                  SafeName +
-                  CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
-              association,
-              index),
-          static_cast<float>(numChannels));
-
-      std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
-      for (size_t i = 0; i < numChannels; i++) {
-        channelsAsFloats[i] = static_cast<float>(texture.channels[i]);
-      }
-
-      FLinearColor channels;
-      pMaterial->SetVectorParameterValueByInfo(
-          FMaterialParameterInfo(
-              FName(
-                  SafeName +
-                  CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
-              association,
-              index),
-          channels);
     }
-  }
 
-  for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
-           propertyTexture : gltfComponent.EncodedMetadata.propertyTextures) {
-    SetPropertyTextureParameterValues(
-        propertyTexture,
-        pMaterial,
-        association,
-        index);
-  }
+    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
+             propertyTexture : gltfComponent.EncodedMetadata.propertyTextures) {
+      SetPropertyTextureParameterValues(
+          propertyTexture,
+          pMaterial,
+          association,
+          index);
+    }
 
-  for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
-           propertyTable : gltfComponent.EncodedMetadata.propertyTables) {
-    SetPropertyTableParameterValues(
-        propertyTable,
-        pMaterial,
-        association,
-        index);
+    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
+             propertyTable : gltfComponent.EncodedMetadata.propertyTables) {
+      SetPropertyTableParameterValues(
+          propertyTable,
+          pMaterial,
+          association,
+          index);
+    }
   }
 }
 

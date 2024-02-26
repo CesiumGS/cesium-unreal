@@ -99,7 +99,9 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
     const int32_t imageWidth,
     const int32_t imageHeight,
     const std::vector<glm::vec2>& texCoords,
-    const int64_t texcoordSetIndex);
+    const int64_t texcoordSetIndex,
+    const int32_t samplerWrapS = CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE,
+    const int32_t samplerWrapT = CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE);
 
 /**
  * @brief Adds the given values to the given model as a property table property

@@ -12,7 +12,7 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "Templates/UniquePtr.h"
 #include <CesiumUtility/IntrusivePointer.h>
-#include <CesiumUtility/ReferenceCountedThreadSafe.h>
+#include <CesiumUtility/ReferenceCounted.h>
 
 namespace CesiumGltf {
 struct ImageCesium;

@@ -124,6 +124,8 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
   encodedFeatureIdTexture.channels = featureIdTextureView.getChannels();
   encodedFeatureIdTexture.textureCoordinateSetIndex =
       featureIdTextureView.getTexCoordSetIndex();
+  encodedFeatureIdTexture.textureTransform =
+      featureIdTextureView.getTextureTransform();
 
   TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
       featureIdTextureMap.Find(pFeatureIdImage);
