@@ -132,9 +132,10 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
   if (pMappedUnrealImageIt) {
     encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
   } else {
-    const CesiumGltf::Sampler* pSampler = featureIdTextureView.getSampler();
     TextureAddress addressX = TextureAddress::TA_Wrap;
     TextureAddress addressY = TextureAddress::TA_Wrap;
+
+    const CesiumGltf::Sampler* pSampler = featureIdTextureView.getSampler();
     if (pSampler) {
       addressX = convertGltfWrapSToUnreal(pSampler->wrapS);
       addressY = convertGltfWrapTToUnreal(pSampler->wrapT);
@@ -682,10 +683,14 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
       if (pMappedUnrealImageIt) {
         encodedProperty.pTexture = pMappedUnrealImageIt->Pin();
       } else {
-        const CesiumGltf::Sampler* pSampler = property.getSampler();
+        TextureAddress addressX = TextureAddress::TA_Wrap;
+        TextureAddress addressY = TextureAddress::TA_Wrap;
 
-        TextureAddress addressX = convertGltfWrapSToUnreal(pSampler->wrapS);
-        TextureAddress addressY = convertGltfWrapTToUnreal(pSampler->wrapT);
+        const CesiumGltf::Sampler* pSampler = property.getSampler();
+        if (pSampler) {
+          addressX = convertGltfWrapSToUnreal(pSampler->wrapS);
+          addressY = convertGltfWrapTToUnreal(pSampler->wrapT);
+        }
 
         // Copy the image, so that we can keep a copy of it in the glTF.
         CesiumGltf::ImageCesium imageCopy(*pImage);

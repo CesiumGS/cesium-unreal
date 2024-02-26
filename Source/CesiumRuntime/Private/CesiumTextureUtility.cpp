@@ -456,7 +456,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   // Store the current size of the pixel data, because we're about to clear it
   // but we still want to have an accurate estimation of the size of the image
   // for caching purposes.
-  imageCesium.lastKnownSizeInBytes = int64_t(imageCesium.pixelData.size());
+  imageCesium.sizeBytes = int64_t(imageCesium.pixelData.size());
 
   if (pExistingImageResource) {
     pResult->pTextureResource = MakeUnique<FCesiumUseExistingTextureResource>(
