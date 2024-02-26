@@ -172,4 +172,24 @@ loadTextureGameThreadPart(
 CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
 loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
+/**
+ * @brief Convert a glTF {@link CesiumGltf::Sampler::WrapS} value to an Unreal
+ * `TextureAddress` value.
+ *
+ * @param wrapS The glTF wrapS value.
+ * @returns The Unreal equivalent, or `TextureAddress::TA_Wrap` if the glTF
+ * value is unknown or invalid.
+ */
+TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
+
+/**
+ * @brief Convert a glTF {@link CesiumGltf::Sampler::WrapT} value to an Unreal
+ * `TextureAddress` value.
+ *
+ * @param wrapT The glTF wrapT value.
+ * @returns The Unreal equivalent, or `TextureAddress::TA_Wrap` if the glTF
+ * value is unknown or invalid.
+ */
+TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
+
 } // namespace CesiumTextureUtility

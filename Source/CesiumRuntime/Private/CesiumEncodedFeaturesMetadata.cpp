@@ -132,13 +132,21 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
   if (pMappedUnrealImageIt) {
     encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
   } else {
+    const CesiumGltf::Sampler* pSampler = featureIdTextureView.getSampler();
+    TextureAddress addressX = TextureAddress::TA_Wrap;
+    TextureAddress addressY = TextureAddress::TA_Wrap;
+    if (pSampler) {
+      addressX = convertGltfWrapSToUnreal(pSampler->wrapS);
+      addressY = convertGltfWrapTToUnreal(pSampler->wrapT);
+    }
+
     // Copy the image, so that we can keep a copy of it in the glTF.
     CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
     encodedFeatureIdTexture.pTexture =
         MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
             imageCopy,
-            TextureAddress::TA_Clamp,
-            TextureAddress::TA_Clamp,
+            addressX,
+            addressY,
             TextureFilter::TF_Nearest,
             false,
             TEXTUREGROUP_8BitData,
@@ -676,29 +684,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
       } else {
         const CesiumGltf::Sampler* pSampler = property.getSampler();
 
-        TextureAddress addressX;
-        switch (pSampler->wrapS) {
-        case CesiumGltf::Sampler::WrapS::REPEAT:
-          addressX = TextureAddress::TA_Wrap;
-          break;
-        case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
-          addressX = TextureAddress::TA_Mirror;
-        case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
-        default:
-          addressX = TextureAddress::TA_Clamp;
-        }
-
-        TextureAddress addressY;
-        switch (pSampler->wrapT) {
-        case CesiumGltf::Sampler::WrapT::REPEAT:
-          addressY = TextureAddress::TA_Wrap;
-          break;
-        case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
-          addressY = TextureAddress::TA_Mirror;
-        case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
-        default:
-          addressY = TextureAddress::TA_Clamp;
-        }
+        TextureAddress addressX = convertGltfWrapSToUnreal(pSampler->wrapS);
+        TextureAddress addressY = convertGltfWrapTToUnreal(pSampler->wrapT);
 
         // Copy the image, so that we can keep a copy of it in the glTF.
         CesiumGltf::ImageCesium imageCopy(*pImage);

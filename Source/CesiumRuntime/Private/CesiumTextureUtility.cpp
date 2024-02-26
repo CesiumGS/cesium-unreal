@@ -276,37 +276,11 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
     const CesiumGltf::Sampler& sampler,
     bool sRGB,
     FCesiumTextureResourceBase* pExistingImageResource) {
-  // glTF spec: "When undefined, a sampler with repeat wrapping and auto
-  // filtering should be used."
-  TextureAddress addressX = TextureAddress::TA_Wrap;
-  TextureAddress addressY = TextureAddress::TA_Wrap;
+  TextureAddress addressX = convertGltfWrapSToUnreal(sampler.wrapS);
+  TextureAddress addressY = convertGltfWrapTToUnreal(sampler.wrapT);
 
   TextureFilter filter = TextureFilter::TF_Default;
   bool useMipMapsIfAvailable = false;
-
-  switch (sampler.wrapS) {
-  case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
-    addressX = TextureAddress::TA_Clamp;
-    break;
-  case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
-    addressX = TextureAddress::TA_Mirror;
-    break;
-  case CesiumGltf::Sampler::WrapS::REPEAT:
-    addressX = TextureAddress::TA_Wrap;
-    break;
-  }
-
-  switch (sampler.wrapT) {
-  case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
-    addressY = TextureAddress::TA_Clamp;
-    break;
-  case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
-    addressY = TextureAddress::TA_Mirror;
-    break;
-  case CesiumGltf::Sampler::WrapT::REPEAT:
-    addressY = TextureAddress::TA_Wrap;
-    break;
-  }
 
   // Unreal Engine's available filtering modes are only nearest, bilinear,
   // trilinear, and "default". Default means "use the texture group settings",
@@ -602,6 +576,34 @@ loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   }
 
   return pHalfLoadedTexture->pTexture;
+}
+
+TextureAddress convertGltfWrapSToUnreal(int32_t wrapS) {
+  // glTF spec: "When undefined, a sampler with repeat wrapping and auto
+  // filtering should be used."
+  switch (wrapS) {
+  case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
+    return TextureAddress::TA_Clamp;
+  case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
+    return TextureAddress::TA_Mirror;
+  case CesiumGltf::Sampler::WrapS::REPEAT:
+  default:
+    return TextureAddress::TA_Wrap;
+  }
+}
+
+TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
+  // glTF spec: "When undefined, a sampler with repeat wrapping and auto
+  // filtering should be used."
+  switch (wrapT) {
+  case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
+    return TextureAddress::TA_Clamp;
+  case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
+    return TextureAddress::TA_Mirror;
+  case CesiumGltf::Sampler::WrapT::REPEAT:
+  default:
+    return TextureAddress::TA_Wrap;
+  }
 }
 
 } // namespace CesiumTextureUtility
