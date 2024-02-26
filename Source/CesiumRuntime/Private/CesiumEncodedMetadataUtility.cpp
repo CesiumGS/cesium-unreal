@@ -34,7 +34,8 @@ namespace {
 
 struct EncodedPixelFormat {
   EPixelFormat format;
-  size_t pixelSize;
+  int32_t bytesPerChannel;
+  int32_t channels;
 };
 
 // TODO: consider picking better pixel formats when they are available for the
@@ -48,13 +49,17 @@ EncodedPixelFormat getPixelFormat(
   case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED:
     switch (componentCount) {
     case 1:
-      return {isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT, 1};
+      return {
+          isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT,
+          1,
+          1};
     case 2:
     case 3:
     case 4:
       return {
           isNormalized ? EPixelFormat::PF_R8G8B8A8
                        : EPixelFormat::PF_R8G8B8A8_UINT,
+          1,
           4};
     default:
       return {EPixelFormat::PF_Unknown, 0};
@@ -62,15 +67,15 @@ EncodedPixelFormat getPixelFormat(
   case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED:
     switch (componentCount) {
     case 1:
-      return {EPixelFormat::PF_R32_FLOAT, 4};
+      return {EPixelFormat::PF_R32_FLOAT, 4, 1};
     case 2:
     case 3:
     case 4:
       // Note this is ABGR
-      return {EPixelFormat::PF_A32B32G32R32F, 16};
+      return {EPixelFormat::PF_A32B32G32R32F, 4, 4};
     }
   default:
-    return {EPixelFormat::PF_Unknown, 0};
+    return {EPixelFormat::PF_Unknown, 0, 0};
   }
 }
 } // namespace
@@ -200,41 +205,21 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
         (floorSqrtFeatureCount * floorSqrtFeatureCount == featureCount)
             ? floorSqrtFeatureCount
             : (floorSqrtFeatureCount + 1);
-    encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
-    encodedProperty.pTexture->sRGB = false;
-    // TODO: upgrade to new texture creation path.
-    encodedProperty.pTexture->textureSource = LegacyTextureSource{};
-    encodedProperty.pTexture->pTextureData = createTexturePlatformData(
-        ceilSqrtFeatureCount,
-        ceilSqrtFeatureCount,
-        encodedFormat.format);
 
-    encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
-    encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
-    encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
-
-    if (!encodedProperty.pTexture->pTextureData) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT(
-              "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-      continue;
-    }
-
-    FTexture2DMipMap* pMip = new FTexture2DMipMap();
-    encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
-    pMip->SizeX = ceilSqrtFeatureCount;
-    pMip->SizeY = ceilSqrtFeatureCount;
-    pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-    void* pTextureData = pMip->BulkData.Realloc(
-        ceilSqrtFeatureCount * ceilSqrtFeatureCount * encodedFormat.pixelSize);
+    CesiumGltf::ImageCesium image;
+    image.bytesPerChannel = encodedFormat.bytesPerChannel;
+    image.channels = encodedFormat.channels;
+    image.compressedPixelFormat = CesiumGltf::GpuCompressedPixelFormat::NONE;
+    image.height = image.width = ceilSqrtFeatureCount;
+    image.pixelData.resize(size_t(
+        image.width * image.height * image.channels * image.bytesPerChannel));
 
     if (isArray) {
       switch (gpuType) {
       case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        int64_t pixelSize =
+            encodedFormat.channels * encodedFormat.bytesPerChannel;
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumPropertyArray arrayProperty =
               UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
@@ -244,11 +229,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
             *(pWritePos + j) =
                 UCesiumPropertyArrayBlueprintLibrary::GetByte(arrayProperty, j);
           }
-          pWritePos += encodedFormat.pixelSize;
+          pWritePos += pixelSize;
         }
       } break;
       case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        int64_t pixelSize =
+            encodedFormat.channels * encodedFormat.bytesPerChannel;
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumPropertyArray arrayProperty =
               UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
@@ -256,21 +243,21 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
                   i);
           // Floats are encoded backwards (e.g., ABGR)
           float* pWritePosF =
-              reinterpret_cast<float*>(pWritePos + encodedFormat.pixelSize) - 1;
+              reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
           for (int64 j = 0; j < componentCount; ++j) {
             *pWritePosF = UCesiumPropertyArrayBlueprintLibrary::GetFloat(
                 arrayProperty,
                 j);
             --pWritePosF;
           }
-          pWritePos += encodedFormat.pixelSize;
+          pWritePos += pixelSize;
         }
       } break;
       }
     } else {
       switch (gpuType) {
       case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
         for (int64 i = 0; i < featureCount; ++i) {
           *pWritePos = UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
               property,
@@ -279,7 +266,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED: {
-        float* pWritePosF = reinterpret_cast<float*>(pTextureData);
+        float* pWritePosF = reinterpret_cast<float*>(image.pixelData.data());
         for (int64 i = 0; i < featureCount; ++i) {
           *pWritePosF = UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
               property,
@@ -290,8 +277,16 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       }
     }
 
-    pMip->BulkData.Unlock();
-    pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
+    encodedProperty.pTexture = loadTextureAnyThreadPart(
+        image,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Nearest,
+        false,
+        TEXTUREGROUP_8BitData,
+        false,
+        encodedFormat.format,
+        nullptr);
   }
 
   return encodedFeatureTable;
@@ -416,54 +411,25 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     if (pMappedUnrealImageIt) {
       encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
     } else {
+      CesiumGltf::ImageCesium imageCopy(*pImage);
       encodedFeatureTextureProperty.pTexture =
-          MakeShared<LoadedTextureResult>();
-      // TODO: upgrade to new texture creation path.
-      encodedFeatureTextureProperty.pTexture->textureSource =
-          LegacyTextureSource{};
-      featureTexturePropertyMap.Emplace(
-          pImage,
-          encodedFeatureTextureProperty.pTexture);
-      encodedFeatureTextureProperty.pTexture->pTextureData =
-          createTexturePlatformData(
-              pImage->width,
-              pImage->height,
+          MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
+              imageCopy,
+              TextureAddress::TA_Clamp,
+              TextureAddress::TA_Clamp,
+              TextureFilter::TF_Nearest,
+              false,
+              TEXTUREGROUP_8BitData,
+              false,
               // TODO : currently the unnormalized pixels are always in unsigned
               // R8G8B8A8 form, but this does not necessarily need to be the
               // case in the future.
               isNormalized ? EPixelFormat::PF_R8G8B8A8
-                           : EPixelFormat::PF_R8G8B8A8_UINT);
-
-      encodedFeatureTextureProperty.pTexture->addressX =
-          TextureAddress::TA_Clamp;
-      encodedFeatureTextureProperty.pTexture->addressY =
-          TextureAddress::TA_Clamp;
-      encodedFeatureTextureProperty.pTexture->filter =
-          TextureFilter::TF_Nearest;
-
-      if (!encodedFeatureTextureProperty.pTexture->pTextureData) {
-        UE_LOG(
-            LogCesium,
-            Error,
-            TEXT(
-                "Error encoding a feature texture property. Most likely could not allocate enough texture memory."));
-        continue;
-      }
-
-      FTexture2DMipMap* pMip = new FTexture2DMipMap();
-      encodedFeatureTextureProperty.pTexture->pTextureData->Mips.Add(pMip);
-      pMip->SizeX = pImage->width;
-      pMip->SizeY = pImage->height;
-      pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-      void* pTextureData = pMip->BulkData.Realloc(pImage->pixelData.size());
-
-      FMemory::Memcpy(
-          pTextureData,
-          pImage->pixelData.data(),
-          pImage->pixelData.size());
-
-      pMip->BulkData.Unlock();
+                           : EPixelFormat::PF_R8G8B8A8_UINT,
+              nullptr)));
+      featureTexturePropertyMap.Emplace(
+          pImage,
+          encodedFeatureTextureProperty.pTexture);
     }
   }
 
@@ -551,51 +517,23 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         if (pMappedUnrealImageIt) {
           encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
         } else {
-          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
-          encodedFeatureIdTexture.pTexture->sRGB = false;
-          // TODO: upgrade to new texture creation path
-          encodedFeatureIdTexture.pTexture->textureSource =
-              LegacyTextureSource{};
+          CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
+          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
+              std::move(*loadTextureAnyThreadPart(
+                  imageCopy,
+                  TextureAddress::TA_Clamp,
+                  TextureAddress::TA_Clamp,
+                  TextureFilter::TF_Nearest,
+                  false,
+                  TEXTUREGROUP_8BitData,
+                  false,
+                  // TODO: currently this is always the case, but doesn't have
+                  // to be
+                  EPixelFormat::PF_R8G8B8A8_UINT,
+                  nullptr)));
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);
-          encodedFeatureIdTexture.pTexture->pTextureData =
-              createTexturePlatformData(
-                  pFeatureIdImage->width,
-                  pFeatureIdImage->height,
-                  // TODO: currently this is always the case, but doesn't have
-                  // to be
-                  EPixelFormat::PF_R8G8B8A8_UINT);
-
-          encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
-          encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
-          encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
-
-          if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-            UE_LOG(
-                LogCesium,
-                Error,
-                TEXT(
-                    "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-            continue;
-          }
-
-          FTexture2DMipMap* pMip = new FTexture2DMipMap();
-          encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
-          pMip->SizeX = pFeatureIdImage->width;
-          pMip->SizeY = pFeatureIdImage->height;
-          pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-          void* pTextureData =
-              pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
-
-          FMemory::Memcpy(
-              pTextureData,
-              pFeatureIdImage->pixelData.data(),
-              pFeatureIdImage->pixelData.size());
-
-          pMip->BulkData.Unlock();
-          pMip->BulkData.SetBulkDataFlags(BULKDATA_SingleUse);
         }
 
         encodedFeatureIdTexture.featureTableName = featureTableName;
@@ -768,9 +706,8 @@ void destroyEncodedMetadataPrimitive(
   for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitive.encodedFeatureIdTextures) {
 
-    if (encodedFeatureIdTexture.pTexture->pTexture.IsValid()) {
-      CesiumLifetime::destroy(encodedFeatureIdTexture.pTexture->pTexture.Get());
-      encodedFeatureIdTexture.pTexture->pTexture.Reset();
+    if (encodedFeatureIdTexture.pTexture) {
+      encodedFeatureIdTexture.pTexture->pTexture = nullptr;
     }
   }
 }
@@ -781,9 +718,8 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
   for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
     for (EncodedMetadataProperty& encodedProperty :
          encodedFeatureTableIt.Value.encodedProperties) {
-      if (encodedProperty.pTexture->pTexture.IsValid()) {
-        CesiumLifetime::destroy(encodedProperty.pTexture->pTexture.Get());
-        encodedProperty.pTexture->pTexture.Reset();
+      if (encodedProperty.pTexture) {
+        encodedProperty.pTexture->pTexture = nullptr;
       }
     }
   }
@@ -792,10 +728,8 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
   for (auto& encodedFeatureTextureIt : encodedMetadata.encodedFeatureTextures) {
     for (EncodedFeatureTextureProperty& encodedFeatureTextureProperty :
          encodedFeatureTextureIt.Value.properties) {
-      if (encodedFeatureTextureProperty.pTexture->pTexture.IsValid()) {
-        CesiumLifetime::destroy(
-            encodedFeatureTextureProperty.pTexture->pTexture.Get());
-        encodedFeatureTextureProperty.pTexture->pTexture.Reset();
+      if (encodedFeatureTextureProperty.pTexture) {
+        encodedFeatureTextureProperty.pTexture->pTexture = nullptr;
       }
     }
   }
