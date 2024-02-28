@@ -16,10 +16,22 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const FeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
-      _featureIdTextureView(Model, FeatureIdTexture, true),
+      _featureIdTextureView(),
       _texCoordAccessor(),
       _textureCoordinateSetIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
+  TextureViewOptions options;
+  options.applyKhrTextureTransformExtension = true;
+
+  if (FeatureIdTexture.extras.find("makeImageCopy") !=
+      FeatureIdTexture.extras.end()) {
+    options.makeImageCopy =
+        FeatureIdTexture.extras.at("makeImageCopy").getBoolOrDefault(false);
+  }
+
+  this->_featureIdTextureView =
+      FeatureIdTextureView(Model, FeatureIdTexture, options);
+
   switch (_featureIdTextureView.status()) {
   case FeatureIdTextureViewStatus::Valid:
     _status = ECesiumFeatureIdTextureStatus::Valid;

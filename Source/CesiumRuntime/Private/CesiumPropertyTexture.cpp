@@ -26,12 +26,33 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     return;
   }
 
-  propertyTextureView.forEachProperty([&properties = _properties](
-                                          const std::string& propertyName,
-                                          auto propertyValue) mutable {
-    FString key(UTF8_TO_TCHAR(propertyName.data()));
-    properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
-  });
+  const CesiumGltf::Class* pClass = propertyTextureView.getClass();
+  for (auto classPropertyIt : pClass->properties) {
+    const auto propertyIt =
+        PropertyTexture.properties.find(classPropertyIt.first);
+    if (propertyIt == PropertyTexture.properties.end()) {
+      continue;
+    }
+
+    TextureViewOptions options;
+    options.applyKhrTextureTransformExtension = true;
+
+    if (propertyIt->second.extras.find("makeImageCopy") !=
+        propertyIt->second.extras.end()) {
+      options.makeImageCopy =
+          propertyIt->second.extras.at("makeImageCopy").getBoolOrDefault(false);
+    }
+
+    propertyTextureView.getPropertyView(
+        propertyIt->first,
+        [&properties = this->_properties](
+            const std::string& propertyId,
+            auto propertyValue) mutable {
+          FString key(UTF8_TO_TCHAR(propertyId.data()));
+          properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
+        },
+        options);
+  }
 }
 
 /*static*/ const ECesiumPropertyTextureStatus
