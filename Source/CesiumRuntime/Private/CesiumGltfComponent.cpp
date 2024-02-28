@@ -1375,6 +1375,18 @@ static void loadPrimitive(
   std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
       primitiveResult.GltfToUnrealTexCoordMap;
 
+  // This must be done before material textures are loaded, in case any of the
+  // material textures are also used for features + metadata.
+  loadPrimitiveFeaturesMetadata(
+      primitiveResult,
+      options,
+      model,
+      primitive,
+      duplicateVertices,
+      StaticMeshBuildVertices,
+      indices,
+      textureResources);
+
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
     primitiveResult.baseColorTexture = loadTexture(
@@ -1468,16 +1480,6 @@ static void loadPrimitive(
       }
     }
   }
-
-  loadPrimitiveFeaturesMetadata(
-      primitiveResult,
-      options,
-      model,
-      primitive,
-      duplicateVertices,
-      StaticMeshBuildVertices,
-      indices,
-      textureResources);
 
   // TangentX: Tangent
   // TangentY: Bi-tangent

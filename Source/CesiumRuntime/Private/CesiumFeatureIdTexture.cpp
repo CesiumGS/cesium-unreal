@@ -34,10 +34,10 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
 
   switch (_featureIdTextureView.status()) {
   case FeatureIdTextureViewStatus::Valid:
-    _status = ECesiumFeatureIdTextureStatus::Valid;
+    this->_status = ECesiumFeatureIdTextureStatus::Valid;
     break;
   case FeatureIdTextureViewStatus::ErrorInvalidChannels:
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
+    this->_status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
     return;
   default:
     // Error with the texture or image. The status is already set by the
