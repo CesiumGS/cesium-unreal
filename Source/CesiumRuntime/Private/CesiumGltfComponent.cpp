@@ -479,7 +479,7 @@ static bool textureUsesSpecifiedImage(
     return false;
   }
 
-  const CesiumGltf::Texture texture = model.textures[textureIndex];
+  const CesiumGltf::Texture& texture = model.textures[textureIndex];
   return texture.source == imageIndex;
 }
 
@@ -488,7 +488,7 @@ static bool hasMaterialTextureConflicts(
     const CesiumGltf::Material& material,
     int32_t imageIndex) {
   if (material.pbrMetallicRoughness) {
-    auto maybeBaseColorTexture =
+    const std::optional<TextureInfo>& maybeBaseColorTexture =
         material.pbrMetallicRoughness->baseColorTexture;
     if (maybeBaseColorTexture && textureUsesSpecifiedImage(
                                      model,
@@ -497,7 +497,7 @@ static bool hasMaterialTextureConflicts(
       return true;
     }
 
-    auto maybeMetallicRoughnessTexture =
+    const std::optional<TextureInfo>& maybeMetallicRoughnessTexture =
         material.pbrMetallicRoughness->metallicRoughnessTexture;
     if (maybeMetallicRoughnessTexture &&
         textureUsesSpecifiedImage(
@@ -942,8 +942,9 @@ static void loadPrimitiveFeaturesMetadata(
   const ExtensionMeshPrimitiveExtStructuralMetadata* pMetadata =
       primitive.getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
 
-  auto pModelOptions = options.pMeshOptions->pNodeOptions->pModelOptions;
-  auto pModelResult =
+  const CreateGltfOptions::CreateModelOptions* pModelOptions =
+      options.pMeshOptions->pNodeOptions->pModelOptions;
+  const LoadGltfResult::LoadModelResult* pModelResult =
       options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
 
   primitiveResult.Features =
