@@ -422,6 +422,12 @@ struct EncodedPropertyTextureProperty {
    * @brief The property table property's default value.
    */
   FCesiumMetadataValue defaultValue;
+
+  /**
+   * @brief The KHR_texture_transform extension on this feature ID texture, if
+   * it exists.
+   */
+  std::optional<CesiumGltf::KhrTextureTransform> textureTransform;
 };
 
 /**

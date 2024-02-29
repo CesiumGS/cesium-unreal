@@ -344,6 +344,18 @@ FCesiumPropertyTextureProperty::getImage() const {
       });
 }
 
+const std::optional<CesiumGltf::KhrTextureTransform>
+FCesiumPropertyTextureProperty::getTextureTransform() const {
+  return propertyTexturePropertyCallback<
+      std::optional<CesiumGltf::KhrTextureTransform>>(
+      this->_property,
+      this->_valueType,
+      this->_normalized,
+      [](const auto& view) -> std::optional<CesiumGltf::KhrTextureTransform> {
+        return view.getTextureTransform();
+      });
+}
+
 ECesiumPropertyTexturePropertyStatus
 UCesiumPropertyTexturePropertyBlueprintLibrary::
     GetPropertyTexturePropertyStatus(
