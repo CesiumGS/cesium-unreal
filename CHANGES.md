@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v2.4.0 - 2024-03-01
 
 ##### Additions :tada:
 
@@ -12,6 +12,7 @@
 ##### Fixes :wrench:
 
 - Metadata-related textures are now created in `TEXTUREGROUP_8BitData` instead of `TEXTUREGROUP_World`.
+- Added some defensive nullptr checks to `CesiumSunSky`.
 
 ### v2.3.0 - 2024-02-01
 
