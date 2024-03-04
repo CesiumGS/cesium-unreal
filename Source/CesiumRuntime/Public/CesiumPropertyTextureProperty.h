@@ -5,8 +5,10 @@
 #include "CesiumMetadataValue.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/PropertyTexturePropertyView.h>
 #include <any>
+#include <optional>
 #include "CesiumPropertyTextureProperty.generated.h"
 
 /**
@@ -97,6 +99,8 @@ public:
   const int64 getTexCoordSetIndex() const;
   const CesiumGltf::Sampler* getSampler() const;
   const CesiumGltf::ImageCesium* getImage() const;
+  const std::optional<CesiumGltf::KhrTextureTransform>
+  getTextureTransform() const;
 
 private:
   ECesiumPropertyTexturePropertyStatus _status;

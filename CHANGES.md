@@ -1,17 +1,20 @@
 # Change Log
 
-### ? - ?
+### v2.4.0 - 2024-03-01
 
 ##### Additions :tada:
 
 - Significantly reduced CPU memory used by glTF and raster overlay textures.
 - Improved texture creation performance on non-D3D platforms.
-- Added support for the `KHR_texture_transform` glTF extension - including rotation - for `CesiumFeatureIdTexture`.
-- `CesiumFeaturesMetadataComponent` now generates nodes for `KHR_texture_transform` if the extension is present in a feature ID texture.
+- Added support for the `KHR_texture_transform` glTF extension - including rotation - for `CesiumFeatureIdTexture` and `CesiumPropertyTextureProperty`.
+- `CesiumFeaturesMetadataComponent` now generates nodes for `KHR_texture_transform` if the extension is present in a feature ID texture or property texture property.
 
 ##### Fixes :wrench:
 
 - Metadata-related textures are now created in `TEXTUREGROUP_8BitData` instead of `TEXTUREGROUP_World`.
+- Added some defensive nullptr checks to `CesiumSunSky`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.32.0 to v0.33.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.3.0 - 2024-02-01
 

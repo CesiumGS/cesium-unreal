@@ -471,26 +471,65 @@ static void applyWaterMask(
 
 #pragma region Features Metadata helper functions(load thread)
 
-static FCesiumPrimitiveFeatures
-loadPrimitiveFeatures(const Model& model, const MeshPrimitive& primitive) {
-  const ExtensionExtMeshFeatures* pExtension =
-      primitive.getExtension<ExtensionExtMeshFeatures>();
-  if (!pExtension) {
-    return FCesiumPrimitiveFeatures();
+static bool textureUsesSpecifiedImage(
+    const CesiumGltf::Model& model,
+    int32_t textureIndex,
+    int32_t imageIndex) {
+  if (textureIndex < 0 || textureIndex >= model.textures.size()) {
+    return false;
   }
 
-  return FCesiumPrimitiveFeatures(model, primitive, *pExtension);
+  const CesiumGltf::Texture& texture = model.textures[textureIndex];
+  return texture.source == imageIndex;
 }
 
-static FCesiumPrimitiveMetadata
-loadPrimitiveMetadata(const MeshPrimitive& primitive) {
-  const ExtensionMeshPrimitiveExtStructuralMetadata* pMetadata =
-      primitive.getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
-  if (!pMetadata) {
-    return FCesiumPrimitiveMetadata();
+static bool hasMaterialTextureConflicts(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::Material& material,
+    int32_t imageIndex) {
+  if (material.pbrMetallicRoughness) {
+    const std::optional<TextureInfo>& maybeBaseColorTexture =
+        material.pbrMetallicRoughness->baseColorTexture;
+    if (maybeBaseColorTexture && textureUsesSpecifiedImage(
+                                     model,
+                                     maybeBaseColorTexture->index,
+                                     imageIndex)) {
+      return true;
+    }
+
+    const std::optional<TextureInfo>& maybeMetallicRoughnessTexture =
+        material.pbrMetallicRoughness->metallicRoughnessTexture;
+    if (maybeMetallicRoughnessTexture &&
+        textureUsesSpecifiedImage(
+            model,
+            maybeMetallicRoughnessTexture->index,
+            imageIndex)) {
+      return true;
+    }
   }
 
-  return FCesiumPrimitiveMetadata(primitive, *pMetadata);
+  if (material.normalTexture && textureUsesSpecifiedImage(
+                                    model,
+                                    material.normalTexture->index,
+                                    imageIndex)) {
+    return true;
+  }
+
+  if (material.emissiveTexture && textureUsesSpecifiedImage(
+                                      model,
+                                      material.emissiveTexture->index,
+                                      imageIndex)) {
+    return true;
+  }
+
+  if (material.occlusionTexture && textureUsesSpecifiedImage(
+                                       model,
+                                       material.occlusionTexture->index,
+                                       imageIndex)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -850,6 +889,140 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
   }
 }
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+static void loadPrimitiveFeaturesMetadata(
+    LoadPrimitiveResult& primitiveResult,
+    const CreatePrimitiveOptions& options,
+    CesiumGltf::Model& model,
+    CesiumGltf::MeshPrimitive& primitive,
+    bool duplicateVertices,
+    TArray<FStaticMeshBuildVertex>& vertices,
+    const TArray<uint32>& indices,
+    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+
+  ExtensionExtMeshFeatures* pFeatures =
+      primitive.getExtension<ExtensionExtMeshFeatures>();
+
+  if (pFeatures) {
+    int32_t materialIndex = primitive.material;
+    if (materialIndex >= 0 && materialIndex < model.materials.size()) {
+      const CesiumGltf::Material& material =
+          model.materials[primitive.material];
+
+      for (CesiumGltf::FeatureId& featureId : pFeatures->featureIds) {
+        if (!featureId.texture) {
+          continue;
+        }
+
+        if (featureId.texture->extras.find("makeImageCopy") !=
+            featureId.texture->extras.end()) {
+          continue;
+        }
+
+        int32_t textureIndex = featureId.texture->index;
+        if (textureIndex < 0 || textureIndex >= model.textures.size()) {
+          continue;
+        }
+
+        const CesiumGltf::Texture& texture = model.textures[textureIndex];
+        if (texture.source < 0 || texture.source >= model.images.size()) {
+          continue;
+        }
+
+        int32_t imageIndex = model.textures[textureIndex].source;
+        if (hasMaterialTextureConflicts(model, material, imageIndex)) {
+          // Add a flag in the extras to indicate a copy should be made.
+          // This is checked for in FCesiumFeatureIdTexture.
+          featureId.texture->extras.insert({"makeImageCopy", true});
+        }
+      }
+    }
+  }
+
+  const ExtensionMeshPrimitiveExtStructuralMetadata* pMetadata =
+      primitive.getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
+
+  const CreateGltfOptions::CreateModelOptions* pModelOptions =
+      options.pMeshOptions->pNodeOptions->pModelOptions;
+  const LoadGltfResult::LoadModelResult* pModelResult =
+      options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
+
+  primitiveResult.Features =
+      pFeatures ? FCesiumPrimitiveFeatures(model, primitive, *pFeatures)
+                : FCesiumPrimitiveFeatures();
+  primitiveResult.Metadata =
+      pMetadata ? FCesiumPrimitiveMetadata(primitive, *pMetadata)
+                : FCesiumPrimitiveMetadata();
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  primitiveResult.Metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      primitiveResult.Features,
+      primitiveResult.Metadata,
+      pModelResult->Metadata};
+
+  createTexCoordAccessorsForFeaturesMetadata(
+      model,
+      primitive,
+      primitiveResult.Features,
+      primitiveResult.Metadata,
+      pModelResult->Metadata,
+      primitiveResult.TexCoordAccessorMap);
+
+  const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
+      pModelOptions->pFeaturesMetadataDescription;
+
+  // Check for deprecated metadata description
+  const FMetadataDescription* pMetadataDescription_DEPRECATED =
+      pModelOptions->pEncodedMetadataDescription_DEPRECATED;
+
+  std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
+      primitiveResult.GltfToUnrealTexCoordMap;
+
+  if (pFeaturesMetadataDescription) {
+    primitiveResult.EncodedFeatures =
+        CesiumEncodedFeaturesMetadata::encodePrimitiveFeaturesAnyThreadPart(
+            pFeaturesMetadataDescription->Features,
+            primitiveResult.Features);
+
+    primitiveResult.EncodedMetadata =
+        CesiumEncodedFeaturesMetadata::encodePrimitiveMetadataAnyThreadPart(
+            pFeaturesMetadataDescription->PrimitiveMetadata,
+            primitiveResult.Metadata,
+            pModelResult->Metadata);
+
+    updateTextureCoordinatesForFeaturesMetadata(
+        model,
+        primitive,
+        duplicateVertices,
+        vertices,
+        indices,
+        primitiveResult.Features,
+        primitiveResult.EncodedFeatures,
+        primitiveResult.EncodedMetadata,
+        pModelResult->EncodedMetadata,
+        primitiveResult.FeaturesMetadataTexCoordParameters,
+        gltfToUnrealTexCoordMap);
+  } else if (pMetadataDescription_DEPRECATED) {
+    primitiveResult.EncodedMetadata_DEPRECATED =
+        CesiumEncodedMetadataUtility::encodeMetadataPrimitiveAnyThreadPart(
+            *pMetadataDescription_DEPRECATED,
+            primitiveResult.Metadata_DEPRECATED);
+
+    updateTextureCoordinatesForMetadata_DEPRECATED(
+        model,
+        primitive,
+        duplicateVertices,
+        vertices,
+        indices,
+        *pModelResult->EncodedMetadata_DEPRECATED,
+        *primitiveResult.EncodedMetadata_DEPRECATED,
+        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
+            primitiveResult.Metadata_DEPRECATED),
+        primitiveResult.FeaturesMetadataTexCoordParameters,
+        gltfToUnrealTexCoordMap);
+  }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+}
 #pragma endregion
 
 namespace {
@@ -924,8 +1097,8 @@ static void loadPrimitive(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
   Model& model = *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-  const Mesh& mesh = *options.pMeshOptions->pMesh;
-  const MeshPrimitive& primitive = *options.pPrimitive;
+  Mesh& mesh = *options.pMeshOptions->pMesh;
+  MeshPrimitive& primitive = *options.pPrimitive;
 
   if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
       primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP &&
@@ -1203,6 +1376,18 @@ static void loadPrimitive(
   std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
       primitiveResult.GltfToUnrealTexCoordMap;
 
+  // This must be done before material textures are loaded, in case any of the
+  // material textures are also used for features + metadata.
+  loadPrimitiveFeaturesMetadata(
+      primitiveResult,
+      options,
+      model,
+      primitive,
+      duplicateVertices,
+      StaticMeshBuildVertices,
+      indices,
+      textureResources);
+
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
     primitiveResult.baseColorTexture = loadTexture(
@@ -1296,79 +1481,6 @@ static void loadPrimitive(
       }
     }
   }
-
-  auto pModelOptions = options.pMeshOptions->pNodeOptions->pModelOptions;
-  auto pModelResult =
-      options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
-
-  primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
-  primitiveResult.Metadata = loadPrimitiveMetadata(primitive);
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  primitiveResult.Metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      primitiveResult.Features,
-      primitiveResult.Metadata,
-      pModelResult->Metadata};
-
-  createTexCoordAccessorsForFeaturesMetadata(
-      model,
-      primitive,
-      primitiveResult.Features,
-      primitiveResult.Metadata,
-      pModelResult->Metadata,
-      primitiveResult.TexCoordAccessorMap);
-
-  const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      pModelOptions->pFeaturesMetadataDescription;
-
-  // Check for deprecated metadata description
-  const FMetadataDescription* pMetadataDescription_DEPRECATED =
-      pModelOptions->pEncodedMetadataDescription_DEPRECATED;
-
-  if (pFeaturesMetadataDescription) {
-    primitiveResult.EncodedFeatures =
-        CesiumEncodedFeaturesMetadata::encodePrimitiveFeaturesAnyThreadPart(
-            pFeaturesMetadataDescription->Features,
-            primitiveResult.Features);
-
-    primitiveResult.EncodedMetadata =
-        CesiumEncodedFeaturesMetadata::encodePrimitiveMetadataAnyThreadPart(
-            pFeaturesMetadataDescription->PrimitiveMetadata,
-            primitiveResult.Metadata,
-            pModelResult->Metadata);
-
-    updateTextureCoordinatesForFeaturesMetadata(
-        model,
-        primitive,
-        duplicateVertices,
-        StaticMeshBuildVertices,
-        indices,
-        primitiveResult.Features,
-        primitiveResult.EncodedFeatures,
-        primitiveResult.EncodedMetadata,
-        pModelResult->EncodedMetadata,
-        primitiveResult.FeaturesMetadataTexCoordParameters,
-        gltfToUnrealTexCoordMap);
-  } else if (pMetadataDescription_DEPRECATED) {
-    primitiveResult.EncodedMetadata_DEPRECATED =
-        CesiumEncodedMetadataUtility::encodeMetadataPrimitiveAnyThreadPart(
-            *pMetadataDescription_DEPRECATED,
-            primitiveResult.Metadata_DEPRECATED);
-
-    updateTextureCoordinatesForMetadata_DEPRECATED(
-        model,
-        primitive,
-        duplicateVertices,
-        StaticMeshBuildVertices,
-        indices,
-        *pModelResult->EncodedMetadata_DEPRECATED,
-        *primitiveResult.EncodedMetadata_DEPRECATED,
-        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
-            primitiveResult.Metadata_DEPRECATED),
-        primitiveResult.FeaturesMetadataTexCoordParameters,
-        gltfToUnrealTexCoordMap);
-  }
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   // TangentX: Tangent
   // TangentY: Bi-tangent
@@ -1521,9 +1633,9 @@ static void loadPrimitive(
   // This matrix converts from right-handed Z-up to Unreal
   // left-handed Z-up by flipping the Y axis. It effectively undoes the Y-axis
   // flipping that we did when creating the mesh in the first place. This is
-  // necessary to work around a problem in UE 5.1 where negatively-scaled meshes
-  // don't work correctly for collision.
-  // See https://github.com/CesiumGS/cesium-unreal/pull/1126
+  // necessary to work around a problem in UE 5.1 where negatively-scaled
+  // meshes don't work correctly for collision. See
+  // https://github.com/CesiumGS/cesium-unreal/pull/1126
   static constexpr glm::dmat4 yInvertMatrix = {
       1.0,
       0.0,
@@ -1681,11 +1793,11 @@ static void loadMesh(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
   const Model& model = *options.pNodeOptions->pModelOptions->pModel;
-  const Mesh& mesh = *options.pMesh;
+  Mesh& mesh = *options.pMesh;
 
   result = LoadMeshResult();
   result->primitiveResults.reserve(mesh.primitives.size());
-  for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
+  for (CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     auto& primitiveResult = result->primitiveResults.emplace_back();
     loadPrimitive(
@@ -1727,7 +1839,7 @@ static void loadNode(
       0.0,
       1.0};
 
-  const Model& model = *options.pModelOptions->pModel;
+  Model& model = *options.pModelOptions->pModel;
   const Node& node = *options.pNode;
 
   LoadNodeResult& result = loadNodeResults.emplace_back();
@@ -1843,7 +1955,99 @@ void applyGltfUpAxisTransform(const Model& model, glm::dmat4x4& rootTransform) {
         gltfUpAxisValue);
   }
 }
+
 } // namespace
+
+static void
+loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
+  Model& model = *options.pModel;
+
+  ExtensionModelExtStructuralMetadata* pModelMetadata =
+      model.getExtension<ExtensionModelExtStructuralMetadata>();
+  if (!pModelMetadata) {
+    return;
+  }
+
+  model.forEachPrimitiveInScene(
+      model.scene,
+      [pModelMetadata](
+          CesiumGltf::Model& gltf,
+          CesiumGltf::Node& /*node*/,
+          CesiumGltf::Mesh& /*mesh*/,
+          CesiumGltf::MeshPrimitive& primitive,
+          const glm::dmat4& /*nodeTransform*/) {
+        const ExtensionMeshPrimitiveExtStructuralMetadata* pPrimitiveMetadata =
+            primitive
+                .getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
+        if (!pPrimitiveMetadata) {
+          return;
+        }
+
+        int32_t materialIndex = primitive.material;
+        if (materialIndex < 0 || materialIndex >= gltf.materials.size()) {
+          return;
+        }
+
+        const CesiumGltf::Material& material =
+            gltf.materials[primitive.material];
+
+        for (const auto& propertyTextureIndex :
+             pPrimitiveMetadata->propertyTextures) {
+          if (propertyTextureIndex < 0 ||
+              static_cast<size_t>(propertyTextureIndex) >=
+                  pModelMetadata->propertyTextures.size()) {
+            continue;
+          }
+
+          CesiumGltf::PropertyTexture& propertyTexture =
+              pModelMetadata->propertyTextures[propertyTextureIndex];
+
+          for (auto& propertyIt : propertyTexture.properties) {
+            if (propertyIt.second.extras.find("makeImageCopy") !=
+                propertyIt.second.extras.end()) {
+              continue;
+            }
+
+            int32_t textureIndex = propertyIt.second.index;
+            if (textureIndex < 0 || textureIndex > gltf.textures.size()) {
+              continue;
+            }
+
+            const CesiumGltf::Texture& texture = gltf.textures[textureIndex];
+            if (texture.source < 0 || texture.source >= gltf.images.size()) {
+              continue;
+            }
+
+            if (hasMaterialTextureConflicts(gltf, material, texture.source)) {
+              // Add a flag in the extras to indicate a copy should be made.
+              // This is checked for in FCesiumPropertyTexture.
+              propertyIt.second.extras.insert({"makeImageCopy", true});
+            }
+          }
+        }
+      });
+
+  result.Metadata = FCesiumModelMetadata(model, *pModelMetadata);
+
+  const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
+      options.pFeaturesMetadataDescription;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  const FMetadataDescription* pMetadataDescription_DEPRECATED =
+      options.pEncodedMetadataDescription_DEPRECATED;
+  if (pFeaturesMetadataDescription) {
+    result.EncodedMetadata =
+        CesiumEncodedFeaturesMetadata::encodeModelMetadataAnyThreadPart(
+            pFeaturesMetadataDescription->ModelMetadata,
+            result.Metadata);
+  } else if (pMetadataDescription_DEPRECATED) {
+    result.EncodedMetadata_DEPRECATED =
+        CesiumEncodedMetadataUtility::encodeMetadataAnyThreadPart(
+            *pMetadataDescription_DEPRECATED,
+            result.Metadata);
+  }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+}
 
 static void loadModelAnyThreadPart(
     LoadModelResult& result,
@@ -1856,11 +2060,12 @@ static void loadModelAnyThreadPart(
 
   // Generate mipmaps if needed.
   // An image needs mipmaps generated for it if:
-  // 1. It is used by a Texture that has a Sampler with a mipmap filtering mode,
-  // and
+  // 1. It is used by a Texture that has a Sampler with a mipmap filtering
+  // mode, and
   // 2. It does not already have mipmaps.
   // It's ok if an image has mipmaps even if not all textures will use them.
-  // There's no reason to have two RHI textures, one with and one without mips.
+  // There's no reason to have two RHI textures, one with and one without
+  // mips.
   for (const Texture& texture : model.textures) {
     const Sampler& sampler = model.getSafe(model.samplers, texture.sampler);
 
@@ -1896,30 +2101,7 @@ static void loadModelAnyThreadPart(
     }
   }
 
-  const ExtensionModelExtStructuralMetadata* pMetadataExtension =
-      model.getExtension<ExtensionModelExtStructuralMetadata>();
-  if (pMetadataExtension) {
-    result.Metadata = FCesiumModelMetadata(model, *pMetadataExtension);
-  }
-
-  const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      options.pFeaturesMetadataDescription;
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  const FMetadataDescription* pMetadataDescription_DEPRECATED =
-      options.pEncodedMetadataDescription_DEPRECATED;
-  if (pFeaturesMetadataDescription) {
-    result.EncodedMetadata =
-        CesiumEncodedFeaturesMetadata::encodeModelMetadataAnyThreadPart(
-            pFeaturesMetadataDescription->ModelMetadata,
-            result.Metadata);
-  } else if (pMetadataDescription_DEPRECATED) {
-    result.EncodedMetadata_DEPRECATED =
-        CesiumEncodedMetadataUtility::encodeMetadataAnyThreadPart(
-            *pMetadataDescription_DEPRECATED,
-            result.Metadata);
-  }
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+  loadModelMetadata(result, options);
 
   glm::dmat4x4 rootTransform = transform;
 
@@ -1957,7 +2139,7 @@ static void loadModelAnyThreadPart(
     loadNode(result.nodeResults, rootTransform, nodeOptions, textureResources);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
-    for (const Mesh& mesh : model.meshes) {
+    for (Mesh& mesh : model.meshes) {
       CreateNodeOptions dummyNodeOptions = {&options, &result, nullptr};
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
       CreateMeshOptions meshOptions = {
@@ -2249,7 +2431,6 @@ static void SetFeatureIdTextureParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-
   pMaterial->SetTextureParameterValueByInfo(
       FMaterialParameterInfo(
           FName(name + CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
@@ -2526,6 +2707,33 @@ static void SetPropertyTextureParameterValues(
           FMaterialParameterInfo(FName(hasValueName), association, index),
           encodedProperty.pTexture ? 1.0 : 0.0);
     }
+
+    if (!encodedProperty.textureTransform) {
+      continue;
+    }
+
+    glm::dvec2 scale = encodedProperty.textureTransform->scale();
+    glm::dvec2 offset = encodedProperty.textureTransform->offset();
+
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(
+                fullPropertyName + CesiumEncodedFeaturesMetadata::
+                                       MaterialTextureScaleOffsetSuffix),
+            association,
+            index),
+        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
+
+    glm::dvec2 rotation =
+        encodedProperty.textureTransform->rotationSineCosine();
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(
+                fullPropertyName +
+                CesiumEncodedFeaturesMetadata::MaterialTextureRotationSuffix),
+            association,
+            index),
+        FLinearColor(rotation[0], rotation[1], 0.0f, 1.0f));
   }
 }
 
@@ -2536,8 +2744,8 @@ static void SetFeaturesMetadataParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-  // This handles texture coordinate indices for both attribute feature ID sets
-  // and property textures.
+  // This handles texture coordinate indices for both attribute feature ID
+  // sets and property textures.
   for (const auto& textureCoordinateSet :
        loadResult.FeaturesMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
@@ -2617,7 +2825,6 @@ static void SetMetadataParameterValues_DEPRECATED(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-
   /**
    * The following is the naming convention for deprecated encoded metadata:
    *
@@ -3056,7 +3263,6 @@ UCesiumGltfComponent::CreateOffGameThread(
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision) {
-
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3163,7 +3369,6 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
 }
 
 namespace {
-
 template <typename Func>
 void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
   for (USceneComponent* pSceneComponent : pGltf->GetAttachChildren()) {
@@ -3174,10 +3379,10 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
           Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
 
       if (!IsValid(pMaterial) || pMaterial->IsUnreachable()) {
-        // Don't try to update the material while it's in the process of being
-        // destroyed. This can lead to the render thread freaking out when
-        // it's asked to update a parameter for a material that has been
-        // marked for garbage collection.
+        // Don't try to update the material while it's in the process of
+        // being destroyed. This can lead to the render thread freaking out
+        // when it's asked to update a parameter for a material that has
+        // been marked for garbage collection.
         continue;
       }
 
@@ -3204,7 +3409,6 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& translation,
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
-
   FVector4 translationAndScale(translation.x, translation.y, scale.x, scale.y);
 
   forEachPrimitiveComponent(
@@ -3269,7 +3473,6 @@ void UCesiumGltfComponent::DetachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
     const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture) {
-
   forEachPrimitiveComponent(
       this,
       [this, &rasterTile, pTexture](
@@ -3315,8 +3518,8 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 
 void UCesiumGltfComponent::BeginDestroy() {
   // Clear everything we can in order to reduce memory usage, because this
-  // UObject might not actually get deleted by the garbage collector until much
-  // later.
+  // UObject might not actually get deleted by the garbage collector until
+  // much later.
   this->Metadata = FCesiumModelMetadata();
   this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata();
 
@@ -3390,7 +3593,6 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
-
   int32 vertexCount = vertexData.Num();
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
