@@ -866,6 +866,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
       *this->GetFullName());
 
   OnGeoreferenceUpdated.Broadcast();
+  this->ReceiveGeoreferenceUpdated();
 }
 
 GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
