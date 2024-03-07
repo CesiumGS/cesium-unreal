@@ -12,6 +12,7 @@
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Containers/Map.h"
 #include "Containers/UnrealString.h"
+#include "Math/TransformNonVectorized.h"
 #include "StaticMeshResources.h"
 #include "Templates/SharedPointer.h"
 
@@ -23,6 +24,7 @@
 #include <glm/mat4x4.hpp>
 #include <optional>
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 namespace LoadGltfResult {
@@ -151,6 +153,10 @@ struct LoadMeshResult {
  */
 struct LoadNodeResult {
   std::optional<LoadMeshResult> meshResult = std::nullopt;
+  /**
+   * Array of instance transforms, if any.
+   */
+  std::vector<FTransform> InstanceTransforms;
 };
 
 /**

@@ -6,10 +6,16 @@
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
+#include "CesiumLifetime.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumRasterOverlays.h"
+#include "VecMath.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "CoreMinimal.h"
 #include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
@@ -22,14 +28,10 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
-UCLASS()
-class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
-  GENERATED_BODY()
-
+class CesiumGltfPrimitiveBase
+{
 public:
-  // Sets default values for this component's properties
-  UCesiumGltfPrimitiveComponent();
-  virtual ~UCesiumGltfPrimitiveComponent();
+  CesiumGltfPrimitiveBase();
 
   /**
    * Represents the primitive's EXT_mesh_features extension.
@@ -112,9 +114,98 @@ public:
    *
    * @param CesiumToUnrealTransform The new transformation.
    */
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+  virtual void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
+
+  void BeginDestroyPrimitive();
+};
+
+template<typename T>
+class CesiumGltfPrimitive : public CesiumGltfPrimitiveBase
+{
+public:
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override
+  {
+    const FTransform transform = FTransform(
+		VecMath::createMatrix(CesiumToUnrealTransform * HighPrecisionNodeTransform));
+
+    if (_uobject->Mobility == EComponentMobility::Movable) {
+      // For movable objects, move the component in the normal way, but don't
+      // generate collisions along the way. Teleporting physics is imperfect, but
+      // it's the best available option.
+      _uobject->SetRelativeTransform(
+          transform,
+          false,
+          nullptr,
+          ETeleportType::TeleportPhysics);
+    } else {
+      // Unreal will yell at us for calling SetRelativeTransform on a static
+      // object, but we still need to adjust (accurately!) for origin rebasing and
+      // georeference changes. It's "ok" to move a static object in this way
+      // because, we assume, the globe and globe-oriented lights, etc. are moving
+      // too, so in a relative sense the object isn't actually moving. This isn't
+      // a perfect assumption, of course.
+      _uobject->SetRelativeTransform_Direct(transform);
+      _uobject->UpdateComponentToWorld();
+      _uobject->MarkRenderTransformDirty();
+      _uobject->SendPhysicsTransform(ETeleportType::ResetPhysics);
+    }
+  }
+
+  void BeginDestroyPrimitive() {
+    // Clear everything we can in order to reduce memory usage, because this
+    // UObject might not actually get deleted by the garbage collector until much
+    // later.
+    CesiumGltfPrimitiveBase::BeginDestroyPrimitive();
+    UMaterialInstanceDynamic* pMaterial =
+        Cast<UMaterialInstanceDynamic>(_uobject->GetMaterial(0));
+    if (pMaterial) {
+      CesiumLifetime::destroy(pMaterial);
+    }
+
+    UStaticMesh* pMesh = _uobject->GetStaticMesh();
+    if (pMesh) {
+      UBodySetup* pBodySetup = pMesh->GetBodySetup();
+
+      if (pBodySetup) {
+        CesiumLifetime::destroy(pBodySetup);
+      }
+
+      CesiumLifetime::destroy(pMesh);
+    }
+  }
+  T* _uobject;
+};
+
+UCLASS()
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
+  public CesiumGltfPrimitive<UCesiumGltfPrimitiveComponent> {
+  GENERATED_BODY()
+
+public:
+  // Sets default values for this component's properties
+  UCesiumGltfPrimitiveComponent();
+  virtual ~UCesiumGltfPrimitiveComponent();
 
   virtual void BeginDestroy() override;
 
   virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
+
+  using UPrimitiveComponent::SendPhysicsTransform;
+};
+
+UCLASS()
+class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
+  public CesiumGltfPrimitive<UCesiumGltfInstancedComponent> {
+  GENERATED_BODY()
+
+  public:
+  // Sets default values for this component's properties
+  UCesiumGltfInstancedComponent();
+  virtual ~UCesiumGltfInstancedComponent();
+
+  virtual void BeginDestroy() override;
+
+  virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
+
+  using UPrimitiveComponent::SendPhysicsTransform;
 };
