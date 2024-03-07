@@ -6,9 +6,9 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
-#include <type_traits>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 /**
  * @brief Vector math utility functions.
@@ -337,17 +337,15 @@ public:
   static glm::dvec3 subtract3D(const FIntVector& i, const FVector& f) noexcept;
 };
 
-template<class IntType>
-std::enable_if_t<std::is_signed_v<IntType>, float>
-GltfNormalized(IntType val)
-{
-	return std::max(static_cast<float>(val) / std::numeric_limits<IntType>::max(), -1.0f);
+template <class IntType>
+std::enable_if_t<std::is_signed_v<IntType>, float> GltfNormalized(IntType val) {
+  return std::max(
+      static_cast<float>(val) / std::numeric_limits<IntType>::max(),
+      -1.0f);
 }
 
-template<class IntType>
+template <class IntType>
 std::enable_if_t<std::is_unsigned_v<IntType>, float>
-GltfNormalized(IntType val)
-{
-	return static_cast<float>(val) / std::numeric_limits<IntType>::max();
+GltfNormalized(IntType val) {
+  return static_cast<float>(val) / std::numeric_limits<IntType>::max();
 }
-

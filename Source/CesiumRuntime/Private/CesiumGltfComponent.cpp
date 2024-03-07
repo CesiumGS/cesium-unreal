@@ -920,22 +920,22 @@ FName createSafeName(
 // Note that this matrix is its own inverse.
 
 constexpr glm::dmat4 yInvertMatrix = {
-  1.0,
-  0.0,
-  0.0,
-  0.0,
-  0.0,
-  -1.0,
-  0.0,
-  0.0,
-  0.0,
-  0.0,
-  1.0,
-  0.0,
-  0.0,
-  0.0,
-  0.0,
-  1.0};
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0};
 } // namespace
 
 template <class TIndexAccessor>
@@ -1707,35 +1707,31 @@ static void loadMesh(
 
 // Helpers for different instancing rotation formats
 
-template<typename T>
-struct is_float_quat: std::false_type
-{
+template <typename T> struct is_float_quat : std::false_type {};
+
+template <>
+struct is_float_quat<CesiumGltf::AccessorTypes::VEC4<float>> : std::true_type {
 };
 
-template<> struct is_float_quat<CesiumGltf::AccessorTypes::VEC4<float>> : std::true_type
-{
-};
+template <typename T> struct is_int_quat : std::false_type {};
 
-template<typename T>
-struct is_int_quat: std::false_type
-{
-};
+template <typename T>
+struct is_int_quat<CesiumGltf::AccessorTypes::VEC4<T>>
+    : std::conjunction<std::is_integral<T>, std::is_signed<T>> {};
 
-template<typename T>
-struct is_int_quat<CesiumGltf::AccessorTypes::VEC4<T>> : std::conjunction<std::is_integral<T>, std::is_signed<T>>
-{
-};
-
-template<typename T>
+template <typename T>
 inline constexpr bool is_float_quat_v = is_float_quat<T>::value;
 
-template<typename T>
+template <typename T>
 inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
 
-static void loadInstancingData(const Model& model, LoadNodeResult& result,
-                               const ExtensionExtMeshGpuInstancing* pGpuInstancing) {
+static void loadInstancingData(
+    const Model& model,
+    LoadNodeResult& result,
+    const ExtensionExtMeshGpuInstancing* pGpuInstancing) {
   auto getInstanceAccessor = [&](const char* name) -> const Accessor* {
-    if (auto accessorItr = pGpuInstancing->attributes.find(name); accessorItr != pGpuInstancing->attributes.end()) {
+    if (auto accessorItr = pGpuInstancing->attributes.find(name);
+        accessorItr != pGpuInstancing->attributes.end()) {
       return Model::getSafe(&model.accessors, accessorItr->second);
     }
     return nullptr;
@@ -1755,7 +1751,9 @@ static void loadInstancingData(const Model& model, LoadNodeResult& result,
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT("instance rotation count %d not consistent with %d"), rotations->count, count);
+          TEXT("instance rotation count %d not consistent with %d"),
+          rotations->count,
+          count);
       return;
     }
   }
@@ -1766,71 +1764,87 @@ static void loadInstancingData(const Model& model, LoadNodeResult& result,
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT("instance scale count %d not consistent with %d"), scales->count, count);
+          TEXT("instance scale count %d not consistent with %d"),
+          scales->count,
+          count);
       return;
     }
   }
   if (count == 0) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("No valid instance data"));
+    UE_LOG(LogCesium, Warning, TEXT("No valid instance data"));
     return;
   }
-  // The glTF instance transforms need to be transformed into the local coordinate system of the
-  // Unreal static mesh i.e., Unreals' left-handed system. Another way to think about it is that the
-  // geometry, which is stored in the Unreal system, must be transformed to glTF, have the instance
-  // transform applied, and then be transformed back to Unreal. It's tempting to do this by trying
-  // some manipulation of the individual glTF instance operations, but that general approach has
-  // always ended in tears for me. Better to formally multiply out the matrices and be assured that
-  // the operation is correct.
+  // The glTF instance transforms need to be transformed into the local
+  // coordinate system of the Unreal static mesh i.e., Unreals' left-handed
+  // system. Another way to think about it is that the geometry, which is stored
+  // in the Unreal system, must be transformed to glTF, have the instance
+  // transform applied, and then be transformed back to Unreal. It's tempting to
+  // do this by trying some manipulation of the individual glTF instance
+  // operations, but that general approach has always ended in tears for me.
+  // Better to formally multiply out the matrices and be assured that the
+  // operation is correct.
   std::vector<glm::dmat4> instanceTransforms(count);
   for (auto& mat : instanceTransforms) {
     mat = glm::dmat4(1.0);
   }
-  // Note: the glm functions translate() and scale() post-multiply the matrix argument by the new
-  // transform. E.g., translate() does *not* translate the matrix.
+  // Note: the glm functions translate() and scale() post-multiply the matrix
+  // argument by the new transform. E.g., translate() does *not* translate the
+  // matrix.
   if (translations) {
     // XXX Need to verify float scalar3.
-    AccessorView<CesiumGltf::AccessorTypes::VEC3<float>> translationAccessor(model, *translations);
+    AccessorView<CesiumGltf::AccessorTypes::VEC3<float>> translationAccessor(
+        model,
+        *translations);
     for (int i = 0; i < count; ++i) {
-      glm::dvec3 transVec(translationAccessor[i].value[0], translationAccessor[i].value[1], translationAccessor[i].value[2]);
+      glm::dvec3 transVec(
+          translationAccessor[i].value[0],
+          translationAccessor[i].value[1],
+          translationAccessor[i].value[2]);
       instanceTransforms[i] = glm::translate(instanceTransforms[i], transVec);
     }
   }
   if (rotations) {
-    createAccessorView(model, *rotations,
-                       [&](auto&& quatView) -> void {
-                         using QuatType = decltype(quatView[0]);
-                         using ValueType = std::decay_t<QuatType>;
-                         if constexpr (is_float_quat_v<ValueType>) {
-                           for (int i = 0; i < count; ++i) {
-                             glm::dquat quat(quatView[i].value[3], quatView[i].value[0], quatView[i].value[1], quatView[i].value[2]);
-                             instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
-                           }
-                         } else if constexpr (is_int_quat_v<ValueType>) {
-                           for (int i = 0; i < count; ++i) {
-                             float val[4];
-                             for (int j = 0; j < 4; ++j) {
-                               val[j] = GltfNormalized(quatView[i].value[j]);
-                             }
-                             glm::dquat quat(val[3], val[0], val[1], val[2]);
-                             instanceTransforms[i] =  instanceTransforms[i] * glm::toMat4(quat);
-                           }
-                         }
-                       });
+    createAccessorView(model, *rotations, [&](auto&& quatView) -> void {
+      using QuatType = decltype(quatView[0]);
+      using ValueType = std::decay_t<QuatType>;
+      if constexpr (is_float_quat_v<ValueType>) {
+        for (int i = 0; i < count; ++i) {
+          glm::dquat quat(
+              quatView[i].value[3],
+              quatView[i].value[0],
+              quatView[i].value[1],
+              quatView[i].value[2]);
+          instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
+        }
+      } else if constexpr (is_int_quat_v<ValueType>) {
+        for (int i = 0; i < count; ++i) {
+          float val[4];
+          for (int j = 0; j < 4; ++j) {
+            val[j] = GltfNormalized(quatView[i].value[j]);
+          }
+          glm::dquat quat(val[3], val[0], val[1], val[2]);
+          instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
+        }
+      }
+    });
   }
   if (scales) {
     // XXX Need to Verify float scalar3.
-    AccessorView<CesiumGltf::AccessorTypes::VEC3<float>> scaleAccessor(model, *scales);
+    AccessorView<CesiumGltf::AccessorTypes::VEC3<float>> scaleAccessor(
+        model,
+        *scales);
     for (int i = 0; i < count; ++i) {
-      glm::dvec3 scaleFactors(scaleAccessor[i].value[0], scaleAccessor[i].value[1], scaleAccessor[i].value[2]);
+      glm::dvec3 scaleFactors(
+          scaleAccessor[i].value[0],
+          scaleAccessor[i].value[1],
+          scaleAccessor[i].value[2]);
       instanceTransforms[i] = glm::scale(instanceTransforms[i], scaleFactors);
     }
   }
   result.InstanceTransforms.resize(count);
   for (int i = 0; i < count; ++i) {
-    glm::dmat4 unrealMat = yInvertMatrix * instanceTransforms[i] * yInvertMatrix;
+    glm::dmat4 unrealMat =
+        yInvertMatrix * instanceTransforms[i] * yInvertMatrix;
     auto unrealFMatrix = VecMath::createMatrix(unrealMat);
     result.InstanceTransforms[i].SetFromMatrix(unrealFMatrix);
   }
@@ -1915,7 +1929,8 @@ static void loadNode(
 
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
-    if (const auto* pGpuInstancingExtension = node.getExtension<ExtensionExtMeshGpuInstancing>()) {
+    if (const auto* pGpuInstancingExtension =
+            node.getExtension<ExtensionExtMeshGpuInstancing>()) {
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
@@ -2920,7 +2935,8 @@ static void loadPrimitiveGameThreadPart(
     pMesh = pPointMesh;
     pPrimBase = pPointMesh;
   } else if (!instanceTransforms.empty()) {
-    auto* cesiumMesh = NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
+    auto* cesiumMesh =
+        NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
     pInstancedMesh = cesiumMesh;
     pMesh = cesiumMesh;
     pPrimBase = cesiumMesh;
@@ -2928,7 +2944,8 @@ static void loadPrimitiveGameThreadPart(
       pInstancedMesh->AddInstance(transform, false);
     }
   } else {
-    auto* cesiumMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    auto* cesiumMesh =
+        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
     pMesh = cesiumMesh;
     pPrimBase = cesiumMesh;
   }
@@ -3308,9 +3325,12 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
     CesiumGltfPrimitiveBase* pPrimitive = nullptr;
-    if (auto* pCesiumPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent)) {
+    if (auto* pCesiumPrimitive =
+            Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent)) {
       pPrimitive = pCesiumPrimitive;
-    } else if (auto* pCesiumInstanced = Cast<UCesiumGltfInstancedComponent>(pSceneComponent)) {
+    } else if (
+        auto* pCesiumInstanced =
+            Cast<UCesiumGltfInstancedComponent>(pSceneComponent)) {
       pPrimitive = pCesiumInstanced;
     }
     if (pPrimitive) {

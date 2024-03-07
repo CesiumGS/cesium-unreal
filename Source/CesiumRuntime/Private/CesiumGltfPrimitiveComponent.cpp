@@ -74,7 +74,6 @@ void UCesiumGltfInstancedComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
-
 FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
   if (!this->boundingVolume) {

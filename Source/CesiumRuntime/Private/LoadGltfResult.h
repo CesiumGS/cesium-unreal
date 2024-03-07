@@ -24,8 +24,8 @@
 #include <glm/mat4x4.hpp>
 #include <optional>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 namespace LoadGltfResult {
 /**
