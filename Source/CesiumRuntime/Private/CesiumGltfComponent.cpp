@@ -2988,41 +2988,46 @@ static void loadPrimitiveGameThreadPart(
     pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   }
 
-  pMesh->pTilesetActor = pTilesetActor;
-  pMesh->overlayTextureCoordinateIDToUVIndex =
-      loadResult.overlayTextureCoordinateIDToUVIndex;
-  pMesh->GltfToUnrealTexCoordMap =
-      std::move(loadResult.GltfToUnrealTexCoordMap);
-  pMesh->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-  pMesh->PositionAccessor = std::move(loadResult.PositionAccessor);
-  pMesh->IndexAccessor = std::move(loadResult.IndexAccessor);
-  pMesh->HighPrecisionNodeTransform = loadResult.transform;
-  pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+  UStaticMesh* pStaticMesh;
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
 
-  pMesh->bUseDefaultCollision = false;
-  pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  pMesh->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMesh->pModel = loadResult.pModel;
-  pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
-  pMesh->boundingVolume = boundingVolume;
-  pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
-  pMesh->SetCustomDepthStencilWriteMask(
-      pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
-  pMesh->SetCustomDepthStencilValue(
-      pGltf->CustomDepthParameters.CustomDepthStencilValue);
-  if (loadResult.isUnlit) {
-    pMesh->bCastDynamicShadow = false;
+    pMesh->pTilesetActor = pTilesetActor;
+    pMesh->overlayTextureCoordinateIDToUVIndex =
+        loadResult.overlayTextureCoordinateIDToUVIndex;
+    pMesh->GltfToUnrealTexCoordMap =
+        std::move(loadResult.GltfToUnrealTexCoordMap);
+    pMesh->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+    pMesh->PositionAccessor = std::move(loadResult.PositionAccessor);
+    pMesh->IndexAccessor = std::move(loadResult.IndexAccessor);
+    pMesh->HighPrecisionNodeTransform = loadResult.transform;
+    pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+    pMesh->bUseDefaultCollision = false;
+    pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+    pMesh->SetFlags(
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+    pMesh->pModel = loadResult.pModel;
+    pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
+    pMesh->boundingVolume = boundingVolume;
+    pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
+    pMesh->SetCustomDepthStencilWriteMask(
+        pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
+    pMesh->SetCustomDepthStencilValue(
+        pGltf->CustomDepthParameters.CustomDepthStencilValue);
+    if (loadResult.isUnlit) {
+      pMesh->bCastDynamicShadow = false;
+    }
+
+    pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
+    pMesh->SetStaticMesh(pStaticMesh);
+
+    pStaticMesh->SetFlags(
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+    pStaticMesh->NeverStream = true;
+
+    pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
   }
-
-  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
-  pMesh->SetStaticMesh(pStaticMesh);
-
-  pStaticMesh->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pStaticMesh->NeverStream = true;
-
-  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 
   const Material& material =
       loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
@@ -3059,117 +3064,123 @@ static void loadPrimitiveGameThreadPart(
   }
 #endif
 
-  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
-      pBaseMaterial,
-      nullptr,
-      ImportedSlotName);
+  UMaterialInstanceDynamic* pMaterial;
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
 
-  pMaterial->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  SetGltfParameterValues(
-      model,
-      loadResult,
-      material,
-      pbr,
-      pMaterial,
-      EMaterialParameterAssociation::GlobalParameter,
-      INDEX_NONE);
-  SetWaterParameterValues(
-      model,
-      loadResult,
-      pMaterial,
-      EMaterialParameterAssociation::GlobalParameter,
-      INDEX_NONE);
+    pMaterial = UMaterialInstanceDynamic::Create(
+        pBaseMaterial,
+        nullptr,
+        ImportedSlotName);
 
-  UMaterialInstance* pBaseAsMaterialInstance =
-      Cast<UMaterialInstance>(pBaseMaterial);
-  UCesiumMaterialUserData* pCesiumData =
-      pBaseAsMaterialInstance
-          ? pBaseAsMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>()
-          : nullptr;
-
-  // If possible and necessary, attach the CesiumMaterialUserData now.
-#if WITH_EDITORONLY_DATA
-  if (pBaseAsMaterialInstance && !pCesiumData) {
-    const FStaticParameterSet& parameters =
-        pBaseAsMaterialInstance->GetStaticParameters();
-
-    bool hasLayers = parameters.bHasMaterialLayers;
-    if (hasLayers) {
-#if WITH_EDITOR
-      FScopedTransaction transaction(
-          FText::FromString("Add Cesium User Data to Material"));
-      pBaseAsMaterialInstance->Modify();
-#endif
-      pCesiumData = NewObject<UCesiumMaterialUserData>(
-          pBaseAsMaterialInstance,
-          NAME_None,
-          RF_Transactional);
-      pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
-      pCesiumData->PostEditChangeOwner();
-    }
-  }
-#endif
-
-  if (pCesiumData) {
+    pMaterial->SetFlags(
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     SetGltfParameterValues(
         model,
         loadResult,
         material,
         pbr,
         pMaterial,
-        EMaterialParameterAssociation::LayerParameter,
-        0);
+        EMaterialParameterAssociation::GlobalParameter,
+        INDEX_NONE);
+    SetWaterParameterValues(
+        model,
+        loadResult,
+        pMaterial,
+        EMaterialParameterAssociation::GlobalParameter,
+        INDEX_NONE);
 
-    // Initialize fade uniform to fully visible, in case LOD transitions
-    // are off.
-    int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
-    if (fadeLayerIndex >= 0) {
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(
-              "FadePercentage",
-              EMaterialParameterAssociation::LayerParameter,
-              fadeLayerIndex),
-          1.0f);
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(
-              "FadingType",
-              EMaterialParameterAssociation::LayerParameter,
-              fadeLayerIndex),
-          0.0f);
+    UMaterialInstance* pBaseAsMaterialInstance =
+        Cast<UMaterialInstance>(pBaseMaterial);
+    UCesiumMaterialUserData* pCesiumData =
+        pBaseAsMaterialInstance
+            ? pBaseAsMaterialInstance
+                  ->GetAssetUserData<UCesiumMaterialUserData>()
+            : nullptr;
+
+    // If possible and necessary, attach the CesiumMaterialUserData now.
+#if WITH_EDITORONLY_DATA
+    if (pBaseAsMaterialInstance && !pCesiumData) {
+      const FStaticParameterSet& parameters =
+          pBaseAsMaterialInstance->GetStaticParameters();
+
+      bool hasLayers = parameters.bHasMaterialLayers;
+      if (hasLayers) {
+#if WITH_EDITOR
+        FScopedTransaction transaction(
+            FText::FromString("Add Cesium User Data to Material"));
+        pBaseAsMaterialInstance->Modify();
+#endif
+        pCesiumData = NewObject<UCesiumMaterialUserData>(
+            pBaseAsMaterialInstance,
+            NAME_None,
+            RF_Transactional);
+        pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
+        pCesiumData->PostEditChangeOwner();
+      }
     }
+#endif
 
-    // If there's a "Water" layer, set its parameters
-    int32 waterIndex = pCesiumData->LayerNames.Find("Water");
-    if (waterIndex >= 0) {
-      SetWaterParameterValues(
+    if (pCesiumData) {
+      SetGltfParameterValues(
           model,
           loadResult,
+          material,
+          pbr,
           pMaterial,
           EMaterialParameterAssociation::LayerParameter,
-          waterIndex);
-    }
+          0);
 
-    int32 featuresMetadataIndex =
-        pCesiumData->LayerNames.Find("FeaturesMetadata");
-    int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
-    if (featuresMetadataIndex >= 0) {
-      SetFeaturesMetadataParameterValues(
-          model,
-          *pGltf,
-          loadResult,
-          pMaterial,
-          EMaterialParameterAssociation::LayerParameter,
-          featuresMetadataIndex);
-    } else if (metadataIndex >= 0) {
-      // Set parameters for materials generated by the old implementation
-      SetMetadataParameterValues_DEPRECATED(
-          model,
-          *pGltf,
-          loadResult,
-          pMaterial,
-          EMaterialParameterAssociation::LayerParameter,
-          metadataIndex);
+      // Initialize fade uniform to fully visible, in case LOD transitions
+      // are off.
+      int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
+      if (fadeLayerIndex >= 0) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(
+                "FadePercentage",
+                EMaterialParameterAssociation::LayerParameter,
+                fadeLayerIndex),
+            1.0f);
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(
+                "FadingType",
+                EMaterialParameterAssociation::LayerParameter,
+                fadeLayerIndex),
+            0.0f);
+      }
+
+      // If there's a "Water" layer, set its parameters
+      int32 waterIndex = pCesiumData->LayerNames.Find("Water");
+      if (waterIndex >= 0) {
+        SetWaterParameterValues(
+            model,
+            loadResult,
+            pMaterial,
+            EMaterialParameterAssociation::LayerParameter,
+            waterIndex);
+      }
+
+      int32 featuresMetadataIndex =
+          pCesiumData->LayerNames.Find("FeaturesMetadata");
+      int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
+      if (featuresMetadataIndex >= 0) {
+        SetFeaturesMetadataParameterValues(
+            model,
+            *pGltf,
+            loadResult,
+            pMaterial,
+            EMaterialParameterAssociation::LayerParameter,
+            featuresMetadataIndex);
+      } else if (metadataIndex >= 0) {
+        // Set parameters for materials generated by the old implementation
+        SetMetadataParameterValues_DEPRECATED(
+            model,
+            *pGltf,
+            loadResult,
+            pMaterial,
+            EMaterialParameterAssociation::LayerParameter,
+            metadataIndex);
+      }
     }
   }
 
@@ -3201,38 +3212,52 @@ static void loadPrimitiveGameThreadPart(
   pStaticMesh->AddMaterial(pMaterial);
 
   pStaticMesh->SetLightingGuid();
-  pStaticMesh->InitResources();
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
+    pStaticMesh->InitResources();
+  }
 
   // Set up RenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
   pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
 
-  pStaticMesh->CreateBodySetup();
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BodySetup)
 
-  UBodySetup* pBodySetup = pMesh->GetBodySetup();
+    pStaticMesh->CreateBodySetup();
 
-  // pMesh->UpdateCollisionFromStaticMesh();
-  pBodySetup->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
+    UBodySetup* pBodySetup = pMesh->GetBodySetup();
 
-  if (loadResult.pCollisionMesh) {
-    pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
+    // pMesh->UpdateCollisionFromStaticMesh();
+    pBodySetup->CollisionTraceFlag =
+        ECollisionTraceFlag::CTF_UseComplexAsSimple;
+
+    if (loadResult.pCollisionMesh) {
+      pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
+    }
+
+    // Mark physics meshes created, no matter if we actually have a collision
+    // mesh or not. We don't want the editor creating collision meshes itself in
+    // the game thread, because that would be slow.
+    pBodySetup->bCreatedPhysicsMeshes = true;
+    pBodySetup->bSupportUVsAndFaceRemap =
+        UPhysicsSettings::Get()->bSupportUVFromHitResults;
   }
 
-  // Mark physics meshes created, no matter if we actually have a collision
-  // mesh or not. We don't want the editor creating collision meshes itself in
-  // the game thread, because that would be slow.
-  pBodySetup->bCreatedPhysicsMeshes = true;
-  pBodySetup->bSupportUVsAndFaceRemap =
-      UPhysicsSettings::Get()->bSupportUVFromHitResults;
-
   if (createNavCollision) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateNavCollision)
     pStaticMesh->CreateNavCollision(true);
   }
 
   pMesh->SetMobility(pGltf->Mobility);
 
   pMesh->SetupAttachment(pGltf);
-  pMesh->RegisterComponent();
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+    pMesh->RegisterComponent();
+  }
 }
 
 /*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
