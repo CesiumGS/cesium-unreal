@@ -185,7 +185,25 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       this,
       &SelectCesiumIonToken::RefreshTokens);
 
-  TSharedRef<SVerticalBox> pLoaderOrContent = SNew(SVerticalBox);
+  TSharedRef<SVerticalBox> pLoaderOrContent =
+      SNew(SVerticalBox).Visibility_Lambda([pSession]() {
+        return pSession->getAppData().needsOauthAuthentication()
+                   ? EVisibility::Visible
+                   : EVisibility::Collapsed;
+      });
+
+  TSharedRef<SVerticalBox> pSingleUserText =
+      SNew(SVerticalBox).Visibility_Lambda([pSession]() {
+        return !pSession->getAppData().needsOauthAuthentication()
+                   ? EVisibility::Visible
+                   : EVisibility::Collapsed;
+      });
+
+  pSingleUserText->AddSlot().AutoHeight()
+      [SNew(STextBlock)
+           .AutoWrapText(true)
+           .Text(FText::FromString(TEXT(
+               "Cesium for Unreal is currently connected to a Cesium ion server running in single-user authentication mode. Tokens are not used in this mode.")))];
 
   pLoaderOrContent->AddSlot().AutoHeight()
       [SNew(STextBlock)
@@ -347,16 +365,22 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
                 .Text(FText::FromString(
                     TEXT("Create New Project Default Token")))];
 
+  TSharedRef<SVerticalBox> totalBox = SNew(SVerticalBox);
+
+  totalBox->AddSlot().AutoHeight()[pLoaderOrContent];
+  totalBox->AddSlot().AutoHeight()[pSingleUserText];
+
   SWindow::Construct(
       SWindow::FArguments()
           .Title(FText::FromString(TEXT("Select a Cesium ion Token")))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
-          .ClientSize(FVector2D(635, 500))
-              [SNew(SBorder)
-                   .Visibility(EVisibility::Visible)
-                   .Padding(
-                       FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pLoaderOrContent]]);
+          .ClientSize(FVector2D(
+              635,
+              500))[SNew(SBorder)
+                        .Visibility(EVisibility::Visible)
+                        .Padding(
+                            FMargin(10.0f, 10.0f, 10.0f, 10.0f))[totalBox]]);
 
   pSession->refreshTokens();
 }

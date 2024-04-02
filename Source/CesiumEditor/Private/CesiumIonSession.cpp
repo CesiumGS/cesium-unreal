@@ -73,6 +73,11 @@ CesiumIonSession::CesiumIonSession(
       _loadDefaultsQueued(false),
       _authorizeUrl() {}
 
+bool CesiumIonSession::isAuthenticationRequired() const {
+  return this->_appData.has_value() ? this->_appData->needsOauthAuthentication()
+                                    : true;
+}
+
 void CesiumIonSession::connect() {
   if (!this->_pServer.IsValid() || this->isConnecting() ||
       this->isConnected() || this->isResuming()) {
@@ -82,6 +87,7 @@ void CesiumIonSession::connect() {
   UCesiumIonServer* pServer = this->_pServer.Get();
 
   this->_isConnecting = true;
+  this->_hasEverConnected = true;
 
   std::string ionServerUrl = TCHAR_TO_UTF8(*pServer->ServerUrl);
 
@@ -99,24 +105,23 @@ void CesiumIonSession::connect() {
   std::move(futureApiUrl)
       .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer](
                             std::optional<std::string>&& ionApiUrl) {
+        CesiumAsync::Promise<
+            CesiumIonClient::Response<CesiumIonClient::ApplicationData>>
+            promise = thiz->_asyncSystem.createPromise<
+                CesiumIonClient::Response<CesiumIonClient::ApplicationData>>();
+
         if (!pServer.IsValid()) {
-          thiz->_isConnecting = false;
-          thiz->_connection = std::nullopt;
-          thiz->ConnectionUpdated.Broadcast();
-          return;
+          promise.reject(
+              std::runtime_error("CesiumIonServer unexpectedly nullptr"));
+          return promise.getFuture();
         }
 
         if (!ionApiUrl) {
-          thiz->_isConnecting = false;
-          thiz->_connection = std::nullopt;
-          thiz->ConnectionUpdated.Broadcast();
-          UE_LOG(
-              LogCesiumEditor,
-              Error,
-              TEXT(
-                  "Failed to retrieve API URL from the config.json file at the specified Ion server URL: %s"),
-              UTF8_TO_TCHAR(ionServerUrl.c_str()));
-          return;
+          promise.reject(std::runtime_error(fmt::format(
+              "Failed to retrieve API URL from the config.json file at the "
+              "specified Ion server URL: {}",
+              ionServerUrl)));
+          return promise.getFuture();
         }
 
         if (pServer->ApiUrl.IsEmpty()) {
@@ -127,55 +132,104 @@ void CesiumIonSession::connect() {
               true);
         }
 
-        int64_t clientID = pServer->OAuth2ApplicationID;
-
-        Connection::authorize(
+        // Make request to /appData to learn the server's authentication mode
+        return CesiumIonClient::Connection::appData(
             thiz->_asyncSystem,
             thiz->_pAssetAccessor,
-            "Cesium for Unreal",
-            clientID,
-            "/cesium-for-unreal/oauth2/callback",
-            {"assets:list",
-             "assets:read",
-             "profile:read",
-             "tokens:read",
-             "tokens:write",
-             "geocode"},
-            [thiz](const std::string& url) {
-              thiz->_authorizeUrl = url;
+            std::string(TCHAR_TO_UTF8(*pServer->ApiUrl)));
+      })
+      .thenInMainThread(
+          [ionServerUrl, thiz, pServer = this->_pServer](
+              CesiumIonClient::Response<CesiumIonClient::ApplicationData>&&
+                  appData) {
+            CesiumAsync::Promise<void> promise =
+                thiz->_asyncSystem.createPromise<void>();
 
-              thiz->_redirectUrl =
-                  CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
+            thiz->_appData = appData.value;
+            if (!appData.value.has_value()) {
+              promise.reject(std::runtime_error(fmt::format(
+                  "Failed to obtain ion server application data: {}",
+                  appData.errorMessage)));
+            } else {
+              promise.resolve();
+            }
 
-              FPlatformProcess::LaunchURL(
-                  UTF8_TO_TCHAR(thiz->_authorizeUrl.c_str()),
-                  NULL,
-                  NULL);
-            },
-            *ionApiUrl,
-            CesiumUtility::Uri::resolve(ionServerUrl, "oauth"))
-            .thenInMainThread([thiz](CesiumIonClient::Connection&& connection) {
-              thiz->_isConnecting = false;
-              thiz->_connection = std::move(connection);
+            return promise.getFuture();
+          })
+      .catchInMainThread(
+          [ionServerUrl, thiz, pServer = this->_pServer](std::exception&& e) {
+            UE_LOG(
+                LogCesiumEditor,
+                Error,
+                TEXT("Error connecting: %s"),
+                UTF8_TO_TCHAR(e.what()));
+            thiz->_isConnecting = false;
+            thiz->_connection = std::nullopt;
+            thiz->ConnectionUpdated.Broadcast();
+          })
+      .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer]() {
+        if (thiz->_appData->needsOauthAuthentication()) {
 
-              UCesiumEditorSettings* pSettings =
-                  GetMutableDefault<UCesiumEditorSettings>();
-              pSettings->UserAccessTokenMap.Add(
-                  thiz->_pServer.Get(),
-                  UTF8_TO_TCHAR(
-                      thiz->_connection.value().getAccessToken().c_str()));
-              pSettings->Save();
+          int64_t clientID = pServer->OAuth2ApplicationID;
+          return CesiumIonClient::Connection::authorize(
+              thiz->_asyncSystem,
+              thiz->_pAssetAccessor,
+              "Cesium for Unity",
+              clientID,
+              "/cesium-for-unity/oauth2/callback",
+              {"assets:list",
+               "assets:read",
+               "profile:read",
+               "tokens:read",
+               "tokens:write",
+               "geocode"},
+              [thiz](const std::string& url) {
+                thiz->_authorizeUrl = url;
 
-              thiz->ConnectionUpdated.Broadcast();
+                thiz->_redirectUrl =
+                    CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
 
-              thiz->startQueuedLoads();
-            })
-            .catchInMainThread([thiz](std::exception&& e) {
-              thiz->_isConnecting = false;
-              thiz->_connection = std::nullopt;
-              thiz->ConnectionUpdated.Broadcast();
-            });
-      });
+                FPlatformProcess::LaunchURL(
+                    UTF8_TO_TCHAR(thiz->_authorizeUrl.c_str()),
+                    NULL,
+                    NULL);
+              },
+              thiz->_appData.value(),
+              std::string(TCHAR_TO_UTF8(*pServer->ApiUrl)),
+              CesiumUtility::Uri::resolve(ionServerUrl, "oauth"));
+        }
+
+        return thiz->_asyncSystem
+            .createResolvedFuture<CesiumIonClient::Connection>(
+                CesiumIonClient::Connection(
+                    thiz->_asyncSystem,
+                    thiz->_pAssetAccessor,
+                    "",
+                    thiz->_appData.value(),
+                    std::string(TCHAR_TO_UTF8(*pServer->ApiUrl))));
+      })
+      .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer](
+                            CesiumIonClient::Connection&& connection) {
+        thiz->_isConnecting = false;
+        thiz->_connection = std::move(connection);
+
+        UCesiumEditorSettings* pSettings =
+            GetMutableDefault<UCesiumEditorSettings>();
+        pSettings->UserAccessTokenMap.Add(
+            thiz->_pServer.Get(),
+            UTF8_TO_TCHAR(thiz->_connection.value().getAccessToken().c_str()));
+        pSettings->Save();
+
+        thiz->ConnectionUpdated.Broadcast();
+
+        thiz->startQueuedLoads();
+      })
+      .catchInMainThread(
+          [ionServerUrl, thiz, pServer = this->_pServer](std::exception&& e) {
+            thiz->_isConnecting = false;
+            thiz->_connection = std::nullopt;
+            thiz->ConnectionUpdated.Broadcast();
+          });
 }
 
 void CesiumIonSession::resume() {
@@ -188,7 +242,8 @@ void CesiumIonSession::resume() {
   const FString* pUserAccessToken =
       pSettings->UserAccessTokenMap.Find(this->_pServer.Get());
 
-  if (!pUserAccessToken || pUserAccessToken->IsEmpty()) {
+  if (!pUserAccessToken || pUserAccessToken->IsEmpty() ||
+      !this->_appData.has_value()) {
     // No existing session to resume.
     return;
   }
@@ -199,6 +254,7 @@ void CesiumIonSession::resume() {
       this->_asyncSystem,
       this->_pAssetAccessor,
       TCHAR_TO_UTF8(**pUserAccessToken),
+      *this->_appData,
       TCHAR_TO_UTF8(*this->_pServer->ApiUrl));
 
   std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
@@ -227,6 +283,7 @@ void CesiumIonSession::disconnect() {
   this->_assets.reset();
   this->_tokens.reset();
   this->_defaults.reset();
+  this->_appData.reset();
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   pSettings->UserAccessTokenMap.Remove(this->_pServer.Get());
@@ -404,6 +461,14 @@ const CesiumIonClient::Defaults& CesiumIonSession::getDefaults() {
     this->refreshDefaults();
     return empty;
   }
+}
+
+const CesiumIonClient::ApplicationData& CesiumIonSession::getAppData() {
+  static const CesiumIonClient::ApplicationData empty{};
+  if (this->_appData) {
+    return *this->_appData;
+  }
+  return empty;
 }
 
 bool CesiumIonSession::refreshProfileIfNeeded() {

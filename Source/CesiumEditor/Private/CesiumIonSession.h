@@ -46,6 +46,8 @@ public:
   bool isDefaultsLoaded() const { return this->_defaults.has_value(); }
   bool isLoadingDefaults() const { return this->_isLoadingDefaults; }
 
+  bool isAuthenticationRequired() const;
+
   void connect();
   void resume();
   void disconnect();
@@ -66,6 +68,7 @@ public:
   const CesiumIonClient::Assets& getAssets();
   const std::vector<CesiumIonClient::Token>& getTokens();
   const CesiumIonClient::Defaults& getDefaults();
+  const CesiumIonClient::ApplicationData& getAppData();
 
   const std::string& getAuthorizeUrl() const { return this->_authorizeUrl; }
   const std::string& getRedirectUrl() const { return this->_redirectUrl; }
@@ -117,12 +120,14 @@ private:
   std::optional<CesiumIonClient::Assets> _assets;
   std::optional<std::vector<CesiumIonClient::Token>> _tokens;
   std::optional<CesiumIonClient::Defaults> _defaults;
+  std::optional<CesiumIonClient::ApplicationData> _appData;
 
   std::optional<CesiumAsync::SharedFuture<CesiumIonClient::Token>>
       _projectDefaultTokenDetailsFuture;
 
   bool _isConnecting;
   bool _isResuming;
+  bool _hasEverConnected = false;
   bool _isLoadingProfile;
   bool _isLoadingAssets;
   bool _isLoadingTokens;
