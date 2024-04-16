@@ -266,8 +266,9 @@ float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryInte
 
 float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
-  	return mul(float4(Intermediates.Position, 1),
-  	  	LWCMultiplyTranslation(Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation));
+  	//return mul(float4(Intermediates.Position, 1),
+  	//	LWCMultiplyTranslation(Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation));
+	return float4(1, 1, 1, 1); // XXX Fix this for real
 }
 
 float4 ApplyAttenuation(float4 WorldPosition, uint CornerIndex) {
