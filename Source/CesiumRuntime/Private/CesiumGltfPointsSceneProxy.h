@@ -39,7 +39,12 @@ public:
   virtual ~FCesiumGltfPointsSceneProxy();
 
 protected:
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  virtual void
+  CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
+#else
   virtual void CreateRenderThreadResources() override;
+#endif
   virtual void DestroyRenderThreadResources() override;
 
   virtual void GetDynamicMeshElements(
