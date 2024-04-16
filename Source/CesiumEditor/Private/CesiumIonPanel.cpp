@@ -471,7 +471,7 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
         LogCesiumEditor,
         Warning,
         TEXT("Cannot add asset of type %s"),
-        item->type.c_str());
+        UTF8_TO_TCHAR(item->type.c_str()));
   }
 }
 
@@ -577,7 +577,7 @@ FString formatDate(const std::string& assetDate) {
         LogCesiumEditor,
         Warning,
         TEXT("Could not parse date %s"),
-        assetDate.c_str());
+        UTF8_TO_TCHAR(assetDate.c_str()));
     return UTF8_TO_TCHAR(assetDate.c_str());
   }
   return dateTime.ToString(TEXT("%Y-%m-%d"));
