@@ -10,11 +10,8 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
+#include <CesiumGltf/KhrTextureTransform.h>
 #include <variant>
-
-namespace CesiumGltf {
-class KhrTextureTransform;
-}
 
 struct FCesiumFeatureIdSet;
 struct FCesiumPrimitiveFeatures;
