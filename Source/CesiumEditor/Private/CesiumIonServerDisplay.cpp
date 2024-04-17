@@ -6,6 +6,7 @@
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Text/STextBlock.h"
 
 void CesiumIonServerDisplay::Construct(const FArguments& InArgs) {
   UCesiumIonServer* pServer = InArgs._Server;

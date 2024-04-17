@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/SCompoundWidget.h"
 
 class FArguments;

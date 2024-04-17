@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IDetailCustomization.h"
+#include "PropertyEditorModule.h"
 
 class IDetailCategoryBuilder;
 
