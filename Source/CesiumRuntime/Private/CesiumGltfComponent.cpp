@@ -3330,7 +3330,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UMaterialInstance>
         BaseMaterialWithTranslucency;
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
-    ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
+    ConstructorHelpers::FObjectFinder<UTexture2D> TransparentTiny;
     FConstructorStatics()
         : BaseMaterial(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClipping.MI_CesiumThreeOverlaysAndClipping")),
@@ -3338,8 +3338,8 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingTranslucent.MI_CesiumThreeOverlaysAndClippingTranslucent")),
           BaseMaterialWithWater(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingAndWater.MI_CesiumThreeOverlaysAndClippingAndWater")),
-          Transparent1x1(
-              TEXT("/CesiumForUnreal/Textures/transparent1x1.transparent1x1")) {
+          TransparentTiny(
+              TEXT("/CesiumForUnreal/Textures/TransparentTiny.TransparentTiny")) {
     }
   };
   static FConstructorStatics ConstructorStatics;
@@ -3348,7 +3348,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->BaseMaterialWithTranslucency =
       ConstructorStatics.BaseMaterialWithTranslucency.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
-  this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
+  this->TransparentTiny = ConstructorStatics.TransparentTiny.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
 }
@@ -3495,12 +3495,12 @@ void UCesiumGltfComponent::DetachRasterTile(
                     "Texture",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                this->Transparent1x1);
+                this->TransparentTiny);
           }
         } else {
           pMaterial->SetTextureParameterValue(
               createSafeName(rasterTile.getOverlay().getName(), "_Texture"),
-              this->Transparent1x1);
+              this->TransparentTiny);
         }
       });
 }
