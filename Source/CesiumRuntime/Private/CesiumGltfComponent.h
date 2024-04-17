@@ -1,11 +1,12 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTileset.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
-#include "CesiumMetadataModel.h"
+#include "CesiumModelMetadata.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -21,7 +22,7 @@ class UStaticMeshComponent;
 
 namespace CreateGltfOptions {
 struct CreateModelOptions;
-} // namespace CreateGltfOptions
+}
 
 namespace CesiumGltf {
 struct Model;
@@ -29,8 +30,11 @@ struct Model;
 
 namespace Cesium3DTilesSelection {
 class Tile;
+}
+
+namespace CesiumRasterOverlays {
 class RasterOverlayTile;
-} // namespace Cesium3DTilesSelection
+}
 
 namespace CesiumGeometry {
 struct Rectangle;
@@ -65,7 +69,7 @@ public:
       const CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
-      const CesiumGltf::Model& model,
+      CesiumGltf::Model& model,
       ACesium3DTileset* ParentActor,
       TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
@@ -91,15 +95,19 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
-  FCesiumMetadataModel Metadata{};
+  FCesiumModelMetadata Metadata{};
+  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
+      EncodedMetadata_DEPRECATED = std::nullopt;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
   void AttachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
-      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
       const glm::dvec2& Translation,
       const glm::dvec2& Scale,
@@ -107,7 +115,7 @@ public:
 
   void DetachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
-      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& RasterTile,
       UTexture2D* Texture);
 
   UFUNCTION(BlueprintCallable, Category = "Collision")

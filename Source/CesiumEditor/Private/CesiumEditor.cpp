@@ -1,16 +1,20 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumEditor.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetCustomization.h"
+#include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
+#include "CesiumGeoreferenceCustomization.h"
+#include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
-#include "ClassIconFinder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
@@ -20,10 +24,9 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Interfaces/IPluginManager.h"
 #include "LevelEditor.h"
+#include "PropertyEditorModule.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
-#include "UnrealAssetAccessor.h"
-#include "UnrealTaskProcessor.h"
 
 constexpr int MaximumOverlaysWithDefaultMaterial = 3;
 
@@ -53,6 +56,9 @@ TSharedPtr<FSlateStyleSet> FCesiumEditorModule::StyleSet = nullptr;
 FCesiumEditorModule* FCesiumEditorModule::_pModule = nullptr;
 
 namespace {
+
+AActor* SpawnActorWithClass(UClass* actorClass);
+
 /**
  * Register an icon in the StyleSet, using the given property
  * name and relative resource path.
@@ -95,137 +101,181 @@ createButtonBoxBrush(const FString& name, const FLinearColor& color) {
 
 } // namespace
 
+namespace {
+
+/**
+ * Registers our details panel customizations with the property editor.
+ */
+void registerDetailCustomization() {
+  FPropertyEditorModule& PropertyEditorModule =
+      FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+          "PropertyEditor");
+
+  FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
+  FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
+  FCesium3DTilesetCustomization::Register(PropertyEditorModule);
+
+  PropertyEditorModule.NotifyCustomizationModuleChanged();
+}
+
+/**
+ * Undo the registration that was done in `registerDetailCustomization`
+ */
+void unregisterDetailCustomization() {
+  if (FModuleManager::Get().IsModuleLoaded("PropertyEditor")) {
+    FPropertyEditorModule& PropertyEditorModule =
+        FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+            "PropertyEditor");
+
+    FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
+    FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
+    FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
+  }
+}
+
+} // namespace
+
+namespace {
+
+/**
+ * @brief Populate the given StyleSet with the Cesium icons and fonts.
+ *
+ * @param StyleSet The StyleSet
+ */
+void populateCesiumStyleSet(TSharedPtr<FSlateStyleSet>& StyleSet) {
+  if (!StyleSet.IsValid()) {
+    return;
+  }
+  const FVector2D Icon16x16(16.0f, 16.0f);
+  const FVector2D Icon40x40(40.0f, 40.0f);
+  const FVector2D Icon64x64(64.0f, 64.0f);
+
+  StyleSet->Set(
+      "Cesium.MenuIcon",
+      new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
+
+  // Give Cesium Actors a Cesium icon in the editor
+  StyleSet->Set(
+      "ClassIcon.Cesium3DTileset",
+      new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
+  StyleSet->Set(
+      "ClassThumbnail.Cesium3DTileset",
+      new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
+  StyleSet->Set(
+      "ClassIcon.CesiumGeoreference",
+      new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
+  StyleSet->Set(
+      "ClassThumbnail.CesiumGeoreference",
+      new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
+
+  // Icons for the toolbar. These will be registered with
+  // a default size, and a ".Small" suffix for the case
+  // that the useSmallToolbarIcons preference is enabled
+  registerIcon(StyleSet, "Cesium.Common.AddFromIon", "FontAwesome/plus-solid");
+  registerIcon(
+      StyleSet,
+      "Cesium.Common.UploadToIon",
+      "FontAwesome/cloud-upload-alt-solid");
+  registerIcon(
+      StyleSet,
+      "Cesium.Common.SignOut",
+      "FontAwesome/sign-out-alt-solid");
+  registerIcon(
+      StyleSet,
+      "Cesium.Common.OpenDocumentation",
+      "FontAwesome/book-reader-solid");
+  registerIcon(
+      StyleSet,
+      "Cesium.Common.OpenSupport",
+      "FontAwesome/hands-helping-solid");
+  registerIcon(
+      StyleSet,
+      "Cesium.Common.OpenTokenSelector",
+      "FontAwesome/key-solid");
+
+  StyleSet->Set(
+      "Cesium.Common.GreenTick",
+      new IMAGE_BRUSH(TEXT("FontAwesome/check-solid"), Icon16x16));
+  StyleSet->Set(
+      "Cesium.Common.RedX",
+      new IMAGE_BRUSH(TEXT("FontAwesome/times-solid"), Icon16x16));
+
+  registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
+
+  StyleSet->Set(
+      "Cesium.Common.Refresh",
+      new IMAGE_BRUSH(TEXT("FontAwesome/sync-alt-solid"), Icon16x16));
+
+  StyleSet->Set(
+      "Cesium.Logo",
+      new IMAGE_BRUSH(
+          "Cesium_for_Unreal_light_color_vertical-height150",
+          FVector2D(184.0f, 150.0f)));
+
+  StyleSet->Set(
+      "WelcomeText",
+      FTextBlockStyle()
+          .SetColorAndOpacity(FSlateColor::UseForeground())
+          .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14)));
+
+  StyleSet->Set(
+      "Heading",
+      FTextBlockStyle()
+          .SetColorAndOpacity(FSlateColor::UseForeground())
+          .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 12)));
+
+  StyleSet->Set(
+      "BodyBold",
+      FTextBlockStyle()
+          .SetColorAndOpacity(FSlateColor::UseForeground())
+          .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 9)));
+
+  StyleSet->Set(
+      "AssetDetailsFieldHeader",
+      FTextBlockStyle()
+          .SetColorAndOpacity(FSlateColor::UseForeground())
+          .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 11)));
+
+  StyleSet->Set(
+      "AssetDetailsFieldValue",
+      FTextBlockStyle()
+          .SetColorAndOpacity(FSlateColor::UseForeground())
+          .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 9)));
+
+  const FLinearColor CesiumButtonLighter(0.16863f, 0.52941f, 0.76863f, 1.0f);
+  const FLinearColor CesiumButton(0.07059f, 0.35686f, 0.59216f, 1.0f);
+  const FLinearColor CesiumButtonDarker(0.05490f, 0.29412f, 0.45882f, 1.0f);
+  const FButtonStyle CesiumButtonStyle =
+      FButtonStyle()
+          .SetNormalPadding(FMargin(10, 5, 10, 5))
+          .SetPressedPadding(FMargin(10, 5, 10, 5))
+          .SetNormal(createButtonBoxBrush("CesiumButton", CesiumButton))
+          .SetHovered(createButtonBoxBrush("CesiumButton", CesiumButtonLighter))
+          .SetPressed(createButtonBoxBrush("CesiumButton", CesiumButtonDarker));
+  StyleSet->Set("CesiumButton", CesiumButtonStyle);
+
+  const FTextBlockStyle CesiumButtonTextStyle =
+      FTextBlockStyle()
+          .SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
+          .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
+  StyleSet->Set("CesiumButtonText", CesiumButtonTextStyle);
+}
+} // namespace
+
 void FCesiumEditorModule::StartupModule() {
   _pModule = this;
 
   IModuleInterface::StartupModule();
 
-  this->_pIonSession =
-      std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
-  this->_pIonSession->resume();
+  registerDetailCustomization();
+
+  this->_serverManager.Initialize();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
-    const FVector2D Icon16x16(16.0f, 16.0f);
-    const FVector2D Icon40x40(40.0f, 40.0f);
-    const FVector2D Icon64x64(64.0f, 64.0f);
 
     StyleSet = MakeShareable(new FSlateStyleSet("CesiumStyleSet"));
-    StyleSet->Set(
-        "Cesium.MenuIcon",
-        new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
-
-    // Give Cesium Actors a Cesium icon in the editor
-    StyleSet->Set(
-        "ClassIcon.Cesium3DTileset",
-        new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
-    StyleSet->Set(
-        "ClassThumbnail.Cesium3DTileset",
-        new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
-    StyleSet->Set(
-        "ClassIcon.CesiumGeoreference",
-        new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
-    StyleSet->Set(
-        "ClassThumbnail.CesiumGeoreference",
-        new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
-
-    // Icons for the toolbar. These will be registered with
-    // a default size, and a ".Small" suffix for the case
-    // that the useSmallToolbarIcons preference is enabled
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.AddFromIon",
-        "FontAwesome/plus-solid");
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.UploadToIon",
-        "FontAwesome/cloud-upload-alt-solid");
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.SignOut",
-        "FontAwesome/sign-out-alt-solid");
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.OpenDocumentation",
-        "FontAwesome/book-reader-solid");
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.OpenSupport",
-        "FontAwesome/hands-helping-solid");
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.OpenTokenSelector",
-        "FontAwesome/key-solid");
-
-    StyleSet->Set(
-        "Cesium.Common.GreenTick",
-        new IMAGE_BRUSH(TEXT("FontAwesome/check-solid"), Icon16x16));
-    StyleSet->Set(
-        "Cesium.Common.RedX",
-        new IMAGE_BRUSH(TEXT("FontAwesome/times-solid"), Icon16x16));
-
-    registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
-
-    StyleSet->Set(
-        "Cesium.Common.Refresh",
-        new IMAGE_BRUSH(TEXT("FontAwesome/sync-alt-solid"), Icon16x16));
-
-    StyleSet->Set(
-        "Cesium.Logo",
-        new IMAGE_BRUSH(
-            "Cesium_for_Unreal_light_color_vertical-height150",
-            FVector2D(184.0f, 150.0f)));
-
-    StyleSet->Set(
-        "WelcomeText",
-        FTextBlockStyle()
-            .SetColorAndOpacity(FSlateColor::UseForeground())
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14)));
-
-    StyleSet->Set(
-        "Heading",
-        FTextBlockStyle()
-            .SetColorAndOpacity(FSlateColor::UseForeground())
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 12)));
-
-    StyleSet->Set(
-        "BodyBold",
-        FTextBlockStyle()
-            .SetColorAndOpacity(FSlateColor::UseForeground())
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 9)));
-
-    StyleSet->Set(
-        "AssetDetailsFieldHeader",
-        FTextBlockStyle()
-            .SetColorAndOpacity(FSlateColor::UseForeground())
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 11)));
-
-    StyleSet->Set(
-        "AssetDetailsFieldValue",
-        FTextBlockStyle()
-            .SetColorAndOpacity(FSlateColor::UseForeground())
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 9)));
-
-    const FLinearColor CesiumButtonLighter(0.16863f, 0.52941f, 0.76863f, 1.0f);
-    const FLinearColor CesiumButton(0.07059f, 0.35686f, 0.59216f, 1.0f);
-    const FLinearColor CesiumButtonDarker(0.05490f, 0.29412f, 0.45882f, 1.0f);
-    const FButtonStyle CesiumButtonStyle =
-        FButtonStyle()
-            .SetNormalPadding(FMargin(10, 5, 10, 5))
-            .SetPressedPadding(FMargin(10, 5, 10, 5))
-            .SetNormal(createButtonBoxBrush("CesiumButton", CesiumButton))
-            .SetHovered(
-                createButtonBoxBrush("CesiumButton", CesiumButtonLighter))
-            .SetPressed(
-                createButtonBoxBrush("CesiumButton", CesiumButtonDarker));
-    StyleSet->Set("CesiumButton", CesiumButtonStyle);
-
-    const FTextBlockStyle CesiumButtonTextStyle =
-        FTextBlockStyle()
-            .SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
-    StyleSet->Set("CesiumButtonText", CesiumButtonTextStyle);
-
+    populateCesiumStyleSet(StyleSet);
     FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
   }
 
@@ -338,7 +388,7 @@ void FCesiumEditorModule::ShutdownModule() {
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
-
+  unregisterDetailCustomization();
   _pModule = nullptr;
 }
 
@@ -473,19 +523,13 @@ FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
 
 ACesium3DTileset*
 FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-  AActor* pNewActor = GEditor->AddActor(
-      pCurrentLevel,
-      ACesium3DTileset::StaticClass(),
-      FTransform(),
-      false,
-      RF_Transactional);
+  AActor* pNewActor = SpawnActorWithClass(ACesium3DTileset::StaticClass());
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
-  pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
-  if (assetID != -1) {
-    pTilesetActor->SetIonAssetID(assetID);
+  if (pTilesetActor) {
+    pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
+    if (assetID != -1) {
+      pTilesetActor->SetIonAssetID(assetID);
+    }
   }
   return pTilesetActor;
 }
@@ -613,12 +657,36 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-  return GEditor->AddActor(
+  ACesiumGeoreference* Georeference =
+      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
+
+  // Spawn the new Actor with the same world transform as the
+  // CesiumGeoreference. This way it will match the existing globe. The user may
+  // transform it from there (e.g., to offset one tileset from another).
+
+  // When we're spawning this Actor in a sub-level, the transform specified here
+  // is a world transform relative to the _persistent level_. It's not relative
+  // to the sub-level's origin. Strange but true! But it's helpful in this case
+  // because we're able to correctly spawn things like tilesets into sub-levels
+  // where the sub-level origin and the persistent-level origin don't coincide
+  // due to a LevelTransform.
+
+  AActor* NewActor = GEditor->AddActor(
       pCurrentLevel,
       actorClass,
-      FTransform(),
+      Georeference->GetActorTransform(),
       false,
       RF_Transactional);
+
+  // Make the new Actor a child of the CesiumGeoreference. Unless they're in
+  // different levels.
+  if (Georeference->GetLevel() == pCurrentLevel) {
+    NewActor->AttachToActor(
+        Georeference,
+        FAttachmentTransformRules::KeepWorldTransform);
+  }
+
+  return NewActor;
 }
 } // namespace
 
@@ -640,6 +708,14 @@ AActor* FCesiumEditorModule::SpawnDynamicPawn() {
 
 UClass* FCesiumEditorModule::GetCesiumSunSkyClass() {
   return ACesiumSunSky::StaticClass();
+}
+
+AActor* FCesiumEditorModule::SpawnBlankTileset() {
+  return SpawnActorWithClass(ACesium3DTileset::StaticClass());
+}
+
+AActor* FCesiumEditorModule::SpawnCartographicPolygon() {
+  return SpawnActorWithClass(ACesiumCartographicPolygon::StaticClass());
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {

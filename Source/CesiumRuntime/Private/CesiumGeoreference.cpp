@@ -1,10 +1,12 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumOriginShiftComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelSwitcherComponent.h"
@@ -35,7 +37,10 @@
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
 #include "Editor.h"
+#include "EditorLevelUtils.h"
 #include "EditorViewportClient.h"
+#include "GameFramework/Pawn.h"
+#include "LevelInstance/LevelInstanceEditorLevelStreaming.h"
 #include "Slate/SceneViewport.h"
 #endif
 
@@ -54,83 +59,124 @@ createCoordinateSystem(const FVector& center, double scale) {
       Ellipsoid::WGS84);
 }
 
-} // namespace
+ACesiumGeoreference* FindGeoreferenceAncestor(AActor* Actor) {
+  AActor* Current = Actor;
 
-/*static*/ const double ACesiumGeoreference::kMinimumScale = 1.0e-6;
-
-/*static*/ ACesiumGeoreference*
-ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
-  UWorld* world = WorldContextObject->GetWorld();
-  // This method can be called by actors even when opening the content browser.
-  if (!IsValid(world)) {
-    return nullptr;
+  while (IsValid(Current)) {
+    ACesiumGeoreference* Georeference = Cast<ACesiumGeoreference>(Current);
+    if (IsValid(Georeference)) {
+      return Georeference;
+    }
+    Current = Current->GetAttachParentActor();
   }
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("World name for GetDefaultGeoreference: %s"),
-      *world->GetFullName());
+
+  return nullptr;
+}
+
+ACesiumGeoreference*
+FindGeoreferenceWithTag(const UObject* WorldContextObject, const FName& Tag) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
 
   // Note: The actor iterator will be created with the
   // "EActorIteratorFlags::SkipPendingKill" flag,
   // meaning that we don't have to handle objects
   // that have been deleted. (This is the default,
   // but made explicit here)
-  ACesiumGeoreference* pGeoreference = nullptr;
+  ACesiumGeoreference* Georeference = nullptr;
   EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
                               EActorIteratorFlags::SkipPendingKill;
   for (TActorIterator<AActor> actorIterator(
-           world,
+           World,
            ACesiumGeoreference::StaticClass(),
            flags);
        actorIterator;
        ++actorIterator) {
     AActor* actor = *actorIterator;
-    if (actor->GetLevel() == world->PersistentLevel &&
-        actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
-      pGeoreference = Cast<ACesiumGeoreference>(actor);
+    if (actor->GetLevel() == World->PersistentLevel &&
+        actor->ActorHasTag(Tag)) {
+      Georeference = Cast<ACesiumGeoreference>(actor);
       break;
     }
   }
-  if (!pGeoreference) {
-    // Legacy method of finding Georeference, for backwards compatibility with
-    // existing projects
-    ACesiumGeoreference* pGeoreferenceCandidate =
-        FindObject<ACesiumGeoreference>(
-            world->PersistentLevel,
-            TEXT("CesiumGeoreferenceDefault"));
-    // Test if PendingKill
-    if (IsValid(pGeoreferenceCandidate)) {
-      pGeoreference = pGeoreferenceCandidate;
-    }
-  }
-  if (!pGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Creating default Georeference for actor %s"),
-        *WorldContextObject->GetName());
-    // Spawn georeference in the persistent level
-    FActorSpawnParameters spawnParameters;
-    spawnParameters.SpawnCollisionHandlingOverride =
-        ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    spawnParameters.OverrideLevel = world->PersistentLevel;
-    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
-    // Null check so the editor doesn't crash when it makes arbitrary calls to
-    // this function without a valid world context object.
-    if (pGeoreference) {
-      pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
-    }
 
-  } else {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Using existing Georeference %s for actor %s"),
-        *pGeoreference->GetName(),
-        *WorldContextObject->GetName());
+  return Georeference;
+}
+
+ACesiumGeoreference*
+FindGeoreferenceWithDefaultName(const UObject* WorldContextObject) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  ACesiumGeoreference* Candidate = FindObject<ACesiumGeoreference>(
+      World->PersistentLevel,
+      TEXT("CesiumGeoreferenceDefault"));
+
+  // Test if PendingKill
+  if (IsValid(Candidate)) {
+    return Candidate;
   }
-  return pGeoreference;
+
+  return nullptr;
+}
+
+ACesiumGeoreference*
+CreateDefaultGeoreference(const UObject* WorldContextObject, const FName& Tag) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  // Spawn georeference in the persistent level
+  FActorSpawnParameters spawnParameters;
+  spawnParameters.SpawnCollisionHandlingOverride =
+      ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+  spawnParameters.OverrideLevel = World->PersistentLevel;
+
+  ACesiumGeoreference* Georeference =
+      World->SpawnActor<ACesiumGeoreference>(spawnParameters);
+  if (Georeference) {
+    Georeference->Tags.Add(Tag);
+  }
+
+  return Georeference;
+}
+
+} // namespace
+
+/*static*/ const double ACesiumGeoreference::kMinimumScale = 1.0e-6;
+
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
+  if (!IsValid(WorldContextObject))
+    return nullptr;
+
+  ACesiumGeoreference* Georeference =
+      FindGeoreferenceWithTag(WorldContextObject, DEFAULT_GEOREFERENCE_TAG);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  Georeference = FindGeoreferenceWithDefaultName(WorldContextObject);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  Georeference =
+      CreateDefaultGeoreference(WorldContextObject, DEFAULT_GEOREFERENCE_TAG);
+
+  return Georeference;
+}
+
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultGeoreferenceForActor(AActor* Actor) {
+  if (!IsValid(Actor))
+    return nullptr;
+
+  ACesiumGeoreference* Georeference = FindGeoreferenceAncestor(Actor);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  return ACesiumGeoreference::GetDefaultGeoreference(Actor);
 }
 
 FVector ACesiumGeoreference::GetOriginLongitudeLatitudeHeight() const {
@@ -206,11 +252,11 @@ void ACesiumGeoreference::SetScale(double NewValue) {
 }
 
 APlayerCameraManager* ACesiumGeoreference::GetSubLevelCamera() const {
-  return this->SubLevelCamera;
+  return this->SubLevelCamera_DEPRECATED;
 }
 
 void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
-  this->SubLevelCamera = NewValue;
+  this->SubLevelCamera_DEPRECATED = NewValue;
 }
 
 #if WITH_EDITOR
@@ -296,8 +342,16 @@ FMatrix ACesiumGeoreference::ComputeEastSouthUpToUnrealTransformation(
     const FVector& UnrealLocation) const {
   FVector ecef =
       this->TransformUnrealPositionToEarthCenteredEarthFixed(UnrealLocation);
+  return this
+      ->ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+          ecef);
+}
+
+FMatrix ACesiumGeoreference::
+    ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+        const FVector& EarthCenteredEarthFixedPosition) const {
   LocalHorizontalCoordinateSystem newLocal =
-      createCoordinateSystem(ecef, this->GetScale());
+      createCoordinateSystem(EarthCenteredEarthFixedPosition, this->GetScale());
   return VecMath::createMatrix(
       newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }
@@ -312,7 +366,7 @@ FMatrix ACesiumGeoreference::ComputeUnrealToEastSouthUpTransformation(
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
   UWorld* pWorld = this->GetWorld();
-  if (!GEditor || pWorld->IsGameWorld()) {
+  if (!pWorld || !GEditor || pWorld->IsGameWorld()) {
     return;
   }
 
@@ -323,22 +377,32 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   FEditorViewportClient* pEditorViewportClient =
       static_cast<FEditorViewportClient*>(pViewportClient);
 
-  FRotator newViewRotation = this->TransformUnrealRotatorToEastSouthUp(
-      pEditorViewportClient->GetViewRotation(),
-      pEditorViewportClient->GetViewLocation());
+  // The viewport location / rotation is Unreal world coordinates. Transform
+  // into the georeference's reference frame. This way we'll compute the correct
+  // globe position even if the globe is transformed into the Unreal world.
+  FVector ViewLocation = pEditorViewportClient->GetViewLocation();
+  FQuat ViewRotation = pEditorViewportClient->GetViewRotation().Quaternion();
+
+  ViewLocation =
+      this->GetActorTransform().InverseTransformPosition(ViewLocation);
+  ViewRotation =
+      this->GetActorTransform().InverseTransformRotation(ViewRotation);
+
+  FRotator NewViewRotation = this->TransformUnrealRotatorToEastSouthUp(
+      ViewRotation.Rotator(),
+      ViewLocation);
 
   // camera local space to ECEF
-  FVector cameraEcefPosition =
-      this->TransformUnrealPositionToEarthCenteredEarthFixed(
-          pEditorViewportClient->GetViewLocation());
+  FVector CameraEcefPosition =
+      this->TransformUnrealPositionToEarthCenteredEarthFixed(ViewLocation);
 
   // Long/Lat/Height camera location, in degrees/meters (also our new target
   // georeference origin) When the location is too close to the center of the
   // earth, the result will be (0,0,0)
-  this->SetOriginEarthCenteredEarthFixed(cameraEcefPosition);
+  this->SetOriginEarthCenteredEarthFixed(CameraEcefPosition);
 
   // TODO: check for degeneracy ?
-  FVector cameraFront = newViewRotation.RotateVector(FVector::XAxisVector);
+  FVector cameraFront = NewViewRotation.RotateVector(FVector::XAxisVector);
   FVector cameraRight =
       FVector::CrossProduct(FVector::ZAxisVector, cameraFront).GetSafeNormal();
   FVector cameraUp =
@@ -347,7 +411,75 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   pEditorViewportClient->SetViewRotation(
       FMatrix(cameraFront, cameraRight, cameraUp, FVector::ZeroVector)
           .Rotator());
-  pEditorViewportClient->SetViewLocation(FVector::ZeroVector);
+  pEditorViewportClient->SetViewLocation(
+      this->GetActorTransform().TransformPosition(FVector::ZeroVector));
+}
+
+void ACesiumGeoreference::CreateSubLevelHere() {
+  UWorld* World = GetWorld();
+  if (!World || !GEditor || World->IsGameWorld()) {
+    return;
+  }
+
+  // Deactivate any previous sub-levels, so that setting the georeference origin
+  // doesn't change their origin, too.
+  this->SubLevelSwitcher->SetTargetSubLevel(nullptr);
+
+  // Update the georeference origin so that the new sub-level inherits it.
+  this->PlaceGeoreferenceOriginHere();
+
+  // Create a dummy Actor to add to the new sub-level, because
+  // CreateLevelInstanceFrom forbids an empty array for some reason.
+  TArray<AActor*> SubLevelActors;
+
+  FActorSpawnParameters SpawnParameters{};
+  SpawnParameters.NameMode =
+      FActorSpawnParameters::ESpawnActorNameMode::Requested;
+  SpawnParameters.Name = TEXT("Placeholder");
+  SpawnParameters.ObjectFlags = RF_Transactional;
+
+  AActor* PlaceholderActor = World->SpawnActor<AActor>(
+      FVector::ZeroVector,
+      FRotator::ZeroRotator,
+      SpawnParameters);
+  PlaceholderActor->SetActorLabel(TEXT("Placeholder"));
+
+  SubLevelActors.Add(PlaceholderActor);
+
+  // Create the new Level Instance Actor and corresponding streaming level.
+  FNewLevelInstanceParams LevelInstanceParams{};
+  LevelInstanceParams.PivotType = ELevelInstancePivotType::WorldOrigin;
+  LevelInstanceParams.Type = ELevelInstanceCreationType::LevelInstance;
+  LevelInstanceParams.SetExternalActors(false);
+
+  ULevelInstanceSubsystem* LevelInstanceSubsystem =
+      World->GetSubsystem<ULevelInstanceSubsystem>();
+  AActor* LevelInstance =
+      Cast<AActor>(LevelInstanceSubsystem->CreateLevelInstanceFrom(
+          SubLevelActors,
+          LevelInstanceParams));
+  if (!IsValid(LevelInstance)) {
+    // User canceled creation of the sub-level, so delete the placeholder we
+    // created.
+    PlaceholderActor->Destroy();
+    return;
+  }
+
+  UCesiumSubLevelComponent* LevelComponent =
+      Cast<UCesiumSubLevelComponent>(LevelInstance->AddComponentByClass(
+          UCesiumSubLevelComponent::StaticClass(),
+          false,
+          FTransform::Identity,
+          false));
+  LevelComponent->SetFlags(RF_Transactional);
+  LevelInstance->AddInstanceComponent(LevelComponent);
+
+  // Move the new level instance under the CesiumGeoreference.
+  LevelInstance->GetRootComponent()->SetMobility(
+      this->GetRootComponent()->Mobility);
+  LevelInstance->AttachToActor(
+      this,
+      FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void ACesiumGeoreference::_showSubLevelLoadRadii() const {
@@ -360,7 +492,7 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   }
 
   for (const auto& pLevelWeak :
-       this->SubLevelSwitcher->GetRegisteredSubLevels()) {
+       this->SubLevelSwitcher->GetRegisteredSubLevelsWeak()) {
     ALevelInstance* pLevel = pLevelWeak.Get();
     if (!IsValid(pLevel))
       continue;
@@ -393,14 +525,12 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
 #if WITH_EDITOR
   _showSubLevelLoadRadii();
 #endif
-
-  if (this->_shouldManageSubLevels()) {
-    _updateSublevelState();
-  }
 }
 
 void ACesiumGeoreference::Serialize(FArchive& Ar) {
   Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
 
   // Recompute derived values on load.
   if (Ar.IsLoading()) {
@@ -420,22 +550,6 @@ void ACesiumGeoreference::BeginPlay() {
         Warning,
         TEXT("CesiumGeoreference does not have a World in BeginPlay."));
     return;
-  }
-
-  if (!this->SubLevelCamera) {
-    // Find the first player's camera manager
-    APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
-    if (pPlayerController) {
-      this->SubLevelCamera = pPlayerController->PlayerCameraManager;
-    }
-
-    if (!this->SubLevelCamera) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "CesiumGeoreference could not find a FirstPlayerController or a corresponding PlayerCameraManager."));
-    }
   }
 
   UpdateGeoreference();
@@ -463,6 +577,94 @@ void ACesiumGeoreference::PostLoad() {
       IsValid(this->GetWorld()->WorldComposition) &&
       !this->GetWorld()->IsGameWorld()) {
     this->_createSubLevelsFromWorldComposition();
+  }
+
+  const int32 CesiumVersion =
+      this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::OriginShiftComponent &&
+      !this->SubLevelSwitcher->GetRegisteredSubLevelsWeak().IsEmpty()) {
+    // In previous versions, the CesiumGeoreference managed origin shifting
+    // based on a SubLevelCamera, which defaulted to the PlayerCameraManager of
+    // the World's `GetFirstPlayerController()`.
+
+    // Backward compatibility for this is tricky, but we can make a decent
+    // attempt that will work in a lot of cases. And this is just an unfortunate
+    // v2.0 breakage for any remaining cases.
+
+    AActor* SubLevelActor = nullptr;
+
+    if (this->SubLevelCamera_DEPRECATED) {
+      // An explicit SubLevelCamera_DEPRECATED is specified. If it has a target
+      // Actor, attach a CesiumOriginShiftComponent to that Actor.
+      SubLevelActor = this->SubLevelCamera_DEPRECATED->ViewTarget.Target.Get();
+
+      if (!SubLevelActor) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("An explicit SubLevelCamera was specified on this "
+                 "CesiumGeoreference, but its ViewTarget is not a valid "
+                 "Actor, so a CesiumOriginShiftComponent could not be added "
+                 "automatically. You must manually add a "
+                 "CesiumOriginShiftComponent to the Actor whose position "
+                 "should be used to control sub-level switching."));
+      }
+    } else {
+      // No explicit SubLevelCamera_DEPRECATED, so try to find a Pawn set to
+      // auto-possess player 0.
+      for (TActorIterator<APawn> it(
+               GetWorld(),
+               APawn::StaticClass(),
+               EActorIteratorFlags::SkipPendingKill);
+           it;
+           ++it) {
+        if (it->AutoPossessPlayer == EAutoReceiveInput::Player0) {
+          SubLevelActor = *it;
+          break;
+        }
+      }
+
+      if (!SubLevelActor) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT(
+                "Could not find a Pawn in the level set to auto-possess player "
+                "0, so a CesiumOriginShiftComponent could not be added "
+                "automatically. You must manually add a "
+                "CesiumOriginShiftComponent to the Actor whose position "
+                "should be used to control sub-level switching."));
+      }
+    }
+
+    if (SubLevelActor) {
+      // If this is a Blueprint object, like DynamicPawn, its construction
+      // scripts may not have been run yet at this point. Doing so might cause
+      // an origin shift component to be added. So we force it to happen here so
+      // that we don't end up adding a duplicate CesiumOriginShiftComponent.
+      SubLevelActor->RerunConstructionScripts();
+      if (SubLevelActor->FindComponentByClass<UCesiumOriginShiftComponent>() ==
+          nullptr) {
+
+        UCesiumOriginShiftComponent* OriginShift =
+            Cast<UCesiumOriginShiftComponent>(
+                SubLevelActor->AddComponentByClass(
+                    UCesiumOriginShiftComponent::StaticClass(),
+                    false,
+                    FTransform::Identity,
+                    false));
+        OriginShift->SetFlags(RF_Transactional);
+        SubLevelActor->AddInstanceComponent(OriginShift);
+
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("Added CesiumOriginShiftComponent to %s in order to preserve "
+                 "backward compatibility for sub-level switching."),
+            *SubLevelActor->GetName());
+      }
+    }
   }
 #endif // WITH_EDITOR
 }
@@ -511,7 +713,7 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
   }
 
   if (this->CesiumSubLevels_DEPRECATED.IsEmpty() ||
-      !this->_shouldManageSubLevels())
+      !this->GetLevel()->IsPersistentLevel())
     return;
 
   this->Modify();
@@ -539,6 +741,8 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
 
     FActorSpawnParameters spawnParameters{};
     spawnParameters.Name = FName(pFound->LevelName);
+    spawnParameters.NameMode =
+        FActorSpawnParameters::ESpawnActorNameMode::Requested;
     spawnParameters.ObjectFlags = RF_Transactional;
 
     ALevelInstance* pLevelInstance = pWorld->SpawnActor<ALevelInstance>(
@@ -574,8 +778,8 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
     pLevelComponent->SetEnabled(pFound->Enabled);
     pLevelComponent->SetLoadRadius(pFound->LoadRadius);
 
-    // But if the georeference origin is close to this sub-level's origin, make
-    // this the active sub-level.
+    // But if the georeference origin is close to this sub-level's origin,
+    // make this the active sub-level.
     if (FMath::IsNearlyEqual(
             this->OriginLongitude,
             pFound->LevelLongitude,
@@ -591,7 +795,7 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
     pLevelInstance->LoadLevelInstance();
   }
 
-  this->SubLevelSwitcher->SetTarget(pActiveSubLevel);
+  this->SubLevelSwitcher->SetTargetSubLevel(pActiveSubLevel);
 
   this->CesiumSubLevels_DEPRECATED.Empty();
 
@@ -640,10 +844,10 @@ void ACesiumGeoreference::UpdateGeoreference() {
 
   // If we're in a sub-level, update its origin as well.
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->SubLevelSwitcher;
-  if (IsValid(pSwitcher) && pSwitcher->GetTarget() != nullptr) {
-    if (pSwitcher->GetTarget() == pSwitcher->GetCurrent() ||
-        pSwitcher->GetCurrent() == nullptr) {
-      ALevelInstance* pTarget = pSwitcher->GetTarget();
+  if (IsValid(pSwitcher) && pSwitcher->GetTargetSubLevel() != nullptr) {
+    if (pSwitcher->GetTargetSubLevel() == pSwitcher->GetCurrentSubLevel() ||
+        pSwitcher->GetCurrentSubLevel() == nullptr) {
+      ALevelInstance* pTarget = pSwitcher->GetTargetSubLevel();
       UCesiumSubLevelComponent* pComponent =
           pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
       if (IsValid(pComponent)) {
@@ -675,69 +879,6 @@ GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
     FName("DEFAULT_GEOREFERENCE");
 
-bool ACesiumGeoreference::_updateSublevelState() {
-  const TArray<TWeakObjectPtr<ALevelInstance>>& sublevels =
-      this->SubLevelSwitcher->GetRegisteredSubLevels();
-
-  if (sublevels.Num() == 0) {
-    // If we don't have any known sub-levels, bail quickly to save ourselves a
-    // little work.
-    return false;
-  }
-
-  if (!IsValid(this->SubLevelCamera)) {
-    return false;
-  }
-
-  UWorld* pWorld = this->GetWorld();
-  const FIntVector& originLocation = pWorld->OriginLocation;
-  const FMinimalViewInfo& pov = this->SubLevelCamera->ViewTarget.POV;
-  const FVector& cameraLocation = pov.Location;
-
-  // Transform camera from World to Georeference local frame
-  FVector cameraRelativeToGeoreference =
-      this->GetActorTransform().TransformPosition(cameraLocation);
-
-  // Transform camera from Georeference local frame to ECEF
-  FVector cameraEcef = this->TransformUnrealPositionToEarthCenteredEarthFixed(
-      cameraRelativeToGeoreference);
-
-  ALevelInstance* pClosestActiveLevel = nullptr;
-  double closestLevelDistance = std::numeric_limits<double>::max();
-
-  for (int32 i = 0; i < sublevels.Num(); ++i) {
-    ALevelInstance* pCurrent = sublevels[i].Get();
-    if (!IsValid(pCurrent))
-      continue;
-
-    UCesiumSubLevelComponent* pComponent =
-        pCurrent->FindComponentByClass<UCesiumSubLevelComponent>();
-    if (!IsValid(pComponent))
-      continue;
-
-    if (!pComponent->GetEnabled())
-      continue;
-
-    FVector levelEcef =
-        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-            FVector(
-                pComponent->GetOriginLongitude(),
-                pComponent->GetOriginLatitude(),
-                pComponent->GetOriginHeight()));
-
-    double levelDistance = FVector::Distance(levelEcef, cameraEcef);
-    if (levelDistance < pComponent->GetLoadRadius() &&
-        levelDistance < closestLevelDistance) {
-      pClosestActiveLevel = pCurrent;
-      closestLevelDistance = levelDistance;
-    }
-  }
-
-  this->SubLevelSwitcher->SetTarget(pClosestActiveLevel);
-
-  return pClosestActiveLevel != nullptr;
-}
-
 void ACesiumGeoreference::_updateCoordinateSystem() {
   if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     FVector origin = this->GetOriginLongitudeLatitudeHeight();
@@ -757,9 +898,4 @@ void ACesiumGeoreference::_updateCoordinateSystem() {
         glm::dvec4(0.0, 0.0, 0.0, 1.0));
     this->_coordinateSystem = LocalHorizontalCoordinateSystem(localToEcef);
   }
-}
-
-bool ACesiumGeoreference::_shouldManageSubLevels() const {
-  // Only a Georeference in the PersistentLevel should manage sub-levels.
-  return this->GetLevel()->IsPersistentLevel();
 }

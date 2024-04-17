@@ -1,24 +1,25 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumPolygonRasterOverlay.h"
-#include "Cesium3DTilesSelection/RasterizedPolygonsOverlay.h"
 #include "Cesium3DTilesSelection/RasterizedPolygonsTileExcluder.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "CesiumBingMapsRasterOverlay.h"
 #include "CesiumCartographicPolygon.h"
+#include "CesiumRasterOverlays/RasterizedPolygonsOverlay.h"
 
-using namespace CesiumGeospatial;
 using namespace Cesium3DTilesSelection;
+using namespace CesiumGeospatial;
+using namespace CesiumRasterOverlays;
 
 UCesiumPolygonRasterOverlay::UCesiumPolygonRasterOverlay()
     : UCesiumRasterOverlay() {
   this->MaterialLayerKey = TEXT("Clipping");
 }
 
-std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
+std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumPolygonRasterOverlay::CreateOverlay(
-    const Cesium3DTilesSelection::RasterOverlayOptions& options) {
+    const CesiumRasterOverlays::RasterOverlayOptions& options) {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
 
   FTransform worldToTileset =
@@ -37,7 +38,7 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
     polygons.emplace_back(std::move(polygon));
   }
 
-  return std::make_unique<Cesium3DTilesSelection::RasterizedPolygonsOverlay>(
+  return std::make_unique<CesiumRasterOverlays::RasterizedPolygonsOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
       this->InvertSelection,

@@ -38,11 +38,10 @@ class UCesiumSubLevelSwitcherComponent;
  * In the Editor, the currently-active sub-level is selected by clicking the
  * "Eye" icon next to the Level Instance in the Outliner.
  *
- * At runtime, the currently-active sub-level is selected by the object
- * identified by the "Sub Level Camera" property on the "Cesium Georeference".
- * Only if the "Sub Level Camera" is inside a sub-level's "Load Radius" will
- * that sub-level be activated. If multiple sub-levels are in range, only the
- * closest one will be activated.
+ * At runtime, the currently-active sub-level is selected by the Actor with a
+ * CesiumOriginShiftComponent attached to it. If this Actor is inside a
+ * sub-level's "Load Radius" that sub-level will be activated. If multiple
+ * sub-levels are in range, only the closest one will be activated.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
@@ -172,18 +171,10 @@ public:
    * the value of the Georeference property if it is set. Otherwise, finds a
    * Georeference in the World and returns it, creating it if necessary. The
    * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
+   * return the same instance, unless ForceReresolve is true.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* ResolveGeoreference();
-
-  /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time ResolveGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InvalidateResolvedGeoreference();
+  ACesiumGeoreference* ResolveGeoreference(bool bForceReresolve = false);
 
   /**
    * Sets the longitude (X), latitude (Y), and height (Z) of this sub-level's
@@ -201,6 +192,11 @@ public:
    * Level Instance's Location to (0,0,0). This improves the precision of the
    * objects in the sub-level as well as makes the Load Radius more sensible.
    *
+   * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
+   * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
+   * be updated based on the new georeference origin. You should Commit this
+   * change.
+   *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
    * or attached to an actor with that component. Ensure that static actors only
@@ -208,6 +204,30 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginAtSubLevelOrigin();
+
+  /**
+   * Places the sub-level's origin at the camera's current location. Rotates
+   * the globe so the current longitude/latitude/height of the camera is at the
+   * Unreal origin of this sub-level. The camera is also teleported to the new
+   * Unreal origin and rotated so that the view direction is maintained.
+   *
+   * This function is similar to "Place Georeference Origin Here" on the
+   * CesiumGeoreference, except that this moves the georeference origin while
+   * also ensuring that the sub-level content stays in the same place on the
+   * globe by adjusting the Level Instance's transform.
+   *
+   * If your sub-level has any Cesium3DTilesets, Cesium for Unreal will enter
+   * Edit mode for the sub-level and the Cesium3DTilesets' transformations will
+   * be updated based on the new georeference origin. You should Commit this
+   * change.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sub-levels.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void PlaceGeoreferenceOriginHere();
 #endif
 
   /**
@@ -244,6 +264,15 @@ protected:
    * changes to properties.
    */
   virtual void OnUnregister() override;
+
+#if WITH_EDITOR
+  /**
+   * Called by the Editor to check if it's ok to edit a property on this object.
+   * Used to disable all fields on this component when editing the sub-level
+   * instance that this component is attached to.
+   */
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
+#endif
 
 private:
   /**
@@ -347,6 +376,7 @@ private:
    */
   UPROPERTY(
       Transient,
+      VisibleAnywhere,
       BlueprintReadOnly,
       BlueprintGetter = GetResolvedGeoreference,
       Category = "Cesium",
@@ -366,4 +396,13 @@ private:
    * warning and returns nullptr.
    */
   ALevelInstance* _getLevelInstance() const noexcept;
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time ResolveGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  void _invalidateResolvedGeoreference();
+
+  void PlaceOriginAtEcef(const FVector& NewOriginEcef);
 };

@@ -6,7 +6,7 @@
 #include "SceneInterface.h"
 #include "StaticMeshResources.h"
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION > 1
+#if ENGINE_VERSION_5_2_OR_HIGHER
 #include "DataDrivenShaderPlatformInfo.h"
 #endif
 

@@ -1,15 +1,20 @@
 #include "CesiumSubLevelComponent.h"
+#include "Cesium3DTileset.h"
 #include "CesiumActors.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumUtility/Math.h"
+#include "CesiumWgs84Ellipsoid.h"
+#include "EngineUtils.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "VecMath.h"
+#include <glm/gtc/matrix_inverse.hpp>
 
 #if WITH_EDITOR
 #include "EditorViewportClient.h"
+#include "LevelInstance/LevelInstanceLevelStreaming.h"
 #include "ScopedTransaction.h"
 #endif
 
@@ -62,7 +67,7 @@ UCesiumSubLevelComponent::GetGeoreference() const {
 void UCesiumSubLevelComponent::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
   this->Georeference = NewGeoreference;
-  this->InvalidateResolvedGeoreference();
+  this->_invalidateResolvedGeoreference();
 
   ALevelInstance* pOwner = this->_getLevelInstance();
   if (pOwner) {
@@ -77,32 +82,28 @@ ACesiumGeoreference* UCesiumSubLevelComponent::GetResolvedGeoreference() const {
   return this->ResolvedGeoreference;
 }
 
-ACesiumGeoreference* UCesiumSubLevelComponent::ResolveGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
+ACesiumGeoreference*
+UCesiumSubLevelComponent::ResolveGeoreference(bool bForceReresolve) {
+  if (IsValid(this->ResolvedGeoreference) && !bForceReresolve) {
     return this->ResolvedGeoreference;
   }
 
+  ACesiumGeoreference* Previous = this->ResolvedGeoreference;
+  ACesiumGeoreference* Next = nullptr;
+
   if (IsValid(this->Georeference.Get())) {
-    this->ResolvedGeoreference = this->Georeference.Get();
+    Next = this->Georeference.Get();
   } else {
-    this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
+    Next =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->GetOwner());
   }
 
+  if (Previous != Next) {
+    this->_invalidateResolvedGeoreference();
+  }
+
+  this->ResolvedGeoreference = Next;
   return this->ResolvedGeoreference;
-}
-
-void UCesiumSubLevelComponent::InvalidateResolvedGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
-    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-    if (pSwitcher) {
-      ALevelInstance* pOwner = this->_getLevelInstance();
-      if (pOwner) {
-        pSwitcher->UnregisterSubLevel(Cast<ALevelInstance>(pOwner));
-      }
-    }
-  }
-  this->ResolvedGeoreference = nullptr;
 }
 
 void UCesiumSubLevelComponent::SetOriginLongitudeLatitudeHeight(
@@ -119,6 +120,28 @@ void UCesiumSubLevelComponent::SetOriginLongitudeLatitudeHeight(
 
 #if WITH_EDITOR
 
+namespace {
+
+ULevelStreaming* getLevelStreamingForSubLevel(ALevelInstance* SubLevel) {
+  if (!IsValid(SubLevel))
+    return nullptr;
+
+  ULevelStreaming* const* ppStreaming =
+      SubLevel->GetWorld()->GetStreamingLevels().FindByPredicate(
+          [SubLevel](ULevelStreaming* pStreaming) {
+            ULevelStreamingLevelInstance* pInstanceStreaming =
+                Cast<ULevelStreamingLevelInstance>(pStreaming);
+            if (!pInstanceStreaming)
+              return false;
+
+            return pInstanceStreaming->GetLevelInstance() == SubLevel;
+          });
+
+  return ppStreaming ? *ppStreaming : nullptr;
+}
+
+} // namespace
+
 void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (!IsValid(pGeoreference)) {
@@ -130,72 +153,140 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
     return;
   }
 
-  AActor* pOwner = this->GetOwner();
-
+  ALevelInstance* pOwner = this->_getLevelInstance();
   if (!IsValid(pOwner)) {
+    return;
+  }
+
+  USceneComponent* Root = pOwner->GetRootComponent();
+  if (!IsValid(Root)) {
+    return;
+  }
+
+  FVector UnrealPosition =
+      pGeoreference->GetActorTransform().InverseTransformPosition(
+          pOwner->GetActorLocation());
+
+  FVector NewOriginEcef =
+      pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
+          UnrealPosition);
+  this->PlaceOriginAtEcef(NewOriginEcef);
+}
+
+void UCesiumSubLevelComponent::PlaceGeoreferenceOriginHere() {
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (!IsValid(pGeoreference)) {
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("CesiumSubLevelComponent does not have an owning Actor."));
+        TEXT(
+            "Cannot place the origin because the sub-level does not have a CesiumGeoreference."));
+    return;
+  }
+
+  FViewport* pViewport = GEditor->GetActiveViewport();
+  if (!pViewport)
+    return;
+
+  FViewportClient* pViewportClient = pViewport->GetClient();
+  if (!pViewportClient)
+    return;
+
+  FEditorViewportClient* pEditorViewportClient =
+      static_cast<FEditorViewportClient*>(pViewportClient);
+
+  FVector ViewLocation = pEditorViewportClient->GetViewLocation();
+
+  // Transform the world-space view location to the CesiumGeoreference's frame.
+  ViewLocation =
+      pGeoreference->GetActorTransform().InverseTransformPosition(ViewLocation);
+
+  FVector CameraEcefPosition =
+      pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
+          ViewLocation);
+  this->PlaceOriginAtEcef(CameraEcefPosition);
+}
+
+void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (!IsValid(pGeoreference)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot place the origin because the sub-level does not have a CesiumGeoreference."));
+    return;
+  }
+
+  ALevelInstance* pOwner = this->_getLevelInstance();
+  if (!IsValid(pOwner)) {
+    return;
+  }
+
+  if (pOwner->IsEditing()) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "The georeference origin cannot be moved while the sub-level is being edited."));
     return;
   }
 
   // Another sub-level might be active right now, so we construct the correct
   // GeoTransforms instead of using the CesiumGeoreference's.
   const Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
-  glm::dvec3 originEcef =
-      ellipsoid.cartographicToCartesian(Cartographic::fromDegrees(
-          this->OriginLongitude,
-          this->OriginLatitude,
-          this->OriginHeight));
-  GeoTransforms currentTransforms(
+  FVector CurrentOriginEcef =
+      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+          FVector(
+              this->OriginLongitude,
+              this->OriginLatitude,
+              this->OriginHeight));
+  GeoTransforms CurrentTransforms(
       ellipsoid,
-      originEcef,
+      VecMath::createVector3D(CurrentOriginEcef),
       pGeoreference->GetScale() / 100.0);
 
   // Construct new geotransforms at the new origin
-  glm::dvec3 levelCenterEcef = currentTransforms.TransformUnrealToEcef(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(pOwner)),
-      VecMath::createVector3D(pOwner->GetActorLocation()));
-
-  std::optional<Cartographic> maybeCartographic =
-      ellipsoid.cartesianToCartographic(levelCenterEcef);
-  if (!maybeCartographic) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "Cannot place the origin because the level instance's position on the globe cannot be converted to longitude/latitude/height. It may be too close to the center of the Earth."));
-    return;
-  }
-
-  GeoTransforms newTransforms(
+  GeoTransforms NewTransforms(
       ellipsoid,
-      levelCenterEcef,
+      VecMath::createVector3D(NewOriginEcef),
       pGeoreference->GetScale() / 100.0);
 
   // Transform the level instance from the old origin to the new one.
-  glm::dmat4 oldToEcef =
-      currentTransforms.GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
-  glm::dmat4 ecefToNew =
-      newTransforms.GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
-  glm::dmat4 oldToNew = ecefToNew * oldToEcef;
-  glm::dmat4 oldTransform =
+  glm::dmat4 OldToEcef =
+      CurrentTransforms.GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+  glm::dmat4 EcefToNew =
+      NewTransforms.GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+  glm::dmat4 OldToNew = EcefToNew * OldToEcef;
+  glm::dmat4 OldTransform =
       VecMath::createMatrix4D(pOwner->GetActorTransform().ToMatrixWithScale());
-  glm::dmat4 newTransform = oldToNew * oldTransform;
+  glm::dmat4 NewLevelTransform = OldToNew * OldTransform;
 
-  FScopedTransaction transaction(
-      FText::FromString("Place Georeference Origin At SubLevel Origin"));
+  FScopedTransaction transaction(FText::FromString("Place Origin At Location"));
+
+  ULevelStreaming* LevelStreaming = getLevelStreamingForSubLevel(pOwner);
+  ULevel* Level =
+      IsValid(LevelStreaming) ? LevelStreaming->GetLoadedLevel() : nullptr;
+
+  bool bHasTilesets = Level && IsValid(Level) &&
+                      Level->Actors.FindByPredicate([](AActor* Actor) {
+                        return Cast<ACesium3DTileset>(Actor) != nullptr;
+                      }) != nullptr;
+
+  FTransform OldLevelTransform;
+  if (bHasTilesets) {
+    OldLevelTransform = LevelStreaming->LevelTransform;
+  }
 
   pOwner->Modify();
-  pOwner->SetActorTransform(FTransform(VecMath::createMatrix(newTransform)));
+  pOwner->SetActorTransform(
+      FTransform(VecMath::createMatrix(NewLevelTransform)));
 
   // Set the new sub-level georeference origin.
   this->Modify();
-  this->SetOriginLongitudeLatitudeHeight(FVector(
-      CesiumUtility::Math::radiansToDegrees(maybeCartographic->longitude),
-      CesiumUtility::Math::radiansToDegrees(maybeCartographic->latitude),
-      maybeCartographic->height));
+  this->SetOriginLongitudeLatitudeHeight(
+      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+          NewOriginEcef));
 
   // Also update the viewport so the level doesn't appear to shift.
   FViewport* pViewport = GEditor->GetActiveViewport();
@@ -203,31 +294,68 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
   FEditorViewportClient* pEditorViewportClient =
       static_cast<FEditorViewportClient*>(pViewportClient);
 
-  glm::dvec3 viewLocation =
+  glm::dvec3 ViewLocation =
       VecMath::createVector3D(pEditorViewportClient->GetViewLocation());
-  viewLocation = glm::dvec3(oldToNew * glm::dvec4(viewLocation, 1.0));
-  pEditorViewportClient->SetViewLocation(VecMath::createVector(viewLocation));
+  ViewLocation = glm::dvec3(OldToNew * glm::dvec4(ViewLocation, 1.0));
+  pEditorViewportClient->SetViewLocation(VecMath::createVector(ViewLocation));
 
-  glm::dmat4 viewportRotation = VecMath::createMatrix4D(
+  glm::dmat4 ViewportRotation = VecMath::createMatrix4D(
       pEditorViewportClient->GetViewRotation().Quaternion().ToMatrix());
-  viewportRotation = oldToNew * viewportRotation;
+  ViewportRotation = OldToNew * ViewportRotation;
 
   // At this point, viewportRotation will keep the viewport orientation in ECEF
   // exactly as it was before. But that means if it was tilted before, it will
   // still be tilted. We instead want an orientation that maintains the exact
   // same forward direction but has an "up" direction aligned with +Z.
-  glm::dvec3 cameraFront = glm::normalize(glm::dvec3(viewportRotation[0]));
-  glm::dvec3 cameraRight =
-      glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
-  glm::dvec3 cameraUp = glm::normalize(glm::cross(cameraFront, cameraRight));
+  glm::dvec3 CameraFront = glm::normalize(glm::dvec3(ViewportRotation[0]));
+  glm::dvec3 CameraRight =
+      glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), CameraFront));
+  glm::dvec3 CameraUp = glm::normalize(glm::cross(CameraFront, CameraRight));
 
   pEditorViewportClient->SetViewRotation(
       FMatrix(
-          FVector(cameraFront.x, cameraFront.y, cameraFront.z),
-          FVector(cameraRight.x, cameraRight.y, cameraRight.z),
-          FVector(cameraUp.x, cameraUp.y, cameraUp.z),
+          FVector(CameraFront.x, CameraFront.y, CameraFront.z),
+          FVector(CameraRight.x, CameraRight.y, CameraRight.z),
+          FVector(CameraUp.x, CameraUp.y, CameraUp.z),
           FVector::ZeroVector)
           .Rotator());
+
+  // Restore the previous tileset transforms. We'll enter Edit mode of the
+  // sub-level, make the modifications, and let the user choose whether to
+  // commit them.
+  if (bHasTilesets) {
+    pOwner->EnterEdit();
+    Level = pOwner->GetLoadedLevel();
+    for (AActor* Actor : Level->Actors) {
+      ACesium3DTileset* Tileset = Cast<ACesium3DTileset>(Actor);
+      if (!IsValid(Tileset))
+        continue;
+
+      USceneComponent* Root = Tileset->GetRootComponent();
+      if (!IsValid(Root))
+        continue;
+
+      // Change of basis of the old tileset relative transform to the new
+      // coordinate system.
+      glm::dmat4 NewToEcef =
+          NewTransforms.GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+      glm::dmat4 oldRelativeTransform = VecMath::createMatrix4D(
+          (Root->GetRelativeTransform() * OldLevelTransform)
+              .ToMatrixWithScale());
+      glm::dmat4 NewToOld = glm::affineInverse(OldToNew);
+      glm::dmat4 RelativeTransformInNew =
+          glm::affineInverse(NewLevelTransform) * OldToNew *
+          oldRelativeTransform * NewToOld;
+
+      Tileset->Modify();
+      Root->Modify();
+      Root->SetRelativeTransform(
+          FTransform(VecMath::createMatrix(RelativeTransformInNew)),
+          false,
+          nullptr,
+          ETeleportType::TeleportPhysics);
+    }
+  }
 }
 
 #endif // #if WITH_EDITOR
@@ -247,8 +375,8 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
   if (!pSwitcher)
     return;
 
-  ALevelInstance* pCurrent = pSwitcher->GetCurrent();
-  ALevelInstance* pTarget = pSwitcher->GetTarget();
+  ALevelInstance* pCurrent = pSwitcher->GetCurrentSubLevel();
+  ALevelInstance* pTarget = pSwitcher->GetTargetSubLevel();
 
   // This sub-level's origin is active if it is the current level or if it's the
   // target level and there is no current level.
@@ -268,7 +396,7 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
 }
 
 void UCesiumSubLevelComponent::BeginDestroy() {
-  this->InvalidateResolvedGeoreference();
+  this->_invalidateResolvedGeoreference();
   Super::BeginDestroy();
 }
 
@@ -290,7 +418,7 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
         !this->GetWorld()->IsGameWorld()) {
       ALevelInstance* pOwner = Cast<ALevelInstance>(this->GetOwner());
       if (IsValid(pOwner) && !pOwner->IsTemporarilyHiddenInEditor(true)) {
-        pSwitcher->SetTarget(pOwner);
+        pSwitcher->SetTargetSubLevel(pOwner);
       }
     }
 #endif
@@ -403,6 +531,15 @@ void UCesiumSubLevelComponent::OnUnregister() {
     pSwitcher->UnregisterSubLevel(pOwner);
 }
 
+#if WITH_EDITOR
+bool UCesiumSubLevelComponent::CanEditChange(
+    const FProperty* InProperty) const {
+  // Don't allow editing this property if the parent Actor isn't editable.
+  return Super::CanEditChange(InProperty) &&
+         (!IsValid(GetOwner()) || GetOwner()->CanEditChange(InProperty));
+}
+#endif
+
 UCesiumSubLevelSwitcherComponent*
 UCesiumSubLevelComponent::_getSwitcher() noexcept {
   // Ignore transient level instances, like those that are created when
@@ -424,4 +561,17 @@ ALevelInstance* UCesiumSubLevelComponent::_getLevelInstance() const noexcept {
             "A CesiumSubLevelComponent can only be attached a LevelInstance Actor."));
   }
   return pOwner;
+}
+
+void UCesiumSubLevelComponent::_invalidateResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+    if (pSwitcher) {
+      ALevelInstance* pOwner = this->_getLevelInstance();
+      if (pOwner) {
+        pSwitcher->UnregisterSubLevel(Cast<ALevelInstance>(pOwner));
+      }
+    }
+  }
+  this->ResolvedGeoreference = nullptr;
 }

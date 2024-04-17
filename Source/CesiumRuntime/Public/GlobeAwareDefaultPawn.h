@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -13,6 +13,7 @@
 class ACesiumGeoreference;
 class UCesiumGlobeAnchorComponent;
 class UCurveFloat;
+class UCesiumFlyToComponent;
 
 /**
  * The delegate for when the pawn finishes flying
@@ -73,45 +74,6 @@ public:
    */
   virtual FRotator GetBaseAimRotation() const override;
 
-  /**
-   * This curve dictates what percentage of the max altitude the pawn should
-   * take at a given time on the curve. This curve must be kept in the 0 to
-   * 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} dictates the
-   * actual max altitude at each point along the curve.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  UCurveFloat* FlyToAltitudeProfileCurve;
-
-  /**
-   * This curve is used to determine the progress percentage for all the other
-   * curves. This allows us to accelerate and deaccelerate as wanted throughout
-   * the curve.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  UCurveFloat* FlyToProgressCurve;
-
-  /**
-   * This curve dictates the maximum altitude at each point along the curve.
-   * This can be used in conjunction with the {@see FlyToAltitudeProfileCurve}
-   * to allow the pawn to take some altitude during the flight.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  UCurveFloat* FlyToMaximumAltitudeCurve;
-
-  /**
-   * The length in seconds that the flight should last.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium",
-      meta = (ClampMin = 0.0))
-  float FlyToDuration = 5.0f;
-
-  /**
-   * The granularity in degrees with which keypoints should be generated for
-   * the flight interpolation.
-   */
   UPROPERTY(
       meta =
           (DeprecatedProperty,
@@ -119,19 +81,21 @@ public:
                "FlyToGranularityDegrees has been deprecated. This property no longer needs to be set."))
   float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
-  /**
-   * A delegate that will be called whenever the pawn finishes flying
-   *
-   */
-  UPROPERTY(BlueprintAssignable, Category = "Cesium");
-  FCompletedFlight OnFlightComplete;
+  UPROPERTY(
+      BlueprintAssignable,
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Use OnFlightComplete on CesiumFlyToComponent instead."))
+  FCompletedFlight OnFlightComplete_DEPRECATED;
 
-  /**
-   * A delegate that will be called when a pawn's flying is interrupted
-   *
-   */
-  UPROPERTY(BlueprintAssignable, Category = "Cesium");
-  FInterruptedFlight OnFlightInterrupt;
+  UPROPERTY(
+      BlueprintAssignable,
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Use OnFlightInterrupted on CesiumFlyToComponent instead."))
+  FInterruptedFlight OnFlightInterrupt_DEPRECATED;
 
   /**
    * Gets the transformation from globe's reference frame to the Unreal world
@@ -149,20 +113,12 @@ public:
    * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
    * {@see FlyToMaximumAltitudeCurve}, and {@see FlyToDuration}
    */
-  void FlyToLocationECEF(
-      const glm::dvec3& ECEFDestination,
-      double YawAtDestination,
-      double PitchAtDestination,
-      bool CanInterruptByMoving);
-
-  /**
-   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed
-   * (ECEF) destination such that the camera ends at the specified yaw and
-   * pitch. The characteristics of the flight can be configured with
-   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
-   * {@see FlyToMaximumAltitudeCurve}, and {@see FlyToDuration}
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(
+      BlueprintCallable,
+      meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use FlyToEarthCenteredEarthFixed on CesiumFlyToComponent instead."))
   void FlyToLocationECEF(
       const FVector& ECEFDestination,
       double YawAtDestination,
@@ -175,43 +131,32 @@ public:
    * ends at the given yaw and pitch. The characteristics of the flight can be
    * configured with {@see FlyToAltitudeProfileCurve},
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
-   * and {@see FlyToDuration}
-   */
-  void FlyToLocationLongitudeLatitudeHeight(
-      const glm::dvec3& LongitudeLatitudeHeightDestination,
-      double YawAtDestination,
-      double PitchAtDestination,
-      bool CanInterruptByMoving);
-
-  /**
-   * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
-   * latitude in degrees (y), and height in meters (z) such that the camera
-   * ends at the given yaw and pitch. The characteristics of the flight can be
-   * configured with {@see FlyToAltitudeProfileCurve},
-   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(
+      BlueprintCallable,
+      meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use FlyToLocationLongitudeLatitudeHeight on CesiumFlyToComponent instead."))
   void FlyToLocationLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeightDestination,
       double YawAtDestination,
       double PitchAtDestination,
       bool CanInterruptByMoving);
 
-  virtual bool ShouldTickIfViewportsOnly() const override;
-  virtual void Tick(float DeltaSeconds) override;
-  virtual void PostLoad() override;
-  // virtual void Serialize(FArchive& Ar) override;
-
 protected:
+  virtual void Serialize(FArchive& Ar) override;
+  virtual void PostLoad() override;
+
   /**
    * THIS PROPERTY IS DEPRECATED.
    *
    * Get the Georeference instance from the Globe Anchor Component instead.
    */
   UPROPERTY(
-      BlueprintReadOnly,
       Category = "Cesium",
+      BlueprintReadOnly,
       BlueprintGetter = GetGeoreference,
       Meta =
           (DeprecatedProperty,
@@ -233,44 +178,72 @@ protected:
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
 private:
+  UPROPERTY(
+      Category = "Cesium",
+      BlueprintGetter = GetFlyToProgressCurve_DEPRECATED,
+      BlueprintSetter = SetFlyToProgressCurve_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use ProgressCurve on CesiumFlyToComponent instead."))
+  UCurveFloat* FlyToProgressCurve_DEPRECATED;
+  UFUNCTION(BlueprintGetter)
+  UCurveFloat* GetFlyToProgressCurve_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToProgressCurve_DEPRECATED(UCurveFloat* NewValue);
+
+  UPROPERTY(
+      Category = "Cesium",
+      BlueprintGetter = GetFlyToAltitudeProfileCurve_DEPRECATED,
+      BlueprintSetter = SetFlyToAltitudeProfileCurve_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use HeightPercentageCurve on CesiumFlyToComponent instead."))
+  UCurveFloat* FlyToAltitudeProfileCurve_DEPRECATED;
+  UFUNCTION(BlueprintGetter)
+  UCurveFloat* GetFlyToAltitudeProfileCurve_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToAltitudeProfileCurve_DEPRECATED(UCurveFloat* NewValue);
+
+  UPROPERTY(
+      Category = "Cesium",
+      BlueprintGetter = GetFlyToMaximumAltitudeCurve_DEPRECATED,
+      BlueprintSetter = SetFlyToMaximumAltitudeCurve_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use MaximumHeightByDistanceCurve on CesiumFlyToComponent instead."))
+  UCurveFloat* FlyToMaximumAltitudeCurve_DEPRECATED;
+  UFUNCTION(BlueprintGetter)
+  UCurveFloat* GetFlyToMaximumAltitudeCurve_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToMaximumAltitudeCurve_DEPRECATED(UCurveFloat* NewValue);
+
+  UPROPERTY(
+      Category = "Cesium",
+      BlueprintGetter = GetFlyToDuration_DEPRECATED,
+      BlueprintSetter = SetFlyToDuration_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use Duration on CesiumFlyToComponent instead."))
+  float FlyToDuration_DEPRECATED = 5.0f;
+  UFUNCTION(BlueprintGetter)
+  float GetFlyToDuration_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToDuration_DEPRECATED(float NewValue);
+
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
-  void _interruptFlight();
-  void _interpolateFlightPosition(float percentage, glm::dvec3& out) const;
 
-  /**
-   * @brief Advance the camera flight based on the given time delta.
-   *
-   * NOTE: This function requires the Georefence to be valid. If it
-   * is not valid, then this function will do nothing.
-   *
-   * The given delta will be added to the _currentFlyTime, and the position
-   * and orientation will be computed by interpolating based on this time.
-   *
-   * The position will be set as the SetECEFCameraLocation, and the
-   * orientation will be assigned GetController()->SetControlRotation.
-   *
-   * @param DeltaSeconds The time delta, in seconds
-   */
-  void _handleFlightStep(float DeltaSeconds);
+  UFUNCTION()
+  void _onFlightComplete();
 
-  // helper variables for FlyToLocation
-  bool _bFlyingToLocation = false;
-  bool _bCanInterruptFlight = false;
-  float _currentFlyTime = 0.0f;
-
-  double _flyToSourceAltitude = 0.0;
-  double _flyToDestinationAltitude = 0.0;
-  double _flyToMaxAltitude = 0.0;
-
-  double _flyToTotalAngle = 0.0;
-  glm::dvec3 _flyToSourceDirection;
-  glm::dvec3 _flyToRotationAxis;
-
-  FQuat _flyToSourceRotation;
-  FQuat _flyToDestinationRotation;
-  glm::dvec3 _flyToECEFDestination;
-
-  const CesiumGeospatial::Ellipsoid& _ellipsoid =
-      CesiumGeospatial::Ellipsoid::WGS84;
+  UFUNCTION()
+  void _onFlightInterrupted();
 };

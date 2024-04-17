@@ -4,26 +4,29 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
-#include "CesiumFeatureTable.h"
-#include "CesiumFeatureTexture.h"
 #include "CesiumLifetime.h"
-#include "CesiumMetadataArray.h"
-#include "CesiumMetadataConversions.h"
-#include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
-#include "CesiumMetadataProperty.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPropertyArray.h"
+#include "CesiumPropertyArrayBlueprintLibrary.h"
+#include "CesiumPropertyTable.h"
+#include "CesiumPropertyTableProperty.h"
+#include "CesiumPropertyTexture.h"
 #include "CesiumRuntime.h"
 #include "Containers/Map.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
-#include <CesiumGltf/FeatureIDTextureView.h>
-#include <CesiumGltf/FeatureTexturePropertyView.h>
-#include <CesiumGltf/FeatureTextureView.h>
+#include "UnrealMetadataConversions.h"
+#include <CesiumGltf/FeatureIdTextureView.h>
+#include <CesiumGltf/PropertyTexturePropertyView.h>
+#include <CesiumGltf/PropertyTextureView.h>
 #include <CesiumUtility/Tracing.h>
 #include <glm/gtx/integer.hpp>
 #include <unordered_map>
 
 using namespace CesiumTextureUtility;
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 namespace CesiumEncodedMetadataUtility {
 
@@ -31,64 +34,69 @@ namespace {
 
 struct EncodedPixelFormat {
   EPixelFormat format;
-  size_t pixelSize;
+  int32_t bytesPerChannel;
+  int32_t channels;
 };
 
 // TODO: consider picking better pixel formats when they are available for the
 // current platform.
 EncodedPixelFormat getPixelFormat(
-    ECesiumMetadataPackedGpuType type,
+    ECesiumMetadataPackedGpuType_DEPRECATED type,
     int64 componentCount,
     bool isNormalized) {
 
   switch (type) {
-  case ECesiumMetadataPackedGpuType::Uint8:
+  case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED:
     switch (componentCount) {
     case 1:
-      return {isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT, 1};
+      return {
+          isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT,
+          1,
+          1};
     case 2:
     case 3:
     case 4:
       return {
           isNormalized ? EPixelFormat::PF_R8G8B8A8
                        : EPixelFormat::PF_R8G8B8A8_UINT,
+          1,
           4};
     default:
       return {EPixelFormat::PF_Unknown, 0};
     }
-  case ECesiumMetadataPackedGpuType::Float:
+  case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED:
     switch (componentCount) {
     case 1:
-      return {EPixelFormat::PF_R32_FLOAT, 4};
+      return {EPixelFormat::PF_R32_FLOAT, 4, 1};
     case 2:
     case 3:
     case 4:
       // Note this is ABGR
-      return {EPixelFormat::PF_A32B32G32R32F, 16};
+      return {EPixelFormat::PF_A32B32G32R32F, 4, 4};
     }
   default:
-    return {EPixelFormat::PF_Unknown, 0};
+    return {EPixelFormat::PF_Unknown, 0, 0};
   }
 }
 } // namespace
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
-    const FCesiumFeatureTable& featureTable) {
+    const FCesiumPropertyTable& featureTable) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTable)
 
   EncodedMetadataFeatureTable encodedFeatureTable;
 
   int64 featureCount =
-      UCesiumFeatureTableBlueprintLibrary::GetNumberOfFeatures(featureTable);
+      UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(featureTable);
 
-  const TMap<FString, FCesiumMetadataProperty>& properties =
-      UCesiumFeatureTableBlueprintLibrary::GetProperties(featureTable);
+  const TMap<FString, FCesiumPropertyTableProperty>& properties =
+      UCesiumPropertyTableBlueprintLibrary::GetProperties(featureTable);
 
   encodedFeatureTable.encodedProperties.Reserve(properties.Num());
   for (const auto& pair : properties) {
-    const FCesiumMetadataProperty& property = pair.Value;
+    const FCesiumPropertyTableProperty& property = pair.Value;
 
     const FPropertyDescription* pExpectedProperty =
         featureTableDescription.Properties.FindByPredicate(
@@ -100,18 +108,16 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
-    ECesiumMetadataTrueType trueType =
-        UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(property);
-    bool isArray = trueType == ECesiumMetadataTrueType::Array;
+    FCesiumMetadataValueType trueType =
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(property);
+    bool isArray = trueType.bIsArray;
     bool isNormalized =
-        UCesiumMetadataPropertyBlueprintLibrary::IsNormalized(property);
+        UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property);
 
     int64 componentCount;
     if (isArray) {
-      trueType = UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
-          property);
       componentCount =
-          UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(property);
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property);
     } else {
       componentCount = 1;
     }
@@ -121,13 +127,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     // case ECesiumPropertyType::Scalar:
     //  expectedComponentCount = 1;
     //  break;
-    case ECesiumPropertyType::Vec2:
+    case ECesiumPropertyType_DEPRECATED::Vec2_DEPRECATED:
       expectedComponentCount = 2;
       break;
-    case ECesiumPropertyType::Vec3:
+    case ECesiumPropertyType_DEPRECATED::Vec3_DEPRECATED:
       expectedComponentCount = 3;
       break;
-    case ECesiumPropertyType::Vec4:
+    case ECesiumPropertyType_DEPRECATED::Vec4_DEPRECATED:
       expectedComponentCount = 4;
     };
 
@@ -140,12 +146,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     // Coerce the true type into the expected gpu component type.
-    ECesiumMetadataPackedGpuType gpuType = ECesiumMetadataPackedGpuType::None;
+    ECesiumMetadataPackedGpuType_DEPRECATED gpuType =
+        ECesiumMetadataPackedGpuType_DEPRECATED::None_DEPRECATED;
     if (pExpectedProperty->ComponentType ==
-        ECesiumPropertyComponentType::Uint8) {
-      gpuType = ECesiumMetadataPackedGpuType::Uint8;
+        ECesiumPropertyComponentType_DEPRECATED::Uint8_DEPRECATED) {
+      gpuType = ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED;
     } else /*if (expected type is float)*/ {
-      gpuType = ECesiumMetadataPackedGpuType::Float;
+      gpuType = ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED;
     }
 
     if (pExpectedProperty->Normalized != isNormalized) {
@@ -164,7 +171,8 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     // Only support normalization of uint8 for now
-    if (isNormalized && trueType != ECesiumMetadataTrueType::Uint8) {
+    if (isNormalized &&
+        trueType.ComponentType != ECesiumMetadataComponentType::Uint8) {
       UE_LOG(
           LogCesium,
           Warning,
@@ -197,90 +205,88 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
         (floorSqrtFeatureCount * floorSqrtFeatureCount == featureCount)
             ? floorSqrtFeatureCount
             : (floorSqrtFeatureCount + 1);
-    encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
-    // TODO: upgrade to new texture creation path.
-    encodedProperty.pTexture->textureSource = LegacyTextureSource{};
-    encodedProperty.pTexture->pTextureData = createTexturePlatformData(
-        ceilSqrtFeatureCount,
-        ceilSqrtFeatureCount,
-        encodedFormat.format);
 
-    encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
-    encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
-    encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
-
-    if (!encodedProperty.pTexture->pTextureData) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT(
-              "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-      continue;
-    }
-
-    FTexture2DMipMap* pMip = new FTexture2DMipMap();
-    encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
-    pMip->SizeX = ceilSqrtFeatureCount;
-    pMip->SizeY = ceilSqrtFeatureCount;
-    pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-    void* pTextureData = pMip->BulkData.Realloc(
-        ceilSqrtFeatureCount * ceilSqrtFeatureCount * encodedFormat.pixelSize);
+    CesiumGltf::ImageCesium image;
+    image.bytesPerChannel = encodedFormat.bytesPerChannel;
+    image.channels = encodedFormat.channels;
+    image.compressedPixelFormat = CesiumGltf::GpuCompressedPixelFormat::NONE;
+    image.height = image.width = ceilSqrtFeatureCount;
+    image.pixelData.resize(size_t(
+        image.width * image.height * image.channels * image.bytesPerChannel));
 
     if (isArray) {
       switch (gpuType) {
-      case ECesiumMetadataPackedGpuType::Uint8: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+      case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED: {
+        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        int64_t pixelSize =
+            encodedFormat.channels * encodedFormat.bytesPerChannel;
         for (int64 i = 0; i < featureCount; ++i) {
-          FCesiumMetadataArray arrayProperty =
-              UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
+          FCesiumPropertyArray arrayProperty =
+              UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
+                  property,
+                  i);
           for (int64 j = 0; j < componentCount; ++j) {
             *(pWritePos + j) =
-                UCesiumMetadataArrayBlueprintLibrary::GetByte(arrayProperty, j);
+                UCesiumPropertyArrayBlueprintLibrary::GetByte(arrayProperty, j);
           }
-          pWritePos += encodedFormat.pixelSize;
+          pWritePos += pixelSize;
         }
       } break;
-      case ECesiumMetadataPackedGpuType::Float: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+      case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED: {
+        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        int64_t pixelSize =
+            encodedFormat.channels * encodedFormat.bytesPerChannel;
         for (int64 i = 0; i < featureCount; ++i) {
-          FCesiumMetadataArray arrayProperty =
-              UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
+          FCesiumPropertyArray arrayProperty =
+              UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
+                  property,
+                  i);
           // Floats are encoded backwards (e.g., ABGR)
           float* pWritePosF =
-              reinterpret_cast<float*>(pWritePos + encodedFormat.pixelSize) - 1;
+              reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
           for (int64 j = 0; j < componentCount; ++j) {
-            *pWritePosF = UCesiumMetadataArrayBlueprintLibrary::GetFloat(
+            *pWritePosF = UCesiumPropertyArrayBlueprintLibrary::GetFloat(
                 arrayProperty,
                 j);
             --pWritePosF;
           }
-          pWritePos += encodedFormat.pixelSize;
+          pWritePos += pixelSize;
         }
       } break;
       }
     } else {
       switch (gpuType) {
-      case ECesiumMetadataPackedGpuType::Uint8: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+      case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED: {
+        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
         for (int64 i = 0; i < featureCount; ++i) {
-          *pWritePos =
-              UCesiumMetadataPropertyBlueprintLibrary::GetByte(property, i);
+          *pWritePos = UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
+              property,
+              i);
           ++pWritePos;
         }
       } break;
-      case ECesiumMetadataPackedGpuType::Float: {
-        float* pWritePosF = reinterpret_cast<float*>(pTextureData);
+      case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED: {
+        float* pWritePosF = reinterpret_cast<float*>(image.pixelData.data());
         for (int64 i = 0; i < featureCount; ++i) {
-          *pWritePosF =
-              UCesiumMetadataPropertyBlueprintLibrary::GetFloat(property, i);
+          *pWritePosF = UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
+              property,
+              i);
           ++pWritePosF;
         }
       } break;
       }
     }
 
-    pMip->BulkData.Unlock();
+    encodedProperty.pTexture = loadTextureAnyThreadPart(
+        image,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Nearest,
+        false,
+        TEXTUREGROUP_8BitData,
+        false,
+        encodedFormat.format,
+        nullptr);
   }
 
   return encodedFeatureTable;
@@ -291,23 +297,20 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
         featureTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
-    const FCesiumFeatureTexture& featureTexture) {
+    const FCesiumPropertyTexture& featureTexture) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTexture)
 
   EncodedFeatureTexture encodedFeatureTexture;
 
-  const CesiumGltf::FeatureTextureView& featureTextureView =
-      featureTexture.getFeatureTextureView();
-  const std::unordered_map<std::string, CesiumGltf::FeatureTexturePropertyView>&
-      properties = featureTextureView.getProperties();
-
-  encodedFeatureTexture.properties.Reserve(properties.size());
+  const auto& properties =
+      UCesiumPropertyTextureBlueprintLibrary::GetProperties(featureTexture);
+  encodedFeatureTexture.properties.Reserve(properties.Num());
 
   for (const auto& propertyIt : properties) {
     const FFeatureTexturePropertyDescription* pPropertyDescription =
         featureTextureDescription.Properties.FindByPredicate(
-            [propertyName = UTF8_TO_TCHAR(propertyIt.first.c_str())](
+            [propertyName = propertyIt.Key](
                 const FFeatureTexturePropertyDescription& expectedProperty) {
               return propertyName == expectedProperty.Name;
             });
@@ -316,11 +319,10 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
       continue;
     }
 
-    const CesiumGltf::FeatureTexturePropertyView& featureTexturePropertyView =
-        propertyIt.second;
+    const FCesiumPropertyTextureProperty& featureTextureProperty =
+        propertyIt.Value;
 
-    const CesiumGltf::ImageCesium* pImage =
-        featureTexturePropertyView.getImage();
+    const CesiumGltf::ImageCesium* pImage = featureTextureProperty.getImage();
 
     if (!pImage) {
       UE_LOG(
@@ -330,30 +332,59 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
       continue;
     }
 
-    int32 expectedComponentCount = 1;
+    int32 expectedComponentCount = 0;
     switch (pPropertyDescription->Type) {
-    // case ECesiumPropertyType::Scalar:
-    //  expectedComponentCount = 1;
-    //  break;
-    case ECesiumPropertyType::Vec2:
+    case ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED:
+      expectedComponentCount = 1;
+      break;
+    case ECesiumPropertyType_DEPRECATED::Vec2_DEPRECATED:
       expectedComponentCount = 2;
       break;
-    case ECesiumPropertyType::Vec3:
+    case ECesiumPropertyType_DEPRECATED::Vec3_DEPRECATED:
       expectedComponentCount = 3;
       break;
-    case ECesiumPropertyType::Vec4:
+    case ECesiumPropertyType_DEPRECATED::Vec4_DEPRECATED:
       expectedComponentCount = 4;
+      break;
     };
 
-    if (expectedComponentCount != propertyIt.second.getComponentCount() ||
-        pPropertyDescription->Normalized != propertyIt.second.isNormalized() ||
-        pPropertyDescription->Swizzle !=
-            UTF8_TO_TCHAR(propertyIt.second.getSwizzle().c_str())) {
+    int32 actualComponentCount = 0;
+    FCesiumMetadataValueType valueType =
+        UCesiumPropertyTexturePropertyBlueprintLibrary::GetValueType(
+            featureTextureProperty);
+    switch (valueType.Type) {
+    case ECesiumMetadataType::Scalar:
+      actualComponentCount = 1;
+      break;
+    case ECesiumMetadataType::Vec2:
+      actualComponentCount = 2;
+      break;
+    case ECesiumMetadataType::Vec3:
+      actualComponentCount = 3;
+      break;
+    case ECesiumMetadataType::Vec4:
+      actualComponentCount = 4;
+      break;
+    }
+
+    if (expectedComponentCount != actualComponentCount) {
       UE_LOG(
           LogCesium,
           Warning,
           TEXT(
-              "This feature texture property does not have the expected component count, normalization, or swizzle string."));
+              "This feature texture property does not have the expected component count"));
+      continue;
+    }
+
+    bool isNormalized =
+        UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
+            featureTextureProperty);
+    if (pPropertyDescription->Normalized != isNormalized) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "This feature texture property does not have the expected normalization."));
       continue;
     }
 
@@ -365,69 +396,40 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     encodedFeatureTextureProperty.baseName =
         "FTX_" + featureTextureName + "_" + pPropertyDescription->Name + "_";
     encodedFeatureTextureProperty.textureCoordinateAttributeId =
-        featureTexturePropertyView.getTextureCoordinateAttributeId();
+        featureTextureProperty.getTexCoordSetIndex();
 
-    const CesiumGltf::FeatureTexturePropertyChannelOffsets& channelOffsets =
-        featureTexturePropertyView.getChannelOffsets();
-    encodedFeatureTextureProperty.channelOffsets[0] = channelOffsets.r;
-    encodedFeatureTextureProperty.channelOffsets[1] = channelOffsets.g;
-    encodedFeatureTextureProperty.channelOffsets[2] = channelOffsets.b;
-    encodedFeatureTextureProperty.channelOffsets[3] = channelOffsets.a;
+    const auto& channels =
+        UCesiumPropertyTexturePropertyBlueprintLibrary::GetChannels(
+            featureTextureProperty);
+    encodedFeatureTextureProperty.channelOffsets[0] = channels[0];
+    encodedFeatureTextureProperty.channelOffsets[1] = channels[1];
+    encodedFeatureTextureProperty.channelOffsets[2] = channels[2];
+    encodedFeatureTextureProperty.channelOffsets[3] = channels[3];
 
     TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
         featureTexturePropertyMap.Find(pImage);
     if (pMappedUnrealImageIt) {
       encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
     } else {
+      CesiumGltf::ImageCesium imageCopy(*pImage);
       encodedFeatureTextureProperty.pTexture =
-          MakeShared<LoadedTextureResult>();
-      // TODO: upgrade to new texture creation path.
-      encodedFeatureTextureProperty.pTexture->textureSource =
-          LegacyTextureSource{};
+          MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
+              imageCopy,
+              TextureAddress::TA_Clamp,
+              TextureAddress::TA_Clamp,
+              TextureFilter::TF_Nearest,
+              false,
+              TEXTUREGROUP_8BitData,
+              false,
+              // TODO : currently the unnormalized pixels are always in unsigned
+              // R8G8B8A8 form, but this does not necessarily need to be the
+              // case in the future.
+              isNormalized ? EPixelFormat::PF_R8G8B8A8
+                           : EPixelFormat::PF_R8G8B8A8_UINT,
+              nullptr)));
       featureTexturePropertyMap.Emplace(
           pImage,
           encodedFeatureTextureProperty.pTexture);
-      encodedFeatureTextureProperty.pTexture->pTextureData =
-          createTexturePlatformData(
-              pImage->width,
-              pImage->height,
-              // TODO: currently the unnormalized pixels are always in
-              // unsigned R8G8B8A8 form, but this does not necessarily need
-              // to be the case in the future.
-              featureTexturePropertyView.isNormalized()
-                  ? EPixelFormat::PF_R8G8B8A8
-                  : EPixelFormat::PF_R8G8B8A8_UINT);
-
-      encodedFeatureTextureProperty.pTexture->addressX =
-          TextureAddress::TA_Clamp;
-      encodedFeatureTextureProperty.pTexture->addressY =
-          TextureAddress::TA_Clamp;
-      encodedFeatureTextureProperty.pTexture->filter =
-          TextureFilter::TF_Nearest;
-
-      if (!encodedFeatureTextureProperty.pTexture->pTextureData) {
-        UE_LOG(
-            LogCesium,
-            Error,
-            TEXT(
-                "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-        continue;
-      }
-
-      FTexture2DMipMap* pMip = new FTexture2DMipMap();
-      encodedFeatureTextureProperty.pTexture->pTextureData->Mips.Add(pMip);
-      pMip->SizeX = pImage->width;
-      pMip->SizeY = pImage->height;
-      pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-      void* pTextureData = pMip->BulkData.Realloc(pImage->pixelData.size());
-
-      FMemory::Memcpy(
-          pTextureData,
-          pImage->pixelData.data(),
-          pImage->pixelData.size());
-
-      pMip->BulkData.Unlock();
     }
   }
 
@@ -474,7 +476,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const FString& featureTableName = expectedFeatureTable.Name;
 
     if (expectedFeatureTable.AccessType ==
-        ECesiumFeatureTableAccessType::Texture) {
+        ECesiumFeatureTableAccessType_DEPRECATED::Texture_DEPRECATED) {
 
       const FCesiumFeatureIdTexture* pFeatureIdTexture =
           featureIdTextures.FindByPredicate([&featureTableName](
@@ -486,7 +488,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           });
 
       if (pFeatureIdTexture) {
-        const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
+        const CesiumGltf::FeatureIdTextureView& featureIdTextureView =
             pFeatureIdTexture->getFeatureIdTextureView();
         const CesiumGltf::ImageCesium* pFeatureIdImage =
             featureIdTextureView.getImage();
@@ -504,66 +506,41 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         EncodedFeatureIdTexture& encodedFeatureIdTexture =
             result.encodedFeatureIdTextures.Emplace_GetRef();
 
+        const auto channels = featureIdTextureView.getChannels();
         encodedFeatureIdTexture.baseName = "FIT_" + featureTableName + "_";
-        encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
+        encodedFeatureIdTexture.channel = channels.size() ? channels[0] : 0;
         encodedFeatureIdTexture.textureCoordinateAttributeId =
-            featureIdTextureView.getTextureCoordinateAttributeId();
+            featureIdTextureView.getTexCoordSetIndex();
 
         TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
             featureIdTextureMap.Find(pFeatureIdImage);
         if (pMappedUnrealImageIt) {
           encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
         } else {
-          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
-          // TODO: upgrade to new texture creation path
-          encodedFeatureIdTexture.pTexture->textureSource =
-              LegacyTextureSource{};
+          CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
+          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
+              std::move(*loadTextureAnyThreadPart(
+                  imageCopy,
+                  TextureAddress::TA_Clamp,
+                  TextureAddress::TA_Clamp,
+                  TextureFilter::TF_Nearest,
+                  false,
+                  TEXTUREGROUP_8BitData,
+                  false,
+                  // TODO: currently this is always the case, but doesn't have
+                  // to be
+                  EPixelFormat::PF_R8G8B8A8_UINT,
+                  nullptr)));
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);
-          encodedFeatureIdTexture.pTexture->pTextureData =
-              createTexturePlatformData(
-                  pFeatureIdImage->width,
-                  pFeatureIdImage->height,
-                  // TODO: currently this is always the case, but doesn't have
-                  // to be
-                  EPixelFormat::PF_R8G8B8A8_UINT);
-
-          encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
-          encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
-          encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
-
-          if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-            UE_LOG(
-                LogCesium,
-                Error,
-                TEXT(
-                    "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-            continue;
-          }
-
-          FTexture2DMipMap* pMip = new FTexture2DMipMap();
-          encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
-          pMip->SizeX = pFeatureIdImage->width;
-          pMip->SizeY = pFeatureIdImage->height;
-          pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-          void* pTextureData =
-              pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
-
-          FMemory::Memcpy(
-              pTextureData,
-              pFeatureIdImage->pixelData.data(),
-              pFeatureIdImage->pixelData.size());
-
-          pMip->BulkData.Unlock();
         }
 
         encodedFeatureIdTexture.featureTableName = featureTableName;
       }
     } else if (
         expectedFeatureTable.AccessType ==
-        ECesiumFeatureTableAccessType::Attribute) {
+        ECesiumFeatureTableAccessType_DEPRECATED::Attribute_DEPRECATED) {
       for (size_t i = 0; i < featureIdAttributes.Num(); ++i) {
         const FCesiumFeatureIdAttribute& featureIdAttribute =
             featureIdAttributes[i];
@@ -589,14 +566,14 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
 EncodedMetadata encodeMetadataAnyThreadPart(
     const FMetadataDescription& metadataDescription,
-    const FCesiumMetadataModel& metadata) {
+    const FCesiumModelMetadata& metadata) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadataModel)
 
   EncodedMetadata result;
 
-  const TMap<FString, FCesiumFeatureTable>& featureTables =
-      UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(metadata);
+  const TMap<FString, FCesiumPropertyTable>& featureTables =
+      UCesiumModelMetadataBlueprintLibrary::GetFeatureTables(metadata);
   result.encodedFeatureTables.Reserve(featureTables.Num());
   for (const auto& featureTableIt : featureTables) {
     const FString& featureTableName = featureTableIt.Key;
@@ -619,8 +596,8 @@ EncodedMetadata encodeMetadataAnyThreadPart(
     }
   }
 
-  const TMap<FString, FCesiumFeatureTexture>& featureTextures =
-      UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(metadata);
+  const TMap<FString, FCesiumPropertyTexture>& featureTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetFeatureTextures(metadata);
   result.encodedFeatureTextures.Reserve(featureTextures.Num());
   TMap<const CesiumGltf::ImageCesium*, TWeakPtr<LoadedTextureResult>>
       featureTexturePropertyMap;
@@ -729,9 +706,8 @@ void destroyEncodedMetadataPrimitive(
   for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitive.encodedFeatureIdTextures) {
 
-    if (encodedFeatureIdTexture.pTexture->pTexture.IsValid()) {
-      CesiumLifetime::destroy(encodedFeatureIdTexture.pTexture->pTexture.Get());
-      encodedFeatureIdTexture.pTexture->pTexture.Reset();
+    if (encodedFeatureIdTexture.pTexture) {
+      encodedFeatureIdTexture.pTexture->pTexture = nullptr;
     }
   }
 }
@@ -742,9 +718,8 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
   for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
     for (EncodedMetadataProperty& encodedProperty :
          encodedFeatureTableIt.Value.encodedProperties) {
-      if (encodedProperty.pTexture->pTexture.IsValid()) {
-        CesiumLifetime::destroy(encodedProperty.pTexture->pTexture.Get());
-        encodedProperty.pTexture->pTexture.Reset();
+      if (encodedProperty.pTexture) {
+        encodedProperty.pTexture->pTexture = nullptr;
       }
     }
   }
@@ -753,10 +728,8 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
   for (auto& encodedFeatureTextureIt : encodedMetadata.encodedFeatureTextures) {
     for (EncodedFeatureTextureProperty& encodedFeatureTextureProperty :
          encodedFeatureTextureIt.Value.properties) {
-      if (encodedFeatureTextureProperty.pTexture->pTexture.IsValid()) {
-        CesiumLifetime::destroy(
-            encodedFeatureTextureProperty.pTexture->pTexture.Get());
-        encodedFeatureTextureProperty.pTexture->pTexture.Reset();
+      if (encodedFeatureTextureProperty.pTexture) {
+        encodedFeatureTextureProperty.pTexture->pTexture = nullptr;
       }
     }
   }
@@ -789,3 +762,5 @@ FString createHlslSafeName(const FString& rawName) {
 }
 
 } // namespace CesiumEncodedMetadataUtility
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

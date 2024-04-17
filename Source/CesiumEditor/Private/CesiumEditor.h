@@ -1,8 +1,10 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
+#include "CesiumEditorReparentHandler.h"
 #include "CesiumEditorSubLevelMutex.h"
+#include "CesiumIonServerManager.h"
 #include "CesiumIonSession.h"
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -16,6 +18,7 @@ class UCesiumRasterOverlay;
 class UCesiumIonRasterOverlay;
 struct FCesium3DTilesetLoadFailureDetails;
 struct FCesiumRasterOverlayLoadFailureDetails;
+class UCesiumIonServer;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesiumEditor, Log, All);
 
@@ -33,9 +36,9 @@ public:
 
   static FCesiumEditorModule* get() { return _pModule; }
 
-  static CesiumIonSession& ion() {
+  static CesiumIonServerManager& serverManager() {
     assert(_pModule);
-    return *_pModule->_pIonSession;
+    return get()->_serverManager;
   }
 
   static ACesium3DTileset* FindFirstTilesetSupportingOverlays();
@@ -85,6 +88,18 @@ public:
    */
   static AActor* SpawnDynamicPawn();
 
+  /**
+   * Spawns a new Cesium3DTileset with default values in the current level of
+   * the edited world.
+   */
+  static AActor* SpawnBlankTileset();
+
+  /**
+   * Spawns a new CesiumCartographicPolygon in the current level of the edited
+   * world.
+   */
+  static AActor* SpawnCartographicPolygon();
+
 private:
   TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
   TSharedRef<SDockTab>
@@ -96,13 +111,14 @@ private:
   void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
 
-  std::shared_ptr<CesiumIonSession> _pIonSession;
+  CesiumIonServerManager _serverManager;
   FDelegateHandle _tilesetLoadFailureSubscription;
   FDelegateHandle _rasterOverlayLoadFailureSubscription;
   FDelegateHandle _tilesetIonTroubleshootingSubscription;
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
+  CesiumEditorReparentHandler _reparentHandler;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;

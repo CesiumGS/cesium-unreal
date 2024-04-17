@@ -83,15 +83,20 @@ public class CesiumRuntime : ModuleRules
         {
             "async++",
             "Cesium3DTiles",
+            "Cesium3DTilesContent",
             "Cesium3DTilesReader",
             "Cesium3DTilesSelection",
             "CesiumAsync",
+            "CesiumIonClient",
             "CesiumGeometry",
             "CesiumGeospatial",
             "CesiumGltfReader",
+            "CesiumGltfContent",
             "CesiumGltf",
             "CesiumJsonReader",
+            "CesiumRasterOverlays",
             "CesiumUtility",
+            "csprng",
             "draco",
             "ktx_read",
             //"MikkTSpace",
@@ -176,7 +181,8 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_XYZW_ONLY",
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
-                "TIDY_STATIC"
+                "TIDY_STATIC",
+                "URI_STATIC_BUILD"
             }
         );
 

@@ -2,6 +2,11 @@
 
 #include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
+#if WITH_EDITOR
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
+#include "Engine/Selection.h"
+#endif
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "PhysicsEngine/BodySetup.h"
@@ -38,6 +43,15 @@ CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
     destroyComponentRecursively(pChild);
   }
 
+#if WITH_EDITOR
+  // If the editor is currently selecting this, remove the reference
+  if (GEditor) {
+    USelection* editorSelection = GEditor->GetSelectedComponents();
+    if (editorSelection && editorSelection->IsSelected(pComponent))
+      editorSelection->Deselect(pComponent);
+  }
+#endif
+
   pComponent->DestroyPhysicsState();
   pComponent->DestroyComponent();
   pComponent->ConditionalBeginDestroy();
@@ -70,13 +84,7 @@ bool AmortizedDestructor::runDestruction(UObject* pObject) const {
     return true;
   }
 
-#if ENGINE_MAJOR_VERSION >= 5
   pObject->MarkAsGarbage();
-#else
-  if (!pObject->IsPendingKill()) {
-    pObject->MarkPendingKill();
-  }
-#endif
 
   if (pObject->HasAnyFlags(RF_FinishDestroyed)) {
     // Already done being destroyed.
@@ -121,24 +129,14 @@ void AmortizedDestructor::finalizeDestroy(UObject* pObject) const {
 
   UTexture2D* pTexture2D = Cast<UTexture2D>(pObject);
   if (pTexture2D) {
-#if ENGINE_MAJOR_VERSION >= 5
     FTexturePlatformData* pPlatformData = pTexture2D->GetPlatformData();
     pTexture2D->SetPlatformData(nullptr);
     delete pPlatformData;
-#else
-    delete pTexture2D->PlatformData;
-    pTexture2D->PlatformData = nullptr;
-#endif
   }
 
   UStaticMesh* pMesh = Cast<UStaticMesh>(pObject);
   if (pMesh) {
-#if ENGINE_MAJOR_VERSION >= 5 ||                                               \
-    (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27)
     pMesh->SetRenderData(nullptr);
-#else
-    pMesh->RenderData.Reset();
-#endif
   }
 
   UBodySetup* pBodySetup = Cast<UBodySetup>(pObject);

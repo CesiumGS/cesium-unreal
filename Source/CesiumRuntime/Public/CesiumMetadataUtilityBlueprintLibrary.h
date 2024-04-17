@@ -1,21 +1,15 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
-#include "CesiumFeatureTable.h"
-#include "CesiumMetadataGenericValue.h"
-#include "CesiumMetadataModel.h"
+#include "CesiumFeatureIdAttribute.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumMetadataValue.h"
+#include "CesiumPrimitiveMetadata.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
-
-struct FCesiumFeatureIdAttribute;
-struct FCesiumFeatureIdTexture;
-
-// REMOVE AFTER DEPRECATION
-struct FCesiumMetadataFeatureTable;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
@@ -23,17 +17,7 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
   GENERATED_BODY()
 
 public:
-  /**
-   * Gets the model metadata of a glTF primitive component. If component is
-   * not a Cesium glTF primitive component, the returned metadata is empty
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
-  static const FCesiumMetadataModel&
-  GetModelMetadata(const UPrimitiveComponent* component);
-
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the primitive metadata of a glTF primitive component. If component is
    * not a Cesium glTF primitive component, the returned metadata is empty
@@ -41,7 +25,10 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Use CesiumPrimitiveFeatures and CesiumPrimitiveMetadata instead."))
   static const FCesiumMetadataPrimitive&
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
@@ -54,8 +41,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
-  static TMap<FString, FCesiumMetadataGenericValue>
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "The CesiumMetadataUtility blueprint library is deprecated. Use GetMetadataValuesForFace in the CesiumMetadataPicking blueprint library instead."))
+  static TMap<FString, FCesiumMetadataValue>
   GetMetadataValuesForFace(const UPrimitiveComponent* component, int64 faceID);
 
   /**
@@ -67,7 +57,10 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "The CesiumMetadataUtility blueprint library is deprecated. Use GetMetadataValuesForFaceAsStrings in the CesiumMetadataPicking blueprint library instead."))
   static TMap<FString, FString> GetMetadataValuesAsStringForFace(
       const UPrimitiveComponent* component,
       int64 faceID);
@@ -79,27 +72,13 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
-  static int64 GetFeatureIDFromFaceID(
-      UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
-      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
-      int64 faceID);
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  /**
-   * Gets the feature ID associated with a given face for a given feature table.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Utility",
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "GetFeatureIDForFace(Primitive, FeatureTable) is deprecated. Please use GetFeatureIDFromFaceID(Primitive, FeatureIdAttribute)."))
-  static int64 GetFeatureIDForFace(
+               "Use GetFeatureIDFromFace with CesiumPrimitiveFeatures instead."))
+  static int64 GetFeatureIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
-      UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
-      int64 faceID);
+      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
+      int64 FaceID);
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

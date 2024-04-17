@@ -220,14 +220,9 @@ void UScreenCreditsWidget::HandleImageRequest(
     texture->SRGB = true;
     texture->UpdateResource();
     _textures.Add(texture);
-#if ENGINE_MAJOR_VERSION >= 5
     FTexturePlatformData* pPlatformData = texture->GetPlatformData();
     int32 SizeX = pPlatformData->SizeX;
     int32 SizeY = pPlatformData->SizeY;
-#else
-    int32 SizeX = texture->PlatformData->SizeX;
-    int32 SizeY = texture->PlatformData->SizeY;
-#endif
     _creditImages[id] = new FSlateImageBrush(texture, FVector2D(SizeX, SizeY));
   }
   // Only update credits after all of the images are done loading.
@@ -247,14 +242,9 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
       texture->SRGB = true;
       texture->UpdateResource();
       _textures.Add(texture);
-#if ENGINE_MAJOR_VERSION >= 5
       FTexturePlatformData* pPlatformData = texture->GetPlatformData();
       int32 SizeX = pPlatformData->SizeX;
       int32 SizeY = pPlatformData->SizeY;
-#else
-      int32 SizeX = texture->PlatformData->SizeX;
-      int32 SizeY = texture->PlatformData->SizeY;
-#endif
       _creditImages.Add(new FSlateImageBrush(texture, FVector2D(SizeX, SizeY)));
     }
   } else {

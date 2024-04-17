@@ -182,6 +182,30 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	return Intermediates;
 }
 
+
+#if NUM_TEX_COORD_INTERPOLATORS
+/** Taken from LocalVertexFactoryCommon.ush. */
+
+float2 GetUV(FVertexFactoryInterpolantsVSToPS Interpolants, int UVIndex)
+{
+	float4 UVVector = Interpolants.TexCoords[UVIndex / 2];
+	return UVIndex % 2 ? UVVector.zw : UVVector.xy;
+}
+
+void SetUV(inout FVertexFactoryInterpolantsVSToPS Interpolants, int UVIndex, float2 InValue)
+{
+	FLATTEN
+	if (UVIndex % 2)
+	{
+		Interpolants.TexCoords[UVIndex / 2].zw = InValue;
+	}
+	else
+	{
+		Interpolants.TexCoords[UVIndex / 2].xy = InValue;
+	}
+}
+#endif
+
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(
   	FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
@@ -189,7 +213,19 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(
   	Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
   	Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
   	Interpolants.Color = Intermediates.Color;
-
+  
+  	#if NUM_TEX_COORD_INTERPOLATORS
+  	float2 CustomizedUVs[NUM_TEX_COORD_INTERPOLATORS];
+  	GetMaterialCustomizedUVs(VertexParameters, CustomizedUVs);
+  	GetCustomInterpolators(VertexParameters, CustomizedUVs);
+	
+  	UNROLL
+  	for (int CoordinateIndex = 0; CoordinateIndex < NUM_TEX_COORD_INTERPOLATORS; CoordinateIndex++)
+  	{
+  	SetUV(Interpolants, CoordinateIndex, CustomizedUVs[CoordinateIndex]);
+  	}
+#endif
+  
 #if INSTANCED_STEREO
   	Interpolants.EyeIndex = 0;
 #endif
@@ -315,15 +351,6 @@ FMaterialVertexParameters GetMaterialVertexParameters(
 
   	return Result;
 }
-
-#if NUM_TEX_COORD_INTERPOLATORS
-/** Taken from LocalVertexFactoryCommon.ush. */
-float2 GetUV(FVertexFactoryInterpolantsVSToPS Interpolants, int UVIndex)
-{
-  	float4 UVVector = Interpolants.TexCoords[UVIndex / 2];
-  	return UVIndex % 2 ? UVVector.zw : UVVector.xy;
-}
-#endif
 
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
 {

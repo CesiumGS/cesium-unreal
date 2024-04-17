@@ -51,6 +51,9 @@ public:
   CesiumGeospatial::CartographicPolygon
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
+  // AActor overrides
+  virtual void PostLoad() override;
+
 protected:
   virtual void BeginPlay() override;
 

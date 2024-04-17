@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CalcBounds.h"
@@ -9,7 +9,13 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "VecMath.h"
+
+#include <CesiumGltf/MeshPrimitive.h>
+#include <CesiumGltf/Model.h>
 #include <variant>
+
+// Prevent deprecation warnings while initializing deprecated metadata structs.
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
@@ -18,6 +24,8 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   pMeshPrimitive = nullptr;
   pTilesetActor = nullptr;
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 
@@ -49,97 +57,43 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
   }
 }
 
-namespace {
-
-void destroyMaterialTexture(
-    UMaterialInstanceDynamic* pMaterial,
-    const char* name,
-    EMaterialParameterAssociation assocation,
-    int32 index) {
-  UTexture* pTexture = nullptr;
-  if (pMaterial->GetTextureParameterValue(
-          FMaterialParameterInfo(name, assocation, index),
-          pTexture,
-          true)) {
-    CesiumTextureUtility::destroyTexture(pTexture);
-  }
-}
-
-void destroyGltfParameterValues(
-    UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation assocation,
-    int32 index) {
-  destroyMaterialTexture(pMaterial, "baseColorTexture", assocation, index);
-  destroyMaterialTexture(
-      pMaterial,
-      "metallicRoughnessTexture",
-      assocation,
-      index);
-  destroyMaterialTexture(pMaterial, "normalTexture", assocation, index);
-  destroyMaterialTexture(pMaterial, "emissiveTexture", assocation, index);
-  destroyMaterialTexture(pMaterial, "occlusionTexture", assocation, index);
-}
-
-void destroyWaterParameterValues(
-    UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation assocation,
-    int32 index) {
-  destroyMaterialTexture(pMaterial, "WaterMask", assocation, index);
-}
-} // namespace
-
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  // This should mirror the logic in loadPrimitiveGameThreadPart in
-  // CesiumGltfComponent.cpp
+  // Clear everything we can in order to reduce memory usage, because this
+  // UObject might not actually get deleted by the garbage collector until much
+  // later.
+  this->Features = FCesiumPrimitiveFeatures();
+  this->Metadata = FCesiumPrimitiveMetadata();
+  this->EncodedFeatures =
+      CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures();
+  this->EncodedMetadata =
+      CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata();
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  this->Metadata_DEPRECATED = FCesiumMetadataPrimitive();
+  this->EncodedMetadata_DEPRECATED.reset();
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  this->pTilesetActor = nullptr;
+  this->pModel = nullptr;
+  this->pMeshPrimitive = nullptr;
+
+  std::unordered_map<int32_t, uint32_t> emptyTexCoordMap;
+  this->GltfToUnrealTexCoordMap.swap(emptyTexCoordMap);
+
+  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
+      emptyAccessorMap;
+  this->TexCoordAccessorMap.swap(emptyAccessorMap);
+
   UMaterialInstanceDynamic* pMaterial =
       Cast<UMaterialInstanceDynamic>(this->GetMaterial(0));
   if (pMaterial) {
-
-    destroyGltfParameterValues(
-        pMaterial,
-        EMaterialParameterAssociation::GlobalParameter,
-        INDEX_NONE);
-    destroyWaterParameterValues(
-        pMaterial,
-        EMaterialParameterAssociation::GlobalParameter,
-        INDEX_NONE);
-
-    UMaterialInterface* pBaseMaterial = pMaterial->Parent;
-    UMaterialInstance* pBaseAsMaterialInstance =
-        Cast<UMaterialInstance>(pBaseMaterial);
-    UCesiumMaterialUserData* pCesiumData =
-        pBaseAsMaterialInstance
-            ? pBaseAsMaterialInstance
-                  ->GetAssetUserData<UCesiumMaterialUserData>()
-            : nullptr;
-    if (pCesiumData) {
-      destroyGltfParameterValues(
-          pMaterial,
-          EMaterialParameterAssociation::LayerParameter,
-          0);
-
-      int32 waterIndex = pCesiumData->LayerNames.Find("Water");
-      if (waterIndex >= 0) {
-        destroyWaterParameterValues(
-            pMaterial,
-            EMaterialParameterAssociation::LayerParameter,
-            waterIndex);
-      }
-    }
-
-    CesiumEncodedMetadataUtility::destroyEncodedMetadataPrimitive(
-        this->EncodedMetadata);
-
     CesiumLifetime::destroy(pMaterial);
   }
 
   UStaticMesh* pMesh = this->GetStaticMesh();
   if (pMesh) {
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-    UBodySetup* pBodySetup = pMesh->BodySetup;
-#else
     UBodySetup* pBodySetup = pMesh->GetBodySetup();
-#endif
+
     if (pBodySetup) {
       CesiumLifetime::destroy(pBodySetup);
     }

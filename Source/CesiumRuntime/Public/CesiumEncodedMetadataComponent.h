@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -13,35 +13,50 @@
 
 #include "CesiumEncodedMetadataComponent.generated.h"
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 /**
  * @brief The GPU component type to coerce this property to.
  *
  */
 UENUM()
-enum class ECesiumPropertyComponentType : uint8 { Uint8, Float };
+enum class ECesiumPropertyComponentType_DEPRECATED : uint8 {
+  Uint8_DEPRECATED,
+  Float_DEPRECATED
+};
 
 /**
  * @brief The property type.
  */
 UENUM()
-enum class ECesiumPropertyType : uint8 { Scalar, Vec2, Vec3, Vec4 };
+enum class ECesiumPropertyType_DEPRECATED : uint8 {
+  Scalar_DEPRECATED,
+  Vec2_DEPRECATED,
+  Vec3_DEPRECATED,
+  Vec4_DEPRECATED
+};
 
 /**
  * @brief Describes how this feature table is accessed. Either through feature
  * id textures, feature id attributes, mixed, or neither.
  */
 UENUM()
-enum class ECesiumFeatureTableAccessType : uint8 {
-  Unknown,
-  Texture,
-  Attribute,
-  Mixed
+enum class ECesiumFeatureTableAccessType_DEPRECATED : uint8 {
+  Unknown_DEPRECATED,
+  Texture_DEPRECATED,
+  Attribute_DEPRECATED,
+  Mixed_DEPRECATED
 };
 
 // Note that these don't exhaustively cover the possibilities of glTF metadata
 // classes, they only cover the subset that can be encoded into textures. For
 // example, arbitrary size arrays and enums are excluded. Other un-encoded
 // types like strings will be coerced.
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FPropertyDescription;
 
 /**
  * @brief Description of a feature table property that should be encoded for
@@ -63,14 +78,15 @@ struct CESIUMRUNTIME_API FPropertyDescription {
    *
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyComponentType ComponentType =
-      ECesiumPropertyComponentType::Float;
+  ECesiumPropertyComponentType_DEPRECATED ComponentType =
+      ECesiumPropertyComponentType_DEPRECATED::Float_DEPRECATED;
 
   /**
    * @brief The property type.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
+  ECesiumPropertyType_DEPRECATED Type =
+      ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED;
 
   /**
    * @brief If ComponentType==Uint8, this indicates whether to normalize into a
@@ -81,9 +97,14 @@ struct CESIUMRUNTIME_API FPropertyDescription {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "ComponentType==ECesiumPropertyComponentType::Uint8"))
+               "ComponentType==ECesiumPropertyComponentType_DEPRECATED::Uint8_DEPRECATED"))
   bool Normalized = false;
 };
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FFeatureTableDescription;
 
 /**
  * @brief Description of a feature table containing properties to be encoded
@@ -105,8 +126,8 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
    * id textures, feature id attributes, mixed, or neither.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumFeatureTableAccessType AccessType =
-      ECesiumFeatureTableAccessType::Unknown;
+  ECesiumFeatureTableAccessType_DEPRECATED AccessType =
+      ECesiumFeatureTableAccessType_DEPRECATED::Unknown_DEPRECATED;
 
   /**
    * @brief If the AccessType==Texture, this string represents the channel of
@@ -117,7 +138,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "AccessType==ECesiumFeatureTableAccessType::Texture"))
+               "AccessType==ECesiumFeatureTableAccessType_DEPRECATED::Texture_DEPRECATED"))
   FString Channel;
 
   /**
@@ -126,6 +147,11 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FPropertyDescription> Properties;
 };
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FFeatureTexturePropertyDescription;
 
 /**
  * @brief Description of a feature texture property that should be uploaded to
@@ -152,7 +178,8 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
    * @brief The property type.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
+  ECesiumPropertyType_DEPRECATED Type =
+      ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED;
 
   /**
    * @brief If ComponentType==Uint8, this indicates whether to normalize into a
@@ -169,6 +196,11 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Swizzle;
 };
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FFeatureTextureDescription;
 
 /**
  * @brief Description of a feature texture with properties that should be
@@ -190,6 +222,16 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FFeatureTexturePropertyDescription> Properties;
 };
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FMetadataDescription;
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FMetadataDescription;
 
 /**
  * @brief Description of metadata from a glTF that should be uploaded to the
@@ -226,34 +268,12 @@ struct CESIUMRUNTIME_API FMetadataDescription {
  * boiler-plate material code to access the selected properties can be
  * auto-generated using the "Generate Material" button.
  */
-UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
+UCLASS(Deprecated)
+class CESIUMRUNTIME_API UDEPRECATED_CesiumEncodedMetadataComponent
     : public UActorComponent {
   GENERATED_BODY()
 
 public:
-  /**
-   * @brief This button can be used to pre-populate the description of metadata
-   * to encode based on the existing metadata in the current tiles.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
-   */
-  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
-  void AutoFill();
-
-#if WITH_EDITOR
-  /**
-   * @brief This button can be used to create a boiler-plate material layer that
-   * exposes the requested metadata properties in the current description. The
-   * nodes to access the metada will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Game/
-   * folder and TargetMaterialLayer will be set to the new material layer.
-   */
-  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
-  void GenerateMaterial();
-#endif
-
 #if WITH_EDITORONLY_DATA
   /**
    * @brief This is the target UMaterialFunctionMaterialLayer that the
@@ -262,7 +282,13 @@ public:
    * to the requested metadata. If this is left blank, a new material layer
    * will be created in the /Game/ folder.
    */
-  UPROPERTY(EditAnywhere, Category = "EncodeMetadata")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "EncodeMetadata",
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."))
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
 #endif
 
@@ -276,7 +302,11 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "EncodeMetadata",
-      Meta = (TitleProperty = "Name"))
+      Meta =
+          (TitleProperty = "Name",
+           DeprecatedProperty,
+           DeprecationMessage =
+               "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."))
   TArray<FFeatureTableDescription> FeatureTables;
 
   /**
@@ -285,6 +315,14 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "EncodeMetadata",
-      Meta = (TitleProperty = "Name"))
+      Meta =
+          (TitleProperty = "Name",
+           DeprecatedProperty,
+           DeprecationMessage =
+               "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."))
   TArray<FFeatureTextureDescription> FeatureTextures;
+
+  // virtual void Serialize(FArchive& Ar) override;
 };
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

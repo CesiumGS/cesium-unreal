@@ -1,11 +1,9 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
-#include "Containers/UnrealString.h"
-#include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GeoTransforms.h"
 #include "OriginPlacement.h"
@@ -43,10 +41,17 @@ public:
   static const double kMinimumScale;
 
   /**
-   * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
-   * persistent level of the calling object's world. If not found, it creates a
-   * new default Georeference.
-   * @param WorldContextObject Any `UObject`.
+   * Finds and returns a CesiumGeoreference in the world. It searches in the
+   * following order:
+   *
+   * 1. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 2. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 3. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -54,6 +59,23 @@ public:
       meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
+
+  /**
+   * Finds and returns the CesiumGeoreference suitable for use with the given
+   * Actor. It searches in the following order:
+   *
+   * 1. A CesiumGeoreference that is an attachment parent of the given Actor.
+   * 2. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 3. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 4. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static ACesiumGeoreference* GetDefaultGeoreferenceForActor(AActor* Actor);
 
   /**
    * A delegate that will be called whenever the Georeference is
@@ -158,15 +180,27 @@ private:
   /**
    * The camera to use to determine which sub-level is closest, so that one can
    * be activated and all others deactivated.
+   * @deprecated Add a CesiumOriginShiftComponent to the appropriate Actor
+   * instead.
    */
   UPROPERTY(
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Add a CesiumOriginShiftComponent to the appropriate Actor instead."))
+  APlayerCameraManager* SubLevelCamera_DEPRECATED = nullptr;
+
+  /**
+   * The component that allows switching between the sub-levels registered with
+   * this georeference.
+   */
+  UPROPERTY(
+      Instanced,
       Category = "Cesium|Sub-levels",
-      EditAnywhere,
-      BlueprintReadWrite,
-      BlueprintGetter = GetSubLevelCamera,
-      BlueprintSetter = SetSublevelCamera,
+      BlueprintReadOnly,
+      BlueprintGetter = GetSubLevelSwitcher,
       meta = (AllowPrivateAccess))
-  APlayerCameraManager* SubLevelCamera = nullptr;
+  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
 
 #if WITH_EDITORONLY_DATA
   /**
@@ -322,6 +356,9 @@ public:
    * Gets the camera to use to determine which sub-level is closest, so that one
    * can be activated and all others deactivated.
    */
+  UE_DEPRECATED(
+      "Cesium For Unreal v2.0",
+      "Add a CesiumOriginShiftComponent to the appropriate Actor instead.")
   UFUNCTION(BlueprintGetter)
   APlayerCameraManager* GetSubLevelCamera() const;
 
@@ -329,8 +366,20 @@ public:
    * Sets the camera to use to determine which sub-level is closest, so that one
    * can be activated and all others deactivated.
    */
+  UE_DEPRECATED(
+      "Cesium For Unreal v2.0",
+      "Add a CesiumOriginShiftComponent to the appropriate Actor instead.")
   UFUNCTION(BlueprintSetter)
   void SetSubLevelCamera(APlayerCameraManager* NewValue);
+
+  /**
+   * Gets the component that allows switching between different sub-levels
+   * registered with this georeference.
+   */
+  UFUNCTION(BlueprintGetter)
+  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
+    return this->SubLevelSwitcher;
+  }
 
 #if WITH_EDITOR
   /**
@@ -544,8 +593,37 @@ public:
   ComputeEastSouthUpToUnrealTransformation(const FVector& UnrealLocation) const;
 
   /**
+   * Computes the matrix that transforms from an East-South-Up frame centered at
+   * a given location to the Unreal frame. The location is expressed as an
+   * Earth-Centered, Earth-Fixed (ECEF) position. To use an Unreal position
+   * instead, use ComputeUnrealToEastSouthUpTransformation.
+   *
+   * In an East-South-Up frame, +X points East, +Y points South, and +Z points
+   * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
+   * coordinates vary depending on where on the globe we are talking about.
+   * That is why this function takes a location, expressed in ECEF
+   * coordinates, that defines the origin of the East-South-Up frame of
+   * interest.
+   *
+   * The resulting matrix should generally not be relative to the Unreal
+   * _world_, but rather be expressed in some parent Actor's reference frame as
+   * defined by its Transform. This way, the chain of Unreal transforms places
+   * and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EastSouthUpToUnrealMatrix"))
+  FMatrix
+  ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+      const FVector& EarthCenteredEarthFixedPosition) const;
+
+  /**
    * Computes the matrix that transforms from the Unreal frame to an
-   * East-South-Up frame centered at a given location.
+   * East-South-Up frame centered at a given location. The location is expressed
+   * in Unreal coordinates. To use an Earth-Centered, Earth-Fixed position
+   * instead, use
+   * ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation.
    *
    * In an East-South-Up frame, +X points East, +Y points South, and +Z points
    * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
@@ -575,15 +653,29 @@ public:
   /**
    * Places the georeference origin at the camera's current location. Rotates
    * the globe so the current longitude/latitude/height of the camera is at the
-   * Unreal origin. The camera is also teleported to the Unreal origin.
+   * Unreal origin. The camera is also teleported to the new Unreal origin and
+   * rotated so that the view direction is maintained.
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
    * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sub-levels.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
+
+  /**
+   * Creates a new Level Instance Actor at the current viewport location, and
+   * attaches the Cesium Sub Level Component to it. You will be prompted for
+   * where to store the new level.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sub-levels.
+   */
+  UFUNCTION(Category = "Cesium")
+  void CreateSubLevelHere();
 #endif
 
 private:
@@ -625,9 +717,10 @@ protected:
 #pragma region Obsolete
 
 public:
-  [[deprecated(
-      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")]] GeoTransforms
-  GetGeoTransforms() const noexcept;
+  UE_DEPRECATED(
+      "Cesium For Unreal v2.0",
+      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")
+  GeoTransforms GetGeoTransforms() const noexcept;
 
 private:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -693,7 +786,7 @@ public:
   ACesiumGeoreference();
 
   const CesiumGeospatial::LocalHorizontalCoordinateSystem&
-  getCoordinateSystem() const noexcept {
+  GetCoordinateSystem() const noexcept {
     return this->_coordinateSystem;
   }
 
@@ -712,33 +805,12 @@ private:
   CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem{
       glm::dmat4(1.0)};
 
-  UPROPERTY()
-  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
-
-  /**
-   * @brief Updates the load state of sub-levels.
-   *
-   * This checks all sub-levels whether their load radius contains the
-   * `SubLevelCamera`, in ECEF coordinates. The sub-levels that
-   * contain the camera will be loaded. All others will be unloaded.
-   *
-   * @return Whether the camera is contained in *any* sub-level.
-   */
-  bool _updateSublevelState();
-
   /**
    * Updates _geoTransforms based on the current ellipsoid and center, and
    * returns the old transforms.
    */
   void _updateCoordinateSystem();
 
-  /**
-   * Determines if this Georeference should manage sub-level switching.
-   *
-   * A Georeference inside a sub-level should not manage sub-level switching,
-   * so this function returns true the Georeference is in the world's
-   * PersistentLevel.
-   */
-  bool _shouldManageSubLevels() const;
+  friend class FCesiumGeoreferenceCustomization;
 #pragma endregion
 };

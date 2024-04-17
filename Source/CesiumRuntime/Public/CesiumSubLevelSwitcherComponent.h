@@ -15,13 +15,56 @@ class UWorld;
  * previous sub-level is hidden before the CesiumGeoreference is switched to a
  * new location and the next sub-level is loaded.
  */
-UCLASS()
+UCLASS(ClassGroup = "Cesium")
 class CESIUMRUNTIME_API UCesiumSubLevelSwitcherComponent
     : public UActorComponent {
   GENERATED_BODY()
 
 public:
   UCesiumSubLevelSwitcherComponent();
+
+  /**
+   * Gets the list of sub-levels that are currently registered with this
+   * switcher.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium|Sub-levels")
+  TArray<ALevelInstance*> GetRegisteredSubLevels() const noexcept;
+
+  /**
+   * Gets the list of sub-levels that are currently registered with this
+   * switcher. This is slightly more efficient than GetRegisteredSubLevels but
+   * is not accessible from Blueprints.
+   */
+  const TArray<TWeakObjectPtr<ALevelInstance>>&
+  GetRegisteredSubLevelsWeak() const noexcept {
+    return this->_sublevels;
+  }
+
+  /**
+   * Gets the sub-level that is currently active, or nullptr if none are active.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium|Sub-levels")
+  ALevelInstance* GetCurrentSubLevel() const noexcept;
+
+  /**
+   * Gets the sub-level that is in the process of becoming active. If nullptr,
+   * the target is a state where no sub-levels are active.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium|Sub-levels")
+  ALevelInstance* GetTargetSubLevel() const noexcept;
+
+  /**
+   * Sets the sub-level that should be active. The switcher will asynchronously
+   * load and show this sub-level.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Sub-levels")
+  void SetTargetSubLevel(ALevelInstance* LevelInstance) noexcept;
+
+private:
+  // To allow the sub-level to register/unregister itself with the functions
+  // below.
+  friend class UCesiumSubLevelComponent;
+  friend class CesiumEditorSubLevelMutex;
 
   /**
    * Registers a sub-level with this switcher. The switcher will ensure that
@@ -35,42 +78,11 @@ public:
    */
   void UnregisterSubLevel(ALevelInstance* pSubLevel) noexcept;
 
-  /**
-   * Gets the list of sub-levels that are currently registered with this
-   * switcher.
-   */
-  const TArray<TWeakObjectPtr<ALevelInstance>>&
-  GetRegisteredSubLevels() const noexcept;
-
-  /**
-   * Gets the sub-level that is currently active, or nullptr if none are active.
-   */
-  ALevelInstance* GetCurrent() const noexcept;
-
-  /**
-   * Gets the sub-level that is in the process of becoming active. If nullptr,
-   * the target is a state where no sub-levels are active.
-   */
-  ALevelInstance* GetTarget() const noexcept;
-
-  /**
-   * Sets the sub-level that should be active. The switcher will asynchronously
-   * load and show this sub-level.
-   */
-  void SetTarget(ALevelInstance* pLevelInstance) noexcept;
-
-#if WITH_EDITOR
-  void NotifySubLevelIsTemporarilyHiddenInEditorChanged(
-      ALevelInstance* pLevelInstance,
-      bool bIsHidden);
-#endif
-
   virtual void TickComponent(
       float DeltaTime,
       enum ELevelTick TickType,
       FActorComponentTickFunction* ThisTickFunction) override;
 
-private:
   void _updateSubLevelStateGame();
 #if WITH_EDITOR
   void _updateSubLevelStateEditor();
@@ -97,6 +109,4 @@ private:
 
   bool _doExtraChecksOnNextTick = false;
   bool _isTransitioningSubLevels = false;
-
-  friend class CesiumEditorSubLevelMutex;
 };

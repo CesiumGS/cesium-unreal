@@ -1,18 +1,15 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGlobeAnchorComponent.h"
-#include "CesiumActors.h"
 #include "CesiumCustomVersion.h"
+#include "CesiumGeometry/Transforms.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumRuntime.h"
-#include "CesiumTransforms.h"
 #include "CesiumWgs84Ellipsoid.h"
 #include "Components/SceneComponent.h"
-#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
-#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:
@@ -45,12 +42,18 @@
 // * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
 // not changing.
 //
-// ## Origin Rebased
+// ## OriginLocation Changed
 //
-// * Detected by a call to `ApplyWorldOffset`.
-// * Updates the Actor transform from the existing ECEF transform.
-// * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
-// not changing.
+// * Handled by Unreal's normal `ApplyWorldOffset` mechanism.
+
+namespace {
+
+CesiumGeospatial::GlobeAnchor
+createNativeGlobeAnchor(const FMatrix& actorToECEF) {
+  return CesiumGeospatial::GlobeAnchor(VecMath::createMatrix4D(actorToECEF));
+}
+
+} // namespace
 
 TSoftObjectPtr<ACesiumGeoreference>
 UCesiumGlobeAnchorComponent::GetGeoreference() const {
@@ -59,34 +62,104 @@ UCesiumGlobeAnchorComponent::GetGeoreference() const {
 
 void UCesiumGlobeAnchorComponent::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
+  ACesiumGeoreference* pOriginal = this->ResolvedGeoreference;
+
+  if (IsValid(pOriginal)) {
+    pOriginal->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+
+  this->ResolvedGeoreference = nullptr;
   this->Georeference = NewGeoreference;
-  this->InvalidateResolvedGeoreference();
-  this->ResolveGeoreference();
+
+  // If this component is currently registered, we need to re-resolve the
+  // georeference. If it's not, this will happen when it becomes registered.
+  if (this->IsRegistered()) {
+    this->ResolveGeoreference();
+  }
 }
 
-FVector UCesiumGlobeAnchorComponent::GetECEF() const {
+ACesiumGeoreference*
+UCesiumGlobeAnchorComponent::GetResolvedGeoreference() const {
+  return this->ResolvedGeoreference;
+}
+
+FVector
+UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedPosition() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
+          *this->GetName());
+    }
     return FVector(0.0);
   }
 
-  return VecMath::createVector(glm::dvec3(this->_actorToECEF[3]));
+  return this->ActorToEarthCenteredEarthFixedMatrix.GetOrigin();
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF(const glm::dvec3& newPosition) {
-  this->ECEF_X = newPosition.x;
-  this->ECEF_Y = newPosition.y;
-  this->ECEF_Z = newPosition.z;
-  this->_applyCartesianProperties();
+FMatrix
+UCesiumGlobeAnchorComponent::GetActorToEarthCenteredEarthFixedMatrix() const {
+  if (!this->_actorToECEFIsValid) {
+    const_cast<UCesiumGlobeAnchorComponent*>(this)
+        ->_setNewActorToECEFFromRelativeTransform();
+  }
+
+  return this->ActorToEarthCenteredEarthFixedMatrix;
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF(const FVector& TargetEcef) {
-  this->MoveToECEF(VecMath::createVector3D(TargetEcef));
+void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
+    const FMatrix& Value) {
+  // This method is equivalent to
+  // CesiumGlobeAnchorImpl::SetNewLocalToGlobeFixedMatrix in Cesium for Unity.
+  USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
+  if (!IsValid(pOwnerRoot)) {
+    return;
+  }
+
+  // Update with the new ECEF transform, also rotating based on the new position
+  // if desired.
+  CesiumGeospatial::GlobeAnchor nativeAnchor =
+      this->_createOrUpdateNativeGlobeAnchorFromECEF(Value);
+  this->_updateFromNativeGlobeAnchor(nativeAnchor);
+
+#if WITH_EDITOR
+  // In the Editor, mark this component and the root component modified so Undo
+  // works properly.
+  this->Modify();
+  pOwnerRoot->Modify();
+#endif
+}
+
+bool UCesiumGlobeAnchorComponent::GetTeleportWhenUpdatingTransform() const {
+  return this->TeleportWhenUpdatingTransform;
+}
+
+void UCesiumGlobeAnchorComponent::SetTeleportWhenUpdatingTransform(bool Value) {
+  this->TeleportWhenUpdatingTransform = Value;
+}
+
+bool UCesiumGlobeAnchorComponent::GetAdjustOrientationForGlobeWhenMoving()
+    const {
+  return this->AdjustOrientationForGlobeWhenMoving;
+}
+
+void UCesiumGlobeAnchorComponent::SetAdjustOrientationForGlobeWhenMoving(
+    bool Value) {
+  this->AdjustOrientationForGlobeWhenMoving = Value;
+}
+
+void UCesiumGlobeAnchorComponent::MoveToEarthCenteredEarthFixedPosition(
+    const FVector& TargetEcef) {
+  if (!this->_actorToECEFIsValid)
+    this->_setNewActorToECEFFromRelativeTransform();
+  FMatrix newMatrix = this->ActorToEarthCenteredEarthFixedMatrix;
+  newMatrix.SetOrigin(TargetEcef);
+  this->SetActorToEarthCenteredEarthFixedMatrix(newMatrix);
 }
 
 void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
@@ -100,185 +173,261 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
     return;
   }
 
-  // Compute the current local up axis of the actor (the +Z axis)
-  glm::dmat3 currentRotation = glm::dmat3(this->_actorToECEF);
-  const glm::dvec3 actorUp = glm::normalize(currentRotation[2]);
+  // Compute the current local up axis of the actor (the +Z axis) in ECEF
+  FVector up = this->ActorToEarthCenteredEarthFixedMatrix.GetUnitAxis(EAxis::Z);
 
   // Compute the surface normal of the ellipsoid
-  glm::dvec3 ellipsoidNormal = VecMath::createVector3D(
-      UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(this->GetECEF()));
+  FVector ellipsoidNormal = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+      this->GetEarthCenteredEarthFixedPosition());
 
   // Find the shortest rotation to align local up with the ellipsoid normal
-  const glm::dquat R = glm::rotation(actorUp, ellipsoidNormal);
-  const glm::dmat3 alignmentRotation = glm::mat3_cast(R);
+  FMatrix alignmentRotation =
+      FQuat::FindBetween(up, ellipsoidNormal).ToMatrix();
 
-  // Compute the new actor rotation and apply it
-  const glm::dmat3 newRotation = alignmentRotation * currentRotation;
-  this->_actorToECEF = glm::dmat4(
-      glm::dvec4(newRotation[0], 0.0),
-      glm::dvec4(newRotation[1], 0.0),
-      glm::dvec4(newRotation[2], 0.0),
-      this->_actorToECEF[3]);
+  // Apply the new rotation to the Actor->ECEF transform.
+  // Note that FMatrix multiplication order is opposite glm::dmat4
+  // multiplication order!
+  FMatrix newActorToECEF =
+      this->ActorToEarthCenteredEarthFixedMatrix * alignmentRotation;
+
+  // We don't want to rotate the origin, though, so re-set it.
+  newActorToECEF.SetOrigin(
+      this->ActorToEarthCenteredEarthFixedMatrix.GetOrigin());
+
+  this->_updateFromNativeGlobeAnchor(createNativeGlobeAnchor(newActorToECEF));
 
 #if WITH_EDITOR
   // In the Editor, mark this component modified so Undo works properly.
   this->Modify();
 #endif
-
-  this->_updateActorTransformFromGlobeTransform();
 }
 
 void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
-  if (!this->_actorToECEFIsValid || !IsValid(this->ResolvedGeoreference)) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe orientation cannot be changed because the component is not yet registered."),
-        *this->GetName());
-    return;
-  }
-
-  // Extract the translation and scale from the existing transformation.
-  // We assume there is no perspective or skew.
-  glm::dvec4 translation = this->_actorToECEF[3];
-  glm::dvec3 scale = glm::dvec3(
-      glm::length(this->_actorToECEF[0]),
-      glm::length(this->_actorToECEF[1]),
-      glm::length(this->_actorToECEF[2]));
-
-  // Compute the desired new orientation.
-  glm::dmat3 newOrientation =
-      glm::dmat3(CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
-          glm::dvec3(translation))) *
-      glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
-
-  // Scale the new orientation
-  newOrientation[0] *= scale.x;
-  newOrientation[1] *= scale.y;
-  newOrientation[2] *= scale.z;
-
-  // Recompose the transform.
-  this->_actorToECEF = glm::dmat4(
-      glm::dvec4(newOrientation[0], 0.0),
-      glm::dvec4(newOrientation[1], 0.0),
-      glm::dvec4(newOrientation[2], 0.0),
-      translation);
+  this->SetEastSouthUpRotation(FQuat::Identity);
 
 #if WITH_EDITOR
   // In the Editor, mark this component modified so Undo works properly.
   this->Modify();
 #endif
-
-  // Update the actor from the new globe transform
-  this->_updateActorTransformFromGlobeTransform();
 }
 
-ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
+void UCesiumGlobeAnchorComponent::Sync() {
+  // If we don't have a actor -> ECEF matrix yet, we must update from the
+  // actor's root transform.
+  bool updateFromTransform = !this->_actorToECEFIsValid;
+  if (!updateFromTransform && this->_lastRelativeTransformIsValid) {
+    // We may also need to update from the Transform if it has changed
+    // since the last time we computed the local -> globe fixed matrix.
+    updateFromTransform = !this->_lastRelativeTransform.Equals(
+        this->_getCurrentRelativeTransform(),
+        0.0);
+  }
+
+  if (updateFromTransform) {
+    this->_setNewActorToECEFFromRelativeTransform();
+  } else {
+    this->SetActorToEarthCenteredEarthFixedMatrix(
+        this->ActorToEarthCenteredEarthFixedMatrix);
+  }
+}
+
+ACesiumGeoreference*
+UCesiumGlobeAnchorComponent::ResolveGeoreference(bool bForceReresolve) {
+  if (IsValid(this->ResolvedGeoreference) && !bForceReresolve) {
     return this->ResolvedGeoreference;
   }
 
-  if (IsValid(this->Georeference.Get())) {
-    this->ResolvedGeoreference = this->Georeference.Get();
-  } else {
-    this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
+  ACesiumGeoreference* Previous = this->ResolvedGeoreference;
+  ACesiumGeoreference* Next =
+      IsValid(this->Georeference.Get())
+          ? this->ResolvedGeoreference = this->Georeference.Get()
+          : ACesiumGeoreference::GetDefaultGeoreferenceForActor(
+                this->GetOwner());
 
-  if (this->ResolvedGeoreference) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        this,
-        &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
-  }
+  if (Previous != Next) {
+    if (IsValid(Previous)) {
+      // If we previously had a valid georeference, first synchronize using the
+      // old one so that the ECEF and Actor transforms are both up-to-date.
+      this->Sync();
 
-  this->_onGeoreferenceChanged();
+      Previous->OnGeoreferenceUpdated.RemoveAll(this);
+    }
+
+    this->ResolvedGeoreference = Next;
+
+    if (this->ResolvedGeoreference) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          this,
+          &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
+
+      // Now synchronize based on the new georeference.
+      this->Sync();
+    }
+  }
 
   return this->ResolvedGeoreference;
 }
 
 void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
-  }
-  this->ResolvedGeoreference = nullptr;
+  // This method is deprecated and no longer does anything.
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
-  if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
-        *this->GetName());
-    return FVector(0.0);
-  }
-
   return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(this->GetECEF());
-}
-
-void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
-    const glm::dvec3& TargetLongitudeLatitudeHeight) {
-  if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s cannot move to a globe position because the component is not yet registered."),
-        *this->GetName());
-    return;
-  }
-
-  this->MoveToECEF(
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          VecMath::createVector(TargetLongitudeLatitudeHeight)));
+      EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+          this->GetEarthCenteredEarthFixedPosition());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight) {
-  return this->MoveToLongitudeLatitudeHeight(
-      VecMath::createVector3D(TargetLongitudeLatitudeHeight));
+  this->MoveToEarthCenteredEarthFixedPosition(
+      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+          TargetLongitudeLatitudeHeight));
 }
 
-void UCesiumGlobeAnchorComponent::ApplyWorldOffset(
-    const FVector& InOffset,
-    bool bWorldShift) {
-  // By the time this is called, all of the Actor's SceneComponents (including
-  // its RootComponent) will already have had ApplyWorldOffset called on them.
-  // So the root component's transform already reflects the shifted origin. It's
-  // imprecise, though.
-  //
-  // Fortunately, this process does _not_ trigger the `TransformUpdated` event.
-  // So our _actorToECEF transform still represents the precise globe transform
-  // of the Actor.
-  //
-  // We simply need to convert the globe transform to a new Actor transform
-  // based on the updated OriginLocation. The only slightly tricky part of this
-  // is that the OriginLocation hasn't actually been updated yet.
-  UActorComponent::ApplyWorldOffset(InOffset, bWorldShift);
+namespace {
 
-  const UWorld* pWorld = this->GetWorld();
-  if (!IsValid(pWorld)) {
+CesiumGeospatial::LocalHorizontalCoordinateSystem
+createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
+  glm::dvec3 ecefPosition;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      anchor.getAnchorToFixedTransform(),
+      &ecefPosition,
+      nullptr,
+      nullptr);
+
+  return CesiumGeospatial::LocalHorizontalCoordinateSystem(
+      ecefPosition,
+      CesiumGeospatial::LocalDirection::East,
+      CesiumGeospatial::LocalDirection::South,
+      CesiumGeospatial::LocalDirection::Up,
+      1.0);
+}
+
+} // namespace
+
+FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
+  if (!this->_actorToECEFIsValid) {
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+          *this->GetName());
+    }
+    return FQuat::Identity;
+  }
+
+  CesiumGeospatial::GlobeAnchor anchor(
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
+
+  CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
+      createEastSouthUp(anchor);
+
+  glm::dmat4 modelToEastSouthUp = anchor.getAnchorToLocalTransform(eastSouthUp);
+
+  glm::dquat rotationToEastSouthUp;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      modelToEastSouthUp,
+      nullptr,
+      &rotationToEastSouthUp,
+      nullptr);
+  return VecMath::createQuaternion(rotationToEastSouthUp);
+}
+
+void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
+    const FQuat& EastSouthUpRotation) {
+  if (!this->_actorToECEFIsValid) {
     UE_LOG(
         LogCesium,
-        Warning,
-        TEXT("CesiumGlobeAnchorComponent %s is not spawned in world"),
+        Error,
+        TEXT(
+            "Cannot set the rotation on CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
         *this->GetName());
     return;
   }
 
-  // Compute the position that the world origin will have
-  // after the rebase, indeed by SUBTRACTING the offset
-  const glm::dvec3 oldWorldOriginLocation =
-      VecMath::createVector3D(pWorld->OriginLocation);
-  const glm::dvec3 offset = VecMath::createVector3D(InOffset);
-  const glm::dvec3 newWorldOriginLocation = oldWorldOriginLocation - offset;
+  CesiumGeospatial::GlobeAnchor anchor(
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
-  // Update the Actor transform from the globe transform with the new origin
-  // location explicitly provided.
-  this->_updateActorTransformFromGlobeTransform(newWorldOriginLocation);
+  CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
+      createEastSouthUp(anchor);
+
+  glm::dmat4 modelToEastSouthUp = anchor.getAnchorToLocalTransform(eastSouthUp);
+
+  glm::dvec3 translation;
+  glm::dvec3 scale;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      modelToEastSouthUp,
+      &translation,
+      nullptr,
+      &scale);
+
+  glm::dmat4 newModelToEastSouthUp =
+      CesiumGeometry::Transforms::createTranslationRotationScaleMatrix(
+          translation,
+          VecMath::createQuaternion(EastSouthUpRotation),
+          scale);
+
+  anchor.setAnchorToLocalTransform(eastSouthUp, newModelToEastSouthUp, false);
+  this->_updateFromNativeGlobeAnchor(anchor);
+}
+
+FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
+  if (!this->_actorToECEFIsValid) {
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+          *this->GetName());
+    }
+    return FQuat::Identity;
+  }
+
+  glm::dquat rotationToEarthCenteredEarthFixed;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix),
+      nullptr,
+      &rotationToEarthCenteredEarthFixed,
+      nullptr);
+  return VecMath::createQuaternion(rotationToEarthCenteredEarthFixed);
+}
+
+void UCesiumGlobeAnchorComponent::SetEarthCenteredEarthFixedRotation(
+    const FQuat& EarthCenteredEarthFixedRotation) {
+  if (!this->_actorToECEFIsValid) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot set the rotation on CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+        *this->GetName());
+    return;
+  }
+
+  glm::dvec3 translation;
+  glm::dvec3 scale;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix),
+      &translation,
+      nullptr,
+      &scale);
+
+  glm::dmat4 newModelToEarthCenteredEarthFixed =
+      CesiumGeometry::Transforms::createTranslationRotationScaleMatrix(
+          translation,
+          VecMath::createQuaternion(EarthCenteredEarthFixedRotation),
+          scale);
+
+  this->ActorToEarthCenteredEarthFixedMatrix =
+      VecMath::createMatrix(newModelToEarthCenteredEarthFixed);
 }
 
 void UCesiumGlobeAnchorComponent::Serialize(FArchive& Ar) {
@@ -293,6 +442,16 @@ void UCesiumGlobeAnchorComponent::Serialize(FArchive& Ar) {
     // assume that the previously-stored ECEF transform was valid.
     this->_actorToECEFIsValid = true;
   }
+
+#if WITH_EDITORONLY_DATA
+  if (CesiumVersion <
+      FCesiumCustomVersion::GlobeAnchorTransformationAsFMatrix) {
+    memcpy(
+        this->ActorToEarthCenteredEarthFixedMatrix.M,
+        this->_actorToECEF_Array_DEPRECATED,
+        sizeof(double) * 16);
+  }
+#endif
 }
 
 void UCesiumGlobeAnchorComponent::OnComponentCreated() {
@@ -303,33 +462,35 @@ void UCesiumGlobeAnchorComponent::OnComponentCreated() {
 #if WITH_EDITOR
 void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
-  Super::PostEditChangeProperty(PropertyChangedEvent);
+  if (PropertyChangedEvent.Property) {
+    FName propertyName = PropertyChangedEvent.Property->GetFName();
 
-  if (!PropertyChangedEvent.Property) {
-    return;
+    if (propertyName ==
+        GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
+      this->SetGeoreference(this->Georeference);
+    }
   }
 
-  FName propertyName = PropertyChangedEvent.Property->GetFName();
+  // Call the base class implementation last, because it will call OnRegister,
+  // which will call Sync. So we need to apply the updated values first.
+  Super::PostEditChangeProperty(PropertyChangedEvent);
 
-  if (propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Longitude) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Latitude) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)) {
-    this->_applyCartographicProperties();
-  } else if (
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_X) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Y) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Z)) {
-    this->_applyCartesianProperties();
-  } else if (
-      propertyName ==
-      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
-    this->InvalidateResolvedGeoreference();
+  // Calling the Super implementation above shouldn't change the current
+  // relative transform without also changing _lastRelativeTransform. Except it
+  // can, because in some cases (e.g., on undo/redo), Unreal reruns the Actor's
+  // construction scripts, which can cause the relative transform to be
+  // recomputed from the world transform. That's a problem because later we'll
+  // think the relative transform has changed and will recompute the globe
+  // transform from it. So we set (again) the _lastRelativeTransform here.
+  //
+  // One possible danger is that the construction script _intentionally_ changes
+  // the transform. But we can't reliably distinguish that case from a phantom
+  // transform "change" caused by converting to a world transform and back. And
+  // surely something dodgy would be happening if something _other_ than the
+  // globe anchor were intentionally moving the Actor in the globe anchor's
+  // PostEditChangeProperty, right?
+  if (this->_lastRelativeTransformIsValid) {
+    this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
   }
 }
 #endif
@@ -349,32 +510,22 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
-    if (_onTransformChangedWhileUnregistered.IsValid()) {
-      pOwnerRoot->TransformUpdated.Remove(_onTransformChangedWhileUnregistered);
-    }
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
   }
 
-  // Resolve the georeference, which will also subscribe to the new georeference
-  // (if there is one) and call _onGeoreferenceChanged.
-  // This will update the actor transform with the globe position, but only if
-  // the globe transform is valid.
   this->ResolveGeoreference();
-
-  // If the globe transform is not yet valid, compute it from the actor
-  // transform now.
-  if (!this->_actorToECEFIsValid) {
-    this->_updateGlobeTransformFromActorTransform();
-  }
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
   Super::OnUnregister();
 
   // Unsubscribe from the ResolvedGeoreference.
-  this->InvalidateResolvedGeoreference();
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+  this->ResolvedGeoreference = nullptr;
 
   // Unsubscribe from the TransformUpdated event.
   const AActor* pOwner = this->GetOwner();
@@ -390,11 +541,151 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
     pOwnerRoot->TransformUpdated.RemoveAll(this);
-    _onTransformChangedWhileUnregistered =
-        pOwnerRoot->TransformUpdated.AddLambda(
-            [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) {
-              this->_actorToECEFIsValid = false;
-            });
+  }
+}
+
+CesiumGeospatial::GlobeAnchor
+UCesiumGlobeAnchorComponent::_createNativeGlobeAnchor() const {
+  return createNativeGlobeAnchor(this->ActorToEarthCenteredEarthFixedMatrix);
+}
+
+USceneComponent*
+UCesiumGlobeAnchorComponent::_getRootComponent(bool warnIfNull) const {
+  const AActor* pOwner = this->GetOwner();
+  if (!IsValid(pOwner)) {
+    if (warnIfNull) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("UCesiumGlobeAnchorComponent %s does not have a valid owner."),
+          *this->GetName());
+    }
+    return nullptr;
+  }
+
+  USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
+  if (!IsValid(pOwnerRoot)) {
+    if (warnIfNull) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "The owner of UCesiumGlobeAnchorComponent %s does not have a valid root component."),
+          *this->GetName());
+    }
+    return nullptr;
+  }
+
+  return pOwnerRoot;
+}
+
+FTransform UCesiumGlobeAnchorComponent::_getCurrentRelativeTransform() const {
+  const USceneComponent* pOwnerRoot = this->_getRootComponent(true);
+  return pOwnerRoot->GetRelativeTransform();
+}
+
+void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
+    const FTransform& relativeTransform) {
+  AActor* pOwner = this->GetOwner();
+  if (!IsValid(pOwner)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("UCesiumGlobeAnchorComponent %s does not have a valid owner"),
+        *this->GetName());
+    return;
+  }
+
+  USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
+  if (!IsValid(pOwnerRoot)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "The owner of UCesiumGlobeAnchorComponent %s does not have a valid root component"),
+        *this->GetName());
+    return;
+  }
+
+  // Set the new Actor relative transform, taking care not to do this
+  // recursively.
+  this->_updatingActorTransform = true;
+  pOwnerRoot->SetRelativeTransform(
+      relativeTransform,
+      false,
+      nullptr,
+      this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
+                                          : ETeleportType::None);
+  this->_updatingActorTransform = false;
+
+  this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
+  this->_lastRelativeTransformIsValid = true;
+}
+
+CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
+    _createOrUpdateNativeGlobeAnchorFromRelativeTransform(
+        const FTransform& newRelativeTransform) {
+  ACesiumGeoreference* pGeoreference = this->ResolvedGeoreference;
+  assert(pGeoreference != nullptr);
+
+  const CesiumGeospatial::LocalHorizontalCoordinateSystem& local =
+      pGeoreference->GetCoordinateSystem();
+
+  glm::dmat4 newModelToLocal =
+      VecMath::createMatrix4D(newRelativeTransform.ToMatrixWithScale());
+
+  if (!this->_actorToECEFIsValid) {
+    // Create a new anchor initialized at the new position, because there is no
+    // old one.
+    return CesiumGeospatial::GlobeAnchor::fromAnchorToLocalTransform(
+        local,
+        newModelToLocal);
+  } else {
+    // Create an anchor at the old position and move it to the new one.
+    CesiumGeospatial::GlobeAnchor cppAnchor = this->_createNativeGlobeAnchor();
+    cppAnchor.setAnchorToLocalTransform(
+        local,
+        newModelToLocal,
+        this->AdjustOrientationForGlobeWhenMoving);
+    return cppAnchor;
+  }
+}
+
+CesiumGeospatial::GlobeAnchor
+UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
+    const FMatrix& newActorToECEFMatrix) {
+  if (!this->_actorToECEFIsValid) {
+    // Create a new anchor initialized at the new position, because there is no
+    // old one.
+    return CesiumGeospatial::GlobeAnchor(
+        VecMath::createMatrix4D(newActorToECEFMatrix));
+  } else {
+    // Create an anchor at the old position and move it to the new one.
+    CesiumGeospatial::GlobeAnchor cppAnchor(
+        VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
+    cppAnchor.setAnchorToFixedTransform(
+        VecMath::createMatrix4D(newActorToECEFMatrix),
+        this->AdjustOrientationForGlobeWhenMoving);
+    return cppAnchor;
+  }
+}
+
+void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
+    const CesiumGeospatial::GlobeAnchor& nativeAnchor) {
+  this->ActorToEarthCenteredEarthFixedMatrix =
+      VecMath::createMatrix(nativeAnchor.getAnchorToFixedTransform());
+  this->_actorToECEFIsValid = true;
+
+  // Update the Unreal relative transform
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (IsValid(pGeoreference)) {
+    glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
+        pGeoreference->GetCoordinateSystem());
+
+    this->_setCurrentRelativeTransform(
+        FTransform(VecMath::createMatrix(anchorToLocal)));
+  } else {
+    this->_lastRelativeTransformIsValid = false;
   }
 }
 
@@ -406,7 +697,15 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     return;
   }
 
-  if (!this->ResolvedGeoreference) {
+  this->_setNewActorToECEFFromRelativeTransform();
+}
+
+void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
+  // This method is equivalent to
+  // CesiumGlobeAnchorImpl::SetNewLocalToGlobeFixedMatrixFromTransform in Cesium
+  // for Unity.
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (!IsValid(pGeoreference)) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -416,333 +715,29 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     return;
   }
 
-  if (!this->_actorToECEFIsValid ||
-      !this->AdjustOrientationForGlobeWhenMoving) {
-    // We can't or don't want to adjust the orientation, so just compute the new
-    // globe transform.
-    this->_updateGlobeTransformFromActorTransform();
+  USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
+  if (!IsValid(pOwnerRoot)) {
     return;
   }
 
-  // Also adjust the orientation so that the Object is still "upright" at the
-  // new position on the globe.
-
-  // Store the old globe position and compute the new transform.
-  const glm::dvec3 oldGlobePosition = glm::dvec3(this->_actorToECEF[3]);
-  const glm::dmat4& newGlobeTransform =
-      this->_updateGlobeTransformFromActorTransform();
-
-  // Compute the surface normal rotation between the old and new positions.
-  const glm::dvec3 newGlobePosition = glm::dvec3(newGlobeTransform[3]);
-
-  const glm::dmat3 ecefToUnreal =
-      glm::dmat3(this->ResolvedGeoreference->getCoordinateSystem()
-                     .getEcefToLocalTransformation());
-  const glm::dvec3 oldEllipsoidNormalUnreal = glm::normalize(
-      ecefToUnreal * CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
-                         oldGlobePosition));
-  const glm::dvec3 newEllipsoidNormalUnreal = glm::normalize(
-      ecefToUnreal * CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
-                         newGlobePosition));
-  const glm::dquat ellipsoidNormalRotation =
-      glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
-
-  // Adjust the new rotation by the surface normal rotation
-  const glm::dquat rotation = VecMath::createQuaternion(
-      InRootComponent->GetRelativeRotation().Quaternion());
-  const glm::dquat adjustedRotation = ellipsoidNormalRotation * rotation;
+  // Update with the new local transform, also rotating based on the new
+  // position if desired.
+  FTransform modelToLocal = this->_getCurrentRelativeTransform();
+  CesiumGeospatial::GlobeAnchor cppAnchor =
+      this->_createOrUpdateNativeGlobeAnchorFromRelativeTransform(modelToLocal);
+  this->_updateFromNativeGlobeAnchor(cppAnchor);
 
 #if WITH_EDITOR
-  // In the Editor, mark the root component modified so Undo works properly.
-  InRootComponent->Modify();
+  // In the Editor, mark this component and the root component modified so Undo
+  // works properly.
+  this->Modify();
+  pOwnerRoot->Modify();
 #endif
-
-  // Set the new Actor transform, taking care not to do this recursively.
-  this->_updatingActorTransform = true;
-  InRootComponent->SetRelativeRotation(
-      VecMath::createQuaternion(adjustedRotation),
-      false,
-      nullptr,
-      this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
-                                          : ETeleportType::None);
-  this->_updatingActorTransform = false;
-
-  // Compute the globe transform from the updated Actor transform.
-  this->_updateGlobeTransformFromActorTransform();
 }
 
 void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
   if (this->_actorToECEFIsValid) {
-    this->_updateActorTransformFromGlobeTransform();
-  }
-}
-
-const glm::dmat4&
-UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
-  if (!this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s cannot update globe transform from actor transform because there is no valid Georeference."),
-        *this->GetName());
-    this->_actorToECEFIsValid = false;
-    return this->_actorToECEF;
-  }
-
-  const AActor* pOwner = this->GetOwner();
-  if (!IsValid(pOwner)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("UCesiumGlobeAnchorComponent %s does not have a valid owner"),
-        *this->GetName());
-    this->_actorToECEFIsValid = false;
-    return this->_actorToECEF;
-  }
-
-  const USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (!IsValid(pOwnerRoot)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "The owner of UCesiumGlobeAnchorComponent %s does not have a valid root component"),
-        *this->GetName());
-    this->_actorToECEFIsValid = false;
-    return this->_actorToECEF;
-  }
-
-  // Get the relative world transform.
-  glm::dmat4 actorTransform = VecMath::createMatrix4D(
-      pOwnerRoot->GetRelativeTransform().ToMatrixWithScale());
-
-  // Convert to an absolute world transform
-  actorTransform[3] += CesiumActors::getWorldOrigin4D(pOwner);
-  actorTransform[3].w = 1.0;
-
-  // Convert to ECEF
-  const glm::dmat4& absoluteUnrealToEcef =
-      this->ResolvedGeoreference->getCoordinateSystem()
-          .getLocalToEcefTransformation();
-
-  this->_actorToECEF = absoluteUnrealToEcef * actorTransform;
-  this->_actorToECEFIsValid = true;
-
-  this->_updateCartesianProperties();
-  this->_updateCartographicProperties();
-
-#if WITH_EDITOR
-  // In the Editor, mark this component modified so Undo works properly.
-  this->Modify();
-#endif
-
-  return this->_actorToECEF;
-}
-
-FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
-    const std::optional<glm::dvec3>& newWorldOrigin) {
-  const AActor* pOwner = this->GetOwner();
-  if (!IsValid(pOwner)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("UCesiumGlobeAnchorComponent %s does not have a valid owner"),
-        *this->GetName());
-    return FTransform();
-  }
-
-  USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (!IsValid(pOwnerRoot)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "The owner of UCesiumGlobeAnchorComponent %s does not have a valid root component"),
-        *this->GetName());
-    return FTransform();
-  }
-
-  if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "UCesiumGlobeAnchorComponent %s cannot update Actor transform from Globe transform because the Globe transform is not known."),
-        *this->GetName());
-    return pOwnerRoot->GetRelativeTransform();
-  }
-
-  const CesiumGeospatial::LocalHorizontalCoordinateSystem& coordinateSystem =
-      this->ResolveGeoreference()->getCoordinateSystem();
-
-  // Transform ECEF to UE absolute world
-  const glm::dmat4& ecefToAbsoluteUnreal =
-      coordinateSystem.getEcefToLocalTransformation();
-  glm::dmat4 actorToUnreal = ecefToAbsoluteUnreal * this->_actorToECEF;
-
-  // Transform UE absolute world to UE relative world
-  actorToUnreal[3] -= newWorldOrigin ? glm::dvec4(*newWorldOrigin, 1.0)
-                                     : CesiumActors::getWorldOrigin4D(pOwner);
-  actorToUnreal[3].w = 1.0;
-
-  FTransform actorTransform = FTransform(VecMath::createMatrix(actorToUnreal));
-
-#if WITH_EDITOR
-  // In the Editor, mark the root component modified so Undo works properly.
-  pOwnerRoot->Modify();
-#endif
-
-  // Set the Actor transform
-  this->_updatingActorTransform = true;
-  pOwnerRoot->SetRelativeTransform(
-      actorTransform,
-      false,
-      nullptr,
-      this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
-                                          : ETeleportType::None);
-  this->_updatingActorTransform = false;
-
-  return actorTransform;
-}
-
-const glm::dmat4& UCesiumGlobeAnchorComponent::_setGlobeTransform(
-    const glm::dmat4& newTransform) {
-#if WITH_EDITOR
-  // In the Editor, mark this component modified so Undo works properly.
-  this->Modify();
-#endif
-
-  // If we don't yet know our globe transform, we can't update the orientation
-  // for globe curvature, so just replace the globe transform and we're done.
-  // Do the same if we don't want to update the orientation for globe curvature.
-  if (!this->_actorToECEFIsValid ||
-      !this->AdjustOrientationForGlobeWhenMoving) {
-    this->_actorToECEF = newTransform;
-    this->_updateActorTransformFromGlobeTransform();
-    return this->_actorToECEF;
-  }
-
-  // Save the old position and apply the new transform.
-  const glm::dvec3 oldPosition = glm::dvec3(this->_actorToECEF[3]);
-  const glm::dvec3 newPosition = glm::dvec3(newTransform[3]);
-
-  // Adjust the orientation so that the Object is still "upright" at the new
-  // position on the globe.
-
-  // Compute the surface normal rotation between the old and new positions.
-  const glm::dquat ellipsoidNormalRotation = glm::rotation(
-      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(oldPosition),
-      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(newPosition));
-
-  // Adjust the new rotation by the surface normal rotation
-  glm::dmat3 newRotation =
-      glm::mat3_cast(ellipsoidNormalRotation) * glm::dmat3(newTransform);
-  this->_actorToECEF = glm::dmat4(
-      glm::dvec4(newRotation[0], 0.0),
-      glm::dvec4(newRotation[1], 0.0),
-      glm::dvec4(newRotation[2], 0.0),
-      glm::dvec4(newPosition, 1.0));
-
-  // Update the Actor transform from the new globe transform.
-  this->_updateActorTransformFromGlobeTransform();
-
-  return this->_actorToECEF;
-}
-
-void UCesiumGlobeAnchorComponent::_applyCartesianProperties() {
-  // If we don't yet know our globe transform, compute it from the Actor
-  // transform now. But restore the ECEF position properties afterward.
-  if (!this->_actorToECEFIsValid) {
-    double x = this->ECEF_X;
-    double y = this->ECEF_Y;
-    double z = this->ECEF_Z;
-    this->_updateGlobeTransformFromActorTransform();
-    this->ECEF_X = x;
-    this->ECEF_Y = y;
-    this->ECEF_Z = z;
-  }
-
-  glm::dmat4 transform = this->_actorToECEF;
-  transform[3] = glm::dvec4(this->ECEF_X, this->ECEF_Y, this->ECEF_Z, 1.0);
-  this->_setGlobeTransform(transform);
-
-  this->_updateCartographicProperties();
-}
-
-void UCesiumGlobeAnchorComponent::_updateCartesianProperties() {
-  if (!this->_actorToECEFIsValid) {
-    return;
-  }
-
-  this->ECEF_X = this->_actorToECEF[3].x;
-  this->ECEF_Y = this->_actorToECEF[3].y;
-  this->ECEF_Z = this->_actorToECEF[3].z;
-}
-
-void UCesiumGlobeAnchorComponent::_applyCartographicProperties() {
-  // If we don't yet know our globe transform, compute it from the Actor
-  // transform now. But restore the LLH position properties afterward.
-  if (!this->_actorToECEFIsValid) {
-    double longitude = this->Longitude;
-    double latitude = this->Latitude;
-    double height = this->Height;
-    this->_updateGlobeTransformFromActorTransform();
-    this->Longitude = longitude;
-    this->Latitude = latitude;
-    this->Height = height;
-  }
-
-  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-  if (!pGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "The UCesiumGlobeAnchorComponent %s does not have a valid Georeference"),
-        *this->GetName());
-  }
-
-  glm::dmat4 transform = this->_actorToECEF;
-  glm::dvec3 newEcef =
-      CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-          CesiumGeospatial::Cartographic::fromDegrees(
-              this->Longitude,
-              this->Latitude,
-              this->Height));
-  transform[3] = glm::dvec4(newEcef, 1.0);
-  this->_setGlobeTransform(transform);
-
-  this->_updateCartesianProperties();
-}
-
-void UCesiumGlobeAnchorComponent::_updateCartographicProperties() {
-  if (!this->_actorToECEFIsValid) {
-    return;
-  }
-
-  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-  if (!pGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "The UCesiumGlobeAnchorComponent %s does not have a valid Georeference"),
-        *this->GetName());
-  }
-
-  std::optional<CesiumGeospatial::Cartographic> llh =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
-          glm::dvec3(this->_actorToECEF[3]));
-  if (llh) {
-    this->Longitude = CesiumUtility::Math::radiansToDegrees(llh->longitude);
-    this->Latitude = CesiumUtility::Math::radiansToDegrees(llh->latitude);
-    this->Height = llh->height;
-  } else {
-    // Too close to the center of the Earth to compute
-    // Longitude/Latitude/Height. So use a default.
-    this->Longitude = 0.0;
-    this->Latitude = 0.0;
-    this->Height = 0.0;
+    this->SetActorToEarthCenteredEarthFixedMatrix(
+        this->ActorToEarthCenteredEarthFixedMatrix);
   }
 }

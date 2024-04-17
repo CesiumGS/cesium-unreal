@@ -1,6 +1,7 @@
 #if WITH_EDITOR
 
 #include "CesiumGeoreference.h"
+#include "CesiumOriginShiftComponent.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumTestHelpers.h"
 #include "Editor.h"
@@ -14,7 +15,7 @@
 
 BEGIN_DEFINE_SPEC(
     FSubLevelsSpec,
-    "Cesium.SubLevels",
+    "Cesium.Unit.SubLevels",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 
@@ -84,6 +85,11 @@ void FSubLevelsSpec::Define() {
     trackForPlay(pGeoreference);
 
     pPawn = pWorld->SpawnActor<AGlobeAwareDefaultPawn>();
+    pPawn->AddComponentByClass(
+        UCesiumOriginShiftComponent::StaticClass(),
+        false,
+        FTransform::Identity,
+        false);
     trackForPlay(pPawn);
     pPawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
   });

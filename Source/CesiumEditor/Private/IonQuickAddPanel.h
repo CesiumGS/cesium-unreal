@@ -37,6 +37,11 @@ class IonQuickAddPanel : public SCompoundWidget {
   void Construct(const FArguments& InArgs);
 
   void AddItem(const QuickAddItem& item);
+  void ClearItems();
+  void Refresh();
+
+  const FText& GetMessage() const;
+  void SetMessage(const FText& message);
 
 private:
   TSharedRef<SWidget> QuickAddList();
@@ -45,12 +50,12 @@ private:
       const TSharedRef<STableViewBase>& list);
 
   void AddItemToLevel(TSharedRef<QuickAddItem> item);
-  void AddBlankTilesetToLevel();
   void AddIonTilesetToLevel(TSharedRef<QuickAddItem> item);
   void AddCesiumSunSkyToLevel();
   void AddDynamicPawnToLevel();
-  void AddCartographicPolygonToLevel();
 
   TArray<TSharedRef<QuickAddItem>> _quickAddItems;
   std::unordered_set<std::string> _itemsBeingAdded;
+  TSharedPtr<SListView<TSharedRef<QuickAddItem>>> _pQuickAddList;
+  FText _message;
 };

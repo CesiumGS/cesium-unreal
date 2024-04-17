@@ -74,6 +74,7 @@ To build a "Release" build of cesium-native,
   - Add a new configuration by clicking the `+` and choose `x64-Release`. 
   - Select the new "x64-Release" from the Solution Configuration dropdown. 
   - Right-click on `CMakeLists.txt` again and choose "Install".
+> In Visual Studio, this defaults to the "RelWithDebInfo" configuration type. You can change this at any time
 
 ## Visual Studio Code
 
