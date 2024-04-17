@@ -3338,8 +3338,9 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingTranslucent.MI_CesiumThreeOverlaysAndClippingTranslucent")),
           BaseMaterialWithWater(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingAndWater.MI_CesiumThreeOverlaysAndClippingAndWater")),
-          TransparentTiny(TEXT(
-              "/CesiumForUnreal/Textures/TransparentTiny.TransparentTiny")) {}
+          TransparentTiny(
+              TEXT("/CesiumForUnreal/Textures/TransparentTiny.TransparentTiny")) {
+    }
   };
   static FConstructorStatics ConstructorStatics;
 
