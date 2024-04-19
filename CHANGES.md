@@ -12,6 +12,10 @@
   - `North` -> `RectangleNorth`
 - `UseWebMercatorProjection` has been deprecated on `CesiumWebMapTileServiceRasterOverlay`. Instead, use the `Projection` enum property to specify between `Geographic` or `WebMercator` projection.
 
+##### Additions :tada:
+
+- Added `TileWidth` and `TileHeight` properties to `CesiumWebMapTileServiceRasterOverlay`.
+
 ##### Fixes :wrench:
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
