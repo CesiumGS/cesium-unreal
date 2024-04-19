@@ -12,10 +12,12 @@
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
-  CesiumRasterOverlays::WebMapTileServiceRasterOverlayOptions wmtsOptions;
-  if (!TileMatrixSetID.IsEmpty()) {
-    wmtsOptions.tileMatrixSetID = TCHAR_TO_UTF8(*this->TileMatrixSetID);
+  if (this->BaseUrl.IsEmpty()) {
+    // Don't create an overlay with an empty base URL.
+    return nullptr;
   }
+
+  CesiumRasterOverlays::WebMapTileServiceRasterOverlayOptions wmtsOptions;
   if (!Style.IsEmpty()) {
     wmtsOptions.style = TCHAR_TO_UTF8(*this->Style);
   }
@@ -25,10 +27,17 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
   if (!Format.IsEmpty()) {
     wmtsOptions.format = TCHAR_TO_UTF8(*this->Format);
   }
-  if (MaximumLevel > MinimumLevel && bSpecifyZoomLevels) {
+  if (!TileMatrixSetID.IsEmpty()) {
+    wmtsOptions.tileMatrixSetID = TCHAR_TO_UTF8(*this->TileMatrixSetID);
+  }
+
+  if (bSpecifyZoomLevels && MaximumLevel > MinimumLevel) {
     wmtsOptions.minimumLevel = MinimumLevel;
     wmtsOptions.maximumLevel = MaximumLevel;
   }
+
+  wmtsOptions.tileWidth = this->TileWidth;
+  wmtsOptions.tileHeight = this->TileHeight;
 
   CesiumGeospatial::Projection projection;
   if (this->UseWebMercatorProjection) {
@@ -38,9 +47,14 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
     projection = CesiumGeospatial::GeographicProjection();
     wmtsOptions.projection = projection;
   }
+
   if (bSpecifyTilingScheme) {
     CesiumGeospatial::GlobeRectangle globeRectangle =
-        CesiumGeospatial::GlobeRectangle::fromDegrees(West, South, East, North);
+        CesiumGeospatial::GlobeRectangle::fromDegrees(
+            RectangleWest,
+            RectangleSouth,
+            RectangleEast,
+            RectangleNorth);
     CesiumGeometry::Rectangle coverageRectangle =
         CesiumGeospatial::projectRectangleSimple(projection, globeRectangle);
     wmtsOptions.coverageRectangle = coverageRectangle;
@@ -49,6 +63,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
         RootTilesX,
         RootTilesY);
   }
+
   if (bSpecifyTileMatrixSetLabels) {
     if (!TileMatrixSetLabels.IsEmpty()) {
       std::vector<std::string> labels;
@@ -70,7 +85,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
   }
   return std::make_unique<CesiumRasterOverlays::WebMapTileServiceRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
-      TCHAR_TO_UTF8(*this->Url),
+      TCHAR_TO_UTF8(*this->BaseUrl),
       std::vector<CesiumAsync::IAssetAccessor::THeader>(),
       wmtsOptions,
       options);

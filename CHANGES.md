@@ -2,6 +2,15 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- Renamed the following properties on `CesiumWebMapTileServiceRasterOverlay`:
+  - `Url` -> `BaseUrl`
+  - `West` -> `RectangleWest`
+  - `South` -> `RectangleSouth`
+  - `East` -> `RectangleEast`
+  - `North` -> `RectangleNorth`
+
 ##### Fixes :wrench:
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
