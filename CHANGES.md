@@ -10,10 +10,12 @@
   - `South` -> `RectangleSouth`
   - `East` -> `RectangleEast`
   - `North` -> `RectangleNorth`
+- `UseWebMercatorProjection` has been deprecated on `CesiumWebMapTileServiceRasterOverlay`. Instead, use the `Projection` enum property to specify between `Geographic` or `WebMercator` projection.
 
 ##### Fixes :wrench:
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
+- Fixed a bug where `CesiumTileMapServiceRasterOverlay`, `CesiumWebMapServiceRasterOverlay`, and `CesiumWebMapTileServiceRasterOverlay` would attempt to load empty URLs.
 
 ### v2.4.1 - 2024-04-01
 

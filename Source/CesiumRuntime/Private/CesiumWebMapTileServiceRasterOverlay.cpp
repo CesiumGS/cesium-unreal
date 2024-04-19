@@ -2,12 +2,30 @@
 
 #include "CesiumWebMapTileServiceRasterOverlay.h"
 
+#include "CesiumCustomVersion.h"
 #include "CesiumGeometry/QuadtreeTilingScheme.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
 #include "CesiumRasterOverlays/WebMapTileServiceRasterOverlay.h"
 
 #include "CesiumRuntime.h"
+
+void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+  const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::WebMapTileServiceProjectionAsEnum) {
+    // In previous versions, the projection of the overlay was controlled by
+    // boolean, rather than being explicitly specified by an enum.
+    this->Projection =
+        this->UseWebMercatorProjection_DEPRECATED
+            ? ECesiumWebMapTileServiceRasterOverlayProjection::WebMercator
+            : ECesiumWebMapTileServiceRasterOverlayProjection::Geographic;
+  }
+}
 
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
@@ -39,13 +57,11 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
   wmtsOptions.tileWidth = this->TileWidth;
   wmtsOptions.tileHeight = this->TileHeight;
 
-  CesiumGeospatial::Projection projection;
-  if (this->UseWebMercatorProjection) {
-    projection = CesiumGeospatial::WebMercatorProjection();
-    wmtsOptions.projection = projection;
+  if (this->Projection ==
+      ECesiumWebMapTileServiceRasterOverlayProjection::Geographic) {
+    wmtsOptions.projection = CesiumGeospatial::GeographicProjection();
   } else {
-    projection = CesiumGeospatial::GeographicProjection();
-    wmtsOptions.projection = projection;
+    wmtsOptions.projection = CesiumGeospatial::WebMercatorProjection();
   }
 
   if (bSpecifyTilingScheme) {
@@ -56,7 +72,9 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
             RectangleEast,
             RectangleNorth);
     CesiumGeometry::Rectangle coverageRectangle =
-        CesiumGeospatial::projectRectangleSimple(projection, globeRectangle);
+        CesiumGeospatial::projectRectangleSimple(
+            *wmtsOptions.projection,
+            globeRectangle);
     wmtsOptions.coverageRectangle = coverageRectangle;
     wmtsOptions.tilingScheme = CesiumGeometry::QuadtreeTilingScheme(
         coverageRectangle,

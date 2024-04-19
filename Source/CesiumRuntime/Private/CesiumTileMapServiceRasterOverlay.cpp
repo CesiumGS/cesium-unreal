@@ -7,6 +7,11 @@
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumTileMapServiceRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
+  if (this->Url.IsEmpty()) {
+    // Don't create an overlay with an empty URL.
+    return nullptr;
+  }
+
   CesiumRasterOverlays::TileMapServiceRasterOverlayOptions tmsOptions;
   if (MaximumLevel > MinimumLevel && bSpecifyZoomLevels) {
     tmsOptions.minimumLevel = MinimumLevel;

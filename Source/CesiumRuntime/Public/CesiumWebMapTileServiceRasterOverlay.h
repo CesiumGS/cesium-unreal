@@ -14,7 +14,7 @@
 UENUM(BlueprintType)
 enum class ECesiumWebMapTileServiceRasterOverlayProjection : uint8 {
   /**
-   * This component is disabled and will have no effect.
+   * The raster overlay is projected using Web Mercator.
    */
   WebMercator,
 
@@ -100,12 +100,19 @@ public:
       meta = (EditCondition = "bSpecifyTileMatrixSetLabels"))
   TArray<FString> TileMatrixSetLabels;
 
+  UPROPERTY(
+      meta =
+          (DeprecatedProperty, DeprecationMessage = "Use Projection instead."))
+  bool UseWebMercatorProjection_DEPRECATED;
+
   /**
-   * False to use geographic projection, true to use webmercator projection.
-   * For instance, EPSG:4326 uses geographic and EPSG:3857 uses webmercator.
+   * The type of projection used to project the WMTS imagery onto the globe.
+   * For instance, EPSG:4326 uses geographic projection and EPSG:3857 uses Web
+   * Mercator.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool UseWebMercatorProjection;
+  ECesiumWebMapTileServiceRasterOverlayProjection Projection =
+      ECesiumWebMapTileServiceRasterOverlayProjection::WebMercator;
 
   /**
    * Set this to true to specify the quadtree tiling scheme according to the
@@ -259,6 +266,8 @@ public:
       Category = "Cesium",
       meta = (ClampMin = 64, ClampMax = 2048))
   int32 TileHeight = 256;
+
+  virtual void Serialize(FArchive& Ar) override;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(

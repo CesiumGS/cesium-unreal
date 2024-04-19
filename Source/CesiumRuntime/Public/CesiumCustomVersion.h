@@ -37,6 +37,10 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // CesiumIonRasterOverlay.
     CesiumIonServer = 7,
 
+    // Replaced the UseWebMercatorProjection property in
+    // CesiumWebMapTileServiceOverlay with the enum Projection property.
+    WebMapTileServiceProjectionAsEnum = 8,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };
