@@ -61,6 +61,7 @@ CesiumIonSession::CesiumIonSession(
       _assets(std::nullopt),
       _tokens(std::nullopt),
       _defaults(std::nullopt),
+      _appData(std::nullopt),
       _isConnecting(false),
       _isResuming(false),
       _isLoadingProfile(false),
@@ -105,10 +106,8 @@ void CesiumIonSession::connect() {
   std::move(futureApiUrl)
       .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer](
                             std::optional<std::string>&& ionApiUrl) {
-        CesiumAsync::Promise<
-            CesiumIonClient::Response<CesiumIonClient::ApplicationData>>
-            promise = thiz->_asyncSystem.createPromise<
-                CesiumIonClient::Response<CesiumIonClient::ApplicationData>>();
+        CesiumAsync::Promise<bool> promise =
+            thiz->_asyncSystem.createPromise<bool>();
 
         if (!pServer.IsValid()) {
           promise.reject(
@@ -133,29 +132,8 @@ void CesiumIonSession::connect() {
         }
 
         // Make request to /appData to learn the server's authentication mode
-        return CesiumIonClient::Connection::appData(
-            thiz->_asyncSystem,
-            thiz->_pAssetAccessor,
-            std::string(TCHAR_TO_UTF8(*pServer->ApiUrl)));
+        return thiz->ensureAppDataLoaded();
       })
-      .thenInMainThread(
-          [ionServerUrl, thiz, pServer = this->_pServer](
-              CesiumIonClient::Response<CesiumIonClient::ApplicationData>&&
-                  appData) {
-            CesiumAsync::Promise<void> promise =
-                thiz->_asyncSystem.createPromise<void>();
-
-            thiz->_appData = appData.value;
-            if (!appData.value.has_value()) {
-              promise.reject(std::runtime_error(fmt::format(
-                  "Failed to obtain ion server application data: {}",
-                  appData.errorMessage)));
-            } else {
-              promise.resolve();
-            }
-
-            return promise.getFuture();
-          })
       .catchInMainThread(
           [ionServerUrl, thiz, pServer = this->_pServer](std::exception&& e) {
             UE_LOG(
@@ -167,47 +145,55 @@ void CesiumIonSession::connect() {
             thiz->_connection = std::nullopt;
             thiz->ConnectionUpdated.Broadcast();
           })
-      .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer]() {
-        if (thiz->_appData->needsOauthAuthentication()) {
+      .thenInMainThread(
+          [ionServerUrl, thiz, pServer = this->_pServer](bool loadedAppData) {
+            if (!loadedAppData || !thiz->_appData.has_value()) {
+              Promise<Connection> promise =
+                  thiz->_asyncSystem.createPromise<Connection>();
+              promise.reject(std::runtime_error(
+                  "Failed to obtain _appData, can't create connection"));
+              return promise.getFuture();
+            }
 
-          int64_t clientID = pServer->OAuth2ApplicationID;
-          return CesiumIonClient::Connection::authorize(
-              thiz->_asyncSystem,
-              thiz->_pAssetAccessor,
-              "Cesium for Unity",
-              clientID,
-              "/cesium-for-unity/oauth2/callback",
-              {"assets:list",
-               "assets:read",
-               "profile:read",
-               "tokens:read",
-               "tokens:write",
-               "geocode"},
-              [thiz](const std::string& url) {
-                thiz->_authorizeUrl = url;
+            if (thiz->_appData->needsOauthAuthentication()) {
+              int64_t clientID = pServer->OAuth2ApplicationID;
+              return CesiumIonClient::Connection::authorize(
+                  thiz->_asyncSystem,
+                  thiz->_pAssetAccessor,
+                  "Cesium for Unity",
+                  clientID,
+                  "/cesium-for-unity/oauth2/callback",
+                  {"assets:list",
+                   "assets:read",
+                   "profile:read",
+                   "tokens:read",
+                   "tokens:write",
+                   "geocode"},
+                  [thiz](const std::string& url) {
+                    thiz->_authorizeUrl = url;
 
-                thiz->_redirectUrl =
-                    CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
+                    thiz->_redirectUrl =
+                        CesiumUtility::Uri::getQueryValue(url, "redirect_uri");
 
-                FPlatformProcess::LaunchURL(
-                    UTF8_TO_TCHAR(thiz->_authorizeUrl.c_str()),
-                    NULL,
-                    NULL);
-              },
-              thiz->_appData.value(),
-              std::string(TCHAR_TO_UTF8(*pServer->ApiUrl)),
-              CesiumUtility::Uri::resolve(ionServerUrl, "oauth"));
-        }
+                    FPlatformProcess::LaunchURL(
+                        UTF8_TO_TCHAR(thiz->_authorizeUrl.c_str()),
+                        NULL,
+                        NULL);
+                  },
+                  thiz->_appData.value(),
+                  std::string(TCHAR_TO_UTF8(*pServer->ApiUrl)),
+                  CesiumUtility::Uri::resolve(ionServerUrl, "oauth"));
+            }
 
-        return thiz->_asyncSystem
-            .createResolvedFuture<CesiumIonClient::Connection>(
-                CesiumIonClient::Connection(
-                    thiz->_asyncSystem,
-                    thiz->_pAssetAccessor,
-                    "",
-                    thiz->_appData.value(),
-                    std::string(TCHAR_TO_UTF8(*pServer->ApiUrl))));
-      })
+            return thiz->_asyncSystem
+                .createResolvedFuture<CesiumIonClient::Connection>(
+                    CesiumIonClient::Connection(
+                        thiz->_asyncSystem,
+                        thiz->_pAssetAccessor,
+                        "",
+                        thiz->_appData.value(),
+                        std::string(TCHAR_TO_UTF8(*pServer->ApiUrl))));
+          })
       .thenInMainThread([ionServerUrl, thiz, pServer = this->_pServer](
                             CesiumIonClient::Connection&& connection) {
         thiz->_isConnecting = false;
@@ -242,8 +228,7 @@ void CesiumIonSession::resume() {
   const FString* pUserAccessToken =
       pSettings->UserAccessTokenMap.Find(this->_pServer.Get());
 
-  if (!pUserAccessToken || pUserAccessToken->IsEmpty() ||
-      !this->_appData.has_value()) {
+  if (!pUserAccessToken || pUserAccessToken->IsEmpty()) {
     // No existing session to resume.
     return;
   }
@@ -260,7 +245,18 @@ void CesiumIonSession::resume() {
   std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
 
   // Verify that the connection actually works.
-  pConnection->me()
+  this->ensureAppDataLoaded()
+      .thenInMainThread([thiz, pConnection](bool loadedAppData) {
+        if (!loadedAppData || !thiz->_appData.has_value()) {
+          Promise<Response<Profile>> promise =
+              thiz->_asyncSystem.createPromise<Response<Profile>>();
+
+          promise.reject(std::runtime_error(
+              "Failed to obtain _appData, can't resume connection"));
+          return promise.getFuture();
+        }
+        return pConnection->me();
+      })
       .thenInMainThread([thiz, pConnection](Response<Profile>&& response) {
         logResponseErrors(response);
         if (response.value.has_value()) {
@@ -598,4 +594,43 @@ void CesiumIonSession::startQueuedLoads() {
     this->refreshTokens();
   if (this->_loadDefaultsQueued)
     this->refreshDefaults();
+}
+
+CesiumAsync::Future<bool> CesiumIonSession::ensureAppDataLoaded() {
+  UCesiumIonServer* pServer = this->_pServer.Get();
+  std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
+
+  return CesiumIonClient::Connection::appData(
+             thiz->_asyncSystem,
+             thiz->_pAssetAccessor,
+             std::string(TCHAR_TO_UTF8(*pServer->ApiUrl)))
+      .thenInMainThread(
+          [thiz, pServer = this->_pServer](
+              CesiumIonClient::Response<CesiumIonClient::ApplicationData>&&
+                  appData) {
+            CesiumAsync::Promise<bool> promise =
+                thiz->_asyncSystem.createPromise<bool>();
+
+            thiz->_appData = appData.value;
+            if (!appData.value.has_value()) {
+              UE_LOG(
+                  LogCesiumEditor,
+                  Error,
+                  TEXT("Failed to obtain ion server application data: %s"),
+                  UTF8_TO_TCHAR(appData.errorMessage.c_str()));
+              promise.resolve(false);
+            } else {
+              promise.resolve(true);
+            }
+
+            return promise.getFuture();
+          })
+      .catchInMainThread([thiz, pServer = this->_pServer](std::exception&& e) {
+        UE_LOG(
+            LogCesiumEditor,
+            Error,
+            TEXT("Error obtaining appData: %s"),
+            UTF8_TO_TCHAR(e.what()));
+        return thiz->_asyncSystem.createResolvedFuture(false);
+      });
 }

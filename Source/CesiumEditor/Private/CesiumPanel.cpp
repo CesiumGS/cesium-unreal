@@ -145,7 +145,7 @@ static bool isSignedIn() {
       ->isConnected();
 }
 
-static bool doesNeedToken() {
+static bool requiresTokenForServer() {
   return FCesiumEditorModule::serverManager()
       .GetCurrentSession()
       ->getAppData()
@@ -166,7 +166,7 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
   commandList->MapAction(
       FCesiumCommands::Get().OpenTokenSelector,
       FExecuteAction::CreateSP(this, &CesiumPanel::openTokenSelector),
-      FCanExecuteAction::CreateStatic(doesNeedToken));
+      FCanExecuteAction::CreateStatic(requiresTokenForServer));
   commandList->MapAction(
       FCesiumCommands::Get().SignOut,
       FExecuteAction::CreateSP(this, &CesiumPanel::signOut),
