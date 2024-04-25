@@ -144,6 +144,7 @@ void CesiumIonSession::connect() {
             thiz->_isConnecting = false;
             thiz->_connection = std::nullopt;
             thiz->ConnectionUpdated.Broadcast();
+            return thiz->_asyncSystem.createResolvedFuture(false);
           })
       .thenInMainThread(
           [ionServerUrl, thiz, pServer = this->_pServer](bool loadedAppData) {
