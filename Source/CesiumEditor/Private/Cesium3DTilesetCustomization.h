@@ -23,4 +23,6 @@ public:
 
   static void SortCustomDetailsCategories(
       const TMap<FName, IDetailCategoryBuilder*>& AllCategoryMap);
+
+  static FName RegisteredLayoutName;
 };

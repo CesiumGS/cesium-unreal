@@ -41,6 +41,8 @@ private:
   TArray<TWeakObjectPtr<UObject>> SelectedObjects;
   TArray<TObjectPtr<UCesiumGlobeAnchorDerivedProperties>> DerivedObjects;
   TArray<UObject*> DerivedPointers;
+
+  static FName RegisteredLayoutName;
 };
 
 UCLASS()

@@ -22,4 +22,6 @@ public:
 private:
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LongitudeEditor;
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LatitudeEditor;
+
+  static FName RegisteredLayoutName;
 };
