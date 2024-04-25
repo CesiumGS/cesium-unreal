@@ -95,10 +95,11 @@ public class CesiumRuntime : ModuleRules
             "CesiumGltf",
             "CesiumJsonReader",
             "CesiumRasterOverlays",
+            "CesiumQuantizedMeshTerrain",
             "CesiumUtility",
             "csprng",
             "draco",
-            "ktx_read",
+            "ktx",
             //"MikkTSpace",
             "meshoptimizer",
             "modp_b64",
@@ -109,7 +110,6 @@ public class CesiumRuntime : ModuleRules
             "turbojpeg",
             "uriparser",
             "webpdecoder",
-            "ktx_read",
         };
 
         // Use our own copy of MikkTSpace on Android.
