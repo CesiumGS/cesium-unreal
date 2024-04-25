@@ -1,5 +1,15 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
+
+### v2.4.1 - 2024-04-01
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.33.0 to v0.34.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.4.0 - 2024-03-01
 
 ##### Additions :tada:

@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "CesiumPropertyTextureProperty.h"
