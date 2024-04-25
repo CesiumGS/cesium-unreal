@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #if WITH_EDITOR
 
 #include "CesiumGeoreference.h"
