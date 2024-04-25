@@ -228,37 +228,37 @@ void CesiumIonSession::resume() {
 
   this->_isResuming = true;
 
-  std::shared_ptr<Connection> pConnection = std::make_shared<Connection>(
-      this->_asyncSystem,
-      this->_pAssetAccessor,
-      TCHAR_TO_UTF8(**pUserAccessToken),
-      *this->_appData,
-      TCHAR_TO_UTF8(*this->_pServer->ApiUrl));
-
   std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
 
   // Verify that the connection actually works.
   this->ensureAppDataLoaded()
-      .thenInMainThread([thiz, pConnection](bool loadedAppData) {
+      .thenInMainThread([thiz, pUserAccessToken](bool loadedAppData) {
         if (!loadedAppData || !thiz->_appData.has_value()) {
-          Promise<Response<Profile>> promise =
-              thiz->_asyncSystem.createPromise<Response<Profile>>();
+          Promise<void> promise = thiz->_asyncSystem.createPromise<void>();
 
           promise.reject(std::runtime_error(
               "Failed to obtain _appData, can't resume connection"));
           return promise.getFuture();
         }
-        return pConnection->me();
-      })
-      .thenInMainThread([thiz, pConnection](Response<Profile>&& response) {
-        logResponseErrors(response);
-        if (response.value.has_value()) {
-          thiz->_connection = std::move(*pConnection);
-        }
-        thiz->_isResuming = false;
-        thiz->ConnectionUpdated.Broadcast();
 
-        thiz->startQueuedLoads();
+        std::shared_ptr<Connection> pConnection = std::make_shared<Connection>(
+            thiz->_asyncSystem,
+            thiz->_pAssetAccessor,
+            TCHAR_TO_UTF8(**pUserAccessToken),
+            *thiz->_appData,
+            TCHAR_TO_UTF8(*thiz->_pServer->ApiUrl));
+
+        return pConnection->me().thenInMainThread(
+            [thiz, pConnection](Response<Profile>&& response) {
+              logResponseErrors(response);
+              if (response.value.has_value()) {
+                thiz->_connection = std::move(*pConnection);
+              }
+              thiz->_isResuming = false;
+              thiz->ConnectionUpdated.Broadcast();
+
+              thiz->startQueuedLoads();
+            });
       })
       .catchInMainThread([thiz](std::exception&& e) {
         logResponseErrors(e);
@@ -454,7 +454,10 @@ const CesiumIonClient::Defaults& CesiumIonSession::getDefaults() {
 
 const CesiumIonClient::ApplicationData& CesiumIonSession::getAppData() {
   static const CesiumIonClient::ApplicationData empty{};
-  return this->_appData.value_or(empty);
+  if (this->_appData) {
+    return *this->_appData;
+  }
+  return empty;
 }
 
 bool CesiumIonSession::refreshProfileIfNeeded() {
