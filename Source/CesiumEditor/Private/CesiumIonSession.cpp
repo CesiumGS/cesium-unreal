@@ -134,18 +134,6 @@ void CesiumIonSession::connect() {
         // Make request to /appData to learn the server's authentication mode
         return thiz->ensureAppDataLoaded();
       })
-      .catchInMainThread(
-          [ionServerUrl, thiz, pServer = this->_pServer](std::exception&& e) {
-            UE_LOG(
-                LogCesiumEditor,
-                Error,
-                TEXT("Error connecting: %s"),
-                UTF8_TO_TCHAR(e.what()));
-            thiz->_isConnecting = false;
-            thiz->_connection = std::nullopt;
-            thiz->ConnectionUpdated.Broadcast();
-            return thiz->_asyncSystem.createResolvedFuture(false);
-          })
       .thenInMainThread(
           [ionServerUrl, thiz, pServer = this->_pServer](bool loadedAppData) {
             if (!loadedAppData || !thiz->_appData.has_value()) {
@@ -213,6 +201,11 @@ void CesiumIonSession::connect() {
       })
       .catchInMainThread(
           [ionServerUrl, thiz, pServer = this->_pServer](std::exception&& e) {
+            UE_LOG(
+                LogCesiumEditor,
+                Error,
+                TEXT("Error connecting: %s"),
+                UTF8_TO_TCHAR(e.what()));
             thiz->_isConnecting = false;
             thiz->_connection = std::nullopt;
             thiz->ConnectionUpdated.Broadcast();
