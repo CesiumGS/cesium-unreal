@@ -135,7 +135,6 @@ private:
 
   bool _isConnecting;
   bool _isResuming;
-  bool _hasEverConnected = false;
   bool _isLoadingProfile;
   bool _isLoadingAssets;
   bool _isLoadingTokens;

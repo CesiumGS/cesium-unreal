@@ -88,7 +88,6 @@ void CesiumIonSession::connect() {
   UCesiumIonServer* pServer = this->_pServer.Get();
 
   this->_isConnecting = true;
-  this->_hasEverConnected = true;
 
   std::string ionServerUrl = TCHAR_TO_UTF8(*pServer->ServerUrl);
 
@@ -455,10 +454,7 @@ const CesiumIonClient::Defaults& CesiumIonSession::getDefaults() {
 
 const CesiumIonClient::ApplicationData& CesiumIonSession::getAppData() {
   static const CesiumIonClient::ApplicationData empty{};
-  if (this->_appData) {
-    return *this->_appData;
-  }
-  return empty;
+  return this->_appData.value_or(empty);
 }
 
 bool CesiumIonSession::refreshProfileIfNeeded() {
