@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #if WITH_EDITOR
 
@@ -164,7 +164,7 @@ bool TestCleanupCommand::Update() {
     defaultReportStep(context.testPasses);
 
   // Turn on the editor tileset updates so we can see what we loaded
-  gLoadTestContext.creationContext.setSuspendUpdate(false);
+  // gLoadTestContext.creationContext.setSuspendUpdate(false);
   return true;
 }
 
@@ -180,12 +180,6 @@ bool InitForPlayWhenReady::Update() {
   UE_LOG(LogCesium, Display, TEXT("Play in Editor ready..."));
   playContext.initForPlay(creationContext);
   return true;
-}
-
-void clearCacheDb() {
-  std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
-      getCacheDatabase();
-  pCacheDatabase->clearAll();
 }
 
 bool RunLoadTest(
@@ -218,7 +212,6 @@ bool RunLoadTest(
   // Halt tileset updates and reset them
   context.creationContext.setSuspendUpdate(true);
   context.creationContext.refreshTilesets();
-  clearCacheDb();
 
   // Let the editor viewports see the same thing the test will
   context.creationContext.syncWorldCamera();
