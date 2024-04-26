@@ -11,7 +11,7 @@
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
 - Fixed issue when using DynamicPawn where you could get stuck after interrupting a flight started with `UCesiumFlyToComponent`
-  
+
 ### v2.4.1 - 2024-04-01
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.33.0 to v0.34.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
