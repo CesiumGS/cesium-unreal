@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumGltfPointsSceneProxy.h"
 #include "CesiumGltfPointsComponent.h"
 #include "Engine/StaticMesh.h"

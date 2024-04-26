@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #if WITH_EDITOR
 
@@ -35,7 +35,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Performance.SampleVaryMaxTileLoads",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
-void refreshSampleTilesets(
+void samplesClearCache(SceneGenerationContext&, TestPass::TestingParameter) {
+  std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+      getCacheDatabase();
+  pCacheDatabase->clearAll();
+}
+
+void samplesRefreshTilesets(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
   context.refreshTilesets();
@@ -142,8 +148,8 @@ void setupForMontrealPointCloud(SceneGenerationContext& context) {
 
 bool FCesiumSampleDenver::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", samplesClearCache, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", samplesRefreshTilesets, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -155,8 +161,8 @@ bool FCesiumSampleDenver::RunTest(const FString& Parameters) {
 
 bool FCesiumSampleMelbourne::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
-  testPasses.push_back(TestPass{"Warm Cache", refreshSampleTilesets, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", samplesClearCache, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", samplesRefreshTilesets, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -207,7 +213,7 @@ bool FCesiumSampleMontrealPointCloud::RunTest(const FString& Parameters) {
   };
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", nullptr, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", samplesClearCache, nullptr});
   testPasses.push_back(TestPass{"Adjust", adjustCamera, verifyVisibleTiles});
 
   return RunLoadTest(
@@ -253,7 +259,7 @@ bool FSampleMaxTileLoads::RunTest(const FString& Parameters) {
   };
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Default", NULL, NULL});
+  testPasses.push_back(TestPass{"Default", samplesClearCache, NULL});
   testPasses.push_back(TestPass{"12", setupPass, NULL, 12});
   testPasses.push_back(TestPass{"16", setupPass, NULL, 16});
   testPasses.push_back(TestPass{"20", setupPass, NULL, 20});
