@@ -4,6 +4,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed any C++ and shader errors that occur when building under Unreal Engine 5.4
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
 - Fixed a crash on Unreal Editor shutdown that would happen occassionally.
 
