@@ -44,23 +44,24 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
   }
 #if ENGINE_VERSION_5_4_OR_HIGHER
   TArray<TObjectPtr<AActor>>& Actors = Level->Actors;
-  TObjectPtr<AActor>* DefaultCreditSystemPtr;
+  using LevelActorPointer = TObjectPtr<AActor>*;
 #else
   TArray<AActor*>& Actors = Level->Actors;
-  AActor** DefaultCreditSystemPtr;
+  using LevelActorPointer = AActor**;
 #endif
-  DefaultCreditSystemPtr = Actors.FindByPredicate([](AActor* const& InItem) {
-    if (!IsValid(InItem)) {
-      return false;
-    }
-    if (!InItem->IsA(ACesiumCreditSystem::StaticClass())) {
-      return false;
-    }
-    if (!InItem->GetName().StartsWith("CesiumCreditSystemDefault")) {
-      return false;
-    }
-    return true;
-  });
+  LevelActorPointer DefaultCreditSystemPtr =
+      Actors.FindByPredicate([](AActor* const& InItem) {
+        if (!IsValid(InItem)) {
+          return false;
+        }
+        if (!InItem->IsA(ACesiumCreditSystem::StaticClass())) {
+          return false;
+        }
+        if (!InItem->GetName().StartsWith("CesiumCreditSystemDefault")) {
+          return false;
+        }
+        return true;
+      });
   if (!DefaultCreditSystemPtr) {
     return nullptr;
   }
