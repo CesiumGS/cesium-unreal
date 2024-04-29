@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
+- Fixed a crash on Unreal Editor shutdown that would happen occassionally.
 
 ### v2.4.1 - 2024-04-01
 

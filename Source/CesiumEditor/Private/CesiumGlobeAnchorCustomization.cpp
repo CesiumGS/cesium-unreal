@@ -8,18 +8,22 @@
 #include "DetailLayoutBuilder.h"
 #include "IDetailGroup.h"
 
+FName FCesiumGlobeAnchorCustomization::RegisteredLayoutName;
+
 void FCesiumGlobeAnchorCustomization::Register(
     FPropertyEditorModule& PropertyEditorModule) {
+
+  RegisteredLayoutName = UCesiumGlobeAnchorComponent::StaticClass()->GetFName();
+
   PropertyEditorModule.RegisterCustomClassLayout(
-      UCesiumGlobeAnchorComponent::StaticClass()->GetFName(),
+      RegisteredLayoutName,
       FOnGetDetailCustomizationInstance::CreateStatic(
           &FCesiumGlobeAnchorCustomization::MakeInstance));
 }
 
 void FCesiumGlobeAnchorCustomization::Unregister(
     FPropertyEditorModule& PropertyEditorModule) {
-  PropertyEditorModule.UnregisterCustomClassLayout(
-      UCesiumGlobeAnchorComponent::StaticClass()->GetFName());
+  PropertyEditorModule.UnregisterCustomClassLayout(RegisteredLayoutName);
 }
 
 TSharedRef<IDetailCustomization>
