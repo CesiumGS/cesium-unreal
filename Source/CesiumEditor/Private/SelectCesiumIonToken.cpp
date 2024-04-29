@@ -33,6 +33,15 @@ using namespace CesiumUtility;
 
 /*static*/ SharedFuture<std::optional<Token>>
 SelectCesiumIonToken::SelectNewToken(UCesiumIonServer* pServer) {
+  std::shared_ptr<CesiumIonSession> pSession =
+      FCesiumEditorModule::serverManager().GetSession(pServer);
+  const std::optional<ApplicationData>& appData = pSession->getAppData();
+  if (appData.has_value() && !appData->needsOauthAuthentication()) {
+    return getAsyncSystem()
+        .createResolvedFuture(std::optional<Token>(Token()))
+        .share();
+  }
+
   if (SelectCesiumIonToken::_pExistingPanel.IsValid()) {
     SelectCesiumIonToken::_pExistingPanel->BringToFront();
   } else {
