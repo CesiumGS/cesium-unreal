@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumCreditSystem.h"
+#include "CesiumCommon.h"
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
 #include "CesiumUtility/CreditSystem.h"
@@ -41,8 +42,14 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
         TEXT("No valid level for findValidDefaultCreditSystem"));
     return nullptr;
   }
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  TArray<TObjectPtr<AActor>>& Actors = Level->Actors;
+  using LevelActorPointer = TObjectPtr<AActor>*;
+#else
   TArray<AActor*>& Actors = Level->Actors;
-  AActor** DefaultCreditSystemPtr =
+  using LevelActorPointer = AActor**;
+#endif
+  LevelActorPointer DefaultCreditSystemPtr =
       Actors.FindByPredicate([](AActor* const& InItem) {
         if (!IsValid(InItem)) {
           return false;
