@@ -100,7 +100,7 @@ jobs:
         run: |
           cd extern
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
-          cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
+          cmake --verbose -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8
           cd ..
           rm -r -fo extern
