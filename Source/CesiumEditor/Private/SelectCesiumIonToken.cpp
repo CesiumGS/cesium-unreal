@@ -35,8 +35,9 @@ using namespace CesiumUtility;
 SelectCesiumIonToken::SelectNewToken(UCesiumIonServer* pServer) {
   std::shared_ptr<CesiumIonSession> pSession =
       FCesiumEditorModule::serverManager().GetSession(pServer);
-  const std::optional<ApplicationData>& appData = pSession->getAppData();
-  if (appData.has_value() && !appData->needsOauthAuthentication()) {
+  // If the current server doesn't require tokens, don't bother opening the
+  // window to create one.
+  if (!pSession->isAuthenticationRequired()) {
     return getAsyncSystem()
         .createResolvedFuture(std::optional<Token>(Token()))
         .share();
@@ -110,6 +111,11 @@ Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
     const std::vector<int64_t>& assetIDs) {
   std::shared_ptr<CesiumIonSession> pSession =
       FCesiumEditorModule::serverManager().GetSession(pServer);
+  // If the current server doesn't require tokens, don't try to authorize them.
+  if (!pSession->isAuthenticationRequired()) {
+    return getAsyncSystem().createResolvedFuture(std::optional<Token>(Token()));
+  }
+
   return SelectTokenIfNecessary(pServer).thenInMainThread([pSession, assetIDs](
                                                               const std::optional<
                                                                   Token>&

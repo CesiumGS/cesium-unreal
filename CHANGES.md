@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Added support for Unreal Engine 5.4.
+- Added support for Cesium ion servers in single user mode. Tokens are not required to stream assets from such servers.
 
 ##### Fixes :wrench:
 
