@@ -99,7 +99,7 @@ jobs:
           #dir "C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\VC\Tools\MSVC"
           cd extern
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
-          cmake --debug-output -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" -D CMAKE_GENERATOR_INSTANCE="C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\" $toolchainOption
+          cmake --debug-output -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}"
           cmake --build build --config Release --target install -j8
           cd ..
           rm -r -fo extern
