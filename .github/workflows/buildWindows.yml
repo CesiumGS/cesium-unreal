@@ -52,20 +52,6 @@ jobs:
       - name: Check disk space
         run: |
           get-psdrive
-      # - name: Uninstall Visual Studio components
-      #   run: |
-      #     Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "export --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet --config installedcomponents.txt" -Wait -PassThru
-      #     cat installedcomponents.txt
-      #     Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-      #     $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
-      #     $componentsToRemove= @(
-      #         "Microsoft.VisualStudio.Component.VC"
-      #     )
-      #     [string]$workloadArgs = $componentsToRemove | ForEach-Object {" --remove " +  $_}
-      #     $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"",$workloadArgs, '--quiet', '--norestart', '--nocache')
-      #     # should be run twice
-      #     $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
-      #     $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
       - name: Install Visual Studio components
         if: ${{ inputs.visual-studio-version && inputs.visual-studio-components }}
         run: |
@@ -101,13 +87,6 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
-      - name: Install Unreal Engine
-        uses: ./.github/actions/install-unreal-windows
-        with:
-          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
-          unreal-program-name: ${{ inputs.unreal-program-name }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
       - name: Build cesium-native
@@ -119,6 +98,13 @@ jobs:
           cmake --build build --config Release --target install -j8
           cd ..
           rm -r -fo extern
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-windows
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Overwrite plugin engine version
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
