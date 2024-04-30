@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumGltfPointsSceneProxy.h"
 #include "CesiumGltfPointsComponent.h"
 #include "Engine/StaticMesh.h"
@@ -51,8 +53,14 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
+#if ENGINE_VERSION_5_3_OR_HIGHER
+  FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
+  AttenuationVertexFactory.InitResource(RHICmdList);
+  AttenuationIndexBuffer.InitResource(RHICmdList);
+#else
   AttenuationVertexFactory.InitResource();
   AttenuationIndexBuffer.InitResource();
+#endif
 }
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {

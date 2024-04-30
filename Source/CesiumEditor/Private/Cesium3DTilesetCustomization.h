@@ -1,8 +1,9 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "IDetailCustomization.h"
+#include "PropertyEditorModule.h"
 
 class IDetailCategoryBuilder;
 

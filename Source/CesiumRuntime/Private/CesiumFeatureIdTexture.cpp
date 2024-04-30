@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltf/FeatureIdTexture.h"
@@ -16,16 +16,28 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const FeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
-      _featureIdTextureView(Model, FeatureIdTexture, true),
+      _featureIdTextureView(),
       _texCoordAccessor(),
       _textureCoordinateSetIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
+  TextureViewOptions options;
+  options.applyKhrTextureTransformExtension = true;
+
+  if (FeatureIdTexture.extras.find("makeImageCopy") !=
+      FeatureIdTexture.extras.end()) {
+    options.makeImageCopy =
+        FeatureIdTexture.extras.at("makeImageCopy").getBoolOrDefault(false);
+  }
+
+  this->_featureIdTextureView =
+      FeatureIdTextureView(Model, FeatureIdTexture, options);
+
   switch (_featureIdTextureView.status()) {
   case FeatureIdTextureViewStatus::Valid:
-    _status = ECesiumFeatureIdTextureStatus::Valid;
+    this->_status = ECesiumFeatureIdTextureStatus::Valid;
     break;
   case FeatureIdTextureViewStatus::ErrorInvalidChannels:
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
+    this->_status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
     return;
   default:
     // Error with the texture or image. The status is already set by the

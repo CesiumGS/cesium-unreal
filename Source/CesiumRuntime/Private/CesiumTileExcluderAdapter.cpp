@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumTileExcluderAdapter.h"
 #include "Cesium3DTilesSelection/Tile.h"
 #include "CesiumGeoreference.h"
@@ -20,9 +22,8 @@ void CesiumTileExcluderAdapter::startNewFrame() noexcept {
   }
 
   IsExcluderValid = true;
-  Tile->_tileTransform =
-      Georeference->GetGeoTransforms()
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+  Tile->_tileTransform = VecMath::createMatrix4D(
+      Georeference->ComputeUnrealToEarthCenteredEarthFixedTransformation());
 }
 
 CesiumTileExcluderAdapter::CesiumTileExcluderAdapter(

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -35,12 +35,12 @@ struct CreateNodeOptions {
 struct CreateMeshOptions {
   const CreateNodeOptions* pNodeOptions = nullptr;
   const LoadGltfResult::LoadNodeResult* pHalfConstructedNodeResult = nullptr;
-  const CesiumGltf::Mesh* pMesh = nullptr;
+  CesiumGltf::Mesh* pMesh = nullptr;
 };
 
 struct CreatePrimitiveOptions {
   const CreateMeshOptions* pMeshOptions = nullptr;
   const LoadGltfResult::LoadMeshResult* pHalfConstructedMeshResult = nullptr;
-  const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
+  CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
 };
 } // namespace CreateGltfOptions

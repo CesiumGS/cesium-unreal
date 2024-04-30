@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTexture.h"
 #include "CesiumGltf/Model.h"
@@ -26,12 +26,35 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     return;
   }
 
-  propertyTextureView.forEachProperty([&properties = _properties](
-                                          const std::string& propertyName,
-                                          auto propertyValue) mutable {
-    FString key(UTF8_TO_TCHAR(propertyName.data()));
-    properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
-  });
+  const CesiumGltf::Class* pClass = propertyTextureView.getClass();
+  for (const auto& classPropertyPair : pClass->properties) {
+    {
+      const auto& propertyPair =
+          PropertyTexture.properties.find(classPropertyPair.first);
+      if (propertyPair == PropertyTexture.properties.end()) {
+        continue;
+      }
+
+      TextureViewOptions options;
+      options.applyKhrTextureTransformExtension = true;
+
+      if (propertyPair->second.extras.find("makeImageCopy") !=
+          propertyPair->second.extras.end()) {
+        options.makeImageCopy = propertyPair->second.extras.at("makeImageCopy")
+                                    .getBoolOrDefault(false);
+      }
+
+      propertyTextureView.getPropertyView(
+          propertyPair->first,
+          [&properties = this->_properties](
+              const std::string& propertyId,
+              auto propertyValue) mutable {
+            FString key(UTF8_TO_TCHAR(propertyId.data()));
+            properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
+          },
+          options);
+    }
+  }
 }
 
 /*static*/ const ECesiumPropertyTextureStatus

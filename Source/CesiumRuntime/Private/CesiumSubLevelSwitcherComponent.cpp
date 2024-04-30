@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"

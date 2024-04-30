@@ -1,6 +1,8 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumTextureResource.h"
+#include "Misc/CoreStats.h"
 #include "RenderUtils.h"
-#include "Stats/Stats.h"
 
 namespace {
 

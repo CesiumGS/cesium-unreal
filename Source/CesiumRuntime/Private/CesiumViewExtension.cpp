@@ -1,3 +1,4 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumViewExtension.h"
 

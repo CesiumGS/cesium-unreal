@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTextureProperty.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -341,6 +341,18 @@ FCesiumPropertyTextureProperty::getImage() const {
       this->_normalized,
       [](const auto& view) -> const CesiumGltf::ImageCesium* {
         return view.getImage();
+      });
+}
+
+const std::optional<CesiumGltf::KhrTextureTransform>
+FCesiumPropertyTextureProperty::getTextureTransform() const {
+  return propertyTexturePropertyCallback<
+      std::optional<CesiumGltf::KhrTextureTransform>>(
+      this->_property,
+      this->_valueType,
+      this->_normalized,
+      [](const auto& view) -> std::optional<CesiumGltf::KhrTextureTransform> {
+        return view.getTextureTransform();
       });
 }
 

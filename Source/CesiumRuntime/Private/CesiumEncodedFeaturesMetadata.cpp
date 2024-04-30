@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataConversions.h"
@@ -732,6 +732,10 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
       encodedProperty.defaultValue =
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
               property);
+    }
+
+    if (pDescription->bHasKhrTextureTransform) {
+      encodedProperty.textureTransform = property.getTextureTransform();
     }
   }
 
