@@ -61,11 +61,6 @@ jobs:
             $componentcmd = $components -join " "
             Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet $componentcmd" -Wait -PassThru
           }
-      # - name: Set up Visual Studio version
-      #   uses: ilammy/msvc-dev-cmd@v1
-      #   with:
-      #     sdk: "10.0.18362.0"
-      #     toolset: "14.38"
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -92,17 +87,6 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
-      - name: Install nasm
-        uses: ilammy/setup-nasm@v1.5.1
-      - name: Build cesium-native
-        run: |
-          #dir "C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\VC\Tools\MSVC"
-          cd extern
-          $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
-          cmake --debug-output -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}"
-          cmake --build build --config Release --target install -j8
-          cd ..
-          rm -r -fo extern
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-windows
         with:
@@ -110,6 +94,16 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.5.1
+      - name: Build cesium-native
+        run: |
+          cd extern
+          $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
+          cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
+          cmake --build build --config Release --target install -j8
+          cd ..
+          rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
