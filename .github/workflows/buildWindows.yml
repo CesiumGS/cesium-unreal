@@ -54,6 +54,8 @@ jobs:
           get-psdrive
       - name: Uninstall Visual Studio components
         run: |
+          Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "export --installPath ""C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise"" --quiet --config installedcomponents.txt" -Wait -PassThru
+          cat installedcomponents.txt
           Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
           $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
           $componentsToRemove= @(
