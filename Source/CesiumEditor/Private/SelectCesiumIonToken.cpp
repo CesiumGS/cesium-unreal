@@ -111,7 +111,8 @@ Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
     const std::vector<int64_t>& assetIDs) {
   std::shared_ptr<CesiumIonSession> pSession =
       FCesiumEditorModule::serverManager().GetSession(pServer);
-  // If the current server doesn't require tokens, don't try to authorize them.
+  // If the current server doesn't require tokens, don't try to create or
+  // authorize one.
   if (!pSession->isAuthenticationRequired()) {
     return getAsyncSystem().createResolvedFuture(std::optional<Token>(Token()));
   }
