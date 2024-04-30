@@ -548,6 +548,7 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
       ionSession.getAsyncSystem(),
       ionSession.getAssetAccessor(),
       TCHAR_TO_UTF8(*state.token),
+      ionSession.getAppData(),
       TCHAR_TO_UTF8(*getCesiumIonServer(pIonObject)->ApiUrl));
 
   // Don't let this panel be destroyed while the async operations below are in
