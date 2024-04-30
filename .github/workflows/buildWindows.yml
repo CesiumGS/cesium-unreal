@@ -98,7 +98,7 @@ jobs:
         uses: ilammy/setup-nasm@v1.5.1
       - name: Build cesium-native
         run: |
-          dir C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC
+          dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
           cd extern
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
           cmake --verbose -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
