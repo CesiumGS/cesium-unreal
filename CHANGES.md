@@ -1,14 +1,15 @@
 # Change Log
 
-### ? - ?
+### v2.5.0 - 2024-05-01
 
 ##### Additions :tada:
 
-- Add support for Unreal Engine 5.4. Fixed any related C++ and shader errors when using the new version.
+- Added support for Unreal Engine 5.4.
 
 ##### Fixes :wrench:
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
+- Fixed a crash on Unreal Editor shutdown that would occasionally happen due to attempts to access garbage-collected static classes.
 
 ### v2.4.1 - 2024-04-01
 
