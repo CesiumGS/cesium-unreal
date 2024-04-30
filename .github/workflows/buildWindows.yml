@@ -91,10 +91,10 @@ jobs:
         uses: ilammy/setup-nasm@v1.5.1
       - name: Build cesium-native
         run: |
-          dir "C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\VC\Tools\MSVC"
+          #dir "C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\VC\Tools\MSVC"
           cd extern
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
-          cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" -D CMAKE_GENERATOR_INSTANCE="C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\" $toolchainOption
+          cmake --trace -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" -D CMAKE_GENERATOR_INSTANCE="C:\Program Files\Microsoft Visual Studio\${{ inputs.visual-studio-version }}\Enterprise\" $toolchainOption
           cmake --build build --config Release --target install -j8
           cd ..
           rm -r -fo extern
