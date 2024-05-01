@@ -27,5 +27,6 @@ runs:
       shell: bash
       run: |
         mkdir -p /mnt/work/${{ inputs.unreal-program-name }}
-        unzip -q ./ue.zip -d /mnt/work/${{ inputs.unreal-program-name }}
+        # Selectively extract files in order to save disk space
+        unzip -q ./ue.zip "Engine/*" -d /mnt/work/${{ inputs.unreal-program-name }} -x "Engine/Binaries/Android/*" "Engine/Binaries/LinuxArm64/*" "Engine/Intermediate/Build/Android/*" "Engine/Intermediate/Build/LinuxArm64/*"
         rm ./ue.zip
