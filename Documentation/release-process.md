@@ -85,7 +85,7 @@ Assuming you tested the release candidate as described above, you should have [c
    * The name of the token should match the format "Cesium for Unreal Samples x.x.x - Delete on September 1st, 2021". The expiry date should be set to two months after the date it was created.
    * The scope of the token should be "assets:read" for all assets.
 3. Copy the access token you just created.
-4. Open cesium-unreal-samples in Unreal Engine.
+4. Open cesium-unreal-samples in the oldest supported version of Unreal Engine.
 5. For the `ion.cesium.com` server, use the **Token** window to paste the new token into the field for **Specify a token**.
 6. If the plugin update has replaced any Cesium blueprints that may already exist in one of the scenes, e.g., DynamicPawn or CesiumSunSky, replace the old version of the blueprint with the new version, and test the level with the play button to make sure everything is working. If you're unsure whether the plugin update has resulted in anything that needs to be changed in the Samples, ask the team.
 7. Visit every level again to make sure that the view is correct and that nothing appears to be missing. Repeat the same tests that you did while testing the Cesium for Unreal release.
