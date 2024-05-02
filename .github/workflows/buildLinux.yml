@@ -82,11 +82,14 @@ jobs:
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
           sudo swapon --show
+      - name: Customize BuildConfiguration.xml
+        run: |
+          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
+          # - We limit parallel actions because our builds use a lot more memory than UBT thinks they will.
+          # - We set the source code control Provider to None so UBT includes all files in the unity build.
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
       - name: Build plugin
         run: |
-          # while true; do cat /proc/meminfo; sleep 5; done &
-          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
-          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
           sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
