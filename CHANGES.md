@@ -1,10 +1,16 @@
 # Change Log
 
-### ? - ?
+### v2.5.0 - 2024-05-01
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.4.
+- Added support for Cesium ion servers in single user mode. Tokens are not required to stream assets from such servers.
 
 ##### Fixes :wrench:
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
+- Fixed a crash on Unreal Editor shutdown that would occasionally happen due to attempts to access garbage-collected static classes.
 
 ### v2.4.1 - 2024-04-01
 

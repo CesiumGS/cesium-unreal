@@ -6,18 +6,22 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 
+FName FCesium3DTilesetCustomization::RegisteredLayoutName;
+
 void FCesium3DTilesetCustomization::Register(
     FPropertyEditorModule& PropertyEditorModule) {
+
+  RegisteredLayoutName = ACesium3DTileset::StaticClass()->GetFName();
+
   PropertyEditorModule.RegisterCustomClassLayout(
-      ACesium3DTileset::StaticClass()->GetFName(),
+      RegisteredLayoutName,
       FOnGetDetailCustomizationInstance::CreateStatic(
           &FCesium3DTilesetCustomization::MakeInstance));
 }
 
 void FCesium3DTilesetCustomization::Unregister(
     FPropertyEditorModule& PropertyEditorModule) {
-  PropertyEditorModule.UnregisterCustomClassLayout(
-      ACesium3DTileset::StaticClass()->GetFName());
+  PropertyEditorModule.UnregisterCustomClassLayout(RegisteredLayoutName);
 }
 
 TSharedRef<IDetailCustomization> FCesium3DTilesetCustomization::MakeInstance() {
