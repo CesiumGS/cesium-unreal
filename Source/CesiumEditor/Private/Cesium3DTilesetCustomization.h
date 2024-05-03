@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IDetailCustomization.h"
+#include "PropertyEditorModule.h"
 
 class IDetailCategoryBuilder;
 
@@ -22,4 +23,6 @@ public:
 
   static void SortCustomDetailsCategories(
       const TMap<FName, IDetailCategoryBuilder*>& AllCategoryMap);
+
+  static FName RegisteredLayoutName;
 };
