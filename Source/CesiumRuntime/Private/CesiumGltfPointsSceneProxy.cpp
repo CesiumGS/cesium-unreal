@@ -2,15 +2,12 @@
 
 #include "CesiumGltfPointsSceneProxy.h"
 #include "CesiumGltfPointsComponent.h"
+#include "DataDrivenShaderPlatformInfo.h"
 #include "Engine/StaticMesh.h"
 #include "RHIResources.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneInterface.h"
 #include "StaticMeshResources.h"
-
-#if ENGINE_VERSION_5_2_OR_HIGHER
-#include "DataDrivenShaderPlatformInfo.h"
-#endif
 
 FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
     : PointCloudShading(),

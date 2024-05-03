@@ -2,6 +2,8 @@
 
 ### v2.5.0 - 2024-05-01
 
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.1. Future versions will require Unreal Engine v5.2+.
+
 ##### Additions :tada:
 
 - Added support for Unreal Engine 5.4.
