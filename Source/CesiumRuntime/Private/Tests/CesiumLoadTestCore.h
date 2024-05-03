@@ -7,29 +7,27 @@
 #include <functional>
 #include <variant>
 
+#include "CesiumTestPass.h"
 #include "CesiumSceneGeneration.h"
+#include "Tests/AutomationCommon.h"
 
 namespace Cesium {
 
-struct TestPass {
-  typedef std::variant<int, float> TestingParameter;
-  typedef std::function<void(SceneGenerationContext&, TestingParameter)>
-      PassCallback;
-
-  FString name;
-  PassCallback setupStep;
-  PassCallback verifyStep;
-  TestingParameter optionalParameter;
-
-  bool testInProgress = false;
-  double startMark = 0;
-  double endMark = 0;
-  double elapsedTime = 0;
-
-  bool isFastest = false;
-};
-
 typedef std::function<void(const std::vector<TestPass>&)> ReportCallback;
+
+struct LoadTestContext {
+  FString testName;
+  std::vector<TestPass> testPasses;
+
+  SceneGenerationContext creationContext;
+  SceneGenerationContext playContext;
+
+  float cameraFieldOfView = 90.0f;
+
+  ReportCallback reportStep;
+
+  void reset();
+};
 
 bool RunLoadTest(
     const FString& testName,
@@ -38,6 +36,32 @@ bool RunLoadTest(
     int viewportWidth,
     int viewportHeight,
     ReportCallback optionalReportStep = nullptr);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
+    TimeLoadingCommand,
+    FString,
+    loggingName,
+    SceneGenerationContext&,
+    playContext,
+    TestPass&,
+    pass);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    LoadTestScreenshotCommand,
+    FString,
+    screenshotName);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    TestCleanupCommand,
+    LoadTestContext&,
+    context);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
+    InitForPlayWhenReady,
+    SceneGenerationContext&,
+    creationContext,
+    SceneGenerationContext&,
+    playContext);
 
 }; // namespace Cesium
 

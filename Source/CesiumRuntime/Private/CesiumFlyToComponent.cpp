@@ -170,6 +170,10 @@ void UCesiumFlyToComponent::InterruptFlight() {
   OnFlightInterrupted.Broadcast();
 }
 
+bool UCesiumFlyToComponent::IsFlightInProgress() {
+  return this->_flightInProgress;
+}
+
 void UCesiumFlyToComponent::TickComponent(
     float DeltaTime,
     ELevelTick TickType,
