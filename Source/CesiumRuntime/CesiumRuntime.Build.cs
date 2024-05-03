@@ -22,13 +22,7 @@ public class CesiumRuntime : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-              // ... add other private include paths required here ...
-#if UE_5_1_OR_LATER
-              // In UE5.1, we need to explicit add the renderer's private directory to the include
-              // paths in order to be able to include ScenePrivate.h. GetModuleDirectory makes this
-              // easy, but it isn't available in UE5.0 and earlier.
               Path.Combine(GetModuleDirectory("Renderer"), "Private")
-#endif
             }
         );
 

@@ -46,7 +46,8 @@ void FCesiumCommands::RegisterCommands() {
   UI_COMMAND(
       OpenTokenSelector,
       "Token",
-      "Select or create a token to use to access Cesium ion assets",
+      "Select or create a token to use to access Cesium ion assets. "
+      "Not used for ion servers that don't need token authentication.",
       EUserInterfaceActionType::Button,
       FInputChord());
 
