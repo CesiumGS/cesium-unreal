@@ -4,7 +4,7 @@
 
 ##### Fixes :wrench:
 
-- Fixed issue when using DynamicPawn where you could get stuck after interrupting a flight started with `UCesiumFlyToComponent`
+- Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
 
 ### v2.5.0 - 2024-05-01
 
