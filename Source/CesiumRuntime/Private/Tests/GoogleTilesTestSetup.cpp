@@ -1,9 +1,9 @@
 #include "GoogleTilesTestSetup.h"
 
-#include "CesiumAsync/ICacheDatabase.h"
-#include "CesiumRuntime.h"
 #include "Cesium3DTileset.h"
+#include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumLoadTestCore.h"
+#include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
 
 namespace Cesium {

@@ -7,8 +7,8 @@
 #include <functional>
 #include <variant>
 
-#include "CesiumTestPass.h"
 #include "CesiumSceneGeneration.h"
+#include "CesiumTestPass.h"
 #include "Tests/AutomationCommon.h"
 
 namespace Cesium {

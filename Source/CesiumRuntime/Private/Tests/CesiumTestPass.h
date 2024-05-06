@@ -2,18 +2,17 @@
 
 #if WITH_EDITOR
 
-#include <variant>
 #include <functional>
+#include <variant>
 
 #include "CesiumSceneGeneration.h"
 #include "Tests/AutomationCommon.h"
-
 
 namespace Cesium {
 
 struct TestPass {
   typedef std::variant<int, float> TestingParameter;
-  typedef std::function<void(SceneGenerationContext &, TestingParameter)>
+  typedef std::function<void(SceneGenerationContext&, TestingParameter)>
       PassCallback;
 
   FString name;
@@ -29,6 +28,6 @@ struct TestPass {
   bool isFastest = false;
 };
 
-}
+} // namespace Cesium
 
 #endif
