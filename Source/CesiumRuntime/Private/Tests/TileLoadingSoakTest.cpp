@@ -2,12 +2,18 @@
 
 #if WITH_EDITOR
 
+#include <stack>
+#include <algorithm>
+#include <vector>
+#include <random>
+
 #include "Math/UnrealMathUtility.h"
 #include "Misc/AutomationTest.h"
 #include "Settings/LevelEditorPlaySettings.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
 
+#include "Cesium3DTileset.h"
 #include "CesiumFlyToComponent.h"
 #include "CesiumGeoreference.h"
 #include "GlobeAwareDefaultPawn.h"
@@ -17,15 +23,38 @@
 #include "CesiumSceneGeneration.h"
 #include "CesiumTestHelpers.h"
 
+#include "TestRegionPolygons.h"
+
 #define VIEWPORT_WIDTH 1280;
 #define VIEWPORT_HEIGHT 720;
 // Twelve hour soak test
 constexpr static double SOAK_TEST_DURATION = 60 * 60 * 12;
 // The duration in seconds between each stress test iteration
-constexpr static double TEST_ITERATION_DELAY = 5.0;
+constexpr static double TEST_ITERATION_DELAY = 10.0;
 constexpr static float FLIGHT_TIME = 5.0f;
 
+// Stack of indices into TestRegionPolygons::polygons to use next
+static std::stack<int> nextPolygonIndex;
+
 namespace Cesium {
+
+void fillWithRandomIndices() {
+  // Create a vector with every index
+  std::vector<int> indices;
+  for (int i = 0; i < TEST_REGION_POLYGONS_COUNT; i++) {
+    indices.push_back(i);
+  }
+
+  // Shuffle indices
+  std::default_random_engine rng{};
+  std::shuffle(indices.begin(), indices.end(), rng);
+
+  // Push shuffled indices onto stack
+  for (int idx : indices) {
+    nextPolygonIndex.push(idx);
+  }
+}
+
 // Since this shares a name with the global defined in Google3dTilesLoadTest, we
 // tell the compiler to look for the variable there instead.
 extern LoadTestContext gLoadTestContext;
@@ -51,15 +80,15 @@ bool FFlyToRandomLocationCommand::Update() {
       context.playContext.georeference
           ->TransformUnrealPositionToLongitudeLatitudeHeight(pawnPosition);
 
-  // If longitude is greater than 0, we're in the northern hemisphere
-  bool northernHemisphere = llhPosition.Y >= 0;
-  // If latitude is greater than 0, we're in the western hemisphere
-  bool westernHemisphere = llhPosition.X >= 0;
-  // Calculate a new random position to fly to in the opposite quadrant
-  FVector targetLlh(
-      FMath::RandRange(0.0f, 180.0f) * (westernHemisphere ? -1.0f : 1.0f),
-      FMath::RandRange(0.0f, 90.0f) * (northernHemisphere ? -1.0f : 1.0f),
-      1000.0f);
+  if (nextPolygonIndex.empty()) {
+    fillWithRandomIndices();
+  }
+
+  const int nextIndex = nextPolygonIndex.top();
+  nextPolygonIndex.pop();
+
+  FVector targetLlh = TestRegionPolygons::polygons[nextIndex].GetRandomPoint();
+  targetLlh.Z = 1000.0f;
 
   // Start the flight
   context.playContext.pawn
@@ -83,6 +112,8 @@ bool FGoogleTilesStressTest::RunTest(const FString& Parameters) {
 
   UE_LOG(LogCesium, Display, TEXT("Setting up location..."));
   GoogleTilesTestSetup::setupForGoogleplex(context.creationContext);
+  ACesium3DTileset* tileset = context.creationContext.tilesets.at(0);
+  tileset->MaximumCachedBytes = 0;
   context.creationContext.trackForPlay();
 
   // Let the editor viewports see the same thing the test will
