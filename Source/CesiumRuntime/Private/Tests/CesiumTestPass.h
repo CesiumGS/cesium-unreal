@@ -1,19 +1,19 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
-
 #pragma once
 
-#include <functional>
-#include <variant>
+#if WITH_EDITOR
 
+#include <variant>
+#include <functional>
+
+#include "CesiumSceneGeneration.h"
 #include "Tests/AutomationCommon.h"
+
 
 namespace Cesium {
 
-struct SceneGenerationContext;
-
 struct TestPass {
   typedef std::variant<int, float> TestingParameter;
-  typedef std::function<void(SceneGenerationContext&, TestingParameter)>
+  typedef std::function<void(SceneGenerationContext &, TestingParameter)>
       PassCallback;
 
   FString name;
@@ -29,4 +29,6 @@ struct TestPass {
   bool isFastest = false;
 };
 
-} // namespace Cesium
+}
+
+#endif

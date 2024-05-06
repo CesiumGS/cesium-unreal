@@ -11,6 +11,7 @@
 #include "CesiumFlyToComponent.h"
 #include "CesiumGeoreference.h"
 #include "GlobeAwareDefaultPawn.h"
+#include "GoogleTilesTestSetup.h"
 
 #include "CesiumLoadTestCore.h"
 #include "CesiumSceneGeneration.h"
@@ -18,8 +19,11 @@
 
 #define VIEWPORT_WIDTH 1280;
 #define VIEWPORT_HEIGHT 720;
-// twelve hour stress test
+// Twelve hour stress test
 constexpr static double STRESS_TEST_DURATION = 60 * 60 * 12;
+// The duration in seconds between each stress test iteration
+constexpr static double TEST_ITERATION_DELAY = 5.0;
+constexpr static float FLIGHT_TIME = 5.0f;
 
 namespace Cesium {
 // Since this shares a name with the global defined in Google3dTilesLoadTest, we
@@ -27,27 +31,20 @@ namespace Cesium {
 extern LoadTestContext gLoadTestContext;
 
 DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    FPerformStressTestCommand,
+    FFlyToRandomLocationCommand,
     LoadTestContext&,
     context);
 
-bool FPerformStressTestCommand::Update() {
-  if (FPlatformTime::Seconds() > (this->StartTime + STRESS_TEST_DURATION)) {
-    // Done with stress test, end command
+bool FFlyToRandomLocationCommand::Update() {
+
+  if (!GEditor->IsPlaySessionInProgress()) {
     return true;
   }
 
   UCesiumFlyToComponent* flyTo =
       context.playContext.pawn->FindComponentByClass<UCesiumFlyToComponent>();
 
-  if (flyTo->IsFlightInProgress()) {
-    // We're still flying somewhere, give it some time to complete
-    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
-    return false;
-  }
-
-  // Give it some time for the tiles to load where we are
-  ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(10.0f));
+  flyTo->Duration = FLIGHT_TIME;
 
   FVector pawnPosition = context.playContext.pawn->GetActorLocation();
   FVector llhPosition =
@@ -55,18 +52,26 @@ bool FPerformStressTestCommand::Update() {
           ->TransformUnrealPositionToLongitudeLatitudeHeight(pawnPosition);
   // If longitude is greater than 0, we're in the northern hemisphere
   bool northernHemisphere = llhPosition.Y >= 0;
-  // Calculate a new random position to fly to in the opposite hemisphere
+  // If latitude is greater than 0, we're in the western hemisphere
+  bool westernHemisphere = llhPosition.X >= 0;
+  // Calculate a new random position to fly to in the opposite quadrant
   FVector targetLlh(
-      FMath::RandRange(-180.0f, 180.0f),
+      FMath::RandRange(0.0f, 180.0f) * (westernHemisphere ? -1.0f : 1.0f),
       FMath::RandRange(0.0f, 90.0f) * (northernHemisphere ? -1.0f : 1.0f),
       1000.0f);
 
   // Start the flight
   context.playContext.pawn
       ->FlyToLocationLongitudeLatitudeHeight(targetLlh, 0, 0, false);
-  ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(flyTo->Duration));
-  return false;
+  return true;
 }
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    FPerformStressTestCommand,
+    LoadTestContext&,
+    context);
+
+bool FPerformStressTestCommand::Update() { return true; }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesStressTest,
@@ -86,12 +91,10 @@ bool FGoogleTilesStressTest::RunTest(const FString& Parameters) {
   GoogleTilesTestSetup::setupForGoogleplex(context.creationContext);
   context.creationContext.trackForPlay();
 
-  // Halt tileset updates and reset them
-  context.creationContext.setSuspendUpdate(true);
-  context.creationContext.refreshTilesets();
-
   // Let the editor viewports see the same thing the test will
   context.creationContext.syncWorldCamera();
+
+  context.creationContext.refreshTilesets();
 
   ADD_LATENT_AUTOMATION_COMMAND(FWaitForShadersToFinishCompiling);
 
@@ -110,7 +113,15 @@ bool FGoogleTilesStressTest::RunTest(const FString& Parameters) {
   // Wait to show distinct gap in profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 
-  ADD_LATENT_AUTOMATION_COMMAND(FPerformStressTestCommand(context));
+  int numFlights = static_cast<int>(
+      STRESS_TEST_DURATION / (FLIGHT_TIME + TEST_ITERATION_DELAY));
+
+  for (int i = 0; i < numFlights; i++) {
+    // Give it some time for the tiles to load where we are
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(TEST_ITERATION_DELAY));
+    ADD_LATENT_AUTOMATION_COMMAND(FFlyToRandomLocationCommand(context));
+    ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(FLIGHT_TIME));
+  }
 
   // End play in editor
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());

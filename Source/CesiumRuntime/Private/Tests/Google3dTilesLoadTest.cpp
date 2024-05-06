@@ -7,6 +7,8 @@
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 
+#include "GoogleTilesTestSetup.h"
+
 #include "Cesium3DTileset.h"
 #include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumRuntime.h"
