@@ -19,8 +19,8 @@
 
 #define VIEWPORT_WIDTH 1280;
 #define VIEWPORT_HEIGHT 720;
-// Twelve hour stress test
-constexpr static double STRESS_TEST_DURATION = 60 * 60 * 12;
+// Twelve hour soak test
+constexpr static double SOAK_TEST_DURATION = 60 * 60 * 12;
 // The duration in seconds between each stress test iteration
 constexpr static double TEST_ITERATION_DELAY = 5.0;
 constexpr static float FLIGHT_TIME = 5.0f;
@@ -50,6 +50,7 @@ bool FFlyToRandomLocationCommand::Update() {
   FVector llhPosition =
       context.playContext.georeference
           ->TransformUnrealPositionToLongitudeLatitudeHeight(pawnPosition);
+
   // If longitude is greater than 0, we're in the northern hemisphere
   bool northernHemisphere = llhPosition.Y >= 0;
   // If latitude is greater than 0, we're in the western hemisphere
@@ -66,17 +67,10 @@ bool FFlyToRandomLocationCommand::Update() {
   return true;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    FPerformStressTestCommand,
-    LoadTestContext&,
-    context);
-
-bool FPerformStressTestCommand::Update() { return true; }
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FGoogleTilesStressTest,
     "Cesium.Performance.StressTest.GoogleTiles",
-    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::StressFilter)
 
 bool FGoogleTilesStressTest::RunTest(const FString& Parameters) {
 
@@ -114,7 +108,7 @@ bool FGoogleTilesStressTest::RunTest(const FString& Parameters) {
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 
   int numFlights = static_cast<int>(
-      STRESS_TEST_DURATION / (FLIGHT_TIME + TEST_ITERATION_DELAY));
+      SOAK_TEST_DURATION / (FLIGHT_TIME + TEST_ITERATION_DELAY));
 
   for (int i = 0; i < numFlights; i++) {
     // Give it some time for the tiles to load where we are
