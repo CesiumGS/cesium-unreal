@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed an issue with pixel dithering artifacts that could appear on tilesets.
+
 ### v2.5.0 - 2024-05-01
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.1. Future versions will require Unreal Engine v5.2+.
