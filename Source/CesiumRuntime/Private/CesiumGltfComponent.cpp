@@ -3135,10 +3135,17 @@ static void loadPrimitiveGameThreadPart(
           EMaterialParameterAssociation::LayerParameter,
           0);
 
-      // Initialize fade uniform to fully visible, in case LOD transitions
-      // are off.
       int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
       if (fadeLayerIndex >= 0) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(
+                "EnableLodTransitions",
+                EMaterialParameterAssociation::LayerParameter,
+                fadeLayerIndex),
+            pTilesetActor->GetUseLodTransitions() ? 1.0f : 0.0f);
+
+        // Initialize fade uniform to fully visible, in case LOD transitions
+        // are off.
         pMaterial->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
                 "FadePercentage",
