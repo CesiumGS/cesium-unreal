@@ -9,7 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed an issue with flickering pixel artifacts that could appear on tilesets.
-- Fixed an issue with dithering artifacts that would appear on tilesets for non-temporal anti-aliasing methods.
+- Fixed an issue with dithering artifacts that would appear on tilesets when using non-temporal anti-aliasing methods for Forward Rendering.
 
 ### v2.5.0 - 2024-05-01
 

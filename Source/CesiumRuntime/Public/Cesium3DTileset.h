@@ -619,12 +619,12 @@ public:
    * Whether to enable a dithering effect when transitioning between tiles of
    * different LODs.
    *
-   * This is only compatible with temporal anti-aliasing methods. Setting this
-   * to true for other anti-aliasing modes may result in unwanted visual
-   * artifacts.
-   *
    * When this is set to true, Frustrum Culling and Fog Culling are always
    * disabled.
+   *
+   * When Forward Rendering is enabled for the project, LOD transitions are
+   * only compatible when used with temporal anti-aliasing methods. Setting this
+   * to true for other methods will result in dithering artifacts.
    */
   UPROPERTY(
       EditAnywhere,
