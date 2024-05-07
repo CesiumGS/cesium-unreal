@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 using UnrealBuildTool;
 using System;
@@ -22,13 +22,7 @@ public class CesiumRuntime : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-              // ... add other private include paths required here ...
-#if UE_5_1_OR_LATER
-              // In UE5.1, we need to explicit add the renderer's private directory to the include
-              // paths in order to be able to include ScenePrivate.h. GetModuleDirectory makes this
-              // easy, but it isn't available in UE5.0 and earlier.
               Path.Combine(GetModuleDirectory("Renderer"), "Private")
-#endif
             }
         );
 
@@ -95,10 +89,11 @@ public class CesiumRuntime : ModuleRules
             "CesiumGltf",
             "CesiumJsonReader",
             "CesiumRasterOverlays",
+            "CesiumQuantizedMeshTerrain",
             "CesiumUtility",
             "csprng",
             "draco",
-            "ktx_read",
+            "ktx",
             //"MikkTSpace",
             "meshoptimizer",
             "modp_b64",
@@ -109,7 +104,6 @@ public class CesiumRuntime : ModuleRules
             "turbojpeg",
             "uriparser",
             "webpdecoder",
-            "ktx_read",
         };
 
         // Use our own copy of MikkTSpace on Android.
@@ -211,7 +205,12 @@ public class CesiumRuntime : ModuleRules
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
+
+#if UE_5_4_OR_LATER
+        CppStandard = CppStandardVersion.Cpp20;
+#else
         CppStandard = CppStandardVersion.Cpp17;
+#endif
         bEnableExceptions = true;
     }
 }

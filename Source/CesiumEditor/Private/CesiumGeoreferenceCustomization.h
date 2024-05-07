@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -22,4 +22,6 @@ public:
 private:
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LongitudeEditor;
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LatitudeEditor;
+
+  static FName RegisteredLayoutName;
 };

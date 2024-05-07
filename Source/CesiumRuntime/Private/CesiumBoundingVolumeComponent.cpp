@@ -1,7 +1,8 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumBoundingVolumeComponent.h"
 #include "CalcBounds.h"
+#include "CesiumCommon.h"
 #include "CesiumGeoreference.h"
 #include "CesiumLifetime.h"
 #include "UObject/UObjectGlobals.h"
@@ -100,9 +101,15 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusion(
     return;
   }
 
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  FPrimitiveComponentId componentId = this->GetPrimitiveSceneId();
+#else
+  FPrimitiveComponentId componentId = this->ComponentId;
+#endif
+
   TileOcclusionState occlusionState =
       cesiumViewExtension.getPrimitiveOcclusionState(
-          this->ComponentId,
+          componentId,
           _occlusionState == TileOcclusionState::Occluded,
           _mappedFrameTime);
 

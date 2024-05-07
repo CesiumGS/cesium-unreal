@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -46,6 +46,8 @@ public:
   bool isDefaultsLoaded() const { return this->_defaults.has_value(); }
   bool isLoadingDefaults() const { return this->_isLoadingDefaults; }
 
+  bool isAuthenticationRequired() const;
+
   void connect();
   void resume();
   void disconnect();
@@ -66,6 +68,7 @@ public:
   const CesiumIonClient::Assets& getAssets();
   const std::vector<CesiumIonClient::Token>& getTokens();
   const CesiumIonClient::Defaults& getDefaults();
+  const CesiumIonClient::ApplicationData& getAppData();
 
   const std::string& getAuthorizeUrl() const { return this->_authorizeUrl; }
   const std::string& getRedirectUrl() const { return this->_redirectUrl; }
@@ -108,6 +111,14 @@ public:
 private:
   void startQueuedLoads();
 
+  /**
+   * If the {@link _appData} field has no value, this method will request the
+   * ion server's /appData endpoint to obtain its data.
+   * @returns A future that resolves to true if _appData is present or false if
+   * it couldn't be fetched.
+   */
+  CesiumAsync::Future<bool> ensureAppDataLoaded();
+
   CesiumAsync::AsyncSystem _asyncSystem;
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
   TWeakObjectPtr<UCesiumIonServer> _pServer;
@@ -117,6 +128,7 @@ private:
   std::optional<CesiumIonClient::Assets> _assets;
   std::optional<std::vector<CesiumIonClient::Token>> _tokens;
   std::optional<CesiumIonClient::Defaults> _defaults;
+  std::optional<CesiumIonClient::ApplicationData> _appData;
 
   std::optional<CesiumAsync::SharedFuture<CesiumIonClient::Token>>
       _projectDefaultTokenDetailsFuture;

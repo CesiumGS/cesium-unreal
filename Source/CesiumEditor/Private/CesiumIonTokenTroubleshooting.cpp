@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumIonTokenTroubleshooting.h"
 #include "Cesium3DTileset.h"
@@ -548,6 +548,7 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
       ionSession.getAsyncSystem(),
       ionSession.getAssetAccessor(),
       TCHAR_TO_UTF8(*state.token),
+      ionSession.getAppData(),
       TCHAR_TO_UTF8(*getCesiumIonServer(pIonObject)->ApiUrl));
 
   // Don't let this panel be destroyed while the async operations below are in

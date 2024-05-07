@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -11,6 +11,12 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneManagement.h"
 
+#if ENGINE_VERSION_5_3_OR_HIGHER
+#define INIT_RHI_SIGNATURE InitRHI(FRHICommandListBase& RHICmdList)
+#else
+#define INIT_RHI_SIGNATURE InitRHI()
+#endif
+
 /**
  * This generates the indices necessary for point attenuation in a
  * FCesiumGltfPointsComponent.
@@ -21,11 +27,8 @@ public:
       const int32& NumPoints,
       const bool bAttenuationSupported)
       : NumPoints(NumPoints), bAttenuationSupported(bAttenuationSupported) {}
-#if ENGINE_VERSION_5_3_OR_HIGHER
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-#else
-  virtual void InitRHI() override;
-#endif
+
+  virtual void INIT_RHI_SIGNATURE override;
 
 private:
   // The number of points in the original point mesh. Not to be confused with
@@ -68,10 +71,6 @@ public:
       const FVertexFactoryShaderPermutationParameters& Parameters);
 
 private:
-#if ENGINE_VERSION_5_3_OR_HIGHER
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-#else
-  virtual void InitRHI() override;
-#endif
+  virtual void INIT_RHI_SIGNATURE override;
   virtual void ReleaseRHI() override;
 };

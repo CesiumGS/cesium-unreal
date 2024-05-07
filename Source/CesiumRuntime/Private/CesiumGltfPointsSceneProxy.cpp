@@ -1,14 +1,13 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumGltfPointsSceneProxy.h"
 #include "CesiumGltfPointsComponent.h"
+#include "DataDrivenShaderPlatformInfo.h"
 #include "Engine/StaticMesh.h"
 #include "RHIResources.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneInterface.h"
 #include "StaticMeshResources.h"
-
-#if ENGINE_VERSION_5_2_OR_HIGHER
-#include "DataDrivenShaderPlatformInfo.h"
-#endif
 
 FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
     : PointCloudShading(),
@@ -50,10 +49,24 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
 
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 
+#if ENGINE_VERSION_5_4_OR_HIGHER
+void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
+    FRHICommandListBase& RHICmdList) {
+  AttenuationVertexFactory.InitResource(RHICmdList);
+  AttenuationIndexBuffer.InitResource(RHICmdList);
+}
+#elif ENGINE_VERSION_5_3_OR_HIGHER
+void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
+  FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
+  AttenuationVertexFactory.InitResource(RHICmdList);
+  AttenuationIndexBuffer.InitResource(RHICmdList);
+}
+#else
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
   AttenuationVertexFactory.InitResource();
   AttenuationIndexBuffer.InitResource();
 }
+#endif
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {
   AttenuationVertexFactory.ReleaseResource();

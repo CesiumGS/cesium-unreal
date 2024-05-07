@@ -54,6 +54,12 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-macos
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Build cesium-native
         run: |
           mkdir -p extern/build-ios
@@ -62,12 +68,12 @@ jobs:
           cmake --build build-ios -j4 --target install --config Release
           cd ..
           rm -rf extern
-      - name: Install Unreal Engine
-        uses: ./.github/actions/install-unreal-macos
-        with:
-          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Customize BuildConfiguration.xml
+        run: |
+          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
+          # - We limit parallel actions because our builds use a lot more memory than UBT thinks they will.
+          # - We set the source code control Provider to None so UBT includes all files in the unity build.
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
       - name: Build plugin
         run: |
           sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin

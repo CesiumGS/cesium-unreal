@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumSubLevelComponent.h"
 #include "Cesium3DTileset.h"
 #include "CesiumActors.h"

@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "Async/Async.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumRuntime.h"

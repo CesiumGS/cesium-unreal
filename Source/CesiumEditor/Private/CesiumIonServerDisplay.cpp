@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumIonServerDisplay.h"
 #include "CesiumEditor.h"
@@ -6,6 +6,7 @@
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Text/STextBlock.h"
 
 void CesiumIonServerDisplay::Construct(const FArguments& InArgs) {
   UCesiumIonServer* pServer = InArgs._Server;

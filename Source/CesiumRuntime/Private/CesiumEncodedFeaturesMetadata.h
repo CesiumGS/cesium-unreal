@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -10,11 +10,8 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
+#include <CesiumGltf/KhrTextureTransform.h>
 #include <variant>
-
-namespace CesiumGltf {
-class KhrTextureTransform;
-}
 
 struct FCesiumFeatureIdSet;
 struct FCesiumPrimitiveFeatures;

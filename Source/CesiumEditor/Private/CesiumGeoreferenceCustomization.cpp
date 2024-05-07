@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumCustomization.h"
@@ -7,18 +7,22 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 
+FName FCesiumGeoreferenceCustomization::RegisteredLayoutName;
+
 void FCesiumGeoreferenceCustomization::Register(
     FPropertyEditorModule& PropertyEditorModule) {
+
+  RegisteredLayoutName = ACesiumGeoreference::StaticClass()->GetFName();
+
   PropertyEditorModule.RegisterCustomClassLayout(
-      ACesiumGeoreference::StaticClass()->GetFName(),
+      RegisteredLayoutName,
       FOnGetDetailCustomizationInstance::CreateStatic(
           &FCesiumGeoreferenceCustomization::MakeInstance));
 }
 
 void FCesiumGeoreferenceCustomization::Unregister(
     FPropertyEditorModule& PropertyEditorModule) {
-  PropertyEditorModule.UnregisterCustomClassLayout(
-      ACesiumGeoreference::StaticClass()->GetFName());
+  PropertyEditorModule.UnregisterCustomClassLayout(RegisteredLayoutName);
 }
 
 TSharedRef<IDetailCustomization>

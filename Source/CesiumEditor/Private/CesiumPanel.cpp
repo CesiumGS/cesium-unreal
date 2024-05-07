@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPanel.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -145,6 +145,13 @@ static bool isSignedIn() {
       ->isConnected();
 }
 
+static bool requiresTokenForServer() {
+  return FCesiumEditorModule::serverManager()
+      .GetCurrentSession()
+      ->getAppData()
+      .needsOauthAuthentication();
+}
+
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
   TSharedRef<FUICommandList> commandList = MakeShared<FUICommandList>();
 
@@ -158,7 +165,8 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
       FCanExecuteAction::CreateStatic(isSignedIn));
   commandList->MapAction(
       FCesiumCommands::Get().OpenTokenSelector,
-      FExecuteAction::CreateSP(this, &CesiumPanel::openTokenSelector));
+      FExecuteAction::CreateSP(this, &CesiumPanel::openTokenSelector),
+      FCanExecuteAction::CreateStatic(requiresTokenForServer));
   commandList->MapAction(
       FCesiumCommands::Get().SignOut,
       FExecuteAction::CreateSP(this, &CesiumPanel::signOut),
