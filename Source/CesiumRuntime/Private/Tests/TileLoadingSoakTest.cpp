@@ -2,11 +2,18 @@
 
 #if WITH_EDITOR
 
-#include <stack>
 #include <algorithm>
-#include <vector>
 #include <random>
+#include <stack>
+#include <vector>
 
+#include <strstream>
+
+#include "Containers/UnrealString.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "GenericPlatform/GenericPlatformMemory.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
+#include "HAL/PlatformFileManager.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/AutomationTest.h"
 #include "Settings/LevelEditorPlaySettings.h"
@@ -37,6 +44,111 @@ constexpr static float FLIGHT_TIME = 5.0f;
 static std::stack<int> nextPolygonIndex;
 
 namespace Cesium {
+
+FString& getLogFilePath() {
+  static std::optional<FString> path{};
+  static const TCHAR* filename = TEXT("tiles_output.csv");
+
+  if (!path.has_value()) {
+    path = FString::Printf(TEXT("%s/%s"), *FPaths::ProjectDir(), filename);
+  }
+
+  return path.value();
+}
+
+void countTree(
+    Cesium3DTilesSelection::Tile* tile,
+    int depth,
+    int& outCount,
+    int& outUnloaded,
+    int& outUnloading,
+    int& outContentLoading,
+    int& outContentLoaded,
+    int& outDone) {
+  std::string indentation(depth, '\t');
+  /*UE_LOG(
+      LogCesium,
+         Display,
+         TEXT("%s- tile load state %d"),
+         UTF8_TO_TCHAR(indentation.c_str()),
+         tile->getState());*/
+
+  outCount++;
+  gsl::span<Cesium3DTilesSelection::Tile> tiles = tile->getChildren();
+  for (Cesium3DTilesSelection::Tile& tile : tiles) {
+    switch (tile.getState()) {
+    case Cesium3DTilesSelection::TileLoadState::Unloaded:
+      outUnloaded++;
+      break;
+    case Cesium3DTilesSelection::TileLoadState::ContentLoading:
+      outContentLoading++;
+      break;
+    case Cesium3DTilesSelection::TileLoadState::ContentLoaded:
+      outContentLoaded++;
+      break;
+    case Cesium3DTilesSelection::TileLoadState::Unloading:
+      outUnloading++;
+      break;
+    case Cesium3DTilesSelection::TileLoadState::Done:
+      outDone++;
+      break;
+    }
+    countTree(
+        &tile,
+        depth + 1,
+        outCount,
+        outUnloaded,
+        outUnloading,
+        outContentLoading,
+        outContentLoaded,
+        outDone);
+  }
+}
+
+void logDebug(ACesium3DTileset* tilesetActor) {
+  Cesium3DTilesSelection::Tileset* tileset = tilesetActor->GetTileset();
+  int numTiles = 0, numUnloaded = 0, numUnloading = 0, numContentLoading = 0,
+      numContentLoaded = 0, numDone = 0;
+  countTree(
+      tileset->getRootTile(),
+      0,
+      numTiles,
+      numUnloaded,
+      numUnloading,
+      numContentLoading,
+      numContentLoaded,
+      numDone);
+
+  FGenericPlatformMemoryStats stats = FPlatformMemory::GetStats();
+
+  IPlatformFile& file = FPlatformFileManager::Get().GetPlatformFile();
+  IFileHandle* handle = file.OpenWrite(*getLogFilePath(), true);
+  assert(handle);
+
+  std::stringstream outstream;
+
+  outstream << static_cast<uint64>(FPlatformTime::Seconds()) << "," << numTiles << "," << numUnloaded
+            << "," << numUnloading << "," << numContentLoading << ","
+            << numContentLoaded << "," << numDone << "," << stats.UsedVirtual
+            << std::endl;
+
+  std::string str = outstream.str();
+  handle->Write(reinterpret_cast<const uint8*>(str.c_str()), str.length());
+  handle->Flush();
+  delete handle;
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT(
+          "Tileset has %d tiles in tree (%d unloaded, %d unloading, %d content loading, %d content loaded, %d done)"),
+      numTiles,
+      numUnloaded,
+      numUnloading,
+      numContentLoading,
+      numContentLoaded,
+      numDone);
+}
 
 void fillWithRandomIndices() {
   // Create a vector with every index
@@ -69,6 +181,8 @@ bool FFlyToRandomLocationCommand::Update() {
   if (!GEditor->IsPlaySessionInProgress()) {
     return true;
   }
+
+  logDebug(context.playContext.tilesets.at(0));
 
   UCesiumFlyToComponent* flyTo =
       context.playContext.pawn->FindComponentByClass<UCesiumFlyToComponent>();
