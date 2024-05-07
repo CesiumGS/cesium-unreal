@@ -87,7 +87,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _beforeMovieUseLodTransitions{true},
+      _beforeMovieEnableLodTransitions{true},
 
       _tilesetsBeingDestroyed(0) {
 
@@ -272,9 +272,9 @@ void ACesium3DTileset::PostInitProperties() {
   }
 }
 
-void ACesium3DTileset::SetUseLodTransitions(bool InUseLodTransitions) {
-  if (InUseLodTransitions != this->UseLodTransitions) {
-    this->UseLodTransitions = InUseLodTransitions;
+void ACesium3DTileset::SetEnableLodTransitions(bool InEnableLodTransitions) {
+  if (InEnableLodTransitions != this->EnableLodTransitions) {
+    this->EnableLodTransitions = InEnableLodTransitions;
     this->DestroyTileset();
   }
 }
@@ -442,13 +442,13 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  this->_beforeMovieUseLodTransitions = this->UseLodTransitions;
+  this->_beforeMovieEnableLodTransitions = this->EnableLodTransitions;
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  this->UseLodTransitions = false;
+  this->EnableLodTransitions = false;
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
@@ -456,7 +456,7 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  this->UseLodTransitions = this->_beforeMovieUseLodTransitions;
+  this->EnableLodTransitions = this->_beforeMovieEnableLodTransitions;
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
@@ -1819,7 +1819,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
-  options.enableLodTransitionPeriod = this->UseLodTransitions;
+  options.enableLodTransitionPeriod = this->EnableLodTransitions;
   options.lodTransitionLength = this->LodTransitionLength;
   // options.kickDescendantsWhileFadingIn = false;
 }
@@ -2071,7 +2071,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
     Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         pTile->getContent().getRenderContent();
-    if (!this->UseLodTransitions ||
+    if (!this->EnableLodTransitions ||
         (pRenderContent &&
          pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
       _tilesToHideNextFrame.push_back(pTile);
@@ -2080,7 +2080,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   showTilesToRender(pResult->tilesToRenderThisFrame);
 
-  if (this->UseLodTransitions) {
+  if (this->EnableLodTransitions) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
 
     for (Cesium3DTilesSelection::Tile* pTile :
@@ -2180,7 +2180,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableLodTransitions) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Root) ||

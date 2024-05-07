@@ -425,13 +425,14 @@ public:
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
    *
-   * Note that this will always be disabled if UseLodTransitions is set to true.
+   * Note that this will always be disabled if Enable Lod Transitions is set to
+   * true.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      Meta = (EditCondition = "!UseLodTransitions", EditConditionHides))
+      Meta = (EditCondition = "!EnableLodTransitions", EditConditionHides))
   bool EnableFrustumCulling = true;
 
   /**
@@ -442,13 +443,14 @@ public:
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
    *
-   * Note that this will always be disabled if UseLodTransitions is set to true.
+   * Note that this will always be disabled if Enable Lod Transitions is set to
+   * true.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      Meta = (EditCondition = "!UseLodTransitions", EditConditionHides))
+      Meta = (EditCondition = "!EnableLodTransitions", EditConditionHides))
   bool EnableFogCulling = true;
 
   /**
@@ -616,29 +618,34 @@ public:
   FCompletedLoadTrigger OnTilesetLoaded;
 
   /**
-   * Use a dithering effect when transitioning between tiles of different LODs.
+   * Whether to enable a dithering effect when transitioning between tiles of
+   * different LODs.
    *
    * When this is set to true, Frustrum Culling and Fog Culling are always
    * disabled.
+   *
+   * When Forward Rendering is enabled for the project, LOD transitions are
+   * only compatible when used with temporal anti-aliasing methods. Setting this
+   * to true for other methods will result in dithering artifacts.
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintGetter = GetUseLodTransitions,
-      BlueprintSetter = SetUseLodTransitions,
+      BlueprintGetter = GetEnableLodTransitions,
+      BlueprintSetter = SetEnableLodTransitions,
       Category = "Cesium|Rendering")
-  bool UseLodTransitions = false;
+  bool EnableLodTransitions = false;
 
   /**
-   * How long dithered LOD transitions between different tiles should take, in
+   * How long the LOD transitions between different tiles should take, in
    * seconds.
    *
-   * Only relevant if UseLodTransitions is true.
+   * Only relevant if Enable Lod Transitions is true.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Rendering",
-      meta = (EditCondition = "UseLodTransitions", EditConditionHides))
+      meta = (EditCondition = "EnableLodTransitions", EditConditionHides))
   float LodTransitionLength = 0.5f;
 
 private:
@@ -904,10 +911,10 @@ public:
   float GetLoadProgress() const { return LoadProgress; }
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  bool GetUseLodTransitions() const { return UseLodTransitions; }
+  bool GetEnableLodTransitions() const { return EnableLodTransitions; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetUseLodTransitions(bool InUseLodTransitions);
+  void SetEnableLodTransitions(bool InEnableLodTransitions);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
@@ -1207,7 +1214,7 @@ private:
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
-  bool _beforeMovieUseLodTransitions;
+  bool _beforeMovieEnableLodTransitions;
 
   bool _scaleUsingDPI;
 

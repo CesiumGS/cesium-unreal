@@ -2,9 +2,14 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- `UseLodTransitions` has been renamed to `EnableLodTransitions` on `Cesium3DTileset`.
+
 ##### Fixes :wrench:
 
-- Fixed an issue with pixel dithering artifacts that could appear on tilesets.
+- Fixed an issue with flickering pixel artifacts that could appear on tilesets.
+- Fixed an issue with dithering artifacts that would appear on tilesets when using non-temporal anti-aliasing methods for Forward Rendering.
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
 
 ### v2.5.0 - 2024-05-01
