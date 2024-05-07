@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- `UseLodTransitions` has been renamed to `EnableLodTransitions` on `Cesium3DTileset`.
+
 ##### Fixes :wrench:
 
 - Fixed an issue with flickering pixel artifacts that could appear on tilesets.
