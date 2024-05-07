@@ -266,8 +266,13 @@ float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryInte
 
 float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
-  	return mul(float4(Intermediates.Position, 1),
+  #ifdef DFGetX
+    // When double floats exist (UE 5.4), use the df tranform functions
+    return DFTransformLocalToTranslatedWorld(Intermediates.Position, Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation);
+  #else
+    return mul(float4(Intermediates.Position, 1),
   	  	LWCMultiplyTranslation(Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation));
+  #endif
 }
 
 float4 ApplyAttenuation(float4 WorldPosition, uint CornerIndex) {

@@ -71,6 +71,18 @@ jobs:
       - name: Overwrite plugin engine version
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
+      - name: Customize BuildConfiguration.xml
+        run: |
+          mkdir -p "$env:USERPROFILE\AppData\Roaming\Unreal Engine\UnrealBuildTool"
+          # - We limit parallel actions because our builds use a lot more memory than UBT thinks they will.
+          # - We set the source code control Provider to None so UBT includes all files in the unity build.
+          Set-Content -Path "$env:USERPROFILE\AppData\Roaming\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml" -Value '<?xml version="1.0" encoding="utf-8" ?>
+            <Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">
+              <BuildConfiguration>
+                <MaxParallelActions>2</MaxParallelActions>
+              </BuildConfiguration>
+              <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>
+            </Configuration>'
       - name: Build plugin
         run: |
           $env:NDKROOT=$env:ANDROID_NDK_ROOT
