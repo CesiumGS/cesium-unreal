@@ -616,17 +616,22 @@ public:
   FCompletedLoadTrigger OnTilesetLoaded;
 
   /**
-   * Use a dithering effect when transitioning between tiles of different LODs.
+   * Whether to enable a dithering effect when transitioning between tiles of
+   * different LODs.
+   *
+   * This is only compatible with temporal anti-aliasing methods. Setting this
+   * to true for other anti-aliasing modes may result in unwanted visual
+   * artifacts.
    *
    * When this is set to true, Frustrum Culling and Fog Culling are always
    * disabled.
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintGetter = GetUseLodTransitions,
-      BlueprintSetter = SetUseLodTransitions,
+      BlueprintGetter = GetEnableLodTransitions,
+      BlueprintSetter = SetEnableLodTransitions,
       Category = "Cesium|Rendering")
-  bool UseLodTransitions = false;
+  bool EnableLodTransitions = false;
 
   /**
    * How long dithered LOD transitions between different tiles should take, in
@@ -904,10 +909,10 @@ public:
   float GetLoadProgress() const { return LoadProgress; }
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  bool GetUseLodTransitions() const { return UseLodTransitions; }
+  bool GetEnableLodTransitions() const { return EnableLodTransitions; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetUseLodTransitions(bool InUseLodTransitions);
+  void SetEnableLodTransitions(bool InEnableLodTransitions);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
@@ -1207,7 +1212,7 @@ private:
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
-  bool _beforeMovieUseLodTransitions;
+  bool _beforeMovieEnableLodTransitions;
 
   bool _scaleUsingDPI;
 

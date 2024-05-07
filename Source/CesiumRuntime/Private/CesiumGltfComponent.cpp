@@ -3142,9 +3142,9 @@ static void loadPrimitiveGameThreadPart(
                 "EnableLodTransitions",
                 EMaterialParameterAssociation::LayerParameter,
                 fadeLayerIndex),
-            pTilesetActor->GetUseLodTransitions() ? 1.0f : 0.0f);
+            pTilesetActor->GetEnableLodTransitions() ? 1.0f : 0.0f);
 
-        // Initialize fade uniform to fully visible, in case LOD transitions
+        // Initialize fade uniforms to fully visible, in case LOD transitions
         // are off.
         pMaterial->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
@@ -3154,7 +3154,7 @@ static void loadPrimitiveGameThreadPart(
             1.0f);
         pMaterial->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
-                "FadingType",
+                "FadeDirection",
                 EMaterialParameterAssociation::LayerParameter,
                 fadeLayerIndex),
             0.0f);
