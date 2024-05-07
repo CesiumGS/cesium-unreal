@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
- - Improve DynamicPawn movement by smoothing speed when height changes suddenly. Ex. Flying over buildings in a city
+ - Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
 
 ##### Fixes :wrench:
 
