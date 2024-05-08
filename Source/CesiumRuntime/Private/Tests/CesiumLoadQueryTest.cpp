@@ -53,7 +53,14 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     pCacheDatabase->clearAll();
   };
 
-  auto issueQueries = [this](
+  struct TestResults {
+    std::atomic<bool> queryFinished = false;
+    std::vector<double> queryResults;
+  };
+
+  static TestResults testResults;
+
+  auto issueQueries = [this, &testResults = testResults](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter parameter) {
     // Test right at camera position
@@ -65,13 +72,22 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
     std::vector<CesiumGeospatial::Cartographic> queryInput = {testInput};
 
-    auto returnedFutures = nativeTileset->getHeightsAtCoordinates(queryInput);
+    nativeTileset->getHeightsAtCoordinates(queryInput)
+        .thenInMainThread([&testResults](std::vector<double> results) {
+          testResults.queryResults = results;
+          testResults.queryFinished = true;
+        });
   };
 
-  auto waitForQueries = [this](
+  auto waitForQueries = [this, &testResults = testResults](
                             SceneGenerationContext& context,
                             TestPass::TestingParameter parameter) {
-    // TODO
+    if (!testResults.queryFinished)
+      return false;
+
+    // TODO, place some objects on the ground to verify positions
+
+    return true;
   };
 
   std::vector<TestPass> testPasses;

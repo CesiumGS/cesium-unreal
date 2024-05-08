@@ -75,31 +75,44 @@ bool TimeLoadingCommand::Update() {
   bool tilesetsloaded = playContext.areTilesetsDoneLoading();
   bool timedOut = pass.elapsedTime >= testTimeout;
 
-  if (tilesetsloaded || timedOut) {
-    pass.endMark = timeMark;
-    UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
+  if (timedOut) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("TIMED OUT: Loading stopped after %.2f seconds"),
+        pass.elapsedTime);
+    // Command is done
+    pass.testInProgress = false;
+    return true;
+  }
 
-    if (timedOut) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT("TIMED OUT: Loading stopped after %.2f seconds"),
-          pass.elapsedTime);
-    } else {
+  if (tilesetsloaded) {
+    // Run verify step as part of timing
+    // This is useful for running additional logic after a load, or if the step
+    // exists in the pass solely, timing very specific functionality (like
+    // terrain queries)
+    bool verifyComplete = true;
+    if (pass.verifyStep)
+      verifyComplete = pass.verifyStep(playContext, pass.optionalParameter);
+
+    if (verifyComplete) {
+      pass.endMark = timeMark;
+      UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
+
       UE_LOG(
           LogCesium,
           Display,
-          TEXT("Tileset load completed in %.2f seconds"),
+          TEXT("Pass completed in %.2f seconds"),
           pass.elapsedTime);
+
+      if (pass.verifyStep)
+        pass.verifyStep(playContext, pass.optionalParameter);
+
+      pass.testInProgress = false;
+
+      // Command is done
+      return true;
     }
-
-    if (pass.verifyStep)
-      pass.verifyStep(playContext, pass.optionalParameter);
-
-    pass.testInProgress = false;
-
-    // Command is done
-    return true;
   }
 
   // Let world tick, we'll come back to this command

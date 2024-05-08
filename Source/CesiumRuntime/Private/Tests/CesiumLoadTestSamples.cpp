@@ -210,6 +210,8 @@ bool FCesiumSampleMontrealPointCloud::RunTest(const FString& Parameters) {
 
       TestEqual("visibleTiles", visibleTiles, 1);
     }
+
+    return true;
   };
 
   std::vector<TestPass> testPasses;
