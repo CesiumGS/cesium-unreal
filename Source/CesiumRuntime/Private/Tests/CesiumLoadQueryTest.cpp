@@ -21,7 +21,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 void setupCityLocale(SceneGenerationContext& context) {
-  // Similar to Melbourne
+  // Similar to SampleLocaleMelbourne
   context.setCommonProperties(
       FVector(144.951538, -37.809871, 140.334974),
       FVector(1052, 506, 23651),
@@ -31,36 +31,16 @@ void setupCityLocale(SceneGenerationContext& context) {
   context.sunSky->SolarTime = 16.8;
   context.sunSky->UpdateSun();
 
-  // Add Cesium World Terrain
-  ACesium3DTileset* worldTerrainTileset =
+  ACesium3DTileset* melbourneBuildings =
       context.world->SpawnActor<ACesium3DTileset>();
-  worldTerrainTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  worldTerrainTileset->SetIonAssetID(1);
-  worldTerrainTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
-  worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
+  melbourneBuildings->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  melbourneBuildings->SetIonAssetID(69380);
+  melbourneBuildings->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  melbourneBuildings->SetMaximumScreenSpaceError(6.0);
+  melbourneBuildings->SetActorLabel(TEXT("Melbourne Photogrammetry"));
+  melbourneBuildings->SetActorLocation(FVector(0, 0, 900));
 
-  // Bing Maps Aerial overlay
-  UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
-      worldTerrainTileset,
-      FName("Bing Maps Aerial"),
-      RF_Transactional);
-  pOverlay->MaterialLayerKey = TEXT("Overlay0");
-  pOverlay->IonAssetID = 2;
-  pOverlay->SetActive(true);
-  pOverlay->OnComponentCreated();
-  worldTerrainTileset->AddInstanceComponent(pOverlay);
-
-  ACesium3DTileset* melbourneTileset =
-      context.world->SpawnActor<ACesium3DTileset>();
-  melbourneTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  melbourneTileset->SetIonAssetID(69380);
-  melbourneTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
-  melbourneTileset->SetMaximumScreenSpaceError(6.0);
-  melbourneTileset->SetActorLabel(TEXT("Melbourne Photogrammetry"));
-  melbourneTileset->SetActorLocation(FVector(0, 0, 900));
-
-  context.tilesets.push_back(worldTerrainTileset);
-  context.tilesets.push_back(melbourneTileset);
+  context.tilesets.push_back(melbourneBuildings);
 }
 
 bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
@@ -76,7 +56,16 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
   auto issueQueries = [this](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter parameter) {
-    // TODO
+    // Test right at camera position
+    CesiumGeospatial::Cartographic testInput =
+        CesiumGeospatial::Cartographic::fromDegrees(144.951538, -37.80987);
+
+    ACesium3DTileset* tileset = context.tilesets[0];
+    Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
+
+    std::vector<CesiumGeospatial::Cartographic> queryInput = {testInput};
+
+    auto returnedFutures = nativeTileset->getHeightsAtCoordinates(queryInput);
   };
 
   auto waitForQueries = [this](
