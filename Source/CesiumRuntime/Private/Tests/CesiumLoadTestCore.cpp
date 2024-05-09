@@ -36,10 +36,12 @@ struct LoadTestContext {
 
 LoadTestContext gLoadTestContext;
 
-DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
     TimeLoadingCommand,
     FString,
     loggingName,
+    SceneGenerationContext&,
+    creationContext,
     SceneGenerationContext&,
     playContext,
     TestPass&,
@@ -93,7 +95,8 @@ bool TimeLoadingCommand::Update() {
     // terrain queries)
     bool verifyComplete = true;
     if (pass.verifyStep)
-      verifyComplete = pass.verifyStep(playContext, pass.optionalParameter);
+      verifyComplete =
+          pass.verifyStep(creationContext, playContext, pass.optionalParameter);
 
     if (verifyComplete) {
       pass.endMark = timeMark;
@@ -104,9 +107,6 @@ bool TimeLoadingCommand::Update() {
           Display,
           TEXT("Pass completed in %.2f seconds"),
           pass.elapsedTime);
-
-      if (pass.verifyStep)
-        pass.verifyStep(playContext, pass.optionalParameter);
 
       pass.testInProgress = false;
 
@@ -259,8 +259,11 @@ bool RunLoadTest(
     // Do our timing capture
     FString loggingName = testName + "-" + pass.name;
 
-    ADD_LATENT_AUTOMATION_COMMAND(
-        TimeLoadingCommand(loggingName, context.playContext, pass));
+    ADD_LATENT_AUTOMATION_COMMAND(TimeLoadingCommand(
+        loggingName,
+        context.creationContext,
+        context.playContext,
+        pass));
 
     ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 

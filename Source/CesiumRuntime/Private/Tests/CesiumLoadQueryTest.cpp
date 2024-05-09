@@ -80,7 +80,8 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
   };
 
   auto waitForQueries = [this, &testResults = testResults](
-                            SceneGenerationContext& context,
+                            SceneGenerationContext& creationContext,
+                            SceneGenerationContext& playContext,
                             TestPass::TestingParameter parameter) {
     if (!testResults.queryFinished)
       return false;

@@ -15,7 +15,8 @@ struct TestPass {
   typedef std::variant<int, float> TestingParameter;
   typedef std::function<void(SceneGenerationContext&, TestingParameter)>
       SetupCallback;
-  typedef std::function<bool(SceneGenerationContext&, TestingParameter)>
+  typedef std::function<
+      bool(SceneGenerationContext&, SceneGenerationContext&, TestingParameter)>
       VerifyCallback;
 
   FString name;

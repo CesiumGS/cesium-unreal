@@ -185,10 +185,11 @@ bool FCesiumSampleMontrealPointCloud::RunTest(const FString& Parameters) {
   };
 
   auto verifyVisibleTiles = [this](
-                                SceneGenerationContext& context,
+                                SceneGenerationContext& creationContext,
+                                SceneGenerationContext& playContext,
                                 TestPass::TestingParameter parameter) {
     Cesium3DTilesSelection::Tileset* pTileset =
-        context.tilesets[0]->GetTileset();
+        playContext.tilesets[0]->GetTileset();
     if (TestNotNull("Tileset", pTileset)) {
       int visibleTiles = 0;
       pTileset->forEachLoadedTile([&](Cesium3DTilesSelection::Tile& tile) {
