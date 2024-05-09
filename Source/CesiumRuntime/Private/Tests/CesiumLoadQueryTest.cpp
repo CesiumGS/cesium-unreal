@@ -13,6 +13,8 @@
 #include "CesiumSunSky.h"
 #include "GlobeAwareDefaultPawn.h"
 
+#include "Engine/StaticMeshActor.h"
+
 using namespace Cesium;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -83,11 +85,25 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
                             SceneGenerationContext& creationContext,
                             SceneGenerationContext& playContext,
                             TestPass::TestingParameter parameter) {
-    if (!testResults.queryFinished)
-      return false;
+    return (bool)testResults.queryFinished;
+  };
 
-    // TODO, place some objects on the ground to verify positions
+  auto showResults = [this, &testResults = testResults](
+                         SceneGenerationContext& creationContext,
+                         SceneGenerationContext& playContext,
+                         TestPass::TestingParameter parameter) {
+    // Place some objects on the ground to verify positions
+    UWorld* World = creationContext.world;
 
+    FSoftObjectPath objectPath(
+        TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+    TSoftObjectPtr<UStaticMesh> cubeMeshPtr =
+        TSoftObjectPtr<UStaticMesh>(objectPath);
+
+    // TODO, hook up to actual results
+    AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
+    staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(cubeMeshPtr.Get());
+    staticMeshActor->SetActorLocation(FVector(1, 1, 1));
     return true;
   };
 
@@ -96,6 +112,8 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
       TestPass{"Load city from cold cache", clearCache, nullptr});
   testPasses.push_back(
       TestPass{"Issue height queries and wait", issueQueries, waitForQueries});
+  testPasses.push_back(
+      TestPass{"Populate scene with results", nullptr, showResults});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
