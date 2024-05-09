@@ -2,16 +2,13 @@
 
 #include "CesiumPointAttenuationVertexFactory.h"
 
+#include "DataDrivenShaderPlatformInfo.h"
+#include "MaterialDomain.h"
 #include "MeshBatch.h"
 #include "MeshDrawShaderBindings.h"
 #include "MeshMaterialShader.h"
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
-
-#if ENGINE_VERSION_5_2_OR_HIGHER
-#include "DataDrivenShaderPlatformInfo.h"
-#include "MaterialDomain.h"
-#endif
 
 #if ENGINE_VERSION_5_3_OR_HIGHER
 #define RHI_CREATE_BUFFER RHICmdList.CreateBuffer

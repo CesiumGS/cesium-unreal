@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumCommon.h"
 #include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
@@ -48,8 +49,12 @@ struct LoadPrimitiveResult {
    */
   const CesiumGltf::Material* pMaterial = nullptr;
   glm::dmat4x4 transform{1.0};
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
+#else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
       pCollisionMesh = nullptr;
+#endif
   std::string name{};
 
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
