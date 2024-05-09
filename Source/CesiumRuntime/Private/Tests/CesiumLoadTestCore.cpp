@@ -176,8 +176,6 @@ bool TestCleanupCommand::Update() {
   else
     defaultReportStep(context.testPasses);
 
-  // Turn on the editor tileset updates so we can see what we loaded
-  // gLoadTestContext.creationContext.setSuspendUpdate(false);
   return true;
 }
 

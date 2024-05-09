@@ -92,7 +92,10 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
                          SceneGenerationContext& creationContext,
                          SceneGenerationContext& playContext,
                          TestPass::TestingParameter parameter) {
-    // Place some objects on the ground to verify positions
+    // Turn on the editor tileset updates so we can see what we loaded
+    creationContext.setSuspendUpdate(false);
+
+    // Place an object on the ground to verify position
     UWorld* World = creationContext.world;
 
     FSoftObjectPath objectPath(
@@ -100,10 +103,25 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     TSoftObjectPtr<UStaticMesh> cubeMeshPtr =
         TSoftObjectPtr<UStaticMesh>(objectPath);
 
-    // TODO, hook up to actual results
+    // Test right at camera position
+    FVector hitCoordinate = {
+        144.951538,
+        -37.80987,
+        testResults.queryResults[0]};
+
+    ACesium3DTileset* tileset = playContext.tilesets[0];
+    Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
+
+    FVector unrealPosition =
+        tileset->ResolveGeoreference()
+            ->TransformLongitudeLatitudeHeightPositionToUnreal(hitCoordinate);
+
     AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
     staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(cubeMeshPtr.Get());
-    staticMeshActor->SetActorLocation(FVector(1, 1, 1));
+    staticMeshActor->SetActorLocation(unrealPosition);
+    staticMeshActor->SetActorLabel(FString("Hit X"));
+    staticMeshActor->SetFolderPath("/QueryResults");
+
     return true;
   };
 
