@@ -4,13 +4,28 @@
 
 ##### Additions :tada:
 
- - Improve DynamicPawn movement by smoothing speed when height changes suddenly. Ex. Flying over buildings in a city
+ - Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
  - Improve DynamicPawn movement by adding deceleration. This lets the camera slowly come to a stop after moving, rather than immediately.
 
 ##### Fixes :wrench:
 
+- Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
+
+### v2.5.0 - 2024-05-01
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.1. Future versions will require Unreal Engine v5.2+.
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.4.
+- Added support for Cesium ion servers in single user mode. Tokens are not required to stream assets from such servers.
+
+##### Fixes :wrench:
+
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
-- Fixed issue when using DynamicPawn where you could get stuck after interrupting a flight started with `UCesiumFlyToComponent`
+- Fixed a crash on Unreal Editor shutdown that would occasionally happen due to attempts to access garbage-collected static classes.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.34.0 to v0.35.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.4.1 - 2024-04-01
 
