@@ -65,8 +65,8 @@ void countTree(
     int& outContentLoading,
     int& outContentLoaded,
     int& outDone) {
-  std::string indentation(depth, '\t');
-  /*UE_LOG(
+  /*std::string indentation(depth, '\t');
+  UE_LOG(
       LogCesium,
          Display,
          TEXT("%s- tile load state %d"),
@@ -75,8 +75,8 @@ void countTree(
 
   outCount++;
   gsl::span<Cesium3DTilesSelection::Tile> tiles = tile->getChildren();
-  for (Cesium3DTilesSelection::Tile& tile : tiles) {
-    switch (tile.getState()) {
+  for (Cesium3DTilesSelection::Tile& child : tiles) {
+    switch (child.getState()) {
     case Cesium3DTilesSelection::TileLoadState::Unloaded:
       outUnloaded++;
       break;
@@ -94,7 +94,7 @@ void countTree(
       break;
     }
     countTree(
-        &tile,
+        &child,
         depth + 1,
         outCount,
         outUnloaded,
