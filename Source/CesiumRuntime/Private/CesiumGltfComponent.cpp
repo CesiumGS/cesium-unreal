@@ -3163,7 +3163,7 @@ static void loadPrimitiveGameThreadPart(
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-        pPrimBase->pTilesetActor = pTilesetActor;
+    pPrimBase->pTilesetActor = pTilesetActor;
     pPrimBase->overlayTextureCoordinateIDToUVIndex =
         loadResult.overlayTextureCoordinateIDToUVIndex;
     pPrimBase->GltfToUnrealTexCoordMap =
