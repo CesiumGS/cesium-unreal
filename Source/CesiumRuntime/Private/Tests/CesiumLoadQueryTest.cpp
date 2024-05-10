@@ -56,6 +56,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
   };
 
   struct TestResults {
+    std::vector<CesiumGeospatial::Cartographic> queryInput;
     std::atomic<bool> queryFinished = false;
     std::vector<double> queryResults;
   };
@@ -66,17 +67,39 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
                           SceneGenerationContext& context,
                           TestPass::TestingParameter parameter) {
     // Test right at camera position
-    CesiumGeospatial::Cartographic testInput =
-        CesiumGeospatial::Cartographic::fromDegrees(144.951538, -37.80987);
+    double testLongitude = 144.951538;
+    double testLatitude = -37.80987;
+
+    // Make a grid of test points
+    const size_t gridRowCount = 5;
+    const size_t gridColumnCount = 5;
+    double cartographicSpacing = 0.001;
+
+    std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
+
+    for (size_t rowIndex = 0; rowIndex < gridRowCount; ++rowIndex) {
+      double rowLatitude = testLatitude + (cartographicSpacing * rowIndex);
+
+      for (size_t columnIndex = 0; columnIndex < gridColumnCount;
+           ++columnIndex) {
+        CesiumGeospatial::Cartographic queryInstance = {
+            testLongitude + (cartographicSpacing * columnIndex),
+            rowLatitude};
+
+        testResults.queryInput.push_back(queryInstance);
+
+        queryInputRadians.push_back(CesiumGeospatial::Cartographic::fromDegrees(
+            queryInstance.longitude,
+            queryInstance.latitude));
+      }
+    }
 
     ACesium3DTileset* tileset = context.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    std::vector<CesiumGeospatial::Cartographic> queryInput = {testInput};
-
-    nativeTileset->getHeightsAtCoordinates(queryInput)
-        .thenInMainThread([&testResults](std::vector<double> results) {
-          testResults.queryResults = results;
+    nativeTileset->getHeightsAtCoordinates(queryInputRadians)
+        .thenInMainThread([&testResults](std::vector<double>&& results) {
+          testResults.queryResults = std::move(results);
           testResults.queryFinished = true;
         });
   };
@@ -103,24 +126,32 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     TSoftObjectPtr<UStaticMesh> cubeMeshPtr =
         TSoftObjectPtr<UStaticMesh>(objectPath);
 
-    // Test right at camera position
-    FVector hitCoordinate = {
-        144.951538,
-        -37.80987,
-        testResults.queryResults[0]};
-
     ACesium3DTileset* tileset = playContext.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    FVector unrealPosition =
-        tileset->ResolveGeoreference()
-            ->TransformLongitudeLatitudeHeightPositionToUnreal(hitCoordinate);
+    for (size_t queryIndex = 0; queryIndex < testResults.queryResults.size();
+         ++queryIndex) {
+      CesiumGeospatial::Cartographic& originalQuery =
+          testResults.queryInput[queryIndex];
 
-    AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
-    staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(cubeMeshPtr.Get());
-    staticMeshActor->SetActorLocation(unrealPosition);
-    staticMeshActor->SetActorLabel(FString("Hit X"));
-    staticMeshActor->SetFolderPath("/QueryResults");
+      FVector hitCoordinate = {
+          originalQuery.longitude,
+          originalQuery.latitude,
+          testResults.queryResults[queryIndex]};
+
+      FVector unrealPosition =
+          tileset->ResolveGeoreference()
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(hitCoordinate);
+
+      AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
+      staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(
+          cubeMeshPtr.Get());
+      staticMeshActor->SetActorLocation(unrealPosition);
+      staticMeshActor->SetActorScale3D(FVector(10, 10, 10));
+      staticMeshActor->SetActorLabel(
+          FString::Printf(TEXT("Hit %d"), queryIndex));
+      staticMeshActor->SetFolderPath("/QueryResults");
+    }
 
     return true;
   };
