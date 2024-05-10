@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+ - Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
+
 ##### Fixes :wrench:
 
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
