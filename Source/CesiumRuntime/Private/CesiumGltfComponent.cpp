@@ -3128,6 +3128,8 @@ static void loadPrimitiveGameThreadPart(
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
   FName meshName = createSafeName(loadResult.name, "");
+  UCesiumGltfPrimitiveComponent* pComponent = nullptr;
+  UCesiumGltfInstancedComponent* pInstancedComponent = nullptr;
   UStaticMeshComponent* pMesh = nullptr;
   UInstancedStaticMeshComponent* pInstancedMesh = nullptr;
   CesiumGltfPrimitiveBase* pPrimBase = nullptr;
@@ -3138,22 +3140,23 @@ static void loadPrimitiveGameThreadPart(
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
+    pComponent = pPointMesh;
     pMesh = pPointMesh;
-    pPrimBase = pPointMesh;
   } else if (!instanceTransforms.empty()) {
-    auto* cesiumMesh =
-        NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
-    pInstancedMesh = cesiumMesh;
-    pMesh = cesiumMesh;
-    pPrimBase = cesiumMesh;
+    pInstancedComponent = NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
+    pInstancedMesh = pInstancedComponent;
+    pMesh = pInstancedComponent;
     for (const auto& transform : instanceTransforms) {
       pInstancedMesh->AddInstance(transform, false);
     }
   } else {
-    auto* cesiumMesh =
-        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
-    pMesh = cesiumMesh;
-    pPrimBase = cesiumMesh;
+    pComponent = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    pMesh = pComponent;
+  }
+  if (pInstancedComponent) {
+    pPrimBase = pInstancedComponent;
+  } else {
+    pPrimBase = pComponent;
   }
 
   UStaticMesh* pStaticMesh;
@@ -3168,8 +3171,11 @@ static void loadPrimitiveGameThreadPart(
     pPrimBase->PositionAccessor = std::move(loadResult.PositionAccessor);
     pPrimBase->IndexAccessor = std::move(loadResult.IndexAccessor);
     pPrimBase->HighPrecisionNodeTransform = loadResult.transform;
-    pPrimBase->UpdateTransformFromCesium(cesiumToUnrealTransform);
-
+    if (pInstancedComponent) {
+      UpdateTransformFromCesium(cesiumToUnrealTransform, pInstancedComponent, pPrimBase);
+    } else {
+      UpdateTransformFromCesium(cesiumToUnrealTransform, pComponent, pPrimBase);
+    }
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
@@ -3553,17 +3559,13 @@ UCesiumGltfComponent::~UCesiumGltfComponent() {
 void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    CesiumGltfPrimitiveBase* pPrimitive = nullptr;
     if (auto* pCesiumPrimitive =
             Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent)) {
-      pPrimitive = pCesiumPrimitive;
+      ::UpdateTransformFromCesium(cesiumToUnrealTransform, pCesiumPrimitive, pCesiumPrimitive);
     } else if (
         auto* pCesiumInstanced =
             Cast<UCesiumGltfInstancedComponent>(pSceneComponent)) {
-      pPrimitive = pCesiumInstanced;
-    }
-    if (pPrimitive) {
-      pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+      ::UpdateTransformFromCesium(cesiumToUnrealTransform, pCesiumInstanced, pCesiumInstanced);
     }
   }
 }

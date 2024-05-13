@@ -32,6 +32,8 @@ class CesiumGltfPrimitiveBase {
 public:
   CesiumGltfPrimitiveBase();
 
+  virtual ~CesiumGltfPrimitiveBase() = default;
+  
   /**
    * Represents the primitive's EXT_mesh_features extension.
    */
@@ -106,72 +108,67 @@ public:
 
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 
-  /**
-   * Updates this component's transform from a new double-precision
-   * transformation from the Cesium world to the Unreal Engine world, as well as
-   * the current HighPrecisionNodeTransform.
-   *
-   * @param CesiumToUnrealTransform The new transformation.
-   */
-  virtual void
-  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
-
   void BeginDestroyPrimitive();
 };
+
+template <typename UnrealType>
+void UpdateTransformFromCesium(
+    const glm::dmat4& CesiumToUnrealTransform,
+    UnrealType* uobject,
+    CesiumGltfPrimitiveBase* cesiumData) {
+  const FTransform transform = FTransform(
+      VecMath::createMatrix(CesiumToUnrealTransform * cesiumData->HighPrecisionNodeTransform));
+
+  if (uobject->Mobility == EComponentMobility::Movable) {
+    // For movable objects, move the component in the normal way, but don't
+    // generate collisions along the way. Teleporting physics is imperfect,
+    // but it's the best available option.
+    uobject->SetRelativeTransform(
+        transform,
+        false,
+        nullptr,
+        ETeleportType::TeleportPhysics);
+  } else {
+    // Unreal will yell at us for calling SetRelativeTransform on a static
+    // object, but we still need to adjust (accurately!) for origin rebasing
+    // and georeference changes. It's "ok" to move a static object in this way
+    // because, we assume, the globe and globe-oriented lights, etc. are
+    // moving too, so in a relative sense the object isn't actually moving.
+    // This isn't a perfect assumption, of course.
+    uobject->SetRelativeTransform_Direct(transform);
+    uobject->UpdateComponentToWorld();
+    uobject->MarkRenderTransformDirty();
+    uobject->SendPhysicsTransform(ETeleportType::ResetPhysics);
+  }
+}
+
+template <typename UnrealType>
+void BeginDestroyPrimitive(UnrealType* uobject, CesiumGltfPrimitiveBase* cesiumData) {
+  // Clear everything we can in order to reduce memory usage, because this
+  // UObject might not actually get deleted by the garbage collector until
+  // much later.
+  cesiumData->BeginDestroyPrimitive();
+  UMaterialInstanceDynamic* pMaterial =
+      Cast<UMaterialInstanceDynamic>(uobject->GetMaterial(0));
+  if (pMaterial) {
+    CesiumLifetime::destroy(pMaterial);
+  }
+
+  UStaticMesh* pMesh = uobject->GetStaticMesh();
+  if (pMesh) {
+    UBodySetup* pBodySetup = pMesh->GetBodySetup();
+
+    if (pBodySetup) {
+      CesiumLifetime::destroy(pBodySetup);
+    }
+
+    CesiumLifetime::destroy(pMesh);
+  }
+}
 
 template <typename T>
 class CesiumGltfPrimitive : public CesiumGltfPrimitiveBase {
 public:
-  void UpdateTransformFromCesium(
-      const glm::dmat4& CesiumToUnrealTransform) override {
-    const FTransform transform = FTransform(VecMath::createMatrix(
-        CesiumToUnrealTransform * HighPrecisionNodeTransform));
-
-    if (_uobject->Mobility == EComponentMobility::Movable) {
-      // For movable objects, move the component in the normal way, but don't
-      // generate collisions along the way. Teleporting physics is imperfect,
-      // but it's the best available option.
-      _uobject->SetRelativeTransform(
-          transform,
-          false,
-          nullptr,
-          ETeleportType::TeleportPhysics);
-    } else {
-      // Unreal will yell at us for calling SetRelativeTransform on a static
-      // object, but we still need to adjust (accurately!) for origin rebasing
-      // and georeference changes. It's "ok" to move a static object in this way
-      // because, we assume, the globe and globe-oriented lights, etc. are
-      // moving too, so in a relative sense the object isn't actually moving.
-      // This isn't a perfect assumption, of course.
-      _uobject->SetRelativeTransform_Direct(transform);
-      _uobject->UpdateComponentToWorld();
-      _uobject->MarkRenderTransformDirty();
-      _uobject->SendPhysicsTransform(ETeleportType::ResetPhysics);
-    }
-  }
-
-  void BeginDestroyPrimitive() {
-    // Clear everything we can in order to reduce memory usage, because this
-    // UObject might not actually get deleted by the garbage collector until
-    // much later.
-    CesiumGltfPrimitiveBase::BeginDestroyPrimitive();
-    UMaterialInstanceDynamic* pMaterial =
-        Cast<UMaterialInstanceDynamic>(_uobject->GetMaterial(0));
-    if (pMaterial) {
-      CesiumLifetime::destroy(pMaterial);
-    }
-
-    UStaticMesh* pMesh = _uobject->GetStaticMesh();
-    if (pMesh) {
-      UBodySetup* pBodySetup = pMesh->GetBodySetup();
-
-      if (pBodySetup) {
-        CesiumLifetime::destroy(pBodySetup);
-      }
-
-      CesiumLifetime::destroy(pMesh);
-    }
-  }
   T* _uobject;
 };
 

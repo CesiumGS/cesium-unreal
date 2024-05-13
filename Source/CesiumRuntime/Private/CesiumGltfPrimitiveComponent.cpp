@@ -65,12 +65,12 @@ void CesiumGltfPrimitiveBase::BeginDestroyPrimitive() {
 }
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  BeginDestroyPrimitive();
+  ::BeginDestroyPrimitive(this, this);
   Super::BeginDestroy();
 }
 
 void UCesiumGltfInstancedComponent::BeginDestroy() {
-  BeginDestroyPrimitive();
+  ::BeginDestroyPrimitive(this, this);
   Super::BeginDestroy();
 }
 
