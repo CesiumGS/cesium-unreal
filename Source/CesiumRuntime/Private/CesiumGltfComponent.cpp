@@ -296,7 +296,11 @@ static void computeFlatNormals(TArray<FStaticMeshBuildVertex>& vertices) {
 }
 
 template <typename TIndex>
+#if ENGINE_VERSION_5_4_OR_HIGHER
+static Chaos::FTriangleMeshImplicitObjectPtr
+#else
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
+#endif
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
@@ -3162,7 +3166,7 @@ static void loadPrimitiveGameThreadPart(
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-        pPrimBase->pTilesetActor = pTilesetActor;
+    pPrimBase->pTilesetActor = pTilesetActor;
     pPrimBase->overlayTextureCoordinateIDToUVIndex =
         loadResult.overlayTextureCoordinateIDToUVIndex;
     pPrimBase->GltfToUnrealTexCoordMap =
@@ -3407,7 +3411,11 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
+#if ENGINE_VERSION_5_4_OR_HIGHER
+      pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
+#else
       pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
+#endif
     }
 
     // Mark physics meshes created, no matter if we actually have a collision
@@ -3797,7 +3805,11 @@ static bool isTriangleDegenerate(
 }
 
 template <typename TIndex>
+#if ENGINE_VERSION_5_4_OR_HIGHER
+static Chaos::FTriangleMeshImplicitObjectPtr
+#else
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
+#endif
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
@@ -3833,6 +3845,15 @@ BuildChaosTriangleMeshes(
   TArray<uint16> materials;
   materials.SetNum(triangles.Num());
 
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  return new Chaos::FTriangleMeshImplicitObject(
+      MoveTemp(vertices),
+      MoveTemp(triangles),
+      MoveTemp(materials),
+      MoveTemp(pFaceRemap),
+      nullptr,
+      false);
+#else
   return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
       MoveTemp(vertices),
       MoveTemp(triangles),
@@ -3840,4 +3861,5 @@ BuildChaosTriangleMeshes(
       MoveTemp(pFaceRemap),
       nullptr,
       false);
+#endif
 }

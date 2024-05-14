@@ -148,9 +148,9 @@ void CesiumIonSession::connect() {
               return CesiumIonClient::Connection::authorize(
                   thiz->_asyncSystem,
                   thiz->_pAssetAccessor,
-                  "Cesium for Unity",
+                  "Cesium for Unreal",
                   clientID,
-                  "/cesium-for-unity/oauth2/callback",
+                  "/cesium-for-unreal/oauth2/callback",
                   {"assets:list",
                    "assets:read",
                    "profile:read",

@@ -1,12 +1,18 @@
 # Change Log
 
-### v2.6.0 - 2024-06-01
+### ? - ?
 
 ##### Additions :tada:
 
 - Added support for the glTF EXT_mesh_gpu_instancing extension.
 
+##### Fixes :wrench:
+
+- Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
+
 ### v2.5.0 - 2024-05-01
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.1. Future versions will require Unreal Engine v5.2+.
 
 ##### Additions :tada:
 
@@ -17,6 +23,8 @@
 
 - Fixed an issue where tilesets would render completely black on Quest headsets and some iOS devices.
 - Fixed a crash on Unreal Editor shutdown that would occasionally happen due to attempts to access garbage-collected static classes.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.34.0 to v0.35.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.4.1 - 2024-04-01
 
