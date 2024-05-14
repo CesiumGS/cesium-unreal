@@ -1818,6 +1818,7 @@ static void loadMesh(
 
 // Helpers for different instancing rotation formats
 
+namespace {
 template <typename T> struct is_float_quat : std::false_type {};
 
 template <>
@@ -1835,6 +1836,7 @@ inline constexpr bool is_float_quat_v = is_float_quat<T>::value;
 
 template <typename T>
 inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
+}
 
 static void loadInstancingData(
     const Model& model,
@@ -1894,25 +1896,24 @@ static void loadInstancingData(
   // operations, but that general approach has always ended in tears for me.
   // Better to formally multiply out the matrices and be assured that the
   // operation is correct.
-  std::vector<glm::dmat4> instanceTransforms(count);
-  for (auto& mat : instanceTransforms) {
-    mat = glm::dmat4(1.0);
-  }
+  std::vector<glm::dmat4> instanceTransforms(count, glm::dmat4(1.0));
+
   // Note: the glm functions translate() and scale() post-multiply the matrix
   // argument by the new transform. E.g., translate() does *not* translate the
   // matrix.
   if (translations) {
-    // XXX Need to verify float scalar3.
-    AccessorView<CesiumGltf::AccessorTypes::VEC3<float>> translationAccessor(
-        model,
-        *translations);
-    for (int i = 0; i < count; ++i) {
-      glm::dvec3 transVec(
-          translationAccessor[i].value[0],
-          translationAccessor[i].value[1],
-          translationAccessor[i].value[2]);
-      instanceTransforms[i] = glm::translate(instanceTransforms[i], transVec);
+    AccessorView<glm::fvec3> translationAccessor(model, *translations);
+    if (translationAccessor.status() == AccessorViewStatus::Valid) {
+      for (int64_t i = 0; i < count; ++i) {
+        glm::dvec3 translation(translationAccessor[i]);
+        instanceTransforms[i] = glm::translate(instanceTransforms[i], translation);
+      }
     }
+  } else {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Invalid accessor for instance translations"));
   }
   if (rotations) {
     createAccessorView(model, *rotations, [&](auto&& quatView) -> void {
@@ -1928,7 +1929,7 @@ static void loadInstancingData(
           instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
         }
       } else if constexpr (is_int_quat_v<ValueType>) {
-        for (int i = 0; i < count; ++i) {
+        for (int64_t i = 0; i < count; ++i) {
           float val[4];
           for (int j = 0; j < 4; ++j) {
             val[j] = GltfNormalized(quatView[i].value[j]);
@@ -1940,20 +1941,19 @@ static void loadInstancingData(
     });
   }
   if (scales) {
-    // XXX Need to Verify float scalar3.
-    AccessorView<CesiumGltf::AccessorTypes::VEC3<float>> scaleAccessor(
-        model,
-        *scales);
-    for (int i = 0; i < count; ++i) {
-      glm::dvec3 scaleFactors(
-          scaleAccessor[i].value[0],
-          scaleAccessor[i].value[1],
-          scaleAccessor[i].value[2]);
+    AccessorView<glm::fvec3> scaleAccessor(model, *scales);
+    for (int64_t i = 0; i < count; ++i) {
+      glm::dvec3 scaleFactors(scaleAccessor[i]);
       instanceTransforms[i] = glm::scale(instanceTransforms[i], scaleFactors);
     }
+  } else {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Invalid accessor for instance scales"));
   }
   result.InstanceTransforms.resize(count);
-  for (int i = 0; i < count; ++i) {
+  for (int64_t i = 0; i < count; ++i) {
     glm::dmat4 unrealMat =
         yInvertMatrix * instanceTransforms[i] * yInvertMatrix;
     auto unrealFMatrix = VecMath::createMatrix(unrealMat);
@@ -3121,7 +3121,7 @@ static void loadPrimitiveGameThreadPart(
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
     ACesium3DTileset* pTilesetActor,
-    std::vector<FTransform>& instanceTransforms) {
+    const std::vector<FTransform>& instanceTransforms) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
@@ -3146,7 +3146,7 @@ static void loadPrimitiveGameThreadPart(
     pInstancedComponent = NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
     pInstancedMesh = pInstancedComponent;
     pMesh = pInstancedComponent;
-    for (const auto& transform : instanceTransforms) {
+    for (const FTransform& transform : instanceTransforms) {
       pInstancedMesh->AddInstance(transform, false);
     }
   } else {
