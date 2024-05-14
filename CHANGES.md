@@ -1,5 +1,11 @@
 # Change Log
 
+### v2.6.0 - 2024-06-01
+
+##### Additions :tada:
+
+- Added support for the glTF EXT_mesh_gpu_instancing extension.
+
 ### v2.5.0 - 2024-05-01
 
 ##### Additions :tada:
