@@ -2978,18 +2978,17 @@ static void loadPrimitiveGameThreadPart(
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
-  FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
-        NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+        NewObject<UCesiumGltfPointsComponent>(pGltf);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
   } else {
-    pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf);
   }
 
   UStaticMesh* pStaticMesh;
@@ -3023,7 +3022,7 @@ static void loadPrimitiveGameThreadPart(
       pMesh->bCastDynamicShadow = false;
     }
 
-    pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
+    pStaticMesh = NewObject<UStaticMesh>(pMesh);
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
