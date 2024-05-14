@@ -32,8 +32,6 @@ class CesiumGltfPrimitiveBase {
 public:
   CesiumGltfPrimitiveBase();
 
-  virtual ~CesiumGltfPrimitiveBase() = default;
-  
   /**
    * Represents the primitive's EXT_mesh_features extension.
    */
