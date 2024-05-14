@@ -79,7 +79,9 @@ FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
   }
 
   return std::visit(
-      CalcBoundsOperation{LocalToWorld, this->_cesiumBase.HighPrecisionNodeTransform},
+      CalcBoundsOperation{
+          LocalToWorld,
+          this->_cesiumBase.HighPrecisionNodeTransform},
       *this->_cesiumBase.boundingVolume);
 }
 
@@ -90,27 +92,32 @@ FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
   }
 
   return std::visit(
-      CalcBoundsOperation{LocalToWorld, this->_cesiumBase.HighPrecisionNodeTransform},
+      CalcBoundsOperation{
+          LocalToWorld,
+          this->_cesiumBase.HighPrecisionNodeTransform},
       *this->_cesiumBase.boundingVolume);
 }
 
-CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent)
-{
-  if (auto* instancedComponent = Cast<UCesiumGltfInstancedComponent>(pComponent)) {
+CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent) {
+  if (auto* instancedComponent =
+          Cast<UCesiumGltfInstancedComponent>(pComponent)) {
     return &instancedComponent->_cesiumBase;
-  } else if (auto* meshComponent = Cast<UCesiumGltfPrimitiveComponent>(pComponent)) {
+  } else if (
+      auto* meshComponent = Cast<UCesiumGltfPrimitiveComponent>(pComponent)) {
     return &meshComponent->_cesiumBase;
   }
   return nullptr;
 }
 
-const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* pComponent)
-{
-  if (const auto* instancedComponent = Cast<UCesiumGltfInstancedComponent>(pComponent)) {
+const CesiumGltfPrimitiveBase*
+getPrimitiveBase(const USceneComponent* pComponent) {
+  if (const auto* instancedComponent =
+          Cast<UCesiumGltfInstancedComponent>(pComponent)) {
     return &instancedComponent->_cesiumBase;
-  } else if (const auto* meshComponent = Cast<UCesiumGltfPrimitiveComponent>(pComponent)) {
+  } else if (
+      const auto* meshComponent =
+          Cast<UCesiumGltfPrimitiveComponent>(pComponent)) {
     return &meshComponent->_cesiumBase;
   }
   return nullptr;
 }
-

@@ -1840,7 +1840,7 @@ inline constexpr bool is_float_quat_v = is_float_quat<T>::value;
 
 template <typename T>
 inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
-}
+} // namespace
 
 static void loadInstancingData(
     const Model& model,
@@ -1910,7 +1910,8 @@ static void loadInstancingData(
     if (translationAccessor.status() == AccessorViewStatus::Valid) {
       for (int64_t i = 0; i < count; ++i) {
         glm::dvec3 translation(translationAccessor[i]);
-        instanceTransforms[i] = glm::translate(instanceTransforms[i], translation);
+        instanceTransforms[i] =
+            glm::translate(instanceTransforms[i], translation);
       }
     }
   } else {
@@ -1951,10 +1952,7 @@ static void loadInstancingData(
       instanceTransforms[i] = glm::scale(instanceTransforms[i], scaleFactors);
     }
   } else {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Invalid accessor for instance scales"));
+    UE_LOG(LogCesium, Warning, TEXT("Invalid accessor for instance scales"));
   }
   result.InstanceTransforms.resize(count);
   for (int64_t i = 0; i < count; ++i) {
@@ -3147,7 +3145,8 @@ static void loadPrimitiveGameThreadPart(
     pComponent = pPointMesh;
     pMesh = pPointMesh;
   } else if (!instanceTransforms.empty()) {
-    pInstancedComponent = NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
+    pInstancedComponent =
+        NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
     pInstancedMesh = pInstancedComponent;
     pMesh = pInstancedComponent;
     for (const FTransform& transform : instanceTransforms) {
@@ -3176,7 +3175,10 @@ static void loadPrimitiveGameThreadPart(
     pPrimBase->IndexAccessor = std::move(loadResult.IndexAccessor);
     pPrimBase->HighPrecisionNodeTransform = loadResult.transform;
     if (pInstancedComponent) {
-      UpdateTransformFromCesium(cesiumToUnrealTransform, pInstancedComponent, pPrimBase);
+      UpdateTransformFromCesium(
+          cesiumToUnrealTransform,
+          pInstancedComponent,
+          pPrimBase);
     } else {
       UpdateTransformFromCesium(cesiumToUnrealTransform, pComponent, pPrimBase);
     }
@@ -3576,9 +3578,10 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
     } else if (
         auto* pCesiumInstanced =
             Cast<UCesiumGltfInstancedComponent>(pSceneComponent)) {
-      ::UpdateTransformFromCesium(cesiumToUnrealTransform,
-                                  pCesiumInstanced,
-                                  getPrimitiveBase(pCesiumInstanced));
+      ::UpdateTransformFromCesium(
+          cesiumToUnrealTransform,
+          pCesiumInstanced,
+          getPrimitiveBase(pCesiumInstanced));
     }
   }
 }
@@ -3662,9 +3665,8 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(
-                    pBase->overlayTextureCoordinateIDToUVIndex
-                        [textureCoordinateID]));
+                static_cast<float>(pBase->overlayTextureCoordinateIDToUVIndex
+                                       [textureCoordinateID]));
           }
         } else {
           pMaterial->SetTextureParameterValue(

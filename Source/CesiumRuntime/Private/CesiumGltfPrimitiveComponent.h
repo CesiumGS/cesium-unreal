@@ -114,8 +114,8 @@ void UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform,
     UnrealType* uobject,
     CesiumGltfPrimitiveBase* cesiumData) {
-  const FTransform transform = FTransform(
-      VecMath::createMatrix(CesiumToUnrealTransform * cesiumData->HighPrecisionNodeTransform));
+  const FTransform transform = FTransform(VecMath::createMatrix(
+      CesiumToUnrealTransform * cesiumData->HighPrecisionNodeTransform));
 
   if (uobject->Mobility == EComponentMobility::Movable) {
     // For movable objects, move the component in the normal way, but don't
@@ -141,7 +141,9 @@ void UpdateTransformFromCesium(
 }
 
 template <typename UnrealType>
-void BeginDestroyPrimitive(UnrealType* uobject, CesiumGltfPrimitiveBase* cesiumData) {
+void BeginDestroyPrimitive(
+    UnrealType* uobject,
+    CesiumGltfPrimitiveBase* cesiumData) {
   // Clear everything we can in order to reduce memory usage, because this
   // UObject might not actually get deleted by the garbage collector until
   // much later.
@@ -186,7 +188,9 @@ public:
   using UPrimitiveComponent::SendPhysicsTransform;
 
   friend CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* Component);
-  friend const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* Component);
+  friend const CesiumGltfPrimitiveBase*
+  getPrimitiveBase(const USceneComponent* Component);
+
 protected:
   CesiumGltfPrimitiveBase _cesiumBase;
 };
@@ -207,10 +211,13 @@ public:
   using UPrimitiveComponent::SendPhysicsTransform;
 
   friend CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* Component);
-  friend const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* Component);
+  friend const CesiumGltfPrimitiveBase*
+  getPrimitiveBase(const USceneComponent* Component);
+
 protected:
   CesiumGltfPrimitiveBase _cesiumBase;
 };
 
 CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent);
-const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* pComponent);
+const CesiumGltfPrimitiveBase*
+getPrimitiveBase(const USceneComponent* pComponent);

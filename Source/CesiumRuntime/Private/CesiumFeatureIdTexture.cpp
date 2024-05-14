@@ -77,7 +77,8 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetGltfTextureCoordinateSetIndex(
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetUnrealUVChannel(
     const UPrimitiveComponent* PrimitiveComponent,
     UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
-  const CesiumGltfPrimitiveBase* pPrimitive = getPrimitiveBase(PrimitiveComponent);
+  const CesiumGltfPrimitiveBase* pPrimitive =
+      getPrimitiveBase(PrimitiveComponent);
   if (!pPrimitive ||
       FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
     return -1;

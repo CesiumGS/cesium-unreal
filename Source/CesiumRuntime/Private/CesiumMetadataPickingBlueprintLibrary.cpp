@@ -96,8 +96,7 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     return false;
   }
 
-  auto accessorIt =
-      pBase->TexCoordAccessorMap.find(GltfTexCoordSetIndex);
+  auto accessorIt = pBase->TexCoordAccessorMap.find(GltfTexCoordSetIndex);
   if (accessorIt == pBase->TexCoordAccessorMap.end()) {
     return false;
   }

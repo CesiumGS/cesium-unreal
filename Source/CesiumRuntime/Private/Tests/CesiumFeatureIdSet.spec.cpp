@@ -17,7 +17,7 @@ BEGIN_DEFINE_SPEC(
 Model model;
 MeshPrimitive* pPrimitive;
 TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
-CesiumGltfPrimitiveBase *pBase;
+CesiumGltfPrimitiveBase* pBase;
 END_DEFINE_SPEC(FCesiumFeatureIdSetSpec)
 
 void FCesiumFeatureIdSetSpec::Define() {
@@ -415,10 +415,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       FeatureId featureId;
       featureId.featureCount = 6;
 
-      pBase->PositionAccessor =
-          CesiumGltf::AccessorView<FVector3f>(
-              model,
-              static_cast<int32_t>(model.accessors.size() - 1));
+      pBase->PositionAccessor = CesiumGltf::AccessorView<FVector3f>(
+          model,
+          static_cast<int32_t>(model.accessors.size() - 1));
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
 
@@ -494,10 +493,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       FeatureId featureId;
       featureId.featureCount = 6;
 
-      pBase->PositionAccessor =
-          CesiumGltf::AccessorView<FVector3f>(
-              model,
-              static_cast<int32_t>(model.accessors.size() - 1));
+      pBase->PositionAccessor = CesiumGltf::AccessorView<FVector3f>(
+          model,
+          static_cast<int32_t>(model.accessors.size() - 1));
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
 
