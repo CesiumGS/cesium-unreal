@@ -24,12 +24,10 @@ CesiumGltfPrimitiveBase::CesiumGltfPrimitiveBase() {
 
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
-  _uobject = this;
   PrimaryComponentTick.bCanEverTick = false;
 }
 
 UCesiumGltfInstancedComponent::UCesiumGltfInstancedComponent() {
-  _uobject = this;
   PrimaryComponentTick.bCanEverTick = false;
 }
 
@@ -65,33 +63,54 @@ void CesiumGltfPrimitiveBase::BeginDestroyPrimitive() {
 }
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  ::BeginDestroyPrimitive(this, this);
+  ::BeginDestroyPrimitive(this, getPrimitiveBase(this));
   Super::BeginDestroy();
 }
 
 void UCesiumGltfInstancedComponent::BeginDestroy() {
-  ::BeginDestroyPrimitive(this, this);
+  ::BeginDestroyPrimitive(this, getPrimitiveBase(this));
   Super::BeginDestroy();
 }
 
 FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
-  if (!this->boundingVolume) {
+  if (!this->_cesiumBase.boundingVolume) {
     return Super::CalcBounds(LocalToWorld);
   }
 
   return std::visit(
-      CalcBoundsOperation{LocalToWorld, this->HighPrecisionNodeTransform},
-      *this->boundingVolume);
+      CalcBoundsOperation{LocalToWorld, this->_cesiumBase.HighPrecisionNodeTransform},
+      *this->_cesiumBase.boundingVolume);
 }
 
 FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
-  if (!this->boundingVolume) {
+  if (!_cesiumBase.boundingVolume) {
     return Super::CalcBounds(LocalToWorld);
   }
 
   return std::visit(
-      CalcBoundsOperation{LocalToWorld, this->HighPrecisionNodeTransform},
-      *this->boundingVolume);
+      CalcBoundsOperation{LocalToWorld, this->_cesiumBase.HighPrecisionNodeTransform},
+      *this->_cesiumBase.boundingVolume);
 }
+
+CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent)
+{
+  if (auto* instancedComponent = Cast<UCesiumGltfInstancedComponent>(pComponent)) {
+    return &instancedComponent->_cesiumBase;
+  } else if (auto* meshComponent = Cast<UCesiumGltfPrimitiveComponent>(pComponent)) {
+    return &meshComponent->_cesiumBase;
+  }
+  return nullptr;
+}
+
+const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* pComponent)
+{
+  if (const auto* instancedComponent = Cast<UCesiumGltfInstancedComponent>(pComponent)) {
+    return &instancedComponent->_cesiumBase;
+  } else if (const auto* meshComponent = Cast<UCesiumGltfPrimitiveComponent>(pComponent)) {
+    return &meshComponent->_cesiumBase;
+  }
+  return nullptr;
+}
+

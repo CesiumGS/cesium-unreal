@@ -381,8 +381,7 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
     pGltf->GetChildrenComponents(false, childComponents);
 
     for (const USceneComponent* pChildComponent : childComponents) {
-      const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
-          Cast<UCesiumGltfPrimitiveComponent>(pChildComponent);
+      const CesiumGltfPrimitiveBase* pGltfPrimitive = getPrimitiveBase(pChildComponent);
       if (!pGltfPrimitive) {
         continue;
       }

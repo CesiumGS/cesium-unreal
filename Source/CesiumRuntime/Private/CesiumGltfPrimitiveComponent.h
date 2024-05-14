@@ -173,9 +173,7 @@ public:
 };
 
 UCLASS()
-class UCesiumGltfPrimitiveComponent
-    : public UStaticMeshComponent,
-      public CesiumGltfPrimitive<UCesiumGltfPrimitiveComponent> {
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
   GENERATED_BODY()
 
 public:
@@ -188,12 +186,15 @@ public:
   virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
 
   using UPrimitiveComponent::SendPhysicsTransform;
+
+  friend CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* Component);
+  friend const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* Component);
+protected:
+  CesiumGltfPrimitiveBase _cesiumBase;
 };
 
 UCLASS()
-class UCesiumGltfInstancedComponent
-    : public UInstancedStaticMeshComponent,
-      public CesiumGltfPrimitive<UCesiumGltfInstancedComponent> {
+class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent {
   GENERATED_BODY()
 
 public:
@@ -206,4 +207,12 @@ public:
   virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
 
   using UPrimitiveComponent::SendPhysicsTransform;
+
+  friend CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* Component);
+  friend const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* Component);
+protected:
+  CesiumGltfPrimitiveBase _cesiumBase;
 };
+
+CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent);
+const CesiumGltfPrimitiveBase* getPrimitiveBase(const USceneComponent* pComponent);

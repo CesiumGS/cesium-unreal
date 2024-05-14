@@ -26,6 +26,7 @@ PropertyTable* pPropertyTable;
 PropertyTexture* pPropertyTexture;
 TObjectPtr<UCesiumGltfComponent> pModelComponent;
 TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
+CesiumGltfPrimitiveBase* pBase;
 END_DEFINE_SPEC(FCesiumMetadataPickingSpec)
 
 void FCesiumMetadataPickingSpec::Define() {
@@ -36,7 +37,8 @@ void FCesiumMetadataPickingSpec::Define() {
       pPrimitive = &mesh.primitives.emplace_back();
       pPrimitive->mode = CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
       pPrimitiveComponent = NewObject<UCesiumGltfPrimitiveComponent>();
-      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
+      pBase = getPrimitiveBase(pPrimitiveComponent);
+      pBase->pMeshPrimitive = pPrimitive;
 
       std::vector<glm::vec3> positions{
           glm::vec3(-1, 0, 0),
@@ -74,9 +76,9 @@ void FCesiumMetadataPickingSpec::Define() {
           AccessorSpec::ComponentType::FLOAT,
           texCoords);
 
-      pPrimitiveComponent->PositionAccessor =
+      pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
-      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+      pBase->TexCoordAccessorMap.emplace(
           0,
           AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -149,7 +151,7 @@ void FCesiumMetadataPickingSpec::Define() {
           AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
-      pPrimitiveComponent->IndexAccessor = AccessorView<uint8_t>(
+      pBase->IndexAccessor = AccessorView<uint8_t>(
           model,
           static_cast<int32_t>(model.accessors.size() - 1));
 
@@ -230,7 +232,7 @@ void FCesiumMetadataPickingSpec::Define() {
       pPrimitiveComponent->AttachToComponent(
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
-      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
+      pBase->pMeshPrimitive = pPrimitive;
     });
 
     It("returns empty map for invalid component", [this]() {
@@ -243,7 +245,7 @@ void FCesiumMetadataPickingSpec::Define() {
       featureId.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
 
-      pPrimitiveComponent->PositionAccessor =
+      pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
@@ -258,7 +260,7 @@ void FCesiumMetadataPickingSpec::Define() {
           scalarValues);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
-      pPrimitiveComponent->Features =
+      pBase->Features =
           FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
       FHitResult Hit;
@@ -281,7 +283,7 @@ void FCesiumMetadataPickingSpec::Define() {
       featureId.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
 
-      pPrimitiveComponent->PositionAccessor =
+      pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
@@ -296,7 +298,7 @@ void FCesiumMetadataPickingSpec::Define() {
           scalarValues);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
-      pPrimitiveComponent->Features =
+      pBase->Features =
           FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
       FHitResult Hit;
@@ -326,7 +328,7 @@ void FCesiumMetadataPickingSpec::Define() {
          std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
          AddFeatureIDsAsAttributeToModel(model, *pPrimitive, featureIDs, 2, 0);
 
-         pPrimitiveComponent->PositionAccessor =
+         pBase->PositionAccessor =
              AccessorView<FVector3f>(model, positionAccessorIndex);
 
          std::vector<int32_t> scalarValues{1, 2};
@@ -354,7 +356,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pModelComponent->Metadata =
              FCesiumModelMetadata(model, *pModelMetadata);
-         pPrimitiveComponent->Features =
+         pBase->Features =
              FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
          FHitResult Hit;
@@ -376,7 +378,7 @@ void FCesiumMetadataPickingSpec::Define() {
       featureId.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
 
-      pPrimitiveComponent->PositionAccessor =
+      pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
@@ -403,7 +405,7 @@ void FCesiumMetadataPickingSpec::Define() {
           vec2Values);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
-      pPrimitiveComponent->Features =
+      pBase->Features =
           FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
       FHitResult Hit;
@@ -471,7 +473,7 @@ void FCesiumMetadataPickingSpec::Define() {
       featureId0.propertyTable = featureId1.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
 
-      pPrimitiveComponent->PositionAccessor =
+      pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
@@ -498,7 +500,7 @@ void FCesiumMetadataPickingSpec::Define() {
           vec2Values);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
-      pPrimitiveComponent->Features =
+      pBase->Features =
           FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
       FHitResult Hit;
@@ -614,10 +616,10 @@ void FCesiumMetadataPickingSpec::Define() {
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
 
-      pPrimitiveComponent->pMeshPrimitive = pPrimitive;
-      pPrimitiveComponent->PositionAccessor =
+      pBase->pMeshPrimitive = pPrimitive;
+      pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
-      pPrimitiveComponent->TexCoordAccessorMap.emplace(
+      pBase->TexCoordAccessorMap.emplace(
           0,
           AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -637,7 +639,7 @@ void FCesiumMetadataPickingSpec::Define() {
           {0});
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
-      pPrimitiveComponent->Metadata =
+      pBase->Metadata =
           FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
       FHitResult Hit;
@@ -664,7 +666,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pModelComponent->Metadata =
              FCesiumModelMetadata(model, *pModelMetadata);
-         pPrimitiveComponent->Metadata =
+         pBase->Metadata =
              FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
          FHitResult Hit;
@@ -699,7 +701,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pPrimitiveMetadata->propertyTextures.clear();
          pPrimitiveMetadata->propertyTextures.push_back(1);
-         pPrimitiveComponent->Metadata =
+         pBase->Metadata =
              FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
          FHitResult Hit;
@@ -741,7 +743,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pModelComponent->Metadata =
              FCesiumModelMetadata(model, *pModelMetadata);
-         pPrimitiveComponent->Metadata =
+         pBase->Metadata =
              FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
          FHitResult Hit;
@@ -828,7 +830,7 @@ void FCesiumMetadataPickingSpec::Define() {
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
 
       pPrimitiveMetadata->propertyTextures.push_back(1);
-      pPrimitiveComponent->Metadata =
+      pBase->Metadata =
           FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
       FHitResult Hit;
@@ -938,7 +940,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
         pModelComponent->Metadata =
             FCesiumModelMetadata(model, *pModelMetadata);
-        pPrimitiveComponent->Features =
+        pBase->Features =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
         auto values =
@@ -980,7 +982,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
         pModelComponent->Metadata =
             FCesiumModelMetadata(model, *pModelMetadata);
-        pPrimitiveComponent->Features =
+        pBase->Features =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
         auto values =
@@ -1035,7 +1037,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
            pModelComponent->Metadata =
                FCesiumModelMetadata(model, *pModelMetadata);
-           pPrimitiveComponent->Features =
+           pBase->Features =
                FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
            const auto values =
@@ -1081,7 +1083,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
         pModelComponent->Metadata =
             FCesiumModelMetadata(model, *pModelMetadata);
-        pPrimitiveComponent->Features =
+        pBase->Features =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
         for (size_t i = 0; i < scalarValues.size(); i++) {
@@ -1167,7 +1169,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
         pModelComponent->Metadata =
             FCesiumModelMetadata(model, *pModelMetadata);
-        pPrimitiveComponent->Features =
+        pBase->Features =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
         for (size_t i = 0; i < scalarValues.size(); i++) {
@@ -1287,7 +1289,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
         pModelComponent->Metadata =
             FCesiumModelMetadata(model, *pModelMetadata);
-        pPrimitiveComponent->Features =
+        pBase->Features =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 
         for (size_t i = 0; i < scalarValues.size(); i++) {
