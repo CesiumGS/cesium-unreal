@@ -232,6 +232,7 @@ void FCesiumMetadataPickingSpec::Define() {
       pPrimitiveComponent->AttachToComponent(
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+      pBase = getPrimitiveBase(pPrimitiveComponent);
       pBase->pMeshPrimitive = pPrimitive;
     });
 
@@ -616,6 +617,7 @@ void FCesiumMetadataPickingSpec::Define() {
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
 
+      pBase = getPrimitiveBase(pPrimitiveComponent);
       pBase->pMeshPrimitive = pPrimitive;
       pBase->PositionAccessor =
           AccessorView<FVector3f>(model, positionAccessorIndex);
@@ -914,6 +916,7 @@ void FCesiumMetadataPickingSpec::Define() {
         pPrimitiveComponent->AttachToComponent(
             pModelComponent,
             FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+        pBase = getPrimitiveBase(pPrimitiveComponent);
       });
 
       It("returns empty map for invalid face index", [this]() {
@@ -1251,6 +1254,7 @@ void FCesiumMetadataPickingSpec::Define() {
         pPrimitiveComponent->AttachToComponent(
             pModelComponent,
             FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+        pBase = getPrimitiveBase(pPrimitiveComponent);
       });
 
       It("returns values for first feature ID set by default", [this]() {
