@@ -1978,7 +1978,9 @@ loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
           CesiumGltf::Model& gltf,
           CesiumGltf::Node& /*node*/,
           CesiumGltf::Mesh& /*mesh*/,
+          const int /*meshId*/,
           CesiumGltf::MeshPrimitive& primitive,
+          const int /*primitiveId*/,
           const glm::dmat4& /*nodeTransform*/) {
         const ExtensionMeshPrimitiveExtStructuralMetadata* pPrimitiveMetadata =
             primitive
