@@ -8,6 +8,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed an issue with pixel dithering artifacts that could appear on tilesets.
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
 
 ### v2.5.0 - 2024-05-01
