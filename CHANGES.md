@@ -14,10 +14,12 @@
 
 ##### Additions :tada:
 
+- Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
 - Added `TileWidth` and `TileHeight` properties to `CesiumWebMapTileServiceRasterOverlay`.
 
 ##### Fixes :wrench:
 
+- Fixed an issue with pixel dithering artifacts that could appear on tilesets.
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
 - Fixed a bug where `CesiumTileMapServiceRasterOverlay`, `CesiumWebMapServiceRasterOverlay`, and `CesiumWebMapTileServiceRasterOverlay` would attempt to load empty URLs.
 
