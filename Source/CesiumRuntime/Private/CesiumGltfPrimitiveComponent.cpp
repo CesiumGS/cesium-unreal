@@ -16,7 +16,7 @@
 // Prevent deprecation warnings while initializing deprecated metadata structs.
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
-CesiumGltfPrimitiveBase::CesiumGltfPrimitiveBase() {
+CesiumPrimitiveData::CesiumPrimitiveData() {
   pModel = nullptr;
   pMeshPrimitive = nullptr;
   pTilesetActor = nullptr;
@@ -37,7 +37,7 @@ UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 
 UCesiumGltfInstancedComponent::~UCesiumGltfInstancedComponent() {}
 
-void CesiumGltfPrimitiveBase::BeginDestroyPrimitive() {
+void CesiumPrimitiveData::BeginDestroyPrimitive() {
   this->Features = FCesiumPrimitiveFeatures();
   this->Metadata = FCesiumPrimitiveMetadata();
   this->EncodedFeatures =
@@ -63,12 +63,12 @@ void CesiumGltfPrimitiveBase::BeginDestroyPrimitive() {
 }
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  ::BeginDestroyPrimitive(this, getPrimitiveBase(this));
+  ::BeginDestroyPrimitive(this, getPrimitiveData(this));
   Super::BeginDestroy();
 }
 
 void UCesiumGltfInstancedComponent::BeginDestroy() {
-  ::BeginDestroyPrimitive(this, getPrimitiveBase(this));
+  ::BeginDestroyPrimitive(this, getPrimitiveData(this));
   Super::BeginDestroy();
 }
 
@@ -98,7 +98,7 @@ FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
       *this->_cesiumBase.boundingVolume);
 }
 
-CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent) {
+CesiumPrimitiveData* getPrimitiveData(USceneComponent* pComponent) {
   if (auto* instancedComponent =
           Cast<UCesiumGltfInstancedComponent>(pComponent)) {
     return &instancedComponent->_cesiumBase;
@@ -109,8 +109,8 @@ CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent) {
   return nullptr;
 }
 
-const CesiumGltfPrimitiveBase*
-getPrimitiveBase(const USceneComponent* pComponent) {
+const CesiumPrimitiveData*
+getPrimitiveData(const USceneComponent* pComponent) {
   if (const auto* instancedComponent =
           Cast<UCesiumGltfInstancedComponent>(pComponent)) {
     return &instancedComponent->_cesiumBase;

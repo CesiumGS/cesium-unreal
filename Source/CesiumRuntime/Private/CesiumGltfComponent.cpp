@@ -3134,7 +3134,7 @@ static void loadPrimitiveGameThreadPart(
   UCesiumGltfInstancedComponent* pInstancedComponent = nullptr;
   UStaticMeshComponent* pMesh = nullptr;
   UInstancedStaticMeshComponent* pInstancedMesh = nullptr;
-  CesiumGltfPrimitiveBase* pPrimBase = nullptr;
+  CesiumPrimitiveData* pPrimBase = nullptr;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
@@ -3157,9 +3157,9 @@ static void loadPrimitiveGameThreadPart(
     pMesh = pComponent;
   }
   if (pInstancedComponent) {
-    pPrimBase = getPrimitiveBase(pInstancedComponent);
+    pPrimBase = getPrimitiveData(pInstancedComponent);
   } else {
-    pPrimBase = getPrimitiveBase(pComponent);
+    pPrimBase = getPrimitiveData(pComponent);
   }
 
   UStaticMesh* pStaticMesh;
@@ -3574,14 +3574,14 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
       ::UpdateTransformFromCesium(
           cesiumToUnrealTransform,
           pCesiumPrimitive,
-          getPrimitiveBase(pCesiumPrimitive));
+          getPrimitiveData(pCesiumPrimitive));
     } else if (
         auto* pCesiumInstanced =
             Cast<UCesiumGltfInstancedComponent>(pSceneComponent)) {
       ::UpdateTransformFromCesium(
           cesiumToUnrealTransform,
           pCesiumInstanced,
-          getPrimitiveBase(pCesiumInstanced));
+          getPrimitiveData(pCesiumInstanced));
     }
   }
 }
@@ -3635,7 +3635,7 @@ void UCesiumGltfComponent::AttachRasterTile(
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
-        CesiumGltfPrimitiveBase* pBase = getPrimitiveBase(pPrimitive);
+        CesiumPrimitiveData* pData = getPrimitiveData(pPrimitive);
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
         // tile.
@@ -3665,7 +3665,7 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(pBase->overlayTextureCoordinateIDToUVIndex
+                static_cast<float>(pData->overlayTextureCoordinateIDToUVIndex
                                        [textureCoordinateID]));
           }
         } else {
@@ -3681,7 +3681,7 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              static_cast<float>(pBase->overlayTextureCoordinateIDToUVIndex
+              static_cast<float>(pData->overlayTextureCoordinateIDToUVIndex
                                      [textureCoordinateID]));
         }
       });

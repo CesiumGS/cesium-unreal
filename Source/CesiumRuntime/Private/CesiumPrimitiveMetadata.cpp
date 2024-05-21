@@ -32,7 +32,7 @@ UCesiumPrimitiveMetadataBlueprintLibrary::GetPrimitiveMetadata(
     return EmptyPrimitiveMetadata;
   }
 
-  return getPrimitiveBase(pGltfComponent)->Metadata;
+  return getPrimitiveData(pGltfComponent)->Metadata;
 }
 
 const TArray<int64>&

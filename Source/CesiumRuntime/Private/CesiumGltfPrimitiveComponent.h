@@ -28,9 +28,9 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
-class CesiumGltfPrimitiveBase {
+class CesiumPrimitiveData {
 public:
-  CesiumGltfPrimitiveBase();
+  CesiumPrimitiveData();
 
   /**
    * Represents the primitive's EXT_mesh_features extension.
@@ -113,7 +113,7 @@ template <typename UnrealType>
 void UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform,
     UnrealType* uobject,
-    CesiumGltfPrimitiveBase* cesiumData) {
+    CesiumPrimitiveData* cesiumData) {
   const FTransform transform = FTransform(VecMath::createMatrix(
       CesiumToUnrealTransform * cesiumData->HighPrecisionNodeTransform));
 
@@ -143,7 +143,7 @@ void UpdateTransformFromCesium(
 template <typename UnrealType>
 void BeginDestroyPrimitive(
     UnrealType* uobject,
-    CesiumGltfPrimitiveBase* cesiumData) {
+    CesiumPrimitiveData* cesiumData) {
   // Clear everything we can in order to reduce memory usage, because this
   // UObject might not actually get deleted by the garbage collector until
   // much later.
@@ -167,7 +167,7 @@ void BeginDestroyPrimitive(
 }
 
 template <typename T>
-class CesiumGltfPrimitive : public CesiumGltfPrimitiveBase {
+class CesiumGltfPrimitive : public CesiumPrimitiveData {
 public:
   T* _uobject;
 };
@@ -187,12 +187,12 @@ public:
 
   using UPrimitiveComponent::SendPhysicsTransform;
 
-  friend CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* Component);
-  friend const CesiumGltfPrimitiveBase*
-  getPrimitiveBase(const USceneComponent* Component);
+  friend CesiumPrimitiveData* getPrimitiveData(USceneComponent* Component);
+  friend const CesiumPrimitiveData*
+  getPrimitiveData(const USceneComponent* Component);
 
 protected:
-  CesiumGltfPrimitiveBase _cesiumBase;
+  CesiumPrimitiveData _cesiumBase;
 };
 
 UCLASS()
@@ -210,14 +210,14 @@ public:
 
   using UPrimitiveComponent::SendPhysicsTransform;
 
-  friend CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* Component);
-  friend const CesiumGltfPrimitiveBase*
-  getPrimitiveBase(const USceneComponent* Component);
+  friend CesiumPrimitiveData* getPrimitiveData(USceneComponent* Component);
+  friend const CesiumPrimitiveData*
+  getPrimitiveData(const USceneComponent* Component);
 
 protected:
-  CesiumGltfPrimitiveBase _cesiumBase;
+  CesiumPrimitiveData _cesiumBase;
 };
 
-CesiumGltfPrimitiveBase* getPrimitiveBase(USceneComponent* pComponent);
-const CesiumGltfPrimitiveBase*
-getPrimitiveBase(const USceneComponent* pComponent);
+CesiumPrimitiveData* getPrimitiveData(USceneComponent* pComponent);
+const CesiumPrimitiveData*
+getPrimitiveData(const USceneComponent* pComponent);

@@ -18,7 +18,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
     return EmptyMetadataPrimitive;
   }
 
-  return getPrimitiveBase(pGltfComponent)->Metadata_DEPRECATED;
+  return getPrimitiveData(pGltfComponent)->Metadata_DEPRECATED;
 }
 
 TMap<FString, FCesiumMetadataValue>
@@ -31,14 +31,14 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataValue>();
   }
 
-  const CesiumGltfPrimitiveBase* pBase = getPrimitiveBase(pGltfComponent);
+  const CesiumPrimitiveData* pData = getPrimitiveData(pGltfComponent);
   const UCesiumGltfComponent* pModel =
       Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
   if (!IsValid(pModel)) {
     return TMap<FString, FCesiumMetadataValue>();
   }
 
-  const FCesiumPrimitiveFeatures& features = pBase->Features;
+  const FCesiumPrimitiveFeatures& features = pData->Features;
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           features,
@@ -48,7 +48,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   }
 
   const FCesiumModelMetadata& modelMetadata = pModel->Metadata;
-  const FCesiumPrimitiveMetadata& primitiveMetadata = pBase->Metadata;
+  const FCesiumPrimitiveMetadata& primitiveMetadata = pData->Metadata;
 
   // For now, only considers the first feature ID set
   const FCesiumFeatureIdSet& featureIDSet = featureIDSets[0];
