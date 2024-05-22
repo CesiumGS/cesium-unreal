@@ -55,7 +55,7 @@ void destroyCesiumPrimitive(UStaticMeshComponent* uobject) {
     CesiumLifetime::destroy(pMesh);
   }
 }
-}
+} // namespace
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
   destroyCesiumPrimitive(this);
   Super::BeginDestroy();

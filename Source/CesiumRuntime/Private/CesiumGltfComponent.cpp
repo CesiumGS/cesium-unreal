@@ -3150,7 +3150,8 @@ static void loadPrimitiveGameThreadPart(
     }
     pPrimData = pInstancedComponent->getPrimitiveData();
   } else {
-    auto* pComponent = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    auto* pComponent =
+        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
     pMesh = pComponent;
     pPrimData = pComponent->getPrimitiveData();
   }
@@ -3640,8 +3641,9 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(pPrimData->overlayTextureCoordinateIDToUVIndex
-                                       [textureCoordinateID]));
+                static_cast<float>(
+                    pPrimData->overlayTextureCoordinateIDToUVIndex
+                        [textureCoordinateID]));
           }
         } else {
           pMaterial->SetTextureParameterValue(

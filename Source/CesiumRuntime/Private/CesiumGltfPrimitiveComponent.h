@@ -24,8 +24,8 @@ void UpdateTransformFromCesium(
     UStaticMeshComponent* uobject);
 
 UCLASS()
-  class UCesiumGltfPrimitiveComponent :
-   public UStaticMeshComponent, public ICesiumPrimitive {
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
+                                      public ICesiumPrimitive {
   GENERATED_BODY()
 
 public:
@@ -41,8 +41,8 @@ public:
 };
 
 UCLASS()
-class UCesiumGltfInstancedComponent
-  : public UInstancedStaticMeshComponent, public ICesiumPrimitive {
+class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
+                                      public ICesiumPrimitive {
   GENERATED_BODY()
 
 public:

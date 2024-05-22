@@ -26,4 +26,3 @@ void CesiumPrimitiveData::destroy() {
       emptyAccessorMap;
   this->TexCoordAccessorMap.swap(emptyAccessorMap);
 }
-
