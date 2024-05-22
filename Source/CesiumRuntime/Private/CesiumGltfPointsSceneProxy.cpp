@@ -18,8 +18,8 @@ FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
 
 void FCesiumGltfPointsSceneProxyTilesetData::UpdateFromComponent(
     UCesiumGltfPointsComponent* Component) {
-  CesiumPrimitiveData* pData = getPrimitiveData(Component);
-  ACesium3DTileset* Tileset = pData->pTilesetActor;
+  CesiumPrimitiveData* pPrimData = Component->getPrimitiveData();
+  ACesium3DTileset* Tileset = pPrimData->pTilesetActor;
   PointCloudShading = Tileset->GetPointCloudShading();
   MaximumScreenSpaceError = Tileset->MaximumScreenSpaceError;
   UsesAdditiveRefinement = Component->UsesAdditiveRefinement;

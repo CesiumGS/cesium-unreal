@@ -18,7 +18,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
     return EmptyMetadataPrimitive;
   }
 
-  return getPrimitiveData(pGltfComponent)->Metadata_DEPRECATED;
+  return pGltfComponent->getPrimitiveData()->Metadata_DEPRECATED;
 }
 
 TMap<FString, FCesiumMetadataValue>
@@ -31,7 +31,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataValue>();
   }
 
-  const CesiumPrimitiveData* pData = getPrimitiveData(pGltfComponent);
+  const CesiumPrimitiveData* pData = pGltfComponent->getPrimitiveData();
   const UCesiumGltfComponent* pModel =
       Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
   if (!IsValid(pModel)) {

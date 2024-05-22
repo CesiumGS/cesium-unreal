@@ -3130,11 +3130,8 @@ static void loadPrimitiveGameThreadPart(
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
   FName meshName = createSafeName(loadResult.name, "");
-  UCesiumGltfPrimitiveComponent* pComponent = nullptr;
-  UCesiumGltfInstancedComponent* pInstancedComponent = nullptr;
   UStaticMeshComponent* pMesh = nullptr;
-  UInstancedStaticMeshComponent* pInstancedMesh = nullptr;
-  CesiumPrimitiveData* pPrimBase = nullptr;
+  CesiumPrimitiveData* pPrimData = nullptr;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
@@ -3142,53 +3139,42 @@ static void loadPrimitiveGameThreadPart(
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
-    pComponent = pPointMesh;
     pMesh = pPointMesh;
+    pPrimData = pPointMesh->getPrimitiveData();
   } else if (!instanceTransforms.empty()) {
-    pInstancedComponent =
+    auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
-    pInstancedMesh = pInstancedComponent;
     pMesh = pInstancedComponent;
     for (const FTransform& transform : instanceTransforms) {
-      pInstancedMesh->AddInstance(transform, false);
+      pInstancedComponent->AddInstance(transform, false);
     }
+    pPrimData = pInstancedComponent->getPrimitiveData();
   } else {
-    pComponent = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    auto* pComponent = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
     pMesh = pComponent;
-  }
-  if (pInstancedComponent) {
-    pPrimBase = getPrimitiveData(pInstancedComponent);
-  } else {
-    pPrimBase = getPrimitiveData(pComponent);
+    pPrimData = pComponent->getPrimitiveData();
   }
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    pPrimBase->pTilesetActor = pTilesetActor;
-    pPrimBase->overlayTextureCoordinateIDToUVIndex =
+    pPrimData->pTilesetActor = pTilesetActor;
+    pPrimData->overlayTextureCoordinateIDToUVIndex =
         loadResult.overlayTextureCoordinateIDToUVIndex;
-    pPrimBase->GltfToUnrealTexCoordMap =
+    pPrimData->GltfToUnrealTexCoordMap =
         std::move(loadResult.GltfToUnrealTexCoordMap);
-    pPrimBase->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    pPrimBase->PositionAccessor = std::move(loadResult.PositionAccessor);
-    pPrimBase->IndexAccessor = std::move(loadResult.IndexAccessor);
-    pPrimBase->HighPrecisionNodeTransform = loadResult.transform;
-    if (pInstancedComponent) {
-      UpdateTransformFromCesium(
-          cesiumToUnrealTransform,
-          pInstancedComponent,
-          pPrimBase);
-    } else {
-      UpdateTransformFromCesium(cesiumToUnrealTransform, pComponent, pPrimBase);
-    }
+    pPrimData->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+    pPrimData->PositionAccessor = std::move(loadResult.PositionAccessor);
+    pPrimData->IndexAccessor = std::move(loadResult.IndexAccessor);
+    pPrimData->HighPrecisionNodeTransform = loadResult.transform;
+    UpdateTransformFromCesium(cesiumToUnrealTransform, pMesh);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    pPrimBase->pModel = loadResult.pModel;
-    pPrimBase->pMeshPrimitive = loadResult.pMeshPrimitive;
-    pPrimBase->boundingVolume = boundingVolume;
+    pPrimData->pModel = loadResult.pModel;
+    pPrimData->pMeshPrimitive = loadResult.pMeshPrimitive;
+    pPrimData->boundingVolume = boundingVolume;
     pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
     pMesh->SetCustomDepthStencilWriteMask(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
@@ -3363,24 +3349,24 @@ static void loadPrimitiveGameThreadPart(
     }
   }
 
-  pPrimBase->Features = std::move(loadResult.Features);
-  pPrimBase->Metadata = std::move(loadResult.Metadata);
+  pPrimData->Features = std::move(loadResult.Features);
+  pPrimData->Metadata = std::move(loadResult.Metadata);
 
-  pPrimBase->EncodedFeatures = std::move(loadResult.EncodedFeatures);
-  pPrimBase->EncodedMetadata = std::move(loadResult.EncodedMetadata);
+  pPrimData->EncodedFeatures = std::move(loadResult.EncodedFeatures);
+  pPrimData->EncodedMetadata = std::move(loadResult.EncodedMetadata);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
   // Doing the above std::move operations invalidates the pointers in the
   // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
   // awkward, but we have to reconstruct the metadata primitive here.
-  pPrimBase->Metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      pPrimBase->Features,
-      pPrimBase->Metadata,
+  pPrimData->Metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      pPrimData->Features,
+      pPrimData->Metadata,
       pGltf->Metadata};
 
   if (loadResult.EncodedMetadata_DEPRECATED) {
-    pPrimBase->EncodedMetadata_DEPRECATED =
+    pPrimData->EncodedMetadata_DEPRECATED =
         std::move(loadResult.EncodedMetadata_DEPRECATED);
   }
 
@@ -3569,19 +3555,8 @@ UCesiumGltfComponent::~UCesiumGltfComponent() {
 void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    if (auto* pCesiumPrimitive =
-            Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent)) {
-      ::UpdateTransformFromCesium(
-          cesiumToUnrealTransform,
-          pCesiumPrimitive,
-          getPrimitiveData(pCesiumPrimitive));
-    } else if (
-        auto* pCesiumInstanced =
-            Cast<UCesiumGltfInstancedComponent>(pSceneComponent)) {
-      ::UpdateTransformFromCesium(
-          cesiumToUnrealTransform,
-          pCesiumInstanced,
-          getPrimitiveData(pCesiumInstanced));
+    if (auto* pStaticMesh = Cast<UStaticMeshComponent>(pSceneComponent)) {
+      ::UpdateTransformFromCesium(cesiumToUnrealTransform, pStaticMesh);
     }
   }
 }
@@ -3635,7 +3610,7 @@ void UCesiumGltfComponent::AttachRasterTile(
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
-        CesiumPrimitiveData* pData = getPrimitiveData(pPrimitive);
+        CesiumPrimitiveData* pPrimData = pPrimitive->getPrimitiveData();
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
         // tile.
@@ -3665,7 +3640,7 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(pData->overlayTextureCoordinateIDToUVIndex
+                static_cast<float>(pPrimData->overlayTextureCoordinateIDToUVIndex
                                        [textureCoordinateID]));
           }
         } else {
@@ -3681,7 +3656,7 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              static_cast<float>(pData->overlayTextureCoordinateIDToUVIndex
+              static_cast<float>(pPrimData->overlayTextureCoordinateIDToUVIndex
                                      [textureCoordinateID]));
         }
       });
