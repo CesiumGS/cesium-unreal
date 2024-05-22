@@ -29,4 +29,6 @@ runs:
       run: |
         df -h
         unzip -q ue.zip "${{ inputs.unreal-program-name }}/Engine/*" -d $HOME -x "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/LiveLinkHub-Mac-Shipping.app/*" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/Android/*" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/UnrealGame.app/*" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/UnrealGame-Mac-Shipping.app/*" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame.app/*" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/UnrealGame" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/UnrealGame-Mac-Shipping" "${{ inputs.unreal-program-name }}/Engine/Binaries/Mac/*.dSYM"
+        df -h
         rm ue.zip
+        df -h

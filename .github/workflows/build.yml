@@ -320,37 +320,17 @@ jobs:
     uses: ./.github/workflows/buildMac.yml
     secrets: inherit
     with:
-      runner-label: macos-12
+      runner-label: macos-13
       unreal-engine-version: "5.4.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
       unreal-program-name: "UE_5.4"
       upload-package-base-name: "CesiumForUnreal-54-macos"
       xcode-version: "14.2"
-  TestMacOS12:
-    runs-on: macos-12
-    steps:
-      - name: Test
-        run: df -h
-  TestMacOS13:
-    runs-on: macos-13
-    steps:
-      - name: Test
-        run: df -h
-  TestMacOS14:
-    runs-on: macos-14
-    steps:
-      - name: Test
-        run: df -h
-  TestMacOSLatest:
-    runs-on: macos-latest
-    steps:
-      - name: Test
-        run: df -h
   iOS54:
     uses: ./.github/workflows/buildiOS.yml
     secrets: inherit
     with:
-      runner-label: macos-12
+      runner-label: macos-13
       unreal-engine-version: "5.4.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
       unreal-program-name: "UE_5.4"
