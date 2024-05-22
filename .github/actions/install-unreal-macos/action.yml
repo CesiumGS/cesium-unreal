@@ -9,6 +9,9 @@ inputs:
   aws-secret-access-key:
     required: true
     type: string
+  unreal-program-name:
+    required: true
+    type: string
 runs:
   using: composite
   steps:
@@ -23,5 +26,5 @@ runs:
     - name: Unzip Unreal Engine
       shell: bash
       run: |
-        unzip -q ue.zip "Engine/*" -d $HOME -x "Engine/Binaries/Android/*" "Engine/Binaries/LinuxArm64/*" "Engine/Intermediate/Build/Android/*" "Engine/Intermediate/Build/LinuxArm64/*"
+        unzip -q ue.zip "${{ inputs.unreal-program-name }}/Engine/*" -d $HOME -x "${{ inputs.unreal-program-name }}/Engine/Binaries/Android/*" "${{ inputs.unreal-program-name }}/Engine/Binaries/LinuxArm64/*" "${{ inputs.unreal-program-name }}/Engine/Intermediate/Build/Android/*" "${{ inputs.unreal-program-name }}/Engine/Intermediate/Build/LinuxArm64/*"
         rm ue.zip
