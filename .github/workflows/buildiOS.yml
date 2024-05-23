@@ -60,6 +60,7 @@ jobs:
           unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
       - name: Build cesium-native
         run: |
           mkdir -p extern/build-ios
