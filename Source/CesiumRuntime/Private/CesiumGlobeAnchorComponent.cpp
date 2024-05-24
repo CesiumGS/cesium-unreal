@@ -271,7 +271,13 @@ UCesiumGlobeAnchorComponent::ResolveGeoreference(bool bForceReresolve) {
 }
 
 UCesiumEllipsoid* UCesiumGlobeAnchorComponent::GetEllipsoid() const {
-  return this->GetGeoreference()->GetEllipsoidConst();
+  ACesiumGeoreference* Georeference = this->GetResolvedGeoreference();
+  if (!IsValid(Georeference)) {
+    Georeference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->GetOwner());
+  }
+
+  return Georeference->GetEllipsoid();
 }
 
 void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
@@ -279,16 +285,17 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
-  return this->GetEllipsoid()->
-      EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+  return this->GetEllipsoid()
+      ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
           this->GetEarthCenteredEarthFixedPosition());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight) {
   this->MoveToEarthCenteredEarthFixedPosition(
-      this->GetEllipsoid()->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
-          TargetLongitudeLatitudeHeight));
+      this->GetEllipsoid()
+          ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+              TargetLongitudeLatitudeHeight));
 }
 
 namespace {

@@ -93,29 +93,22 @@ public:
    * one based on the value of {@link EllipsoidPath}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  UCesiumEllipsoid* GetEllipsoid();
-
-  /**
-   * Returns a pointer to the UCesiumEllipsoid currently being used by this
-   * georeference.
-   *
-   * Unlike {@link GetEllipsoid}, this method won't modify the
-   * CesiumGeoreference. This means it can be used in const methods, with the
-   * caveat that it will possibly unnecessarily load the ellipsoid multiple
-   * times.
-   */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  UCesiumEllipsoid* GetEllipsoidConst() const;
+  UCesiumEllipsoid* GetEllipsoid() const;
 
 #pragma region Properties
 
 private:
+  /**
+   * The Ellipsoid being used by this georeference. The ellipsoid informs how
+   * cartographic coordinates will be interpreted and how they are transformed
+   * into cartesian coordinates.
+   */
   UPROPERTY(
-      EditAnywhere,
       Category = "Cesium",
-      meta = (AllowedClasses = "/Script/CesiumRuntime.CesiumEllipsoid"))
-  FSoftObjectPath EllipsoidPath = FSoftObjectPath(TEXT(
-      "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/WGS84.WGS84'"));
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta = (AllowPrivateAccess))
+  UCesiumEllipsoid* Ellipsoid = nullptr;
 
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
@@ -252,20 +245,6 @@ private:
 #pragma region PropertyAccessors
 
 public:
-  /**
-   * Returns a FSoftObjectPath pointing to the UCesiumEllipsoid object currently
-   * selected by this georeference.
-   */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FSoftObjectPath GetEllipsoidObjectPath() const;
-
-  /**
-   * Sets the object path of the UCesiumEllipsoid object used by this
-   * georeference.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetEllipsoidObjectPath(const FSoftObjectPath& TargetObjectPath);
-
   /**
    * Returns the georeference origin position as an FVector where `X` is
    * longitude (degrees), `Y` is latitude (degrees), and `Z` is height above the
@@ -825,8 +804,6 @@ private:
 #pragma endregion
 
 private:
-  UCesiumEllipsoid* Ellipsoid = nullptr;
-
 #pragma region Implementation Details
 
 public:

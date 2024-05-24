@@ -2,7 +2,12 @@
 
 #include "CesiumEllipsoid.h"
 #include "CesiumEllipsoidFunctions.h"
+#include "CesiumRuntime.h"
 #include "VecMath.h"
+
+#include "UObject/ConstructorHelpers.h"
+#include "MathUtil.h"
+
 #include <CesiumGeospatial/Ellipsoid.h>
 
 using namespace CesiumGeospatial;
@@ -66,15 +71,24 @@ UCesiumEllipsoid::CreateCoordinateSystem(const FVector& Center, double Scale) {
 }
 
 TSharedPtr<Ellipsoid> UCesiumEllipsoid::GetNativeEllipsoid() {
+  const double MinRadiiValue = TMathUtilConstants<double>::Epsilon;
+
   if (!this->NativeEllipsoid.IsValid()) {
-    /*this->NativeEllipsoid = MakeShared<CesiumGeospatial::Ellipsoid>(
-        this->Radii.X,
-        this->Radii.Y,
-        this->Radii.Z);*/
-    this->NativeEllipsoid = MakeShared<Ellipsoid>(
-        Ellipsoid::WGS84.getRadii().x,
-        Ellipsoid::WGS84.getRadii().y,
-        Ellipsoid::WGS84.getRadii().z);
+    // Radii of zero will throw Infs and NaNs into our calculations which will
+    // cause Unreal to crash when the values reach a transform.
+    if (this->Radii.X < MinRadiiValue || this->Radii.Y < MinRadiiValue ||
+        this->Radii.Z < MinRadiiValue) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Radii must be greater than 0 - clamping to minimum value to avoid crashes."));
+    }
+
+    this->NativeEllipsoid = MakeShared<CesiumGeospatial::Ellipsoid>(
+        FMath::Max(this->Radii.X, MinRadiiValue),
+        FMath::Max(this->Radii.Y, MinRadiiValue),
+        FMath::Max(this->Radii.Z, MinRadiiValue));
   }
 
   return this->NativeEllipsoid;

@@ -61,8 +61,7 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   FVector ecefSource = GlobeAnchor->GetEarthCenteredEarthFixedPosition();
 
   // Obtain Ellipsoid
-  UCesiumEllipsoid* ellipsoid =
-      GlobeAnchor->GetGeoreference()->GetEllipsoidConst();
+  UCesiumEllipsoid* ellipsoid = GlobeAnchor->GetGeoreference()->GetEllipsoid();
 
   check(IsValid(ellipsoid));
 
