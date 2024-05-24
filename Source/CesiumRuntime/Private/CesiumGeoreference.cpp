@@ -12,7 +12,6 @@
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
-#include "CesiumWgs84Ellipsoid.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
@@ -47,17 +46,6 @@
 using namespace CesiumGeospatial;
 
 namespace {
-
-LocalHorizontalCoordinateSystem
-createCoordinateSystem(const FVector& center, double scale) {
-  return LocalHorizontalCoordinateSystem(
-      VecMath::createVector3D(center),
-      LocalDirection::East,
-      LocalDirection::South,
-      LocalDirection::Up,
-      1.0 / scale,
-      Ellipsoid::WGS84);
-}
 
 ACesiumGeoreference* FindGeoreferenceAncestor(AActor* Actor) {
   AActor* Current = Actor;
@@ -179,6 +167,45 @@ ACesiumGeoreference::GetDefaultGeoreferenceForActor(AActor* Actor) {
   return ACesiumGeoreference::GetDefaultGeoreference(Actor);
 }
 
+UCesiumEllipsoid* ACesiumGeoreference::GetEllipsoid() {
+  UCesiumEllipsoid* Ellipsoid = this->GetEllipsoidConst();
+  this->Ellipsoid = Ellipsoid;
+  return this->Ellipsoid;
+}
+
+UCesiumEllipsoid* ACesiumGeoreference::GetEllipsoidConst() const {
+  if (IsValid(this->Ellipsoid)) {
+    return this->Ellipsoid;
+  }
+
+  UPackage* Package = CreatePackage(*this->EllipsoidPath.GetLongPackageName());
+  Package->FullyLoad();
+
+  UCesiumEllipsoid* NewEllipsoid =
+      Cast<UCesiumEllipsoid>(Package->FindAssetInPackage());
+  if (!IsValid(NewEllipsoid)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Attempted to load a UCesiumEllipsoid from path %s but failed"),
+        *this->EllipsoidPath.ToString());
+    NewEllipsoid = nullptr;
+  }
+
+  return NewEllipsoid;
+}
+
+FSoftObjectPath ACesiumGeoreference::GetEllipsoidObjectPath() const {
+  return this->EllipsoidPath;
+}
+
+void ACesiumGeoreference::SetEllipsoidObjectPath(
+    const FSoftObjectPath& TargetObjectPath) {
+  this->EllipsoidPath = TargetObjectPath;
+  // Load a new ellipsoid
+  this->Ellipsoid = this->GetEllipsoidConst();
+}
+
 FVector ACesiumGeoreference::GetOriginLongitudeLatitudeHeight() const {
   return FVector(OriginLongitude, OriginLatitude, OriginHeight);
 }
@@ -192,16 +219,17 @@ void ACesiumGeoreference::SetOriginLongitudeLatitudeHeight(
 }
 
 FVector ACesiumGeoreference::GetOriginEarthCenteredEarthFixed() const {
-  return UCesiumWgs84Ellipsoid::
-      LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+  return this->GetEllipsoidConst()
+      ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
           this->GetOriginLongitudeLatitudeHeight());
 }
 
 void ACesiumGeoreference::SetOriginEarthCenteredEarthFixed(
     const FVector& TargetEarthCenteredEarthFixed) {
   this->SetOriginLongitudeLatitudeHeight(
-      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-          TargetEarthCenteredEarthFixed));
+      this->GetEllipsoid()
+          ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+              TargetEarthCenteredEarthFixed));
 }
 
 EOriginPlacement ACesiumGeoreference::GetOriginPlacement() const {
@@ -272,14 +300,15 @@ void ACesiumGeoreference::SetShowLoadRadii(bool NewValue) {
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightPositionToUnreal(
     const FVector& LongitudeLatitudeHeight) const {
   return this->TransformEarthCenteredEarthFixedPositionToUnreal(
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          LongitudeLatitudeHeight));
+      this->GetEllipsoidConst()
+          ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+              LongitudeLatitudeHeight));
 }
 
 FVector ACesiumGeoreference::TransformUnrealPositionToLongitudeLatitudeHeight(
     const FVector& UnrealPosition) const {
-  return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+  return this->GetEllipsoidConst()
+      ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
           this->TransformUnrealPositionToEarthCenteredEarthFixed(
               UnrealPosition));
 }
@@ -351,7 +380,9 @@ FMatrix ACesiumGeoreference::
     ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
         const FVector& EarthCenteredEarthFixedPosition) const {
   LocalHorizontalCoordinateSystem newLocal =
-      createCoordinateSystem(EarthCenteredEarthFixedPosition, this->GetScale());
+      this->GetEllipsoidConst()->CreateCoordinateSystem(
+          EarthCenteredEarthFixedPosition,
+          this->GetScale());
   return VecMath::createMatrix(
       newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }
@@ -810,19 +841,21 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
-  return UCesiumWgs84Ellipsoid::
-      LongitudeLatitudeHeightToEarthCenteredEarthFixed(longitudeLatitudeHeight);
+  return this->GetEllipsoidConst()
+      ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+          longitudeLatitudeHeight);
 }
 
 FVector ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
     const FVector& ecef) const {
-  return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(ecef);
+  return this->GetEllipsoidConst()
+      ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(ecef);
 }
 
 FMatrix
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const FVector& ecef) const {
-  return UCesiumWgs84Ellipsoid::EastNorthUpToEarthCenteredEarthFixed(ecef);
+  return this->GetEllipsoidConst()
+      ->EastNorthUpToEllipsoidCenteredEllipsoidFixed(ecef);
 }
 
 ACesiumGeoreference::ACesiumGeoreference() : AActor() {
@@ -871,7 +904,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
 GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
   // Because GeoTransforms is deprecated, we only lazily update it.
   return GeoTransforms(
-      Ellipsoid::WGS84,
+      *this->GetEllipsoidConst()->GetNativeEllipsoid(),
       glm::dvec3(this->_coordinateSystem.getLocalToEcefTransformation()[3]),
       this->GetScale() / 100.0);
 }
@@ -882,7 +915,7 @@ FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
 void ACesiumGeoreference::_updateCoordinateSystem() {
   if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     FVector origin = this->GetOriginLongitudeLatitudeHeight();
-    this->_coordinateSystem = createCoordinateSystem(
+    this->_coordinateSystem = this->GetEllipsoid()->CreateCoordinateSystem(
         this->GetOriginEarthCenteredEarthFixed(),
         this->GetScale());
   } else {

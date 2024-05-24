@@ -173,11 +173,13 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
     return;
   }
 
+  UCesiumEllipsoid* ellipsoid = this->Georeference->GetEllipsoid();
+
   // Compute the current local up axis of the actor (the +Z axis) in ECEF
   FVector up = this->ActorToEarthCenteredEarthFixedMatrix.GetUnitAxis(EAxis::Z);
 
   // Compute the surface normal of the ellipsoid
-  FVector ellipsoidNormal = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+  FVector ellipsoidNormal = ellipsoid->GeodeticSurfaceNormal(
       this->GetEarthCenteredEarthFixedPosition());
 
   // Find the shortest rotation to align local up with the ellipsoid normal
@@ -268,20 +270,24 @@ UCesiumGlobeAnchorComponent::ResolveGeoreference(bool bForceReresolve) {
   return this->ResolvedGeoreference;
 }
 
+UCesiumEllipsoid* UCesiumGlobeAnchorComponent::GetEllipsoid() const {
+  return this->GetGeoreference()->GetEllipsoidConst();
+}
+
 void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
   // This method is deprecated and no longer does anything.
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
-  return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+  return this->GetEllipsoid()->
+      EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
           this->GetEarthCenteredEarthFixedPosition());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight) {
   this->MoveToEarthCenteredEarthFixedPosition(
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+      this->GetEllipsoid()->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
           TargetLongitudeLatitudeHeight));
 }
 

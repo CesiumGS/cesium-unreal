@@ -708,8 +708,15 @@ public:
           &(*this->_pActor->_metadataDescription_DEPRECATED);
     }
 
+    const CesiumGeospatial::Ellipsoid& ellipsoid =
+        tileLoadResult.ellipsoid == nullptr ? CesiumGeospatial::Ellipsoid::WGS84
+                                            : *tileLoadResult.ellipsoid;
+
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(transform, options);
+        UCesiumGltfComponent::CreateOffGameThread(
+            transform,
+            options,
+            ellipsoid);
 
     return asyncSystem.createResolvedFuture(
         Cesium3DTilesSelection::TileLoadResultAndRenderResources{
@@ -1052,6 +1059,16 @@ void ACesium3DTileset::LoadTileset() {
     this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
   }
 
+  TSharedPtr<CesiumGeospatial::Ellipsoid> pNativeEllipsoid =
+      this->Georeference->GetEllipsoid()->GetNativeEllipsoid();
+
+  // Since native will be working with an STL shared_ptr, not an Unreal one,
+  // we'll copy the ellipsoid here. It's not much data to copy and saves us some
+  // headaches.
+  std::shared_ptr<CesiumGeospatial::Ellipsoid> pEllipsoid =
+      std::make_shared<CesiumGeospatial::Ellipsoid>(
+          pNativeEllipsoid->getRadii());
+
   ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
 
   Cesium3DTilesSelection::TilesetExternals externals{
@@ -1066,11 +1083,15 @@ void ACesium3DTileset::LoadTileset() {
           ? this->BoundingVolumePoolComponent->getPool()
           : nullptr};
 
+  externals.pEllipsoid = pEllipsoid;
+
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   this->LoadProgress = 0;
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.ellipsoid = pEllipsoid;
 
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()

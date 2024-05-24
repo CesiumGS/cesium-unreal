@@ -38,11 +38,14 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
     polygons.emplace_back(std::move(polygon));
   }
 
+  UCesiumEllipsoid* Ellipsoid = pTileset->GetGeoreference()->GetEllipsoid();
+  check(IsValid(Ellipsoid));
+
   return std::make_unique<CesiumRasterOverlays::RasterizedPolygonsOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
       this->InvertSelection,
-      CesiumGeospatial::Ellipsoid::WGS84,
+      *Ellipsoid->GetNativeEllipsoid(),
       CesiumGeospatial::GeographicProjection(),
       options);
 }

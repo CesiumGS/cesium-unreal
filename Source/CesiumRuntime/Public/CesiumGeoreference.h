@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumEllipsoid.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
 #include "GameFramework/Actor.h"
@@ -84,9 +85,38 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
+  /**
+   * Returns a pointer to the UCesiumEllipsoid currently being used by this
+   * georeference.
+   *
+   * If no ellipsoid has been created yet, this method will attempt to create
+   * one based on the value of {@link EllipsoidPath}.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UCesiumEllipsoid* GetEllipsoid();
+
+  /**
+   * Returns a pointer to the UCesiumEllipsoid currently being used by this
+   * georeference.
+   *
+   * Unlike {@link GetEllipsoid}, this method won't modify the
+   * CesiumGeoreference. This means it can be used in const methods, with the
+   * caveat that it will possibly unnecessarily load the ellipsoid multiple
+   * times.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  UCesiumEllipsoid* GetEllipsoidConst() const;
+
 #pragma region Properties
 
 private:
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (AllowedClasses = "/Script/CesiumRuntime.CesiumEllipsoid"))
+  FSoftObjectPath EllipsoidPath = FSoftObjectPath(TEXT(
+      "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/WGS84.WGS84'"));
+
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
    *
@@ -222,6 +252,20 @@ private:
 #pragma region PropertyAccessors
 
 public:
+  /**
+   * Returns a FSoftObjectPath pointing to the UCesiumEllipsoid object currently
+   * selected by this georeference.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FSoftObjectPath GetEllipsoidObjectPath() const;
+
+  /**
+   * Sets the object path of the UCesiumEllipsoid object used by this
+   * georeference.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetEllipsoidObjectPath(const FSoftObjectPath& TargetObjectPath);
+
   /**
    * Returns the georeference origin position as an FVector where `X` is
    * longitude (degrees), `Y` is latitude (degrees), and `Z` is height above the
@@ -719,7 +763,7 @@ protected:
 public:
   UE_DEPRECATED(
       "Cesium For Unreal v2.0",
-      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")
+      "Use transformation functions on ACesiumGeoreference and UCesiumEllipsoid instead.")
   GeoTransforms GetGeoTransforms() const noexcept;
 
 private:
@@ -747,14 +791,14 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use LongitudeLatitudeHeightToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+               "Use LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed on UCesiumEllipsoid instead."))
   FVector TransformLongitudeLatitudeHeightToEcef(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
-   * the ellipsoid in meters (z).
+   * Ellipsoid longitude in degrees (x), latitude in degrees (y), and height
+   * above the ellipsoid in meters (z).
    */
   UFUNCTION(
       BlueprintPure,
@@ -762,7 +806,7 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use EarthCenteredEarthFixedToLongitudeLatitudeHeight on CesiumWgs84Ellipsoid instead."))
+               "Use EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight on UCesiumEllipsoid instead."))
   FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
 
   /**
@@ -775,10 +819,13 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use EastNorthUpToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+               "Use EastNorthUpToEllipsoidCenteredEllipsoidFixed on UCesiumEllipsoid instead."))
   FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
 
 #pragma endregion
+
+private:
+  UCesiumEllipsoid* Ellipsoid = nullptr;
 
 #pragma region Implementation Details
 
