@@ -3595,8 +3595,6 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
     return;
   }
 
-  fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
-
   UCesiumMaterialUserData* pCesiumData =
       BaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
 
@@ -3609,10 +3607,12 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
     return;
   }
 
+  fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
+
   for (USceneComponent* pChild : this->GetAttachChildren()) {
     UCesiumGltfPrimitiveComponent* pPrimitive =
         Cast<UCesiumGltfPrimitiveComponent>(pChild);
-    if (!pPrimitive || !pPrimitive->GetMaterials().Num()) {
+    if (!pPrimitive || pPrimitive->GetMaterials().IsEmpty()) {
       continue;
     }
 
