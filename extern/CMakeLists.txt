@@ -74,7 +74,7 @@ endif()
 
 option(CESIUM_USE_UNREAL_TRACING "Whether to trace cesium-native events using Unreal's tracing framework.")
 if (CESIUM_USE_UNREAL_TRACING)
-  # Trace Cesium Native with Unreal Insights. Need to include Unreal Engine headers when building 
+  # Trace Cesium Native with Unreal Insights. Need to include Unreal Engine headers when building
   # Cesium Native.
 
   # Change this line to change engine version. Note you will have to set an environment variable to
@@ -82,13 +82,13 @@ if (CESIUM_USE_UNREAL_TRACING)
   set(UNREAL_ENGINE_DIR $ENV{UE427})
   list(APPEND CESIUM_EXTRA_INCLUDES "${UNREAL_ENGINE_DIR}/Engine/Source/Runtime/TraceLog/Public")
   list(APPEND CESIUM_EXTRA_INCLUDES "${UNREAL_ENGINE_DIR}/Engine/Source/Runtime/Core/Public")
-  # Change this line depending on where your project's PCH is. 
+  # Change this line depending on where your project's PCH is.
   list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/../Intermediate/Build/Win64/UnrealEditor/Development/CesiumRuntime")
   # Let Cesium Native know that we are tracing and overriding the default tracing macros.
   add_compile_definitions(CESIUM_TRACING_ENABLED)
   add_compile_definitions(CESIUM_OVERRIDE_TRACING)
 
-  # Overrides Cesium Native's macro definitions with Unreal Insights macros. 
+  # Overrides Cesium Native's macro definitions with Unreal Insights macros.
   # This allows us to trace Unreal, Cesium for Unreal, and Cesium Native all in Unreal Insights.
   list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 endif()
@@ -108,6 +108,11 @@ if (ANDROID OR IOS)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mikktspace
     )
+
+    if (IOS)
+      # ktx tags itself as a FRAMEWORK on iOS, which causes linker errors. Undo that.
+      set_target_properties(ktx PROPERTIES FRAMEWORK FALSE)
+    endif()
 endif()
 
 option(BUILD_SHARED_LIB OFF)
