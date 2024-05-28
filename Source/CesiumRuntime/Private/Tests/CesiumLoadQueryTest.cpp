@@ -56,9 +56,8 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
   };
 
   struct TestResults {
-    std::vector<CesiumGeospatial::Cartographic> queryInput;
     std::atomic<bool> queryFinished = false;
-    std::vector<double> queryResults;
+    std::vector<CesiumGeospatial::Cartographic> queryResults;
   };
 
   static TestResults testResults;
@@ -86,8 +85,6 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
             testLongitude + (cartographicSpacing * columnIndex),
             rowLatitude};
 
-        testResults.queryInput.push_back(queryInstance);
-
         queryInputRadians.push_back(CesiumGeospatial::Cartographic::fromDegrees(
             queryInstance.longitude,
             queryInstance.latitude));
@@ -98,10 +95,12 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
     nativeTileset->getHeightsAtCoordinates(queryInputRadians)
-        .thenInMainThread([&testResults](std::vector<double>&& results) {
-          testResults.queryResults = std::move(results);
-          testResults.queryFinished = true;
-        });
+        .thenInMainThread(
+            [&testResults](
+                std::vector<CesiumGeospatial::Cartographic>&& results) {
+              testResults.queryResults = std::move(results);
+              testResults.queryFinished = true;
+            });
   };
 
   auto waitForQueries = [this, &testResults = testResults](
@@ -131,13 +130,13 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
     for (size_t queryIndex = 0; queryIndex < testResults.queryResults.size();
          ++queryIndex) {
-      CesiumGeospatial::Cartographic& originalQuery =
-          testResults.queryInput[queryIndex];
+      CesiumGeospatial::Cartographic& queryHit =
+          testResults.queryResults[queryIndex];
 
       FVector hitCoordinate = {
-          originalQuery.longitude,
-          originalQuery.latitude,
-          testResults.queryResults[queryIndex]};
+          CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
+          CesiumUtility::Math::radiansToDegrees(queryHit.latitude),
+          queryHit.height};
 
       FVector unrealPosition =
           tileset->ResolveGeoreference()
