@@ -69,6 +69,14 @@ using namespace CesiumTextureUtility;
 using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
+// To debug which urls correspond to which gltf components you see in the view,
+// - Set this define to 1
+// - Click on a piece of terrain in the editor viewport to select it
+// - Press delete to try to delete it
+// Note that the console gives an error, but also tells you the url associated
+// with it
+#define DEBUG_GLTF_ASSET_NAMES 0
+
 namespace {
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
@@ -2975,20 +2983,26 @@ static void loadPrimitiveGameThreadPart(
     ACesium3DTileset* pTilesetActor) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
+
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
   UCesiumGltfPrimitiveComponent* pMesh;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
-        NewObject<UCesiumGltfPointsComponent>(pGltf);
+        NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
   } else {
-    pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf);
+    pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
   }
 
   UStaticMesh* pStaticMesh;
@@ -3022,7 +3036,7 @@ static void loadPrimitiveGameThreadPart(
       pMesh->bCastDynamicShadow = false;
     }
 
-    pStaticMesh = NewObject<UStaticMesh>(pMesh);
+    pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
