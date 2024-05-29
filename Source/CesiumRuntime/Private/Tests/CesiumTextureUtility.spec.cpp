@@ -374,6 +374,72 @@ void CesiumTextureUtilitySpec::RunTests() {
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
     TestEqual("Same textures", pRefCountedTexture2, pRefCountedTexture);
   });
+
+  It("Loading the same texture twice from one model", [this]() {
+    Model model;
+
+    Image& image = model.images.emplace_back();
+    image.cesium = imageCesium;
+
+    Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = Sampler::MagFilter::LINEAR;
+    sampler.wrapS = Sampler::WrapS::REPEAT;
+    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+
+    Texture& texture = model.textures.emplace_back();
+    texture.source = 0;
+    texture.sampler = 0;
+
+    std::vector<FCesiumTextureResourceBase*> textureResources;
+    textureResources.resize(model.images.size(), nullptr);
+
+    TUniquePtr<LoadedTextureResult> pHalfLoaded =
+        loadTextureFromModelAnyThreadPart(
+            model,
+            texture,
+            true,
+            textureResources);
+    TestNotNull("pHalfLoaded", pHalfLoaded.Get());
+    TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
+    TestEqual(
+        "textureResources[0]",
+        textureResources[0],
+        pHalfLoaded->pTexture->getTextureResource().Get());
+
+    IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
+        loadTextureGameThreadPart(model, pHalfLoaded.Get());
+    CheckPixels(pRefCountedTexture);
+    CheckSRGB(pRefCountedTexture, true);
+    CheckAddress(
+        pRefCountedTexture,
+        TextureAddress::TA_Wrap,
+        TextureAddress::TA_Mirror);
+    CheckFilter(pRefCountedTexture, TextureFilter::TF_Default);
+    CheckGroup(pRefCountedTexture, TextureGroup::TEXTUREGROUP_World);
+
+    std::vector<FCesiumTextureResourceBase*> textureResources2;
+    textureResources2.resize(model.images.size(), nullptr);
+
+    // Load the same texture again.
+    // This time there's no more pixel data, so it's necessary to use the
+    // previously-created texture.
+    TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
+        loadTextureFromModelAnyThreadPart(
+            model,
+            model.textures[0],
+            true,
+            textureResources2);
+    TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
+    TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
+    TestNull(
+        "pHalfLoaded2->pTexture->getTextureResource()",
+        pHalfLoaded2->pTexture->getTextureResource().Get());
+
+    IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture2 =
+        loadTextureGameThreadPart(model, pHalfLoaded.Get());
+    TestEqual("Same textures", pRefCountedTexture2, pRefCountedTexture);
+  });
 }
 
 void CesiumTextureUtilitySpec::CheckPixels(
