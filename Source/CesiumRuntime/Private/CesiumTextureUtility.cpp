@@ -383,13 +383,11 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
 }
 
 static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
-  if (!pHalfLoadedTexture) {
+  if (!pHalfLoadedTexture || !pHalfLoadedTexture->pTexture) {
     return nullptr;
   }
 
-  UTexture2D* pTexture = pHalfLoadedTexture->pTexture
-                             ? pHalfLoadedTexture->pTexture->getUnrealTexture()
-                             : nullptr;
+  UTexture2D* pTexture = pHalfLoadedTexture->pTexture->getUnrealTexture();
   if (!pTexture) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
