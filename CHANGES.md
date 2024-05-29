@@ -22,6 +22,7 @@
 - Fixed an issue with pixel dithering artifacts that could appear on tilesets.
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
 - Fixed a bug where `CesiumTileMapServiceRasterOverlay`, `CesiumWebMapServiceRasterOverlay`, and `CesiumWebMapTileServiceRasterOverlay` would attempt to load empty URLs.
+- Fixed a bug that caused some textures shared between multiple glTF primitives to be missing entirely.
 
 ### v2.5.0 - 2024-05-01
 
