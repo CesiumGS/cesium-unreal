@@ -97,7 +97,14 @@ public:
     UPROPERTY( Category = "Cesium", EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bSpecifyTilingScheme", ClampMin = -90.0, ClampMax = 90.0))
     double North = 90;
 
+    UFUNCTION( Category = "Cesium" )
+    void SetRequestHeaders(TArray<FString> Keys, TArray<FString> Values);
+
 protected:
 
     virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
+
+private:
+
+    std::vector<CesiumAsync::IAssetAccessor::THeader> headers;
 };
