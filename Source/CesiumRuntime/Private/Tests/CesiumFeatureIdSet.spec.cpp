@@ -154,7 +154,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           "PropertyTableIndex",
           UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
               featureIDSet),
-          static_cast<int64>(*featureId.propertyTable));
+          static_cast<int64>(featureId.propertyTable));
     });
   });
 
