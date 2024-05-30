@@ -268,6 +268,9 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
 void UScreenCreditsWidget::SetCredits(
     const FString& InCredits,
     const FString& InOnScreenCredits) {
+#ifdef WITH_UINO_BRANCH
+  return;
+#endif
   if (_numImagesLoading != 0) {
     _credits = InCredits;
     _onScreenCredits = InOnScreenCredits;
