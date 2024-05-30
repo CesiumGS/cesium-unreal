@@ -385,9 +385,9 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
       if (!pCesiumPrimitive) {
         continue;
       }
-      const CesiumPrimitiveData* pPrimData =
+      const CesiumPrimitiveData& primData =
           pCesiumPrimitive->getPrimitiveData();
-      const FCesiumPrimitiveFeatures& primitiveFeatures = pPrimData->Features;
+      const FCesiumPrimitiveFeatures& primitiveFeatures = primData.Features;
       const TArray<FCesiumPropertyTable>& propertyTables =
           UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(
               modelMetadata);
@@ -396,7 +396,7 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
           primitiveFeatures,
           propertyTables);
 
-      const FCesiumPrimitiveMetadata& primitiveMetadata = pPrimData->Metadata;
+      const FCesiumPrimitiveMetadata& primitiveMetadata = primData.Metadata;
       const TArray<FCesiumPropertyTexture>& propertyTextures =
           UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
               modelMetadata);

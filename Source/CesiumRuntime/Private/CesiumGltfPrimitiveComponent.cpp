@@ -37,7 +37,7 @@ void destroyCesiumPrimitive(UStaticMeshComponent* uobject) {
   // UObject might not actually get deleted by the garbage collector until
   // much later.
   auto* cesiumPrimitive = Cast<ICesiumPrimitive>(uobject);
-  cesiumPrimitive->getPrimitiveData()->destroy();
+  cesiumPrimitive->getPrimitiveData().destroy();
   UMaterialInstanceDynamic* pMaterial =
       Cast<UMaterialInstanceDynamic>(uobject->GetMaterial(0));
   if (pMaterial) {
@@ -68,28 +68,28 @@ void UCesiumGltfInstancedComponent::BeginDestroy() {
 
 FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
-  if (!getPrimitiveData()->boundingVolume) {
+  if (!getPrimitiveData().boundingVolume) {
     return Super::CalcBounds(LocalToWorld);
   }
 
   return std::visit(
       CalcBoundsOperation{
           LocalToWorld,
-          getPrimitiveData()->HighPrecisionNodeTransform},
-      *getPrimitiveData()->boundingVolume);
+          getPrimitiveData().HighPrecisionNodeTransform},
+      *getPrimitiveData().boundingVolume);
 }
 
 FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
-  if (!getPrimitiveData()->boundingVolume) {
+  if (!getPrimitiveData().boundingVolume) {
     return Super::CalcBounds(LocalToWorld);
   }
 
   return std::visit(
       CalcBoundsOperation{
           LocalToWorld,
-          getPrimitiveData()->HighPrecisionNodeTransform},
-      *getPrimitiveData()->boundingVolume);
+          getPrimitiveData().HighPrecisionNodeTransform},
+      *getPrimitiveData().boundingVolume);
 }
 
 void UCesiumGltfPrimitiveComponent::resetPhysicsTransform() {
@@ -107,9 +107,9 @@ void UpdateTransformFromCesium(
   if (!pCesiumPrimitive) {
     return;
   }
-  const CesiumPrimitiveData* pPrimData = pCesiumPrimitive->getPrimitiveData();
+  const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
   const FTransform transform = FTransform(VecMath::createMatrix(
-      CesiumToUnrealTransform * pPrimData->HighPrecisionNodeTransform));
+      CesiumToUnrealTransform * primData.HighPrecisionNodeTransform));
 
   if (uobject->Mobility == EComponentMobility::Movable) {
     // For movable objects, move the component in the normal way, but don't

@@ -122,11 +122,11 @@ class UCesiumPrimitive : public UInterface {
 class ICesiumPrimitive {
   GENERATED_BODY()
 public:
-  virtual CesiumPrimitiveData* getPrimitiveData() {
-    return &_cesiumData;
+  virtual CesiumPrimitiveData& getPrimitiveData() {
+    return _cesiumData;
   }
-  virtual const CesiumPrimitiveData* getPrimitiveData() const {
-    return &_cesiumData;
+  virtual const CesiumPrimitiveData& getPrimitiveData() const {
+    return _cesiumData;
   }
   /*
    * @brief Reset the component's physics transform. The Unreal function to do

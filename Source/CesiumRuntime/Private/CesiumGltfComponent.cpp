@@ -3131,7 +3131,7 @@ static void loadPrimitiveGameThreadPart(
 
   FName meshName = createSafeName(loadResult.name, "");
   UStaticMeshComponent* pMesh = nullptr;
-  CesiumPrimitiveData* pPrimData = nullptr;
+  ICesiumPrimitive* pCesiumPrimitive = nullptr;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
@@ -3140,7 +3140,7 @@ static void loadPrimitiveGameThreadPart(
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
-    pPrimData = pPointMesh->getPrimitiveData();
+    pCesiumPrimitive = pPointMesh;
   } else if (!instanceTransforms.empty()) {
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
@@ -3148,33 +3148,34 @@ static void loadPrimitiveGameThreadPart(
     for (const FTransform& transform : instanceTransforms) {
       pInstancedComponent->AddInstance(transform, false);
     }
-    pPrimData = pInstancedComponent->getPrimitiveData();
+    pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
     pMesh = pComponent;
-    pPrimData = pComponent->getPrimitiveData();
+    pCesiumPrimitive = pComponent;
   }
+  CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    pPrimData->pTilesetActor = pTilesetActor;
-    pPrimData->overlayTextureCoordinateIDToUVIndex =
+    primData.pTilesetActor = pTilesetActor;
+    primData.overlayTextureCoordinateIDToUVIndex =
         loadResult.overlayTextureCoordinateIDToUVIndex;
-    pPrimData->GltfToUnrealTexCoordMap =
+    primData.GltfToUnrealTexCoordMap =
         std::move(loadResult.GltfToUnrealTexCoordMap);
-    pPrimData->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    pPrimData->PositionAccessor = std::move(loadResult.PositionAccessor);
-    pPrimData->IndexAccessor = std::move(loadResult.IndexAccessor);
-    pPrimData->HighPrecisionNodeTransform = loadResult.transform;
+    primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+    primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+    primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+    primData.HighPrecisionNodeTransform = loadResult.transform;
     UpdateTransformFromCesium(cesiumToUnrealTransform, pMesh);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    pPrimData->pModel = loadResult.pModel;
-    pPrimData->pMeshPrimitive = loadResult.pMeshPrimitive;
-    pPrimData->boundingVolume = boundingVolume;
+    primData.pModel = loadResult.pModel;
+    primData.pMeshPrimitive = loadResult.pMeshPrimitive;
+    primData.boundingVolume = boundingVolume;
     pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
     pMesh->SetCustomDepthStencilWriteMask(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
@@ -3349,24 +3350,24 @@ static void loadPrimitiveGameThreadPart(
     }
   }
 
-  pPrimData->Features = std::move(loadResult.Features);
-  pPrimData->Metadata = std::move(loadResult.Metadata);
+  primData.Features = std::move(loadResult.Features);
+  primData.Metadata = std::move(loadResult.Metadata);
 
-  pPrimData->EncodedFeatures = std::move(loadResult.EncodedFeatures);
-  pPrimData->EncodedMetadata = std::move(loadResult.EncodedMetadata);
+  primData.EncodedFeatures = std::move(loadResult.EncodedFeatures);
+  primData.EncodedMetadata = std::move(loadResult.EncodedMetadata);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
   // Doing the above std::move operations invalidates the pointers in the
   // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
   // awkward, but we have to reconstruct the metadata primitive here.
-  pPrimData->Metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      pPrimData->Features,
-      pPrimData->Metadata,
+  primData.Metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      primData.Features,
+      primData.Metadata,
       pGltf->Metadata};
 
   if (loadResult.EncodedMetadata_DEPRECATED) {
-    pPrimData->EncodedMetadata_DEPRECATED =
+    primData.EncodedMetadata_DEPRECATED =
         std::move(loadResult.EncodedMetadata_DEPRECATED);
   }
 
@@ -3610,7 +3611,7 @@ void UCesiumGltfComponent::AttachRasterTile(
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
-        CesiumPrimitiveData* pPrimData = pPrimitive->getPrimitiveData();
+        CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
         // tile.
@@ -3640,7 +3641,7 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(pPrimData->overlayTextureCoordinateIDToUVIndex
+                static_cast<float>(primData.overlayTextureCoordinateIDToUVIndex
                                        [textureCoordinateID]));
           }
         } else {
@@ -3656,7 +3657,7 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              static_cast<float>(pPrimData->overlayTextureCoordinateIDToUVIndex
+              static_cast<float>(primData.overlayTextureCoordinateIDToUVIndex
                                      [textureCoordinateID]));
         }
       });
