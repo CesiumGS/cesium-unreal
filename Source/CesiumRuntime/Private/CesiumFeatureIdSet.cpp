@@ -20,7 +20,7 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
       _featureIDSetType(ECesiumFeatureIdSetType::None),
       _featureCount(FeatureID.featureCount),
       _nullFeatureID(FeatureID.nullFeatureId.value_or(-1)),
-      _propertyTableIndex(FeatureID.propertyTable.value_or(-1)),
+      _propertyTableIndex(FeatureID.propertyTable),
       _label(FString(FeatureID.label.value_or("").c_str())) {
   FString propertyTableName;
 

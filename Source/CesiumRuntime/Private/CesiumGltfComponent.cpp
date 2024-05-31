@@ -71,6 +71,14 @@ using namespace CesiumTextureUtility;
 using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
+// To debug which urls correspond to which gltf components you see in the view,
+// - Set this define to 1
+// - Click on a piece of terrain in the editor viewport to select it
+// - Press delete to try to delete it
+// Note that the console gives an error, but also tells you the url associated
+// with it
+#define DEBUG_GLTF_ASSET_NAMES 0
+
 namespace {
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
@@ -3126,15 +3134,20 @@ static void loadPrimitiveGameThreadPart(
     const std::vector<FTransform>& instanceTransforms) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
+
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
-  FName meshName = createSafeName(loadResult.name, "");
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
-        NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+        NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
@@ -3143,7 +3156,7 @@ static void loadPrimitiveGameThreadPart(
     pCesiumPrimitive = pPointMesh;
   } else if (!instanceTransforms.empty()) {
     auto* pInstancedComponent =
-        NewObject<UCesiumGltfInstancedComponent>(pGltf, meshName);
+        NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
     pMesh = pInstancedComponent;
     for (const FTransform& transform : instanceTransforms) {
       pInstancedComponent->AddInstance(transform, false);
@@ -3151,7 +3164,7 @@ static void loadPrimitiveGameThreadPart(
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
-        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
   }
@@ -3186,7 +3199,7 @@ static void loadPrimitiveGameThreadPart(
       pMesh->bCastDynamicShadow = false;
     }
 
-    pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
+    pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
@@ -3730,8 +3743,6 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
     return;
   }
 
-  fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
-
   UCesiumMaterialUserData* pCesiumData =
       BaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
 
@@ -3744,10 +3755,12 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
     return;
   }
 
+  fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
+
   for (USceneComponent* pChild : this->GetAttachChildren()) {
     UCesiumGltfPrimitiveComponent* pPrimitive =
         Cast<UCesiumGltfPrimitiveComponent>(pChild);
-    if (!pPrimitive || !pPrimitive->GetMaterials().Num()) {
+    if (!pPrimitive || pPrimitive->GetMaterials().IsEmpty()) {
       continue;
     }
 
