@@ -3150,7 +3150,8 @@ static void loadPrimitiveGameThreadPart(
     }
     pCesiumPrimitive = pInstancedComponent;
   } else {
-    auto* pComponent = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    auto* pComponent =
+        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
   }

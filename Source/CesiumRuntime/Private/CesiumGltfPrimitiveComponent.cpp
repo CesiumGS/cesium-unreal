@@ -55,7 +55,7 @@ void destroyCesiumPrimitive(UStaticMeshComponent* pComponent) {
     CesiumLifetime::destroy(pMesh);
   }
 }
-}
+} // namespace
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
   destroyCesiumPrimitive(this);
   Super::BeginDestroy();
@@ -68,17 +68,15 @@ void UCesiumGltfInstancedComponent::BeginDestroy() {
 
 namespace {
 
-std::optional<FBoxSphereBounds> calcBounds(
-    const ICesiumPrimitive& primitive, const FTransform& LocalToWorld) {
+std::optional<FBoxSphereBounds>
+calcBounds(const ICesiumPrimitive& primitive, const FTransform& LocalToWorld) {
   const CesiumPrimitiveData& primData = primitive.getPrimitiveData();
   if (!primData.boundingVolume) {
     return std::nullopt;
   }
 
   return std::visit(
-      CalcBoundsOperation{
-          LocalToWorld,
-          primData.HighPrecisionNodeTransform},
+      CalcBoundsOperation{LocalToWorld, primData.HighPrecisionNodeTransform},
       *primData.boundingVolume);
 }
 
@@ -133,12 +131,11 @@ bool UpdateTransformFromCesiumAux(
   cesiumComponent->UpdateComponentToWorld();
   cesiumComponent->MarkRenderTransformDirty();
   return false;
-  }
+}
 } // namespace
 
 void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
-    const glm::dmat4& CesiumToUnrealTransform)
-{
+    const glm::dmat4& CesiumToUnrealTransform) {
   bool moveable = UpdateTransformFromCesiumAux(CesiumToUnrealTransform, this);
   if (!moveable) {
     SendPhysicsTransform(ETeleportType::ResetPhysics);
@@ -146,8 +143,7 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
 }
 
 void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
-    const glm::dmat4& CesiumToUnrealTransform)
-{
+    const glm::dmat4& CesiumToUnrealTransform) {
   bool moveable = UpdateTransformFromCesiumAux(CesiumToUnrealTransform, this);
   if (!moveable) {
     SendPhysicsTransform(ETeleportType::ResetPhysics);
@@ -158,7 +154,8 @@ CesiumPrimitiveData& UCesiumGltfPrimitiveComponent::getPrimitiveData() {
   return _cesiumData;
 }
 
-const CesiumPrimitiveData& UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
+const CesiumPrimitiveData&
+UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
   return _cesiumData;
 }
 
@@ -166,6 +163,7 @@ CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
   return _cesiumData;
 }
 
-const CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() const {
+const CesiumPrimitiveData&
+UCesiumGltfInstancedComponent::getPrimitiveData() const {
   return _cesiumData;
 }

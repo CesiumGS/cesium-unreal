@@ -329,7 +329,8 @@ void FCesiumMetadataPickingSpec::Define() {
          std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
          AddFeatureIDsAsAttributeToModel(model, *pPrimitive, featureIDs, 2, 0);
 
-         CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
+         CesiumPrimitiveData& primData =
+             pPrimitiveComponent->getPrimitiveData();
          primData.PositionAccessor =
              AccessorView<FVector3f>(model, positionAccessorIndex);
 
@@ -673,7 +674,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pModelComponent->Metadata =
              FCesiumModelMetadata(model, *pModelMetadata);
-         CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
+         CesiumPrimitiveData& primData =
+             pPrimitiveComponent->getPrimitiveData();
          primData.Metadata =
              FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
@@ -709,7 +711,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pPrimitiveMetadata->propertyTextures.clear();
          pPrimitiveMetadata->propertyTextures.push_back(1);
-         CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
+         CesiumPrimitiveData& primData =
+             pPrimitiveComponent->getPrimitiveData();
          primData.Metadata =
              FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
@@ -752,7 +755,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
          pModelComponent->Metadata =
              FCesiumModelMetadata(model, *pModelMetadata);
-         CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
+         CesiumPrimitiveData& primData =
+             pPrimitiveComponent->getPrimitiveData();
          primData.Metadata =
              FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
 
@@ -1052,7 +1056,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
            pModelComponent->Metadata =
                FCesiumModelMetadata(model, *pModelMetadata);
-           CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
+           CesiumPrimitiveData& primData =
+               pPrimitiveComponent->getPrimitiveData();
            primData.Features =
                FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
 

@@ -5,11 +5,11 @@
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
-#include <CesiumGltf/AccessorUtility.h>
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
 #include "CesiumRasterOverlays.h"
+#include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <optional>
@@ -104,7 +104,6 @@ public:
   void destroy();
 };
 
-
 UINTERFACE()
 class UCesiumPrimitive : public UInterface {
   GENERATED_BODY()
@@ -125,6 +124,6 @@ public:
   virtual CesiumPrimitiveData& getPrimitiveData() = 0;
   virtual const CesiumPrimitiveData& getPrimitiveData() const = 0;
 
-  virtual void UpdateTransformFromCesium(
-      const glm::dmat4& CesiumToUnrealTransform) = 0;
+  virtual void
+  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
 };
