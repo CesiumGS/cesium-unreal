@@ -2,6 +2,7 @@
 
 #include "CesiumTextureUtility.h"
 #include "Misc/AutomationTest.h"
+#include "RenderingThread.h"
 
 using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
