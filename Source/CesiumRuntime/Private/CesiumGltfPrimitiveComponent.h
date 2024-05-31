@@ -19,10 +19,6 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
-void UpdateTransformFromCesium(
-    const glm::dmat4& CesiumToUnrealTransform,
-    UStaticMeshComponent* uobject);
-
 UCLASS()
   class UCesiumGltfPrimitiveComponent :
    public UStaticMeshComponent, public ICesiumPrimitive {
@@ -37,7 +33,7 @@ public:
 
   FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 
-  void resetPhysicsTransform() override;
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 };
 
 UCLASS()
@@ -53,6 +49,5 @@ public:
   void BeginDestroy() override;
 
   FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
-
-  void resetPhysicsTransform() override;
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 };

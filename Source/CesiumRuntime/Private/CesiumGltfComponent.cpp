@@ -3168,7 +3168,7 @@ static void loadPrimitiveGameThreadPart(
     primData.PositionAccessor = std::move(loadResult.PositionAccessor);
     primData.IndexAccessor = std::move(loadResult.IndexAccessor);
     primData.HighPrecisionNodeTransform = loadResult.transform;
-    UpdateTransformFromCesium(cesiumToUnrealTransform, pMesh);
+    pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
@@ -3556,8 +3556,8 @@ UCesiumGltfComponent::~UCesiumGltfComponent() {
 void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    if (auto* pStaticMesh = Cast<UStaticMeshComponent>(pSceneComponent)) {
-      ::UpdateTransformFromCesium(cesiumToUnrealTransform, pStaticMesh);
+    if (auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pSceneComponent)) {
+      pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     }
   }
 }

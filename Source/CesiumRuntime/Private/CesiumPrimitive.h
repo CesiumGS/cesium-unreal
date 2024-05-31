@@ -125,14 +125,13 @@ public:
   virtual CesiumPrimitiveData& getPrimitiveData() {
     return _cesiumData;
   }
+
   virtual const CesiumPrimitiveData& getPrimitiveData() const {
     return _cesiumData;
   }
-  /*
-   * @brief Reset the component's physics transform. The Unreal function to do
-   * this, SendPhysicsTransform(), is protected.
-   */
-  virtual void resetPhysicsTransform() = 0;
+
+  virtual void UpdateTransformFromCesium(
+      const glm::dmat4& CesiumToUnrealTransform) = 0;
 
 private:
   CesiumPrimitiveData _cesiumData;

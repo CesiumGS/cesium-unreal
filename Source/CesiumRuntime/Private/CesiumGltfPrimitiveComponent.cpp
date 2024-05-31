@@ -92,44 +92,56 @@ FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
       *getPrimitiveData().boundingVolume);
 }
 
-void UCesiumGltfPrimitiveComponent::resetPhysicsTransform() {
-  SendPhysicsTransform(ETeleportType::ResetPhysics);
-}
-
-void UCesiumGltfInstancedComponent::resetPhysicsTransform() {
-  SendPhysicsTransform(ETeleportType::ResetPhysics);
-}
-
-void UpdateTransformFromCesium(
+namespace {
+// Returns true if the component is moveable, so caller can "Do The Right
+// Thing." This avoids making the protected member function SendPhysicsTransform
+// public.
+template <typename CesiumComponent>
+bool UpdateTransformFromCesiumAux(
     const glm::dmat4& CesiumToUnrealTransform,
-    UStaticMeshComponent* uobject) {
-  auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(uobject);
-  if (!pCesiumPrimitive) {
-    return;
-  }
-  const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
+    CesiumComponent* cesiumComponent) {
+  const CesiumPrimitiveData& primData = cesiumComponent->getPrimitiveData();
   const FTransform transform = FTransform(VecMath::createMatrix(
       CesiumToUnrealTransform * primData.HighPrecisionNodeTransform));
 
-  if (uobject->Mobility == EComponentMobility::Movable) {
+  if (cesiumComponent->Mobility == EComponentMobility::Movable) {
     // For movable objects, move the component in the normal way, but don't
     // generate collisions along the way. Teleporting physics is imperfect,
     // but it's the best available option.
-    uobject->SetRelativeTransform(
+    cesiumComponent->SetRelativeTransform(
         transform,
         false,
         nullptr,
         ETeleportType::TeleportPhysics);
-  } else {
-    // Unreal will yell at us for calling SetRelativeTransform on a static
-    // object, but we still need to adjust (accurately!) for origin rebasing
-    // and georeference changes. It's "ok" to move a static object in this way
-    // because, we assume, the globe and globe-oriented lights, etc. are
-    // moving too, so in a relative sense the object isn't actually moving.
-    // This isn't a perfect assumption, of course.
-    uobject->SetRelativeTransform_Direct(transform);
-    uobject->UpdateComponentToWorld();
-    uobject->MarkRenderTransformDirty();
-    pCesiumPrimitive->resetPhysicsTransform();
+    return true;
+  }
+  // Unreal will yell at us for calling SetRelativeTransform on a static
+  // object, but we still need to adjust (accurately!) for origin rebasing
+  // and georeference changes. It's "ok" to move a static object in this way
+  // because, we assume, the globe and globe-oriented lights, etc. are
+  // moving too, so in a relative sense the object isn't actually moving.
+  // This isn't a perfect assumption, of course.
+  cesiumComponent->SetRelativeTransform_Direct(transform);
+  cesiumComponent->UpdateComponentToWorld();
+  cesiumComponent->MarkRenderTransformDirty();
+  return false;
+  }
+} // namespace
+
+void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
+    const glm::dmat4& CesiumToUnrealTransform)
+{
+  bool moveable = UpdateTransformFromCesiumAux(CesiumToUnrealTransform, this);
+  if (!moveable) {
+    SendPhysicsTransform(ETeleportType::ResetPhysics);
+  }
+}
+
+void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
+    const glm::dmat4& CesiumToUnrealTransform)
+{
+  bool moveable = UpdateTransformFromCesiumAux(CesiumToUnrealTransform, this);
+  if (!moveable) {
+    SendPhysicsTransform(ETeleportType::ResetPhysics);
   }
 }
