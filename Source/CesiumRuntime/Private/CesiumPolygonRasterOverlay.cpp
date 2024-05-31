@@ -46,7 +46,7 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
       polygons,
       this->InvertSelection,
       *Ellipsoid->GetNativeEllipsoid(),
-      CesiumGeospatial::GeographicProjection(),
+      CesiumGeospatial::GeographicProjection(*Ellipsoid->GetNativeEllipsoid()),
       options);
 }
 
