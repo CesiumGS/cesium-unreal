@@ -2,14 +2,27 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- Renamed the following properties on `CesiumWebMapTileServiceRasterOverlay`:
+  - `Url` -> `BaseUrl`
+  - `West` -> `RectangleWest`
+  - `South` -> `RectangleSouth`
+  - `East` -> `RectangleEast`
+  - `North` -> `RectangleNorth`
+- `UseWebMercatorProjection` has been deprecated on `CesiumWebMapTileServiceRasterOverlay`. Instead, use the `Projection` enum property to specify between `Geographic` or `WebMercator` projection.
+
 ##### Additions :tada:
 
- - Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
- - Improve DynamicPawn movement by adding deceleration. This lets the camera slowly come to a stop after moving, rather than immediately.
+- Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
+- Improve DynamicPawn movement by adding deceleration. This lets the camera slowly come to a stop after moving, rather than immediately.
+- Added `TileWidth` and `TileHeight` properties to `CesiumWebMapTileServiceRasterOverlay`.
 
 ##### Fixes :wrench:
 
+- Fixed an issue with pixel dithering artifacts that could appear on tilesets.
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
+- Fixed a bug where `CesiumTileMapServiceRasterOverlay`, `CesiumWebMapServiceRasterOverlay`, and `CesiumWebMapTileServiceRasterOverlay` would attempt to load empty URLs.
 
 ### v2.5.0 - 2024-05-01
 
