@@ -57,7 +57,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
   struct TestResults {
     std::atomic<bool> queryFinished = false;
-    std::vector<CesiumGeospatial::Cartographic> queryResults;
+    std::vector<Cesium3DTilesSelection::Tileset::HeightResult> queryResults;
   };
 
   static TestResults testResults;
@@ -97,7 +97,8 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     nativeTileset->getHeightsAtCoordinates(queryInputRadians)
         .thenInMainThread(
             [&testResults](
-                std::vector<CesiumGeospatial::Cartographic>&& results) {
+                std::vector<Cesium3DTilesSelection::Tileset::HeightResult>&&
+                    results) {
               testResults.queryResults = std::move(results);
               testResults.queryFinished = true;
             });
@@ -130,8 +131,13 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
     for (size_t queryIndex = 0; queryIndex < testResults.queryResults.size();
          ++queryIndex) {
-      CesiumGeospatial::Cartographic& queryHit =
+      Cesium3DTilesSelection::Tileset::HeightResult& heightResult =
           testResults.queryResults[queryIndex];
+
+      if (!heightResult.heightAvailable)
+        continue;
+
+      CesiumGeospatial::Cartographic& queryHit = heightResult.coordinate;
 
       FVector hitCoordinate = {
           CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
