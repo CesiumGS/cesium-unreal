@@ -66,30 +66,38 @@ void UCesiumGltfInstancedComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
-FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
-    const FTransform& LocalToWorld) const {
-  if (!getPrimitiveData().boundingVolume) {
-    return Super::CalcBounds(LocalToWorld);
+namespace {
+
+std::optional<FBoxSphereBounds> calcBounds(
+    const ICesiumPrimitive& primitive, const FTransform& LocalToWorld) {
+  const CesiumPrimitiveData& primData = primitive.getPrimitiveData();
+  if (!primData.boundingVolume) {
+    return std::nullopt;
   }
 
   return std::visit(
       CalcBoundsOperation{
           LocalToWorld,
-          getPrimitiveData().HighPrecisionNodeTransform},
-      *getPrimitiveData().boundingVolume);
+          primData.HighPrecisionNodeTransform},
+      *primData.boundingVolume);
+}
+
+} // namespace
+
+FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
+    const FTransform& LocalToWorld) const {
+  if (auto bounds = calcBounds(*this, LocalToWorld)) {
+    return *bounds;
+  }
+  return Super::CalcBounds(LocalToWorld);
 }
 
 FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
-  if (!getPrimitiveData().boundingVolume) {
-    return Super::CalcBounds(LocalToWorld);
+  if (auto bounds = calcBounds(*this, LocalToWorld)) {
+    return *bounds;
   }
-
-  return std::visit(
-      CalcBoundsOperation{
-          LocalToWorld,
-          getPrimitiveData().HighPrecisionNodeTransform},
-      *getPrimitiveData().boundingVolume);
+  return Super::CalcBounds(LocalToWorld);
 }
 
 namespace {
