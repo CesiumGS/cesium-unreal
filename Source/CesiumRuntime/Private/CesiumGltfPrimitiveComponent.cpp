@@ -145,3 +145,19 @@ void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
     SendPhysicsTransform(ETeleportType::ResetPhysics);
   }
 }
+
+CesiumPrimitiveData& UCesiumGltfPrimitiveComponent::getPrimitiveData() {
+  return _cesiumData;
+}
+
+const CesiumPrimitiveData& UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
+  return _cesiumData;
+}
+
+CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
+  return _cesiumData;
+}
+
+const CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() const {
+  return _cesiumData;
+}

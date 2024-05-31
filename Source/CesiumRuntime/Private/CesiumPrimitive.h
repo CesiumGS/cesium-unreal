@@ -122,17 +122,9 @@ class UCesiumPrimitive : public UInterface {
 class ICesiumPrimitive {
   GENERATED_BODY()
 public:
-  virtual CesiumPrimitiveData& getPrimitiveData() {
-    return _cesiumData;
-  }
-
-  virtual const CesiumPrimitiveData& getPrimitiveData() const {
-    return _cesiumData;
-  }
+  virtual CesiumPrimitiveData& getPrimitiveData() = 0;
+  virtual const CesiumPrimitiveData& getPrimitiveData() const = 0;
 
   virtual void UpdateTransformFromCesium(
       const glm::dmat4& CesiumToUnrealTransform) = 0;
-
-private:
-  CesiumPrimitiveData _cesiumData;
 };
