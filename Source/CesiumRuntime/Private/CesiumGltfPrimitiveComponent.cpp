@@ -32,19 +32,19 @@ UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 UCesiumGltfInstancedComponent::~UCesiumGltfInstancedComponent() {}
 
 namespace {
-void destroyCesiumPrimitive(UStaticMeshComponent* uobject) {
+void destroyCesiumPrimitive(UStaticMeshComponent* pComponent) {
   // Clear everything we can in order to reduce memory usage, because this
   // UObject might not actually get deleted by the garbage collector until
   // much later.
-  auto* cesiumPrimitive = Cast<ICesiumPrimitive>(uobject);
+  auto* cesiumPrimitive = Cast<ICesiumPrimitive>(pComponent);
   cesiumPrimitive->getPrimitiveData().destroy();
   UMaterialInstanceDynamic* pMaterial =
-      Cast<UMaterialInstanceDynamic>(uobject->GetMaterial(0));
+      Cast<UMaterialInstanceDynamic>(pComponent->GetMaterial(0));
   if (pMaterial) {
     CesiumLifetime::destroy(pMaterial);
   }
 
-  UStaticMesh* pMesh = uobject->GetStaticMesh();
+  UStaticMesh* pMesh = pComponent->GetStaticMesh();
   if (pMesh) {
     UBodySetup* pBodySetup = pMesh->GetBodySetup();
 
