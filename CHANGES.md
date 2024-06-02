@@ -14,6 +14,7 @@
 
 ##### Additions :tada:
 
+- Added support for the glTF EXT_mesh_gpu_instancing extension.
 - Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
 - Improve DynamicPawn movement by adding deceleration. This lets the camera slowly come to a stop after moving, rather than immediately.
 - Added `TileWidth` and `TileHeight` properties to `CesiumWebMapTileServiceRasterOverlay`.
