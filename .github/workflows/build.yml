@@ -114,21 +114,22 @@ jobs:
         with:
           name: CesiumForUnreal-52-windows-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
-      - name: Unreal Marketplace Workaround
-        run: |
-          # The UE Marketplace deletes our Intermediates directory and fails to produces new
-          # intermediates for the Linux platform. The Marketplace team has suggested we copy
-          # them to the LinuxIntermediate directory instead, as a workaround. Users still have
-          # to move these files to the correct place manually, though, in order for Linux builds
-          # to succeed.
-          mkdir -p combine/CesiumForUnreal/LinuxIntermediate/Build/Linux
-          cp -r combine/CesiumForUnreal/Intermediate/Build/Linux/* combine/CesiumForUnreal/LinuxIntermediate/Build/Linux
       - name: Publish combined package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
+      - name: Publish combined package artifact for the Unreal Marketplace
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}-SourceOnly
+          path: |
+            combine
+            # These are built by Epic, and including them seems to confuse their process.
+            !combine/Binaries/
+            !combine/Intermediates/
   TestPackage52:
     needs: [Combine52]
     uses: ./.github/workflows/testPackageOnWindows.yml
@@ -244,21 +245,22 @@ jobs:
         with:
           name: CesiumForUnreal-53-windows-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
-      - name: Unreal Marketplace Workaround
-        run: |
-          # The UE Marketplace deletes our Intermediates directory and fails to produces new
-          # intermediates for the Linux platform. The Marketplace team has suggested we copy
-          # them to the LinuxIntermediate directory instead, as a workaround. Users still have
-          # to move these files to the correct place manually, though, in order for Linux builds
-          # to succeed.
-          mkdir -p combine/CesiumForUnreal/LinuxIntermediate/Build/Linux
-          cp -r combine/CesiumForUnreal/Intermediate/Build/Linux/* combine/CesiumForUnreal/LinuxIntermediate/Build/Linux
       - name: Publish combined package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
+      - name: Publish combined package artifact for the Unreal Marketplace
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}-SourceOnly
+          path: |
+            combine
+            # These are built by Epic, and including them seems to confuse their process.
+            !combine/Binaries/
+            !combine/Intermediates/
   TestPackage53:
     needs: [Combine53]
     uses: ./.github/workflows/testPackageOnWindows.yml
@@ -374,21 +376,22 @@ jobs:
         with:
           name: CesiumForUnreal-54-windows-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
-      - name: Unreal Marketplace Workaround
-        run: |
-          # The UE Marketplace deletes our Intermediates directory and fails to produces new
-          # intermediates for the Linux platform. The Marketplace team has suggested we copy
-          # them to the LinuxIntermediate directory instead, as a workaround. Users still have
-          # to move these files to the correct place manually, though, in order for Linux builds
-          # to succeed.
-          mkdir -p combine/CesiumForUnreal/LinuxIntermediate/Build/Linux
-          cp -r combine/CesiumForUnreal/Intermediate/Build/Linux/* combine/CesiumForUnreal/LinuxIntermediate/Build/Linux
       - name: Publish combined package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
+      - name: Publish combined package artifact for the Unreal Marketplace
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}-SourceOnly
+          path: |
+            combine
+            # These are built by Epic, and including them seems to confuse their process.
+            !combine/Binaries/
+            !combine/Intermediates/
   TestPackage54:
     needs: [Combine54]
     uses: ./.github/workflows/testPackageOnWindows.yml
