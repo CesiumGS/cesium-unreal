@@ -26,6 +26,7 @@
 - Fixed a bug where `CesiumTileMapServiceRasterOverlay`, `CesiumWebMapServiceRasterOverlay`, and `CesiumWebMapTileServiceRasterOverlay` would attempt to load empty URLs.
 - Fixed a bug that caused some textures shared between multiple glTF primitives to be missing entirely.
 - Fixed a bug that caused tilesets to fail to load with the "Experimental Occlusion Culling Feature" enabled.
+- Fixed a problem that could cause linker errors when packaging a game using both Cesium for Unreal and the Pixel Streaming plugin in Unreal Engine 5.4.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.35.0 to v0.36.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
