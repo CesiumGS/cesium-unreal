@@ -131,7 +131,7 @@ jobs:
             combine
             # These are built by Epic, and including them seems to confuse their process.
             !combine/CesiumForUnreal/Binaries/**/*
-            !combine/CesiumForUnreal/Intermediates/**/*
+            !combine/CesiumForUnreal/Intermediate/**/*
   TestPackage52:
     needs: [Combine52]
     uses: ./.github/workflows/testPackageOnWindows.yml
@@ -264,7 +264,7 @@ jobs:
             combine
             # These are built by Epic, and including them seems to confuse their process.
             !combine/CesiumForUnreal/Binaries/**/*
-            !combine/CesiumForUnreal/Intermediates/**/*
+            !combine/CesiumForUnreal/Intermediate/**/*
   TestPackage53:
     needs: [Combine53]
     uses: ./.github/workflows/testPackageOnWindows.yml
@@ -397,7 +397,7 @@ jobs:
             combine
             # These are built by Epic, and including them seems to confuse their process.
             !combine/CesiumForUnreal/Binaries/**/*
-            !combine/CesiumForUnreal/Intermediates/**/*
+            !combine/CesiumForUnreal/Intermediate/**/*
   TestPackage54:
     needs: [Combine54]
     uses: ./.github/workflows/testPackageOnWindows.yml
