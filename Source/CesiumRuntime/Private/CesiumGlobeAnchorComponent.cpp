@@ -153,6 +153,29 @@ void UCesiumGlobeAnchorComponent::SetAdjustOrientationForGlobeWhenMoving(
   this->AdjustOrientationForGlobeWhenMoving = Value;
 }
 
+void UCesiumGlobeAnchorComponent::SetAnchorRootComponent(
+    USceneComponent* InSyncRootComponent) {
+  const AActor* pOwner = this->GetOwner();
+  if (!IsValid(pOwner)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGlobeAnchorComponent %s does not have a valid owner"),
+        *this->GetName());
+    return;
+  }
+
+  USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
+  if (pOwnerRoot) {
+    pOwnerRoot->TransformUpdated.RemoveAll(this);
+  }
+
+  this->AnchorRootComponent = InSyncRootComponent;
+  AnchorRootComponent->TransformUpdated.AddUObject(
+        this,
+        &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
+}
+
 void UCesiumGlobeAnchorComponent::MoveToEarthCenteredEarthFixedPosition(
     const FVector& TargetEcef) {
   if (!this->_actorToECEFIsValid)
@@ -563,6 +586,10 @@ UCesiumGlobeAnchorComponent::_getRootComponent(bool warnIfNull) const {
     return nullptr;
   }
 
+  if( IsValid(this->AnchorRootComponent) ) {
+    return this->AnchorRootComponent;
+  }
+
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (!IsValid(pOwnerRoot)) {
     if (warnIfNull) {
@@ -596,7 +623,7 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
     return;
   }
 
-  USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
+  USceneComponent* pOwnerRoot = AnchorRootComponent ? AnchorRootComponent : pOwner->GetRootComponent();
   if (!IsValid(pOwnerRoot)) {
     UE_LOG(
         LogCesium,

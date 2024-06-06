@@ -24,6 +24,13 @@ class CESIUMRUNTIME_API UCesiumGlobeAnchorComponent : public UActorComponent {
 #pragma region Properties
 private:
   /**
+   * The root component of GlobeAnchorComponent
+   * if AnchorRootComponent is not assigned, root component would use attached actor's root component replaced.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium", Meta = (AllowPrivateAccess))
+  TObjectPtr<USceneComponent> AnchorRootComponent = nullptr;
+
+  /**
    * The designated georeference actor controlling how the owning actor's
    * coordinate system relates to the coordinate system in this Unreal Engine
    * level.
@@ -268,6 +275,9 @@ public:
    */
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetAdjustOrientationForGlobeWhenMoving(bool Value);
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetAnchorRootComponent(USceneComponent* InSyncRootComponent);
 
 #pragma endregion
 
