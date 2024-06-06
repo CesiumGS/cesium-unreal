@@ -38,9 +38,21 @@ namespace CesiumTextureUtility {
 // created.
 struct ReferenceCountedUnrealTexture
     : CesiumUtility::ReferenceCountedThreadSafe<ReferenceCountedUnrealTexture> {
-  ReferenceCountedUnrealTexture(TObjectPtr<UTexture2D> p) noexcept;
+  ReferenceCountedUnrealTexture() noexcept;
   ~ReferenceCountedUnrealTexture() noexcept;
-  TObjectPtr<UTexture2D> pUnrealTexture;
+
+  // The texture game object, once it's created.
+  TObjectPtr<UTexture2D> getUnrealTexture() const;
+  void setUnrealTexture(const TObjectPtr<UTexture2D>& p);
+
+  // The renderer / RHI FTextureResource holding the pixel data.
+  const TUniquePtr<FCesiumTextureResourceBase>& getTextureResource() const;
+  TUniquePtr<FCesiumTextureResourceBase>& getTextureResource();
+  void setTextureResource(TUniquePtr<FCesiumTextureResourceBase>&& p);
+
+private:
+  TObjectPtr<UTexture2D> _pUnrealTexture;
+  TUniquePtr<FCesiumTextureResourceBase> _pTextureResource;
 };
 
 /**
@@ -60,9 +72,6 @@ struct LoadedTextureResult {
 
   // The UTexture2D that has already been created, if any.
   CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture> pTexture;
-
-  // The RHI FTextureResource holding the pixel data.
-  TUniquePtr<FCesiumTextureResourceBase> pTextureResource;
 };
 
 /**
@@ -74,7 +83,9 @@ struct LoadedTextureResult {
  * it.
  *
  * @param model The glTF Model for which to load this texture.
- * @param texture The glTF Texture to load.
+ * @param texture The glTF Texture to load. This parameter is non-const because
+ * a private extension will be added to this `Texture` in order to track the
+ * associated Unreal texture.
  * @param sRGB True if the texture should be treated as sRGB; false if it should
  * be treated as linear.
  * @param textureResources Unreal RHI texture resources that have already been
@@ -85,7 +96,7 @@ struct LoadedTextureResult {
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
-    const CesiumGltf::Texture& texture,
+    CesiumGltf::Texture& texture,
     bool sRGB,
     std::vector<FCesiumTextureResourceBase*>& textureResources);
 

@@ -41,6 +41,7 @@
 #include <CesiumGltf/AccessorUtility.h>
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
+#include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
@@ -59,6 +60,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
+#include <type_traits>
 
 #if WITH_EDITOR
 #include "ScopedTransaction.h"
@@ -68,6 +70,14 @@ using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
 using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
+
+// To debug which urls correspond to which gltf components you see in the view,
+// - Set this define to 1
+// - Click on a piece of terrain in the editor viewport to select it
+// - Press delete to try to delete it
+// Note that the console gives an error, but also tells you the url associated
+// with it
+#define DEBUG_GLTF_ASSET_NAMES 0
 
 namespace {
 using TMeshVector2 = FVector2f;
@@ -407,7 +417,7 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
   }
 
   int32_t textureIndex = gltfTexture.value().index;
-  const CesiumGltf::Texture& texture = model.textures[textureIndex];
+  CesiumGltf::Texture& texture = model.textures[textureIndex];
   return loadTextureFromModelAnyThreadPart(
       model,
       texture,
@@ -1086,6 +1096,31 @@ FName createSafeName(
   return FName(combined.c_str());
 }
 
+// This matrix converts from right-handed Z-up to Unreal
+// left-handed Z-up by flipping the Y axis. It effectively undoes the Y-axis
+// flipping that we did when creating the mesh in the first place. This is
+// necessary to work around a problem in UE 5.1 where negatively-scaled meshes
+// don't work correctly for collision.
+// See https://github.com/CesiumGS/cesium-unreal/pull/1126
+// Note that this matrix is its own inverse.
+
+constexpr glm::dmat4 yInvertMatrix = {
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    -1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0};
 } // namespace
 
 template <class TIndexAccessor>
@@ -1634,30 +1669,6 @@ static void loadPrimitive(
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
 
-  // This matrix converts from right-handed Z-up to Unreal
-  // left-handed Z-up by flipping the Y axis. It effectively undoes the Y-axis
-  // flipping that we did when creating the mesh in the first place. This is
-  // necessary to work around a problem in UE 5.1 where negatively-scaled
-  // meshes don't work correctly for collision. See
-  // https://github.com/CesiumGS/cesium-unreal/pull/1126
-  static constexpr glm::dmat4 yInvertMatrix = {
-      1.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      -1.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      1.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      1.0};
-
   primitiveResult.transform = transform * yInvertMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
@@ -1826,6 +1837,149 @@ static void loadMesh(
   }
 }
 
+// Helpers for different instancing rotation formats
+
+namespace {
+template <typename T> struct is_float_quat : std::false_type {};
+
+template <>
+struct is_float_quat<CesiumGltf::AccessorTypes::VEC4<float>> : std::true_type {
+};
+
+template <typename T> struct is_int_quat : std::false_type {};
+
+template <typename T>
+struct is_int_quat<CesiumGltf::AccessorTypes::VEC4<T>>
+    : std::conjunction<std::is_integral<T>, std::is_signed<T>> {};
+
+template <typename T>
+inline constexpr bool is_float_quat_v = is_float_quat<T>::value;
+
+template <typename T>
+inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
+} // namespace
+
+static void loadInstancingData(
+    const Model& model,
+    LoadNodeResult& result,
+    const ExtensionExtMeshGpuInstancing* pGpuInstancing) {
+  auto getInstanceAccessor = [&](const char* name) -> const Accessor* {
+    if (auto accessorItr = pGpuInstancing->attributes.find(name);
+        accessorItr != pGpuInstancing->attributes.end()) {
+      return Model::getSafe(&model.accessors, accessorItr->second);
+    }
+    return nullptr;
+  };
+  const Accessor* translations = getInstanceAccessor("TRANSLATION");
+  const Accessor* rotations = getInstanceAccessor("ROTATION");
+  const Accessor* scales = getInstanceAccessor("SCALE");
+
+  int64_t count = 0;
+  if (translations) {
+    count = translations->count;
+  }
+  if (rotations) {
+    if (count == 0) {
+      count = rotations->count;
+    } else if (count != rotations->count) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("instance rotation count %d not consistent with %d"),
+          rotations->count,
+          count);
+      return;
+    }
+  }
+  if (scales) {
+    if (count == 0) {
+      count = scales->count;
+    } else if (count != scales->count) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("instance scale count %d not consistent with %d"),
+          scales->count,
+          count);
+      return;
+    }
+  }
+  if (count == 0) {
+    UE_LOG(LogCesium, Warning, TEXT("No valid instance data"));
+    return;
+  }
+  // The glTF instance transforms need to be transformed into the local
+  // coordinate system of the Unreal static mesh i.e., Unreals' left-handed
+  // system. Another way to think about it is that the geometry, which is stored
+  // in the Unreal system, must be transformed to glTF, have the instance
+  // transform applied, and then be transformed back to Unreal. It's tempting to
+  // do this by trying some manipulation of the individual glTF instance
+  // operations, but that general approach has always ended in tears for me.
+  // Better to formally multiply out the matrices and be assured that the
+  // operation is correct.
+  std::vector<glm::dmat4> instanceTransforms(count, glm::dmat4(1.0));
+
+  // Note: the glm functions translate() and scale() post-multiply the matrix
+  // argument by the new transform. E.g., translate() does *not* translate the
+  // matrix.
+  if (translations) {
+    AccessorView<glm::fvec3> translationAccessor(model, *translations);
+    if (translationAccessor.status() == AccessorViewStatus::Valid) {
+      for (int64_t i = 0; i < count; ++i) {
+        glm::dvec3 translation(translationAccessor[i]);
+        instanceTransforms[i] =
+            glm::translate(instanceTransforms[i], translation);
+      }
+    }
+  } else {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Invalid accessor for instance translations"));
+  }
+  if (rotations) {
+    createAccessorView(model, *rotations, [&](auto&& quatView) -> void {
+      using QuatType = decltype(quatView[0]);
+      using ValueType = std::decay_t<QuatType>;
+      if constexpr (is_float_quat_v<ValueType>) {
+        for (int i = 0; i < count; ++i) {
+          glm::dquat quat(
+              quatView[i].value[3],
+              quatView[i].value[0],
+              quatView[i].value[1],
+              quatView[i].value[2]);
+          instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
+        }
+      } else if constexpr (is_int_quat_v<ValueType>) {
+        for (int64_t i = 0; i < count; ++i) {
+          float val[4];
+          for (int j = 0; j < 4; ++j) {
+            val[j] = GltfNormalized(quatView[i].value[j]);
+          }
+          glm::dquat quat(val[3], val[0], val[1], val[2]);
+          instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
+        }
+      }
+    });
+  }
+  if (scales) {
+    AccessorView<glm::fvec3> scaleAccessor(model, *scales);
+    for (int64_t i = 0; i < count; ++i) {
+      glm::dvec3 scaleFactors(scaleAccessor[i]);
+      instanceTransforms[i] = glm::scale(instanceTransforms[i], scaleFactors);
+    }
+  } else {
+    UE_LOG(LogCesium, Warning, TEXT("Invalid accessor for instance scales"));
+  }
+  result.InstanceTransforms.resize(count);
+  for (int64_t i = 0; i < count; ++i) {
+    glm::dmat4 unrealMat =
+        yInvertMatrix * instanceTransforms[i] * yInvertMatrix;
+    auto unrealFMatrix = VecMath::createMatrix(unrealMat);
+    result.InstanceTransforms[i].SetFromMatrix(unrealFMatrix);
+  }
+}
+
 static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
@@ -1906,6 +2060,10 @@ static void loadNode(
 
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
+    if (const auto* pGpuInstancingExtension =
+            node.getExtension<ExtensionExtMeshGpuInstancing>()) {
+      loadInstancingData(model, result, pGpuInstancingExtension);
+    }
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
     loadMesh(
         result.meshResult,
@@ -2198,7 +2356,7 @@ bool applyTexture(
     return false;
   }
 
-  pMaterial->SetTextureParameterValueByInfo(info, pTexture->pUnrealTexture);
+  pMaterial->SetTextureParameterValueByInfo(info, pTexture->getUnrealTexture());
 
   return true;
 }
@@ -2465,7 +2623,7 @@ static void SetFeatureIdTextureParameterValues(
           FName(name + CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
           association,
           index),
-      encodedFeatureIdTexture.pTexture->pTexture->pUnrealTexture);
+      encodedFeatureIdTexture.pTexture->pTexture->getUnrealTexture());
 
   size_t numChannels = encodedFeatureIdTexture.channels.size();
   pMaterial->SetScalarParameterValueByInfo(
@@ -2570,7 +2728,7 @@ static void SetPropertyTableParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture->pUnrealTexture);
+          encodedProperty.pTexture->pTexture->getUnrealTexture());
     }
 
     if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
@@ -2656,7 +2814,7 @@ static void SetPropertyTextureParameterValues(
     if (encodedProperty.pTexture) {
       pMaterial->SetTextureParameterValueByInfo(
           FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture->pUnrealTexture);
+          encodedProperty.pTexture->pTexture->getUnrealTexture());
     }
 
     pMaterial->SetVectorParameterValueByInfo(
@@ -2842,7 +3000,7 @@ static void SetMetadataFeatureTableParameterValues_DEPRECATED(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(FName(encodedProperty.name), association, index),
-        encodedProperty.pTexture->pTexture->pUnrealTexture);
+        encodedProperty.pTexture->pTexture->getUnrealTexture());
   }
 }
 
@@ -2910,7 +3068,7 @@ static void SetMetadataParameterValues_DEPRECATED(
                 FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
-            encodedProperty.pTexture->pTexture->pUnrealTexture);
+            encodedProperty.pTexture->pTexture->getUnrealTexture());
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -2935,7 +3093,7 @@ static void SetMetadataParameterValues_DEPRECATED(
             FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
-        encodedFeatureIdTexture.pTexture->pTexture->pUnrealTexture);
+        encodedFeatureIdTexture.pTexture->pTexture->getUnrealTexture());
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {
@@ -2997,48 +3155,66 @@ static void loadPrimitiveGameThreadPart(
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
-    ACesium3DTileset* pTilesetActor) {
+    ACesium3DTileset* pTilesetActor,
+    const std::vector<FTransform>& instanceTransforms) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
+
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
 
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
-  FName meshName = createSafeName(loadResult.name, "");
-  UCesiumGltfPrimitiveComponent* pMesh;
+  UStaticMeshComponent* pMesh = nullptr;
+  ICesiumPrimitive* pCesiumPrimitive = nullptr;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
-        NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+        NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
+    pCesiumPrimitive = pPointMesh;
+  } else if (!instanceTransforms.empty()) {
+    auto* pInstancedComponent =
+        NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
+    pMesh = pInstancedComponent;
+    for (const FTransform& transform : instanceTransforms) {
+      pInstancedComponent->AddInstance(transform, false);
+    }
+    pCesiumPrimitive = pInstancedComponent;
   } else {
-    pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+    auto* pComponent =
+        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
+    pMesh = pComponent;
+    pCesiumPrimitive = pComponent;
   }
+  CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-
-    pMesh->pTilesetActor = pTilesetActor;
-    pMesh->overlayTextureCoordinateIDToUVIndex =
+    primData.pTilesetActor = pTilesetActor;
+    primData.overlayTextureCoordinateIDToUVIndex =
         loadResult.overlayTextureCoordinateIDToUVIndex;
-    pMesh->GltfToUnrealTexCoordMap =
+    primData.GltfToUnrealTexCoordMap =
         std::move(loadResult.GltfToUnrealTexCoordMap);
-    pMesh->TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    pMesh->PositionAccessor = std::move(loadResult.PositionAccessor);
-    pMesh->IndexAccessor = std::move(loadResult.IndexAccessor);
-    pMesh->HighPrecisionNodeTransform = loadResult.transform;
-    pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
-
+    primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+    primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+    primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+    primData.HighPrecisionNodeTransform = loadResult.transform;
+    pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    pMesh->pModel = loadResult.pModel;
-    pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
-    pMesh->boundingVolume = boundingVolume;
+    primData.pModel = loadResult.pModel;
+    primData.pMeshPrimitive = loadResult.pMeshPrimitive;
+    primData.boundingVolume = boundingVolume;
     pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
     pMesh->SetCustomDepthStencilWriteMask(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
@@ -3048,7 +3224,7 @@ static void loadPrimitiveGameThreadPart(
       pMesh->bCastDynamicShadow = false;
     }
 
-    pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
+    pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
@@ -3213,24 +3389,24 @@ static void loadPrimitiveGameThreadPart(
     }
   }
 
-  pMesh->Features = std::move(loadResult.Features);
-  pMesh->Metadata = std::move(loadResult.Metadata);
+  primData.Features = std::move(loadResult.Features);
+  primData.Metadata = std::move(loadResult.Metadata);
 
-  pMesh->EncodedFeatures = std::move(loadResult.EncodedFeatures);
-  pMesh->EncodedMetadata = std::move(loadResult.EncodedMetadata);
+  primData.EncodedFeatures = std::move(loadResult.EncodedFeatures);
+  primData.EncodedMetadata = std::move(loadResult.EncodedMetadata);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
   // Doing the above std::move operations invalidates the pointers in the
   // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
   // awkward, but we have to reconstruct the metadata primitive here.
-  pMesh->Metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      pMesh->Features,
-      pMesh->Metadata,
+  primData.Metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      primData.Features,
+      primData.Metadata,
       pGltf->Metadata};
 
   if (loadResult.EncodedMetadata_DEPRECATED) {
-    pMesh->EncodedMetadata_DEPRECATED =
+    primData.EncodedMetadata_DEPRECATED =
         std::move(loadResult.EncodedMetadata_DEPRECATED);
   }
 
@@ -3373,7 +3549,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             cesiumToUnrealTransform,
             tile,
             createNavCollision,
-            pTilesetActor);
+            pTilesetActor,
+            node.InstanceTransforms);
       }
     }
   }
@@ -3420,10 +3597,8 @@ UCesiumGltfComponent::~UCesiumGltfComponent() {
 void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
-    if (pPrimitive) {
-      pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+    if (auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pSceneComponent)) {
+      pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     }
   }
 }
@@ -3477,6 +3652,7 @@ void UCesiumGltfComponent::AttachRasterTile(
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
+        CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
         // tile.
@@ -3506,9 +3682,8 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(
-                    pPrimitive->overlayTextureCoordinateIDToUVIndex
-                        [textureCoordinateID]));
+                static_cast<float>(primData.overlayTextureCoordinateIDToUVIndex
+                                       [textureCoordinateID]));
           }
         } else {
           pMaterial->SetTextureParameterValue(
@@ -3523,7 +3698,7 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              static_cast<float>(pPrimitive->overlayTextureCoordinateIDToUVIndex
+              static_cast<float>(primData.overlayTextureCoordinateIDToUVIndex
                                      [textureCoordinateID]));
         }
       });

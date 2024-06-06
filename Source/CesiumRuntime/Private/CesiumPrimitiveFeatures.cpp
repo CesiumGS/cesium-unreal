@@ -37,7 +37,7 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
     return EmptyPrimitiveFeatures;
   }
 
-  return pGltfComponent->Features;
+  return pGltfComponent->getPrimitiveData().Features;
 }
 
 const TArray<FCesiumFeatureIdSet>&
