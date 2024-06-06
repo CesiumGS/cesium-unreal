@@ -1939,7 +1939,7 @@ static void loadInstancingData(
               quatView[i].value[0],
               quatView[i].value[1],
               quatView[i].value[2]);
-          instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
+          instanceTransforms[i] = instanceTransforms[i] * glm::mat4_cast(quat);
         }
       } else if constexpr (is_int_quat_v<ValueType>) {
         for (int64_t i = 0; i < count; ++i) {
@@ -1948,7 +1948,7 @@ static void loadInstancingData(
             val[j] = GltfNormalized(quatView[i].value[j]);
           }
           glm::dquat quat(val[3], val[0], val[1], val[2]);
-          instanceTransforms[i] = instanceTransforms[i] * glm::toMat4(quat);
+          instanceTransforms[i] = instanceTransforms[i] * glm::mat4_cast(quat);
         }
       }
     });

@@ -10,7 +10,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
   // Structure to hold one-time initialization

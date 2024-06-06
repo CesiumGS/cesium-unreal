@@ -26,119 +26,52 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        string libPrefix;
-        string libPostfix;
         string platform;
+        string libSearchPattern;
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            platform = "Windows-x64";
-            libPostfix = ".lib";
-            libPrefix = "";
+            platform = "Windows-AMD64-";
+            libSearchPattern = "*.lib";
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            platform = "Darwin-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "Darwin-AMD64-";
+            libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            platform = "Android-xaarch64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "Android-ARM64-";
+            libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            platform = "Linux-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "Linux-AMD64-";
+            libSearchPattern = "lib*.a";
         }
         else if(Target.Platform == UnrealTargetPlatform.IOS)
         {
-            platform = "iOS-xarm64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "iOS-ARM64-";
+            libSearchPattern = "lib*.a";
         }
-        else {
-            platform = "Unknown";
-            libPostfix = ".Unknown";
-            libPrefix = "Unknown";
+        else
+        {
+            throw new InvalidOperationException("Cesium for Unreal does not support this platform.");
         }
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
 
-        string releasePostfix = "";
-        string debugPostfix = "d";
-
-        bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
-        string postfix = preferDebug ? debugPostfix : releasePostfix;
-
-        string[] libs = new string[]
+        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
         {
-            "async++",
-            "Cesium3DTiles",
-            "Cesium3DTilesContent",
-            "Cesium3DTilesReader",
-            "Cesium3DTilesSelection",
-            "CesiumAsync",
-            "CesiumIonClient",
-            "CesiumGeometry",
-            "CesiumGeospatial",
-            "CesiumGltfReader",
-            "CesiumGltfContent",
-            "CesiumGltf",
-            "CesiumJsonReader",
-            "CesiumRasterOverlays",
-            "CesiumQuantizedMeshTerrain",
-            "CesiumUtility",
-            "csprng",
-            "draco",
-            "ktx",
-            //"MikkTSpace",
-            "meshoptimizer",
-            "modp_b64",
-            "s2geometry",
-            "spdlog",
-            "sqlite3",
-            "tinyxml2",
-            "turbojpeg",
-            "uriparser",
-            "webpdecoder",
-        };
-
-        // Use our own copy of MikkTSpace on Android.
-        if (Target.Platform == UnrealTargetPlatform.Android || Target.Platform == UnrealTargetPlatform.IOS)
-        {
-            libs = libs.Concat(new string[] { "MikkTSpace" }).ToArray();
-            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
-        }
-
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            libs = libs.Concat(new string[] { "tidy_static", "zlibstatic" }).ToArray();
-        }
-        else
-        {
-            libs = libs.Concat(new string[] { "tidy", "z" }).ToArray();
-        }
-
-        if (preferDebug)
-        {
-            // We prefer Debug, but might still use Release if that's all that's available.
-            foreach (string lib in libs)
+            string libPathDebug = libPath + "Debug";
+            if (Directory.Exists(libPathDebug))
             {
-                string debugPath = Path.Combine(libPath, libPrefix + lib + debugPostfix + libPostfix);
-                if (!File.Exists(debugPath))
-                {
-                    Console.WriteLine("Using release build of cesium-native because a debug build is not available.");
-                    preferDebug = false;
-                    postfix = releasePostfix;
-                    break;
-                }
+                libPath = libPathDebug;
             }
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
+        string[] allLibs = Directory.GetFiles(libPath, "*");
+
+        PublicAdditionalLibraries.AddRange(allLibs);
 
         PublicDependencyModuleNames.AddRange(
             new string[]

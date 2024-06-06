@@ -9,7 +9,7 @@
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:

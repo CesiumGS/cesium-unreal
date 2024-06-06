@@ -37,26 +37,18 @@ set(PRIVATE_CESIUM_SQLITE ON)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
-set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CESIUM_ARCHITECTURE})
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-$<IF:$<CONFIG:Debug>,Debug,Release>)
 
 # Always define this, since Unreal does in debug anyway
 # We don't want any mismatches, especially with class member ordering
 add_compile_definitions(NDEBUG)
-
-set(CESIUM_DEBUG_POSTFIX "d")
-set(CESIUM_RELEASE_POSTFIX "")
-
-set(CMAKE_DEBUG_POSTFIX ${CESIUM_DEBUG_POSTFIX})
-set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
-set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
-set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 
 # On Mac and Linux, Unreal uses -fvisibility-ms-compat.
 # On Android, it uses -fvisibility=hidden
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-ms-compat -fvisibility-inlines-hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidde\n -fvisibility-inlines-hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -93,10 +85,14 @@ if (CESIUM_USE_UNREAL_TRACING)
   list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 endif()
 
+if(WIN32)
+    set(VCPKG_TRIPLET "x64-windows-unreal")
+endif()
+
 add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
+#install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
