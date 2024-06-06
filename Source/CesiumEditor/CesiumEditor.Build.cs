@@ -69,7 +69,7 @@ public class CesiumEditor : ModuleRules
             }
         }
 
-        string[] allLibs = Directory.GetFiles(libPath, "*");
+        string[] allLibs = Directory.GetFiles(libPath, libSearchPattern);
 
         PublicAdditionalLibraries.AddRange(allLibs);
 

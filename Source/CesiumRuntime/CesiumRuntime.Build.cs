@@ -69,7 +69,7 @@ public class CesiumRuntime : ModuleRules
             }
         }
 
-        string[] allLibs = Directory.GetFiles(libPath, "*");
+        string[] allLibs = Directory.GetFiles(libPath, libSearchPattern);
 
         PublicAdditionalLibraries.AddRange(allLibs);
 
