@@ -40,7 +40,7 @@ public class CesiumEditor : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            platform = "Android-ARM64-";
+            platform = "Android-aarch64-";
             libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
