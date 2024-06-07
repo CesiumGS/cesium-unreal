@@ -47,9 +47,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /.ezvcpkg
-          key: vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
-          save-always: true
+          key: vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
           restore-keys: |
+            vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
             vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
             vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
             vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}
