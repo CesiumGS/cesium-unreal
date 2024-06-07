@@ -48,7 +48,7 @@ add_compile_definitions(NDEBUG)
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-ms-compat -fvisibility-inlines-hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidde\n -fvisibility-inlines-hidden")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -84,6 +84,10 @@ if (CESIUM_USE_UNREAL_TRACING)
   # This allows us to trace Unreal, Cesium for Unreal, and Cesium Native all in Unreal Insights.
   list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 endif()
+
+# vcpkg setup
+set(ENV{VCPKG_OVERLAY_PORTS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays")
+set(ENV{VCPKG_OVERLAY_TRIPLETS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/triplets")
 
 if(WIN32)
     set(VCPKG_TRIPLET "x64-windows-unreal")
