@@ -58,16 +58,20 @@ public class CesiumRuntime : ModuleRules
             throw new InvalidOperationException("Cesium for Unreal does not support this platform.");
         }
 
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string libPathBase = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string libPathDebug = libPathBase + "Debug";
+        string libPathRelease = libPathBase + "Release";
 
+        bool useDebug = false;
         if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
         {
-            string libPathDebug = libPath + "Debug";
             if (Directory.Exists(libPathDebug))
             {
-                libPath = libPathDebug;
+                useDebug = true;
             }
         }
+
+        string libPath = useDebug ? libPathDebug : libPathRelease;
 
         string[] allLibs = Directory.GetFiles(libPath, libSearchPattern);
 
