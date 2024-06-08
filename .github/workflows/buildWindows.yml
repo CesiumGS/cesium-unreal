@@ -73,13 +73,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /.ezvcpkg
-          key: vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
+          key: vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
           restore-keys: |
-            vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-            vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
-            vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
-            vcpkg-${{ inputs.runner-label }}-${{ inputs.unreal-engine-version }}
-            vcpkg-${{ inputs.runner-label }}
+            vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
+            vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
+            vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
+            vcpkg-windows-${{ inputs.unreal-engine-version }}
+            vcpkg-windows-
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
