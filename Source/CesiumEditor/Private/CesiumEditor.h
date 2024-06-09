@@ -77,6 +77,12 @@ public:
   static AActor* GetCurrentLevelDynamicPawn();
 
   /**
+   * Gets the first GlobePawn in the current level if there is one, or
+   * nullptr if there is not.
+   */
+  static AActor* GetCurrentLevelGlobePawn();
+
+  /**
    * Spawns a new actor with the _cesiumSunSkyBlueprintClass
    * in the current level of the edited world.
    */
@@ -87,6 +93,12 @@ public:
    * in the current level of the edited world.
    */
   static AActor* SpawnDynamicPawn();
+
+  /**
+   * Spawns a new actor with the _globePawnBlueprintClass
+   * in the current level of the edited world.
+   */
+  static AActor* SpawnGlobePawn();
 
   /**
    * Spawns a new Cesium3DTileset with default values in the current level of
@@ -134,4 +146,10 @@ private:
    * Used for spawning the DynamicPawn.
    */
   static UClass* GetDynamicPawnBlueprintClass();
+
+  /**
+   * Gets the class of the "Globe Pawn" blueprint, loading it if necessary.
+   * Used for spawning the DynamicPawn.
+   */
+  static UClass* GetGlobePawnBlueprintClass();
 };
