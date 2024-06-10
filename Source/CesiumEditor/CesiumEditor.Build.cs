@@ -45,7 +45,7 @@ public class CesiumEditor : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            platform = "Linux-AMD64-";
+            platform = "Linux-x86_64-";
             libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.IOS)
