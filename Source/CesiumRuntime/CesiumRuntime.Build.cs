@@ -97,12 +97,16 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        // Use UE's MikkTSpace on non-Android
-        if (Target.Platform != UnrealTargetPlatform.Android)
+        // Use UE's MikkTSpace on most platforms, except Android and iOS.
+        // On those platforms, UE's isn't available, so we use our own.
+        if (Target.Platform != UnrealTargetPlatform.Android && Target.Platform != UnrealTargetPlatform.IOS)
         {
             PrivateDependencyModuleNames.Add("MikkTSpace");
         }
-
+        else
+        {
+            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
+        }
 
         PublicDefinitions.AddRange(
             new string[]
