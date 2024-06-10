@@ -89,11 +89,22 @@ jobs:
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-windows
+        if: ${{ inputs.unreal-engine-version != '5.4.0' }}
         with:
           unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Install Unreal Engine VHDX
+        if: ${{ inputs.unreal-engine-version == '5.4.0' }}
+        env:
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          mkdir -p "D:/Program Files/Epic Games"
+          aws s3 cp "s3://cesium-unreal-engine/5.4.0/UnrealEngine541.vhdx" "D:/Program Files/Epic Games/UnrealEngine541.vhdx" --no-progress
+          Mount-VHD -Path "D:/Program Files/Epic Games/UnrealEngine541.vhdx" -NoDriveLetter -Passthru | Get-Disk | Get-Partition | where { ($_ | Get-Volume) -ne $Null } | Add-PartitionAccessPath -AccessPath "D:\Program Files\Epic Games"
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
       - name: Build cesium-native
