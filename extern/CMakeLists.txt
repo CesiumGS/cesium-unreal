@@ -91,6 +91,14 @@ set(ENV{VCPKG_OVERLAY_TRIPLETS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/triple
 
 if(WIN32)
     set(VCPKG_TRIPLET "x64-windows-unreal")
+elseif(CMAKE_HOST_APPLE)
+    if (CMAKE_APPLE_SILICON_PROCESSOR STREQUAL "arm64")
+        set(VCPKG_TRIPLET "arm64-osx-unreal")
+    else()
+        set(VCPKG_TRIPLET "x64-osx-unreal")
+    endif()
+elseif(CMAKE_HOST_LINUX)
+    set(VCPKG_TRIPLET "x64-linux-unreal")
 endif()
 
 add_subdirectory(cesium-native)
