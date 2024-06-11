@@ -75,18 +75,17 @@ jobs:
         run: |
           mkdir -p extern/build
           cd extern/build
-          INSTALL_LIBDIR=`cmake .. -LA | grep CMAKE_INSTALL_LIBDIR`
-          INSTALL_LIBDIR=${INSTALL_LIBDIR##CMAKE_INSTALL_LIBDIR:PATH=}
+          export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64
           cmake --build . -j4 --target install
-          mv $INSTALL_LIBDIR ${INSTALL_LIBDIR}-silicon
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64
           cmake --build . -j4 --target install
-          for f in ${INSTALL_LIBDIR}/*.a
+          for f in ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/*.a
           do
-            lipo -create -output $f ${INSTALL_LIBDIR}-silicon/$(basename -- $f) $f
+            lipo -create -output $f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release/$(basename -- $f) ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release/$(basename -- $f)
           done
-          rm -r -f ${INSTALL_LIBDIR}-silicon
+          rm -r -f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release
+          rm -r -f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release
           cd ../..
           rm -rf extern
       - name: Customize BuildConfiguration.xml

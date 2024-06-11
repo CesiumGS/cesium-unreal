@@ -35,7 +35,7 @@ public class CesiumRuntime : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            platform = "Darwin-AMD64-";
+            platform = "Darwin-universal-";
             libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
