@@ -74,14 +74,6 @@ jobs:
           cmake --build build --config Release --target install -j8
           cd ..
           rm -rf extern
-      - name: Hackily rename libssl.a and libcrypto.a
-        run: |
-          # UnrealBuildTool has hard-coded logic to wrap these two libraries in --whole-archive
-          # which leads to linker errors. So rename these files to avoid this logic.
-          # Most likely this will just lead to linker errors later (at game package time), but
-          # let's try it and see.
-          mv $GITHUB_WORKSPACE/Source/ThirdParty/lib/Linux-x86_64-Release/libssl.a $GITHUB_WORKSPACE/Source/ThirdParty/lib/Linux-x86_64-Release/libcesium-ssl.a
-          mv $GITHUB_WORKSPACE/Source/ThirdParty/lib/Linux-x86_64-Release/libcrypto.a $GITHUB_WORKSPACE/Source/ThirdParty/lib/Linux-x86_64-Release/libcesium-crypto.a
       - name: Make more swap space available
         run: |
           sudo swapoff -a
