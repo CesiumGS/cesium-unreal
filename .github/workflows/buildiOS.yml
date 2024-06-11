@@ -45,6 +45,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Cache vcpkg artifacts
+        uses: actions/cache@v4
+        with:
+          path: /.ezvcpkg
+          key: vcpkg-ios-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
+          restore-keys: |
+            vcpkg-ios-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
+            vcpkg-ios-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
+            vcpkg-ios-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
+            vcpkg-ios-${{ inputs.unreal-engine-version }}
+            vcpkg-ios-
       - name: Set environment variables
         run: |
           export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
