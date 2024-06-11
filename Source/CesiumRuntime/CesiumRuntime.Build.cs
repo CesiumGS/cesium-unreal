@@ -75,6 +75,10 @@ public class CesiumRuntime : ModuleRules
 
         string[] allLibs = Directory.GetFiles(libPath, libSearchPattern);
 
+        // Remove libssl and libcrypto because these come from Unreal Engine itself
+        // TODO: Exclude these from the cesium-native side instead of excluding them here.
+        allLibs = allLibs.Where(l => !l.Contains("libssl") && !l.Contains("libcrypto")).ToArray();
+
         PublicAdditionalLibraries.AddRange(allLibs);
 
         PublicDependencyModuleNames.AddRange(
