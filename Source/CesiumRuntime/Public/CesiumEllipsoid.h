@@ -96,9 +96,8 @@ public:
    * Returns a new {@link CesiumGeospatial::LocalHorizontalCoordinateSystem}
    * with the given scale, center, and ellipsoid.
    */
-  CesiumGeospatial::LocalHorizontalCoordinateSystem CreateCoordinateSystem(
-      const FVector& Center,
-      double Scale);
+  CesiumGeospatial::LocalHorizontalCoordinateSystem
+  CreateCoordinateSystem(const FVector& Center, double Scale);
 
   /**
    * Returns the underlying {@link CesiumGeospatial::Ellipsoid}

@@ -819,8 +819,8 @@ FVector ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
 
 FMatrix
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const FVector& ecef) const {
-  return this->GetEllipsoid()
-      ->EastNorthUpToEllipsoidCenteredEllipsoidFixed(ecef);
+  return this->GetEllipsoid()->EastNorthUpToEllipsoidCenteredEllipsoidFixed(
+      ecef);
 }
 
 ACesiumGeoreference::ACesiumGeoreference() : AActor() {

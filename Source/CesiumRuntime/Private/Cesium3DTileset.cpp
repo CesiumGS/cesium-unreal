@@ -1091,8 +1091,6 @@ void ACesium3DTileset::LoadTileset() {
           ? this->BoundingVolumePoolComponent->getPool()
           : nullptr};
 
-  externals.pEllipsoid = pEllipsoid;
-
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   this->LoadProgress = 0;

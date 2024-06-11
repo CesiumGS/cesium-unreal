@@ -5,8 +5,8 @@
 #include "CesiumRuntime.h"
 #include "VecMath.h"
 
-#include "UObject/ConstructorHelpers.h"
 #include "MathUtil.h"
+#include "UObject/ConstructorHelpers.h"
 
 #include <CesiumGeospatial/Ellipsoid.h>
 
