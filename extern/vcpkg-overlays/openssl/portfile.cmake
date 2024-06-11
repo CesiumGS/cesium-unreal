@@ -41,13 +41,21 @@ elseif (VCPKG_TARGET_IS_WINDOWS)
   set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/Win64/VS2015/Release")
 elseif (VCPKG_TARGET_IS_LINUX)
   if (VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
-    set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/Unix/x86_64-unknown-linux-gnu")
-    set(OPENSSL_INCLUDE_PATH "${OPENSSL_ROOT_DIR}/include/Unix/x86_64-unknown-linux-gnu")
+    set(OPENSSL_PLATFORM "x86_64-unknown-linux-gnu")
   elseif (VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
-    set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/Unix/aarch64-unknown-linux-gnueabi")
-    set(OPENSSL_INCLUDE_PATH "${OPENSSL_ROOT_DIR}/include/Unix/aarch64-unknown-linux-gnueabi")
+    set(OPENSSL_PLATFORM "aarch64-unknown-linux-gnueabi")
   else()
     message(FATAL_ERROR "Unknown Unreal / OpenSSL paths for Linux platform with architecture ${VCPKG_TARGET_ARCHITECTURE}.")
+  endif()
+
+  set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/Unix/${OPENSSL_PLATFORM}")
+  set(OPENSSL_INCLUDE_PATH "${OPENSSL_ROOT_DIR}/include/Unix")
+
+  # UE 5.2 has a platform subdirectory under the OPENSSL_INCLUDE_PATH.
+  # UE 5.3 and 5.4 do not. Rather than check the UE version, we check for the existence of the
+  # openssl directory.
+  if (NOT EXISTS "${OPENSSL_INCLUDE_PATH}/openssl")
+    set(OPENSSL_INCLUDE_PATH "${OPENSSL_INCLUDE_PATH}/${OPENSSL_PLATFORM}")
   endif()
 else()
   message(FATAL_ERROR "Unknown Unreal / OpenSSL paths for VCPKG_CMAKE_SYSTEM_NAME ${VCPKG_CMAKE_SYSTEM_NAME}.")
