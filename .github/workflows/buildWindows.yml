@@ -110,6 +110,7 @@ jobs:
       - name: Build cesium-native
         run: |
           cd extern
+          $env:UNREAL_ENGINE_ROOT="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}"
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
           cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8

@@ -63,16 +63,6 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
-      - name: Build cesium-native
-        run: |
-          # CMake gets confused by the Windows backslashes
-          $env:ANDROID_NDK_ROOT=$env:ANDROID_NDK_ROOT.replace('\', '/')
-          $env:ANDROID_NDK_HOME=$env:ANDROID_NDK_ROOT
-          cd extern
-          cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-android --config Release --target install -j8
-          cd ..
-          rm -r -fo extern
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-windows
         with:
@@ -80,6 +70,17 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Build cesium-native
+        run: |
+          # CMake gets confused by the Windows backslashes
+          $env:ANDROID_NDK_ROOT=$env:ANDROID_NDK_ROOT.replace('\', '/')
+          $env:ANDROID_NDK_HOME=$env:ANDROID_NDK_ROOT
+          $env:UNREAL_ENGINE_ROOT="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}"
+          cd extern
+          cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-android --config Release --target install -j8
+          cd ..
+          rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
