@@ -6,6 +6,19 @@ project(
     LANGUAGES CXX C
 )
 
+if (DEFINED ENV{UNREAL_ENGINE_ROOT} AND NOT UNREAL_ENGINE_ROOT)
+  set(UNREAL_ENGINE_ROOT "$ENV{UNREAL_ENGINE_ROOT}")
+endif()
+
+if (NOT UNREAL_ENGINE_ROOT)
+  message(FATAL_ERROR "Please specify the root of your Unreal Engine installation, either by setting the UNREAL_ENGINE_ROOT environment variable or with -DUNREAL_ENGINE_ROOT=path on the cmake command-line.")
+endif()
+
+message(STATUS "Using Unreal Engine installation at: ${UNREAL_ENGINE_ROOT}")
+
+# Set the UE environment variable so it's inherited by vcpkg builds.
+set(ENV{UNREAL_ENGINE_ROOT} "${UNREAL_ENGINE_ROOT}")
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set(CESIUM_ARCHITECTURE "aarch64")
     set(HTTPLIB_USE_OPENSSL_IF_AVAILABLE OFF)
