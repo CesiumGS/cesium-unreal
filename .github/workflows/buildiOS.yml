@@ -70,7 +70,7 @@ jobs:
           mkdir -p extern/build-ios
           cd extern
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
-          cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=15 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake -B build-ios -S . -GXcode -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
           cmake --build build-ios -j4 --target install --config Release
           cd ..
           rm -rf extern
