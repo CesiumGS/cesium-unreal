@@ -45,6 +45,8 @@ jobs:
           submodules: recursive
       - name: Configure vcpkg caching
         uses: ./.github/actions/vcpkg-cache
+        with:
+          id: ${{ inputs.upload-package-base-name }}
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME
