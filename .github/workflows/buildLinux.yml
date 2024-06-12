@@ -47,17 +47,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Cache vcpkg artifacts
-        uses: actions/cache@v4
-        with:
-          path: /.ezvcpkg
-          key: vcpkg-linux-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-          restore-keys: |
-            vcpkg-linux-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-            vcpkg-linux-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
-            vcpkg-linux-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
-            vcpkg-linux-${{ inputs.unreal-engine-version }}
-            vcpkg-linux-
+      - name: Configure vcpkg caching
+        uses: ./.github/actions/vcpkg-cache
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:

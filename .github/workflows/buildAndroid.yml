@@ -43,17 +43,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Cache vcpkg artifacts
-        uses: actions/cache@v4
-        with:
-          path: /.ezvcpkg
-          key: vcpkg-android-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-          restore-keys: |
-            vcpkg-android-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-            vcpkg-android-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
-            vcpkg-android-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
-            vcpkg-android-${{ inputs.unreal-engine-version }}
-            vcpkg-android-
+      - name: Configure vcpkg caching
+        uses: ./.github/actions/vcpkg-cache
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME

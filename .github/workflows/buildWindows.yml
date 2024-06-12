@@ -69,17 +69,8 @@ jobs:
         if: ${{ inputs.extra-choco-packages }}
         run: |
           choco install -y ${{ inputs.extra-choco-packages }}
-      - name: Cache vcpkg artifacts
-        uses: actions/cache@v4
-        with:
-          path: /.ezvcpkg
-          key: vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-          restore-keys: |
-            vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}-1
-            vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}-${{ hashFiles('extern/CMakeLists.txt') }}
-            vcpkg-windows-${{ inputs.unreal-engine-version }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt') }}
-            vcpkg-windows-${{ inputs.unreal-engine-version }}
-            vcpkg-windows-
+      - name: Configure vcpkg caching
+        uses: ./.github/actions/vcpkg-cache
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$env:GITHUB_REF_NAME

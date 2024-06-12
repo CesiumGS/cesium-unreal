@@ -1,0 +1,12 @@
+name: Configure vcpkg caching
+runs:
+  using: composite
+  steps:
+    - name: Cache vcpkg artifacts
+      uses: actions/cache@v4
+      with:
+        path: /.ezvcpkg
+        key: vcpkg-${{ github.job }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json') }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt', 'extern/CMakeLists.txt') }}
+        restore-keys: |
+          vcpkg-${{ github.job }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json') }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt', 'extern/CMakeLists.txt') }}
+          vcpkg-${{ github.job }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json') }}-
