@@ -9,7 +9,7 @@
 
 set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
 
-if (NOT DEFINED ENV{UNREAL_ENGINE_ROOT}
+if (NOT DEFINED ENV{UNREAL_ENGINE_ROOT})
   message(FATAL_ERROR "The environment variable `UNREAL_ENGINE_ROOT` must be defined.")
 endif()
 
