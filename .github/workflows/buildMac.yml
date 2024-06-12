@@ -69,9 +69,9 @@ jobs:
           mkdir -p extern/build
           cd extern/build
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_PROCESSOR=arm64
           cmake --build . -j4 --target install
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_PROCESSOR=x86_64
           cmake --build . -j4 --target install
           for f in ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/*.a
           do
