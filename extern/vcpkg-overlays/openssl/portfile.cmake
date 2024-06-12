@@ -1,4 +1,17 @@
+# This port uses OpenSSL from Unreal Engine, instead of the normal vcpkg version.
+# This is important for avoiding linker errors (multiply defined symbols) when
+# building and packaging Unreal Engine games that include cesium-native.
+#
+# The environment variable `UNREAL_ENGINE_ROOT` must be set to the root of the
+# Unreal Engine installation to use. It should use forward slashes even on Windows
+# and it should _not_ end with a slash.
+# For example: `C:/Program Files/Epic Games/UE_5.2`
+
 set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
+
+if (NOT DEFINED ENV{UNREAL_ENGINE_ROOT}
+  message(FATAL_ERROR "The environment variable `UNREAL_ENGINE_ROOT` must be defined.")
+endif()
 
 message(STATUS "Using Unreal Engine installation at $ENV{UNREAL_ENGINE_ROOT}")
 
@@ -33,9 +46,11 @@ if (VCPKG_TARGET_IS_ANDROID)
     message(FATAL_ERROR "Unknown Unreal / OpenSSL paths for Android platform with architecture ${VCPKG_TARGET_ARCHITECTURE}.")
   endif()
 elseif (VCPKG_TARGET_IS_IOS)
-  message(FATAL_ERROR "TODO: Unreal / OpenSSL for iOS is not supported yet.")
+  set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/IOS")
+  set(OPENSSL_INCLUDE_PATH "${OPENSSL_ROOT_DIR}/include/IOS")
 elseif (VCPKG_TARGET_IS_OSX)
-  message(FATAL_ERROR "TODO: Unreal / OpenSSL for macOS is not supported yet.")
+  set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/Mac")
+  set(OPENSSL_INCLUDE_PATH "${OPENSSL_ROOT_DIR}/include/Mac")
 elseif (VCPKG_TARGET_IS_WINDOWS)
   set(OPENSSL_INCLUDE_PATH "${OPENSSL_ROOT_DIR}/include/Win64/VS2015")
   set(OPENSSL_LIB_PATH "${OPENSSL_ROOT_DIR}/lib/Win64/VS2015/Release")
