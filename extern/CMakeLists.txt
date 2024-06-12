@@ -135,11 +135,6 @@ if (ANDROID OR IOS)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mikktspace
     )
-
-    if (IOS)
-      # ktx tags itself as a FRAMEWORK on iOS, which causes linker errors. Undo that.
-      set_target_properties(ktx PROPERTIES FRAMEWORK FALSE)
-    endif()
 endif()
 
 option(BUILD_SHARED_LIB OFF)
