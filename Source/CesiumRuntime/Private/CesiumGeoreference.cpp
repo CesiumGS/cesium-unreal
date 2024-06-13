@@ -2,6 +2,7 @@
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTileset.h"
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
@@ -18,6 +19,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTransforms.h"
+#include "Kismet/GameplayStatics.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "Math/Matrix.h"
 #include "Math/RotationTranslationMatrix.h"
@@ -250,6 +252,11 @@ APlayerCameraManager* ACesiumGeoreference::GetSubLevelCamera() const {
 
 void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
   this->SubLevelCamera_DEPRECATED = NewValue;
+}
+
+void ACesiumGeoreference::SetEllipsoid(UCesiumEllipsoid* NewEllipsoid) {
+  this->Ellipsoid = NewEllipsoid;
+  this->ForceReloadTilesets();
 }
 
 #if WITH_EDITOR
@@ -680,6 +687,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
   CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, OriginLatitude);
   CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, OriginHeight);
   CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, Scale);
+  CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, Ellipsoid);
 }
 
 namespace {
@@ -878,6 +886,39 @@ void ACesiumGeoreference::UpdateGeoreference() {
       *this->GetFullName());
 
   OnGeoreferenceUpdated.Broadcast();
+}
+
+void ACesiumGeoreference::ForceReloadTilesets() {
+  const UWorld* World = GetWorld();
+  if (!IsValid(World)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Couldn't reload tileset because GetWorld() returned invalid ptr"));
+    return;
+  }
+
+  // Find all tilesets
+  TArray<AActor*> TilesetActors;
+  UGameplayStatics::GetAllActorsOfClass(
+      World,
+      ACesium3DTileset::StaticClass(),
+      TilesetActors);
+
+  for (AActor* Actor : TilesetActors) {
+    ACesium3DTileset* Tileset = Cast<ACesium3DTileset>(Actor);
+    if (!IsValid(Tileset)) {
+      continue;
+    }
+
+    // We don't need to resolve the georeference if the property isn't already
+    // set, since LoadTileset won't run without one, and if the tileset hasn't
+    // run LoadTileset yet we don't need to reload it
+    if (Tileset->GetGeoreference() == this) {
+      Tileset->RefreshTileset();
+    }
+  }
 }
 
 GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {

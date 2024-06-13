@@ -85,16 +85,6 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
-  /**
-   * Returns a pointer to the UCesiumEllipsoid currently being used by this
-   * georeference.
-   *
-   * If no ellipsoid has been created yet, this method will attempt to create
-   * one based on the value of {@link EllipsoidPath}.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  UCesiumEllipsoid* GetEllipsoid() const;
-
 #pragma region Properties
 
 private:
@@ -107,6 +97,8 @@ private:
       Category = "Cesium",
       EditAnywhere,
       BlueprintReadWrite,
+      BlueprintGetter = GetEllipsoid,
+      BlueprintSetter = SetEllipsoid,
       meta = (AllowPrivateAccess))
   UCesiumEllipsoid* Ellipsoid = nullptr;
 
@@ -403,6 +395,22 @@ public:
   UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
     return this->SubLevelSwitcher;
   }
+
+  /**
+   * Returns a pointer to the UCesiumEllipsoid currently being used by this
+   * georeference.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintGetter, Category = "Cesium")
+  UCesiumEllipsoid* GetEllipsoid() const;
+
+  /**
+   * Sets the UCesiumEllipsoid used by this georeference.
+   *
+   * Calling this will cause all tilesets under this georeference to be
+   * reloaded.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid);
 
 #if WITH_EDITOR
   /**
@@ -819,6 +827,11 @@ private:
    * Recomputes all world georeference transforms.
    */
   void UpdateGeoreference();
+
+  /**
+   * Forces all the tilesets under this georeference to be completely reloaded.
+   */
+  void ForceReloadTilesets();
 
   /**
    * A tag that is assigned to Georeferences when they are created
