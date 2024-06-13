@@ -79,7 +79,15 @@ jobs:
           mkdir -p ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release
           for f in ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/*.a
           do
-            lipo -create -output ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release/$(basename -- $f) ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release/$(basename -- $f) ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/$(basename -- $f)
+            arm64f=${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release/$(basename -- $f)
+            x64f=${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/$(basename -- $f)
+            universalf=${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release/$(basename -- $f)
+            if diff $arm64f $x64f; then
+              # arm64 and x64 files are identical, so just copy one to the universal directory.
+              cp $arm64f $universalf
+            else
+              lipo -create -output $universalf $arm64f $x64f
+            fi
           done
           rm -r -f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release
           rm -r -f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release
