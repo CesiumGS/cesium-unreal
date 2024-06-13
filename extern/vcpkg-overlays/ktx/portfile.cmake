@@ -12,6 +12,7 @@ vcpkg_from_github(
         0005-no-vendored-libs.patch
         CESIUM-0001-do-not-define-_DEBUG.patch
         CESIUM-0002-not-a-framework.patch
+        CESIUM-0003-ios-normal-header-path.patch
 )
 file(REMOVE "${SOURCE_PATH}/other_include/zstd_errors.h")
 
