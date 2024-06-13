@@ -9,7 +9,7 @@ runs:
     - name: Cache vcpkg artifacts
       uses: actions/cache@v4
       with:
-        path: /.ezvcpkg
+        path: ~/.ezvcpkg
         key: vcpkg-${{ inputs.id }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json') }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt', 'extern/CMakeLists.txt') }}
         restore-keys: |
           vcpkg-${{ inputs.id }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json') }}-
