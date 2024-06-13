@@ -79,7 +79,7 @@ jobs:
           mkdir -p ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release
           for f in ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/*.a
           do
-            lipo -create -output $f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release/$(basename -- $f) ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release/$(basename -- $f)
+            lipo -create -output ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release/$(basename -- $f) ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release/$(basename -- $f) ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/$(basename -- $f)
           done
           rm -r -f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release
           rm -r -f ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release
