@@ -8,3 +8,4 @@ set(VCPKG_OSX_DEPLOYMENT_TARGET 10.15)
 # From Unreal Build Tool:
 # https://github.com/EpicGames/UnrealEngine/blob/5.2.1-release/Engine/Source/Programs/UnrealBuildTool/Platform/Mac/MacToolChain.cs
 set(VCPKG_CXX_FLAGS "-fvisibility-ms-compat -fvisibility-inlines-hidden")
+set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")
