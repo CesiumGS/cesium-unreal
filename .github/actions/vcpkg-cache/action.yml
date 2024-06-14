@@ -12,4 +12,4 @@ runs:
         path: ${{ runner.os == 'Windows' && '/.ezvcpkg' || '~/.ezvcpkg' }}
         key: vcpkg-${{ inputs.id }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json', 'extern/vcpkg-overlays/triplets/**/*', 'extern/*toolchain.cmake') }}-${{ hashFiles('extern/cesium-native/CMakeLists.txt', 'extern/CMakeLists.txt') }}
         restore-keys: |
-          vcpkg-${{ inputs.id }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json') }}-
+          vcpkg-${{ inputs.id }}-${{ hashFiles('extern/vcpkg-overlays/**/vcpkg.json', 'extern/vcpkg-overlays/triplets/**/*', 'extern/*toolchain.cmake') }}-
