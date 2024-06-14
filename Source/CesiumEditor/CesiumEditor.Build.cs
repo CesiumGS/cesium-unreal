@@ -11,8 +11,6 @@ public class CesiumEditor : ModuleRules
 {
     public CesiumEditor(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
         PublicIncludePaths.AddRange(
             new string[] {
                 // ... add public include paths required here ...
@@ -125,8 +123,8 @@ public class CesiumEditor : ModuleRules
             }
         );
 
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
     }
 }

@@ -11,9 +11,6 @@ public class CesiumRuntime : ModuleRules
 {
     public CesiumRuntime(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-        ShadowVariableWarningLevel = WarningLevel.Off;
-
         PublicIncludePaths.AddRange(
             new string[] {
                 Path.Combine(ModuleDirectory, "../ThirdParty/include")
@@ -148,8 +145,9 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
+        ShadowVariableWarningLevel = WarningLevel.Off;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivatePCHHeaderFile = "Private/PCH.h";
 
 #if UE_5_4_OR_LATER
         CppStandard = CppStandardVersion.Cpp20;
