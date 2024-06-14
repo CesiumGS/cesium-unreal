@@ -14,6 +14,8 @@ using namespace CesiumGeospatial;
 
 FVector UCesiumEllipsoid::GetRadii() { return this->Radii; }
 
+void UCesiumEllipsoid::SetRadii(FVector NewRadii) { this->Radii = NewRadii; }
+
 double UCesiumEllipsoid::GetMaximumRadius() { return this->Radii.X; }
 
 double UCesiumEllipsoid::GetMinimumRadius() { return this->Radii.Z; }

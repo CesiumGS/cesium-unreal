@@ -23,6 +23,14 @@ public:
   FVector GetRadii();
 
   /**
+   * Sets the radii of this ellipsoid in its x-, y-, and z-directions in meters.
+   *
+   * Tilesets using this ellipsoid may have to be refreshed to see the changes
+   * applied.
+   */
+  void SetRadii(FVector NewRadii);
+
+  /**
    * Gets the maximum radius of the ellipsoid in any dimension, in meters.
    */
   UFUNCTION(BlueprintPure, Category = "Cesium|Ellipsoid")

@@ -1,8 +1,8 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "GeoTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
+#include "GeoTransforms.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGeospatial;
