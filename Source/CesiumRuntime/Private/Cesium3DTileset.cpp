@@ -717,8 +717,7 @@ public:
           &(*this->_pActor->_metadataDescription_DEPRECATED);
     }
 
-    const CesiumGeospatial::Ellipsoid& ellipsoid =
-        tileLoadResult.ellipsoid.value_or(CesiumGeospatial::Ellipsoid::WGS84);
+    const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(
