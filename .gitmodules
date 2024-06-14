@@ -7,3 +7,6 @@
 [submodule "extern/tidy-html5"]
 	path = extern/tidy-html5
 	url = https://github.com/htacg/tidy-html5
+[submodule "extern/swl-variant"]
+	path = extern/swl-variant
+	url = https://github.com/groundswellaudio/swl-variant.git

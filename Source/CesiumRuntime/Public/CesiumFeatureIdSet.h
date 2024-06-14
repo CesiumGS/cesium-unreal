@@ -5,6 +5,7 @@
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include <swl/variant.hpp>
 #include "CesiumFeatureIdSet.generated.h"
 
 namespace CesiumGltf {
@@ -33,8 +34,8 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
   GENERATED_USTRUCT_BODY()
 
-  using FeatureIDType = std::variant<
-      std::monostate,
+  using FeatureIDType = swl::variant<
+      swl::monostate,
       FCesiumFeatureIdAttribute,
       FCesiumFeatureIdTexture>;
 

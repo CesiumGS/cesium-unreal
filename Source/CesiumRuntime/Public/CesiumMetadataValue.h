@@ -9,6 +9,7 @@
 #include "UObject/ObjectMacros.h"
 #include <glm/glm.hpp>
 #include <optional>
+#include <swl/variant.hpp>
 
 #include "CesiumMetadataValue.generated.h"
 
@@ -22,8 +23,8 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 private:
 #pragma region ValueType declaration
   template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
-  using ValueType = std::variant<
-      std::monostate,
+  using ValueType = swl::variant<
+      swl::monostate,
       int8_t,
       uint8_t,
       int16_t,
@@ -174,7 +175,7 @@ public:
   /**
    * Constructs an empty metadata value with unknown type.
    */
-  FCesiumMetadataValue() : _value(std::monostate{}), _valueType() {}
+  FCesiumMetadataValue() : _value(swl::monostate{}), _valueType() {}
 
   /**
    * Constructs a metadata value with the given input.
@@ -209,7 +210,7 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue)
-      : _value(std::monostate{}), _valueType() {
+      : _value(swl::monostate{}), _valueType() {
     if (!MaybeValue) {
       return;
     }

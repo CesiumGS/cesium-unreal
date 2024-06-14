@@ -149,11 +149,7 @@ public class CesiumRuntime : ModuleRules
         IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-#if UE_5_4_OR_LATER
         CppStandard = CppStandardVersion.Cpp20;
-#else
-        CppStandard = CppStandardVersion.Cpp17;
-#endif
         bEnableExceptions = true;
     }
 }

@@ -144,3 +144,6 @@ add_subdirectory(tidy-html5)
 
 # Don't build the cesium-native tests by default
 set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+
+add_subdirectory(swl-variant)
+install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/swl-variant/include/" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

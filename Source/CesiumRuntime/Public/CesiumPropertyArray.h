@@ -6,7 +6,7 @@
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "UObject/ObjectMacros.h"
-#include <variant>
+#include <swl/variant.hpp>
 #include "CesiumPropertyArray.generated.h"
 
 /**
@@ -21,7 +21,7 @@ private:
   template <typename T>
   using ArrayPropertyView = CesiumGltf::PropertyArrayView<T>;
 
-  using ArrayType = std::variant<
+  using ArrayType = swl::variant<
       ArrayPropertyView<int8_t>,
       ArrayPropertyView<uint8_t>,
       ArrayPropertyView<int16_t>,
@@ -121,8 +121,8 @@ public:
 private:
   template <typename T, typename... VariantType>
   static bool
-  holdsArrayAlternative(const std::variant<VariantType...>& variant) {
-    return std::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
+  holdsArrayAlternative(const swl::variant<VariantType...>& variant) {
+    return swl::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
   }
 
   ArrayType _value;
