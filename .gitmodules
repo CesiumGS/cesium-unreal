@@ -9,4 +9,4 @@
 	url = https://github.com/htacg/tidy-html5
 [submodule "extern/swl-variant"]
 	path = extern/swl-variant
-	url = https://github.com/groundswellaudio/swl-variant.git
+	url = https://github.com/kring/swl-variant.git
