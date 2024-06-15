@@ -118,7 +118,8 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
                 "TIDY_STATIC",
-                "URI_STATIC_BUILD"
+                "URI_STATIC_BUILD",
+                "SWL_VARIANT_NO_CONSTEXPR_EMPLACE"
             }
         );
 
