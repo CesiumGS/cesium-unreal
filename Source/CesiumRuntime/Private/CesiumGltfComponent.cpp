@@ -311,7 +311,8 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 #endif
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices);
+    const TArray<uint32>& indices,
+    bool forceBuildChaosTriangleMeshes);
 
 static const Material defaultMaterial;
 static const MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
@@ -1131,7 +1132,8 @@ static void loadPrimitive(
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
     const TIndexAccessor& indicesView,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    bool forceBuildChaosTriangleMeshes) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
@@ -1673,16 +1675,19 @@ static void loadPrimitive(
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
+
     if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
       primitiveResult.pCollisionMesh =
           StaticMeshBuildVertices.Num() < TNumericLimits<uint16>::Max()
               ? BuildChaosTriangleMeshes<uint16>(
                     StaticMeshBuildVertices,
-                    indices)
+                    indices,
+                    forceBuildChaosTriangleMeshes)
               : BuildChaosTriangleMeshes<int32>(
                     StaticMeshBuildVertices,
-                    indices);
+                    indices,
+                    forceBuildChaosTriangleMeshes);
     }
   }
 }
@@ -1693,7 +1698,8 @@ static void loadIndexedPrimitive(
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    bool forceBuildChaosTriangleMeshes) {
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
@@ -1709,7 +1715,8 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor,
-        textureResources);
+        textureResources,
+        forceBuildChaosTriangleMeshes);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1722,7 +1729,8 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor,
-        textureResources);
+        textureResources,
+        forceBuildChaosTriangleMeshes);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1735,7 +1743,8 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor,
-        textureResources);
+        textureResources,
+        forceBuildChaosTriangleMeshes);
     primitiveResult.IndexAccessor = indexAccessor;
   } else {
     UE_LOG(
@@ -1750,7 +1759,9 @@ static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    bool forceBuildChaosTriangleMeshes) {
+  
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
@@ -1786,7 +1797,8 @@ static void loadPrimitive(
         *pPositionAccessor,
         positionView,
         syntheticIndexBuffer,
-        textureResources);
+        textureResources,
+        forceBuildChaosTriangleMeshes);
   } else {
     loadIndexedPrimitive(
         result,
@@ -1794,7 +1806,8 @@ static void loadPrimitive(
         options,
         *pPositionAccessor,
         positionView,
-        textureResources);
+        textureResources,
+        forceBuildChaosTriangleMeshes);
   }
   result.PositionAccessor = std::move(positionView);
 }
@@ -1803,7 +1816,9 @@ static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
     const CreateMeshOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    bool forceBuildChaosTriangleMeshes) {
+  
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
@@ -1819,7 +1834,8 @@ static void loadMesh(
         primitiveResult,
         transform,
         primitiveOptions,
-        textureResources);
+        textureResources,
+        forceBuildChaosTriangleMeshes);
 
     // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
@@ -1975,8 +1991,9 @@ static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
-
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    bool forceBuildChaosTriangleMeshes) {
+  
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
   static constexpr std::array<double, 16> identityMatrix = {
@@ -2055,7 +2072,12 @@ static void loadNode(
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
-    loadMesh(result.meshResult, nodeTransform, meshOptions, textureResources);
+    loadMesh(
+        result.meshResult,
+        nodeTransform,
+        meshOptions,
+        textureResources,
+        forceBuildChaosTriangleMeshes);
   }
 
   for (int childNodeId : node.children) {
@@ -2068,7 +2090,8 @@ static void loadNode(
           loadNodeResults,
           nodeTransform,
           childNodeOptions,
-          textureResources);
+          textureResources,
+          forceBuildChaosTriangleMeshes);
     }
   }
 }
@@ -2215,7 +2238,9 @@ static void loadModelAnyThreadPart(
     LoadModelResult& result,
     const glm::dmat4x4& transform,
     const CreateModelOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    bool forceBuildChaosTriangleMeshes) {
+  
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
   Model& model = *options.pModel;
@@ -2282,7 +2307,8 @@ static void loadModelAnyThreadPart(
           result.nodeResults,
           rootTransform,
           nodeOptions,
-          textureResources);
+          textureResources,
+          forceBuildChaosTriangleMeshes);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
@@ -2293,12 +2319,18 @@ static void loadModelAnyThreadPart(
           result.nodeResults,
           rootTransform,
           nodeOptions,
-          textureResources);
+          textureResources,
+          forceBuildChaosTriangleMeshes);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
-    loadNode(result.nodeResults, rootTransform, nodeOptions, textureResources);
+    loadNode(
+        result.nodeResults,
+        rootTransform,
+        nodeOptions,
+        textureResources,
+        forceBuildChaosTriangleMeshes);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (Mesh& mesh : model.meshes) {
@@ -2312,7 +2344,8 @@ static void loadModelAnyThreadPart(
           dummyNodeResult.meshResult,
           rootTransform,
           meshOptions,
-          textureResources);
+          textureResources,
+          forceBuildChaosTriangleMeshes);
     }
   }
 }
@@ -3447,7 +3480,9 @@ static void loadPrimitiveGameThreadPart(
 /*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
-    const CreateModelOptions& Options) {
+    const CreateModelOptions& Options,
+    bool forceBuildChaosTriangleMeshes) {
+  
   std::vector<FCesiumTextureResourceBase*> textureResources;
   textureResources.resize(Options.pModel->images.size(), nullptr);
 
@@ -3456,7 +3491,8 @@ UCesiumGltfComponent::CreateOffGameThread(
       pResult->loadModelResult,
       Transform,
       Options,
-      textureResources);
+      textureResources,
+      forceBuildChaosTriangleMeshes);
 
   return pResult;
 }
@@ -3804,7 +3840,9 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 #endif
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices) {
+    const TArray<uint32>& indices,
+    bool forceBuildChaosTriangleMeshes) {
+  
   int32 vertexCount = vertexData.Num();
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
@@ -3824,12 +3862,17 @@ BuildChaosTriangleMeshes(
     int32 vIndex1 = indices[index0];
     int32 vIndex2 = indices[index0 + 2];
 
-    if (!isTriangleDegenerate(
-            vertices.X(vIndex0),
-            vertices.X(vIndex1),
-            vertices.X(vIndex2))) {
+    if (forceBuildChaosTriangleMeshes) {
       triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
       faceRemap.Add(i);
+    } else {
+      if (!isTriangleDegenerate(
+              vertices.X(vIndex0),
+              vertices.X(vIndex1),
+              vertices.X(vIndex2))) {
+        triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
+        faceRemap.Add(i);
+      }
     }
   }
 

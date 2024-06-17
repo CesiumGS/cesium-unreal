@@ -709,7 +709,10 @@ public:
     }
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(transform, options);
+        UCesiumGltfComponent::CreateOffGameThread(
+            transform,
+            options,
+            this->_pActor->ForceBuildChaosTriangleMeshes);
 
     return asyncSystem.createResolvedFuture(
         Cesium3DTilesSelection::TileLoadResultAndRenderResources{
