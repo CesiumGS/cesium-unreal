@@ -255,8 +255,10 @@ void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
 }
 
 void ACesiumGeoreference::SetEllipsoid(UCesiumEllipsoid* NewEllipsoid) {
+  UCesiumEllipsoid* OldEllipsoid = this->Ellipsoid;
   this->Ellipsoid = NewEllipsoid;
-  this->ForceReloadTilesets();
+  this->OnEllipsoidChanged.Broadcast(OldEllipsoid, NewEllipsoid);
+  this->UpdateGeoreference();
 }
 
 #if WITH_EDITOR
@@ -886,39 +888,6 @@ void ACesiumGeoreference::UpdateGeoreference() {
       *this->GetFullName());
 
   OnGeoreferenceUpdated.Broadcast();
-}
-
-void ACesiumGeoreference::ForceReloadTilesets() {
-  const UWorld* World = GetWorld();
-  if (!IsValid(World)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Couldn't reload tileset because GetWorld() returned invalid ptr"));
-    return;
-  }
-
-  // Find all tilesets
-  TArray<AActor*> TilesetActors;
-  UGameplayStatics::GetAllActorsOfClass(
-      World,
-      ACesium3DTileset::StaticClass(),
-      TilesetActors);
-
-  for (AActor* Actor : TilesetActors) {
-    ACesium3DTileset* Tileset = Cast<ACesium3DTileset>(Actor);
-    if (!IsValid(Tileset)) {
-      continue;
-    }
-
-    // We don't need to resolve the georeference if the property isn't already
-    // set, since LoadTileset won't run without one, and if the tileset hasn't
-    // run LoadTileset yet we don't need to reload it
-    if (Tileset->GetGeoreference() == this) {
-      Tileset->RefreshTileset();
-    }
-  }
 }
 
 GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {

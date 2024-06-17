@@ -149,6 +149,9 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
     this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
         pRoot,
         &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+    this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
+        this,
+        &ACesium3DTileset::_onGeoreferenceEllipsoidChanged);
 
     // Update existing tile positions, if any.
     pRoot->HandleGeoreferenceUpdated();
@@ -598,6 +601,12 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
     this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
         CesiumToUnreal);
   }
+}
+
+void ACesium3DTileset::_onGeoreferenceEllipsoidChanged(
+    UCesiumEllipsoid* OldEllipsoid,
+    UCesiumEllipsoid* NewEllpisoid) {
+  this->RefreshTileset();
 }
 
 // Called when the game starts or when spawned

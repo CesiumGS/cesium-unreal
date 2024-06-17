@@ -6,6 +6,7 @@
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
 #include "GameFramework/Actor.h"
+#include "Delegates/Delegate.h"
 #include "GeoTransforms.h"
 #include "OriginPlacement.h"
 #include "CesiumGeoreference.generated.h"
@@ -19,6 +20,18 @@ class UCesiumSubLevelSwitcherComponent;
  * which is triggered from UpdateGeoreference
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
+
+/**
+ * The event that triggers when a georeference's ellipsoid is changed.
+ * This should be used for performing any necessary coordinate changes.
+ * The parameters are (OldEllipsoid, NewEllipsoid).
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+    FGeoreferenceEllipsoidChanged,
+    UCesiumEllipsoid*,
+    OldEllipsoid,
+    UCesiumEllipsoid*,
+    NewEllipsoid);
 
 /**
  * Controls how global geospatial coordinates are mapped to coordinates in the
@@ -84,6 +97,13 @@ public:
    */
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
+
+  /**
+   * An event that will be called whenever the georeference's ellipsoid has
+   * been modified.
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium")
+  FGeoreferenceEllipsoidChanged OnEllipsoidChanged;
 
 #pragma region Properties
 
@@ -827,11 +847,6 @@ private:
    * Recomputes all world georeference transforms.
    */
   void UpdateGeoreference();
-
-  /**
-   * Forces all the tilesets under this georeference to be completely reloaded.
-   */
-  void ForceReloadTilesets();
 
   /**
    * A tag that is assigned to Georeferences when they are created

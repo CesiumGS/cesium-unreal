@@ -1129,6 +1129,14 @@ public:
 
 private:
   /**
+   * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
+   */
+  UFUNCTION()
+  void _onGeoreferenceEllipsoidChanged(
+      UCesiumEllipsoid* OldEllipsoid,
+      UCesiumEllipsoid* NewEllpisoid);
+
+  /**
    * Writes the values of all properties of this actor into the
    * TilesetOptions, to take them into account during the next
    * traversal.

@@ -225,4 +225,40 @@ void FCesiumGlobeAnchorSpec::Define() {
 
        TestEqual("up", actualEcefUp, surfaceNormal);
      });
+
+  It("gives correct results for different ellipsoids", [this]() {
+    const FVector Position = FVector(-20.0, -10.0, 1000.0);
+
+    // Check with WGS84 ellipsoid (the default)
+    this->pGlobeAnchor->MoveToLongitudeLatitudeHeight(Position);
+
+    FVector wgs84EcefPos =
+        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+            Position);
+
+    TestEqual(
+        "ecef",
+        this->pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+        wgs84EcefPos);
+
+    // Check with unit ellipsoid
+    TObjectPtr<UCesiumEllipsoid> pUnitEllipsoid = NewObject<UCesiumEllipsoid>();
+    pUnitEllipsoid->SetRadii(FVector::One());
+
+    ACesiumGeoreference* pGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->pActor);
+    pGeoreference->SetEllipsoid(pUnitEllipsoid);
+
+    this->pGlobeAnchor->MoveToLongitudeLatitudeHeight(Position);
+
+    FVector unitEcefPos =
+        pUnitEllipsoid
+            ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+                Position);
+
+    TestEqual(
+        "ecef",
+        this->pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+        unitEcefPos);
+  });
 }
