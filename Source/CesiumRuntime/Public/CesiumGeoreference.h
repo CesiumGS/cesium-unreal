@@ -100,7 +100,7 @@ private:
       BlueprintGetter = GetEllipsoid,
       BlueprintSetter = SetEllipsoid,
       meta = (AllowPrivateAccess))
-  UCesiumEllipsoid* Ellipsoid = nullptr;
+  UCesiumEllipsoid* Ellipsoid;
 
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.

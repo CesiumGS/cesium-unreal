@@ -38,7 +38,7 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
     polygons.emplace_back(std::move(polygon));
   }
 
-  UCesiumEllipsoid* Ellipsoid = pTileset->GetGeoreference()->GetEllipsoid();
+  UCesiumEllipsoid* Ellipsoid = pTileset->ResolveGeoreference()->GetEllipsoid();
   check(IsValid(Ellipsoid));
 
   return std::make_unique<CesiumRasterOverlays::RasterizedPolygonsOverlay>(

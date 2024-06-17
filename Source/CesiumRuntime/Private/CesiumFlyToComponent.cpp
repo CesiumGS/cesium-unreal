@@ -61,7 +61,7 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   FVector ecefSource = GlobeAnchor->GetEarthCenteredEarthFixedPosition();
 
   // Obtain Ellipsoid
-  UCesiumEllipsoid* ellipsoid = GlobeAnchor->GetGeoreference()->GetEllipsoid();
+  UCesiumEllipsoid* ellipsoid = GlobeAnchor->ResolveGeoreference()->GetEllipsoid();
 
   check(IsValid(ellipsoid));
 
@@ -116,7 +116,7 @@ void UCesiumFlyToComponent::FlyToLocationLongitudeLatitudeHeight(
     double PitchAtDestination,
     bool CanInterruptByMoving) {
   UCesiumEllipsoid* ellipsoid =
-      this->GetGlobeAnchor()->GetGeoreference()->GetEllipsoid();
+      this->GetGlobeAnchor()->ResolveGeoreference()->GetEllipsoid();
 
   FVector Ecef =
       ellipsoid->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(

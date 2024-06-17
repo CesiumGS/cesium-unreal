@@ -1067,7 +1067,7 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   TSharedPtr<CesiumGeospatial::Ellipsoid> pNativeEllipsoid =
-      this->Georeference->GetEllipsoid()->GetNativeEllipsoid();
+      this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
   // Since native will be working with an STL shared_ptr, not an Unreal one,
   // we'll copy the ellipsoid here. It's not much data to copy and saves us some
@@ -2072,7 +2072,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  UCesiumEllipsoid* ellipsoid = this->GetGeoreference()->GetEllipsoid();
+  UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {

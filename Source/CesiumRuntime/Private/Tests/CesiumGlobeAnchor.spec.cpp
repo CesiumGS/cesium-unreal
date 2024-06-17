@@ -14,6 +14,7 @@ BEGIN_DEFINE_SPEC(
 
 TObjectPtr<AActor> pActor;
 TObjectPtr<UCesiumGlobeAnchorComponent> pGlobeAnchor;
+TObjectPtr<UCesiumEllipsoid> pEllipsoid;
 
 END_DEFINE_SPEC(FCesiumGlobeAnchorSpec)
 
@@ -28,9 +29,13 @@ void FCesiumGlobeAnchorSpec::Define() {
         false);
     this->pActor->SetActorRelativeTransform(FTransform());
 
+    this->pEllipsoid = NewObject<UCesiumEllipsoid>();
+    this->pEllipsoid->SetRadii(UCesiumWgs84Ellipsoid::GetRadii());
+
     ACesiumGeoreference* pGeoreference =
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(pActor);
     pGeoreference->SetOriginLongitudeLatitudeHeight(FVector(1.0, 2.0, 3.0));
+    pGeoreference->SetEllipsoid(this->pEllipsoid);
 
     this->pGlobeAnchor =
         Cast<UCesiumGlobeAnchorComponent>(pActor->AddComponentByClass(

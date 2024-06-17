@@ -173,7 +173,7 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
     return;
   }
 
-  UCesiumEllipsoid* ellipsoid = this->Georeference->GetEllipsoid();
+  UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
 
   // Compute the current local up axis of the actor (the +Z axis) in ECEF
   FVector up = this->ActorToEarthCenteredEarthFixedMatrix.GetUnitAxis(EAxis::Z);
@@ -388,7 +388,7 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
           scale);
 
   const CesiumGeospatial::Ellipsoid& ellipsoid =
-      *this->GetGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
+      *this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
   anchor.setAnchorToLocalTransform(
       eastSouthUp,
