@@ -17,3 +17,4 @@ set(VCPKG_ENV_PASSTHROUGH "UNREAL_ENGINE_ROOT")
 # https://github.com/EpicGames/UnrealEngine/blob/5.2.1-release/Engine/Source/Programs/UnrealBuildTool/Platform/Windows/VCToolChain.cs
 set(VCPKG_CXX_FLAGS "/MD /Zp8")
 set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")
+set(VCPKG_PLATFORM_TOOLSET_VERSION "14.34")
