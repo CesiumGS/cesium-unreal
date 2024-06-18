@@ -165,6 +165,31 @@ void ACesium3DTileset::InvalidateResolvedGeoreference() {
   this->ResolvedGeoreference = nullptr;
 }
 
+FVector ACesium3DTileset::GetApproximateTilesetLocationUnreal() {
+    ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+
+    FVector approximateRootTileLocationECEF = this->GetApproximateTilesetLocationECEF();
+    FVector approximateRootTileLocationUnreal = pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(approximateRootTileLocationECEF);
+
+    return approximateRootTileLocationUnreal;
+}
+
+
+FVector ACesium3DTileset::GetApproximateTilesetLocationECEF() {
+    const Cesium3DTilesSelection::Tile* pRootTile =
+        this->_pTileset->getRootTile();
+    if (!pRootTile) {
+        return FVector::ZeroVector;
+    }
+
+    glm::dmat4x4 rootTileTransform = pRootTile->getTransform();
+    glm::dvec3 translation(rootTileTransform[3][0], rootTileTransform[3][1], rootTileTransform[3][2]);
+
+    FVector approximateRootTileLocationECEF = VecMath::createVector(translation);
+
+    return approximateRootTileLocationECEF;
+}
+
 TSoftObjectPtr<ACesiumCreditSystem> ACesium3DTileset::GetCreditSystem() const {
   return this->CreditSystem;
 }

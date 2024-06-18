@@ -163,6 +163,24 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InvalidateResolvedGeoreference();
 
+  /**
+   * Returns the approximate Unreal Location of this tileset
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "approximate Unreal Location"))
+  FVector GetApproximateTilesetLocationUnreal();
+
+  /**
+   * Returns the approximate ECEF Location of this tileset
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "approximate ECEF Location"))
+  FVector GetApproximateTilesetLocationECEF();
+
 private:
   /**
    * The actor managing this tileset's content attributions.
