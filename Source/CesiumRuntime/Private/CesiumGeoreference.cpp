@@ -49,21 +49,6 @@ using namespace CesiumGeospatial;
 
 namespace {
 
-UCesiumEllipsoid* GetDefaultEllipsoidObject() {
-  struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UCesiumEllipsoid> DefaultEllipsoid;
-
-    FConstructorStatics()
-        : DefaultEllipsoid(TEXT(
-              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/WGS84.WGS84'")) {
-
-    }
-  };
-
-  static FConstructorStatics ConstructorStatics;
-  return ConstructorStatics.DefaultEllipsoid.Object;
-}
-
 ACesiumGeoreference* FindGeoreferenceAncestor(AActor* Actor) {
   AActor* Current = Actor;
 
@@ -554,14 +539,6 @@ void ACesiumGeoreference::Serialize(FArchive& Ar) {
 
   // Recompute derived values on load.
   if (Ar.IsLoading()) {
-    // We're deserializing a georeference without an ellipsoid (was saved in a
-    // previous version of Cesium for Unreal that didn't yet have ellipsoid
-    // support). _updateCoordinateSystem needs an ellipsoid, so let's set it to
-    // the default
-    if (this->Ellipsoid == nullptr) {
-      this->Ellipsoid = GetDefaultEllipsoidObject();
-    }
-
     this->_updateCoordinateSystem();
   }
 }
@@ -857,7 +834,18 @@ ACesiumGeoreference::ComputeEastNorthUpToEcef(const FVector& ecef) const {
 }
 
 ACesiumGeoreference::ACesiumGeoreference() : AActor() {
-  this->Ellipsoid = GetDefaultEllipsoidObject();
+  struct FConstructorStatics {
+    ConstructorHelpers::FObjectFinder<UCesiumEllipsoid> DefaultEllipsoid;
+
+    FConstructorStatics()
+        : DefaultEllipsoid(TEXT(
+              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/WGS84.WGS84'")) {
+
+    }
+  };
+
+  static FConstructorStatics ConstructorStatics;
+  this->Ellipsoid = ConstructorStatics.DefaultEllipsoid.Object;
 
   PrimaryActorTick.bCanEverTick = true;
 
