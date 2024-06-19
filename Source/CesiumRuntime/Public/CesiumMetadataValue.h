@@ -22,7 +22,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 
 private:
 #pragma region ValueType declaration
-  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
+  template <typename T> using ArrayView = CesiumGltf::PropertyArrayCopy<T>;
   using ValueType = swl::variant<
       swl::monostate,
       int8_t,
@@ -107,8 +107,8 @@ private:
       ArrayView<uint64_t>,
       ArrayView<float>,
       ArrayView<double>,
-      ArrayView<bool>,
-      ArrayView<std::string_view>,
+      CesiumGltf::PropertyArrayView<bool>,
+      CesiumGltf::PropertyArrayView<std::string_view>,
       ArrayView<glm::vec<2, int8_t>>,
       ArrayView<glm::vec<2, uint8_t>>,
       ArrayView<glm::vec<2, int16_t>>,
