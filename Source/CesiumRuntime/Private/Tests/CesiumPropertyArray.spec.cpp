@@ -60,7 +60,7 @@ void FCesiumPropertyArraySpec::Define() {
 
     It("constructs non-empty array", [this]() {
       std::vector<uint8_t> values{1, 2, 3, 4};
-      PropertyArrayCopy<uint8_t> arrayView(std::move(values));
+      PropertyArrayCopy<uint8_t> arrayView = std::vector(values);
       FCesiumPropertyArray array(arrayView);
       TestEqual(
           "size",
@@ -85,7 +85,7 @@ void FCesiumPropertyArraySpec::Define() {
   Describe("GetValue", [this]() {
     It("gets bogus value for out-of-bounds index", [this]() {
       std::vector<uint8_t> values{1};
-      PropertyArrayCopy<uint8_t> arrayView(std::move(values));
+      PropertyArrayCopy<uint8_t> arrayView = std::vector(values);
       FCesiumPropertyArray array(arrayView);
       TestEqual(
           "size",
@@ -114,7 +114,7 @@ void FCesiumPropertyArraySpec::Define() {
 
     It("gets value for valid index", [this]() {
       std::vector<uint8_t> values{1, 2, 3, 4};
-      PropertyArrayCopy<uint8_t> arrayView(std::move(values));
+      PropertyArrayCopy<uint8_t> arrayView = std::vector(values);
       FCesiumPropertyArray array(arrayView);
       TestEqual(
           "size",
