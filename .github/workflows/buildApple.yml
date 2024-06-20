@@ -1,4 +1,4 @@
-name: Build iOS
+name: Build macOS
 
 on:
   workflow_call:
@@ -25,22 +25,10 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      # - name: Install XCode ${{ inputs.xcode-version }}
-      #   env:
-      #     AWS_REGION: us-east-1
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #   run: |
-      #     aws s3 cp s3://cesium-unreal-engine/Xcode/Xcode_${{ inputs.xcode-version }}.xip . --no-progress
-      #     export ORIGINAL_DIR=$PWD
-      #     cd /Applications
-      #     xip -x $ORIGINAL_DIR/Xcode_${{ inputs.xcode-version }}.xip
-      #     rm $ORIGINAL_DIR/Xcode_${{ inputs.xcode-version }}.xip
       - name: Set XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "${{ inputs.xcode-version }}"
-          #"${{ inputs.xcode-version }}"
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -49,6 +37,13 @@ jobs:
         uses: ./.github/actions/vcpkg-cache
         with:
           id: ${{ inputs.upload-package-base-name }}
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-macos
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
       - name: Set environment variables
         run: |
           export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
@@ -58,21 +53,44 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
-      - name: Install Unreal Engine
-        uses: ./.github/actions/install-unreal-macos
-        with:
-          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          unreal-program-name: ${{ inputs.unreal-program-name }}
-      - name: Build cesium-native
+      - name: Build cesium-native for macOS
+        run: |
+          export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
+          mkdir -p extern/build-arm64
+          cd extern/build-arm64
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64
+          cmake --build . -j4 --target install
+          cd ..
+          mkdir -p build-x64
+          cd build-x64
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=x86_64
+          cmake --build . -j4 --target install
+      - name: Create universal macOS libs for cesium-native
+        run: |
+          mkdir -p ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release
+          for f in ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/*.a
+          do
+            arm64f=${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release/$(basename -- $f)
+            x64f=${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release/$(basename -- $f)
+            universalf=${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release/$(basename -- $f)
+            if diff $arm64f $x64f; then
+              # arm64 and x64 files are identical, so just copy one to the universal directory.
+              cp $arm64f $universalf
+            else
+              lipo -create -output $universalf $arm64f $x64f
+            fi
+          done
+          rm -rf ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-x86_64-Release
+          rm -rf ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-arm64-Release
+      - name: Build cesium-native for iOS
         run: |
           mkdir -p extern/build-ios
           cd extern
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           cmake -B build-ios -S . -GXcode -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
           cmake --build build-ios -j4 --target install --config Release
-          cd ..
+      - name: Remove extern directory
+        run: |
           rm -rf extern
       - name: Customize BuildConfiguration.xml
         run: |
@@ -80,16 +98,22 @@ jobs:
           # - We limit parallel actions because our builds use a lot more memory than UBT thinks they will.
           # - We set the source code control Provider to None so UBT includes all files in the unity build.
           printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
-      - name: Build plugin
+      - name: Build plugin for macOS
         run: |
-          sed -i '' 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          sed -i '' 's/\"EngineVersion\": \"5.2.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
       - name: Print log
         if: ${{ failure() }}
         run: |
           cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UnrealEditor-Mac-Development.txt"
+      - name: Build plugin for iOS
+        run: |
+          sed -i '' 's/\"EngineVersion\": \"5.2.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
+          cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4

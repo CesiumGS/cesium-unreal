@@ -56,25 +56,15 @@ jobs:
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-linux"
       clang-version: "v21_clang-15.0.1-centos7"
-  macOS52:
-    uses: ./.github/workflows/buildMac.yml
+  Apple52:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
       runner-label: macos-13-arm64
       unreal-engine-version: "5.2.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
       unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-macos"
-      xcode-version: "14.2"
-  iOS52:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-13-arm64
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-ios"
+      upload-package-base-name: "CesiumForUnreal-52-apple"
       xcode-version: "14.2"
   Combine52:
     runs-on: ubuntu-latest
@@ -189,25 +179,15 @@ jobs:
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-linux"
       clang-version: "v22_clang-16.0.6-centos7"
-  macOS53:
-    uses: ./.github/workflows/buildMac.yml
+  Apple53:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
       runner-label: macos-13-arm64
       unreal-engine-version: "5.3.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
       unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-macos"
-      xcode-version: "14.2"
-  iOS53:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-13-arm64
-      unreal-engine-version: "5.3.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
-      unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-ios"
+      upload-package-base-name: "CesiumForUnreal-53-apple"
       xcode-version: "14.2"
   Combine53:
     runs-on: ubuntu-latest
@@ -322,25 +302,15 @@ jobs:
       unreal-program-name: "UE_5.4"
       upload-package-base-name: "CesiumForUnreal-54-linux"
       clang-version: "v22_clang-16.0.6-centos7"
-  macOS54:
-    uses: ./.github/workflows/buildMac.yml
+  Apple54:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
       runner-label: macos-13-arm64
       unreal-engine-version: "5.4.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
       unreal-program-name: "UE_5.4"
-      upload-package-base-name: "CesiumForUnreal-54-macos"
-      xcode-version: "14.2"
-  iOS54:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-13-arm64
-      unreal-engine-version: "5.4.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
-      unreal-program-name: "UE_5.4"
-      upload-package-base-name: "CesiumForUnreal-54-ios"
+      upload-package-base-name: "CesiumForUnreal-54-apple"
       xcode-version: "14.2"
   Combine54:
     runs-on: ubuntu-latest
