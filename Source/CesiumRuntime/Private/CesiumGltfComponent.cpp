@@ -3252,8 +3252,7 @@ static void loadPrimitiveGameThreadPart(
 #if PLATFORM_MAC
   // TODO: figure out why water material crashes mac
   UMaterialInterface* pBaseMaterial =
-      (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
-       pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+      (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3)
           ? pGltf->BaseMaterialWithTranslucency
           : pGltf->BaseMaterial;
 #else
@@ -3262,8 +3261,7 @@ static void loadPrimitiveGameThreadPart(
     pBaseMaterial = pGltf->BaseMaterialWithWater;
   } else {
     pBaseMaterial =
-        (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
-         pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+        (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3)
             ? pGltf->BaseMaterialWithTranslucency
             : pGltf->BaseMaterial;
   }

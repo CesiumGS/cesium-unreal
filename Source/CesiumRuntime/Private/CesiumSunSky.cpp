@@ -475,7 +475,7 @@ FVector getViewLocation(UWorld* pWorld) {
     const TArray<FEditorViewportClient*>& viewportClients =
         GEditor->GetAllViewportClients();
     for (FEditorViewportClient* pEditorViewportClient : viewportClients) {
-      if (pEditorViewportClient &&
+      if (pEditorViewportClient && pViewport &&
           pEditorViewportClient == pViewport->GetClient()) {
         return pEditorViewportClient->GetViewLocation();
       }
