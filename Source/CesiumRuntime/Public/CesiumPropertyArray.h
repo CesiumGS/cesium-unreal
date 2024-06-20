@@ -19,7 +19,7 @@ struct CESIUMRUNTIME_API FCesiumPropertyArray {
 private:
 #pragma region ArrayType
   template <typename T>
-  using ArrayPropertyView = CesiumGltf::PropertyArrayCopy<T>;
+  using ArrayPropertyView = CesiumGltf::PropertyArrayView<T>;
 
   using ArrayType = swl::variant<
       ArrayPropertyView<int8_t>,
@@ -32,8 +32,8 @@ private:
       ArrayPropertyView<uint64_t>,
       ArrayPropertyView<float>,
       ArrayPropertyView<double>,
-      CesiumGltf::PropertyArrayView<bool>,
-      CesiumGltf::PropertyArrayView<std::string_view>,
+      ArrayPropertyView<bool>,
+      ArrayPropertyView<std::string_view>,
       ArrayPropertyView<glm::vec<2, int8_t>>,
       ArrayPropertyView<glm::vec<2, uint8_t>>,
       ArrayPropertyView<glm::vec<2, int16_t>>,
@@ -107,8 +107,9 @@ public:
    * @param value The property array view that will be stored in this struct
    */
   template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T> value)
-      : _value(value), _elementType() {
+  FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>&& value)
+      : _value(), _elementType(), _storage() {
+    this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
     ECesiumMetadataType type =
         ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
     ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
@@ -119,7 +120,11 @@ public:
   }
 
   template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayView<T> value)
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayCopy<T>& value)
+      : FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>(value)) {}
+
+  template <typename T>
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
       : _value(value), _elementType() {
     ECesiumMetadataType type =
         ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
@@ -130,6 +135,11 @@ public:
     _elementType = {type, componentType, isArray};
   }
 
+  FCesiumPropertyArray(FCesiumPropertyArray&& rhs);
+  FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs);
+  FCesiumPropertyArray(const FCesiumPropertyArray& rhs);
+  FCesiumPropertyArray& operator=(const FCesiumPropertyArray& rhs);
+
 private:
   template <typename T, typename... VariantType>
   static bool
@@ -139,6 +149,7 @@ private:
 
   ArrayType _value;
   FCesiumMetadataValueType _elementType;
+  std::vector<std::byte> _storage;
 
   friend class UCesiumPropertyArrayBlueprintLibrary;
 };

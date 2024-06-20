@@ -22,7 +22,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 
 private:
 #pragma region ValueType declaration
-  template <typename T> using ArrayView = CesiumGltf::PropertyArrayCopy<T>;
+  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
   using ValueType = swl::variant<
       swl::monostate,
       int8_t,
@@ -107,8 +107,8 @@ private:
       ArrayView<uint64_t>,
       ArrayView<float>,
       ArrayView<double>,
-      CesiumGltf::PropertyArrayView<bool>,
-      CesiumGltf::PropertyArrayView<std::string_view>,
+      ArrayView<bool>,
+      ArrayView<std::string_view>,
       ArrayView<glm::vec<2, int8_t>>,
       ArrayView<glm::vec<2, uint8_t>>,
       ArrayView<glm::vec<2, int16_t>>,
@@ -175,7 +175,7 @@ public:
   /**
    * Constructs an empty metadata value with unknown type.
    */
-  FCesiumMetadataValue() : _value(swl::monostate{}), _valueType() {}
+  FCesiumMetadataValue() : _value(swl::monostate{}), _valueType(), _storage() {}
 
   /**
    * Constructs a metadata value with the given input.
@@ -183,7 +183,8 @@ public:
    * @param Value The value to be stored in this struct.
    */
   template <typename T>
-  explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
+  explicit FCesiumMetadataValue(const T& Value)
+      : _value(Value), _valueType(), _storage() {
     ECesiumMetadataType type;
     ECesiumMetadataComponentType componentType;
     bool isArray;
@@ -203,6 +204,24 @@ public:
     _valueType = {type, componentType, isArray};
   }
 
+  template <typename ArrayType>
+  explicit FCesiumMetadataValue(
+      const CesiumGltf::PropertyArrayCopy<ArrayType>& Copy)
+      : FCesiumMetadataValue(CesiumGltf::PropertyArrayCopy<ArrayType>(Copy)) {}
+
+  template <typename ArrayType>
+  explicit FCesiumMetadataValue(CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy)
+      : _value(), _valueType(), _storage() {
+    this->_value = std::move(Copy).toViewAndExternalBuffer(this->_storage);
+
+    ECesiumMetadataType type =
+        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<ArrayType>::component);
+    bool isArray = true;
+    this->_valueType = {type, componentType, isArray};
+  }
+
   /**
    * Constructs a metadata value with the given optional input.
    *
@@ -210,18 +229,26 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue)
-      : _value(swl::monostate{}), _valueType() {
+      : _value(), _valueType(), _storage() {
     if (!MaybeValue) {
       return;
     }
 
-    _value = *MaybeValue;
-    _valueType = TypeToMetadataValueType<T>();
+    FCesiumMetadataValue temp(*MaybeValue);
+    this->_value = std::move(temp._value);
+    this->_valueType = std::move(temp._valueType);
+    this->_storage = std::move(temp._storage);
   }
+
+  FCesiumMetadataValue(FCesiumMetadataValue&& rhs);
+  FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs);
+  FCesiumMetadataValue(const FCesiumMetadataValue& rhs);
+  FCesiumMetadataValue& operator=(const FCesiumMetadataValue& rhs);
 
 private:
   ValueType _value;
   FCesiumMetadataValueType _valueType;
+  std::vector<std::byte> _storage;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
 };

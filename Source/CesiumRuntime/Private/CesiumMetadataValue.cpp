@@ -8,6 +8,35 @@
 
 using namespace CesiumGltf;
 
+FCesiumMetadataValue::FCesiumMetadataValue(FCesiumMetadataValue&& rhs) =
+    default;
+
+FCesiumMetadataValue&
+FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
+
+FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
+    : _value(), _valueType(rhs._valueType), _storage(rhs._storage) {
+  swl::visit(
+      [this](const auto& value) {
+        if constexpr (IsMetadataArray<decltype(value)>::value) {
+          if (!this->_storage.empty()) {
+            this->_value = decltype(value)(this->_storage);
+          } else {
+            this->_value = value;
+          }
+        } else {
+          this->_value = value;
+        }
+      },
+      rhs._value);
+}
+
+FCesiumMetadataValue&
+FCesiumMetadataValue::operator=(const FCesiumMetadataValue& rhs) {
+  *this = FCesiumMetadataValue(rhs);
+  return *this;
+}
+
 ECesiumMetadataBlueprintType
 UCesiumMetadataValueBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
