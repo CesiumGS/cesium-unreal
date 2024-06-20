@@ -1,5 +1,11 @@
 # Change Log
 
+? - ?
+
+##### Fixes :wrench:
+
+- Fixed a crash caused by `CesiumSunSky` when no viewport is activated in the Editor.
+
 ### v2.6.0 - 2024-06-03
 
 ##### Breaking Changes :mega:
