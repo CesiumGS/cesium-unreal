@@ -57,7 +57,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
   struct TestResults {
     std::atomic<bool> queryFinished = false;
-    std::vector<Cesium3DTilesSelection::Tileset::HeightResult> queryResults;
+    Cesium3DTilesSelection::Tileset::HeightResults heightResults;
   };
 
   static TestResults testResults;
@@ -97,9 +97,8 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     nativeTileset->getHeightsAtCoordinates(queryInputRadians)
         .thenInMainThread(
             [&testResults](
-                std::vector<Cesium3DTilesSelection::Tileset::HeightResult>&&
-                    results) {
-              testResults.queryResults = std::move(results);
+                Cesium3DTilesSelection::Tileset::HeightResults&& results) {
+              testResults.heightResults = std::move(results);
               testResults.queryFinished = true;
             });
   };
@@ -129,15 +128,24 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     ACesium3DTileset* tileset = playContext.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    for (size_t queryIndex = 0; queryIndex < testResults.queryResults.size();
-         ++queryIndex) {
-      Cesium3DTilesSelection::Tileset::HeightResult& heightResult =
-          testResults.queryResults[queryIndex];
+    size_t resultCount = testResults.heightResults.coordinateResults.size();
+    for (size_t resultIndex = 0; resultIndex < resultCount; ++resultIndex) {
+      auto& coordinateResult =
+          testResults.heightResults.coordinateResults[resultIndex];
 
-      if (!heightResult.heightAvailable)
+      // Log any warnings
+      for (std::string& warning : coordinateResult.warnings) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("Height query traversal warning: %s"),
+            warning.c_str());
+      }
+
+      if (!coordinateResult.heightAvailable)
         continue;
 
-      CesiumGeospatial::Cartographic& queryHit = heightResult.coordinate;
+      CesiumGeospatial::Cartographic& queryHit = coordinateResult.coordinate;
 
       FVector hitCoordinate = {
           CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
@@ -154,7 +162,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
       staticMeshActor->SetActorLocation(unrealPosition);
       staticMeshActor->SetActorScale3D(FVector(10, 10, 10));
       staticMeshActor->SetActorLabel(
-          FString::Printf(TEXT("Hit %d"), queryIndex));
+          FString::Printf(TEXT("Hit %d"), resultIndex));
       staticMeshActor->SetFolderPath("/QueryResults");
     }
 
