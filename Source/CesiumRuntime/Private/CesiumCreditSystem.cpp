@@ -300,7 +300,7 @@ void ACesiumCreditSystem::removeCreditsFromViewports() {
 #endif
 
   if (IsValid(CreditsWidget)) {
-    CreditsWidget->RemoveFromViewport();
+    CreditsWidget->RemoveFromParent();
   }
 }
 

@@ -381,14 +381,13 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
     pGltf->GetChildrenComponents(false, childComponents);
 
     for (const USceneComponent* pChildComponent : childComponents) {
-      const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
-          Cast<UCesiumGltfPrimitiveComponent>(pChildComponent);
-      if (!pGltfPrimitive) {
+      const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pChildComponent);
+      if (!pCesiumPrimitive) {
         continue;
       }
-
-      const FCesiumPrimitiveFeatures& primitiveFeatures =
-          pGltfPrimitive->Features;
+      const CesiumPrimitiveData& primData =
+          pCesiumPrimitive->getPrimitiveData();
+      const FCesiumPrimitiveFeatures& primitiveFeatures = primData.Features;
       const TArray<FCesiumPropertyTable>& propertyTables =
           UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(
               modelMetadata);
@@ -397,8 +396,7 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
           primitiveFeatures,
           propertyTables);
 
-      const FCesiumPrimitiveMetadata& primitiveMetadata =
-          pGltfPrimitive->Metadata;
+      const FCesiumPrimitiveMetadata& primitiveMetadata = primData.Metadata;
       const TArray<FCesiumPropertyTexture>& propertyTextures =
           UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
               modelMetadata);

@@ -108,14 +108,8 @@ public:
   void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
   void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
   void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override;
-  void PreRenderViewFamily_RenderThread(
-      FRHICommandListImmediate& RHICmdList,
-      FSceneViewFamily& InViewFamily) override;
-  void PreRenderView_RenderThread(
-      FRHICommandListImmediate& RHICmdList,
-      FSceneView& InView) override;
   void PostRenderViewFamily_RenderThread(
-      FRHICommandListImmediate& RHICmdList,
+      FRDGBuilder& GraphBuilder,
       FSceneViewFamily& InViewFamily) override;
 
   void SetEnabled(bool enabled);

@@ -2,13 +2,39 @@
 
 ### ? - ?
 
+##### Fixes :wrench:
+
+- Removed unnecessary alpha check when selecting translucent base materials.
+- Fixed a crash caused by `CesiumSunSky` when no viewport is activated in the Editor.
+
+### v2.6.0 - 2024-06-03
+
+##### Breaking Changes :mega:
+
+- Renamed the following properties on `CesiumWebMapTileServiceRasterOverlay`:
+  - `Url` -> `BaseUrl`
+  - `West` -> `RectangleWest`
+  - `South` -> `RectangleSouth`
+  - `East` -> `RectangleEast`
+  - `North` -> `RectangleNorth`
+- `UseWebMercatorProjection` has been deprecated on `CesiumWebMapTileServiceRasterOverlay`. Instead, use the `Projection` enum property to specify between `Geographic` or `WebMercator` projection.
+
 ##### Additions :tada:
 
- - Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
+- Added support for Instanced 3D Meshes (I3DM) and the glTF `EXT_mesh_gpu_instancing` extension.
+- Improved DynamicPawn movement by interpolating to its intended speed. This provides smoother movement over areas with large height variation, e.g., when flying over buildings in a city.
+- Added `TileWidth` and `TileHeight` properties to `CesiumWebMapTileServiceRasterOverlay`.
 
 ##### Fixes :wrench:
 
+- Fixed an issue with pixel dithering artifacts that could appear on tilesets.
 - Fixed an issue where DynamicPawn could get stuck after interrupting a flight from `UCesiumFlyToComponent`.
+- Fixed a bug where `CesiumTileMapServiceRasterOverlay`, `CesiumWebMapServiceRasterOverlay`, and `CesiumWebMapTileServiceRasterOverlay` would attempt to load empty URLs.
+- Fixed a bug that caused some textures shared between multiple glTF primitives to be missing entirely.
+- Fixed a bug that caused tilesets to fail to load with the "Experimental Occlusion Culling Feature" enabled.
+- Fixed a problem that could cause linker errors when packaging a game using both Cesium for Unreal and the Pixel Streaming plugin in Unreal Engine 5.4.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.35.0 to v0.36.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.5.0 - 2024-05-01
 
