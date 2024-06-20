@@ -164,22 +164,24 @@ public:
   void InvalidateResolvedGeoreference();
 
   /**
-   * Returns the approximate Unreal Location of this tileset
+   * Returns the approximate Unreal Location of this tileset or a zero-Vector if
+   * the root tile is not available yet
    */
   UFUNCTION(
       BlueprintCallable,
       Category = "Cesium",
       meta = (ReturnDisplayName = "approximate Unreal Location"))
-  FVector GetApproximateTilesetLocationUnreal();
+  FVector GetApproximateTilesetLocationUnreal(bool& rootTileAvailable);
 
   /**
-   * Returns the approximate ECEF Location of this tileset
+   * Returns the approximate ECEF Location of this tileset or a zero-Vector if
+   * the root tile is not available yet
    */
   UFUNCTION(
       BlueprintCallable,
       Category = "Cesium",
       meta = (ReturnDisplayName = "approximate ECEF Location"))
-  FVector GetApproximateTilesetLocationECEF();
+  FVector GetApproximateTilesetLocationECEF(bool& rootTileAvailable);
 
 private:
   /**
