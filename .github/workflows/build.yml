@@ -68,7 +68,7 @@ jobs:
       xcode-version: "14.2"
   Combine52:
     runs-on: ubuntu-latest
-    needs: [Windows52, Linux52, Android52, MacOS52, iOS52]
+    needs: [Windows52, Linux52, Android52, Apple52]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -191,7 +191,7 @@ jobs:
       xcode-version: "14.2"
   Combine53:
     runs-on: ubuntu-latest
-    needs: [Windows53, Android53, Linux53, MacOS53, iOS53]
+    needs: [Windows53, Android53, Linux53, Apple53]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -314,7 +314,7 @@ jobs:
       xcode-version: "14.2"
   Combine54:
     runs-on: ubuntu-latest
-    needs: [Windows54, Android54, Linux54, MacOS54, iOS54]
+    needs: [Windows54, Android54, Linux54, Apple54]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
