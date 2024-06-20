@@ -1,9 +1,10 @@
 # Change Log
 
-? - ?
+### ? - ?
 
 ##### Fixes :wrench:
 
+- Removed unnecessary alpha check when selecting translucent base materials.
 - Fixed a crash caused by `CesiumSunSky` when no viewport is activated in the Editor.
 
 ### v2.6.0 - 2024-06-03
