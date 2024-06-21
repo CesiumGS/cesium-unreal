@@ -53,7 +53,7 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
-      - name: Build cesium-native for macOS
+      - name: Build cesium-native for macOS ARM64
         run: |
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
@@ -61,9 +61,12 @@ jobs:
           cd extern/build-arm64
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64
           cmake --build . -j4 --target install
-          cd ..
-          mkdir -p build-x64
-          cd build-x64
+      - name: Build cesium-native for macOS x86_64
+        run: |
+          export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
+          export CESIUM_VCPKG_RELEASE_ONLY=TRUE
+          mkdir -p extern/build-x64
+          cd extern/build-x64
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=x86_64
           cmake --build . -j4 --target install
       - name: Create universal macOS libs for cesium-native
