@@ -42,9 +42,14 @@ UE_5.4/Engine/Binaries/ThirdParty/CEF3/*
 UE_5.4/Engine/Binaries/ThirdParty/Python3/*
 UE_5.4/Engine/Binaries/ThirdParty/svn/*
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/Windows/*
+UE_5.4/Engine/Intermediate/ScriptModules/Win.Automation.json
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/Android/*
+UE_5.4/Engine/Intermediate/ScriptModules/Android.Automation.json
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/Linux/*
+UE_5.4/Engine/Intermediate/ScriptModules/Linux.Automation.json
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/TVOS/*
+UE_5.4/Engine/Intermediate/ScriptModules/TVOS.Automation.json
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/SteamDeck/*
+UE_5.4/Engine/Intermediate/ScriptModules/SteamDeck.Automation.json
 UE_5.4/Engine/Binaries/DotNET/Android/*
 *.dSYM
