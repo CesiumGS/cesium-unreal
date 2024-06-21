@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         df -h
-        unzip -q ue.zip "${{ inputs.unreal-program-name }}/Engine/*" -d $HOME -x "@$GITHUB_WORKSPACE/.github/actions/install-unreal-macos/exclude-from-unzip.lst"
+        unzip -q ue.zip "${{ inputs.unreal-program-name }}/Engine/*" -d $HOME -x $(cat "@$GITHUB_WORKSPACE/.github/actions/install-unreal-macos/exclude-from-unzip.lst")
         df -h
         rm ue.zip
         df -h
