@@ -81,15 +81,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-52-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-52-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -204,15 +199,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-53-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-53-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-53-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -327,15 +317,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-54-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-54-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-54-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
