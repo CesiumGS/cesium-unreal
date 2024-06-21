@@ -60,12 +60,12 @@ jobs:
     uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-13
+      runner-label: macos-14
       unreal-engine-version: "5.2.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-apple"
-      xcode-version: "14.2"
+      xcode-version: "14.3.1"
   Combine52:
     runs-on: ubuntu-latest
     needs: [Windows52, Linux52, Android52, Apple52]
@@ -183,12 +183,12 @@ jobs:
     uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-13
+      runner-label: macos-14
       unreal-engine-version: "5.3.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-apple"
-      xcode-version: "14.2"
+      xcode-version: "14.3.1"
   Combine53:
     runs-on: ubuntu-latest
     needs: [Windows53, Android53, Linux53, Apple53]
@@ -306,12 +306,12 @@ jobs:
     uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-13
+      runner-label: macos-14
       unreal-engine-version: "5.4.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
       unreal-program-name: "UE_5.4"
       upload-package-base-name: "CesiumForUnreal-54-apple"
-      xcode-version: "14.2"
+      xcode-version: "14.3.1"
   Combine54:
     runs-on: ubuntu-latest
     needs: [Windows54, Android54, Linux54, Apple54]
