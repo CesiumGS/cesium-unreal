@@ -9,9 +9,6 @@ UE_5.2/Engine/Binaries/Mac/UnrealGame-Mac-Shipping
 UE_5.2/Engine/Binaries/Mac/*.dSYM
 UE_5.2/Engine/Plugins/Experimental/NNERuntimeIREE/*
 UE_5.2/Engine/Plugins/Experimental/Avalanche/*
-UE_5.2/Engine/Plugins/Runtime/NetworkPredictionExtras/*
-UE_5.2/Engine/Plugins/Runtime/Metasound/*
-UE_5.2/Engine/Plugins/Importers/USDImporter/*
 UE_5.3/Engine/Binaries/Mac/LiveLinkHub-Mac-Shipping.app/*
 UE_5.3/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame.app/*
 UE_5.3/Engine/Binaries/Mac/UnrealGame.app/*
@@ -23,9 +20,6 @@ UE_5.3/Engine/Binaries/Mac/UnrealGame-Mac-Shipping
 UE_5.3/Engine/Binaries/Mac/*.dSYM
 UE_5.3/Engine/Plugins/Experimental/NNERuntimeIREE/*
 UE_5.3/Engine/Plugins/Experimental/Avalanche/*
-UE_5.3/Engine/Plugins/Runtime/NetworkPredictionExtras/*
-UE_5.3/Engine/Plugins/Runtime/Metasound/*
-UE_5.3/Engine/Plugins/Importers/USDImporter/*
 UE_5.4/Engine/Binaries/Mac/LiveLinkHub-Mac-Shipping.app/*
 UE_5.4/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame.app/*
 UE_5.4/Engine/Binaries/Mac/UnrealGame.app/*
