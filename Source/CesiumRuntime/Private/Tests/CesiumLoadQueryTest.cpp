@@ -156,10 +156,14 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
           tileset->ResolveGeoreference()
               ->TransformLongitudeLatitudeHeightPositionToUnreal(hitCoordinate);
 
+      // Now bring the hit point to unreal world coordinates
+      FVector unrealWorldPosition =
+          tileset->GetActorTransform().TransformFVector4(unrealPosition);
+
       AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
       staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(
           cubeMeshPtr.Get());
-      staticMeshActor->SetActorLocation(unrealPosition);
+      staticMeshActor->SetActorLocation(unrealWorldPosition);
       staticMeshActor->SetActorScale3D(FVector(10, 10, 10));
       staticMeshActor->SetActorLabel(
           FString::Printf(TEXT("Hit %d"), resultIndex));
