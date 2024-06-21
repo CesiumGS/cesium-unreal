@@ -40,7 +40,6 @@ UE_5.4/Engine/Source/Runtime/OodleDataCompression/*
 UE_5.4/Engine/Binaries/ThirdParty/DotNet/6.0.302/mac-x64/*
 UE_5.4/Engine/Binaries/ThirdParty/CEF3/*
 UE_5.4/Engine/Binaries/ThirdParty/Python3/*
-UE_5.4/Engine/Binaries/ThirdParty/svn/*
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/Windows/*
 UE_5.4/Engine/Intermediate/ScriptModules/Win.Automation.json
 UE_5.4/Engine/Binaries/DotNET/AutomationTool/AutomationScripts/Platforms/Android/*
