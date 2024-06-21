@@ -139,7 +139,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
             LogCesium,
             Warning,
             TEXT("Height query traversal warning: %s"),
-            warning.c_str());
+            UTF8_TO_TCHAR(warning.c_str()));
       }
 
       if (!coordinateResult.heightAvailable)
