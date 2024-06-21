@@ -56,6 +56,7 @@ jobs:
       - name: Build cesium-native for macOS
         run: |
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
+          export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           mkdir -p extern/build-arm64
           cd extern/build-arm64
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64
@@ -87,6 +88,7 @@ jobs:
           mkdir -p extern/build-ios
           cd extern
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
+          export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cmake -B build-ios -S . -GXcode -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
           cmake --build build-ios -j4 --target install --config Release
       - name: Remove extern directory
@@ -103,7 +105,7 @@ jobs:
           sed -i '' 's/\"EngineVersion\": \"5.2.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
-          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac -Architecture_Mac=arm64+x64
       - name: Print log
         if: ${{ failure() }}
         run: |

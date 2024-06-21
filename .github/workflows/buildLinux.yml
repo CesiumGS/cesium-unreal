@@ -73,6 +73,7 @@ jobs:
         run: |
           export UNREAL_ENGINE_COMPILER_DIR="${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/Unix/LibCxx"
+          export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cd extern
           cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --target install -j8

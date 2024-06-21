@@ -69,6 +69,7 @@ jobs:
           $env:ANDROID_NDK_ROOT=$env:ANDROID_NDK_ROOT.replace('\', '/')
           $env:ANDROID_NDK_HOME=$env:ANDROID_NDK_ROOT
           $env:UNREAL_ENGINE_ROOT="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}"
+          $env:CESIUM_VCPKG_RELEASE_ONLY="TRUE"
           cd extern
           cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android --config Release --target install -j8
