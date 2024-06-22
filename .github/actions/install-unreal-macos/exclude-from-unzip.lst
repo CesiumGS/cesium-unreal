@@ -36,7 +36,6 @@ UE_5.4/Engine/Plugins/Experimental/Avalanche/*
 UE_5.4/Engine/Plugins/Experimental/MoverExamples/*
 UE_5.4/Engine/Plugins/Experimental/MoverTests/*
 UE_5.4/Engine/Plugins/Experimental/Mutable/*
-UE_5.4/Engine/Source/Runtime/OodleDataCompression/*
 UE_5.4/Engine/Binaries/ThirdParty/DotNet/6.0.302/mac-x64/*
 UE_5.4/Engine/Binaries/ThirdParty/CEF3/*
 UE_5.4/Engine/Binaries/ThirdParty/Python3/*

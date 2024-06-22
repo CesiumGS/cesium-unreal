@@ -25,9 +25,11 @@ jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
     steps:
-      - name: List installed Brew thingos
+      - name: Make some more disk space
         run: |
-          brew list
+          df -h
+          brew uninstall google-chrome
+          df -h
       - name: Set XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
