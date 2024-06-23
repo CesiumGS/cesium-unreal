@@ -104,26 +104,6 @@ jobs:
           patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
           patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
-      - name: Compress debug sections
-        run: |
-          for f in packages/CesiumForUnreal/Binaries/Linux/*.so; do objcopy --compress-debug-sections $f; done
-          for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
-          if [ -d "packages/CesiumForUnreal/Intermediate/Build/Linux/x64" ]; then
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-          fi
-          if [ -d "packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA" ]; then
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Development/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Shipping/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-          fi
       - name: Print disk space free
         run: |
           df -h
