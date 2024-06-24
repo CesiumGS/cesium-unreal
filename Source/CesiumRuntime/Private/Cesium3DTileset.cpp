@@ -1889,14 +1889,6 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
-    // That looks like some reeeally entertaining debug session...:
-    // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
-    // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
-    // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
-    // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
-    // 11626) { 	continue;
-    //}
-
     const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();

@@ -118,7 +118,8 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
                 "TIDY_STATIC",
-                "URI_STATIC_BUILD"
+                "URI_STATIC_BUILD",
+                "SWL_VARIANT_NO_CONSTEXPR_EMPLACE"
             }
         );
 
@@ -149,11 +150,7 @@ public class CesiumRuntime : ModuleRules
         IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-#if UE_5_4_OR_LATER
         CppStandard = CppStandardVersion.Cpp20;
-#else
-        CppStandard = CppStandardVersion.Cpp17;
-#endif
         bEnableExceptions = true;
     }
 }

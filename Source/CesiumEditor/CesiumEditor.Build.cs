@@ -125,6 +125,6 @@ public class CesiumEditor : ModuleRules
 
         IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        CppStandard = CppStandardVersion.Cpp17;
+        CppStandard = CppStandardVersion.Cpp20;
     }
 }

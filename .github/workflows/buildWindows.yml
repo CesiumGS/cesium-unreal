@@ -104,6 +104,7 @@ jobs:
         run: |
           cd extern
           $env:UNREAL_ENGINE_ROOT="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}"
+          $env:CESIUM_VCPKG_RELEASE_ONLY="TRUE"
           $toolchainOption=If ("${{ inputs.cmake-toolchain }}") {"-T ${{ inputs.cmake-toolchain }}"} Else {""}
           cmake -B build -S . -A "${{ inputs.cmake-platform }}" -G "${{ inputs.cmake-generator }}" $toolchainOption
           cmake --build build --config Release --target install -j8
@@ -111,7 +112,7 @@ jobs:
           rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.1.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.2.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Customize BuildConfiguration.xml
         run: |
           mkdir -p "$env:USERPROFILE\AppData\Roaming\Unreal Engine\UnrealBuildTool"
