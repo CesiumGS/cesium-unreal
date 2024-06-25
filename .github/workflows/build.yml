@@ -1,5 +1,5 @@
 name: Cesium for Unreal
-on: [push]
+on: [push, workflow_dispatch]
 jobs:
   QuickChecks:
     name: "Quick Checks"
