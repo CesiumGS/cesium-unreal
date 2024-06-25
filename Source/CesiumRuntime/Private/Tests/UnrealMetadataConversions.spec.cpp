@@ -1,8 +1,8 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "UnrealMetadataConversions.h"
 #include "CesiumTestHelpers.h"
 #include "Misc/AutomationTest.h"
-#include "UnrealMetadataConversions.h"
 
 #include <limits>
 
