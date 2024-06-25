@@ -1,6 +1,5 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
@@ -8,6 +7,7 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
+#include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;

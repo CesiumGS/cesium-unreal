@@ -1,6 +1,5 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "UnrealAssetAccessor.h"
 #include "Async/Async.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumRuntime.h"
@@ -8,6 +7,7 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "UnrealAssetAccessor.h"
 
 BEGIN_DEFINE_SPEC(
     FUnrealAssetAccessorSpec,
