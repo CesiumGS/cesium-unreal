@@ -151,7 +151,7 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
         &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
     this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
         this,
-        &ACesium3DTileset::_onGeoreferenceEllipsoidChanged);
+        &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
 
     // Update existing tile positions, if any.
     pRoot->HandleGeoreferenceUpdated();
@@ -603,7 +603,7 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
   }
 }
 
-void ACesium3DTileset::_onGeoreferenceEllipsoidChanged(
+void ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged(
     UCesiumEllipsoid* OldEllipsoid,
     UCesiumEllipsoid* NewEllpisoid) {
   this->RefreshTileset();
@@ -1078,13 +1078,6 @@ void ACesium3DTileset::LoadTileset() {
   TSharedPtr<CesiumGeospatial::Ellipsoid> pNativeEllipsoid =
       this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
-  // Since native will be working with an STL shared_ptr, not an Unreal one,
-  // we'll copy the ellipsoid here. It's not much data to copy and saves us some
-  // headaches.
-  std::shared_ptr<CesiumGeospatial::Ellipsoid> pEllipsoid =
-      std::make_shared<CesiumGeospatial::Ellipsoid>(
-          pNativeEllipsoid->getRadii());
-
   ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
 
   Cesium3DTilesSelection::TilesetExternals externals{
@@ -1105,7 +1098,7 @@ void ACesium3DTileset::LoadTileset() {
 
   Cesium3DTilesSelection::TilesetOptions options;
 
-  options.ellipsoid = *pEllipsoid;
+  options.ellipsoid = *pNativeEllipsoid;
 
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()

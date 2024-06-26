@@ -11,6 +11,13 @@
 #include "VecMath.h"
 #include <glm/gtx/quaternion.hpp>
 
+// quick macro for ellipsoid existence check
+#define ELLIPSOID_CHECK(thiz, ret)                                             \
+  if (!IsValid(thiz->GetEllipsoid())) {                                        \
+    UE_LOG(LogCesium, Error, TEXT("Expected ellipsoid but got nullptr"));      \
+    return ret;                                                                \
+  }
+
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:
 //
@@ -173,6 +180,8 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
     return;
   }
 
+  ELLIPSOID_CHECK(this->ResolveGeoreference(), );
+
   UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
 
   // Compute the current local up axis of the actor (the +Z axis) in ECEF
@@ -277,6 +286,15 @@ UCesiumEllipsoid* UCesiumGlobeAnchorComponent::GetEllipsoid() const {
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->GetOwner());
   }
 
+  if (!IsValid(Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Unable to find UCesiumGeoreference for UCesiumGlobeAnchorComponent - returning unit ellipsoid."));
+    return UCesiumEllipsoid::Create(FVector::OneVector);
+  }
+
   return Georeference->GetEllipsoid();
 }
 
@@ -285,6 +303,7 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
+  ELLIPSOID_CHECK(this, FVector::ZeroVector);
   return this->GetEllipsoid()
       ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
           this->GetEarthCenteredEarthFixedPosition());
@@ -292,6 +311,7 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight) {
+  ELLIPSOID_CHECK(this, );
   this->MoveToEarthCenteredEarthFixedPosition(
       this->GetEllipsoid()
           ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
@@ -336,6 +356,8 @@ FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
     return FQuat::Identity;
   }
 
+  ELLIPSOID_CHECK(this, FQuat::Identity);
+
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
@@ -364,6 +386,8 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
         *this->GetName());
     return;
   }
+
+  ELLIPSOID_CHECK(this, );
 
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
@@ -663,6 +687,7 @@ CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
         local,
         newModelToLocal);
   } else {
+    assert(this->GetEllipsoid() != nullptr);
     // Create an anchor at the old position and move it to the new one.
     CesiumGeospatial::GlobeAnchor cppAnchor = this->_createNativeGlobeAnchor();
     cppAnchor.setAnchorToLocalTransform(
@@ -683,6 +708,7 @@ UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
     return CesiumGeospatial::GlobeAnchor(
         VecMath::createMatrix4D(newActorToECEFMatrix));
   } else {
+    assert(this->GetEllipsoid() != nullptr);
     // Create an anchor at the old position and move it to the new one.
     CesiumGeospatial::GlobeAnchor cppAnchor(
         VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));

@@ -16,6 +16,18 @@ class CESIUMRUNTIME_API UCesiumEllipsoid : public UDataAsset {
 
 public:
   /**
+   * Creates a new {@link UCesiumEllipsoid} with the given radii.
+   *
+   * This is equivalent to
+   * ```
+   * auto ellipsoid = NewObject<UCesiumEllipsoid>();
+   * ellipsoid->SetRadii(Radii);
+   * ```
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Ellipsoid")
+  static UCesiumEllipsoid* Create(const FVector& Radii);
+
+  /**
    * Gets the radii of the ellipsoid in its x-, y-, and z-directions in
    * meters.
    */
@@ -28,7 +40,7 @@ public:
    * Tilesets using this ellipsoid may have to be refreshed to see the changes
    * applied.
    */
-  void SetRadii(FVector NewRadii);
+  void SetRadii(const FVector& NewRadii);
 
   /**
    * Gets the maximum radius of the ellipsoid in any dimension, in meters.

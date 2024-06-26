@@ -170,6 +170,14 @@ ACesiumGeoreference::GetDefaultGeoreferenceForActor(AActor* Actor) {
 }
 
 UCesiumEllipsoid* ACesiumGeoreference::GetEllipsoid() const {
+  if (!IsValid(this->Ellipsoid)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "ACesiumGeoreference needs a valid Ellipsoid asset. Calculations will use a unit ellipsoid as a placeholder."));
+    return UCesiumEllipsoid::Create(FVector::OneVector);
+  }
   return this->Ellipsoid;
 }
 

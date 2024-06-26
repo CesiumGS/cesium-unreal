@@ -12,9 +12,17 @@
 
 using namespace CesiumGeospatial;
 
+UCesiumEllipsoid* UCesiumEllipsoid::Create(const FVector& Radii) {
+  UCesiumEllipsoid* pEllipsoid = NewObject<UCesiumEllipsoid>();
+  pEllipsoid->SetRadii(Radii);
+  return pEllipsoid;
+}
+
 FVector UCesiumEllipsoid::GetRadii() { return this->Radii; }
 
-void UCesiumEllipsoid::SetRadii(FVector NewRadii) { this->Radii = NewRadii; }
+void UCesiumEllipsoid::SetRadii(const FVector& NewRadii) {
+  this->Radii = NewRadii;
+}
 
 double UCesiumEllipsoid::GetMaximumRadius() { return this->Radii.X; }
 

@@ -1132,7 +1132,7 @@ private:
    * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
    */
   UFUNCTION()
-  void _onGeoreferenceEllipsoidChanged(
+  void HandleOnGeoreferenceEllipsoidChanged(
       UCesiumEllipsoid* OldEllipsoid,
       UCesiumEllipsoid* NewEllpisoid);
 
