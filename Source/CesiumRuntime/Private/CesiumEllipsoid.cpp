@@ -31,14 +31,14 @@ double UCesiumEllipsoid::GetMinimumRadius() { return this->Radii.Z; }
 FVector UCesiumEllipsoid::ScaleToGeodeticSurface(
     const FVector& EllipsoidCenteredEllipsoidFixedPosition) {
   return CesiumEllipsoidFunctions::ScaleToGeodeticSurface(
-      *this->GetNativeEllipsoid(),
+      this->GetNativeEllipsoid(),
       EllipsoidCenteredEllipsoidFixedPosition);
 }
 
 FVector UCesiumEllipsoid::GeodeticSurfaceNormal(
     const FVector& EllipsoidCenteredEllipsoidFixedPosition) {
   return CesiumEllipsoidFunctions::GeodeticSurfaceNormal(
-      *this->GetNativeEllipsoid(),
+      this->GetNativeEllipsoid(),
       EllipsoidCenteredEllipsoidFixedPosition);
 }
 
@@ -47,7 +47,7 @@ UCesiumEllipsoid::LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
     const FVector& LongitudeLatitudeHeight) {
   return CesiumEllipsoidFunctions::
       LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
-          *this->GetNativeEllipsoid(),
+          this->GetNativeEllipsoid(),
           LongitudeLatitudeHeight);
 }
 
@@ -56,14 +56,14 @@ UCesiumEllipsoid::EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
     const FVector& EllipsoidCenteredEllipsoidFixedPosition) {
   return CesiumEllipsoidFunctions::
       EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
-          *this->GetNativeEllipsoid(),
+          this->GetNativeEllipsoid(),
           EllipsoidCenteredEllipsoidFixedPosition);
 }
 
 FMatrix UCesiumEllipsoid::EastNorthUpToEllipsoidCenteredEllipsoidFixed(
     const FVector& EllipsoidCenteredEllipsoidFixedPosition) {
   return CesiumEllipsoidFunctions::EastNorthUpToEllipsoidCenteredEllipsoidFixed(
-      *this->GetNativeEllipsoid(),
+      this->GetNativeEllipsoid(),
       EllipsoidCenteredEllipsoidFixedPosition);
 }
 
@@ -76,11 +76,11 @@ UCesiumEllipsoid::CreateCoordinateSystem(const FVector& Center, double Scale) {
         LocalDirection::South,
         LocalDirection::Up,
         1.0 / Scale,
-        *this->GetNativeEllipsoid());
+        this->GetNativeEllipsoid());
   }
 }
 
-TSharedPtr<Ellipsoid> UCesiumEllipsoid::GetNativeEllipsoid() {
+Ellipsoid& UCesiumEllipsoid::GetNativeEllipsoid() {
   const double MinRadiiValue = TMathUtilConstants<double>::Epsilon;
 
   if (!this->NativeEllipsoid.IsValid()) {
@@ -95,11 +95,11 @@ TSharedPtr<Ellipsoid> UCesiumEllipsoid::GetNativeEllipsoid() {
               "Radii must be greater than 0 - clamping to minimum value to avoid crashes."));
     }
 
-    this->NativeEllipsoid = MakeShared<CesiumGeospatial::Ellipsoid>(
+    this->NativeEllipsoid = MakeUnique<CesiumGeospatial::Ellipsoid>(
         FMath::Max(this->Radii.X, MinRadiiValue),
         FMath::Max(this->Radii.Y, MinRadiiValue),
         FMath::Max(this->Radii.Z, MinRadiiValue));
   }
 
-  return this->NativeEllipsoid;
+  return *this->NativeEllipsoid;
 }

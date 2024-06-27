@@ -70,7 +70,7 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   std::optional<CesiumGeospatial::SimplePlanarEllipsoidCurve> curve =
       CesiumGeospatial::SimplePlanarEllipsoidCurve::
           fromEarthCenteredEarthFixedCoordinates(
-              *ellipsoid->GetNativeEllipsoid(),
+              ellipsoid->GetNativeEllipsoid(),
               glm::dvec3(ecefSource.X, ecefSource.Y, ecefSource.Z),
               glm::dvec3(
                   EarthCenteredEarthFixedDestination.X,

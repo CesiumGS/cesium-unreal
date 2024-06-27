@@ -236,7 +236,7 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
   UCesiumEllipsoid* pEllipsoid = pGeoreference->GetEllipsoid();
   check(IsValid(pEllipsoid));
 
-  Ellipsoid& pNativeEllipsoid = *pEllipsoid->GetNativeEllipsoid();
+  Ellipsoid& pNativeEllipsoid = pEllipsoid->GetNativeEllipsoid();
 
   // Another sub-level might be active right now, so we construct the correct
   // GeoTransforms instead of using the CesiumGeoreference's.

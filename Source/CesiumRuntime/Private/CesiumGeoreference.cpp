@@ -900,7 +900,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
 GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
   // Because GeoTransforms is deprecated, we only lazily update it.
   return GeoTransforms(
-      *this->GetEllipsoid()->GetNativeEllipsoid(),
+      this->GetEllipsoid()->GetNativeEllipsoid(),
       glm::dvec3(this->_coordinateSystem.getLocalToEcefTransformation()[3]),
       this->GetScale() / 100.0);
 }

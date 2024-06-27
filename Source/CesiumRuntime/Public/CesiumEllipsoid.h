@@ -122,7 +122,7 @@ public:
   /**
    * Returns the underlying {@link CesiumGeospatial::Ellipsoid}
    */
-  TSharedPtr<CesiumGeospatial::Ellipsoid> GetNativeEllipsoid();
+  CesiumGeospatial::Ellipsoid& GetNativeEllipsoid();
 
 protected:
   /**
@@ -138,5 +138,5 @@ protected:
   FVector Radii;
 
 private:
-  TSharedPtr<CesiumGeospatial::Ellipsoid> NativeEllipsoid = nullptr;
+  TUniquePtr<CesiumGeospatial::Ellipsoid> NativeEllipsoid = nullptr;
 };

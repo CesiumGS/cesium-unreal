@@ -362,7 +362,7 @@ FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
   CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
-      createEastSouthUp(anchor, *this->GetEllipsoid()->GetNativeEllipsoid());
+      createEastSouthUp(anchor, this->GetEllipsoid()->GetNativeEllipsoid());
 
   glm::dmat4 modelToEastSouthUp = anchor.getAnchorToLocalTransform(eastSouthUp);
 
@@ -393,7 +393,7 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
   CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
-      createEastSouthUp(anchor, *this->GetEllipsoid()->GetNativeEllipsoid());
+      createEastSouthUp(anchor, this->GetEllipsoid()->GetNativeEllipsoid());
 
   glm::dmat4 modelToEastSouthUp = anchor.getAnchorToLocalTransform(eastSouthUp);
 
@@ -412,7 +412,7 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
           scale);
 
   const CesiumGeospatial::Ellipsoid& ellipsoid =
-      *this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
+      this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
   anchor.setAnchorToLocalTransform(
       eastSouthUp,
@@ -694,7 +694,7 @@ CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
         local,
         newModelToLocal,
         this->AdjustOrientationForGlobeWhenMoving,
-        *this->GetEllipsoid()->GetNativeEllipsoid());
+        this->GetEllipsoid()->GetNativeEllipsoid());
     return cppAnchor;
   }
 }
@@ -715,7 +715,7 @@ UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
     cppAnchor.setAnchorToFixedTransform(
         VecMath::createMatrix4D(newActorToECEFMatrix),
         this->AdjustOrientationForGlobeWhenMoving,
-        *this->GetEllipsoid()->GetNativeEllipsoid());
+        this->GetEllipsoid()->GetNativeEllipsoid());
     return cppAnchor;
   }
 }

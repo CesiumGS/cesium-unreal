@@ -535,7 +535,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
 
   const CesiumGeospatial::Ellipsoid& ellipsoid =
-      *pGeoreference->GetEllipsoid()->GetNativeEllipsoid();
+      pGeoreference->GetEllipsoid()->GetNativeEllipsoid();
 
   // calculate unreal camera position
   glm::dvec3 ecefCameraPosition =
@@ -1075,7 +1075,7 @@ void ACesium3DTileset::LoadTileset() {
     this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
   }
 
-  TSharedPtr<CesiumGeospatial::Ellipsoid> pNativeEllipsoid =
+  CesiumGeospatial::Ellipsoid pNativeEllipsoid =
       this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
   ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
@@ -1098,7 +1098,7 @@ void ACesium3DTileset::LoadTileset() {
 
   Cesium3DTilesSelection::TilesetOptions options;
 
-  options.ellipsoid = *pNativeEllipsoid;
+  options.ellipsoid = pNativeEllipsoid;
 
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()
@@ -1625,7 +1625,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       size,
       horizontalFieldOfView,
       verticalFieldOfView,
-      *ellipsoid->GetNativeEllipsoid());
+      ellipsoid->GetNativeEllipsoid());
 }
 
 #if WITH_EDITOR

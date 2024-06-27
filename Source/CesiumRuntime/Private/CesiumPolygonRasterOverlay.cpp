@@ -45,8 +45,8 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
       this->InvertSelection,
-      *Ellipsoid->GetNativeEllipsoid(),
-      CesiumGeospatial::GeographicProjection(*Ellipsoid->GetNativeEllipsoid()),
+      Ellipsoid->GetNativeEllipsoid(),
+      CesiumGeospatial::GeographicProjection(Ellipsoid->GetNativeEllipsoid()),
       options);
 }
 
