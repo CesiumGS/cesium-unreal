@@ -250,6 +250,7 @@ void AGlobePawn::MousePanReleased() {
         Georeference->TransformUnrealPositionToLongitudeLatitudeHeight(
             PrePick) -
         Georeference->TransformUnrealPositionToLongitudeLatitudeHeight(CurPick);
+    DeltaPanCartographic /= 2.0;
     DeltaPanCartographic.Z = 0;
   }
 
