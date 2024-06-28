@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/DataAsset.h"
+#include "Misc/Optional.h"
 #include <CesiumGeospatial/LocalHorizontalCoordinateSystem.h>
 #include "CesiumEllipsoid.generated.h"
 
@@ -122,7 +123,7 @@ public:
   /**
    * Returns the underlying {@link CesiumGeospatial::Ellipsoid}
    */
-  CesiumGeospatial::Ellipsoid& GetNativeEllipsoid();
+  const CesiumGeospatial::Ellipsoid& GetNativeEllipsoid();
 
 protected:
   /**
@@ -138,5 +139,10 @@ protected:
   FVector Radii;
 
 private:
-  TUniquePtr<CesiumGeospatial::Ellipsoid> NativeEllipsoid = nullptr;
+#if WITH_EDITOR
+  virtual void
+  PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
+#endif
+
+  TOptional<CesiumGeospatial::Ellipsoid> NativeEllipsoid;
 };

@@ -2,11 +2,19 @@
 
 #include "CesiumEllipsoid.h"
 #include "CesiumEllipsoidFunctions.h"
+#include "CesiumGeoreference.h"
 #include "CesiumRuntime.h"
 #include "VecMath.h"
 
+#include "EngineUtils.h"
 #include "MathUtil.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/ObjectSaveContext.h"
+
+#if WITH_EDITOR
+#include "Editor.h"
+#include "LevelEditor.h"
+#endif
 
 #include <CesiumGeospatial/Ellipsoid.h>
 
@@ -80,10 +88,10 @@ UCesiumEllipsoid::CreateCoordinateSystem(const FVector& Center, double Scale) {
   }
 }
 
-Ellipsoid& UCesiumEllipsoid::GetNativeEllipsoid() {
+const Ellipsoid& UCesiumEllipsoid::GetNativeEllipsoid() {
   const double MinRadiiValue = TMathUtilConstants<double>::Epsilon;
 
-  if (!this->NativeEllipsoid.IsValid()) {
+  if (!this->NativeEllipsoid.IsSet()) {
     // Radii of zero will throw Infs and NaNs into our calculations which will
     // cause Unreal to crash when the values reach a transform.
     if (this->Radii.X < MinRadiiValue || this->Radii.Y < MinRadiiValue ||
@@ -95,11 +103,38 @@ Ellipsoid& UCesiumEllipsoid::GetNativeEllipsoid() {
               "Radii must be greater than 0 - clamping to minimum value to avoid crashes."));
     }
 
-    this->NativeEllipsoid = MakeUnique<CesiumGeospatial::Ellipsoid>(
+    this->NativeEllipsoid.Emplace(Ellipsoid(
         FMath::Max(this->Radii.X, MinRadiiValue),
         FMath::Max(this->Radii.Y, MinRadiiValue),
-        FMath::Max(this->Radii.Z, MinRadiiValue));
+        FMath::Max(this->Radii.Z, MinRadiiValue)));
   }
 
   return *this->NativeEllipsoid;
 }
+
+#if WITH_EDITOR
+void UCesiumEllipsoid::PostSaveRoot(
+    FObjectPostSaveRootContext ObjectSaveContext) {
+  if (!IsValid(GEditor)) {
+    return;
+  }
+
+  GEditor->GetWorld();
+
+  UWorld* World = GEditor->GetEditorWorldContext().World();
+  if (!IsValid(World)) {
+    return;
+  }
+
+  // Go through every georeference and update its ellipsoid if it's this
+  // ellipsoid, since we might have modified values after saving.
+  if (ObjectSaveContext.SaveSucceeded()) {
+    for (TActorIterator<ACesiumGeoreference> It(World); It; ++It) {
+      ACesiumGeoreference* Georeference = *It;
+      if (Georeference->GetEllipsoid() == this) {
+        Georeference->SetEllipsoid(this);
+      }
+    }
+  }
+}
+#endif

@@ -606,6 +606,7 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
 void ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged(
     UCesiumEllipsoid* OldEllipsoid,
     UCesiumEllipsoid* NewEllpisoid) {
+  UE_LOG(LogCesium, Warning, TEXT("Ellipsoid changed"));
   this->RefreshTileset();
 }
 

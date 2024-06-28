@@ -592,7 +592,7 @@ private:
    * Height. The Actor's position and orientation are recomputed from the
    * Component's globe (ECEF) position and orientation.
    */
-  UFUNCTION()
+  UFUNCTION(CallInEditor)
   void _onGeoreferenceChanged();
 
   friend class FCesiumGlobeAnchorCustomization;
