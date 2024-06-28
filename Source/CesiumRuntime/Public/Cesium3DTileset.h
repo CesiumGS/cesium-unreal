@@ -277,6 +277,12 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool ShowCreditsOnScreen = false;
 
+   /**
+   * Whether or not to enforce collision building even for degenerate triangles
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Physics")
+  bool ForceBuildChaosTriangleMeshes = false;
+
   /** @copydoc ACesium3DTileset::CameraManager */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   TSoftObjectPtr<ACesiumCameraManager> GetCameraManager() const;

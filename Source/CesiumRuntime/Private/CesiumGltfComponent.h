@@ -66,7 +66,8 @@ public:
 
   static TUniquePtr<HalfConstructed> CreateOffGameThread(
       const glm::dmat4x4& Transform,
-      const CreateGltfOptions::CreateModelOptions& Options);
+      const CreateGltfOptions::CreateModelOptions& Options,
+      bool forceBuildChaosTriangleMeshes);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       CesiumGltf::Model& model,
