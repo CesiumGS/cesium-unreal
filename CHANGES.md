@@ -6,6 +6,7 @@
 
 - Removed unnecessary alpha check when selecting translucent base materials.
 - Fixed a crash caused by `CesiumSunSky` when no viewport is activated in the Editor.
+- Fixed build issues in Unreal 5.4.2 relating to `UStaticMesh` and `glm::toMat4`. 
 
 ### v2.6.0 - 2024-06-03
 
