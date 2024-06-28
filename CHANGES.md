@@ -2,6 +2,11 @@
 
 ### ? - ?
 
+##### Additions :tada:
+- Cesium for Unreal now supports using non-WGS84 ellipsoids.
+  - An `UCesiumEllipsoid` asset should be specified on the `Ellipsoid` field of an `ACesiumGeoreference`.
+  - To create a `UCesiumEllipsoid` asset, right-click in the Content Drawer and select "Data Asset" under "Miscellaneous." Choose "Cesium Ellipsoid" from the menu that appears.
+
 ##### Fixes :wrench:
 
 - Removed unnecessary alpha check when selecting translucent base materials.

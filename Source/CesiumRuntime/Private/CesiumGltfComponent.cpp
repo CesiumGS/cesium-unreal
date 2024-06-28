@@ -1131,7 +1131,8 @@ static void loadPrimitive(
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
     const TIndexAccessor& indicesView,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
@@ -1558,8 +1559,7 @@ static void loadPrimitive(
       TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
           glm::affineInverse(transform) *
           glm::dvec4(
-              CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
-                  glm::dvec3(ecefCenter)),
+              ellipsoid.geodeticSurfaceNormal(glm::dvec3(ecefCenter)),
               0.0)));
       upDir.Y *= -1;
       setUniformNormals(StaticMeshBuildVertices, upDir);
@@ -1693,7 +1693,8 @@ static void loadIndexedPrimitive(
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
@@ -1709,7 +1710,8 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor,
-        textureResources);
+        textureResources,
+        ellipsoid);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1722,7 +1724,8 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor,
-        textureResources);
+        textureResources,
+        ellipsoid);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1735,7 +1738,8 @@ static void loadIndexedPrimitive(
         positionAccessor,
         positionView,
         indexAccessor,
-        textureResources);
+        textureResources,
+        ellipsoid);
     primitiveResult.IndexAccessor = indexAccessor;
   } else {
     UE_LOG(
@@ -1750,7 +1754,8 @@ static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
@@ -1786,7 +1791,8 @@ static void loadPrimitive(
         *pPositionAccessor,
         positionView,
         syntheticIndexBuffer,
-        textureResources);
+        textureResources,
+        ellipsoid);
   } else {
     loadIndexedPrimitive(
         result,
@@ -1794,7 +1800,8 @@ static void loadPrimitive(
         options,
         *pPositionAccessor,
         positionView,
-        textureResources);
+        textureResources,
+        ellipsoid);
   }
   result.PositionAccessor = std::move(positionView);
 }
@@ -1803,7 +1810,8 @@ static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
     const CreateMeshOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
@@ -1819,7 +1827,8 @@ static void loadMesh(
         primitiveResult,
         transform,
         primitiveOptions,
-        textureResources);
+        textureResources,
+        ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
@@ -1975,7 +1984,8 @@ static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -2055,7 +2065,12 @@ static void loadNode(
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
-    loadMesh(result.meshResult, nodeTransform, meshOptions, textureResources);
+    loadMesh(
+        result.meshResult,
+        nodeTransform,
+        meshOptions,
+        textureResources,
+        ellipsoid);
   }
 
   for (int childNodeId : node.children) {
@@ -2068,7 +2083,8 @@ static void loadNode(
           loadNodeResults,
           nodeTransform,
           childNodeOptions,
-          textureResources);
+          textureResources,
+          ellipsoid);
     }
   }
 }
@@ -2215,7 +2231,8 @@ static void loadModelAnyThreadPart(
     LoadModelResult& result,
     const glm::dmat4x4& transform,
     const CreateModelOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    std::vector<FCesiumTextureResourceBase*>& textureResources,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
   Model& model = *options.pModel;
@@ -2282,7 +2299,8 @@ static void loadModelAnyThreadPart(
           result.nodeResults,
           rootTransform,
           nodeOptions,
-          textureResources);
+          textureResources,
+          ellipsoid);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
@@ -2293,12 +2311,18 @@ static void loadModelAnyThreadPart(
           result.nodeResults,
           rootTransform,
           nodeOptions,
-          textureResources);
+          textureResources,
+          ellipsoid);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
-    loadNode(result.nodeResults, rootTransform, nodeOptions, textureResources);
+    loadNode(
+        result.nodeResults,
+        rootTransform,
+        nodeOptions,
+        textureResources,
+        ellipsoid);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (Mesh& mesh : model.meshes) {
@@ -2312,7 +2336,8 @@ static void loadModelAnyThreadPart(
           dummyNodeResult.meshResult,
           rootTransform,
           meshOptions,
-          textureResources);
+          textureResources,
+          ellipsoid);
     }
   }
 }
@@ -3445,7 +3470,8 @@ static void loadPrimitiveGameThreadPart(
 /*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
-    const CreateModelOptions& Options) {
+    const CreateModelOptions& Options,
+    const CesiumGeospatial::Ellipsoid& Ellipsoid) {
   std::vector<FCesiumTextureResourceBase*> textureResources;
   textureResources.resize(Options.pModel->images.size(), nullptr);
 
@@ -3454,7 +3480,8 @@ UCesiumGltfComponent::CreateOffGameThread(
       pResult->loadModelResult,
       Transform,
       Options,
-      textureResources);
+      textureResources,
+      Ellipsoid);
 
   return pResult;
 }

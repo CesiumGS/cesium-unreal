@@ -76,7 +76,10 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     return;
   }
 
-  FVector upEcef = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+  UCesiumEllipsoid* pEllipsoid = pGeoreference->GetEllipsoid();
+  check(IsValid(pEllipsoid));
+
+  FVector upEcef = pEllipsoid->GeodeticSurfaceNormal(
       this->GlobeAnchor->GetEarthCenteredEarthFixedPosition());
   FVector up =
       pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(upEcef);

@@ -1,10 +1,9 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumWgs84Ellipsoid.h"
+#include "CesiumEllipsoidFunctions.h"
 #include "VecMath.h"
 #include <CesiumGeospatial/Ellipsoid.h>
-#include <CesiumGeospatial/GlobeTransforms.h>
-#include <CesiumUtility/Math.h>
 
 using namespace CesiumGeospatial;
 using namespace CesiumUtility;
@@ -24,49 +23,37 @@ double UCesiumWgs84Ellipsoid::GetMinimumRadius() {
 
 FVector UCesiumWgs84Ellipsoid::ScaleToGeodeticSurface(
     const FVector& EarthCenteredEarthFixedPosition) {
-  std::optional<glm::dvec3> result = Ellipsoid::WGS84.scaleToGeodeticSurface(
-      VecMath::createVector3D(EarthCenteredEarthFixedPosition));
-  if (result) {
-    return VecMath::createVector(*result);
-  } else {
-    return FVector(0.0, 0.0, 0.0);
-  }
+  return CesiumEllipsoidFunctions::ScaleToGeodeticSurface(
+      Ellipsoid::WGS84,
+      EarthCenteredEarthFixedPosition);
 }
 
 FVector UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
     const FVector& EarthCenteredEarthFixedPosition) {
-  return VecMath::createVector(Ellipsoid::WGS84.geodeticSurfaceNormal(
-      VecMath::createVector3D(EarthCenteredEarthFixedPosition)));
+  return CesiumEllipsoidFunctions::GeodeticSurfaceNormal(
+      Ellipsoid::WGS84,
+      EarthCenteredEarthFixedPosition);
 }
 
 FVector UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
     const FVector& LongitudeLatitudeHeight) {
-  glm::dvec3 cartesian =
-      Ellipsoid::WGS84.cartographicToCartesian(Cartographic::fromDegrees(
-          LongitudeLatitudeHeight.X,
-          LongitudeLatitudeHeight.Y,
-          LongitudeLatitudeHeight.Z));
-  return VecMath::createVector(cartesian);
+  return CesiumEllipsoidFunctions::
+      LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+          Ellipsoid::WGS84,
+          LongitudeLatitudeHeight);
 }
 
 FVector UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
     const FVector& EarthCenteredEarthFixedPosition) {
-  std::optional<Cartographic> result = Ellipsoid::WGS84.cartesianToCartographic(
-      VecMath::createVector3D(EarthCenteredEarthFixedPosition));
-  if (result) {
-    return FVector(
-        Math::radiansToDegrees(result->longitude),
-        Math::radiansToDegrees(result->latitude),
-        result->height);
-  } else {
-    return FVector(0.0, 0.0, 0.0);
-  }
+  return CesiumEllipsoidFunctions::
+      EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+          Ellipsoid::WGS84,
+          EarthCenteredEarthFixedPosition);
 }
 
 FMatrix UCesiumWgs84Ellipsoid::EastNorthUpToEarthCenteredEarthFixed(
     const FVector& EarthCenteredEarthFixedPosition) {
-  return VecMath::createMatrix(
-      CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
-          VecMath::createVector3D(EarthCenteredEarthFixedPosition),
-          CesiumGeospatial::Ellipsoid::WGS84));
+  return CesiumEllipsoidFunctions::EastNorthUpToEllipsoidCenteredEllipsoidFixed(
+      Ellipsoid::WGS84,
+      EarthCenteredEarthFixedPosition);
 }
