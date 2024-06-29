@@ -43,6 +43,11 @@ set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CES
 # We don't want any mismatches, especially with class member ordering
 add_compile_definitions(NDEBUG)
 
+# Let debug builds force assertions, because NDEBUG is always defined
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_definitions(CESIUM_FORCE_ASSERTIONS)
+endif()
+
 set(CESIUM_DEBUG_POSTFIX "d")
 set(CESIUM_RELEASE_POSTFIX "")
 
