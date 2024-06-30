@@ -83,6 +83,15 @@ namespace {
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
 using TMeshVector4 = FVector4f;
+
+// We scale up the meshes because Chaos has a degenerate triangle
+// epsilon test in `TriangleMeshImplicitObject.cpp` that is almost laughably
+// too eager. Perhaps it would be fine if our meshes actually used units of
+// centimeters like UE, but they usually use meters instead. UE considering
+// a triangle that is ~10cm on each side to be degenerate is... infuriating.
+//
+// We scale up the collision meshes by a power-of-two factor so that only
+// the exponent portion of the floating point number is affected.
 constexpr double scaleFactor = 1024.0;
 } // namespace
 
@@ -3845,14 +3854,6 @@ BuildChaosTriangleMeshes(
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
   for (int32 i = 0; i < vertexCount; ++i) {
-    // Scale up the collision meshes because Unreal has a degenerate triangle
-    // epsilon test in `TriangleMeshImplicitObject.cpp` that is almost laughably
-    // too eager. Perhaps it would be fine if our meshes actually used units of
-    // centimeters like UE, but they usually use meters instead. UE considering
-    // a triangle that is ~10cm on each side to be degenerate is... infuriating.
-    //
-    // We scale up the collision meshes by a power-of-two factor so that only
-    // the exponent portion of the floating point number is affected.
     vertices.X(i) = vertexData[i].Position;
   }
 
@@ -3868,15 +3869,8 @@ BuildChaosTriangleMeshes(
     int32 vIndex1 = indices[index0];
     int32 vIndex2 = indices[index0 + 2];
 
-    // if (!isTriangleDegenerate(
-    //         vertices.X(vIndex0),
-    //         vertices.X(vIndex1),
-    //         vertices.X(vIndex2))) {
     triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
     faceRemap.Add(i);
-    //} else {
-    //  UE_LOG(LogCesium, Warning, TEXT("Degenerate"));
-    //}
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
