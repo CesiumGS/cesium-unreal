@@ -127,8 +127,9 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
   std::array<FVector, 3> Positions;
   for (size_t i = 0; i < Positions.size(); i++) {
     auto& Position = primData.PositionAccessor[VertexIndices[i]];
-    // The Y-component of glTF positions must be inverted
-    Positions[i] = FVector(Position[0], -Position[1], Position[2]);
+    // The Y-component of glTF positions must be inverted\
+    // TODO: don't hardcode this 1024.0 here.
+    Positions[i] = FVector(Position[0], -Position[1], Position[2]) * 1024.0;
   }
 
   const FVector Location =

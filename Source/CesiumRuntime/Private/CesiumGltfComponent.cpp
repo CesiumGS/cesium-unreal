@@ -83,6 +83,7 @@ namespace {
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
 using TMeshVector4 = FVector4f;
+constexpr double scaleFactor = 1024.0;
 } // namespace
 
 static uint32_t nextMaterialId = 0;
@@ -1309,6 +1310,9 @@ static void loadPrimitive(
       maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
 
+    minPosition *= scaleFactor;
+    maxPosition *= scaleFactor;
+
     primitiveResult.dimensions =
         glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
 
@@ -1370,9 +1374,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector3& pos = positionView[vertexIndex];
-        vertex.Position.X = pos.X;
-        vertex.Position.Y = -pos.Y;
-        vertex.Position.Z = pos.Z;
+        vertex.Position.X = pos.X * scaleFactor;
+        vertex.Position.Y = -pos.Y * scaleFactor;
+        vertex.Position.Z = pos.Z * scaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1384,9 +1388,9 @@ static void loadPrimitive(
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector3& pos = positionView[i];
-        vertex.Position.X = pos.X;
-        vertex.Position.Y = -pos.Y;
-        vertex.Position.Z = pos.Z;
+        vertex.Position.X = pos.X * scaleFactor;
+        vertex.Position.Y = -pos.Y * scaleFactor;
+        vertex.Position.Z = pos.Z * scaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1669,7 +1673,14 @@ static void loadPrimitive(
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
 
-  primitiveResult.transform = transform * yInvertMatrix;
+  double scale = 1.0 / scaleFactor;
+  glm::dmat4 scaleMatrix = glm::dmat4(
+      glm::dvec4(scale, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, scale, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, scale, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
+  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
@@ -3834,6 +3845,14 @@ BuildChaosTriangleMeshes(
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
   for (int32 i = 0; i < vertexCount; ++i) {
+    // Scale up the collision meshes because Unreal has a degenerate triangle
+    // epsilon test in `TriangleMeshImplicitObject.cpp` that is almost laughably
+    // too eager. Perhaps it would be fine if our meshes actually used units of
+    // centimeters like UE, but they usually use meters instead. UE considering
+    // a triangle that is ~10cm on each side to be degenerate is... infuriating.
+    //
+    // We scale up the collision meshes by a power-of-two factor so that only
+    // the exponent portion of the floating point number is affected.
     vertices.X(i) = vertexData[i].Position;
   }
 
@@ -3849,13 +3868,15 @@ BuildChaosTriangleMeshes(
     int32 vIndex1 = indices[index0];
     int32 vIndex2 = indices[index0 + 2];
 
-    if (!isTriangleDegenerate(
-            vertices.X(vIndex0),
-            vertices.X(vIndex1),
-            vertices.X(vIndex2))) {
-      triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
-      faceRemap.Add(i);
-    }
+    // if (!isTriangleDegenerate(
+    //         vertices.X(vIndex0),
+    //         vertices.X(vIndex1),
+    //         vertices.X(vIndex2))) {
+    triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
+    faceRemap.Add(i);
+    //} else {
+    //  UE_LOG(LogCesium, Warning, TEXT("Degenerate"));
+    //}
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
