@@ -91,7 +91,7 @@ TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(
       .HeightOverride(40.0f)
       .Content()
       [
-        SNew(SHorizontalBox) + 
+        SNew(SHorizontalBox) +
           SHorizontalBox::Slot()
             .FillWidth(1.0f)
             .Padding(5.0f)
@@ -338,9 +338,35 @@ void SetBytePropertyValue(
 } // namespace
 
 void IonQuickAddPanel::AddDynamicPawnToLevel() {
+  AActor* pCurPawn = FCesiumEditorModule::GetCurrentLevelGlobePawn();
+  if (pCurPawn) {
+    pCurPawn->Destroy();
+  }
+
   AActor* pActor = FCesiumEditorModule::GetCurrentLevelDynamicPawn();
   if (!pActor) {
     pActor = FCesiumEditorModule::SpawnDynamicPawn();
+  }
+
+  if (pActor) {
+    uint8 autoPossessValue =
+        static_cast<uint8>(EAutoReceiveInput::Type::Player0);
+    SetBytePropertyValue(pActor, "AutoPossessPlayer", autoPossessValue);
+
+    GEditor->SelectNone(true, false);
+    GEditor->SelectActor(pActor, true, true, true, true);
+  }
+}
+
+void IonQuickAddPanel::AddGlobePawnToLevel() {
+  AActor* pCurPawn = FCesiumEditorModule::GetCurrentLevelDynamicPawn();
+  if (pCurPawn) {
+    pCurPawn->Destroy();
+  }
+
+  AActor* pActor = FCesiumEditorModule::GetCurrentLevelGlobePawn();
+  if (!pActor) {
+    pActor = FCesiumEditorModule::SpawnGlobePawn();
   }
 
   if (pActor) {
@@ -378,6 +404,9 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     this->_itemsBeingAdded.erase(item->name);
   } else if (item->type == QuickAddItemType::DYNAMIC_PAWN) {
     AddDynamicPawnToLevel();
+    this->_itemsBeingAdded.erase(item->name);
+  } else if (item->type == QuickAddItemType::GLOBE_PAWN) {
+    AddGlobePawnToLevel();
     this->_itemsBeingAdded.erase(item->name);
   } else if (item->type == QuickAddItemType::CARTOGRAPHIC_POLYGON) {
     FCesiumEditorModule::SpawnCartographicPolygon();

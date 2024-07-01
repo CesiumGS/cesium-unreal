@@ -241,6 +241,14 @@ TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
       "",
       -1});
   quickAddPanel->AddItem(QuickAddItem{
+      QuickAddItemType::GLOBE_PAWN,
+      "Globe Pawn",
+      "A pawn that can be used to control the earth globe.",
+      "",
+      -1,
+      "",
+      -1});
+  quickAddPanel->AddItem(QuickAddItem{
       QuickAddItemType::CARTOGRAPHIC_POLYGON,
       "Cesium Cartographic Polygon",
       "An actor that can be used to draw out regions for use with clipping or other material effects.",

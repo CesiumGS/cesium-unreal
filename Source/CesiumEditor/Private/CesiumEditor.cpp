@@ -22,6 +22,7 @@
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "GlobePawn.h"
 #include "Interfaces/IPluginManager.h"
 #include "LevelEditor.h"
 #include "PropertyEditorModule.h"
@@ -698,12 +699,40 @@ AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
   return GetFirstCurrentLevelActorWithClass(GetDynamicPawnBlueprintClass());
 }
 
+AActor* FCesiumEditorModule::GetCurrentLevelGlobePawn() {
+  return GetFirstCurrentLevelActorWithClass(GetGlobePawnBlueprintClass());
+}
+
 AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
   return SpawnActorWithClass(GetCesiumSunSkyClass());
 }
 
 AActor* FCesiumEditorModule::SpawnDynamicPawn() {
   return SpawnActorWithClass(GetDynamicPawnBlueprintClass());
+}
+
+AActor* FCesiumEditorModule::SpawnGlobePawn() {
+  AActor* pActor = SpawnActorWithClass(GetGlobePawnBlueprintClass());
+
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ACesiumGeoreference* Georeference =
+      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
+  if (Georeference) {
+    AGlobePawn* pGlobePawn = Cast<AGlobePawn>(pActor);
+    UActorComponent* pComponent = pGlobePawn->GetComponentByClass(
+        UCesiumGlobeAnchorComponent::StaticClass());
+    UCesiumGlobeAnchorComponent* pGlobeAnchorComponent =
+        Cast<UCesiumGlobeAnchorComponent>(pComponent);
+    pGlobeAnchorComponent->SetGeoreference(Georeference);
+    pGlobeAnchorComponent->MoveToLongitudeLatitudeHeight(FVector(
+        Georeference->GetOriginLongitude(),
+        Georeference->GetOriginLatitude(),
+        6957358.651689));
+    pGlobePawn->SetActorScale3D(FVector(1.0, 1.0, 1.0));
+    FRotator pawnRotation{-89.0, -90.0, 0.0};
+    pGlobeAnchorComponent->SetEastSouthUpRotation(pawnRotation.Quaternion());
+  }
+  return pActor;
 }
 
 UClass* FCesiumEditorModule::GetCesiumSunSkyClass() {
@@ -730,6 +759,24 @@ UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {
           LogCesiumEditor,
           Warning,
           TEXT("Could not load /CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+    }
+  }
+
+  return pResult;
+}
+
+UClass* FCesiumEditorModule::GetGlobePawnBlueprintClass() {
+  static UClass* pResult = nullptr;
+
+  if (!pResult) {
+    pResult = LoadClass<AActor>(
+        nullptr,
+        TEXT("/CesiumForUnreal/GlobePawn.GlobePawn_C"));
+    if (!pResult) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT("Could not load /CesiumForUnreal/GlobePawn.GlobePawn_C"));
     }
   }
 
