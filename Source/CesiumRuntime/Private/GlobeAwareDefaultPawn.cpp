@@ -21,8 +21,7 @@
 #include <glm/ext/vector_double3.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #if WITH_EDITOR
 #include "Editor.h"

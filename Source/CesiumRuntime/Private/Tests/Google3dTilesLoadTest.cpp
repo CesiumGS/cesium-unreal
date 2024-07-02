@@ -289,7 +289,7 @@ bool FGoogleTilesMaxTileLoads::RunTest(const FString& Parameters) {
         getCacheDatabase();
     pCacheDatabase->clearAll();
 
-    int maxLoadsTarget = std::get<int>(parameter);
+    int maxLoadsTarget = swl::get<int>(parameter);
     context.setMaximumSimultaneousTileLoads(maxLoadsTarget);
 
     context.refreshTilesets();

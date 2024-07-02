@@ -147,6 +147,30 @@ bool isFile(const std::string& url) {
   return url.compare(0, sizeof(fileProtocol) - 1, fileProtocol) == 0;
 }
 
+void rejectPromiseOnUnsuccessfulConnection(
+    const CesiumAsync::Promise<std::shared_ptr<CesiumAsync::IAssetRequest>>&
+        promise,
+    FHttpRequestPtr pRequest) {
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  if (pRequest->GetStatus() == EHttpRequestStatus::Failed) {
+    EHttpFailureReason failureReason = pRequest->GetFailureReason();
+    promise.reject(std::runtime_error(fmt::format(
+        "Request failed: {}",
+        TCHAR_TO_UTF8(LexToString(failureReason)))));
+  } else {
+    promise.reject(std::runtime_error(fmt::format(
+        "Request not successful: {}",
+        TCHAR_TO_UTF8(ToString(pRequest->GetStatus())))));
+  }
+#else
+  if (pRequest->GetStatus() == EHttpRequestStatus::Failed_ConnectionError) {
+    promise.reject(std::runtime_error("Connection failed."));
+  } else {
+    promise.reject(std::runtime_error("Request failed."));
+  }
+#endif
+}
+
 } // namespace
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
@@ -196,12 +220,7 @@ UnrealAssetAccessor::get(
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
               } else {
-                switch (pRequest->GetStatus()) {
-                case EHttpRequestStatus::Failed_ConnectionError:
-                  promise.reject(std::runtime_error("Connection failed."));
-                default:
-                  promise.reject(std::runtime_error("Request failed."));
-                }
+                rejectPromiseOnUnsuccessfulConnection(promise, pRequest);
               }
             });
 
@@ -259,12 +278,7 @@ UnrealAssetAccessor::request(
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
               } else {
-                switch (pRequest->GetStatus()) {
-                case EHttpRequestStatus::Failed_ConnectionError:
-                  promise.reject(std::runtime_error("Connection failed."));
-                default:
-                  promise.reject(std::runtime_error("Request failed."));
-                }
+                rejectPromiseOnUnsuccessfulConnection(promise, pRequest);
               }
             });
 

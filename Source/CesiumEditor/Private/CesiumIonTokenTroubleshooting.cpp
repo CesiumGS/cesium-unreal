@@ -46,7 +46,7 @@ using namespace CesiumIonClient;
   // If this is a tileset, close any already-open panels associated with its
   // overlays. Overlays won't appear until the tileset is working anyway.
   TWeakObjectPtr<ACesium3DTileset>* ppTileset =
-      std::get_if<TWeakObjectPtr<ACesium3DTileset>>(&ionObject);
+      swl::get_if<TWeakObjectPtr<ACesium3DTileset>>(&ionObject);
   if (ppTileset && ppTileset->IsValid()) {
     TArray<UCesiumRasterOverlay*> rasterOverlays;
     (*ppTileset)->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
@@ -69,7 +69,7 @@ using namespace CesiumIonClient;
   // If this is a raster overlay and this panel is already open for its attached
   // tileset, don't open the panel for the overlay for the same reason as above.
   TWeakObjectPtr<UCesiumRasterOverlay>* ppRasterOverlay =
-      std::get_if<TWeakObjectPtr<UCesiumRasterOverlay>>(&ionObject);
+      swl::get_if<TWeakObjectPtr<UCesiumRasterOverlay>>(&ionObject);
   if (ppRasterOverlay && ppRasterOverlay->IsValid()) {
     ACesium3DTileset* pOwner =
         Cast<ACesium3DTileset>((*ppRasterOverlay)->GetOwner());
@@ -145,7 +145,7 @@ addTokenCheck(const FString& label, std::optional<bool>& state) {
 }
 
 bool isNull(const CesiumIonObject& o) {
-  return std::visit([](auto p) { return p == nullptr; }, o);
+  return swl::visit([](auto p) { return p == nullptr; }, o);
 }
 
 FString getLabel(const CesiumIonObject& o) {
@@ -160,11 +160,11 @@ FString getLabel(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return swl::visit(Operation(), o);
 }
 
 FString getName(const CesiumIonObject& o) {
-  return std::visit([](auto p) { return p->GetName(); }, o);
+  return swl::visit([](auto p) { return p->GetName(); }, o);
 }
 
 int64 getIonAssetID(const CesiumIonObject& o) {
@@ -192,7 +192,7 @@ int64 getIonAssetID(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return swl::visit(Operation(), o);
 }
 
 FString getIonAccessToken(const CesiumIonObject& o) {
@@ -220,7 +220,7 @@ FString getIonAccessToken(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return swl::visit(Operation(), o);
 }
 
 void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
@@ -255,7 +255,7 @@ void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
     }
   };
 
-  return std::visit(Operation{newToken}, o);
+  return swl::visit(Operation{newToken}, o);
 }
 
 FString getObjectType(const CesiumIonObject& o) {
@@ -269,11 +269,11 @@ FString getObjectType(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return swl::visit(Operation(), o);
 }
 
 UObject* asUObject(const CesiumIonObject& o) {
-  return std::visit(
+  return swl::visit(
       [](auto p) -> UObject* { return p.IsValid() ? p.Get() : nullptr; },
       o);
 }
@@ -294,7 +294,7 @@ bool isUsingCesiumIon(const CesiumIonObject& o) {
     }
   };
 
-  return std::visit(Operation(), o);
+  return swl::visit(Operation(), o);
 }
 
 UCesiumIonServer* getCesiumIonServer(const CesiumIonObject& o) {
@@ -314,7 +314,7 @@ UCesiumIonServer* getCesiumIonServer(const CesiumIonObject& o) {
     }
   };
 
-  UCesiumIonServer* pServer = std::visit(Operation{}, o);
+  UCesiumIonServer* pServer = swl::visit(Operation{}, o);
   if (!IsValid(pServer)) {
     pServer = UCesiumIonServer::GetDefaultServer();
   }

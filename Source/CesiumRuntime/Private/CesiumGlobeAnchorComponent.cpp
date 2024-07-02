@@ -9,7 +9,7 @@
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 // quick macro for ellipsoid existence check
 #define ELLIPSOID_CHECK(thiz, ret)                                             \

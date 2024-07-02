@@ -75,29 +75,19 @@ jobs:
       unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-linux"
       clang-version: "v21_clang-15.0.1-centos7"
-  macOS52:
-    uses: ./.github/workflows/buildMac.yml
+  Apple52:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-12
+      runner-label: macos-14
       unreal-engine-version: "5.2.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
       unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-macos"
-      xcode-version: "14.2"
-  iOS52:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-12
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-ios"
-      xcode-version: "14.2"
+      upload-package-base-name: "CesiumForUnreal-52-apple"
+      xcode-version: "14.3.1"
   Combine52:
     runs-on: ubuntu-latest
-    needs: [Windows52, Linux52, Android52, MacOS52, iOS52]
+    needs: [Windows52, Linux52, Android52, Apple52]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -110,15 +100,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-52-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-52-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -208,29 +193,19 @@ jobs:
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-linux"
       clang-version: "v22_clang-16.0.6-centos7"
-  macOS53:
-    uses: ./.github/workflows/buildMac.yml
+  Apple53:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-12
+      runner-label: macos-14
       unreal-engine-version: "5.3.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
       unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-macos"
-      xcode-version: "14.2"
-  iOS53:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-12
-      unreal-engine-version: "5.3.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
-      unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-ios"
-      xcode-version: "14.2"
+      upload-package-base-name: "CesiumForUnreal-53-apple"
+      xcode-version: "14.3.1"
   Combine53:
     runs-on: ubuntu-latest
-    needs: [Windows53, Android53, Linux53, MacOS53, iOS53]
+    needs: [Windows53, Android53, Linux53, Apple53]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -243,15 +218,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-53-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-53-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-53-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -341,29 +311,19 @@ jobs:
       unreal-program-name: "UE_5.4"
       upload-package-base-name: "CesiumForUnreal-54-linux"
       clang-version: "v22_clang-16.0.6-centos7"
-  macOS54:
-    uses: ./.github/workflows/buildMac.yml
+  Apple54:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-13
+      runner-label: macos-14
       unreal-engine-version: "5.4.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
       unreal-program-name: "UE_5.4"
-      upload-package-base-name: "CesiumForUnreal-54-macos"
-      xcode-version: "14.2"
-  iOS54:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-13
-      unreal-engine-version: "5.4.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
-      unreal-program-name: "UE_5.4"
-      upload-package-base-name: "CesiumForUnreal-54-ios"
-      xcode-version: "14.2"
+      upload-package-base-name: "CesiumForUnreal-54-apple"
+      xcode-version: "14.3.1"
   Combine54:
     runs-on: ubuntu-latest
-    needs: [Windows54, Android54, Linux54, MacOS54, iOS54]
+    needs: [Windows54, Android54, Linux54, Apple54]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -376,15 +336,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-54-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-54-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-54-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
