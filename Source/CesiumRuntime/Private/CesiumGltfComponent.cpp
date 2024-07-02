@@ -83,16 +83,6 @@ namespace {
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
 using TMeshVector4 = FVector4f;
-
-// We scale up the meshes because Chaos has a degenerate triangle
-// epsilon test in `TriangleMeshImplicitObject.cpp` that is almost laughably
-// too eager. Perhaps it would be fine if our meshes actually used units of
-// centimeters like UE, but they usually use meters instead. UE considering
-// a triangle that is ~10cm on each side to be degenerate is... infuriating.
-//
-// We scale up the collision meshes by a power-of-two factor so that only
-// the exponent portion of the floating point number is affected.
-constexpr double scaleFactor = 1024.0;
 } // namespace
 
 static uint32_t nextMaterialId = 0;
@@ -1319,8 +1309,8 @@ static void loadPrimitive(
       maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
 
-    minPosition *= scaleFactor;
-    maxPosition *= scaleFactor;
+    minPosition *= CesiumPrimitiveData::positionScaleFactor;
+    maxPosition *= CesiumPrimitiveData::positionScaleFactor;
 
     primitiveResult.dimensions =
         glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
@@ -1383,9 +1373,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector3& pos = positionView[vertexIndex];
-        vertex.Position.X = pos.X * scaleFactor;
-        vertex.Position.Y = -pos.Y * scaleFactor;
-        vertex.Position.Z = pos.Z * scaleFactor;
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1397,9 +1387,9 @@ static void loadPrimitive(
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector3& pos = positionView[i];
-        vertex.Position.X = pos.X * scaleFactor;
-        vertex.Position.Y = -pos.Y * scaleFactor;
-        vertex.Position.Z = pos.Z * scaleFactor;
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1682,7 +1672,7 @@ static void loadPrimitive(
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
 
-  double scale = 1.0 / scaleFactor;
+  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
   glm::dmat4 scaleMatrix = glm::dmat4(
       glm::dvec4(scale, 0.0, 0.0, 0.0),
       glm::dvec4(0.0, scale, 0.0, 0.0),
