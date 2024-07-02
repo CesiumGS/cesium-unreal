@@ -1,5 +1,5 @@
 name: Cesium for Unreal
-on: [push]
+on: [push, workflow_dispatch]
 jobs:
   QuickChecks:
     name: "Quick Checks"
@@ -11,6 +11,25 @@ jobs:
         run: |
           npm install
           npm run format -- --dry-run -Werror
+  Documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Doxygen
+        run: |
+          sudo apt install -y doxygen
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Generate Documentation
+        run: |
+          doxygen ./Documentation/Doxyfile
+      - name: Publish Documentation Artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReferenceDocumentation
+          path: Documentation/Reference
   Windows52:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit

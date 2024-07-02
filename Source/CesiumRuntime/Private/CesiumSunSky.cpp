@@ -22,7 +22,7 @@
 // spheroid, where the radius at the poles is ~21km less than the radius at the
 // equator. And on top of that, there's terrain, causing bumps of up to 8km or
 // so (Mount Everest). Mean Sea Level is nowhere more than 100 meters different
-// from the WGS84 ellipsoid, and the lowest dry land point on Earth is the Dead
+// from the ellipsoid, and the lowest dry land point on Earth is the Dead
 // Sea at about 432 meters below sea level. So all up, the worst case "ground
 // radius" for atmosphere purposes ranges from about 6356km to about 6387km
 // depending on where you are on Earth. That's a range of 31km, which definitely
@@ -34,8 +34,8 @@
 //  large, or else there will be a gap between the bottom of the atmosphere and
 //  the top of the terrain. To avoid that, we want to use a tight fitting globe
 //  radius that approximates mean sea level at the camera's position and is
-//  guaranteed to be below it. Rather than actually calculate sea level, a WGS84
-//  height of -100meters will be close enough.
+//  guaranteed to be below it. Rather than actually calculate sea level, an
+//  ellipsoid height of -100meters will be close enough.
 //  * When far from the surface, we can see a lot of the Earth, and it's
 //  essential that no bits of the surface extend outside the atmosphere, because
 //  that creates a very distracting artifact. So we want to choose a globe
@@ -475,7 +475,7 @@ FVector getViewLocation(UWorld* pWorld) {
     const TArray<FEditorViewportClient*>& viewportClients =
         GEditor->GetAllViewportClients();
     for (FEditorViewportClient* pEditorViewportClient : viewportClients) {
-      if (pEditorViewportClient &&
+      if (pEditorViewportClient && pViewport &&
           pEditorViewportClient == pViewport->GetClient()) {
         return pEditorViewportClient->GetViewLocation();
       }
@@ -527,12 +527,15 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     return;
   }
 
+  UCesiumEllipsoid* pEllipsoid = pGeoreference->GetEllipsoid();
+  check(IsValid(pEllipsoid));
+
   FVector location = transform.TransformPosition(getViewLocation(pWorld));
   FVector llh =
       pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
-  double maxRadius = 6387000.0;
+  double maxRadius = pEllipsoid->GetMaximumRadius();
 
   if (llh.Z / 1000.0 > this->CircumscribedGroundThreshold) {
     this->SetSkyAtmosphereGroundRadius(
@@ -541,9 +544,8 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
   } else {
     // Find the ellipsoid radius 100m below the surface at this location. See
     // the comment at the top of this file.
-    glm::dvec3 ecef =
-        CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-            CesiumGeospatial::Cartographic::fromDegrees(llh.X, llh.Y, -100.0));
+    glm::dvec3 ecef = pEllipsoid->GetNativeEllipsoid().cartographicToCartesian(
+        CesiumGeospatial::Cartographic::fromDegrees(llh.X, llh.Y, -100.0));
     double minRadius = glm::length(ecef);
 
     if (llh.Z / 1000.0 < this->InscribedGroundThreshold) {

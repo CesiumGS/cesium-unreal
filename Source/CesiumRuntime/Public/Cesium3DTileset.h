@@ -1110,7 +1110,8 @@ private:
 
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const FCesiumCamera& camera,
-      const glm::dmat4& unrealWorldToTileset);
+      const glm::dmat4& unrealWorldToTileset,
+      UCesiumEllipsoid* ellipsoid);
 
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
@@ -1127,6 +1128,14 @@ public:
   void UpdateTransformFromCesium();
 
 private:
+  /**
+   * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
+   */
+  UFUNCTION(CallInEditor)
+  void HandleOnGeoreferenceEllipsoidChanged(
+      UCesiumEllipsoid* OldEllipsoid,
+      UCesiumEllipsoid* NewEllpisoid);
+
   /**
    * Writes the values of all properties of this actor into the
    * TilesetOptions, to take them into account during the next

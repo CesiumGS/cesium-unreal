@@ -1,5 +1,24 @@
 # Change Log
 
+### v2.7.0 - 2024-07-01
+
+##### Additions :tada:
+
+- Cesium for Unreal now supports using non-WGS84 ellipsoids.
+  - An `CesiumEllipsoid` asset may be specified in the `Ellipsoid` field of a `CesiumGeoreference`.
+  - To create a `CesiumEllipsoid` asset, right-click in the Content Drawer and select "Data Asset" under "Miscellaneous." Choose "Cesium Ellipsoid" from the menu that appears.
+
+##### Fixes :wrench:
+
+- Fixed two problems with `CesiumCartographicRasterOverlay`:
+  - Small tiles would never be excluded, even with "Exclude Selected Tiles" enabled.
+  - Pieces of tiles would sometimes not have the raster overlay correctly applied to them. When using with clipping, this would cause bits of tiles to randomly appear inside the clipping polygon.
+- Removed an unnecessary alpha check when selecting translucent base materials.
+- Fixed a crash caused by `CesiumSunSky` when no viewport is activated in the Editor.
+- Fixed build issues in Unreal 5.4.2 relating to `UStaticMesh` and `glm::toMat4`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.36.0 to v0.37.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.6.0 - 2024-06-03
 
 ##### Breaking Changes :mega:
