@@ -86,7 +86,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
     It("returns false if hit has no valid component", [this]() {
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.FaceIndex = 0;
       Hit.Component = nullptr;
 
@@ -98,7 +99,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
     It("returns false if specified texcoord set does not exist", [this]() {
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.FaceIndex = 0;
       Hit.Component = pPrimitiveComponent;
 
@@ -110,7 +112,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
     It("gets hit for primitive without indices", [this]() {
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.FaceIndex = 0;
       Hit.Component = pPrimitiveComponent;
 
@@ -121,7 +124,8 @@ void FCesiumMetadataPickingSpec::Define() {
       TestTrue("UV at point (X)", FMath::IsNearlyEqual(UV[0], 0.0));
       TestTrue("UV at point (Y)", FMath::IsNearlyEqual(UV[1], 1.0));
 
-      Hit.Location = FVector_NetQuantize(0, -0.5, 0);
+      Hit.Location = FVector_NetQuantize(0, -0.5, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
@@ -133,7 +137,8 @@ void FCesiumMetadataPickingSpec::Define() {
           FMath::IsNearlyEqual(UV[1], 0.5));
 
       Hit.FaceIndex = 1;
-      Hit.Location = FVector_NetQuantize(0, -4, 0);
+      Hit.Location = FVector_NetQuantize(0, -4, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
@@ -156,7 +161,8 @@ void FCesiumMetadataPickingSpec::Define() {
           static_cast<int32_t>(model.accessors.size() - 1));
 
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize(0, -4, 0);
+      Hit.Location = FVector_NetQuantize(0, -4, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.FaceIndex = 0;
       Hit.Component = pPrimitiveComponent;
 
@@ -168,7 +174,8 @@ void FCesiumMetadataPickingSpec::Define() {
       TestTrue("UV at point (X)", FMath::IsNearlyEqual(UV[0], 0.0));
       TestTrue("UV at point (Y)", FMath::IsNearlyEqual(UV[1], 1.0));
 
-      Hit.Location = FVector_NetQuantize(0, -3.5, 0);
+      Hit.Location = FVector_NetQuantize(0, -3.5, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
@@ -180,7 +187,8 @@ void FCesiumMetadataPickingSpec::Define() {
           FMath::IsNearlyEqual(UV[1], 0.5));
 
       Hit.FaceIndex = 1;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       TestTrue(
           "found hit",
           UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(Hit, 0, UV));
@@ -778,7 +786,8 @@ void FCesiumMetadataPickingSpec::Define() {
              FVector2D(vec2Values[0][0], vec2Values[0][1])};
 
          for (size_t i = 0; i < locations.size(); i++) {
-           Hit.Location = locations[i];
+           Hit.Location =
+               locations[i] * CesiumPrimitiveData::positionScaleFactor;
 
            const auto values = UCesiumMetadataPickingBlueprintLibrary::
                GetPropertyTextureValuesFromHit(Hit);
@@ -861,7 +870,7 @@ void FCesiumMetadataPickingSpec::Define() {
           newScalarValues[2],
           newScalarValues[0]};
       for (size_t i = 0; i < locations.size(); i++) {
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
 
         const auto values = UCesiumMetadataPickingBlueprintLibrary::
             GetPropertyTextureValuesFromHit(Hit, 1);

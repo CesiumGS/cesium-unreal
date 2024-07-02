@@ -552,7 +552,8 @@ void FCesiumFeatureIdTextureSpec::Define() {
           ECesiumFeatureIdTextureStatus::Valid);
 
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize::Zero();
+      Hit.Location = FVector_NetQuantize::Zero() *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.Component = pPrimitiveComponent;
       Hit.FaceIndex = 0;
 
@@ -611,7 +612,8 @@ void FCesiumFeatureIdTextureSpec::Define() {
           ECesiumFeatureIdTextureStatus::Valid);
 
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.FaceIndex = 0;
       Hit.Component = nullptr;
 
@@ -671,7 +673,8 @@ void FCesiumFeatureIdTextureSpec::Define() {
           ECesiumFeatureIdTextureStatus::Valid);
 
       FHitResult Hit;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       Hit.FaceIndex = 0;
       Hit.Component = pPrimitiveComponent;
 
@@ -741,7 +744,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       std::array<int64, 3> expected{3, 1, 0};
 
       for (size_t i = 0; i < locations.size(); i++) {
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
         int64 featureID =
             UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
                 featureIDTexture,
@@ -808,7 +811,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       std::array<int64, 3> expected{3, 1, 0};
 
       for (size_t i = 0; i < locations.size(); i++) {
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
         int64 featureID =
             UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
                 featureIDTexture,
@@ -901,7 +904,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       std::array<int64, 3> expected{3, 1, 2};
 
       for (size_t i = 0; i < locations.size(); i++) {
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
         int64 featureID =
             UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDFromHit(
                 featureIDTexture,

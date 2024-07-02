@@ -101,6 +101,22 @@ public:
 
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 
+  /**
+   * The factor by which the positions in the glTF primitive is scaled up when
+   * the Unreal mesh is populated.
+   *
+   * We scale up the meshes because Chaos has a degenerate triangle epsilon test
+   * in `TriangleMeshImplicitObject.cpp` that is almost laughably too eager.
+   * Perhaps it would be fine if our meshes actually used units of centimeters
+   * like UE, but they usually use meters instead. With a factor of 1.0, UE will
+   * consider a right triangle that is slightly less than ~10cm on each side to
+   * be degenerate.
+   *
+   * This property defaults to 1.0, but is set to a larger value in
+   * CesiumGltfComponent.
+   */
+  static constexpr double positionScaleFactor = 1024.0;
+
   void destroy();
 };
 
