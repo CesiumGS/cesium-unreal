@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause a `bad_any_cast` exception when trying to access glTF extensions. This commonly popped up when loading tilesets with metadata.
+
 ### v2.7.0 - 2024-07-01
 
 ##### Additions :tada:
