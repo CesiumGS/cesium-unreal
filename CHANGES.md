@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+#### Fixes :wrench:
+
+- Fixed issue with `UCesiumGlobeAnchorComponent::GetEllipsoid` that caused compilation errors on some machines.
+
 ### v2.7.0 - 2024-07-01
 
 ##### Additions :tada:

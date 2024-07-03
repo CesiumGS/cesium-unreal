@@ -182,6 +182,7 @@ public:
    * Obtains the {@link UCesiumEllipsoid} set on the georeference used by this
    * component.
    */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   UCesiumEllipsoid* GetEllipsoid() const;
 
   /**
