@@ -91,7 +91,7 @@ int64 UCesiumMetadataValueBlueprintLibrary::GetInteger64(
     int64 DefaultValue) {
   return std::visit(
       [DefaultValue](auto value) -> int64 {
-        return CesiumGltf::MetadataConversions<int64, decltype(value)>::convert(
+        return CesiumGltf::MetadataConversions<int64_t, decltype(value)>::convert(
                    value)
             .value_or(DefaultValue);
       },

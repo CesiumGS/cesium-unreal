@@ -4,7 +4,8 @@
 
 ##### Fixes :wrench:
 
-- Fixed a bug that could cause a `bad_any_cast` exception when trying to access glTF extensions. This commonly popped up when loading tilesets with metadata.
+- Fixed a bug that could cause a `bad_any_cast` exception when trying to access glTF extensions on non-Windows platforms. This commonly popped up when loading tilesets with metadata.
+- Fixed a bug that caused the `GetInteger64` functions on `CesiumMetadataValue`, `CesiumPropertyArray`, and `CesiumPropertyTableProperty` to always return the default value on non-Windows platforms.
 
 ### v2.7.0 - 2024-07-01
 
