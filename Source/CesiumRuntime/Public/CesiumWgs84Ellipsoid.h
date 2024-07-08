@@ -17,20 +17,20 @@ public:
    * Gets the radii of the WGS84 ellipsoid in its x-, y-, and z-directions in
    * meters.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
+  UFUNCTION(BlueprintPure, Category = "Cesium|Ellipsoid|WGS84")
   static FVector GetRadii();
 
   /**
    * Gets the maximum radius of the WGS84 ellipsoid in any dimension, in meters.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
+  UFUNCTION(BlueprintPure, Category = "Cesium|Ellipsoid|WGS84")
   static double GetMaximumRadius();
 
   /**
    * Gets the minimum radius of the WGS854 ellipsoid in any dimension, in
    * meters.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
+  UFUNCTION(BlueprintPure, Category = "Cesium|Ellipsoid|WGS84")
   static double GetMinimumRadius();
 
   /**
@@ -41,7 +41,7 @@ public:
    */
   UFUNCTION(
       BlueprintPure,
-      Category = "Cesium|WGS84 Ellipsoid",
+      Category = "Cesium|Ellipsoid|WGS84",
       meta = (ReturnDisplayName = "SurfacePosition"))
   static FVector
   ScaleToGeodeticSurface(const FVector& EarthCenteredEarthFixedPosition);
@@ -52,7 +52,7 @@ public:
    */
   UFUNCTION(
       BlueprintPure,
-      Category = "Cesium|WGS84 Ellipsoid",
+      Category = "Cesium|Ellipsoid|WGS84",
       meta = (ReturnDisplayName = "SurfaceNormalVector"))
   static FVector
   GeodeticSurfaceNormal(const FVector& EarthCenteredEarthFixedPosition);
@@ -64,7 +64,7 @@ public:
    */
   UFUNCTION(
       BlueprintPure,
-      Category = "Cesium|WGS84 Ellipsoid",
+      Category = "Cesium|Ellipsoid|WGS84",
       meta = (ReturnDisplayName = "EarthCenteredEarthFixedPosition"))
   static FVector LongitudeLatitudeHeightToEarthCenteredEarthFixed(
       const FVector& LongitudeLatitudeHeight);
@@ -78,7 +78,7 @@ public:
    */
   UFUNCTION(
       BlueprintPure,
-      Category = "Cesium|WGS84 Ellipsoid",
+      Category = "Cesium|Ellipsoid|WGS84",
       meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   static FVector EarthCenteredEarthFixedToLongitudeLatitudeHeight(
       const FVector& EarthCenteredEarthFixedPosition);

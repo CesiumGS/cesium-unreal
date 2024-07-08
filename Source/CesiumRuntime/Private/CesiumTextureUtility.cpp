@@ -143,17 +143,12 @@ struct ExtensionUnrealTexture {
 
 namespace CesiumTextureUtility {
 
-ReferenceCountedUnrealTexture::ReferenceCountedUnrealTexture(
-    TObjectPtr<UTexture2D> p) noexcept
-    : pUnrealTexture(p) {
-  if (this->pUnrealTexture) {
-    this->pUnrealTexture->AddToRoot();
-  }
-}
+ReferenceCountedUnrealTexture::ReferenceCountedUnrealTexture() noexcept
+    : _pUnrealTexture(nullptr), _pTextureResource(nullptr) {}
 
 ReferenceCountedUnrealTexture::~ReferenceCountedUnrealTexture() noexcept {
-  UTexture2D* pLocal = this->pUnrealTexture;
-  this->pUnrealTexture = nullptr;
+  UTexture2D* pLocal = this->_pUnrealTexture;
+  this->_pUnrealTexture = nullptr;
 
   if (IsValid(pLocal)) {
     if (IsInGameThread()) {
@@ -168,9 +163,44 @@ ReferenceCountedUnrealTexture::~ReferenceCountedUnrealTexture() noexcept {
   }
 }
 
+TObjectPtr<UTexture2D> ReferenceCountedUnrealTexture::getUnrealTexture() const {
+  return this->_pUnrealTexture;
+}
+
+void ReferenceCountedUnrealTexture::setUnrealTexture(
+    const TObjectPtr<UTexture2D>& p) {
+  if (p == this->_pUnrealTexture)
+    return;
+
+  if (p) {
+    p->AddToRoot();
+  }
+
+  if (this->_pUnrealTexture) {
+    this->_pUnrealTexture->RemoveFromRoot();
+  }
+
+  this->_pUnrealTexture = p;
+}
+
+const TUniquePtr<FCesiumTextureResourceBase>&
+ReferenceCountedUnrealTexture::getTextureResource() const {
+  return this->_pTextureResource;
+}
+
+TUniquePtr<FCesiumTextureResourceBase>&
+ReferenceCountedUnrealTexture::getTextureResource() {
+  return this->_pTextureResource;
+}
+
+void ReferenceCountedUnrealTexture::setTextureResource(
+    TUniquePtr<FCesiumTextureResourceBase>&& p) {
+  this->_pTextureResource = std::move(p);
+}
+
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
-    const CesiumGltf::Texture& texture,
+    CesiumGltf::Texture& texture,
     bool sRGB,
     std::vector<FCesiumTextureResourceBase*>& textureResources) {
   check(textureResources.size() == model.images.size());
@@ -181,14 +211,17 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     textureIndex = -1;
   }
 
-  const ExtensionUnrealTexture* pUnrealTextureExtension =
-      texture.getExtension<ExtensionUnrealTexture>();
-  if (pUnrealTextureExtension && pUnrealTextureExtension->pTexture) {
-    // There's an existing Unreal texture for this glTF texture.
-    // This will commonly be the case when this model was upsampled from a
-    // parent tile.
+  ExtensionUnrealTexture& extension =
+      texture.addExtension<ExtensionUnrealTexture>();
+
+  if (extension.pTexture && (extension.pTexture->getUnrealTexture() ||
+                             extension.pTexture->getTextureResource())) {
+    // There's an existing Unreal texture for this glTF texture. This will
+    // happen if this texture is used by multiple primitives on the same model.
+    // It will also be the case when this model was upsampled from a parent
+    // tile.
     TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
-    pResult->pTexture = pUnrealTextureExtension->pTexture;
+    pResult->pTexture = extension.pTexture;
     pResult->textureIndex = textureIndex;
     return pResult;
   }
@@ -259,13 +292,15 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
           sRGB,
           pExistingImageResource);
   if (pResult) {
+    extension.pTexture = pResult->pTexture;
+
     // Note the index of this texture within the glTF.
     pResult->textureIndex = textureIndex;
 
     if (source >= 0 && source < textureResources.size()) {
       // Make the RHI resource known so it can be used by other textures that
       // reference this same image.
-      textureResources[source] = pResult->pTextureResource.Get();
+      textureResources[source] = pResult->pTexture->getTextureResource().Get();
     }
   }
   return pResult;
@@ -348,13 +383,11 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
 }
 
 static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
-  if (!pHalfLoadedTexture) {
+  if (!pHalfLoadedTexture || !pHalfLoadedTexture->pTexture) {
     return nullptr;
   }
 
-  UTexture2D* pTexture = pHalfLoadedTexture->pTexture
-                             ? pHalfLoadedTexture->pTexture->pUnrealTexture
-                             : nullptr;
+  UTexture2D* pTexture = pHalfLoadedTexture->pTexture->getUnrealTexture();
   if (!pTexture) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
@@ -372,7 +405,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 
     pTexture->NeverStream = true;
 
-    pHalfLoadedTexture->pTexture = new ReferenceCountedUnrealTexture(pTexture);
+    pHalfLoadedTexture->pTexture->setUnrealTexture(pTexture);
   }
 
   return pTexture;
@@ -446,6 +479,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   }
 
   TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
+  pResult->pTexture = new ReferenceCountedUnrealTexture();
 
   pResult->addressX = addressX;
   pResult->addressY = addressY;
@@ -459,18 +493,19 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   imageCesium.sizeBytes = int64_t(imageCesium.pixelData.size());
 
   if (pExistingImageResource) {
-    pResult->pTextureResource = MakeUnique<FCesiumUseExistingTextureResource>(
-        pExistingImageResource,
-        group,
-        imageCesium.width,
-        imageCesium.height,
-        pixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        useMipMapsIfAvailable,
-        0);
+    pResult->pTexture->setTextureResource(
+        MakeUnique<FCesiumUseExistingTextureResource>(
+            pExistingImageResource,
+            group,
+            imageCesium.width,
+            imageCesium.height,
+            pixelFormat,
+            filter,
+            addressX,
+            addressY,
+            sRGB,
+            useMipMapsIfAvailable,
+            0));
   } else if (
       GRHISupportsAsyncTextureCreation && !imageCesium.pixelData.empty()) {
     // Create RHI texture resource on this worker thread, and then hand it off
@@ -479,18 +514,19 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 
     FTexture2DRHIRef textureReference =
         CreateRHITexture2D_Async(imageCesium, pixelFormat, sRGB);
-    pResult->pTextureResource = MakeUnique<FCesiumUseExistingTextureResource>(
-        textureReference,
-        group,
-        imageCesium.width,
-        imageCesium.height,
-        pixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        useMipMapsIfAvailable,
-        0);
+    pResult->pTexture->setTextureResource(
+        MakeUnique<FCesiumUseExistingTextureResource>(
+            textureReference,
+            group,
+            imageCesium.width,
+            imageCesium.height,
+            pixelFormat,
+            filter,
+            addressX,
+            addressY,
+            sRGB,
+            useMipMapsIfAvailable,
+            0));
 
     // Clear the now-unnecessary copy of the pixel data. Calling clear() isn't
     // good enough because it won't actually release the memory.
@@ -506,21 +542,22 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       return nullptr;
     }
 
-    pResult->pTextureResource = MakeUnique<FCesiumCreateNewTextureResource>(
-        std::move(imageCesium),
-        group,
-        imageCesium.width,
-        imageCesium.height,
-        pixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        useMipMapsIfAvailable,
-        0);
+    pResult->pTexture->setTextureResource(
+        MakeUnique<FCesiumCreateNewTextureResource>(
+            std::move(imageCesium),
+            group,
+            imageCesium.width,
+            imageCesium.height,
+            pixelFormat,
+            filter,
+            addressX,
+            addressY,
+            sRGB,
+            useMipMapsIfAvailable,
+            0));
   }
 
-  check(pResult->pTextureResource != nullptr);
+  check(pResult->pTexture->getTextureResource() != nullptr);
 
   return pResult;
 }
@@ -551,13 +588,20 @@ CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
 loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
 
+  TUniquePtr<FCesiumTextureResourceBase>& pTextureResource =
+      pHalfLoadedTexture->pTexture->getTextureResource();
+  if (pTextureResource == nullptr) {
+    // Texture is already loaded (or unloadable).
+    return pHalfLoadedTexture->pTexture;
+  }
+
   UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
   if (pTexture == nullptr) {
     return nullptr;
   }
 
   FCesiumTextureResourceBase* pCesiumTextureResource =
-      pHalfLoadedTexture->pTextureResource.Release();
+      pTextureResource.Release();
   if (pCesiumTextureResource) {
     pTexture->SetResource(pCesiumTextureResource);
 

@@ -7,6 +7,7 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "IDetailGroup.h"
+#include "Widgets/SToolTip.h"
 
 FName FCesiumGlobeAnchorCustomization::RegisteredLayoutName;
 
@@ -201,30 +202,61 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
         FVector(this->X, this->Y, this->Z));
-  } else if (
-      propertyName == GET_MEMBER_NAME_CHECKED(
-                          UCesiumGlobeAnchorDerivedProperties,
-                          Longitude) ||
-      propertyName == GET_MEMBER_NAME_CHECKED(
-                          UCesiumGlobeAnchorDerivedProperties,
-                          Latitude) ||
-      propertyName == GET_MEMBER_NAME_CHECKED(
-                          UCesiumGlobeAnchorDerivedProperties,
-                          Height)) {
-    this->GlobeAnchor->Modify();
-    this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
-        FVector(this->Longitude, this->Latitude, this->Height));
-  } else if (
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Pitch) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Yaw) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Roll)) {
-    this->GlobeAnchor->Modify();
-    this->GlobeAnchor->SetEastSouthUpRotation(
-        FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
+  } else if (true) {
+    if (propertyName == GET_MEMBER_NAME_CHECKED(
+                            UCesiumGlobeAnchorDerivedProperties,
+                            Longitude) ||
+        propertyName == GET_MEMBER_NAME_CHECKED(
+                            UCesiumGlobeAnchorDerivedProperties,
+                            Latitude) ||
+        propertyName == GET_MEMBER_NAME_CHECKED(
+                            UCesiumGlobeAnchorDerivedProperties,
+                            Height)) {
+      this->GlobeAnchor->Modify();
+      this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
+          FVector(this->Longitude, this->Latitude, this->Height));
+    } else if (
+        propertyName == GET_MEMBER_NAME_CHECKED(
+                            UCesiumGlobeAnchorDerivedProperties,
+                            Pitch) ||
+        propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Yaw) ||
+        propertyName == GET_MEMBER_NAME_CHECKED(
+                            UCesiumGlobeAnchorDerivedProperties,
+                            Roll)) {
+      this->GlobeAnchor->Modify();
+      this->GlobeAnchor->SetEastSouthUpRotation(
+          FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
+    }
   }
+}
+
+bool UCesiumGlobeAnchorDerivedProperties::CanEditChange(
+    const FProperty* InProperty) const {
+  const FName Name = InProperty->GetFName();
+
+  // Valid georeference, nothing to disable
+  if (IsValid(this->GlobeAnchor->ResolveGeoreference())) {
+    return true;
+  }
+
+  return Name != GET_MEMBER_NAME_CHECKED(
+                     UCesiumGlobeAnchorDerivedProperties,
+                     Longitude) &&
+         Name != GET_MEMBER_NAME_CHECKED(
+                     UCesiumGlobeAnchorDerivedProperties,
+                     Latitude) &&
+         Name != GET_MEMBER_NAME_CHECKED(
+                     UCesiumGlobeAnchorDerivedProperties,
+                     Height) &&
+         Name != GET_MEMBER_NAME_CHECKED(
+                     UCesiumGlobeAnchorDerivedProperties,
+                     Pitch) &&
+         Name != GET_MEMBER_NAME_CHECKED(
+                     UCesiumGlobeAnchorDerivedProperties,
+                     Yaw) &&
+         Name !=
+             GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Roll);
 }
 
 void UCesiumGlobeAnchorDerivedProperties::Initialize(
@@ -240,16 +272,21 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
     this->Y = position.Y;
     this->Z = position.Z;
 
-    FVector llh = this->GlobeAnchor->GetLongitudeLatitudeHeight();
-    this->Longitude = llh.X;
-    this->Latitude = llh.Y;
-    this->Height = llh.Z;
+    // We can't transform the GlobeAnchor's ECEF coordinates back to
+    // cartographic & rotation without a valid georeference to know what
+    // ellipsoid to use.
+    if (IsValid(this->GlobeAnchor->ResolveGeoreference())) {
+      FVector llh = this->GlobeAnchor->GetLongitudeLatitudeHeight();
+      this->Longitude = llh.X;
+      this->Latitude = llh.Y;
+      this->Height = llh.Z;
 
-    FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
-    FRotator rotator = rotation.Rotator();
-    this->Roll = rotator.Roll;
-    this->Pitch = rotator.Pitch;
-    this->Yaw = rotator.Yaw;
+      FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
+      FRotator rotator = rotation.Rotator();
+      this->Roll = rotator.Roll;
+      this->Pitch = rotator.Pitch;
+      this->Yaw = rotator.Yaw;
+    }
   }
 }
 

@@ -77,17 +77,16 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetGltfTextureCoordinateSetIndex(
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetUnrealUVChannel(
     const UPrimitiveComponent* PrimitiveComponent,
     UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
-  const UCesiumGltfPrimitiveComponent* pPrimitive =
-      Cast<UCesiumGltfPrimitiveComponent>(PrimitiveComponent);
-  if (!pPrimitive ||
+  const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(PrimitiveComponent);
+  if (!pCesiumPrimitive ||
       FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
     return -1;
   }
-
-  auto textureCoordinateIndexIt = pPrimitive->GltfToUnrealTexCoordMap.find(
+  const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
+  auto textureCoordinateIndexIt = primData.GltfToUnrealTexCoordMap.find(
       UCesiumFeatureIdTextureBlueprintLibrary::GetGltfTextureCoordinateSetIndex(
           FeatureIDTexture));
-  if (textureCoordinateIndexIt == pPrimitive->GltfToUnrealTexCoordMap.end()) {
+  if (textureCoordinateIndexIt == primData.GltfToUnrealTexCoordMap.end()) {
     return -1;
   }
 

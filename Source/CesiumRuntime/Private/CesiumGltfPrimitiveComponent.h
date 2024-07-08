@@ -3,18 +3,15 @@
 #pragma once
 
 #include "Cesium3DTilesSelection/BoundingVolume.h"
-#include "Cesium3DTileset.h"
-#include "CesiumEncodedFeaturesMetadata.h"
-#include "CesiumEncodedMetadataUtility.h"
-#include "CesiumMetadataPrimitive.h"
-#include "CesiumPrimitiveFeatures.h"
-#include "CesiumRasterOverlays.h"
+#include "CesiumPrimitive.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
-#include <CesiumGltf/AccessorUtility.h>
-#include <cstdint>
-#include <glm/mat4x4.hpp>
-#include <unordered_map>
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicsEngine/BodySetup.h"
+#include "VecMath.h"
+
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
 namespace CesiumGltf {
@@ -23,7 +20,8 @@ struct MeshPrimitive;
 } // namespace CesiumGltf
 
 UCLASS()
-class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
+                                      public ICesiumPrimitive {
   GENERATED_BODY()
 
 public:
@@ -31,90 +29,39 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
-  /**
-   * Represents the primitive's EXT_mesh_features extension.
-   */
-  FCesiumPrimitiveFeatures Features;
-  /**
-   * Represents the primitive's EXT_structural_metadata extension.
-   */
-  FCesiumPrimitiveMetadata Metadata;
+  void BeginDestroy() override;
 
-  /**
-   * The encoded representation of the primitive's EXT_mesh_features extension.
-   */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
-  /**
-   * The encoded representation of the primitive's EXT_structural_metadata
-   * extension.
-   */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata;
+  FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  /**
-   * For backwards compatibility with the EXT_feature_metadata implementation.
-   */
-  FCesiumMetadataPrimitive Metadata_DEPRECATED;
+  void
+  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
-  std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
-      EncodedMetadata_DEPRECATED;
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+  CesiumPrimitiveData& getPrimitiveData() override;
+  const CesiumPrimitiveData& getPrimitiveData() const override;
 
-  ACesium3DTileset* pTilesetActor;
-  const CesiumGltf::Model* pModel;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
+private:
+  CesiumPrimitiveData _cesiumData;
+};
 
-  /**
-   * The double-precision transformation matrix for this glTF node.
-   */
-  glm::dmat4x4 HighPrecisionNodeTransform;
+UCLASS()
+class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
+                                      public ICesiumPrimitive {
+  GENERATED_BODY()
 
-  /**
-   * Maps an overlay texture coordinate ID to the index of the corresponding
-   * texture coordinates in the mesh's UVs array.
-   */
-  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
+public:
+  // Sets default values for this component's properties
+  UCesiumGltfInstancedComponent();
+  virtual ~UCesiumGltfInstancedComponent();
 
-  /**
-   * Maps the accessor index in a glTF to its corresponding texture coordinate
-   * index in the Unreal mesh. The -1 key is reserved for implicit feature IDs
-   * (in other words, the vertex index).
-   */
-  std::unordered_map<int32_t, uint32_t> GltfToUnrealTexCoordMap;
+  void BeginDestroy() override;
 
-  /**
-   * Maps texture coordinate set indices in a glTF to AccessorViews. This stores
-   * accessor views on texture coordinate sets that will be used by feature ID
-   * textures or property textures for picking.
-   */
-  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
-      TexCoordAccessorMap;
+  FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
+  void
+  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
-  /**
-   * The position accessor of the glTF primitive. This is used for computing
-   * the UV at a hit location on a primitive, and is safer to access than the
-   * mesh's RenderData.
-   */
-  CesiumGltf::AccessorView<FVector3f> PositionAccessor;
+  CesiumPrimitiveData& getPrimitiveData() override;
+  const CesiumPrimitiveData& getPrimitiveData() const override;
 
-  /**
-   * The index accessor of the glTF primitive, if one is specified. This is used
-   * for computing the UV at a hit location on a primitive.
-   */
-  CesiumGltf::IndexAccessorType IndexAccessor;
-
-  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
-
-  /**
-   * Updates this component's transform from a new double-precision
-   * transformation from the Cesium world to the Unreal Engine world, as well as
-   * the current HighPrecisionNodeTransform.
-   *
-   * @param CesiumToUnrealTransform The new transformation.
-   */
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
-
-  virtual void BeginDestroy() override;
-
-  virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
+private:
+  CesiumPrimitiveData _cesiumData;
 };
