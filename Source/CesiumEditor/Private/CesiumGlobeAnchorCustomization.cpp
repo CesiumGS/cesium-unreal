@@ -3,6 +3,7 @@
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumCustomization.h"
 #include "CesiumDegreesMinutesSecondsEditor.h"
+#include "CesiumGeoreference.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
