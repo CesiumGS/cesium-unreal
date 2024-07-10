@@ -120,10 +120,11 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
     // Place an object on the ground to verify position
     UWorld* World = creationContext.world;
 
-    FSoftObjectPath objectPath(
-        TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
-    TSoftObjectPtr<UStaticMesh> cubeMeshPtr =
-        TSoftObjectPtr<UStaticMesh>(objectPath);
+    FString objectPath(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+    // FString
+    // objectPath(TEXT("'/Game/PN_interactiveSpruceForest/Meshes/full/low/spruce_full_01_low.spruce_full_01_low'"));
+
+    UStaticMesh* testMesh = LoadObject<UStaticMesh>(nullptr, *objectPath);
 
     ACesium3DTileset* tileset = playContext.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
@@ -161,8 +162,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
           tileset->GetActorTransform().TransformFVector4(unrealPosition);
 
       AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
-      staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(
-          cubeMeshPtr.Get());
+      staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(testMesh);
       staticMeshActor->SetActorLocation(unrealWorldPosition);
       staticMeshActor->SetActorScale3D(FVector(10, 10, 10));
       staticMeshActor->SetActorLabel(
