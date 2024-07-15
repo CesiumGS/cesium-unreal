@@ -15,19 +15,19 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-	"SupportedTargetPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS" ],
+	"SupportedTargetPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS", "VisionOS" ],
 	"Modules": [
 		{
 			"Name": "CesiumRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit",
-			"WhitelistPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS" ]
+			"WhitelistPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS", "VisionOS" ]
 		},
 		{
 			"Name": "CesiumEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit",
-			"WhitelistPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS" ]
+			"WhitelistPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS", "VisionOS" ]
 		}
 	],
 	"Plugins": [

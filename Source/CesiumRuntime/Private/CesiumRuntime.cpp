@@ -73,7 +73,7 @@ namespace {
 std::string getCacheDatabaseName() {
 #if PLATFORM_ANDROID
   FString BaseDirectory = FPaths::ProjectPersistentDownloadDir();
-#elif PLATFORM_IOS
+#elif PLATFORM_IOS || PLATFORM_VISIONOS
   FString BaseDirectory =
       FPaths::Combine(*FPaths::ProjectSavedDir(), TEXT("Cesium"));
   if (!IFileManager::Get().DirectoryExists(*BaseDirectory)) {
