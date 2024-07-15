@@ -4,6 +4,15 @@
 #include "CesiumRasterOverlay.h"
 #include "CesiumTileMapRasterOverlay.generated.h"
 
+UENUM(BlueprintType)
+enum class ECesiumTilemapSource
+{
+    Google = 0,
+    ArcGIS = 1,
+    GaoDe  = 2,
+    Auto  = -1
+};
+
 // author : spr1ngd
 // desc   : add XYZ format tile map load
 
@@ -12,6 +21,10 @@ class CESIUMRUNTIME_API UCesiumTileMapRasterOverlay : public UCesiumRasterOverla
 {
     GENERATED_BODY()
 public:
+
+    UPROPERTY(EditAnywhere)
+    TEnumAsByte<ECesiumTilemapSource> TileMapSource = ECesiumTilemapSource::Auto;
+
     /**
      * The base URL of the XYZ-Format Tile Map.
      */

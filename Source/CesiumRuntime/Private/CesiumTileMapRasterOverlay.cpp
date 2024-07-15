@@ -45,6 +45,7 @@ std::unique_ptr<CesiumRasterOverlays::RasterOverlay> UCesiumTileMapRasterOverlay
     tmOptions.maximumLevel = MaximumLevel;
     tmOptions.format = TCHAR_TO_UTF8(*this->Format);
     tmOptions.flipY = this->bFlipY;
+    tmOptions.tileMapSrc = this->TileMapSource.GetIntValue();
 
     CesiumGeospatial::Projection projection;
     if (this->UseWebMercatorProjection)
