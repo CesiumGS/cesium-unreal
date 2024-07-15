@@ -59,6 +59,11 @@ public class CesiumRuntime : ModuleRules
             libPostfix = ".a";
             libPrefix = "lib";
         }
+        else if(Target.Platform == UnrealTargetPlatform.VisionOS) {
+            platform = "VisionOS-xarm64";
+            libPostfix = ".a";
+            libPrefix = "lib";
+        }
         else {
             platform = "Unknown";
             libPostfix = ".Unknown";
