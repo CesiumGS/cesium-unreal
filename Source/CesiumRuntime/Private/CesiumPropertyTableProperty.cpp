@@ -969,7 +969,7 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumGltf::MetadataConversions<int64, decltype(value)>::
+          return CesiumGltf::MetadataConversions<int64_t, decltype(value)>::
               convert(value)
                   .value_or(DefaultValue);
         }
