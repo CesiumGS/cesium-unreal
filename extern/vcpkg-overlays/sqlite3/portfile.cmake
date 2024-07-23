@@ -62,7 +62,13 @@ endif()
 
 file(COPY "${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt" DESTINATION "${SOURCE_PATH}")
 file(COPY "${CMAKE_CURRENT_LIST_DIR}/sqlite3.pc.in" DESTINATION "${SOURCE_PATH}")
-configure_file("${CMAKE_CURRENT_LIST_DIR}/sqlite3-vcpkg-config.h.in" "${SOURCE_PATH}/sqlite3-vcpkg-config.h" @ONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/sqlite3-vcpkg-config.h.in" "${SOURCE_PATH}/cesium_sqlite3-vcpkg-config.h" @ONLY)
+
+vcpkg_replace_string("${SOURCE_PATH}/sqlite3.c" "sqlite3" "cesium_sqlite3")
+vcpkg_replace_string("${SOURCE_PATH}/shell.c" "sqlite3" "cesium_sqlite3")
+vcpkg_replace_string("${SOURCE_PATH}/sqlite3.h" "sqlite3" "cesium_sqlite3")
+vcpkg_replace_string("${SOURCE_PATH}/sqlite3ext.h" "sqlite3" "cesium_sqlite3")
+vcpkg_replace_string("${SOURCE_PATH}/sqlite3rc.h" "sqlite3" "cesium_sqlite3")
 
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"

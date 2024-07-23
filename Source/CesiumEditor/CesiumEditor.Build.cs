@@ -84,7 +84,8 @@ public class CesiumEditor : ModuleRules
             {
                 "Core",
                 "UnrealEd",
-                "CesiumRuntime"
+                "CesiumRuntime",
+                "OpenSSL"
             }
         );
 
