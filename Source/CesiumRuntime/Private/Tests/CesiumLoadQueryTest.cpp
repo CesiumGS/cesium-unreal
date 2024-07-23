@@ -18,34 +18,50 @@
 using namespace Cesium;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumTerrainQueryCityLocale,
-    "Cesium.TerrainQuery.CityLocale",
+    FCesiumTerrainQueryDenverHills,
+    "Cesium.TerrainQuery.DenverHills",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
-void setupCityLocale(SceneGenerationContext& context) {
-  // Similar to SampleLocaleMelbourne
+void setupDenverHills(SceneGenerationContext& context) {
   context.setCommonProperties(
-      FVector(144.951538, -37.809871, 140.334974),
-      FVector(1052, 506, 23651),
-      FRotator(-32, 20, 0),
+      FVector(-105.238887, 39.756177, 1887.175525),
+      FVector(0, 0, 0),
+      FRotator(-7, -226, -5),
       90.0f);
 
-  context.sunSky->SolarTime = 16.8;
-  context.sunSky->UpdateSun();
-
-  ACesium3DTileset* melbourneBuildings =
+  // Add Cesium World Terrain
+  ACesium3DTileset* worldTerrainTileset =
       context.world->SpawnActor<ACesium3DTileset>();
-  melbourneBuildings->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  melbourneBuildings->SetIonAssetID(69380);
-  melbourneBuildings->SetIonAccessToken(SceneGenerationContext::testIonToken);
-  melbourneBuildings->SetMaximumScreenSpaceError(6.0);
-  melbourneBuildings->SetActorLabel(TEXT("Melbourne Photogrammetry"));
-  melbourneBuildings->SetActorLocation(FVector(0, 0, 900));
+  worldTerrainTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  worldTerrainTileset->SetIonAssetID(1);
+  worldTerrainTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
 
-  context.tilesets.push_back(melbourneBuildings);
+  // Bing Maps Aerial overlay
+  UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
+      worldTerrainTileset,
+      FName("Bing Maps Aerial"),
+      RF_Transactional);
+  pOverlay->MaterialLayerKey = TEXT("Overlay0");
+  pOverlay->IonAssetID = 2;
+  pOverlay->SetActive(true);
+  pOverlay->OnComponentCreated();
+  worldTerrainTileset->AddInstanceComponent(pOverlay);
+
+  // Aerometrex Denver
+  ACesium3DTileset* aerometrexTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  aerometrexTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  aerometrexTileset->SetIonAssetID(354307);
+  aerometrexTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  aerometrexTileset->SetMaximumScreenSpaceError(2.0);
+  aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
+
+  context.tilesets.push_back(worldTerrainTileset);
+  context.tilesets.push_back(aerometrexTileset);
 }
 
-bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
+bool FCesiumTerrainQueryDenverHills::RunTest(const FString& Parameters) {
 
   auto clearCache = [this](
                         SceneGenerationContext& context,
@@ -66,12 +82,12 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
                           SceneGenerationContext& context,
                           TestPass::TestingParameter parameter) {
     // Test right at camera position
-    double testLongitude = 144.951538;
-    double testLatitude = -37.80987;
+    double testLongitude = -105.257595;
+    double testLatitude = 39.743103;
 
     // Make a grid of test points
-    const size_t gridRowCount = 5;
-    const size_t gridColumnCount = 5;
+    const size_t gridRowCount = 20;
+    const size_t gridColumnCount = 20;
     double cartographicSpacing = 0.001;
 
     std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
@@ -164,7 +180,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
       AStaticMeshActor* staticMeshActor = World->SpawnActor<AStaticMeshActor>();
       staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(testMesh);
       staticMeshActor->SetActorLocation(unrealWorldPosition);
-      staticMeshActor->SetActorScale3D(FVector(10, 10, 10));
+      staticMeshActor->SetActorScale3D(FVector(7, 7, 7));
       staticMeshActor->SetActorLabel(
           FString::Printf(TEXT("Hit %d"), resultIndex));
       staticMeshActor->SetFolderPath("/QueryResults");
@@ -175,7 +191,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
   testPasses.push_back(
-      TestPass{"Load city from cold cache", clearCache, nullptr});
+      TestPass{"Load terrain from cold cache", clearCache, nullptr});
   testPasses.push_back(
       TestPass{"Issue height queries and wait", issueQueries, waitForQueries});
   testPasses.push_back(
@@ -183,7 +199,7 @@ bool FCesiumTerrainQueryCityLocale::RunTest(const FString& Parameters) {
 
   return RunLoadTest(
       GetBeautifiedTestName(),
-      setupCityLocale,
+      setupDenverHills,
       testPasses,
       1024,
       768);
