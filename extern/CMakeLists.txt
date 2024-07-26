@@ -39,14 +39,10 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
 set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CESIUM_ARCHITECTURE})
 
-# Always define this, since Unreal does in debug anyway
-# We don't want any mismatches, especially with class member ordering
-add_compile_definitions(NDEBUG)
-
-# Let debug builds force assertions, because NDEBUG is always defined
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_definitions(CESIUM_FORCE_ASSERTIONS)
-endif()
+# Always define NDEBUG, since Unreal does in debug anyway.
+# We don't want any mismatches, especially with class member ordering.
+# But still let debug builds force assertions.
+add_compile_definitions(NDEBUG $<$<CONFIG:Debug>:CESIUM_FORCE_ASSERTIONS>)
 
 set(CESIUM_DEBUG_POSTFIX "d")
 set(CESIUM_RELEASE_POSTFIX "")
