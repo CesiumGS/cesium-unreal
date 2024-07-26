@@ -130,7 +130,7 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     // The Y-component of glTF positions must be inverted, and the positions
     // must be scaled to match the UE meshes.
     Positions[i] = FVector(Position[0], -Position[1], Position[2]) *
-                   primData.positionScaleFactor;
+                   CesiumPrimitiveData::positionScaleFactor;
   }
 
   const FVector Location =

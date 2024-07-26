@@ -4,6 +4,7 @@
 
 ##### Fixes :wrench:
 
+- Improved collision and line tracing against tilesets by working around an overly-aggressive degenerate triangle check in the Chaos physics engine.
 - Fixed a bug that could cause a `bad_any_cast` exception when trying to access glTF extensions on non-Windows platforms. This commonly popped up when loading tilesets with metadata.
 - Fixed a bug that caused the `GetInteger64` functions on `CesiumMetadataValue`, `CesiumPropertyArray`, and `CesiumPropertyTableProperty` to always return the default value on non-Windows platforms.
 - Fixed issue with `UCesiumGlobeAnchorComponent::GetEllipsoid` that caused compilation errors on some machines.
