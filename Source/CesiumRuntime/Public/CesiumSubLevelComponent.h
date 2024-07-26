@@ -104,7 +104,7 @@ public:
 
   /**
    * Gets the height of the georeference origin for this sub-level in meters
-   * above the WGS84 ellipsoid. This height should not be confused with a height
+   * above the ellipsoid. This height should not be confused with a height
    * above Mean Sea Level. When this sub-level is active, the CesiumGeoreference
    * will adopt this origin.
    */
@@ -113,7 +113,7 @@ public:
 
   /**
    * Sets the height of the georeference origin for this sub-level in meters
-   * above the WGS84 ellipsoid. This height should not be confused with a height
+   * above the ellipsoid. This height should not be confused with a height
    * above Mean Sea Level. When this sub-level is active, the CesiumGeoreference
    * will adopt this origin.
    */
@@ -180,7 +180,7 @@ public:
    * Sets the longitude (X), latitude (Y), and height (Z) of this sub-level's
    * georeference origin. When this sub-level is active, the CesiumGeoreference
    * will adopt this origin. Longitude and latitude are in degrees. Height is in
-   * meters above the WGS84 ellipsoid, which should not be confused with meters
+   * meters above the ellipsoid, which should not be confused with meters
    * above Mean Sea Level.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
@@ -322,7 +322,7 @@ private:
 
   /**
    * The height of the georeference origin for this sub-level in meters above
-   * the WGS84 ellipsoid. This height should not be confused with a height above
+   * the ellipsoid. This height should not be confused with a height above
    * Mean Sea Level. When this sub-level is active, the CesiumGeoreference will
    * adopt this origin.
    */

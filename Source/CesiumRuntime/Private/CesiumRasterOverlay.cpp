@@ -44,6 +44,7 @@ void UCesiumRasterOverlay::AddToTileset() {
   }
 
   CesiumRasterOverlays::RasterOverlayOptions options{};
+  options.ellipsoid = pTileset->getOptions().ellipsoid;
   options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.maximumTextureSize = this->MaximumTextureSize;

@@ -14,6 +14,7 @@ BEGIN_DEFINE_SPEC(
 
 TObjectPtr<AActor> pActor;
 TObjectPtr<UCesiumGlobeAnchorComponent> pGlobeAnchor;
+TObjectPtr<UCesiumEllipsoid> pEllipsoid;
 
 END_DEFINE_SPEC(FCesiumGlobeAnchorSpec)
 
@@ -28,9 +29,13 @@ void FCesiumGlobeAnchorSpec::Define() {
         false);
     this->pActor->SetActorRelativeTransform(FTransform());
 
+    this->pEllipsoid = NewObject<UCesiumEllipsoid>();
+    this->pEllipsoid->SetRadii(UCesiumWgs84Ellipsoid::GetRadii());
+
     ACesiumGeoreference* pGeoreference =
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(pActor);
     pGeoreference->SetOriginLongitudeLatitudeHeight(FVector(1.0, 2.0, 3.0));
+    pGeoreference->SetEllipsoid(this->pEllipsoid);
 
     this->pGlobeAnchor =
         Cast<UCesiumGlobeAnchorComponent>(pActor->AddComponentByClass(
@@ -220,4 +225,40 @@ void FCesiumGlobeAnchorSpec::Define() {
 
        TestEqual("up", actualEcefUp, surfaceNormal);
      });
+
+  It("gives correct results for different ellipsoids", [this]() {
+    const FVector Position = FVector(-20.0, -10.0, 1000.0);
+
+    // Check with WGS84 ellipsoid (the default)
+    this->pGlobeAnchor->MoveToLongitudeLatitudeHeight(Position);
+
+    FVector wgs84EcefPos =
+        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+            Position);
+
+    TestEqual(
+        "ecef",
+        this->pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+        wgs84EcefPos);
+
+    // Check with unit ellipsoid
+    TObjectPtr<UCesiumEllipsoid> pUnitEllipsoid = NewObject<UCesiumEllipsoid>();
+    pUnitEllipsoid->SetRadii(FVector::One());
+
+    ACesiumGeoreference* pGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->pActor);
+    pGeoreference->SetEllipsoid(pUnitEllipsoid);
+
+    this->pGlobeAnchor->MoveToLongitudeLatitudeHeight(Position);
+
+    FVector unitEcefPos =
+        pUnitEllipsoid
+            ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+                Position);
+
+    TestEqual(
+        "ecef",
+        this->pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+        unitEcefPos);
+  });
 }
