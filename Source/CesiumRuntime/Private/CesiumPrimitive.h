@@ -111,9 +111,6 @@ public:
    * like UE, but they usually use meters instead. With a factor of 1.0, UE will
    * consider a right triangle that is slightly less than ~10cm on each side to
    * be degenerate.
-   *
-   * This property defaults to 1.0, but is set to a larger value in
-   * CesiumGltfComponent.
    */
   static constexpr double positionScaleFactor = 1024.0;
 
