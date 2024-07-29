@@ -4,13 +4,13 @@
 
 #include "Widgets/SWindow.h"
 #include <optional>
-#include <variant>
+#include <swl/variant.hpp>
 #include <vector>
 
 class ACesium3DTileset;
 class UCesiumRasterOverlay;
 
-using CesiumIonObject = std::variant<
+using CesiumIonObject = swl::variant<
     TWeakObjectPtr<ACesium3DTileset>,
     TWeakObjectPtr<UCesiumRasterOverlay>>;
 

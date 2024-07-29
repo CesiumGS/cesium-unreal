@@ -5,6 +5,7 @@
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include <variant>
 #include "CesiumFeatureIdSet.generated.h"
 
 namespace CesiumGltf {

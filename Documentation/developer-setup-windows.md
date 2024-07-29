@@ -3,14 +3,14 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 # Prerequisities
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
-- Install Visual Studio 2019 v16.11+ (or Visual Studio 2017 v15.6+)
+- Install Visual Studio 2022 v17.4+
   - Under **Workloads**, check `Desktop development with C++`
-  - Under **Workloads**, check `Game development with C++` 
+  - Under **Workloads**, check `Game development with C++`
   - Under **Individual components**, check `.NET Framework 4.8 SDK` (or newer)
-> Note: Visual Studio options are derived from Unreal Engine's [recommended setup](https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/)
+> Note: Visual Studio options are derived from Unreal Engine's [recommended setup](https://dev.epicgames.com/documentation/en-us/unreal-engine/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine?application_version=5.2)
  - Install the .NET  Core 3.1 Runtime, [link](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.32-windows-x64-installer?cid=getdotnetcore)
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
-- Install the Unreal Engine (version 5.0 or newer) from https://www.unrealengine.com/en-US/download
+- Install the Unreal Engine (version 5.2 or newer) from https://www.unrealengine.com/en-US/download
 
 ## To Cross Compile Android on Windows
 
@@ -49,7 +49,7 @@ This can be set up with the following sequence of commands, on the console, star
 
 The cesium-native libraries and their dependencies use CMake and must be built separately from Cesium for Unreal. There are a number of ways to do this, depending on your preferred environment:
 
-* [Visual Studio 2019](#Visual-Studio-2019)
+* [Visual Studio 2022](#Visual-Studio-2022)
 * [Visual Studio Code](#Visual-Studio-Code)
 * [CMake GUI](#CMake-GUI)
 * [CMake command-line](#CMake-command-line)
@@ -57,9 +57,9 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 
 The version of CMake included with Visual Studio 2017 is too old to build cesium-native, so to build with Visual Studio 2017, follow the CMake command-line or CMake GUI instructions.
 
-## Visual Studio 2019
+## Visual Studio 2022
 
-Launch Visual Studio 2019 and "Open a local folder". Select `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`. 
+Launch Visual Studio 2022 and "Open a local folder". Select `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`.
 > Be sure to select the `extern` directory, *not* the `cesium-native` subdirectory.
 
 Find the "Solution Explorer - Folder View".
@@ -69,10 +69,10 @@ To build a "Debug" build  of cesium-native,
   - This will compile and "install" it to the place in the project that Cesium for Unreal expects to find it
   - `c:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\Source\ThirdParty`.
 
-To build a "Release" build of cesium-native, 
-  - Right click on `CMakeLists.txt` and select "CMake Settings for cesium-unreal-extern". 
-  - Add a new configuration by clicking the `+` and choose `x64-Release`. 
-  - Select the new "x64-Release" from the Solution Configuration dropdown. 
+To build a "Release" build of cesium-native,
+  - Right click on `CMakeLists.txt` and select "CMake Settings for cesium-unreal-extern".
+  - Add a new configuration by clicking the `+` and choose `x64-Release`.
+  - Select the new "x64-Release" from the Solution Configuration dropdown.
   - Right-click on `CMakeLists.txt` again and choose "Install".
 > In Visual Studio, this defaults to the "RelWithDebInfo" configuration type. You can change this at any time
 
@@ -99,13 +99,9 @@ This will generate the project file called `cesium-unreal-extern.sln` in the dir
 First, configure the CMake project in the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` directory by following the instructions below.
 **Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
 
-To configure for Visual Studio 2019, open "x64 Native Tools Command Prompt for VS 2019" and execute the following command:
+To configure for Visual Studio 2022, open "x64 Native Tools Command Prompt for VS 2022" and execute the following command:
 
-      cmake -B build -S . -G "Visual Studio 16 2019" -A x64
-
-To use Visual Studio 2017 instead, open "x64 Native Tools Command Prompt for VS 2017" and execute the following command:
-
-      cmake -B build -S . -G "Visual Studio 15 2017 Win64"
+      cmake -B build -S . -G "Visual Studio 17 2022" -A x64
 
 With either compiler, the commands above will generate the project file called `cesium-unreal-extern.sln` in the directory `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\build`. You can open this solution file in the Visual Studio IDE and compile as normal. To install cesium-native to the project - which is required for use with Cesium for Unreal - right-click on `INSTALL` in Solution Explorer, and choose Build. `INSTALL` may be found inside a folder called `CMakePredefinedTargets`. Use the Solution Configuration dropdown to change between the Debug and Release configurations.
 

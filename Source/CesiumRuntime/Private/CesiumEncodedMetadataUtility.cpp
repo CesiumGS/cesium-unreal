@@ -21,7 +21,6 @@
 #include <CesiumGltf/PropertyTexturePropertyView.h>
 #include <CesiumGltf/PropertyTextureView.h>
 #include <CesiumUtility/Tracing.h>
-#include <glm/gtx/integer.hpp>
 #include <unordered_map>
 
 using namespace CesiumTextureUtility;

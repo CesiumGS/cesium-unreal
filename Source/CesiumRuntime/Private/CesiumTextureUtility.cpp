@@ -39,7 +39,27 @@ FTexture2DRHIRef createAsyncTextureAndWait(
     ETextureCreateFlags Flags,
     void** InitialMipData,
     uint32 NumInitialMips) {
-#if ENGINE_VERSION_5_3_OR_HIGHER
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  FGraphEventRef CompletionEvent;
+
+  FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
+      SizeX,
+      SizeY,
+      Format,
+      NumMips,
+      Flags,
+      ERHIAccess::Unknown,
+      InitialMipData,
+      NumInitialMips,
+      TEXT("CesiumTexture"),
+      CompletionEvent);
+
+  if (CompletionEvent) {
+    CompletionEvent->Wait();
+  }
+
+  return result;
+#elif ENGINE_VERSION_5_3_OR_HIGHER
   FGraphEventRef CompletionEvent;
 
   FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
