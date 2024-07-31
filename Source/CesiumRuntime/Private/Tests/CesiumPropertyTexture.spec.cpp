@@ -676,7 +676,8 @@ void FCesiumPropertyTextureSpec::Define() {
       FHitResult Hit;
       Hit.Component = nullptr;
       Hit.FaceIndex = 0;
-      Hit.Location = {0, 0, 0};
+      Hit.Location = FVector_NetQuantize{0, 0, 0} *
+                     CesiumPrimitiveData::positionScaleFactor;
 
       const auto values =
           UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
@@ -741,7 +742,7 @@ void FCesiumPropertyTextureSpec::Define() {
           FIntPoint(1, 2)};
 
       for (size_t i = 0; i < locations.size(); i++) {
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
         const auto values =
             UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
                 propertyTexture,
@@ -807,7 +808,8 @@ void FCesiumPropertyTextureSpec::Define() {
       FHitResult Hit;
       Hit.Component = pPrimitiveComponent;
       Hit.FaceIndex = 0;
-      Hit.Location = {0, 0, 0};
+      Hit.Location = FVector_NetQuantize{0, 0, 0} *
+                     CesiumPrimitiveData::positionScaleFactor;
 
       const auto values =
           UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
