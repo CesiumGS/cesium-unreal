@@ -111,6 +111,10 @@ public:
    * like UE, but they usually use meters instead. With a factor of 1.0, UE will
    * consider a right triangle that is slightly less than ~10cm on each side to
    * be degenerate.
+   *
+   * This value should be a power-of-two so the the scale affects only the
+   * exponent of coordinate values, not the mantissa, in order to reduce the
+   * chances of losing precision.
    */
   static constexpr double positionScaleFactor = 1024.0;
 

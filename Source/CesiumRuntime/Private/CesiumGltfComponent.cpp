@@ -3820,17 +3820,6 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 }
 
-static bool isTriangleDegenerate(
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& A,
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& B,
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& C) {
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType AB = B - A;
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType AC = C - A;
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType Normal =
-      Chaos::FTriangleMeshImplicitObject::ParticleVecType::CrossProduct(AB, AC);
-  return (Normal.SafeNormalize() < 1.e-8f);
-}
-
 template <typename TIndex>
 #if ENGINE_VERSION_5_4_OR_HIGHER
 static Chaos::FTriangleMeshImplicitObjectPtr
