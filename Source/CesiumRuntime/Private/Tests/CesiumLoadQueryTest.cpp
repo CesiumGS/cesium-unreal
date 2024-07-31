@@ -219,12 +219,12 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
 bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
 
   struct QueryObject {
-    CesiumGeospatial::Cartographic inCartographic;
+    CesiumGeospatial::Cartographic coordinateDegrees;
+    CesiumGeospatial::Cartographic coordinateRadians;
 
     AStaticMeshActor* creationMeshActor = nullptr;
     AStaticMeshActor* playMeshActor = nullptr;
 
-    Cesium3DTilesSelection::Tileset::HeightResults heightResults = {};
     bool queryFinished = false;
   };
 
@@ -254,7 +254,11 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
           testLongitude + (cartographicSpacing * columnIndex),
           rowLatitude};
 
-      QueryObject newQueryObject = {cartographicInstance};
+      QueryObject newQueryObject = {
+          cartographicInstance,
+          CesiumGeospatial::Cartographic::fromDegrees(
+              cartographicInstance.longitude,
+              cartographicInstance.latitude)};
 
       queryScene.queryObjects.push_back(std::move(newQueryObject));
     }
@@ -285,9 +289,9 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
       QueryObject& queryObject = queryScene.queryObjects[queryIndex];
 
       FVector startCoordinate = {
-          queryObject.inCartographic.longitude,
-          queryObject.inCartographic.latitude,
-          2000};
+          queryObject.coordinateDegrees.longitude,
+          queryObject.coordinateDegrees.latitude,
+          2190};
 
       FVector unrealPosition =
           tileset->ResolveGeoreference()
@@ -301,6 +305,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
       {
         AStaticMeshActor* staticMeshActor =
             creationWorld->SpawnActor<AStaticMeshActor>();
+        staticMeshActor->SetMobility(EComponentMobility::Movable);
         staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(testMesh);
         staticMeshActor->SetActorLocation(unrealWorldPosition);
         staticMeshActor->SetActorScale3D(FVector(7, 7, 7));
@@ -313,6 +318,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
       {
         AStaticMeshActor* staticMeshActor =
             playWorld->SpawnActor<AStaticMeshActor>();
+        staticMeshActor->SetMobility(EComponentMobility::Movable);
         staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(testMesh);
         staticMeshActor->SetActorLocation(unrealWorldPosition);
         staticMeshActor->SetActorScale3D(FVector(7, 7, 7));
@@ -334,15 +340,12 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     for (QueryObject& queryObject : queryScene.queryObjects) {
 
       std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
-      queryInputRadians.push_back(CesiumGeospatial::Cartographic::fromDegrees(
-          queryObject.inCartographic.longitude,
-          queryObject.inCartographic.latitude));
+      queryInputRadians.push_back(queryObject.coordinateRadians);
 
       nativeTileset->getHeightsAtCoordinates(queryInputRadians)
           .thenInMainThread(
-              [&queryObject](
+              [&queryObject, tileset](
                   Cesium3DTilesSelection::Tileset::HeightResults&& results) {
-                queryObject.heightResults = std::move(results);
                 queryObject.queryFinished = true;
 
                 if (results.coordinateResults.size() != 1) {
@@ -355,6 +358,18 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
 
                 auto& coordinateResult = results.coordinateResults[0];
 
+                auto& originalCoordinate = queryObject.coordinateRadians;
+                auto& newCoordinate = coordinateResult.coordinate;
+
+                if (originalCoordinate.latitude != newCoordinate.latitude ||
+                    originalCoordinate.longitude != newCoordinate.longitude) {
+                  UE_LOG(
+                      LogCesium,
+                      Warning,
+                      TEXT("Hit result doesn't match original input"));
+                  return;
+                }
+
                 // Log any warnings
                 for (std::string& warning : coordinateResult.warnings) {
                   UE_LOG(
@@ -364,12 +379,10 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                       UTF8_TO_TCHAR(warning.c_str()));
                 }
 
-                // TODO, move the actors
-                /*
                 FVector hitCoordinate = {
-                    CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
-                    CesiumUtility::Math::radiansToDegrees(queryHit.latitude),
-                    queryHit.height};
+                    queryObject.coordinateDegrees.longitude,
+                    queryObject.coordinateDegrees.latitude,
+                    newCoordinate.height};
 
                 FVector unrealPosition =
                     tileset->ResolveGeoreference()
@@ -381,12 +394,11 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                     tileset->GetActorTransform().TransformFVector4(
                         unrealPosition);
 
-                AStaticMeshActor* staticMeshActor =
-                    World->SpawnActor<AStaticMeshActor>();
-                staticMeshActor->GetStaticMeshComponent()->SetStaticMesh(
-                    testMesh);
-                staticMeshActor->SetActorLocation(unrealWorldPosition);
-                */
+                queryObject.creationMeshActor->SetActorLocation(
+                    unrealWorldPosition);
+
+                queryObject.playMeshActor->SetActorLocation(
+                    unrealWorldPosition);
               });
     }
   };
