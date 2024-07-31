@@ -212,7 +212,7 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
       GetBeautifiedTestName(),
       setupDenverHills,
       testPasses,
-      1024,
+      1280,
       768);
 }
 
@@ -228,11 +228,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     bool queryFinished = false;
   };
 
-  struct QueryScene {
-    std::vector<QueryObject> queryObjects;
-  };
-
-  static QueryScene queryScene;
+  static std::vector<QueryObject> queryObjects;
 
   //
   // Setup all object positions that will receive queries
@@ -260,7 +256,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
               cartographicInstance.longitude,
               cartographicInstance.latitude)};
 
-      queryScene.queryObjects.push_back(std::move(newQueryObject));
+      queryObjects.push_back(std::move(newQueryObject));
     }
   }
 
@@ -270,7 +266,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     pCacheDatabase->clearAll();
   };
 
-  auto addTestObjects = [&queryScene = queryScene](
+  auto addTestObjects = [&queryObjects = queryObjects](
                             SceneGenerationContext& creationContext,
                             SceneGenerationContext& playContext,
                             TestPass::TestingParameter) {
@@ -284,9 +280,9 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     ACesium3DTileset* tileset = playContext.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    for (size_t queryIndex = 0; queryIndex < queryScene.queryObjects.size();
+    for (size_t queryIndex = 0; queryIndex < queryObjects.size();
          ++queryIndex) {
-      QueryObject& queryObject = queryScene.queryObjects[queryIndex];
+      QueryObject& queryObject = queryObjects[queryIndex];
 
       FVector startCoordinate = {
           queryObject.coordinateDegrees.longitude,
@@ -331,13 +327,13 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     return true;
   };
 
-  auto issueQueries = [this, &queryScene = queryScene](
+  auto issueQueries = [this, &queryObjects = queryObjects](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter) {
     ACesium3DTileset* tileset = context.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    for (QueryObject& queryObject : queryScene.queryObjects) {
+    for (QueryObject& queryObject : queryObjects) {
 
       std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
       queryInputRadians.push_back(queryObject.coordinateRadians);
@@ -403,11 +399,11 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     }
   };
 
-  auto waitForQueries = [this, &queryScene = queryScene](
+  auto waitForQueries = [this, &queryObjects = queryObjects](
                             SceneGenerationContext&,
                             SceneGenerationContext&,
                             TestPass::TestingParameter) {
-    for (QueryObject& queryObject : queryScene.queryObjects) {
+    for (QueryObject& queryObject : queryObjects) {
       if (!queryObject.queryFinished)
         return false;
     }
@@ -428,15 +424,14 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
   testPasses.push_back(TestPass{"Add test objects", nullptr, addTestObjects});
   testPasses.push_back(
       TestPass{"Issue height queries and wait", issueQueries, waitForQueries});
-  testPasses.push_back(
-      TestPass{"Populate scene with results", nullptr, showResults});
+  testPasses.push_back(TestPass{"Show results", nullptr, showResults});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
       setupDenverHills,
       testPasses,
-      1024,
-      768);
+      1280,
+      720);
 }
 
 #endif
