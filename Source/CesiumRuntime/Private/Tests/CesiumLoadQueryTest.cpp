@@ -156,19 +156,19 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
     ACesium3DTileset* tileset = playContext.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
+    // Log any warnings
+    for (auto& warning : testResults.heightResults.warnings) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Height query traversal warning: %s"),
+          UTF8_TO_TCHAR(warning.c_str()));
+    }
+
     size_t resultCount = testResults.heightResults.coordinateResults.size();
     for (size_t resultIndex = 0; resultIndex < resultCount; ++resultIndex) {
       auto& coordinateResult =
           testResults.heightResults.coordinateResults[resultIndex];
-
-      // Log any warnings
-      for (std::string& warning : coordinateResult.warnings) {
-        UE_LOG(
-            LogCesium,
-            Warning,
-            TEXT("Height query traversal warning: %s"),
-            UTF8_TO_TCHAR(warning.c_str()));
-      }
 
       if (!coordinateResult.heightAvailable)
         continue;
@@ -344,6 +344,15 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                   Cesium3DTilesSelection::Tileset::HeightResults&& results) {
                 queryObject.queryFinished = true;
 
+                // Log any warnings
+                for (auto& warning : results.warnings) {
+                  UE_LOG(
+                      LogCesium,
+                      Warning,
+                      TEXT("Height query traversal warning: %s"),
+                      UTF8_TO_TCHAR(warning.c_str()));
+                }
+
                 if (results.coordinateResults.size() != 1) {
                   UE_LOG(
                       LogCesium,
@@ -364,15 +373,6 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                       Warning,
                       TEXT("Hit result doesn't match original input"));
                   return;
-                }
-
-                // Log any warnings
-                for (std::string& warning : coordinateResult.warnings) {
-                  UE_LOG(
-                      LogCesium,
-                      Warning,
-                      TEXT("Height query traversal warning: %s"),
-                      UTF8_TO_TCHAR(warning.c_str()));
                 }
 
                 FVector hitCoordinate = {
