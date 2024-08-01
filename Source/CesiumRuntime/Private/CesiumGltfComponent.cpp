@@ -1309,6 +1309,9 @@ static void loadPrimitive(
       maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
 
+    minPosition *= CesiumPrimitiveData::positionScaleFactor;
+    maxPosition *= CesiumPrimitiveData::positionScaleFactor;
+
     primitiveResult.dimensions =
         glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
 
@@ -1370,9 +1373,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector3& pos = positionView[vertexIndex];
-        vertex.Position.X = pos.X;
-        vertex.Position.Y = -pos.Y;
-        vertex.Position.Z = pos.Z;
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1384,9 +1387,9 @@ static void loadPrimitive(
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector3& pos = positionView[i];
-        vertex.Position.X = pos.X;
-        vertex.Position.Y = -pos.Y;
-        vertex.Position.Z = pos.Z;
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1669,7 +1672,14 @@ static void loadPrimitive(
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
 
-  primitiveResult.transform = transform * yInvertMatrix;
+  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
+  glm::dmat4 scaleMatrix = glm::dmat4(
+      glm::dvec4(scale, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, scale, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, scale, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
+  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
@@ -3810,17 +3820,6 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 }
 
-static bool isTriangleDegenerate(
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& A,
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& B,
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& C) {
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType AB = B - A;
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType AC = C - A;
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType Normal =
-      Chaos::FTriangleMeshImplicitObject::ParticleVecType::CrossProduct(AB, AC);
-  return (Normal.SafeNormalize() < 1.e-8f);
-}
-
 template <typename TIndex>
 #if ENGINE_VERSION_5_4_OR_HIGHER
 static Chaos::FTriangleMeshImplicitObjectPtr
@@ -3849,13 +3848,8 @@ BuildChaosTriangleMeshes(
     int32 vIndex1 = indices[index0];
     int32 vIndex2 = indices[index0 + 2];
 
-    if (!isTriangleDegenerate(
-            vertices.X(vIndex0),
-            vertices.X(vIndex1),
-            vertices.X(vIndex2))) {
-      triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
-      faceRemap.Add(i);
-    }
+    triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
+    faceRemap.Add(i);
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
