@@ -9,6 +9,7 @@
 namespace CesiumGltf {
 struct Model;
 struct Accessor;
+struct Node;
 } // namespace CesiumGltf
 
 /**
@@ -58,6 +59,21 @@ public:
   FCesiumFeatureIdAttribute(
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
+      const int64 FeatureIDAttribute,
+      const FString& PropertyTableName);
+
+  /**
+   * @brief Constructs a feature ID attribute instance from instance metadata.
+   *
+   * @param Model The model.
+   * @param Node The "mesh node" containing the feature ID attribute.
+   * @param FeatureIDAttribute The attribute index specified by the FeatureId.
+   * @param PropertyTableName The name of the property table this attribute
+   * corresponds to, if one exists, for backwards compatibility.
+   */
+  FCesiumFeatureIdAttribute(
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::Node& Node,
       const int64 FeatureIDAttribute,
       const FString& PropertyTableName);
 

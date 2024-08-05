@@ -11,6 +11,7 @@
 namespace CesiumGltf {
 struct Model;
 struct FeatureId;
+struct ExtensionExtInstanceFeaturesFeatureId;
 } // namespace CesiumGltf
 
 /**
@@ -21,7 +22,9 @@ enum class ECesiumFeatureIdSetType : uint8 {
   None,
   Attribute,
   Texture,
-  Implicit
+  Implicit,
+  Instance,
+  InstanceImplicit
 };
 
 /**
@@ -49,6 +52,12 @@ public:
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
       const CesiumGltf::FeatureId& FeatureId);
+
+  FCesiumFeatureIdSet(
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::Node& Node,
+      const CesiumGltf::ExtensionExtInstanceFeaturesFeatureId&
+          InstanceFeatureId);
 
 private:
   FeatureIDType _featureID;
@@ -164,6 +173,22 @@ public:
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
       int64 VertexIndex);
+
+  /**
+   * Gets the feature ID associated with a given instance. The feature ID can be
+   * used with a FCesiumPropertyTable to retrieve the corresponding metadata.
+   *
+   * This returns -1 if the given instance is out-of-bounds, if the feature ID
+   * set is not for instances, or if the feature ID set is invalid (e.g., it
+   * contains an invalid feature ID texture).
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDSet")
+  static int64 GetFeatureIDForInstance(
+      UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
+      int64 InstanceIndex);
 
   /**
    * Given a trace hit result, gets the feature ID from the feature ID set on
