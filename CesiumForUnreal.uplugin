@@ -38,6 +38,10 @@
 		{
 			"Name": "Water",
 			"Enabled": true
-		}
-	]
+		},
+    {
+      "Name": "EnhancedInput",
+      "Enabled": true
+    }
+  ]
 }

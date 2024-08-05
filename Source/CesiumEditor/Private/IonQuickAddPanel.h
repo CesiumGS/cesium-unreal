@@ -13,6 +13,7 @@ enum class QuickAddItemType {
   TILESET,
   SUNSKY,
   DYNAMIC_PAWN,
+  GLOBE_PAWN,
   CARTOGRAPHIC_POLYGON
 };
 
@@ -53,6 +54,7 @@ private:
   void AddIonTilesetToLevel(TSharedRef<QuickAddItem> item);
   void AddCesiumSunSkyToLevel();
   void AddDynamicPawnToLevel();
+  void AddGlobePawnToLevel();
 
   TArray<TSharedRef<QuickAddItem>> _quickAddItems;
   std::unordered_set<std::string> _itemsBeingAdded;
