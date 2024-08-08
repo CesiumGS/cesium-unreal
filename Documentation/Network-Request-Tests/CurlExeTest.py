@@ -1,12 +1,3 @@
-# This test measures network performance when downloading Google P3DT tiles
-#
-# To use
-# 1) Start any app that uses Google P3DT, like Cesium for Unreal sample level, or automation test
-# 2) Find the session key that was started. 
-#    - For Unreal, find you sqlite cache at C:\Users\<your username>\AppData\Local\UnrealEngine\5.4
-#    - Use a sql browser to open cesium-request-cache.sqlite (I recommend DB Browser for SQLite)
-
-
 import sys
 import time
 import os
