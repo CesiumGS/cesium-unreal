@@ -478,7 +478,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       std::array<int64, 3> expected{3, 1, 0};
 
       for (size_t i = 0; i < locations.size(); i++) {
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
         TestEqual(
             "FeatureIDFromHit",
             UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
@@ -511,7 +511,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       std::array<int64, 3> expected{0, 3, 0};
       for (size_t i = 0; i < locations.size(); i++) {
         Hit.FaceIndex = faceIndices[i];
-        Hit.Location = locations[i];
+        Hit.Location = locations[i] * CesiumPrimitiveData::positionScaleFactor;
         TestEqual(
             "FeatureIDFromHit",
             UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
@@ -542,7 +542,8 @@ void FCesiumFeatureIdSetSpec::Define() {
       FHitResult Hit;
       Hit.Component = pPrimitiveComponent;
       Hit.FaceIndex = 0;
-      Hit.Location = FVector_NetQuantize(0, -1, 0);
+      Hit.Location = FVector_NetQuantize(0, -1, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       TestEqual(
           "FeatureIDFromHit",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
@@ -551,7 +552,8 @@ void FCesiumFeatureIdSetSpec::Define() {
           0);
 
       Hit.FaceIndex = 1;
-      Hit.Location = FVector_NetQuantize(0, -4, 0);
+      Hit.Location = FVector_NetQuantize(0, -4, 0) *
+                     CesiumPrimitiveData::positionScaleFactor;
       TestEqual(
           "FeatureIDFromHit",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(

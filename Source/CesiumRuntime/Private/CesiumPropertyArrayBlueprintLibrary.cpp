@@ -120,9 +120,9 @@ int64 UCesiumPropertyArrayBlueprintLibrary::GetInteger64(
           return defaultValue;
         }
         auto value = v[index];
-        return CesiumGltf::MetadataConversions<int64, decltype(value)>::convert(
-                   value)
-            .value_or(defaultValue);
+        return CesiumGltf::MetadataConversions<int64_t, decltype(value)>::
+            convert(value)
+                .value_or(defaultValue);
       },
       array._value);
 }
