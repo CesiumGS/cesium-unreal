@@ -1927,8 +1927,6 @@ void ACesium3DTileset::showTilesToRender(
         applyActorCollisionSettings(BodyInstance, pGltf);
 
         if (pGltf->GetAttachParent() == nullptr) {
-
-<<<<<<< HEAD
           // The AttachToComponent method is ridiculously complex,
           // so print a warning if attaching fails for some reason
           bool attached = pGltf->AttachToComponent(
@@ -1951,14 +1949,6 @@ void ACesium3DTileset::showTilesToRender(
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
           pGltf->SetVisibility(true, true);
         }
-=======
-    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        content.getRenderContent();
-    if (!pRenderContent) {
-      continue;
-    }
->>>>>>> vcpkg
 
         {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
