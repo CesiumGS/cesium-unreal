@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug introduced in the previous release that caused instanced tilesets to render incorrectly.
+
 ### v2.7.1 - 2024-08-01
 
 ##### Fixes :wrench:
