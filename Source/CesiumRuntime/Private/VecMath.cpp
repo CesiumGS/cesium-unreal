@@ -5,10 +5,7 @@
 #include "CesiumUtility/Math.h"
 #include "Math/Quat.h"
 #include "Math/RotationMatrix.h"
-#include <glm/detail/type_quat.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/transform.hpp>
 
 glm::dmat4 VecMath::createMatrix4D(const FMatrix& m) noexcept {
   return glm::dmat4(

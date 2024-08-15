@@ -770,7 +770,7 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no offset is specified.
-        return FCesiumMetadataValue(view.offset());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.offset()));
       });
 }
 
@@ -782,7 +782,7 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetScale(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no scale is specified.
-        return FCesiumMetadataValue(view.scale());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.scale()));
       });
 }
 
@@ -795,7 +795,7 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetMinimumValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no min is specified.
-        return FCesiumMetadataValue(view.min());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.min()));
       });
 }
 
@@ -808,7 +808,7 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetMaximumValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no max is specified.
-        return FCesiumMetadataValue(view.max());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.max()));
       });
 }
 
@@ -821,7 +821,7 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetNoDataValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no "no data" value is specified.
-        return FCesiumMetadataValue(view.noData());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.noData()));
       });
 }
 
@@ -834,6 +834,7 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no default value is specified.
-        return FCesiumMetadataValue(view.defaultValue());
+        return FCesiumMetadataValue(
+            propertyValueViewToCopy(view.defaultValue()));
       });
 }
