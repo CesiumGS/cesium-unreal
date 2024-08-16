@@ -20,7 +20,7 @@ vcpkg_cmake_configure(
         # "NOT ARCH STREQUAL \"aarch64\"" that is meant to set `WITH_ARMV6` to FALSE is not
         # triggered because our ARCH is `aarch64-none-linux-android21`. It's not clear if this
         # is something quirky about our environment or if the fix is just not robust.
-        # Either way, forcing WITH_ARMV6=OFF here fixes the probelm and should be reasonable
+        # Either way, forcing WITH_ARMV6=OFF here fixes the problem and should be reasonable
         # on all platforms that Cesium for Unreal supports.
         -DWITH_ARMV6=OFF
     OPTIONS_RELEASE
