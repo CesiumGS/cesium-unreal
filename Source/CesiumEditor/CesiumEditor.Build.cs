@@ -11,8 +11,6 @@ public class CesiumEditor : ModuleRules
 {
     public CesiumEditor(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-
         PublicIncludePaths.AddRange(
             new string[] {
                 // ... add public include paths required here ...
@@ -26,78 +24,64 @@ public class CesiumEditor : ModuleRules
             }
         );
 
-        string libPrefix;
-        string libPostfix;
         string platform;
-        if (Target.Platform == UnrealTargetPlatform.Win64) {
-            platform = "Windows-x64";
-            libPostfix = ".lib";
-            libPrefix = "";
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Mac) {
-            platform = "Darwin-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else if(Target.Platform == UnrealTargetPlatform.Android) {
-            platform = "Android-xaarch64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else if(Target.Platform == UnrealTargetPlatform.Linux) {
-            platform = "Linux-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else if(Target.Platform == UnrealTargetPlatform.IOS) {
-            platform = "iOS-xarm64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else {
-            platform = "Unknown";
-            libPostfix = ".Unknown";
-            libPrefix = "Unknown";
-        }
-
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-
-        string releasePostfix = "";
-        string debugPostfix = "d";
-
-        bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
-        string postfix = preferDebug ? debugPostfix : releasePostfix;
-
-        string[] libs = new string[]
+        string libSearchPattern;
+        if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            "CesiumIonClient",
-            "csprng"
-        };
-
-        if (preferDebug)
+            platform = "Windows-AMD64-";
+            libSearchPattern = "*.lib";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            // We prefer Debug, but might still use Release if that's all that's available.
-            foreach (string lib in libs)
+            platform = "Darwin-universal-";
+            libSearchPattern = "lib*.a";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Android)
+        {
+            platform = "Android-aarch64-";
+            libSearchPattern = "lib*.a";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            platform = "Linux-x86_64-";
+            libSearchPattern = "lib*.a";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.IOS)
+        {
+            platform = "iOS-ARM64-";
+            libSearchPattern = "lib*.a";
+        }
+        else
+        {
+            throw new InvalidOperationException("Cesium for Unreal does not support this platform.");
+        }
+
+        string libPathBase = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string libPathDebug = libPathBase + "Debug";
+        string libPathRelease = libPathBase + "Release";
+
+        bool useDebug = false;
+        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
+        {
+            if (Directory.Exists(libPathDebug))
             {
-                string debugPath = Path.Combine(libPath, libPrefix + lib + debugPostfix + libPostfix);
-                if (!File.Exists(debugPath))
-                {
-                    Console.WriteLine("Using release build of cesium-native because a debug build is not available.");
-                    preferDebug = false;
-                    postfix = releasePostfix;
-                    break;
-                }
+                useDebug = true;
             }
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
+        string libPath = useDebug ? libPathDebug : libPathRelease;
+
+        string[] allLibs = Directory.GetFiles(libPath, libSearchPattern);
+
+        PublicAdditionalLibraries.AddRange(allLibs);
 
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
                 "UnrealEd",
-                "CesiumRuntime"
+                "CesiumRuntime",
+                "OpenSSL"
             }
         );
 
@@ -136,8 +120,8 @@ public class CesiumEditor : ModuleRules
             }
         );
 
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivatePCHHeaderFile = "Private/PCH.h";
-        CppStandard = CppStandardVersion.Cpp17;
+        CppStandard = CppStandardVersion.Cpp20;
     }
 }
