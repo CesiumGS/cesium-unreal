@@ -137,6 +137,7 @@ public:
 
   virtual void PostEditChangeProperty(
       struct FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
 
   void Initialize(UCesiumGlobeAnchorComponent* GlobeAnchor);
 

@@ -7,6 +7,8 @@
 #include "CesiumTransforms.h"
 #include "VecMath.h"
 #include <glm/gtc/matrix_inverse.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
 using namespace CesiumGeospatial;
@@ -34,7 +36,8 @@ GeoTransforms::GeoTransforms()
           LocalDirection::East,
           LocalDirection::North,
           LocalDirection::Up,
-          1.0),
+          1.0,
+          CesiumGeospatial::Ellipsoid::WGS84),
       _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
       _center(0.0),
       _scale(1.0),
@@ -54,7 +57,8 @@ GeoTransforms::GeoTransforms(
           LocalDirection::East,
           LocalDirection::North,
           LocalDirection::Up,
-          1.0),
+          1.0,
+          ellipsoid),
       _ellipsoid(ellipsoid),
       _center(center),
       _scale(scale),

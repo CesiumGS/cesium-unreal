@@ -150,6 +150,9 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
     this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
         pRoot,
         &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+    this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
+        this,
+        &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
 
     // Update existing tile positions, if any.
     pRoot->HandleGeoreferenceUpdated();
@@ -472,10 +475,14 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       *this->GetName());
 
   struct CalculateECEFCameraPosition {
+    const CesiumGeospatial::Ellipsoid& ellipsoid;
+
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
       glm::dmat4 ENU =
-          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(center);
+          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
+              center,
+              ellipsoid);
       glm::dvec3 offset =
           sphere.getRadius() *
           glm::normalize(
@@ -488,7 +495,9 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
       glm::dmat4 ENU =
-          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(center);
+          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
+              center,
+              ellipsoid);
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset =
           glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
@@ -526,9 +535,12 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
 
+  const CesiumGeospatial::Ellipsoid& ellipsoid =
+      pGeoreference->GetEllipsoid()->GetNativeEllipsoid();
+
   // calculate unreal camera position
   glm::dvec3 ecefCameraPosition =
-      std::visit(CalculateECEFCameraPosition{}, boundingVolume);
+      std::visit(CalculateECEFCameraPosition{ellipsoid}, boundingVolume);
   FVector unrealCameraPosition =
       pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
           VecMath::createVector(ecefCameraPosition));
@@ -590,6 +602,13 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
     this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
         CesiumToUnreal);
   }
+}
+
+void ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged(
+    UCesiumEllipsoid* OldEllipsoid,
+    UCesiumEllipsoid* NewEllpisoid) {
+  UE_LOG(LogCesium, Warning, TEXT("Ellipsoid changed"));
+  this->RefreshTileset();
 }
 
 // Called when the game starts or when spawned
@@ -709,8 +728,13 @@ public:
           &(*this->_pActor->_metadataDescription_DEPRECATED);
     }
 
+    const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
+
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(transform, options);
+        UCesiumGltfComponent::CreateOffGameThread(
+            transform,
+            options,
+            ellipsoid);
 
     return asyncSystem.createResolvedFuture(
         Cesium3DTilesSelection::TileLoadResultAndRenderResources{
@@ -1052,6 +1076,9 @@ void ACesium3DTileset::LoadTileset() {
     this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
   }
 
+  CesiumGeospatial::Ellipsoid pNativeEllipsoid =
+      this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
+
   ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
 
   Cesium3DTilesSelection::TilesetExternals externals{
@@ -1071,6 +1098,8 @@ void ACesium3DTileset::LoadTileset() {
   this->LoadProgress = 0;
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.ellipsoid = pNativeEllipsoid;
 
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()
@@ -1545,7 +1574,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
-    const glm::dmat4& unrealWorldToTileset) {
+    const glm::dmat4& unrealWorldToTileset,
+    UCesiumEllipsoid* ellipsoid) {
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
@@ -1595,7 +1625,8 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       tilesetCameraUp,
       size,
       horizontalFieldOfView,
-      verticalFieldOfView);
+      verticalFieldOfView,
+      ellipsoid->GetNativeEllipsoid());
 }
 
 #if WITH_EDITOR
@@ -1889,14 +1920,6 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
-    // That looks like some reeeally entertaining debug session...:
-    // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
-    // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
-    // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
-    // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
-    // 11626) { 	continue;
-    //}
-
     const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
@@ -2044,10 +2067,14 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
+  UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
+
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(
-        CreateViewStateFromViewParameters(camera, unrealWorldToCesiumTileset));
+    frustums.push_back(CreateViewStateFromViewParameters(
+        camera,
+        unrealWorldToCesiumTileset,
+        ellipsoid));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;

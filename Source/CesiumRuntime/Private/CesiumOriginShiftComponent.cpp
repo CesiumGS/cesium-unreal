@@ -76,6 +76,10 @@ void UCesiumOriginShiftComponent::TickComponent(
   if (!IsValid(Georeference))
     return;
 
+  UCesiumEllipsoid* Ellipsoid = Georeference->GetEllipsoid();
+
+  check(IsValid(Ellipsoid));
+
   UCesiumSubLevelSwitcherComponent* Switcher =
       Georeference->GetSubLevelSwitcher();
   if (!Switcher)
@@ -110,7 +114,7 @@ void UCesiumOriginShiftComponent::TickComponent(
       continue;
 
     FVector LevelEcef =
-        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+        Ellipsoid->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
             FVector(
                 SubLevelComponent->GetOriginLongitude(),
                 SubLevelComponent->GetOriginLatitude(),

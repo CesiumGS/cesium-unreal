@@ -57,11 +57,14 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
   wmtsOptions.tileWidth = this->TileWidth;
   wmtsOptions.tileHeight = this->TileHeight;
 
+  const CesiumGeospatial::Ellipsoid& ellipsoid =
+      options.ellipsoid.value_or(CesiumGeospatial::Ellipsoid::WGS84);
+
   if (this->Projection ==
       ECesiumWebMapTileServiceRasterOverlayProjection::Geographic) {
-    wmtsOptions.projection = CesiumGeospatial::GeographicProjection();
+    wmtsOptions.projection = CesiumGeospatial::GeographicProjection(ellipsoid);
   } else {
-    wmtsOptions.projection = CesiumGeospatial::WebMercatorProjection();
+    wmtsOptions.projection = CesiumGeospatial::WebMercatorProjection(ellipsoid);
   }
 
   if (bSpecifyTilingScheme) {

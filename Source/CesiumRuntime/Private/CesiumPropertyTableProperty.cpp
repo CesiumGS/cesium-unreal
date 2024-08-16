@@ -969,7 +969,7 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
         auto maybeValue = v.get(FeatureID);
         if (maybeValue) {
           auto value = *maybeValue;
-          return CesiumGltf::MetadataConversions<int64, decltype(value)>::
+          return CesiumGltf::MetadataConversions<int64_t, decltype(value)>::
               convert(value)
                   .value_or(DefaultValue);
         }
@@ -1323,7 +1323,8 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(
 
         // size() returns zero if the view is invalid.
         if (FeatureID >= 0 && FeatureID < view.size()) {
-          return FCesiumMetadataValue(view.getRaw(FeatureID));
+          return FCesiumMetadataValue(
+              propertyValueViewToCopy(view.getRaw(FeatureID)));
         }
 
         return FCesiumMetadataValue();
@@ -1343,7 +1344,7 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no offset is specified.
-        return FCesiumMetadataValue(view.offset());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.offset()));
       });
 }
 
@@ -1355,7 +1356,7 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no scale is specified.
-        return FCesiumMetadataValue(view.scale());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.scale()));
       });
 }
 
@@ -1368,7 +1369,7 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetMinimumValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no min is specified.
-        return FCesiumMetadataValue(view.min());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.min()));
       });
 }
 
@@ -1381,7 +1382,7 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetMaximumValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no max is specified.
-        return FCesiumMetadataValue(view.max());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.max()));
       });
 }
 
@@ -1394,7 +1395,7 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no "no data" value is specified.
-        return FCesiumMetadataValue(view.noData());
+        return FCesiumMetadataValue(propertyValueViewToCopy(view.noData()));
       });
 }
 
@@ -1407,7 +1408,8 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no default value is specified.
-        return FCesiumMetadataValue(view.defaultValue());
+        return FCesiumMetadataValue(
+            propertyValueViewToCopy(view.defaultValue()));
       });
 }
 

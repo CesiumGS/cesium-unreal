@@ -1120,7 +1120,8 @@ static void loadPrimitive(
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
-    const TIndexAccessor& indicesView) {
+    const TIndexAccessor& indicesView,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
@@ -1297,6 +1298,9 @@ static void loadPrimitive(
       maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
 
+    minPosition *= CesiumPrimitiveData::positionScaleFactor;
+    maxPosition *= CesiumPrimitiveData::positionScaleFactor;
+
     primitiveResult.dimensions =
         glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
 
@@ -1358,9 +1362,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector3& pos = positionView[vertexIndex];
-        vertex.Position.X = pos.X;
-        vertex.Position.Y = -pos.Y;
-        vertex.Position.Z = pos.Z;
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1372,9 +1376,9 @@ static void loadPrimitive(
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector3& pos = positionView[i];
-        vertex.Position.X = pos.X;
-        vertex.Position.Y = -pos.Y;
-        vertex.Position.Z = pos.Z;
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1542,8 +1546,7 @@ static void loadPrimitive(
       TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
           glm::affineInverse(transform) *
           glm::dvec4(
-              CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
-                  glm::dvec3(ecefCenter)),
+              ellipsoid.geodeticSurfaceNormal(glm::dvec3(ecefCenter)),
               0.0)));
       upDir.Y *= -1;
       setUniformNormals(StaticMeshBuildVertices, upDir);
@@ -1653,7 +1656,14 @@ static void loadPrimitive(
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
 
-  primitiveResult.transform = transform * yInvertMatrix;
+  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
+  glm::dmat4 scaleMatrix = glm::dmat4(
+      glm::dvec4(scale, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, scale, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, scale, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
+  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
@@ -1676,7 +1686,8 @@ static void loadIndexedPrimitive(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
-    const AccessorView<TMeshVector3>& positionView) {
+    const AccessorView<TMeshVector3>& positionView,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
@@ -1691,7 +1702,8 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor);
+        indexAccessor,
+        ellipsoid);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1703,7 +1715,8 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor);
+        indexAccessor,
+        ellipsoid);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1715,7 +1728,8 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor);
+        indexAccessor,
+        ellipsoid);
     primitiveResult.IndexAccessor = indexAccessor;
   } else {
     UE_LOG(
@@ -1729,7 +1743,8 @@ static void loadIndexedPrimitive(
 static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
-    const CreatePrimitiveOptions& options) {
+    const CreatePrimitiveOptions& options,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
@@ -1764,14 +1779,16 @@ static void loadPrimitive(
         options,
         *pPositionAccessor,
         positionView,
-        syntheticIndexBuffer);
+        syntheticIndexBuffer,
+        ellipsoid);
   } else {
     loadIndexedPrimitive(
         result,
         transform,
         options,
         *pPositionAccessor,
-        positionView);
+        positionView,
+        ellipsoid);
   }
   result.PositionAccessor = std::move(positionView);
 }
@@ -1779,7 +1796,8 @@ static void loadPrimitive(
 static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
-    const CreateMeshOptions& options) {
+    const CreateMeshOptions& options,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
@@ -1791,7 +1809,7 @@ static void loadMesh(
   for (CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     auto& primitiveResult = result->primitiveResults.emplace_back();
-    loadPrimitive(primitiveResult, transform, primitiveOptions);
+    loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
@@ -1890,8 +1908,9 @@ static void loadInstancingData(
     if (translationAccessor.status() == AccessorViewStatus::Valid) {
       for (int64_t i = 0; i < count; ++i) {
         glm::dvec3 translation(translationAccessor[i]);
-        instanceTransforms[i] =
-            glm::translate(instanceTransforms[i], translation);
+        instanceTransforms[i] = glm::translate(
+            instanceTransforms[i],
+            translation * CesiumPrimitiveData::positionScaleFactor);
       }
     }
   } else {
@@ -1946,7 +1965,8 @@ static void loadInstancingData(
 static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
-    const CreateNodeOptions& options) {
+    const CreateNodeOptions& options,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -2026,7 +2046,7 @@ static void loadNode(
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
-    loadMesh(result.meshResult, nodeTransform, meshOptions);
+    loadMesh(result.meshResult, nodeTransform, meshOptions, ellipsoid);
   }
 
   for (int childNodeId : node.children) {
@@ -2035,7 +2055,7 @@ static void loadNode(
           options.pModelOptions,
           options.pHalfConstructedModelResult,
           &model.nodes[childNodeId]};
-      loadNode(loadNodeResults, nodeTransform, childNodeOptions);
+      loadNode(loadNodeResults, nodeTransform, childNodeOptions, ellipsoid);
     }
   }
 }
@@ -2181,7 +2201,8 @@ loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
 static void loadModelAnyThreadPart(
     LoadModelResult& result,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreateModelOptions& options,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
   Model& model = *options.pModel;
@@ -2244,19 +2265,19 @@ static void loadModelAnyThreadPart(
     const Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(result.nodeResults, rootTransform, nodeOptions);
+      loadNode(result.nodeResults, rootTransform, nodeOptions, ellipsoid);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(result.nodeResults, rootTransform, nodeOptions);
+      loadNode(result.nodeResults, rootTransform, nodeOptions, ellipsoid);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
-    loadNode(result.nodeResults, rootTransform, nodeOptions);
+    loadNode(result.nodeResults, rootTransform, nodeOptions, ellipsoid);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (Mesh& mesh : model.meshes) {
@@ -2266,7 +2287,11 @@ static void loadModelAnyThreadPart(
           &dummyNodeOptions,
           &dummyNodeResult,
           &mesh};
-      loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
+      loadMesh(
+          dummyNodeResult.meshResult,
+          rootTransform,
+          meshOptions,
+          ellipsoid);
     }
   }
 }
@@ -3399,9 +3424,15 @@ static void loadPrimitiveGameThreadPart(
 /*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
-    const CreateModelOptions& Options) {
+    const CreateModelOptions& Options,
+    const CesiumGeospatial::Ellipsoid& Ellipsoid) {
+
   auto pResult = MakeUnique<HalfConstructedReal>();
-  loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
+  loadModelAnyThreadPart(
+      pResult->loadModelResult,
+      Transform,
+      Options,
+      Ellipsoid);
 
   return pResult;
 }
@@ -3730,17 +3761,6 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 }
 
-static bool isTriangleDegenerate(
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& A,
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& B,
-    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& C) {
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType AB = B - A;
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType AC = C - A;
-  Chaos::FTriangleMeshImplicitObject::ParticleVecType Normal =
-      Chaos::FTriangleMeshImplicitObject::ParticleVecType::CrossProduct(AB, AC);
-  return (Normal.SafeNormalize() < 1.e-8f);
-}
-
 template <typename TIndex>
 #if ENGINE_VERSION_5_4_OR_HIGHER
 static Chaos::FTriangleMeshImplicitObjectPtr
@@ -3769,13 +3789,8 @@ BuildChaosTriangleMeshes(
     int32 vIndex1 = indices[index0];
     int32 vIndex2 = indices[index0 + 2];
 
-    if (!isTriangleDegenerate(
-            vertices.X(vIndex0),
-            vertices.X(vIndex1),
-            vertices.X(vIndex2))) {
-      triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
-      faceRemap.Add(i);
-    }
+    triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
+    faceRemap.Add(i);
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);

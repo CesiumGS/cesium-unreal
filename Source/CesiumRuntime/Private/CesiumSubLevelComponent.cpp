@@ -8,7 +8,6 @@
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumUtility/Math.h"
-#include "CesiumWgs84Ellipsoid.h"
 #include "EngineUtils.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "VecMath.h"
@@ -234,23 +233,27 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
     return;
   }
 
+  UCesiumEllipsoid* pEllipsoid = pGeoreference->GetEllipsoid();
+  check(IsValid(pEllipsoid));
+
+  const Ellipsoid& pNativeEllipsoid = pEllipsoid->GetNativeEllipsoid();
+
   // Another sub-level might be active right now, so we construct the correct
   // GeoTransforms instead of using the CesiumGeoreference's.
-  const Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
   FVector CurrentOriginEcef =
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+      pEllipsoid->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
           FVector(
               this->OriginLongitude,
               this->OriginLatitude,
               this->OriginHeight));
   GeoTransforms CurrentTransforms(
-      ellipsoid,
+      pNativeEllipsoid,
       VecMath::createVector3D(CurrentOriginEcef),
       pGeoreference->GetScale() / 100.0);
 
   // Construct new geotransforms at the new origin
   GeoTransforms NewTransforms(
-      ellipsoid,
+      pNativeEllipsoid,
       VecMath::createVector3D(NewOriginEcef),
       pGeoreference->GetScale() / 100.0);
 
@@ -287,7 +290,7 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
   // Set the new sub-level georeference origin.
   this->Modify();
   this->SetOriginLongitudeLatitudeHeight(
-      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+      pEllipsoid->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
           NewOriginEcef));
 
   // Also update the viewport so the level doesn't appear to shift.

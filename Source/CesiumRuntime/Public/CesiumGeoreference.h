@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include "CesiumEllipsoid.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
+#include "Delegates/Delegate.h"
 #include "GameFramework/Actor.h"
 #include "GeoTransforms.h"
 #include "OriginPlacement.h"
@@ -18,6 +20,18 @@ class UCesiumSubLevelSwitcherComponent;
  * which is triggered from UpdateGeoreference
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
+
+/**
+ * The event that triggers when a georeference's ellipsoid is changed.
+ * This should be used for performing any necessary coordinate changes.
+ * The parameters are (OldEllipsoid, NewEllipsoid).
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+    FGeoreferenceEllipsoidChanged,
+    UCesiumEllipsoid*,
+    OldEllipsoid,
+    UCesiumEllipsoid*,
+    NewEllipsoid);
 
 /**
  * Controls how global geospatial coordinates are mapped to coordinates in the
@@ -84,9 +98,30 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
+  /**
+   * An event that will be called whenever the georeference's ellipsoid has
+   * been modified.
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium")
+  FGeoreferenceEllipsoidChanged OnEllipsoidChanged;
+
 #pragma region Properties
 
 private:
+  /**
+   * The Ellipsoid being used by this georeference. The ellipsoid informs how
+   * cartographic coordinates will be interpreted and how they are transformed
+   * into cartesian coordinates.
+   */
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetEllipsoid,
+      BlueprintSetter = SetEllipsoid,
+      meta = (AllowPrivateAccess))
+  UCesiumEllipsoid* Ellipsoid;
+
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
    *
@@ -380,6 +415,22 @@ public:
   UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
     return this->SubLevelSwitcher;
   }
+
+  /**
+   * Returns a pointer to the UCesiumEllipsoid currently being used by this
+   * georeference.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintGetter, Category = "Cesium")
+  UCesiumEllipsoid* GetEllipsoid() const;
+
+  /**
+   * Sets the UCesiumEllipsoid used by this georeference.
+   *
+   * Calling this will cause all tilesets under this georeference to be
+   * reloaded.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid);
 
 #if WITH_EDITOR
   /**
@@ -719,7 +770,7 @@ protected:
 public:
   UE_DEPRECATED(
       "Cesium For Unreal v2.0",
-      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")
+      "Use transformation functions on ACesiumGeoreference and UCesiumEllipsoid instead.")
   GeoTransforms GetGeoTransforms() const noexcept;
 
 private:
@@ -747,14 +798,14 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use LongitudeLatitudeHeightToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+               "Use LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed on UCesiumEllipsoid instead."))
   FVector TransformLongitudeLatitudeHeightToEcef(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
-   * the ellipsoid in meters (z).
+   * Ellipsoid longitude in degrees (x), latitude in degrees (y), and height
+   * above the ellipsoid in meters (z).
    */
   UFUNCTION(
       BlueprintPure,
@@ -762,7 +813,7 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use EarthCenteredEarthFixedToLongitudeLatitudeHeight on CesiumWgs84Ellipsoid instead."))
+               "Use EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight on UCesiumEllipsoid instead."))
   FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
 
   /**
@@ -775,11 +826,12 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use EastNorthUpToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+               "Use EastNorthUpToEllipsoidCenteredEllipsoidFixed on UCesiumEllipsoid instead."))
   FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
 
 #pragma endregion
 
+private:
 #pragma region Implementation Details
 
 public:

@@ -21,8 +21,7 @@
 #include <glm/ext/vector_double3.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -76,7 +75,10 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     return;
   }
 
-  FVector upEcef = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+  UCesiumEllipsoid* pEllipsoid = pGeoreference->GetEllipsoid();
+  check(IsValid(pEllipsoid));
+
+  FVector upEcef = pEllipsoid->GeodeticSurfaceNormal(
       this->GlobeAnchor->GetEarthCenteredEarthFixedPosition());
   FVector up =
       pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(upEcef);

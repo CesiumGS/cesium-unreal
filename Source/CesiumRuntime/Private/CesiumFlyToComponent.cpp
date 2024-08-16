@@ -10,7 +10,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
   // Structure to hold one-time initialization
@@ -60,11 +60,17 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   // Compute source location in ECEF
   FVector ecefSource = GlobeAnchor->GetEarthCenteredEarthFixedPosition();
 
+  // Obtain Ellipsoid
+  UCesiumEllipsoid* ellipsoid =
+      GlobeAnchor->ResolveGeoreference()->GetEllipsoid();
+
+  check(IsValid(ellipsoid));
+
   // Create curve
   std::optional<CesiumGeospatial::SimplePlanarEllipsoidCurve> curve =
       CesiumGeospatial::SimplePlanarEllipsoidCurve::
           fromEarthCenteredEarthFixedCoordinates(
-              CesiumGeospatial::Ellipsoid::WGS84,
+              ellipsoid->GetNativeEllipsoid(),
               glm::dvec3(ecefSource.X, ecefSource.Y, ecefSource.Z),
               glm::dvec3(
                   EarthCenteredEarthFixedDestination.X,
@@ -110,8 +116,11 @@ void UCesiumFlyToComponent::FlyToLocationLongitudeLatitudeHeight(
     double YawAtDestination,
     double PitchAtDestination,
     bool CanInterruptByMoving) {
+  UCesiumEllipsoid* ellipsoid =
+      this->GetGlobeAnchor()->ResolveGeoreference()->GetEllipsoid();
+
   FVector Ecef =
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+      ellipsoid->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
           LongitudeLatitudeHeightDestination);
   this->FlyToLocationEarthCenteredEarthFixed(
       Ecef,
