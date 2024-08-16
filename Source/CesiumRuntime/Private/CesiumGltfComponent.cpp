@@ -1937,8 +1937,9 @@ static void loadInstancingData(
     if (translationAccessor.status() == AccessorViewStatus::Valid) {
       for (int64_t i = 0; i < count; ++i) {
         glm::dvec3 translation(translationAccessor[i]);
-        instanceTransforms[i] =
-            glm::translate(instanceTransforms[i], translation);
+        instanceTransforms[i] = glm::translate(
+            instanceTransforms[i],
+            translation * CesiumPrimitiveData::positionScaleFactor);
       }
     }
   } else {

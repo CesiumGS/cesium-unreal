@@ -121,6 +121,10 @@ if (NOT VCPKG_TRIPLET)
     endif()
 endif()
 
+# Our OpenSSL is part of Unreal Engine, so need to install it.
+set(CESIUM_EXCLUDE_INSTALL_HEADERS openssl)
+set(CESIUM_EXCLUDE_INSTALL_STATIC_LIBS openssl)
+
 add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
