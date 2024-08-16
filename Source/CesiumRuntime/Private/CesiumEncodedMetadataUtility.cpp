@@ -277,16 +277,16 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       }
     }
 
+    CesiumGltf::ImageCesium imageCopy(image);
     encodedProperty.pTexture = loadTextureAnyThreadPart(
-        image,
+        imageCopy,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         TextureFilter::TF_Nearest,
         false,
         TEXTUREGROUP_8BitData,
         false,
-        encodedFormat.format,
-        nullptr);
+        encodedFormat.format);
   }
 
   return encodedFeatureTable;
@@ -425,8 +425,7 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
               // R8G8B8A8 form, but this does not necessarily need to be the
               // case in the future.
               isNormalized ? EPixelFormat::PF_R8G8B8A8
-                           : EPixelFormat::PF_R8G8B8A8_UINT,
-              nullptr)));
+                           : EPixelFormat::PF_R8G8B8A8_UINT)));
       featureTexturePropertyMap.Emplace(
           pImage,
           encodedFeatureTextureProperty.pTexture);
@@ -529,8 +528,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
                   false,
                   // TODO: currently this is always the case, but doesn't have
                   // to be
-                  EPixelFormat::PF_R8G8B8A8_UINT,
-                  nullptr)));
+                  EPixelFormat::PF_R8G8B8A8_UINT)));
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);

@@ -6,6 +6,7 @@
 #include "Engine/Texture.h"
 #include "TextureResource.h"
 #include <CesiumGltf/ImageCesium.h>
+#include <CesiumGltf/SharedAssetDepot.h>
 
 /**
  * The base class for Cesium texture resources, making Cesium's texture data
@@ -110,7 +111,7 @@ private:
 class FCesiumCreateNewTextureResource : public FCesiumTextureResourceBase {
 public:
   FCesiumCreateNewTextureResource(
-      CesiumGltf::ImageCesium&& image,
+      CesiumGltf::ImageCesium& image,
       TextureGroup textureGroup,
       uint32 width,
       uint32 height,

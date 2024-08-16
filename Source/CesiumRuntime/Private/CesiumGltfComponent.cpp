@@ -401,8 +401,7 @@ template <class T>
 static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture,
-    bool sRGB,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    bool sRGB) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
       gltfTexture.value().index >= model.textures.size()) {
     if (gltfTexture && gltfTexture.value().index >= 0) {
@@ -418,18 +417,13 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
 
   int32_t textureIndex = gltfTexture.value().index;
   CesiumGltf::Texture& texture = model.textures[textureIndex];
-  return loadTextureFromModelAnyThreadPart(
-      model,
-      texture,
-      sRGB,
-      textureResources);
+  return loadTextureFromModelAnyThreadPart(model, texture, sRGB);
 }
 
 static void applyWaterMask(
     Model& model,
     const MeshPrimitive& primitive,
-    LoadPrimitiveResult& primitiveResult,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    LoadPrimitiveResult& primitiveResult) {
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
@@ -451,11 +445,8 @@ static void applyWaterMask(
         waterMaskInfo.index = waterMaskTextureId;
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
-          primitiveResult.waterMaskTexture = loadTexture(
-              model,
-              std::make_optional(waterMaskInfo),
-              false,
-              textureResources);
+          primitiveResult.waterMaskTexture =
+              loadTexture(model, std::make_optional(waterMaskInfo), false);
         }
       }
     }
@@ -911,8 +902,7 @@ static void loadPrimitiveFeaturesMetadata(
     CesiumGltf::MeshPrimitive& primitive,
     bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
-    const TArray<uint32>& indices,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const TArray<uint32>& indices) {
 
   ExtensionExtMeshFeatures* pFeatures =
       primitive.getExtension<ExtensionExtMeshFeatures>();
@@ -1130,8 +1120,7 @@ static void loadPrimitive(
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
     const AccessorView<TMeshVector3>& positionView,
-    const TIndexAccessor& indicesView,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const TIndexAccessor& indicesView) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
@@ -1272,7 +1261,7 @@ static void loadPrimitive(
     }
   }
 
-  applyWaterMask(model, primitive, primitiveResult, textureResources);
+  applyWaterMask(model, primitive, primitiveResult);
 
   // The water effect works by animating the normal, and the normal is
   // expressed in tangent space. So if we have water, we need tangents.
@@ -1424,27 +1413,22 @@ static void loadPrimitive(
       primitive,
       duplicateVertices,
       StaticMeshBuildVertices,
-      indices,
-      textureResources);
+      indices);
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
-    primitiveResult.baseColorTexture = loadTexture(
-        model,
-        pbrMetallicRoughness.baseColorTexture,
-        true,
-        textureResources);
+    primitiveResult.baseColorTexture =
+        loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
     primitiveResult.metallicRoughnessTexture = loadTexture(
         model,
         pbrMetallicRoughness.metallicRoughnessTexture,
-        false,
-        textureResources);
+        false);
     primitiveResult.normalTexture =
-        loadTexture(model, material.normalTexture, false, textureResources);
+        loadTexture(model, material.normalTexture, false);
     primitiveResult.occlusionTexture =
-        loadTexture(model, material.occlusionTexture, false, textureResources);
+        loadTexture(model, material.occlusionTexture, false);
     primitiveResult.emissiveTexture =
-        loadTexture(model, material.emissiveTexture, true, textureResources);
+        loadTexture(model, material.emissiveTexture, true);
   }
 
   {
@@ -1692,8 +1676,7 @@ static void loadIndexedPrimitive(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const Accessor& positionAccessor,
-    const AccessorView<TMeshVector3>& positionView,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const AccessorView<TMeshVector3>& positionView) {
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
@@ -1708,8 +1691,7 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor,
-        textureResources);
+        indexAccessor);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1721,8 +1703,7 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor,
-        textureResources);
+        indexAccessor);
     primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
@@ -1734,8 +1715,7 @@ static void loadIndexedPrimitive(
         options,
         positionAccessor,
         positionView,
-        indexAccessor,
-        textureResources);
+        indexAccessor);
     primitiveResult.IndexAccessor = indexAccessor;
   } else {
     UE_LOG(
@@ -1749,8 +1729,7 @@ static void loadIndexedPrimitive(
 static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
-    const CreatePrimitiveOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const CreatePrimitiveOptions& options) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
@@ -1785,16 +1764,14 @@ static void loadPrimitive(
         options,
         *pPositionAccessor,
         positionView,
-        syntheticIndexBuffer,
-        textureResources);
+        syntheticIndexBuffer);
   } else {
     loadIndexedPrimitive(
         result,
         transform,
         options,
         *pPositionAccessor,
-        positionView,
-        textureResources);
+        positionView);
   }
   result.PositionAccessor = std::move(positionView);
 }
@@ -1802,8 +1779,7 @@ static void loadPrimitive(
 static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
-    const CreateMeshOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const CreateMeshOptions& options) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
@@ -1815,11 +1791,7 @@ static void loadMesh(
   for (CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     auto& primitiveResult = result->primitiveResults.emplace_back();
-    loadPrimitive(
-        primitiveResult,
-        transform,
-        primitiveOptions,
-        textureResources);
+    loadPrimitive(primitiveResult, transform, primitiveOptions);
 
     // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
@@ -1974,8 +1946,7 @@ static void loadInstancingData(
 static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
-    const CreateNodeOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const CreateNodeOptions& options) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -2055,7 +2026,7 @@ static void loadNode(
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
-    loadMesh(result.meshResult, nodeTransform, meshOptions, textureResources);
+    loadMesh(result.meshResult, nodeTransform, meshOptions);
   }
 
   for (int childNodeId : node.children) {
@@ -2064,11 +2035,7 @@ static void loadNode(
           options.pModelOptions,
           options.pHalfConstructedModelResult,
           &model.nodes[childNodeId]};
-      loadNode(
-          loadNodeResults,
-          nodeTransform,
-          childNodeOptions,
-          textureResources);
+      loadNode(loadNodeResults, nodeTransform, childNodeOptions);
     }
   }
 }
@@ -2214,8 +2181,7 @@ loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
 static void loadModelAnyThreadPart(
     LoadModelResult& result,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
+    const CreateModelOptions& options) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
   Model& model = *options.pModel;
@@ -2249,11 +2215,11 @@ static void loadModelAnyThreadPart(
       continue;
 
     Image* pImage = model.getSafe(&model.images, texture.source);
-    if (!pImage || pImage->cesium.pixelData.empty())
+    if (!pImage || pImage->cesium->pixelData.empty())
       continue;
 
     std::optional<std::string> errorMessage =
-        CesiumGltfReader::GltfReader::generateMipMaps(pImage->cesium);
+        CesiumGltfReader::GltfReader::generateMipMaps(*pImage->cesium);
     if (errorMessage) {
       UE_LOG(
           LogCesium,
@@ -2278,27 +2244,19 @@ static void loadModelAnyThreadPart(
     const Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(
-          result.nodeResults,
-          rootTransform,
-          nodeOptions,
-          textureResources);
+      loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(
-          result.nodeResults,
-          rootTransform,
-          nodeOptions,
-          textureResources);
+      loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
-    loadNode(result.nodeResults, rootTransform, nodeOptions, textureResources);
+    loadNode(result.nodeResults, rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (Mesh& mesh : model.meshes) {
@@ -2308,11 +2266,7 @@ static void loadModelAnyThreadPart(
           &dummyNodeOptions,
           &dummyNodeResult,
           &mesh};
-      loadMesh(
-          dummyNodeResult.meshResult,
-          rootTransform,
-          meshOptions,
-          textureResources);
+      loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
     }
   }
 }
@@ -3446,15 +3400,8 @@ static void loadPrimitiveGameThreadPart(
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
-  std::vector<FCesiumTextureResourceBase*> textureResources;
-  textureResources.resize(Options.pModel->images.size(), nullptr);
-
   auto pResult = MakeUnique<HalfConstructedReal>();
-  loadModelAnyThreadPart(
-      pResult->loadModelResult,
-      Transform,
-      Options,
-      textureResources);
+  loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
 
   return pResult;
 }

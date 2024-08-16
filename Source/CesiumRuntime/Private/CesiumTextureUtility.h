@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGltf/Model.h"
+#include "CesiumGltf/SharedAssetDepot.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"
 #include "Engine/Texture.h"
@@ -50,9 +51,14 @@ struct ReferenceCountedUnrealTexture
   TUniquePtr<FCesiumTextureResourceBase>& getTextureResource();
   void setTextureResource(TUniquePtr<FCesiumTextureResourceBase>&& p);
 
+  /// The SharedAsset<ImageCesium> that this texture was created from.
+  CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> getSharedImage() const;
+  void setSharedImage(CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image);
+
 private:
   TObjectPtr<UTexture2D> _pUnrealTexture;
   TUniquePtr<FCesiumTextureResourceBase> _pTextureResource;
+  CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> _pImageCesium;
 };
 
 /**
@@ -97,8 +103,7 @@ struct LoadedTextureResult {
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
     CesiumGltf::Texture& texture,
-    bool sRGB,
-    std::vector<FCesiumTextureResourceBase*>& textureResources);
+    bool sRGB);
 
 /**
  * Does the asynchronous part of renderer resource preparation for a glTF
@@ -117,10 +122,9 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::Image& image,
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
     const CesiumGltf::Sampler& sampler,
-    bool sRGB,
-    FCesiumTextureResourceBase* pExistingImageResource);
+    bool sRGB);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
@@ -153,8 +157,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
-    std::optional<EPixelFormat> overridePixelFormat,
-    FCesiumTextureResourceBase* pExistingImageResource);
+    std::optional<EPixelFormat> overridePixelFormat);
 
 /**
  * @brief Does the main-thread part of render resource preparation for this

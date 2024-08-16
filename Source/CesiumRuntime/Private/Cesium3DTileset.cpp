@@ -19,6 +19,7 @@
 #include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
+#include "CesiumGltf/SharedAssetDepot.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -792,8 +793,7 @@ public:
         pOptions->group,
         // TODO: sRGB should probably be configurable on the raster overlay.
         true,
-        std::nullopt,
-        nullptr);
+        std::nullopt);
     return texture.Release();
   }
 

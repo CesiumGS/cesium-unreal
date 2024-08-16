@@ -136,9 +136,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
     It("constructs valid instance for texture with nonexistent texcoord attribute",
        [this]() {
          Image& image = model.images.emplace_back();
-         image.cesium.width = image.cesium.height = 1;
-         image.cesium.channels = 1;
-         image.cesium.pixelData.push_back(std::byte(42));
+         image.cesium->width = image.cesium->height = 1;
+         image.cesium->channels = 1;
+         image.cesium->pixelData.push_back(std::byte(42));
 
          Sampler& sampler = model.samplers.emplace_back();
          sampler.wrapS = Sampler::WrapS::CLAMP_TO_EDGE;
@@ -175,9 +175,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
     It("constructs valid instance for texture with invalid texcoord accessor",
        [this]() {
          Image& image = model.images.emplace_back();
-         image.cesium.width = image.cesium.height = 1;
-         image.cesium.channels = 1;
-         image.cesium.pixelData.push_back(std::byte(42));
+         image.cesium->width = image.cesium->height = 1;
+         image.cesium->channels = 1;
+         image.cesium->pixelData.push_back(std::byte(42));
 
          Sampler& sampler = model.samplers.emplace_back();
          sampler.wrapS = Sampler::WrapS::CLAMP_TO_EDGE;

@@ -139,6 +139,15 @@ struct ExtensionUnrealTexture {
       pTexture;
 };
 
+struct ExtensionUnrealTextureResource {
+  static inline constexpr const char* TypeName =
+      "ExtensionUnrealTextureResource";
+  static inline constexpr const char* ExtensionName =
+      "PRIVATE_unreal_texture_resource";
+
+  FCesiumTextureResourceBase* pTextureResource;
+};
+
 } // namespace
 
 namespace CesiumTextureUtility {
@@ -198,13 +207,20 @@ void ReferenceCountedUnrealTexture::setTextureResource(
   this->_pTextureResource = std::move(p);
 }
 
+CesiumGltf::SharedAsset<ImageCesium>
+ReferenceCountedUnrealTexture::getSharedImage() const {
+  return this->_pImageCesium;
+}
+
+void ReferenceCountedUnrealTexture::setSharedImage(
+    CesiumGltf::SharedAsset<ImageCesium>& image) {
+  this->_pImageCesium = image;
+}
+
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
     CesiumGltf::Texture& texture,
-    bool sRGB,
-    std::vector<FCesiumTextureResourceBase*>& textureResources) {
-  check(textureResources.size() == model.images.size());
-
+    bool sRGB) {
   int64_t textureIndex =
       model.textures.empty() ? -1 : &texture - &model.textures[0];
   if (textureIndex < 0 || size_t(textureIndex) >= model.textures.size()) {
@@ -213,13 +229,12 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
 
   ExtensionUnrealTexture& extension =
       texture.addExtension<ExtensionUnrealTexture>();
-
   if (extension.pTexture && (extension.pTexture->getUnrealTexture() ||
                              extension.pTexture->getTextureResource())) {
     // There's an existing Unreal texture for this glTF texture. This will
-    // happen if this texture is used by multiple primitives on the same model.
-    // It will also be the case when this model was upsampled from a parent
-    // tile.
+    // happen if this texture is used by multiple primitives on the same
+    // model. It will also be the case when this model was upsampled from a
+    // parent tile.
     TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
     pResult->pTexture = extension.pTexture;
     pResult->textureIndex = textureIndex;
@@ -273,44 +288,25 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
   }
 
   CesiumGltf::Image& image = model.images[source];
-  const CesiumGltf::ImageCesium& imageCesium = image.cesium;
   const CesiumGltf::Sampler& sampler =
       model.getSafe(model.samplers, texture.sampler);
 
-  FCesiumTextureResourceBase* pExistingImageResource = nullptr;
-
-  if (image.cesium.pixelData.empty() && source >= 0 &&
-      source < textureResources.size()) {
-    // An RHI texture has already been created for this image; reuse it.
-    pExistingImageResource = textureResources[source];
-  }
-
   TUniquePtr<LoadedTextureResult> pResult =
-      loadTextureFromImageAndSamplerAnyThreadPart(
-          image,
-          sampler,
-          sRGB,
-          pExistingImageResource);
+      loadTextureFromImageAndSamplerAnyThreadPart(image.cesium, sampler, sRGB);
+
   if (pResult) {
     extension.pTexture = pResult->pTexture;
 
     // Note the index of this texture within the glTF.
     pResult->textureIndex = textureIndex;
-
-    if (source >= 0 && source < textureResources.size()) {
-      // Make the RHI resource known so it can be used by other textures that
-      // reference this same image.
-      textureResources[source] = pResult->pTexture->getTextureResource().Get();
-    }
   }
   return pResult;
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::Image& image,
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
     const CesiumGltf::Sampler& sampler,
-    bool sRGB,
-    FCesiumTextureResourceBase* pExistingImageResource) {
+    bool sRGB) {
   TextureAddress addressX = convertGltfWrapSToUnreal(sampler.wrapS);
   TextureAddress addressY = convertGltfWrapTToUnreal(sampler.wrapT);
 
@@ -369,8 +365,8 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
     break;
   }
 
-  return loadTextureAnyThreadPart(
-      image.cesium,
+  auto loadResult = loadTextureAnyThreadPart(
+      *image,
       addressX,
       addressY,
       filter,
@@ -378,8 +374,13 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
       // TODO: allow texture group to be configured on Cesium3DTileset.
       TEXTUREGROUP_World,
       sRGB,
-      std::nullopt,
-      pExistingImageResource);
+      std::nullopt);
+
+  if (loadResult != nullptr) {
+    loadResult->pTexture->setSharedImage(image);
+  }
+
+  return loadResult;
 }
 
 static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
@@ -419,8 +420,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
-    std::optional<EPixelFormat> overridePixelFormat,
-    FCesiumTextureResourceBase* pExistingImageResource) {
+    std::optional<EPixelFormat> overridePixelFormat) {
   EPixelFormat pixelFormat;
   if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
     switch (imageCesium.compressedPixelFormat) {
@@ -492,10 +492,13 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   // for caching purposes.
   imageCesium.sizeBytes = int64_t(imageCesium.pixelData.size());
 
-  if (pExistingImageResource) {
+  ExtensionUnrealTextureResource& extension =
+      imageCesium.addExtension<ExtensionUnrealTextureResource>();
+
+  if (extension.pTextureResource != nullptr) {
     pResult->pTexture->setTextureResource(
         MakeUnique<FCesiumUseExistingTextureResource>(
-            pExistingImageResource,
+            extension.pTextureResource,
             group,
             imageCesium.width,
             imageCesium.height,
@@ -544,7 +547,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 
     pResult->pTexture->setTextureResource(
         MakeUnique<FCesiumCreateNewTextureResource>(
-            std::move(imageCesium),
+            imageCesium,
             group,
             imageCesium.width,
             imageCesium.height,
@@ -558,6 +561,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   }
 
   check(pResult->pTexture->getTextureResource() != nullptr);
+  extension.pTextureResource = pResult->pTexture->getTextureResource().Get();
 
   return pResult;
 }
