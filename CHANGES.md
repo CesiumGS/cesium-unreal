@@ -1,5 +1,15 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added universal (Intel and Apple Silicon) binaries for Unreal Engine 5.2. Unreal Engine 5.3 and 5.4 already had universal binaries.
+
+##### Fixes :wrench:
+
+- Debug sections are no longer compressed on Linux and Android, improving compatibility.
+
 ### v2.7.1 - 2024-08-01
 
 ##### Fixes :wrench:
