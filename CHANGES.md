@@ -8,6 +8,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug introduced in the previous release that caused instanced tilesets to render incorrectly.
 - Debug sections are no longer compressed on Linux and Android, improving compatibility.
 
 ### v2.7.1 - 2024-08-01
