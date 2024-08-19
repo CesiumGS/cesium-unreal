@@ -20,7 +20,11 @@ UCesiumRasterOverlay::UCesiumRasterOverlay()
   // don't need them.
   PrimaryComponentTick.bCanEverTick = false;
 
-  // ...
+  // Allow DestroyComponent to be called from Blueprints by anyone. Without
+  // this, only the Actor (Cesium3DTileset) itself can destroy raster overlays.
+  // That's really annoying because it's fairly common to dynamically add/remove
+  // overlays at runtime.
+  bAllowAnyoneToDestroyMe = true;
 }
 
 #if WITH_EDITOR
