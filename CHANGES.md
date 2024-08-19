@@ -10,6 +10,7 @@
 
 - Fixed a bug introduced in the previous release that caused instanced tilesets to render incorrectly.
 - Debug sections are no longer compressed on Linux and Android, improving compatibility.
+- Fixed a bug where calling `Refresh` on a `CesiumRasterOverlay` would cause the overlay to appear on the Cesium3DTileset, even if inactive.
 
 ### v2.7.1 - 2024-08-01
 
