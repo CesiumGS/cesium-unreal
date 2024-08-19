@@ -127,7 +127,9 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
 
 void UCesiumRasterOverlay::Refresh() {
   this->RemoveFromTileset();
-  this->AddToTileset();
+  if (this->IsActive()) {
+    this->AddToTileset();
+  }
 }
 
 double UCesiumRasterOverlay::GetMaximumScreenSpaceError() const {
