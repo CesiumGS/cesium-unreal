@@ -147,7 +147,7 @@ public:
    * have been modified since it was added. To do that, call Refresh.
    *
    * If you created this overlay component via Blueprints, consider setting the
-   * "Auto Activate" property to false on the "Add Component" node and call
+   * "Auto Activate" property to false on the "Add Component" node and calling
    * Activate after setting all the desired properties. This will avoid the need
    * to call Refresh, and will ensure the overlay is not loaded multiple times.
    *
