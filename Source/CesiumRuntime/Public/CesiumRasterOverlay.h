@@ -138,14 +138,13 @@ public:
   void SetSubTileCacheBytes(int64 Value);
 
   /**
-   * Activates this raster overlay, which will add it to (that is: display it
-   * on) the Cesium3DTileset to which the component is attached, if it hasn't
-   * already been added. The overlay will continue to be shown on the tileset
-   * until it is deactivated.
+   * Activates this raster overlay, which will display it on the Cesium3DTileset
+   * to which the component is attached, if it isn't already displayed. The
+   * overlay will continue to be shown on the tileset until it is deactivated.
    *
    * If the overlay is already displayed on the Cesium3DTileset, calling this
    * function will not cause it to pick up any new values for properties that
-   * have been modified since it as added. To do that, call Refresh.
+   * have been modified since it was added. To do that, call Refresh.
    *
    * If you created this overlay component via Blueprints, consider setting the
    * "Auto Activate" property to false on the "Add Component" node and call
@@ -158,9 +157,9 @@ public:
   virtual void Activate(bool bReset) override;
 
   /**
-   * Deactivates this raster overlay. This will remove it from (that is: stop
-   * displaying it on) the Cesium3DTileset to which the component is attached.
-   * The overlay will not be shown again until the component is re-activated.
+   * Deactivates this raster overlay. This will stop displaying it on the
+   * Cesium3DTileset to which the component is attached. The overlay will not be
+   * shown again until the component is re-activated.
    */
   virtual void Deactivate() override;
 
@@ -215,12 +214,12 @@ protected:
   /**
    * The maximum number of bytes to use to cache sub-tiles in memory.
    *
-   * This is used by provider types, that have an underlying tiling
-   * scheme that may not align with the tiling scheme of the geometry tiles on
-   * which the raster overlay tiles are draped. Because a single sub-tile may
-   * overlap multiple geometry tiles, it is useful to cache loaded sub-tiles
-   * in memory in case they're needed again soon. This property controls the
-   * maximum size of that cache.
+   * This is used by provider types that have an underlying tiling scheme that
+   * may not align with the tiling scheme of the geometry tiles on which the
+   * raster overlay tiles are draped. Because a single sub-tile may overlap
+   * multiple geometry tiles, it is useful to cache loaded sub-tiles in memory
+   * in case they're needed again soon. This property controls the maximum size
+   * of that cache.
    */
   UPROPERTY(
       EditAnywhere,
