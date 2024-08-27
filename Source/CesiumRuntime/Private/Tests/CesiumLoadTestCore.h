@@ -5,14 +5,14 @@
 #if WITH_EDITOR
 
 #include <functional>
-#include <variant>
+#include <swl/variant.hpp>
 
 #include "CesiumSceneGeneration.h"
 
 namespace Cesium {
 
 struct TestPass {
-  typedef std::variant<int, float> TestingParameter;
+  typedef swl::variant<int, float> TestingParameter;
   typedef std::function<void(SceneGenerationContext&, TestingParameter)>
       SetupCallback;
   typedef std::function<

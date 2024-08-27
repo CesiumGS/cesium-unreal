@@ -1,0 +1,11 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+Version: 3.2.1
+Name: OpenSSL-libcrypto
+Description: OpenSSL cryptography library
+
+
+Libs: "-L${libdir}" -llibcrypto
+Cflags: -I"${includedir}"

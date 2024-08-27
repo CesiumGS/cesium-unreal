@@ -18,7 +18,6 @@
 #include "UnrealMetadataConversions.h"
 #include <CesiumGltf/FeatureIdTextureView.h>
 #include <CesiumUtility/Tracing.h>
-#include <glm/gtx/integer.hpp>
 #include <optional>
 #include <unordered_map>
 

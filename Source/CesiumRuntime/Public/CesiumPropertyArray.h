@@ -6,7 +6,7 @@
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "UObject/ObjectMacros.h"
-#include <variant>
+#include <swl/variant.hpp>
 #include "CesiumPropertyArray.generated.h"
 
 /**
@@ -21,7 +21,7 @@ private:
   template <typename T>
   using ArrayPropertyView = CesiumGltf::PropertyArrayView<T>;
 
-  using ArrayType = std::variant<
+  using ArrayType = swl::variant<
       ArrayPropertyView<int8_t>,
       ArrayPropertyView<uint8_t>,
       ArrayPropertyView<int16_t>,
@@ -107,7 +107,24 @@ public:
    * @param value The property array view that will be stored in this struct
    */
   template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayView<T> value)
+  FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>&& value)
+      : _value(), _elementType(), _storage() {
+    this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
+    ECesiumMetadataType type =
+        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    bool isArray = false;
+
+    _elementType = {type, componentType, isArray};
+  }
+
+  template <typename T>
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayCopy<T>& value)
+      : FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>(value)) {}
+
+  template <typename T>
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
       : _value(value), _elementType() {
     ECesiumMetadataType type =
         ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
@@ -118,15 +135,21 @@ public:
     _elementType = {type, componentType, isArray};
   }
 
+  FCesiumPropertyArray(FCesiumPropertyArray&& rhs);
+  FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs);
+  FCesiumPropertyArray(const FCesiumPropertyArray& rhs);
+  FCesiumPropertyArray& operator=(const FCesiumPropertyArray& rhs);
+
 private:
   template <typename T, typename... VariantType>
   static bool
-  holdsArrayAlternative(const std::variant<VariantType...>& variant) {
-    return std::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
+  holdsArrayAlternative(const swl::variant<VariantType...>& variant) {
+    return swl::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
   }
 
   ArrayType _value;
   FCesiumMetadataValueType _elementType;
+  std::vector<std::byte> _storage;
 
   friend class UCesiumPropertyArrayBlueprintLibrary;
 };

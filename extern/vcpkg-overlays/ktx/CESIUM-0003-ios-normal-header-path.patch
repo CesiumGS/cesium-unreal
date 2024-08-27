@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b62b849..d8c4745 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1133,18 +1133,18 @@ endif()
+ # Use of this to install KHR/khr_df.h is due to CMake's failure to
+ # preserve the include source folder hierarchy.
+ # See https://gitlab.kitware.com/cmake/cmake/-/issues/16739.
+-if (IOS)
+-    set_source_files_properties(
+-          include/KHR/khr_df.h
+-          PROPERTIES MACOSX_PACKAGE_LOCATION Headers/KHR
+-    )
+-else()
++# if (IOS)
++#     set_source_files_properties(
++#           include/KHR/khr_df.h
++#           PROPERTIES MACOSX_PACKAGE_LOCATION Headers/KHR
++#     )
++# else()
+     include(GNUInstallDirs)
+     install(FILES include/KHR/khr_df.h
+         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/KHR
+         COMPONENT dev
+     )
+-endif()
++# endif()
+ 
+ install(EXPORT KTXTargets
+     FILE KtxTargets.cmake
