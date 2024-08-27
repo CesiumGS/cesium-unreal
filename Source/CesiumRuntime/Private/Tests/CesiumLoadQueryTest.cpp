@@ -230,6 +230,8 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
 
   static std::vector<QueryObject> queryObjects;
 
+  queryObjects.clear();
+
   //
   // Setup all object positions that will receive queries
   //

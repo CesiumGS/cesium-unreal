@@ -7,6 +7,7 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
+#include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "HttpManager.h"
 #include "HttpModule.h"

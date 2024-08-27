@@ -99,9 +99,10 @@ bool TimeLoadingCommand::Update() {
           pass.verifyStep(creationContext, playContext, pass.optionalParameter);
 
     if (verifyComplete) {
-      pass.endMark = timeMark;
+      pass.endMark = FPlatformTime::Seconds();
       UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
 
+      pass.elapsedTime = pass.endMark - pass.startMark;
       UE_LOG(
           LogCesium,
           Display,
