@@ -1,8 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
+#include "CesiumAsync/AsyncSystem.h"
 #include "Misc/AutomationTest.h"
 #include "RenderingThread.h"
+#include <UnrealTaskProcessor.h>
+#include <memory>
 
 using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
@@ -16,6 +19,8 @@ BEGIN_DEFINE_SPEC(
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 SharedAsset<ImageCesium> imageCesium;
+CesiumAsync::AsyncSystem asyncSystem =
+    CesiumAsync::AsyncSystem(std::make_shared<UnrealTaskProcessor>());
 
 void RunTests();
 
@@ -44,7 +49,8 @@ void CesiumTextureUtilitySpec::Define() {
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
       originalMipPixels.clear();
 
-      imageCesium = SharedAsset<ImageCesium>(ImageCesium{});
+      ImageCesium image{};
+      imageCesium = SharedAsset<ImageCesium>(image);
       imageCesium->width = 3;
       imageCesium->height = 2;
       TestEqual(
@@ -100,7 +106,7 @@ void CesiumTextureUtilitySpec::Define() {
 
 void CesiumTextureUtilitySpec::RunTests() {
   It("ImageCesium non-sRGB", [this]() {
-    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
+    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPartSync(
         *imageCesium,
         TextureAddress::TA_Mirror,
         TextureAddress::TA_Wrap,
@@ -124,7 +130,7 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("ImageCesium sRGB", [this]() {
-    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
+    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPartSync(
         *imageCesium,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Mirror,
@@ -156,9 +162,11 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
         loadTextureFromImageAndSamplerAnyThreadPart(
+            asyncSystem,
             imageCesium,
             sampler,
-            false);
+            false)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
@@ -190,7 +198,8 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture.sampler = 0;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(model, texture, true);
+        loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, true)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
 
@@ -233,12 +242,22 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture2.sampler = 1;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded1 =
-        loadTextureFromModelAnyThreadPart(model, model.textures[0], true);
+        loadTextureFromModelAnyThreadPart(
+            asyncSystem,
+            model,
+            model.textures[0],
+            true)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded1", pHalfLoaded1.Get());
     TestNotNull("pHalfLoaded1->pTexture", pHalfLoaded1->pTexture.get());
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(model, model.textures[1], false);
+        loadTextureFromModelAnyThreadPart(
+            asyncSystem,
+            model,
+            model.textures[1],
+            false)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
 
@@ -290,7 +309,8 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture.sampler = 0;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(model, texture, true);
+        loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, true)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
 
@@ -310,7 +330,12 @@ void CesiumTextureUtilitySpec::RunTests() {
     // previously-created texture.
     Model model2 = model;
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(model2, model.textures[0], true);
+        loadTextureFromModelAnyThreadPart(
+            asyncSystem,
+            model2,
+            model.textures[0],
+            true)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
     TestNull(
@@ -339,7 +364,8 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture.sampler = 0;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(model, texture, true);
+        loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, true)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
 
@@ -358,7 +384,12 @@ void CesiumTextureUtilitySpec::RunTests() {
     // This time there's no more pixel data, so it's necessary to use the
     // previously-created texture.
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(model, model.textures[0], true);
+        loadTextureFromModelAnyThreadPart(
+            asyncSystem,
+            model,
+            model.textures[0],
+            true)
+            .waitInMainThread();
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
     TestNull(

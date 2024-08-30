@@ -100,7 +100,9 @@ struct LoadedTextureResult {
  * nullptr before the first call to `loadTextureFromModelAnyThreadPart` during
  * the glTF load process.
  */
-TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
+CesiumAsync::Future<TUniquePtr<LoadedTextureResult>>
+loadTextureFromModelAnyThreadPart(
+    const CesiumAsync::AsyncSystem& asyncSystem,
     CesiumGltf::Model& model,
     CesiumGltf::Texture& texture,
     bool sRGB);
@@ -121,8 +123,31 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * parameter is not nullptr, the provided image's `pixelData` is not required
  * and can be empty.
  */
-TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
+CesiumAsync::Future<TUniquePtr<LoadedTextureResult>>
+loadTextureFromImageAndSamplerAnyThreadPart(
+    const CesiumAsync::AsyncSystem& asyncSystem,
     CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    const CesiumGltf::Sampler& sampler,
+    bool sRGB);
+
+/**
+ * Does the asynchronous part of renderer resource preparation for a glTF
+ * `Image` with the given `Sampler` settings.
+ *
+ * The `cesium.pixelData` will be removed from the image so that it can be
+ * passed to Unreal's renderer thread without copying it.
+ *
+ * @param image The glTF image for each to create a texture.
+ * @param sampler The sampler settings to use with the texture.
+ * @param sRGB True if the texture should be treated as sRGB; false if it should
+ * be treated as linear.
+ * @param pExistingImageResource An existing RHI texture resource that has been
+ * created for this image, or nullptr if one hasn't been created yet. When this
+ * parameter is not nullptr, the provided image's `pixelData` is not required
+ * and can be empty.
+ */
+TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPartSync(
+    CesiumGltf::ImageCesium& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
 
@@ -147,10 +172,26 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * created for this image, or nullptr if one hasn't been created yet. When this
  * parameter is not nullptr, the provided image's `pixelData` is not required
  * and can be empty.
- * @return The loaded texture.
+ * @return A future that resolves to the loaded texture.
  */
-TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageCesium& imageCesium,
+CesiumAsync::Future<TUniquePtr<LoadedTextureResult>> loadTextureAnyThreadPart(
+    const CesiumAsync::AsyncSystem& asyncSystem,
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    TextureAddress addressX,
+    TextureAddress addressY,
+    TextureFilter filter,
+    bool useMipMapsIfAvailable,
+    TextureGroup group,
+    bool sRGB,
+    std::optional<EPixelFormat> overridePixelFormat);
+
+/**
+ * @brief Equivalent to \link{loadTextureAnyThreadPart}, but returns the texture
+ * itself rather than a future. Intended to be used for loading raster overlay
+ * textures.
+ */
+TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPartSync(
+    CesiumGltf::ImageCesium& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -205,5 +246,53 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
  * value is unknown or invalid.
  */
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
+
+struct ExtensionUnrealTexture {
+  static inline constexpr const char* TypeName = "ExtensionUnrealTexture";
+  static inline constexpr const char* ExtensionName = "PRIVATE_unreal_texture";
+
+  CesiumUtility::IntrusivePointer<
+      CesiumTextureUtility::ReferenceCountedUnrealTexture>
+      pTexture = nullptr;
+};
+
+struct ExtensionUnrealTextureResource {
+  static inline constexpr const char* TypeName =
+      "ExtensionUnrealTextureResource";
+  static inline constexpr const char* ExtensionName =
+      "PRIVATE_unreal_texture_resource";
+
+  ExtensionUnrealTextureResource() {}
+
+  TSharedPtr<FCesiumTextureResourceBase> pTextureResource = nullptr;
+
+  // If a preprocessing step is required (such as generating mipmaps), this
+  // future returns the preprocessed image. If no preprocessing is required,
+  // this just passes the image through.
+  TSharedPtr<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
+      preprocessFuture = nullptr;
+
+  TSharedPtr<CesiumAsync::SharedFuture<FCesiumTextureResourceBase*>>
+      resourceLoadingFuture = nullptr;
+
+  static void preprocessImage(
+      const CesiumAsync::AsyncSystem& asyncSystem,
+      const CesiumGltf::Sampler& sampler,
+      CesiumGltf::ImageCesium& image);
+
+  static CesiumAsync::Future<TUniquePtr<FCesiumTextureResourceBase>>
+  loadTextureResource(
+      const CesiumAsync::AsyncSystem& asyncSystem,
+      CesiumGltf::ImageCesium& imageCesium,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      TextureFilter filter,
+      bool useMipMapsIfAvailable,
+      TextureGroup group,
+      bool sRGB,
+      std::optional<EPixelFormat> overridePixelFormat);
+
+  static std::mutex textureResourceMutex;
+};
 
 } // namespace CesiumTextureUtility

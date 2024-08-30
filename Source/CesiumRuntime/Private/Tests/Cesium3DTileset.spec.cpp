@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "GlobeAwareDefaultPawn.h"
 #include "Misc/AutomationTest.h"
+#include <CesiumAsync/ICacheDatabase.h>
 
 #define TEST_SCREEN_WIDTH 1280
 #define TEST_SCREEN_HEIGHT 720
@@ -23,12 +24,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 static void setupForSharedImages(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(21.16677692, -67.38013505, -6375355.1944),
-      FVector(-12, 5, -5),
+      FVector(-12, -1300, -5),
       FRotator(0, 90, 0),
       60.0f);
 
   context.georeference->SetOriginEarthCenteredEarthFixed(FVector(0, 0, 0));
-  context.pawn->SetActorLocation(FVector(-12, 5, -5));
+  context.pawn->SetActorLocation(FVector(-12, -1300, -5));
 
   context.sunSky->TimeZone = 9.0f;
   context.sunSky->UpdateSun();
@@ -46,30 +47,34 @@ static void setupForSharedImages(SceneGenerationContext& context) {
           *FPaths::ProjectPluginsDir());
   tileset->SetUrl(FString::Printf(
       TEXT(
-          "file:///%scesium-unreal/extern/cesium-native/Cesium3DTilesSelection/test/data/SharedImages/tileset.json"),
+          "file://%scesium-unreal/extern/cesium-native/Cesium3DTilesSelection/test/data/SharedImages/tileset.json"),
       *FullPluginsPath));
 
   tileset->SetActorLabel(TEXT("SharedImages"));
+  tileset->SetGeoreference(georeference);
+  tileset->SuspendUpdate = false;
   context.tilesets.push_back(tileset);
 
-  UCesiumGlobeAnchorComponent* anchor =
-      NewObject<UCesiumGlobeAnchorComponent>(tileset);
-  anchor->SetGeoreference(georeference);
-  anchor->RegisterComponent();
-
-  anchor->MoveToEarthCenteredEarthFixedPosition(FVector::ZeroVector);
+  UCesiumGlobeAnchorComponent* GlobeAnchorComponent =
+      NewObject<UCesiumGlobeAnchorComponent>(tileset, TEXT("GlobeAnchor"));
+  tileset->AddInstanceComponent(GlobeAnchorComponent);
+  GlobeAnchorComponent->SetAdjustOrientationForGlobeWhenMoving(false);
+  GlobeAnchorComponent->SetGeoreference(georeference);
+  GlobeAnchorComponent->RegisterComponent();
+  GlobeAnchorComponent->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 }
 
-void googleSetupRefreshTilesets(
+void tilesetPass(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
   context.refreshTilesets();
+  context.setSuspendUpdate(false);
 }
 
 bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Warm Cache", googleSetupRefreshTilesets, nullptr});
+  testPasses.push_back(TestPass{"Refresh Pass", tilesetPass, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),

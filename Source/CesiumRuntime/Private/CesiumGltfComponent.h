@@ -12,6 +12,7 @@
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Interfaces/IHttpRequest.h"
+#include <CesiumAsync/SharedFuture.h>
 #include <glm/mat4x4.hpp>
 #include <memory>
 #include "CesiumGltfComponent.generated.h"
@@ -64,7 +65,8 @@ public:
     virtual ~HalfConstructed() = default;
   };
 
-  static TUniquePtr<HalfConstructed> CreateOffGameThread(
+  static CesiumAsync::Future<TUniquePtr<HalfConstructed>> CreateOffGameThread(
+      const CesiumAsync::AsyncSystem& AsyncSystem,
       const glm::dmat4x4& Transform,
       const CreateGltfOptions::CreateModelOptions& Options,
       const CesiumGeospatial::Ellipsoid& Ellipsoid =

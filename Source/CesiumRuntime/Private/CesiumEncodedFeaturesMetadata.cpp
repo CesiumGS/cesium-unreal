@@ -143,7 +143,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     // Copy the image, so that we can keep a copy of it in the glTF.
     CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
     encodedFeatureIdTexture.pTexture =
-        MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
+        MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPartSync(
             imageCopy,
             addressX,
             addressY,
@@ -567,7 +567,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       }
 
       CesiumGltf::ImageCesium imageCopy(image);
-      encodedProperty.pTexture = loadTextureAnyThreadPart(
+      encodedProperty.pTexture = loadTextureAnyThreadPartSync(
           imageCopy,
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
@@ -692,8 +692,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
 
         // Copy the image, so that we can keep a copy of it in the glTF.
         CesiumGltf::ImageCesium imageCopy(*pImage);
-        encodedProperty.pTexture =
-            MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
+        encodedProperty.pTexture = MakeShared<LoadedTextureResult>(
+            std::move(*loadTextureAnyThreadPartSync(
                 imageCopy,
                 addressX,
                 addressY,

@@ -277,7 +277,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     CesiumGltf::ImageCesium imageCopy(image);
-    encodedProperty.pTexture = loadTextureAnyThreadPart(
+    encodedProperty.pTexture = loadTextureAnyThreadPartSync(
         imageCopy,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
@@ -411,8 +411,8 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
       encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
     } else {
       CesiumGltf::ImageCesium imageCopy(*pImage);
-      encodedFeatureTextureProperty.pTexture =
-          MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
+      encodedFeatureTextureProperty.pTexture = MakeShared<LoadedTextureResult>(
+          std::move(*loadTextureAnyThreadPartSync(
               imageCopy,
               TextureAddress::TA_Clamp,
               TextureAddress::TA_Clamp,
@@ -517,7 +517,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         } else {
           CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
           encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
-              std::move(*loadTextureAnyThreadPart(
+              std::move(*loadTextureAnyThreadPartSync(
                   imageCopy,
                   TextureAddress::TA_Clamp,
                   TextureAddress::TA_Clamp,

@@ -730,16 +730,22 @@ public:
 
     const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
-    TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(
+    CesiumAsync::Future<TUniquePtr<UCesiumGltfComponent::HalfConstructed>>
+        pHalfFuture = UCesiumGltfComponent::CreateOffGameThread(
+            asyncSystem,
             transform,
             options,
             ellipsoid);
 
-    return asyncSystem.createResolvedFuture(
-        Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-            std::move(tileLoadResult),
-            pHalf.Release()});
+    return MoveTemp(pHalfFuture)
+        .thenImmediately(
+            [tileLoadResult](
+                TUniquePtr<UCesiumGltfComponent::HalfConstructed>&& pHalf)
+                -> Cesium3DTilesSelection::TileLoadResultAndRenderResources {
+              return Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+                  std::move(tileLoadResult),
+                  pHalf.Release()};
+            });
   }
 
   virtual void* prepareInMainThread(
@@ -808,7 +814,7 @@ public:
       }
     }
 
-    auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
+    auto texture = CesiumTextureUtility::loadTextureAnyThreadPartSync(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
