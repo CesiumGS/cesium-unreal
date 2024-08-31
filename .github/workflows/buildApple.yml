@@ -38,6 +38,7 @@ jobs:
           sudo rm -rf /Applications/Xcode_16.1_beta.app
           sudo rm -rf /Applications/Xcode_16_beta_6.app
           df -h
+          ls /Applications
       - name: Set XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
