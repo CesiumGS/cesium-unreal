@@ -29,6 +29,11 @@ jobs:
         run: |
           df -h
           ls /Applications
+          old_xcode="$(xcode-select --print-path)"
+          echo $old_xcode
+          ls $old_xcode
+          ls $old_xcode/..
+          ls $old_xcode/../..
           brew uninstall google-chrome
           sudo rm -rf /Users/runner/Library/Android
           sudo rm -rf /Applications/Xcode_16.0.0.app
