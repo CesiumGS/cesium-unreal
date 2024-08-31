@@ -29,11 +29,6 @@ jobs:
         run: |
           df -h
           ls /Applications
-          old_xcode="$(xcode-select --print-path)"
-          echo $old_xcode
-          ls $old_xcode
-          ls $old_xcode/..
-          ls $old_xcode/../..
           brew uninstall google-chrome
           sudo rm -rf /Users/runner/Library/Android
           sudo rm -rf /Applications/Xcode_15.0.1.app
@@ -52,8 +47,8 @@ jobs:
           sudo rm -rf /Applications/Xcode_16.1.app
           sudo rm -rf /Applications/Xcode_16.1_beta.app
           sudo rm -rf /Applications/Xcode_16_beta_6.app
-          df -h
           ls /Applications
+          df -h
       - name: Set XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
