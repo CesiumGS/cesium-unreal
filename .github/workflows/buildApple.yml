@@ -28,10 +28,13 @@ jobs:
       - name: Make some more disk space
         run: |
           df -h
+          ls /Applications
           brew uninstall google-chrome
           sudo rm -rf /Users/runner/Library/Android
           sudo rm -rf /Applications/Xcode_16.0.app
           sudo rm -rf /Applications/Xcode_16.0
+          sudo rm -rf /Applications/Xcode_16.1.app
+          sudo rm -rf /Applications/Xcode_16.1
           df -h
       - name: Set XCode version
         uses: maxim-lobanov/setup-xcode@v1
