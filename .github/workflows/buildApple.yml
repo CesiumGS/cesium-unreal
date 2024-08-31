@@ -31,10 +31,12 @@ jobs:
           ls /Applications
           brew uninstall google-chrome
           sudo rm -rf /Users/runner/Library/Android
+          sudo rm -rf /Applications/Xcode_16.0.0.app
           sudo rm -rf /Applications/Xcode_16.0.app
-          sudo rm -rf /Applications/Xcode_16.0
+          sudo rm -rf /Applications/Xcode_16.1.0.app
           sudo rm -rf /Applications/Xcode_16.1.app
-          sudo rm -rf /Applications/Xcode_16.1
+          sudo rm -rf /Applications/Xcode_16.1_beta.app
+          sudo rm -rf /Applications/Xcode_16_beta_6.app
           df -h
       - name: Set XCode version
         uses: maxim-lobanov/setup-xcode@v1
