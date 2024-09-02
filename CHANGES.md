@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v2.8.0 - 2024-09-02
 
 ##### Additions :tada:
 
@@ -12,6 +12,8 @@
 - Fixed a bug introduced in the previous release that caused instanced tilesets to render incorrectly.
 - Debug sections are no longer compressed on Linux and Android, improving compatibility.
 - Fixed a bug where calling `Refresh` on a `CesiumRasterOverlay` would cause the overlay to appear on the Cesium3DTileset, even if inactive.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.38.0 to v0.39.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.7.1 - 2024-08-01
 
