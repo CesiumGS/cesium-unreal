@@ -1519,33 +1519,33 @@ static CesiumAsync::Future<void> loadPrimitive(
 
           std::vector<CesiumAsync::Future<
               TUniquePtr<CesiumTextureUtility::LoadedTextureResult>>>
-              textureLoads{
-                  loadTexture(
-                      asyncSystem,
-                      model,
-                      workingData->pbrMetallicRoughness.baseColorTexture,
-                      true),
-                  loadTexture(
-                      asyncSystem,
-                      model,
-                      workingData->pbrMetallicRoughness
-                          .metallicRoughnessTexture,
-                      false),
-                  loadTexture(
-                      asyncSystem,
-                      model,
-                      workingData->material.normalTexture,
-                      false),
-                  loadTexture(
-                      asyncSystem,
-                      model,
-                      workingData->material.occlusionTexture,
-                      false),
-                  loadTexture(
-                      asyncSystem,
-                      model,
-                      workingData->material.emissiveTexture,
-                      true)};
+              textureLoads;
+
+          textureLoads.push_back(loadTexture(
+              asyncSystem,
+              model,
+              workingData->pbrMetallicRoughness.baseColorTexture,
+              true));
+          textureLoads.push_back(loadTexture(
+              asyncSystem,
+              model,
+              workingData->pbrMetallicRoughness.metallicRoughnessTexture,
+              false));
+          textureLoads.push_back(loadTexture(
+              asyncSystem,
+              model,
+              workingData->material.normalTexture,
+              false));
+          textureLoads.push_back(loadTexture(
+              asyncSystem,
+              model,
+              workingData->material.occlusionTexture,
+              false));
+          textureLoads.push_back(loadTexture(
+              asyncSystem,
+              model,
+              workingData->material.emissiveTexture,
+              true));
 
           return asyncSystem.all(std::move(textureLoads))
               .thenImmediately([&primitiveResult,
@@ -1555,9 +1555,9 @@ static CesiumAsync::Future<void> loadPrimitive(
                                 positionAccessor,
                                 positionView,
                                 indicesView,
-                                &ellipsoid](std::vector<
-                                            TUniquePtr<LoadedTextureResult>>&&
-                                                results) {
+                                &ellipsoid](
+                                   std::vector<TUniquePtr<LoadedTextureResult>>
+                                       results) {
                 Model& model =
                     *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
                 Mesh& mesh = *options.pMeshOptions->pMesh;

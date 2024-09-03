@@ -449,7 +449,7 @@ loadTextureFromModelAnyThreadPart(
           pResult->textureIndex = textureIndex;
         }
 
-        return pResult;
+        return std::move(pResult);
       });
 }
 
@@ -604,7 +604,7 @@ CesiumAsync::Future<TUniquePtr<LoadedTextureResult>> loadTextureAnyThreadPart(
 
             pResult->pTexture->setTextureResource(MoveTemp(textureResource));
             pResult->pTexture->setSharedImage(*pImage);
-            return pResult;
+            return std::move(pResult);
           });
 }
 
@@ -738,7 +738,7 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
 
 std::mutex ExtensionUnrealTextureResource::textureResourceMutex;
 
-inline void ExtensionUnrealTextureResource::preprocessImage(
+void ExtensionUnrealTextureResource::preprocessImage(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const CesiumGltf::Sampler& sampler,
     CesiumGltf::ImageCesium& image) {
