@@ -1158,27 +1158,27 @@ static CesiumAsync::Future<void> loadPrimitive(
     bool hasNormals;
     AccessorView<TMeshVector3> normalAccessor;
     AccessorView<TMeshVector4> tangentAccessor;
-    const Material& material;
-    const MaterialPBRMetallicRoughness& pbrMetallicRoughness;
+    const Material* material;
+    const MaterialPBRMetallicRoughness* pbrMetallicRoughness;
     TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
     bool duplicateVertices;
     TArray<uint32> indices;
     bool hasVertexColors;
 
     PrimitiveLoadingWorkingData(
-        const Material& material_,
-        const MaterialPBRMetallicRoughness& pbrMetallicRoughness_)
+        const Material* material_,
+        const MaterialPBRMetallicRoughness* pbrMetallicRoughness_)
         : material(material_), pbrMetallicRoughness(pbrMetallicRoughness_) {}
   };
 
-  return asyncSystem.runInWorkerThread([asyncSystem,
+  return asyncSystem.runInWorkerThread([&asyncSystem,
                                         pPrimitiveResult = &primitiveResult,
-                                        transform,
-                                        options,
-                                        positionAccessor,
-                                        positionView,
-                                        indicesView,
-                                        ellipsoid]() {
+                                        &transform,
+                                        &options,
+                                        &positionAccessor,
+                                        &positionView,
+                                        &indicesView,
+                                        &ellipsoid]() {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
     LoadPrimitiveResult& primitiveResult = *pPrimitiveResult;
@@ -1260,7 +1260,13 @@ static CesiumAsync::Future<void> loadPrimitive(
                                       : defaultPbrMetallicRoughness;
 
     TSharedPtr<PrimitiveLoadingWorkingData> workingData =
-        MakeShared<PrimitiveLoadingWorkingData>(material, pbrMetallicRoughness);
+        MakeShared<PrimitiveLoadingWorkingData>(
+            &material,
+            &pbrMetallicRoughness);
+
+    UE_LOG(LogCesium, Log, TEXT("material: %p"), &material);
+
+    check(workingData->material == &model.materials[materialID]);
 
     auto normalAccessorIt = primitive.attributes.find("NORMAL");
     if (normalAccessorIt != primitive.attributes.end()) {
@@ -1280,7 +1286,7 @@ static CesiumAsync::Future<void> loadPrimitive(
     }
 
     primitiveResult.isUnlit =
-        workingData->material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
+        workingData->material->hasExtension<ExtensionKhrMaterialsUnlit>() &&
         !options.pMeshOptions->pNodeOptions->pModelOptions
              ->ignoreKhrMaterialsUnlit;
 
@@ -1295,11 +1301,11 @@ static CesiumAsync::Future<void> loadPrimitive(
       primitiveResult.isUnlit = true;
     }
 
-    bool hasNormalMap = workingData->material.normalTexture.has_value();
+    bool hasNormalMap = workingData->material->normalTexture.has_value();
     if (hasNormalMap) {
       const CesiumGltf::Texture* pTexture = Model::getSafe(
           &model.textures,
-          workingData->material.normalTexture->index);
+          workingData->material->normalTexture->index);
       hasNormalMap = pTexture != nullptr &&
                      Model::getSafe(&model.images, pTexture->source) != nullptr;
     }
@@ -1326,15 +1332,15 @@ static CesiumAsync::Future<void> loadPrimitive(
     }
 
     return applyWaterMask(asyncSystem, model, primitive, primitiveResult)
-        .thenImmediately([asyncSystem,
+        .thenImmediately([&asyncSystem,
                           &primitiveResult,
                           workingData,
-                          transform,
-                          options,
-                          positionAccessor,
-                          positionView,
-                          indicesView,
-                          ellipsoid]() {
+                          &transform,
+                          &options,
+                          &positionAccessor,
+                          &positionView,
+                          &indicesView,
+                          &ellipsoid]() {
           Model& model =
               *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
           Mesh& mesh = *options.pMeshOptions->pMesh;
@@ -1524,37 +1530,37 @@ static CesiumAsync::Future<void> loadPrimitive(
           textureLoads.push_back(loadTexture(
               asyncSystem,
               model,
-              workingData->pbrMetallicRoughness.baseColorTexture,
+              workingData->pbrMetallicRoughness->baseColorTexture,
               true));
           textureLoads.push_back(loadTexture(
               asyncSystem,
               model,
-              workingData->pbrMetallicRoughness.metallicRoughnessTexture,
+              workingData->pbrMetallicRoughness->metallicRoughnessTexture,
               false));
           textureLoads.push_back(loadTexture(
               asyncSystem,
               model,
-              workingData->material.normalTexture,
+              workingData->material->normalTexture,
               false));
           textureLoads.push_back(loadTexture(
               asyncSystem,
               model,
-              workingData->material.occlusionTexture,
+              workingData->material->occlusionTexture,
               false));
           textureLoads.push_back(loadTexture(
               asyncSystem,
               model,
-              workingData->material.emissiveTexture,
+              workingData->material->emissiveTexture,
               true));
 
           return asyncSystem.all(std::move(textureLoads))
               .thenImmediately([&primitiveResult,
                                 workingData,
-                                transform,
-                                options,
-                                positionAccessor,
-                                positionView,
-                                indicesView,
+                                &transform,
+                                &options,
+                                &positionAccessor,
+                                &positionView,
+                                &indicesView,
                                 &ellipsoid](
                                    std::vector<TUniquePtr<LoadedTextureResult>>
                                        results) {
@@ -1592,7 +1598,7 @@ static CesiumAsync::Future<void> loadPrimitive(
                           workingData->duplicateVertices,
                           workingData->StaticMeshBuildVertices,
                           workingData->indices,
-                          workingData->pbrMetallicRoughness.baseColorTexture,
+                          workingData->pbrMetallicRoughness->baseColorTexture,
                           gltfToUnrealTexCoordMap);
                   primitiveResult.textureCoordinateParameters
                       ["metallicRoughnessTextureCoordinateIndex"] =
@@ -1603,7 +1609,7 @@ static CesiumAsync::Future<void> loadPrimitive(
                           workingData->StaticMeshBuildVertices,
                           workingData->indices,
                           workingData->pbrMetallicRoughness
-                              .metallicRoughnessTexture,
+                              ->metallicRoughnessTexture,
                           gltfToUnrealTexCoordMap);
                   primitiveResult.textureCoordinateParameters
                       ["normalTextureCoordinateIndex"] =
@@ -1613,7 +1619,7 @@ static CesiumAsync::Future<void> loadPrimitive(
                           workingData->duplicateVertices,
                           workingData->StaticMeshBuildVertices,
                           workingData->indices,
-                          workingData->material.normalTexture,
+                          workingData->material->normalTexture,
                           gltfToUnrealTexCoordMap);
                   primitiveResult.textureCoordinateParameters
                       ["occlusionTextureCoordinateIndex"] =
@@ -1623,7 +1629,7 @@ static CesiumAsync::Future<void> loadPrimitive(
                           workingData->duplicateVertices,
                           workingData->StaticMeshBuildVertices,
                           workingData->indices,
-                          workingData->material.occlusionTexture,
+                          workingData->material->occlusionTexture,
                           gltfToUnrealTexCoordMap);
                   primitiveResult.textureCoordinateParameters
                       ["emissiveTextureCoordinateIndex"] =
@@ -1633,7 +1639,7 @@ static CesiumAsync::Future<void> loadPrimitive(
                           workingData->duplicateVertices,
                           workingData->StaticMeshBuildVertices,
                           workingData->indices,
-                          workingData->material.emissiveTexture,
+                          workingData->material->emissiveTexture,
                           gltfToUnrealTexCoordMap);
 
                   for (size_t i = 0;
@@ -1834,10 +1840,11 @@ static CesiumAsync::Future<void> loadPrimitive(
                 LODResources.bHasReversedIndices = false;
                 LODResources.bHasReversedDepthOnlyIndices = false;
 
-                primitiveResult.pModel = &model;
+                primitiveResult.pModel =
+                    options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
                 primitiveResult.pMeshPrimitive = &primitive;
                 primitiveResult.RenderData = MoveTemp(workingData->RenderData);
-                primitiveResult.pMaterial = &workingData->material;
+                primitiveResult.pMaterial = workingData->material;
                 primitiveResult.pCollisionMesh = nullptr;
 
                 double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
@@ -2194,12 +2201,20 @@ static void loadInstancingData(
   }
 }
 
+static LoadNodeResult& addLoadNodeResult(
+    std::vector<LoadNodeResult>& loadNodeResults,
+    std::mutex& mutex) {
+  std::lock_guard lock(mutex);
+  return loadNodeResults.emplace_back();
+}
+
 static CesiumAsync::SharedFuture<int> loadNode(
     const CesiumAsync::AsyncSystem& asyncSystem,
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options,
-    const CesiumGeospatial::Ellipsoid& ellipsoid) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    std::mutex& loadNodeResultsMutex) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -2224,7 +2239,8 @@ static CesiumAsync::SharedFuture<int> loadNode(
   Model& model = *options.pModelOptions->pModel;
   const Node& node = *options.pNode;
 
-  LoadNodeResult& result = loadNodeResults.emplace_back();
+  LoadNodeResult& result =
+      addLoadNodeResult(loadNodeResults, loadNodeResultsMutex);
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -2294,6 +2310,7 @@ static CesiumAsync::SharedFuture<int> loadNode(
                         model,
                         asyncSystem,
                         options,
+                        &loadNodeResultsMutex,
                         pLoadNodeResults = &loadNodeResults,
                         nodeTransform,
                         ellipsoid](int result) {
@@ -2309,7 +2326,8 @@ static CesiumAsync::SharedFuture<int> loadNode(
                 *pLoadNodeResults,
                 nodeTransform,
                 childNodeOptions,
-                ellipsoid));
+                ellipsoid,
+                loadNodeResultsMutex));
           }
         }
 
@@ -2494,6 +2512,7 @@ loadModelAnyThreadPart(
   }
 
   std::vector<CesiumAsync::SharedFuture<int>> futures;
+  std::mutex loadNodeResultsMutex;
 
   if (model.scene >= 0 && model.scene < model.scenes.size()) {
     // Show the default scene
@@ -2508,7 +2527,8 @@ loadModelAnyThreadPart(
           pResult->loadModelResult.nodeResults,
           rootTransform,
           nodeOptions,
-          ellipsoid));
+          ellipsoid,
+          loadNodeResultsMutex));
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
@@ -2523,7 +2543,8 @@ loadModelAnyThreadPart(
           pResult->loadModelResult.nodeResults,
           rootTransform,
           nodeOptions,
-          ellipsoid));
+          ellipsoid,
+          loadNodeResultsMutex));
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
@@ -2536,7 +2557,8 @@ loadModelAnyThreadPart(
         pResult->loadModelResult.nodeResults,
         rootTransform,
         nodeOptions,
-        ellipsoid));
+        ellipsoid,
+        loadNodeResultsMutex));
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (Mesh& mesh : model.meshes) {
@@ -2561,9 +2583,9 @@ loadModelAnyThreadPart(
 
   return asyncSystem.all(std::move(futures))
       .thenImmediately(
-          [ppResult = &pResult](std::vector<int>&& results)
+          [pResult = pResult.Release()](std::vector<int>&& results)
               -> TUniquePtr<UCesiumGltfComponent::HalfConstructed> {
-            return MoveTemp(*ppResult);
+            return TUniquePtr<UCesiumGltfComponent::HalfConstructed>(pResult);
           });
 }
 

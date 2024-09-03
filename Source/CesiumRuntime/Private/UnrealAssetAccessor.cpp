@@ -151,6 +151,10 @@ void rejectPromiseOnUnsuccessfulConnection(
     const CesiumAsync::Promise<std::shared_ptr<CesiumAsync::IAssetRequest>>&
         promise,
     FHttpRequestPtr pRequest) {
+#ifndef ENGINE_VERSION_5_4_OR_HIGHER
+#define ENGINE_VERSION_5_4_OR_HIGHER 0
+#endif
+
 #if ENGINE_VERSION_5_4_OR_HIGHER
   if (pRequest->GetStatus() == EHttpRequestStatus::Failed) {
     EHttpFailureReason failureReason = pRequest->GetFailureReason();

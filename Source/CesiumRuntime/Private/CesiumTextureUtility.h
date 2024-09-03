@@ -292,7 +292,7 @@ struct ExtensionUnrealTextureResource {
       bool sRGB,
       std::optional<EPixelFormat> overridePixelFormat);
 
-  static std::mutex textureResourceMutex;
+  static std::recursive_mutex textureResourceMutex;
 };
 
 } // namespace CesiumTextureUtility

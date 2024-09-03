@@ -736,7 +736,7 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
   }
 }
 
-std::mutex ExtensionUnrealTextureResource::textureResourceMutex;
+std::recursive_mutex ExtensionUnrealTextureResource::textureResourceMutex;
 
 void ExtensionUnrealTextureResource::preprocessImage(
     const CesiumAsync::AsyncSystem& asyncSystem,
@@ -844,13 +844,20 @@ ExtensionUnrealTextureResource::loadTextureResource(
   }
 
   if (extension.resourceLoadingFuture == nullptr) {
+    // It's possible we got to this path without going through any
+    // pre-processing steps (like from a test)
+    if (extension.preprocessFuture == nullptr) {
+      extension.preprocessFuture =
+          MakeShared<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>(
+              asyncSystem.createResolvedFuture(&imageCesium).share());
+    }
     // We need to start loading the texture resource
     check(extension.preprocessFuture != nullptr);
 
     extension.resourceLoadingFuture =
         MakeShared<CesiumAsync::SharedFuture<FCesiumTextureResourceBase*>>(
             extension.preprocessFuture
-                ->thenImmediately(
+                ->thenInWorkerThread(
                     [addressX,
                      addressY,
                      filter,
