@@ -599,6 +599,13 @@ public:
   bool LogSelectionStats = false;
 
   /**
+   * If true, draws debug text above each tile being rendered with information
+   * about that tile.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool DrawTileInfo = false;
+
+  /**
    * Define the collision profile for all the 3D tiles created inside this
    * actor.
    */

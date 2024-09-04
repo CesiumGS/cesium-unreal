@@ -1865,6 +1865,35 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     const Cesium3DTilesSelection::ViewUpdateResult& result) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateLastViewUpdateResultState)
 
+  if (this->DrawTileInfo) {
+    const UWorld* World = GetWorld();
+    check(World);
+
+    const TSoftObjectPtr<ACesiumGeoreference> Georeference = GetGeoreference();
+    check(Georeference);
+
+    for (auto& tile : result.tilesToRenderThisFrame) {
+
+      CesiumGeometry::OrientedBoundingBox obb =
+          Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
+              tile->getBoundingVolume(),
+              Georeference->GetEllipsoid()->GetNativeEllipsoid());
+
+      FVector unrealCenter =
+          Georeference->TransformEarthCenteredEarthFixedPositionToUnreal(
+              VecMath::createVector(obb.getCenter()));
+
+      FString text = FString::Printf(
+          TEXT("ID %s (%p)"),
+          Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+              tile->getTileID())
+              .c_str(),
+          tile);
+
+      DrawDebugString(World, unrealCenter, text, nullptr, FColor::Red, 0, true);
+    }
+  }
+
   if (!this->LogSelectionStats) {
     return;
   }
