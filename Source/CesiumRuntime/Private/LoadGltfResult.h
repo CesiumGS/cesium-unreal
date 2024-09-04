@@ -48,6 +48,13 @@ struct LoadPrimitiveResult {
    * A pointer to the glTF material.
    */
   const CesiumGltf::Material* pMaterial = nullptr;
+
+  /**
+   * The index of the material for this primitive within the parent model, or -1
+   * if none.
+   */
+  int32_t materialId = -1;
+
   glm::dmat4x4 transform{1.0};
 #if ENGINE_VERSION_5_4_OR_HIGHER
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
