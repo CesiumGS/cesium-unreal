@@ -71,7 +71,7 @@ public class CesiumEditor : ModuleRules
 
         string libPath = useDebug ? libPathDebug : libPathRelease;
 
-        string[] allLibs = Directory.GetFiles(libPath, libSearchPattern);
+        string[] allLibs = Directory.Exists(libPath) ? Directory.GetFiles(libPath, libSearchPattern) : new string[0];
 
         PublicAdditionalLibraries.AddRange(allLibs);
 
