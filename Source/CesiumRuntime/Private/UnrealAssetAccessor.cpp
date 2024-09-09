@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "UnrealAssetAccessor.h"
+#include "CesiumCommon.h"
 #include "Async/Async.h"
 #include "Async/AsyncWork.h"
 
