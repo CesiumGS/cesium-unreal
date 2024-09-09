@@ -35,12 +35,12 @@ struct CreateNodeOptions {
 struct CreateMeshOptions {
   const CreateNodeOptions* pNodeOptions = nullptr;
   const LoadGltfResult::LoadNodeResult* pHalfConstructedNodeResult = nullptr;
-  CesiumGltf::Mesh* pMesh = nullptr;
+  int32_t meshIndex = -1;
 };
 
 struct CreatePrimitiveOptions {
   const CreateMeshOptions* pMeshOptions = nullptr;
   const LoadGltfResult::LoadMeshResult* pHalfConstructedMeshResult = nullptr;
-  CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
+  int32_t primitiveIndex = -1;
 };
 } // namespace CreateGltfOptions

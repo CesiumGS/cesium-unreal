@@ -1186,8 +1186,8 @@ static CesiumAsync::Future<void> loadPrimitive(
 
         Model& model =
             *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        Mesh& mesh = *options.pMeshOptions->pMesh;
-        MeshPrimitive& primitive = *options.pPrimitive;
+        Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+        MeshPrimitive& primitive = mesh.primitives[options.primitiveIndex];
 
         if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
             primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP &&
@@ -1257,7 +1257,7 @@ static CesiumAsync::Future<void> loadPrimitive(
                 ? &model.materials[materialID]
                 : &defaultMaterial;
 
-        primitiveResult.materialId = materialID;
+        primitiveResult.materialIndex = materialID;
 
         workingData->pbrMetallicRoughness =
             workingData->material->pbrMetallicRoughness
@@ -1342,8 +1342,8 @@ static CesiumAsync::Future<void> loadPrimitive(
                         &ellipsoid]() {
         Model& model =
             *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        Mesh& mesh = *options.pMeshOptions->pMesh;
-        MeshPrimitive& primitive = *options.pPrimitive;
+        Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+        MeshPrimitive& primitive = mesh.primitives[options.primitiveIndex];
 
         // The water effect works by animating the normal, and the normal
         // is expressed in tangent space. So if we have water, we need
@@ -1565,8 +1565,9 @@ static CesiumAsync::Future<void> loadPrimitive(
                                         results) {
         Model& model =
             *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        Mesh& mesh = *options.pMeshOptions->pMesh;
-        MeshPrimitive& primitive = *options.pPrimitive;
+        const Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+        const MeshPrimitive& primitive =
+            mesh.primitives[options.primitiveIndex];
 
         // We need to copy the texture coordinates associated with
         // each texture (if any) into the the appropriate UVs slot
@@ -1820,11 +1821,9 @@ static CesiumAsync::Future<void> loadPrimitive(
         LODResources.bHasReversedIndices = false;
         LODResources.bHasReversedDepthOnlyIndices = false;
 
-        primitiveResult.pModel =
-            options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        primitiveResult.pMeshPrimitive = &primitive;
+        primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
+        primitiveResult.primitiveIndex = options.primitiveIndex;
         primitiveResult.RenderData = MoveTemp(workingData->RenderData);
-        primitiveResult.pMaterial = workingData->material;
         primitiveResult.pCollisionMesh = nullptr;
 
         double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
@@ -1866,7 +1865,8 @@ static CesiumAsync::SharedFuture<void> loadIndexedPrimitive(
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-  const MeshPrimitive& primitive = *options.pPrimitive;
+  const MeshPrimitive& primitive = model.meshes[options.pMeshOptions->meshIndex]
+                                       .primitives[options.primitiveIndex];
 
   const Accessor& indexAccessorGltf = model.accessors[primitive.indices];
   if (indexAccessorGltf.componentType ==
@@ -1943,7 +1943,8 @@ static CesiumAsync::SharedFuture<int> loadPrimitive(
 
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-  const MeshPrimitive& primitive = *options.pPrimitive;
+  const MeshPrimitive& primitive = model.meshes[options.pMeshOptions->meshIndex]
+                                       .primitives[options.primitiveIndex];
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
   if (positionAccessorIt == primitive.attributes.end()) {
@@ -2008,13 +2009,14 @@ static CesiumAsync::SharedFuture<int> loadMesh(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
   const Model& model = *options.pNodeOptions->pModelOptions->pModel;
-  Mesh& mesh = *options.pMesh;
+  const Mesh& mesh = model.meshes[options.meshIndex];
 
   result = LoadMeshResult();
   result->primitiveResults.reserve(mesh.primitives.size());
   std::vector<CesiumAsync::SharedFuture<int>> futures;
-  for (CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
+  int32_t i = 0;
+  for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
+    CreatePrimitiveOptions primitiveOptions = {&options, &*result, i++};
     auto& primitiveResult = result->primitiveResults.emplace_back();
     futures.push_back(loadPrimitive(
         asyncSystem,
@@ -2265,15 +2267,15 @@ static CesiumAsync::SharedFuture<int> loadNode(
         nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
   }
 
-  int meshId = node.mesh;
+  int meshIndex = node.mesh;
   CesiumAsync::SharedFuture<int> loadMeshFuture =
       asyncSystem.createResolvedFuture(0).share();
-  if (meshId >= 0 && meshId < model.meshes.size()) {
+  if (meshIndex >= 0 && meshIndex < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
             node.getExtension<ExtensionExtMeshGpuInstancing>()) {
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
-    CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
+    CreateMeshOptions meshOptions = {&options, &result, meshIndex};
     loadMeshFuture = loadMesh(
         asyncSystem,
         result.meshResult,
@@ -2538,6 +2540,7 @@ loadModelAnyThreadPart(
         loadNodeResultsMutex));
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
+    int32_t i = 0;
     for (Mesh& mesh : model.meshes) {
       CreateNodeOptions dummyNodeOptions = {
           &options,
@@ -2548,7 +2551,7 @@ loadModelAnyThreadPart(
       CreateMeshOptions meshOptions = {
           &dummyNodeOptions,
           &dummyNodeResult,
-          &mesh};
+          i++};
       futures.push_back(loadMesh(
           asyncSystem,
           dummyNodeResult.meshResult,
@@ -3392,9 +3395,12 @@ static void loadPrimitiveGameThreadPart(
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
+  MeshPrimitive* pMeshPrimitive =
+      &model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
+
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-  if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
+  if (pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
@@ -3436,8 +3442,9 @@ static void loadPrimitiveGameThreadPart(
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    primData.pModel = loadResult.pModel;
-    primData.pMeshPrimitive = loadResult.pMeshPrimitive;
+    primData.pModel = &model;
+    primData.pMeshPrimitive = &model.meshes[loadResult.meshIndex]
+                                   .primitives[loadResult.primitiveIndex];
     primData.boundingVolume = boundingVolume;
     pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
     pMesh->SetCustomDepthStencilWriteMask(
@@ -3459,9 +3466,9 @@ static void loadPrimitiveGameThreadPart(
   }
 
   const Material& material =
-      loadResult.materialId >= 0 &&
-              loadResult.materialId < model.materials.size()
-          ? model.materials[loadResult.materialId]
+      loadResult.materialIndex >= 0 &&
+              loadResult.materialIndex < model.materials.size()
+          ? model.materials[loadResult.materialIndex]
           : defaultMaterial;
 
   const MaterialPBRMetallicRoughness& pbr =
@@ -3471,9 +3478,10 @@ static void loadPrimitiveGameThreadPart(
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
-  const auto is_in_blend_mode = [](auto& result) {
-    return !!result.pMaterial && result.pMaterial->alphaMode ==
-                                     CesiumGltf::Material::AlphaMode::BLEND;
+  const auto is_in_blend_mode = [&model](auto& result) {
+    return result.materialIndex != -1 &&
+           model.materials[result.materialIndex].alphaMode ==
+               CesiumGltf::Material::AlphaMode::BLEND;
   };
 
 #if PLATFORM_MAC

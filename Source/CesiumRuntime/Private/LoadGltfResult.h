@@ -45,15 +45,10 @@ struct LoadPrimitiveResult {
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
 
   /**
-   * A pointer to the glTF material.
-   */
-  const CesiumGltf::Material* pMaterial = nullptr;
-
-  /**
    * The index of the material for this primitive within the parent model, or -1
    * if none.
    */
-  int32_t materialId = -1;
+  int32_t materialIndex = -1;
 
   glm::dmat4x4 transform{1.0};
 #if ENGINE_VERSION_5_4_OR_HIGHER
@@ -96,8 +91,8 @@ struct LoadPrimitiveResult {
 #pragma endregion
 
 #pragma region CesiumGltfPrimitiveComponent data
-  const CesiumGltf::Model* pModel = nullptr;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
+  int32_t meshIndex = -1;
+  int32_t primitiveIndex = -1;
 
   /** Parses EXT_mesh_features from a mesh primitive.*/
   FCesiumPrimitiveFeatures Features{};
