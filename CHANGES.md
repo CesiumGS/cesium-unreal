@@ -4,7 +4,7 @@
 
 ##### Fixes :wrench:
 
-- Drastically reduced tile mesh memory usage in UE 5.3 and 5.4 by working around a bug that causes those engine versions to add more sets of texture coordinates than are necessary.
+- Drastically reduced tile mesh memory usage in UE 5.3 and 5.4 by working around a bug that causes those engine versions to add more texture coordinate sets than necessary.
 
 ### v2.8.0 - 2024-09-02
 
