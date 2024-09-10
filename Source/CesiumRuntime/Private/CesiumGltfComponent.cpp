@@ -1628,11 +1628,40 @@ static void loadPrimitive(
       ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
     }
 
-    LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
-        StaticMeshBuildVertices,
-        gltfToUnrealTexCoordMap.size() == 0 ? 1
-                                            : gltfToUnrealTexCoordMap.size(),
+    uint32 numberOfTextureCoordinates =
+        gltfToUnrealTexCoordMap.size() == 0
+            ? 1
+            : uint32(gltfToUnrealTexCoordMap.size());
+
+    FStaticMeshVertexBuffer& vertexBuffer =
+        LODResources.VertexBuffers.StaticMeshVertexBuffer;
+    vertexBuffer.Init(
+        StaticMeshBuildVertices.Num(),
+        numberOfTextureCoordinates,
         false);
+
+    // Manually copy the vertices into the buffer. We do this because UE 5.3
+    // and 5.4 have a bug where the overload of `FStaticMeshVertexBuffer::Init`
+    // taking an array of `FStaticMeshBuildVertex` will create a mesh with all 8
+    // sets of texture coordinates, even when we usually only need one or two.
+    // See https://github.com/CesiumGS/cesium-unreal/issues/1513
+    for (uint32 vertexIndex = 0;
+         vertexIndex < uint32(StaticMeshBuildVertices.Num());
+         ++vertexIndex) {
+      const FStaticMeshBuildVertex& source =
+          StaticMeshBuildVertices[vertexIndex];
+
+      vertexBuffer.SetVertexTangents(
+          vertexIndex,
+          source.TangentX,
+          source.TangentY,
+          source.TangentZ);
+      for (uint32 uvIndex = 0; uvIndex < numberOfTextureCoordinates;
+           uvIndex++) {
+        vertexBuffer
+            .SetVertexUV(vertexIndex, uvIndex, source.UVs[uvIndex], false);
+      }
+    }
   }
 
   FStaticMeshSectionArray& Sections = LODResources.Sections;
