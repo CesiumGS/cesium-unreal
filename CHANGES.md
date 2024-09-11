@@ -1,15 +1,25 @@
 # Change Log
 
-### ? - ?
+### Next version (not released yet)
+
+##### Fixes :wrench:
+
+- Drastically reduced tile mesh memory usage in UE 5.3 and 5.4 by working around a bug that causes those engine versions to add more texture coordinate sets than necessary.
+
+### v2.8.0 - 2024-09-02
 
 ##### Additions :tada:
 
 - Added universal (Intel and Apple Silicon) binaries for Unreal Engine 5.2. Unreal Engine 5.3 and 5.4 already had universal binaries.
+- Raster overlays now have `bAllowAnyoneToDestroyMe` set to true by default. This allows them to be dynamically removed and destroyed at runtime via the Blueprint `Destroy Component` function called from anywhere, including Level Blueprints. Previously, attempting to delete a raster overlay from outside the Actor would result in an error.
 
 ##### Fixes :wrench:
 
 - Fixed a bug introduced in the previous release that caused instanced tilesets to render incorrectly.
 - Debug sections are no longer compressed on Linux and Android, improving compatibility.
+- Fixed a bug where calling `Refresh` on a `CesiumRasterOverlay` would cause the overlay to appear on the Cesium3DTileset, even if inactive.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.38.0 to v0.39.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.7.1 - 2024-08-01
 

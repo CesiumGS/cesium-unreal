@@ -1715,6 +1715,34 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 }
 
 namespace {
+template <typename Func>
+void forEachRenderableTile(const auto& tiles, Func&& f) {
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (!pTile ||
+        pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+      continue;
+    }
+
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
+    if (!Gltf) {
+      // When a tile does not have render resources (i.e. a glTF), then
+      // the resources either have not yet been loaded or prepared,
+      // or the tile is from an external tileset and does not directly
+      // own renderable content. In both cases, the tile is ignored here.
+      continue;
+    }
+
+    f(pTile, Gltf);
+  }
+}
 
 void removeVisibleTilesFromList(
     std::vector<Cesium3DTilesSelection::Tile*>& list,
@@ -1742,31 +1770,20 @@ void removeVisibleTilesFromList(
  */
 void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
-  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
-      continue;
-    }
-
-    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        content.getRenderContent();
-    if (!pRenderContent) {
-      continue;
-    }
-
-    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
-        pRenderContent->getRenderResources());
-    if (Gltf && Gltf->IsVisible()) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
-      Gltf->SetVisibility(false, true);
-    } else {
-      // TODO: why is this happening?
-      UE_LOG(
-          LogCesium,
-          Verbose,
-          TEXT("Tile to no longer render does not have a visible Gltf"));
-    }
-  }
+  forEachRenderableTile(
+      tiles,
+      [](Cesium3DTilesSelection::Tile* /*pTile*/, UCesiumGltfComponent* pGltf) {
+        if (pGltf->IsVisible()) {
+          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
+          pGltf->SetVisibility(false, true);
+        } else {
+          // TODO: why is this happening?
+          UE_LOG(
+              LogCesium,
+              Verbose,
+              TEXT("Tile to no longer render does not have a visible Gltf"));
+        }
+      });
 }
 
 /**
@@ -1776,25 +1793,12 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
 void removeCollisionForTiles(
     const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RemoveCollisionForTiles)
-  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
-      continue;
-    }
-
-    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        content.getRenderContent();
-    if (!pRenderContent) {
-      continue;
-    }
-
-    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
-        pRenderContent->getRenderResources());
-    if (Gltf) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    }
-  }
+  forEachRenderableTile(
+      tiles,
+      [](Cesium3DTilesSelection::Tile* /*pTile*/, UCesiumGltfComponent* pGltf) {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
+        pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      });
 }
 
 /**
@@ -1949,89 +1953,56 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 void ACesium3DTileset::showTilesToRender(
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
+  forEachRenderableTile(
+      tiles,
+      [&RootComponent = this->RootComponent,
+       &BodyInstance = this->BodyInstance](
+          Cesium3DTilesSelection::Tile* pTile,
+          UCesiumGltfComponent* pGltf) {
+        applyActorCollisionSettings(BodyInstance, pGltf);
 
-  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
-      continue;
-    }
+        if (pGltf->GetAttachParent() == nullptr) {
+          // The AttachToComponent method is ridiculously complex,
+          // so print a warning if attaching fails for some reason
+          bool attached = pGltf->AttachToComponent(
+              RootComponent,
+              FAttachmentTransformRules::KeepRelativeTransform);
+          if (!attached) {
+            FString tileIdString(
+                Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                    pTile->getTileID())
+                    .c_str());
+            UE_LOG(
+                LogCesium,
+                Warning,
+                TEXT("Tile %s could not be attached to root"),
+                *tileIdString);
+          }
+        }
 
-    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        content.getRenderContent();
-    if (!pRenderContent) {
-      continue;
-    }
+        if (!pGltf->IsVisible()) {
+          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
+          pGltf->SetVisibility(true, true);
+        }
 
-    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
-        pRenderContent->getRenderResources());
-    if (!Gltf) {
-      // When a tile does not have render resources (i.e. a glTF), then
-      // the resources either have not yet been loaded or prepared,
-      // or the tile is from an external tileset and does not directly
-      // own renderable content. In both cases, the tile is ignored here.
-      continue;
-    }
-
-    applyActorCollisionSettings(BodyInstance, Gltf);
-
-    if (Gltf->GetAttachParent() == nullptr) {
-
-      // The AttachToComponent method is ridiculously complex,
-      // so print a warning if attaching fails for some reason
-      bool attached = Gltf->AttachToComponent(
-          this->RootComponent,
-          FAttachmentTransformRules::KeepRelativeTransform);
-      if (!attached) {
-        FString tileIdString(
-            Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
-                pTile->getTileID())
-                .c_str());
-        UE_LOG(
-            LogCesium,
-            Warning,
-            TEXT("Tile %s could not be attached to root"),
-            *tileIdString);
-      }
-    }
-
-    if (!Gltf->IsVisible()) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
-      Gltf->SetVisibility(true, true);
-    }
-
-    {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
-      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    }
-  }
+        {
+          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
+          pGltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        }
+      });
 }
 
-static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
-  if (!pTile || !pTile->getContent().isRenderContent()) {
-    return;
-  }
-
-  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
-    return;
-  }
-
-  const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-      content.getRenderContent();
-  if (!pRenderContent) {
-    return;
-  }
-
-  UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(
-      pRenderContent->getRenderResources());
-  if (!pGltf) {
-    return;
-  }
-
-  float percentage =
-      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
-
-  pGltf->UpdateFade(percentage, fadingIn);
+static void updateTileFades(const auto& tiles, bool fadingIn) {
+  forEachRenderableTile(
+      tiles,
+      [fadingIn](
+          Cesium3DTilesSelection::Tile* pTile,
+          UCesiumGltfComponent* pGltf) {
+        float percentage = pTile->getContent()
+                               .getRenderContent()
+                               ->getLodTransitionFadePercentage();
+        pGltf->UpdateFade(percentage, fadingIn);
+      });
 }
 
 // Called every frame
@@ -2144,15 +2115,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   if (this->UseLodTransitions) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
-
-    for (Cesium3DTilesSelection::Tile* pTile :
-         pResult->tilesToRenderThisFrame) {
-      updateTileFade(pTile, true);
-    }
-
-    for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
-      updateTileFade(pTile, false);
-    }
+    updateTileFades(pResult->tilesToRenderThisFrame, true);
+    updateTileFades(pResult->tilesFadingOut, false);
   }
 
   this->UpdateLoadStatus();
