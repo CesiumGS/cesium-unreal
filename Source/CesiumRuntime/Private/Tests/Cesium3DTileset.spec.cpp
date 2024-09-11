@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "GlobeAwareDefaultPawn.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/AutomationEditorCommon.h"
 #include <CesiumAsync/ICacheDatabase.h>
 
 #define TEST_SCREEN_WIDTH 1280
@@ -29,7 +30,8 @@ static void setupForSharedImages(SceneGenerationContext& context) {
       60.0f);
 
   context.georeference->SetOriginEarthCenteredEarthFixed(FVector(0, 0, 0));
-  context.pawn->SetActorLocation(FVector(-12, -1300, -5));
+  context.pawn->SetActorLocation(FVector(485.0, 2400.0, 520.0));
+  context.pawn->SetActorRotation(FQuat::MakeFromEuler(FVector(0, 0, 270)));
 
   context.sunSky->TimeZone = 9.0f;
   context.sunSky->UpdateSun();
@@ -53,6 +55,7 @@ static void setupForSharedImages(SceneGenerationContext& context) {
   tileset->SetActorLabel(TEXT("SharedImages"));
   tileset->SetGeoreference(georeference);
   tileset->SuspendUpdate = false;
+  tileset->LogSelectionStats = true;
   context.tilesets.push_back(tileset);
 
   UCesiumGlobeAnchorComponent* GlobeAnchorComponent =
@@ -63,13 +66,17 @@ static void setupForSharedImages(SceneGenerationContext& context) {
   GlobeAnchorComponent->RegisterComponent();
   GlobeAnchorComponent->MoveToEarthCenteredEarthFixedPosition(
       FVector(0.0, 0.0, 0.0));
+
+  ADirectionalLight* Light = context.world->SpawnActor<ADirectionalLight>();
+  Light->SetActorRotation(FQuat::MakeFromEuler(FVector(0, 0, 270)));
 }
 
 void tilesetPass(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
-  context.refreshTilesets();
-  context.setSuspendUpdate(false);
+  CesiumGltf::SharedAssetDepot& assetDepot =
+      context.tilesets[0]->GetTileset()->getSharedAssetDepot();
+  assert(assetDepot.getImagesCount() == 2);
 }
 
 bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
