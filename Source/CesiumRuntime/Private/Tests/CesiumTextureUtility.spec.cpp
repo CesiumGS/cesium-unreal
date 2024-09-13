@@ -19,8 +19,6 @@ BEGIN_DEFINE_SPEC(
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 SharedAsset<ImageCesium> imageCesium;
-CesiumAsync::AsyncSystem asyncSystem =
-    CesiumAsync::AsyncSystem(std::make_shared<UnrealTaskProcessor>());
 
 void RunTests();
 
@@ -162,11 +160,9 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
         loadTextureFromImageAndSamplerAnyThreadPart(
-            asyncSystem,
             imageCesium,
             sampler,
-            false)
-            .waitInMainThread();
+            false);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
@@ -198,8 +194,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture.sampler = 0;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, true)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model, texture, true);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
 
@@ -242,22 +237,12 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture2.sampler = 1;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded1 =
-        loadTextureFromModelAnyThreadPart(
-            asyncSystem,
-            model,
-            model.textures[0],
-            true)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model, model.textures[0], true);
     TestNotNull("pHalfLoaded1", pHalfLoaded1.Get());
     TestNotNull("pHalfLoaded1->pTexture", pHalfLoaded1->pTexture.get());
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(
-            asyncSystem,
-            model,
-            model.textures[1],
-            false)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model, model.textures[1], false);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
 
@@ -309,8 +294,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture.sampler = 0;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, true)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model, texture, true);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
 
@@ -330,12 +314,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     // previously-created texture.
     Model model2 = model;
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(
-            asyncSystem,
-            model2,
-            model.textures[0],
-            true)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model2, model.textures[0], true);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
     TestNull(
@@ -364,8 +343,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     texture.sampler = 0;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, true)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model, texture, true);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
 
@@ -384,12 +362,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     // This time there's no more pixel data, so it's necessary to use the
     // previously-created texture.
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(
-            asyncSystem,
-            model,
-            model.textures[0],
-            true)
-            .waitInMainThread();
+        loadTextureFromModelAnyThreadPart(model, model.textures[0], true);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
     TestNull(

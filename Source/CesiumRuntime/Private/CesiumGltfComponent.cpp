@@ -61,7 +61,6 @@
 #include <glm/mat3x3.hpp>
 #include <iostream>
 #include <type_traits>
-#include <vector>
 
 #if WITH_EDITOR
 #include "ScopedTransaction.h"
@@ -399,10 +398,7 @@ struct ColorVisitor {
 };
 
 template <class T>
-static CesiumAsync::Future<
-    TUniquePtr<CesiumTextureUtility::LoadedTextureResult>>
-loadTexture(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture,
     bool sRGB) {
@@ -416,17 +412,15 @@ loadTexture(
           model.textures.size(),
           gltfTexture.value().index);
     }
-    return asyncSystem.createResolvedFuture<
-        TUniquePtr<CesiumTextureUtility::LoadedTextureResult>>(nullptr);
+    return nullptr;
   }
 
   int32_t textureIndex = gltfTexture.value().index;
   CesiumGltf::Texture& texture = model.textures[textureIndex];
-  return loadTextureFromModelAnyThreadPart(asyncSystem, model, texture, sRGB);
+  return loadTextureFromModelAnyThreadPart(model, texture, sRGB);
 }
 
-static CesiumAsync::SharedFuture<void> applyWaterMaskTexture(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static void applyWaterMask(
     Model& model,
     const MeshPrimitive& primitive,
     LoadPrimitiveResult& primitiveResult) {
@@ -451,16 +445,8 @@ static CesiumAsync::SharedFuture<void> applyWaterMaskTexture(
         waterMaskInfo.index = waterMaskTextureId;
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
-          return loadTexture(
-                     asyncSystem,
-                     model,
-                     std::make_optional(waterMaskInfo),
-                     false)
-              .thenImmediately([pPrimitiveResult = &primitiveResult](
-                                   TUniquePtr<LoadedTextureResult> result) {
-                pPrimitiveResult->waterMaskTexture = MoveTemp(result);
-              })
-              .share();
+          primitiveResult.waterMaskTexture =
+              loadTexture(model, std::make_optional(waterMaskInfo), false);
         }
       }
     }
@@ -469,36 +455,23 @@ static CesiumAsync::SharedFuture<void> applyWaterMaskTexture(
     primitiveResult.onlyLand = true;
   }
 
-  return asyncSystem.createResolvedFuture().share();
-}
+  auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
+  auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
+  auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
 
-static CesiumAsync::Future<void> applyWaterMask(
-    const CesiumAsync::AsyncSystem& asyncSystem,
-    Model& model,
-    const MeshPrimitive& primitive,
-    LoadPrimitiveResult& primitiveResult) {
-  return applyWaterMaskTexture(asyncSystem, model, primitive, primitiveResult)
-      .thenImmediately([primitive, pPrimitiveResult = &primitiveResult]() {
-        auto waterMaskTranslationXIt =
-            primitive.extras.find("WaterMaskTranslationX");
-        auto waterMaskTranslationYIt =
-            primitive.extras.find("WaterMaskTranslationY");
-        auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
-
-        if (waterMaskTranslationXIt != primitive.extras.end() &&
-            waterMaskTranslationXIt->second.isDouble() &&
-            waterMaskTranslationYIt != primitive.extras.end() &&
-            waterMaskTranslationYIt->second.isDouble() &&
-            waterMaskScaleIt != primitive.extras.end() &&
-            waterMaskScaleIt->second.isDouble()) {
-          pPrimitiveResult->waterMaskTranslationX =
-              waterMaskTranslationXIt->second.getDoubleOrDefault(0.0);
-          pPrimitiveResult->waterMaskTranslationY =
-              waterMaskTranslationYIt->second.getDoubleOrDefault(0.0);
-          pPrimitiveResult->waterMaskScale =
-              waterMaskScaleIt->second.getDoubleOrDefault(1.0);
-        }
-      });
+  if (waterMaskTranslationXIt != primitive.extras.end() &&
+      waterMaskTranslationXIt->second.isDouble() &&
+      waterMaskTranslationYIt != primitive.extras.end() &&
+      waterMaskTranslationYIt->second.isDouble() &&
+      waterMaskScaleIt != primitive.extras.end() &&
+      waterMaskScaleIt->second.isDouble()) {
+    primitiveResult.waterMaskTranslationX =
+        waterMaskTranslationXIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskTranslationY =
+        waterMaskTranslationYIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskScale =
+        waterMaskScaleIt->second.getDoubleOrDefault(1.0);
+  }
 }
 
 #pragma region Features Metadata helper functions(load thread)
@@ -1141,8 +1114,7 @@ constexpr glm::dmat4 yInvertMatrix = {
 } // namespace
 
 template <class TIndexAccessor>
-static CesiumAsync::Future<void> loadPrimitive(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static void loadPrimitive(
     LoadPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
@@ -1150,745 +1122,595 @@ static CesiumAsync::Future<void> loadPrimitive(
     const AccessorView<TMeshVector3>& positionView,
     const TIndexAccessor& indicesView,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
-  struct PrimitiveLoadingWorkingData {
-    TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-    bool hasTangents;
-    bool needsTangents;
-    bool hasNormals;
-    AccessorView<TMeshVector3> normalAccessor;
-    AccessorView<TMeshVector4> tangentAccessor;
-    const Material* material;
-    const MaterialPBRMetallicRoughness* pbrMetallicRoughness;
-    TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
-    bool duplicateVertices;
-    TArray<uint32> indices;
-    bool hasVertexColors;
 
-    PrimitiveLoadingWorkingData() {}
-  };
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
-  TSharedPtr<PrimitiveLoadingWorkingData> workingData =
-      MakeShared<PrimitiveLoadingWorkingData>();
+  Model& model = *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+  MeshPrimitive& primitive = mesh.primitives[options.primitiveIndex];
 
-  return asyncSystem
-      .runInWorkerThread([&asyncSystem,
-                          pPrimitiveResult = &primitiveResult,
-                          workingData,
-                          &transform,
-                          &options,
-                          &positionAccessor,
-                          &positionView,
-                          &indicesView,
-                          &ellipsoid]() {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
+  if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
+      primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP &&
+      primitive.mode != MeshPrimitive::Mode::POINTS) {
+    // TODO: add support for other primitive types.
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Primitive mode %d is not supported"),
+        primitive.mode);
+    return;
+  }
 
-        LoadPrimitiveResult& primitiveResult = *pPrimitiveResult;
+  std::string name = "glTF";
 
-        Model& model =
-            *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
-        MeshPrimitive& primitive = mesh.primitives[options.primitiveIndex];
+  auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
+  if (urlIt != model.extras.end()) {
+    name = urlIt->second.getStringOrDefault("glTF");
+    name = constrainLength(name, 256);
+  }
 
-        if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
-            primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP &&
-            primitive.mode != MeshPrimitive::Mode::POINTS) {
-          // TODO: add support for other primitive types.
-          UE_LOG(
-              LogCesium,
-              Warning,
-              TEXT("Primitive mode %d is not supported"),
-              primitive.mode);
-          return asyncSystem.createResolvedFuture();
-        }
+  auto meshIt = std::find_if(
+      model.meshes.begin(),
+      model.meshes.end(),
+      [&mesh](const Mesh& candidate) { return &candidate == &mesh; });
+  if (meshIt != model.meshes.end()) {
+    int64_t meshIndex = meshIt - model.meshes.begin();
+    name += " mesh " + std::to_string(meshIndex);
+  }
 
-        std::string name = "glTF";
+  auto primitiveIt = std::find_if(
+      mesh.primitives.begin(),
+      mesh.primitives.end(),
+      [&primitive](const MeshPrimitive& candidate) {
+        return &candidate == &primitive;
+      });
+  if (primitiveIt != mesh.primitives.end()) {
+    int64_t primitiveIndex = primitiveIt - mesh.primitives.begin();
+    name += " primitive " + std::to_string(primitiveIndex);
+  }
 
-        auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
-        if (urlIt != model.extras.end()) {
-          name = urlIt->second.getStringOrDefault("glTF");
-          name = constrainLength(name, 256);
-        }
+  primitiveResult.name = name;
 
-        auto meshIt = std::find_if(
-            model.meshes.begin(),
-            model.meshes.end(),
-            [&mesh](const Mesh& candidate) { return &candidate == &mesh; });
-        if (meshIt != model.meshes.end()) {
-          int64_t meshIndex = meshIt - model.meshes.begin();
-          name += " mesh " + std::to_string(meshIndex);
-        }
+  if (positionView.status() != AccessorViewStatus::Valid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("%s: Invalid position buffer"),
+        UTF8_TO_TCHAR(name.c_str()));
+    return;
+  }
 
-        auto primitiveIt = std::find_if(
-            mesh.primitives.begin(),
-            mesh.primitives.end(),
-            [&primitive](const MeshPrimitive& candidate) {
-              return &candidate == &primitive;
-            });
-        if (primitiveIt != mesh.primitives.end()) {
-          int64_t primitiveIndex = primitiveIt - mesh.primitives.begin();
-          name += " primitive " + std::to_string(primitiveIndex);
-        }
+  if constexpr (IsAccessorView<TIndexAccessor>::value) {
+    if (indicesView.status() != AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s: Invalid indices buffer"),
+          UTF8_TO_TCHAR(name.c_str()));
+      return;
+    }
+  }
 
-        primitiveResult.name = name;
+  auto normalAccessorIt = primitive.attributes.find("NORMAL");
+  AccessorView<TMeshVector3> normalAccessor;
+  bool hasNormals = false;
+  if (normalAccessorIt != primitive.attributes.end()) {
+    int normalAccessorID = normalAccessorIt->second;
+    normalAccessor = AccessorView<TMeshVector3>(model, normalAccessorID);
+    hasNormals = normalAccessor.status() == AccessorViewStatus::Valid;
+    if (!hasNormals) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "%s: Invalid normal buffer. Flat normals will be auto-generated instead."),
+          UTF8_TO_TCHAR(name.c_str()));
+    }
+  }
 
-        if (positionView.status() != AccessorViewStatus::Valid) {
-          UE_LOG(
-              LogCesium,
-              Warning,
-              TEXT("%s: Invalid position buffer"),
-              UTF8_TO_TCHAR(name.c_str()));
-          return asyncSystem.createResolvedFuture();
-        }
+  int materialID = primitive.material;
+  const Material& material =
+      materialID >= 0 && materialID < model.materials.size()
+          ? model.materials[materialID]
+          : defaultMaterial;
 
-        if constexpr (IsAccessorView<TIndexAccessor>::value) {
-          if (indicesView.status() != AccessorViewStatus::Valid) {
-            UE_LOG(
-                LogCesium,
-                Warning,
-                TEXT("%s: Invalid indices buffer"),
-                UTF8_TO_TCHAR(name.c_str()));
-            return asyncSystem.createResolvedFuture();
-          }
-        }
+  primitiveResult.materialIndex = materialID;
 
-        int materialID = primitive.material;
-        workingData->material =
-            materialID >= 0 && materialID < model.materials.size()
-                ? &model.materials[materialID]
-                : &defaultMaterial;
+  primitiveResult.isUnlit =
+      material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
+      !options.pMeshOptions->pNodeOptions->pModelOptions
+           ->ignoreKhrMaterialsUnlit;
 
-        primitiveResult.materialIndex = materialID;
+  // We can't calculate flat normals for points or lines, so we have to force
+  // them to be unlit if no normals are specified. Otherwise this causes a
+  // crash when attempting to calculate flat normals.
+  bool isTriangles = primitive.mode == MeshPrimitive::Mode::TRIANGLES ||
+                     primitive.mode == MeshPrimitive::Mode::TRIANGLE_FAN ||
+                     primitive.mode == MeshPrimitive::Mode::TRIANGLE_STRIP;
 
-        workingData->pbrMetallicRoughness =
-            workingData->material->pbrMetallicRoughness
-                ? &workingData->material->pbrMetallicRoughness.value()
-                : &defaultPbrMetallicRoughness;
+  if (!isTriangles && !hasNormals) {
+    primitiveResult.isUnlit = true;
+  }
 
-        auto normalAccessorIt = primitive.attributes.find("NORMAL");
-        if (normalAccessorIt != primitive.attributes.end()) {
-          int normalAccessorID = normalAccessorIt->second;
-          workingData->normalAccessor =
-              AccessorView<TMeshVector3>(model, normalAccessorID);
-          workingData->hasNormals =
-              workingData->normalAccessor.status() == AccessorViewStatus::Valid;
-          if (!workingData->hasNormals) {
-            UE_LOG(
-                LogCesium,
-                Warning,
-                TEXT(
-                    "%s: Invalid normal buffer. Flat normals will be auto-generated instead."),
-                UTF8_TO_TCHAR(name.c_str()));
-          }
-        }
+  const MaterialPBRMetallicRoughness& pbrMetallicRoughness =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
 
-        primitiveResult.isUnlit =
-            workingData->material->hasExtension<ExtensionKhrMaterialsUnlit>() &&
-            !options.pMeshOptions->pNodeOptions->pModelOptions
-                 ->ignoreKhrMaterialsUnlit;
+  bool hasNormalMap = material.normalTexture.has_value();
+  if (hasNormalMap) {
+    const CesiumGltf::Texture* pTexture =
+        Model::getSafe(&model.textures, material.normalTexture->index);
+    hasNormalMap = pTexture != nullptr &&
+                   Model::getSafe(&model.images, pTexture->source) != nullptr;
+  }
 
-        // We can't calculate flat normals for points or lines, so we have to
-        // force them to be unlit if no normals are specified. Otherwise this
-        // causes a crash when attempting to calculate flat normals.
-        bool isTriangles =
-            primitive.mode == MeshPrimitive::Mode::TRIANGLES ||
-            primitive.mode == MeshPrimitive::Mode::TRIANGLE_FAN ||
-            primitive.mode == MeshPrimitive::Mode::TRIANGLE_STRIP;
+  bool needsTangents =
+      hasNormalMap ||
+      options.pMeshOptions->pNodeOptions->pModelOptions->alwaysIncludeTangents;
 
-        if (!isTriangles && !workingData->hasNormals) {
-          primitiveResult.isUnlit = true;
-        }
+  bool hasTangents = false;
+  auto tangentAccessorIt = primitive.attributes.find("TANGENT");
+  AccessorView<TMeshVector4> tangentAccessor;
+  if (tangentAccessorIt != primitive.attributes.end()) {
+    int tangentAccessorID = tangentAccessorIt->second;
+    tangentAccessor = AccessorView<TMeshVector4>(model, tangentAccessorID);
+    hasTangents = tangentAccessor.status() == AccessorViewStatus::Valid;
+    if (!hasTangents) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s: Invalid tangent buffer."),
+          UTF8_TO_TCHAR(name.c_str()));
+    }
+  }
 
-        bool hasNormalMap = workingData->material->normalTexture.has_value();
-        if (hasNormalMap) {
-          const CesiumGltf::Texture* pTexture = Model::getSafe(
-              &model.textures,
-              workingData->material->normalTexture->index);
-          hasNormalMap =
-              pTexture != nullptr &&
-              Model::getSafe(&model.images, pTexture->source) != nullptr;
-        }
+  applyWaterMask(model, primitive, primitiveResult);
 
-        workingData->needsTangents =
-            hasNormalMap || options.pMeshOptions->pNodeOptions->pModelOptions
-                                ->alwaysIncludeTangents;
+  // The water effect works by animating the normal, and the normal is
+  // expressed in tangent space. So if we have water, we need tangents.
+  if (primitiveResult.onlyWater || primitiveResult.waterMaskTexture) {
+    needsTangents = true;
+  }
 
-        workingData->hasTangents = false;
-        auto tangentAccessorIt = primitive.attributes.find("TANGENT");
-        if (tangentAccessorIt != primitive.attributes.end()) {
-          int tangentAccessorID = tangentAccessorIt->second;
-          workingData->tangentAccessor =
-              AccessorView<TMeshVector4>(model, tangentAccessorID);
-          workingData->hasTangents = workingData->tangentAccessor.status() ==
-                                     AccessorViewStatus::Valid;
-          if (!workingData->hasTangents) {
-            UE_LOG(
-                LogCesium,
-                Warning,
-                TEXT("%s: Invalid tangent buffer."),
-                UTF8_TO_TCHAR(name.c_str()));
-          }
-        }
+  TUniquePtr<FStaticMeshRenderData> RenderData =
+      MakeUnique<FStaticMeshRenderData>();
+  RenderData->AllocateLODResources(1);
 
-        return applyWaterMask(asyncSystem, model, primitive, primitiveResult);
-      })
-      .thenImmediately([&asyncSystem,
-                        &primitiveResult,
-                        workingData,
-                        &transform,
-                        &options,
-                        &positionAccessor,
-                        &positionView,
-                        &indicesView,
-                        &ellipsoid]() {
-        Model& model =
-            *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
-        MeshPrimitive& primitive = mesh.primitives[options.primitiveIndex];
+  FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-        // The water effect works by animating the normal, and the normal
-        // is expressed in tangent space. So if we have water, we need
-        // tangents.
-        if (primitiveResult.onlyWater || primitiveResult.waterMaskTexture) {
-          workingData->needsTangents = true;
-        }
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
 
-        workingData->RenderData = MakeUnique<FStaticMeshRenderData>();
-        workingData->RenderData->AllocateLODResources(1);
+    const std::vector<double>& min = positionAccessor.min;
+    const std::vector<double>& max = positionAccessor.max;
+    glm::dvec3 minPosition{std::numeric_limits<double>::max()};
+    glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
+    if (min.size() != 3 || max.size() != 3) {
+      for (int32_t i = 0; i < positionView.size(); ++i) {
+        minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
+        minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
+        minPosition.z = glm::min<double>(minPosition.z, positionView[i].Z);
 
-        FStaticMeshLODResources& LODResources =
-            workingData->RenderData->LODResources[0];
+        maxPosition.x = glm::max<double>(maxPosition.x, positionView[i].X);
+        maxPosition.y = glm::max<double>(maxPosition.y, positionView[i].Y);
+        maxPosition.z = glm::max<double>(maxPosition.z, positionView[i].Z);
+      }
+    } else {
+      minPosition = glm::dvec3(min[0], min[1], min[2]);
+      maxPosition = glm::dvec3(max[0], max[1], max[2]);
+    }
 
-        {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
+    minPosition *= CesiumPrimitiveData::positionScaleFactor;
+    maxPosition *= CesiumPrimitiveData::positionScaleFactor;
 
-          const std::vector<double>& min = positionAccessor.min;
-          const std::vector<double>& max = positionAccessor.max;
-          glm::dvec3 minPosition{std::numeric_limits<double>::max()};
-          glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
-          if (min.size() != 3 || max.size() != 3) {
-            for (int32_t i = 0; i < positionView.size(); ++i) {
-              minPosition.x =
-                  glm::min<double>(minPosition.x, positionView[i].X);
-              minPosition.y =
-                  glm::min<double>(minPosition.y, positionView[i].Y);
-              minPosition.z =
-                  glm::min<double>(minPosition.z, positionView[i].Z);
+    primitiveResult.dimensions =
+        glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
 
-              maxPosition.x =
-                  glm::max<double>(maxPosition.x, positionView[i].X);
-              maxPosition.y =
-                  glm::max<double>(maxPosition.y, positionView[i].Y);
-              maxPosition.z =
-                  glm::max<double>(maxPosition.z, positionView[i].Z);
-            }
-          } else {
-            minPosition = glm::dvec3(min[0], min[1], min[2]);
-            maxPosition = glm::dvec3(max[0], max[1], max[2]);
-          }
+    FBox aaBox(
+        FVector3d(minPosition.x, -minPosition.y, minPosition.z),
+        FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
 
-          minPosition *= CesiumPrimitiveData::positionScaleFactor;
-          maxPosition *= CesiumPrimitiveData::positionScaleFactor;
+    aaBox.GetCenterAndExtents(
+        RenderData->Bounds.Origin,
+        RenderData->Bounds.BoxExtent);
+    RenderData->Bounds.SphereRadius = 0.0f;
+  }
 
-          primitiveResult.dimensions =
-              glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
+  TArray<uint32> indices;
+  if (primitive.mode == MeshPrimitive::Mode::TRIANGLES ||
+      primitive.mode == MeshPrimitive::Mode::POINTS) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
+    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
-          FBox aaBox(
-              FVector3d(minPosition.x, -minPosition.y, minPosition.z),
-              FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
+    for (int32 i = 0; i < indicesView.size(); ++i) {
+      indices[i] = indicesView[i];
+    }
+  } else {
+    // assume TRIANGLE_STRIP because all others are rejected earlier.
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
+    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
+      if (i % 2) {
+        indices[3 * i] = indicesView[i];
+        indices[3 * i + 1] = indicesView[i + 2];
+        indices[3 * i + 2] = indicesView[i + 1];
+      } else {
+        indices[3 * i] = indicesView[i];
+        indices[3 * i + 1] = indicesView[i + 1];
+        indices[3 * i + 2] = indicesView[i + 2];
+      }
+    }
+  }
 
-          aaBox.GetCenterAndExtents(
-              workingData->RenderData->Bounds.Origin,
-              workingData->RenderData->Bounds.BoxExtent);
-          workingData->RenderData->Bounds.SphereRadius = 0.0f;
-        }
+  // If we don't have normals, the gltf spec prescribes that the client
+  // implementation must generate flat normals, which requires duplicating
+  // vertices shared by multiple triangles. If we don't have tangents, but
+  // need them, we need to use a tangent space generation algorithm which
+  // requires duplicated vertices.
+  bool duplicateVertices = !hasNormals || (needsTangents && !hasTangents);
+  duplicateVertices =
+      duplicateVertices && primitive.mode != MeshPrimitive::Mode::POINTS;
 
-        if (primitive.mode == MeshPrimitive::Mode::TRIANGLES ||
-            primitive.mode == MeshPrimitive::Mode::POINTS) {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
-          workingData->indices.SetNum(
-              static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+  TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
+  StaticMeshBuildVertices.SetNum(
+      duplicateVertices ? indices.Num()
+                        : static_cast<int>(positionView.size()));
 
-          for (int32 i = 0; i < indicesView.size(); ++i) {
-            workingData->indices[i] = indicesView[i];
-          }
-        } else {
-          // assume TRIANGLE_STRIP because all others are rejected
-          // earlier.
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
-          workingData->indices.SetNum(static_cast<TArray<uint32>::SizeType>(
-              3 * (indicesView.size() - 2)));
-          for (int32 i = 0; i < indicesView.size() - 2; ++i) {
-            if (i % 2) {
-              workingData->indices[3 * i] = indicesView[i];
-              workingData->indices[3 * i + 1] = indicesView[i + 2];
-              workingData->indices[3 * i + 2] = indicesView[i + 1];
-            } else {
-              workingData->indices[3 * i] = indicesView[i];
-              workingData->indices[3 * i + 1] = indicesView[i + 1];
-              workingData->indices[3 * i + 2] = indicesView[i + 2];
-            }
-          }
-        }
+  {
+    if (duplicateVertices) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
+      for (int i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        const TMeshVector3& pos = positionView[vertexIndex];
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
+        vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
+        vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
+        RenderData->Bounds.SphereRadius = FMath::Max(
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
+            RenderData->Bounds.SphereRadius);
+      }
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        const TMeshVector3& pos = positionView[i];
+        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
+        vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
+        vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
+        RenderData->Bounds.SphereRadius = FMath::Max(
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
+            RenderData->Bounds.SphereRadius);
+      }
+    }
+  }
 
-        // If we don't have normals, the gltf spec prescribes that the
-        // client implementation must generate flat normals, which
-        // requires duplicating vertices shared by multiple triangles. If
-        // we don't have tangents, but need them, we need to use a tangent
-        // space generation algorithm which requires duplicated vertices.
-        workingData->duplicateVertices =
-            !workingData->hasNormals ||
-            (workingData->needsTangents && !workingData->hasTangents);
-        workingData->duplicateVertices =
-            workingData->duplicateVertices &&
-            primitive.mode != MeshPrimitive::Mode::POINTS;
+  bool hasVertexColors = false;
 
-        workingData->StaticMeshBuildVertices.SetNum(
-            workingData->duplicateVertices
-                ? workingData->indices.Num()
-                : static_cast<int>(positionView.size()));
+  auto colorAccessorIt = primitive.attributes.find("COLOR_0");
+  if (colorAccessorIt != primitive.attributes.end()) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
+    int colorAccessorID = colorAccessorIt->second;
+    hasVertexColors = createAccessorView(
+        model,
+        colorAccessorID,
+        ColorVisitor{duplicateVertices, StaticMeshBuildVertices, indices});
+  }
 
-        {
-          if (workingData->duplicateVertices) {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
-            for (int i = 0; i < workingData->indices.Num(); ++i) {
-              FStaticMeshBuildVertex& vertex =
-                  workingData->StaticMeshBuildVertices[i];
-              uint32 vertexIndex = workingData->indices[i];
-              const TMeshVector3& pos = positionView[vertexIndex];
-              vertex.Position.X =
-                  pos.X * CesiumPrimitiveData::positionScaleFactor;
-              vertex.Position.Y =
-                  -pos.Y * CesiumPrimitiveData::positionScaleFactor;
-              vertex.Position.Z =
-                  pos.Z * CesiumPrimitiveData::positionScaleFactor;
-              vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-              vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
-              workingData->RenderData->Bounds.SphereRadius = FMath::Max(
-                  (FVector(vertex.Position) -
-                   workingData->RenderData->Bounds.Origin)
-                      .Size(),
-                  workingData->RenderData->Bounds.SphereRadius);
-            }
-          } else {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
-            for (int i = 0; i < workingData->StaticMeshBuildVertices.Num();
-                 ++i) {
-              FStaticMeshBuildVertex& vertex =
-                  workingData->StaticMeshBuildVertices[i];
-              const TMeshVector3& pos = positionView[i];
-              vertex.Position.X =
-                  pos.X * CesiumPrimitiveData::positionScaleFactor;
-              vertex.Position.Y =
-                  -pos.Y * CesiumPrimitiveData::positionScaleFactor;
-              vertex.Position.Z =
-                  pos.Z * CesiumPrimitiveData::positionScaleFactor;
-              vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-              vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
-              workingData->RenderData->Bounds.SphereRadius = FMath::Max(
-                  (FVector(vertex.Position) -
-                   workingData->RenderData->Bounds.Origin)
-                      .Size(),
-                  workingData->RenderData->Bounds.SphereRadius);
-            }
-          }
-        }
+  LODResources.bHasColorVertexData = hasVertexColors;
 
-        workingData->hasVertexColors = false;
+  // We need to copy the texture coordinates associated with each texture (if
+  // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
 
-        auto colorAccessorIt = primitive.attributes.find("COLOR_0");
-        if (colorAccessorIt != primitive.attributes.end()) {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
-          int colorAccessorID = colorAccessorIt->second;
-          workingData->hasVertexColors = createAccessorView(
-              model,
-              colorAccessorID,
-              ColorVisitor{
-                  workingData->duplicateVertices,
-                  workingData->StaticMeshBuildVertices,
-                  workingData->indices});
-        }
+  std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
+      primitiveResult.GltfToUnrealTexCoordMap;
 
-        LODResources.bHasColorVertexData = workingData->hasVertexColors;
+  // This must be done before material textures are loaded, in case any of the
+  // material textures are also used for features + metadata.
+  loadPrimitiveFeaturesMetadata(
+      primitiveResult,
+      options,
+      model,
+      primitive,
+      duplicateVertices,
+      StaticMeshBuildVertices,
+      indices);
 
-        // This must be done before material textures are loaded, in case
-        // any of the material textures are also used for features +
-        // metadata.
-        loadPrimitiveFeaturesMetadata(
-            primitiveResult,
-            options,
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
+    primitiveResult.baseColorTexture =
+        loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
+    primitiveResult.metallicRoughnessTexture = loadTexture(
+        model,
+        pbrMetallicRoughness.metallicRoughnessTexture,
+        false);
+    primitiveResult.normalTexture =
+        loadTexture(model, material.normalTexture, false);
+    primitiveResult.occlusionTexture =
+        loadTexture(model, material.occlusionTexture, false);
+    primitiveResult.emissiveTexture =
+        loadTexture(model, material.emissiveTexture, true);
+  }
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinates)
+
+    primitiveResult
+        .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
+        updateTextureCoordinates(
             model,
             primitive,
-            workingData->duplicateVertices,
-            workingData->StaticMeshBuildVertices,
-            workingData->indices);
-
-        std::vector<CesiumAsync::Future<
-            TUniquePtr<CesiumTextureUtility::LoadedTextureResult>>>
-            textureLoads;
-
-        textureLoads.push_back(loadTexture(
-            asyncSystem,
+            duplicateVertices,
+            StaticMeshBuildVertices,
+            indices,
+            pbrMetallicRoughness.baseColorTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult.textureCoordinateParameters
+        ["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(
+        model,
+        primitive,
+        duplicateVertices,
+        StaticMeshBuildVertices,
+        indices,
+        pbrMetallicRoughness.metallicRoughnessTexture,
+        gltfToUnrealTexCoordMap);
+    primitiveResult
+        .textureCoordinateParameters["normalTextureCoordinateIndex"] =
+        updateTextureCoordinates(
             model,
-            workingData->pbrMetallicRoughness->baseColorTexture,
-            true));
-        textureLoads.push_back(loadTexture(
-            asyncSystem,
+            primitive,
+            duplicateVertices,
+            StaticMeshBuildVertices,
+            indices,
+            material.normalTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult
+        .textureCoordinateParameters["occlusionTextureCoordinateIndex"] =
+        updateTextureCoordinates(
             model,
-            workingData->pbrMetallicRoughness->metallicRoughnessTexture,
-            false));
-        textureLoads.push_back(loadTexture(
-            asyncSystem,
+            primitive,
+            duplicateVertices,
+            StaticMeshBuildVertices,
+            indices,
+            material.occlusionTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult
+        .textureCoordinateParameters["emissiveTextureCoordinateIndex"] =
+        updateTextureCoordinates(
             model,
-            workingData->material->normalTexture,
-            false));
-        textureLoads.push_back(loadTexture(
-            asyncSystem,
-            model,
-            workingData->material->occlusionTexture,
-            false));
-        textureLoads.push_back(loadTexture(
-            asyncSystem,
-            model,
-            workingData->material->emissiveTexture,
-            true));
+            primitive,
+            duplicateVertices,
+            StaticMeshBuildVertices,
+            indices,
+            material.emissiveTexture,
+            gltfToUnrealTexCoordMap);
 
-        return asyncSystem.all(std::move(textureLoads));
-      })
-      .thenImmediately([&primitiveResult,
-                        workingData,
-                        &transform,
-                        &options,
-                        &positionAccessor,
-                        &positionView,
-                        &indicesView,
-                        &ellipsoid](std::vector<TUniquePtr<LoadedTextureResult>>
-                                        results) {
-        Model& model =
-            *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
-        const Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
-        const MeshPrimitive& primitive =
-            mesh.primitives[options.primitiveIndex];
+    for (size_t i = 0;
+         i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
+         ++i) {
+      std::string attributeName = "_CESIUMOVERLAY_" + std::to_string(i);
+      auto overlayIt = primitive.attributes.find(attributeName);
+      if (overlayIt != primitive.attributes.end()) {
+        primitiveResult.overlayTextureCoordinateIDToUVIndex[i] =
+            updateTextureCoordinates(
+                model,
+                primitive,
+                duplicateVertices,
+                StaticMeshBuildVertices,
+                indices,
+                attributeName,
+                gltfToUnrealTexCoordMap);
+      } else {
+        primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
+      }
+    }
+  }
 
-        // We need to copy the texture coordinates associated with
-        // each texture (if any) into the the appropriate UVs slot
-        // in FStaticMeshBuildVertex.
+  // TangentX: Tangent
+  // TangentY: Bi-tangent
+  // TangentZ: Normal
 
-        std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
-            primitiveResult.GltfToUnrealTexCoordMap;
+  if (hasNormals) {
+    if (duplicateVertices) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormalsForDuplicatedVertices)
+      for (int i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
+        const TMeshVector3& normal = normalAccessor[vertexIndex];
+        vertex.TangentZ.X = normal.X;
+        vertex.TangentZ.Y = -normal.Y;
+        vertex.TangentZ.Z = normal.Z;
+      }
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
+        const TMeshVector3& normal = normalAccessor[i];
+        vertex.TangentZ.X = normal.X;
+        vertex.TangentZ.Y = -normal.Y;
+        vertex.TangentZ.Z = normal.Z;
+      }
+    }
+  } else {
+    if (primitiveResult.isUnlit) {
+      glm::dvec3 ecefCenter = glm::dvec3(
+          transform *
+          glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
+      TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
+          glm::affineInverse(transform) *
+          glm::dvec4(
+              ellipsoid.geodeticSurfaceNormal(glm::dvec3(ecefCenter)),
+              0.0)));
+      upDir.Y *= -1;
+      setUniformNormals(StaticMeshBuildVertices, upDir);
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
+      computeFlatNormals(StaticMeshBuildVertices);
+    }
+  }
 
-        {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
-          primitiveResult.baseColorTexture = MoveTemp(results[0]);
-          primitiveResult.metallicRoughnessTexture = MoveTemp(results[1]);
-          primitiveResult.normalTexture = MoveTemp(results[2]);
-          primitiveResult.occlusionTexture = MoveTemp(results[3]);
-          primitiveResult.emissiveTexture = MoveTemp(results[4]);
-        }
+  if (hasTangents) {
+    if (duplicateVertices) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangentsForDuplicatedVertices)
+      for (int i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        const TMeshVector4& tangent = tangentAccessor[vertexIndex];
+        vertex.TangentX.X = tangent.X;
+        vertex.TangentX.Y = -tangent.Y;
+        vertex.TangentX.Z = tangent.Z;
+        vertex.TangentY =
+            TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
+            tangent.W;
+      }
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        const TMeshVector4& tangent = tangentAccessor[i];
+        vertex.TangentX = tangent;
+        vertex.TangentX.X = tangent.X;
+        vertex.TangentX.Y = -tangent.Y;
+        vertex.TangentX.Z = tangent.Z;
+        vertex.TangentY =
+            TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
+            tangent.W;
+      }
+    }
+  }
 
-        {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinates)
+  if (needsTangents && !hasTangents) {
+    // Use mikktspace to calculate the tangents.
+    // Note that this assumes normals and UVs are already populated.
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeTangents)
+    computeTangentSpace(StaticMeshBuildVertices);
+  }
 
-          primitiveResult
-              .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  workingData->duplicateVertices,
-                  workingData->StaticMeshBuildVertices,
-                  workingData->indices,
-                  workingData->pbrMetallicRoughness->baseColorTexture,
-                  gltfToUnrealTexCoordMap);
-          primitiveResult.textureCoordinateParameters
-              ["metallicRoughnessTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  workingData->duplicateVertices,
-                  workingData->StaticMeshBuildVertices,
-                  workingData->indices,
-                  workingData->pbrMetallicRoughness->metallicRoughnessTexture,
-                  gltfToUnrealTexCoordMap);
-          primitiveResult
-              .textureCoordinateParameters["normalTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  workingData->duplicateVertices,
-                  workingData->StaticMeshBuildVertices,
-                  workingData->indices,
-                  workingData->material->normalTexture,
-                  gltfToUnrealTexCoordMap);
-          primitiveResult
-              .textureCoordinateParameters["occlusionTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  workingData->duplicateVertices,
-                  workingData->StaticMeshBuildVertices,
-                  workingData->indices,
-                  workingData->material->occlusionTexture,
-                  gltfToUnrealTexCoordMap);
-          primitiveResult
-              .textureCoordinateParameters["emissiveTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  workingData->duplicateVertices,
-                  workingData->StaticMeshBuildVertices,
-                  workingData->indices,
-                  workingData->material->emissiveTexture,
-                  gltfToUnrealTexCoordMap);
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
 
-          for (size_t i = 0;
-               i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
-               ++i) {
-            std::string attributeName = "_CESIUMOVERLAY_" + std::to_string(i);
-            auto overlayIt = primitive.attributes.find(attributeName);
-            if (overlayIt != primitive.attributes.end()) {
-              primitiveResult.overlayTextureCoordinateIDToUVIndex[i] =
-                  updateTextureCoordinates(
-                      model,
-                      primitive,
-                      workingData->duplicateVertices,
-                      workingData->StaticMeshBuildVertices,
-                      workingData->indices,
-                      attributeName,
-                      gltfToUnrealTexCoordMap);
-            } else {
-              primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
-            }
-          }
-        }
+    // Set to full precision (32-bit) UVs. This is especially important for
+    // metadata because integer feature IDs can and will lose meaningful
+    // precision when using 16-bit floats.
+    LODResources.VertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(
+        true);
 
-        // TangentX: Tangent
-        // TangentY: Bi-tangent
-        // TangentZ: Normal
+    LODResources.VertexBuffers.PositionVertexBuffer.Init(
+        StaticMeshBuildVertices,
+        false);
 
-        if (workingData->hasNormals) {
-          if (workingData->duplicateVertices) {
-            TRACE_CPUPROFILER_EVENT_SCOPE(
-                Cesium::CopyNormalsForDuplicatedVertices)
-            for (int i = 0; i < workingData->indices.Num(); ++i) {
-              FStaticMeshBuildVertex& vertex =
-                  workingData->StaticMeshBuildVertices[i];
-              uint32 vertexIndex = workingData->indices[i];
-              vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
-              vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-              const TMeshVector3& normal =
-                  workingData->normalAccessor[vertexIndex];
-              vertex.TangentZ.X = normal.X;
-              vertex.TangentZ.Y = -normal.Y;
-              vertex.TangentZ.Z = normal.Z;
-            }
-          } else {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
-            for (int i = 0; i < workingData->StaticMeshBuildVertices.Num();
-                 ++i) {
-              FStaticMeshBuildVertex& vertex =
-                  workingData->StaticMeshBuildVertices[i];
-              vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
-              vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-              const TMeshVector3& normal = workingData->normalAccessor[i];
-              vertex.TangentZ.X = normal.X;
-              vertex.TangentZ.Y = -normal.Y;
-              vertex.TangentZ.Z = normal.Z;
-            }
-          }
-        } else {
-          if (primitiveResult.isUnlit) {
-            glm::dvec3 ecefCenter = glm::dvec3(
-                transform * glm::dvec4(
-                                VecMath::createVector3D(
-                                    workingData->RenderData->Bounds.Origin),
-                                1.0));
-            TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
-                glm::affineInverse(transform) *
-                glm::dvec4(
-                    ellipsoid.geodeticSurfaceNormal(glm::dvec3(ecefCenter)),
-                    0.0)));
-            upDir.Y *= -1;
-            setUniformNormals(workingData->StaticMeshBuildVertices, upDir);
-          } else {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-            computeFlatNormals(workingData->StaticMeshBuildVertices);
-          }
-        }
+    FColorVertexBuffer& ColorVertexBuffer =
+        LODResources.VertexBuffers.ColorVertexBuffer;
+    if (hasVertexColors) {
+      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
+    }
 
-        if (workingData->hasTangents) {
-          if (workingData->duplicateVertices) {
-            TRACE_CPUPROFILER_EVENT_SCOPE(
-                Cesium::CopyTangentsForDuplicatedVertices)
-            for (int i = 0; i < workingData->indices.Num(); ++i) {
-              FStaticMeshBuildVertex& vertex =
-                  workingData->StaticMeshBuildVertices[i];
-              uint32 vertexIndex = workingData->indices[i];
-              const TMeshVector4& tangent =
-                  workingData->tangentAccessor[vertexIndex];
-              vertex.TangentX.X = tangent.X;
-              vertex.TangentX.Y = -tangent.Y;
-              vertex.TangentX.Z = tangent.Z;
-              vertex.TangentY =
-                  TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
-                  tangent.W;
-            }
-          } else {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
-            for (int i = 0; i < workingData->StaticMeshBuildVertices.Num();
-                 ++i) {
-              FStaticMeshBuildVertex& vertex =
-                  workingData->StaticMeshBuildVertices[i];
-              const TMeshVector4& tangent = workingData->tangentAccessor[i];
-              vertex.TangentX = tangent;
-              vertex.TangentX.X = tangent.X;
-              vertex.TangentX.Y = -tangent.Y;
-              vertex.TangentX.Z = tangent.Z;
-              vertex.TangentY =
-                  TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
-                  tangent.W;
-            }
-          }
-        }
+    uint32 numberOfTextureCoordinates =
+        gltfToUnrealTexCoordMap.size() == 0
+            ? 1
+            : uint32(gltfToUnrealTexCoordMap.size());
 
-        if (workingData->needsTangents && !workingData->hasTangents) {
-          // Use mikktspace to calculate the tangents.
-          // Note that this assumes normals and UVs are already
-          // populated.
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeTangents)
-          computeTangentSpace(workingData->StaticMeshBuildVertices);
-        }
+    FStaticMeshVertexBuffer& vertexBuffer =
+        LODResources.VertexBuffers.StaticMeshVertexBuffer;
+    vertexBuffer.Init(
+        StaticMeshBuildVertices.Num(),
+        numberOfTextureCoordinates,
+        false);
 
-        FStaticMeshLODResources& LODResources =
-            workingData->RenderData->LODResources[0];
+    // Manually copy the vertices into the buffer. We do this because UE 5.3
+    // and 5.4 have a bug where the overload of `FStaticMeshVertexBuffer::Init`
+    // taking an array of `FStaticMeshBuildVertex` will create a mesh with all 8
+    // sets of texture coordinates, even when we usually only need one or two.
+    // See https://github.com/CesiumGS/cesium-unreal/issues/1513
+    for (uint32 vertexIndex = 0;
+         vertexIndex < uint32(StaticMeshBuildVertices.Num());
+         ++vertexIndex) {
+      const FStaticMeshBuildVertex& source =
+          StaticMeshBuildVertices[vertexIndex];
 
-        {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
+      vertexBuffer.SetVertexTangents(
+          vertexIndex,
+          source.TangentX,
+          source.TangentY,
+          source.TangentZ);
+      for (uint32 uvIndex = 0; uvIndex < numberOfTextureCoordinates;
+           uvIndex++) {
+        vertexBuffer
+            .SetVertexUV(vertexIndex, uvIndex, source.UVs[uvIndex], false);
+      }
+    }
+  }
 
-          // Set to full precision (32-bit) UVs. This is especially
-          // important for metadata because integer feature IDs can
-          // and will lose meaningful precision when using 16-bit
-          // floats.
-          LODResources.VertexBuffers.StaticMeshVertexBuffer
-              .SetUseFullPrecisionUVs(true);
+  FStaticMeshSectionArray& Sections = LODResources.Sections;
+  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+  // This will be ignored if the primitive contains points.
+  section.NumTriangles = indices.Num() / 3;
+  section.FirstIndex = 0;
+  section.MinVertexIndex = 0;
+  section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
+  section.bEnableCollision = primitive.mode != MeshPrimitive::Mode::POINTS;
+  section.bCastShadow = true;
+  section.MaterialIndex = 0;
 
-          LODResources.VertexBuffers.PositionVertexBuffer.Init(
-              workingData->StaticMeshBuildVertices,
-              false);
+  if (duplicateVertices) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
+    for (int32 i = 0; i < indices.Num(); i++) {
+      indices[i] = i;
+    }
+  }
 
-          FColorVertexBuffer& ColorVertexBuffer =
-              LODResources.VertexBuffers.ColorVertexBuffer;
-          if (workingData->hasVertexColors) {
-            ColorVertexBuffer.Init(workingData->StaticMeshBuildVertices, false);
-          }
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
+    LODResources.IndexBuffer.SetIndices(
+        indices,
+        StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()
+            ? EIndexBufferStride::Type::Force32Bit
+            : EIndexBufferStride::Type::Force16Bit);
+  }
 
-          uint32 numberOfTextureCoordinates =
-              gltfToUnrealTexCoordMap.size() == 0
-                  ? 1
-                  : uint32(gltfToUnrealTexCoordMap.size());
+  LODResources.bHasDepthOnlyIndices = false;
+  LODResources.bHasReversedIndices = false;
+  LODResources.bHasReversedDepthOnlyIndices = false;
 
-          FStaticMeshVertexBuffer& vertexBuffer =
-              LODResources.VertexBuffers.StaticMeshVertexBuffer;
-          vertexBuffer.Init(
-              workingData->StaticMeshBuildVertices.Num(),
-              numberOfTextureCoordinates,
-              false);
+  primitiveResult.primitiveIndex = options.primitiveIndex;
+  primitiveResult.RenderData = std::move(RenderData);
+  primitiveResult.pCollisionMesh = nullptr;
 
-          // Manually copy the vertices into the buffer. We do this because
-          // UE 5.3 and 5.4 have a bug where the overload of
-          // `FStaticMeshVertexBuffer::Init` taking an array of
-          // `FStaticMeshBuildVertex` will create a mesh with all 8 sets of
-          // texture coordinates, even when we usually only need one or two. See
-          // https://github.com/CesiumGS/cesium-unreal/issues/1513
-          for (uint32 vertexIndex = 0;
-               vertexIndex < uint32(workingData->StaticMeshBuildVertices.Num());
-               ++vertexIndex) {
-            const FStaticMeshBuildVertex& source =
-                workingData->StaticMeshBuildVertices[vertexIndex];
+  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
+  glm::dmat4 scaleMatrix = glm::dmat4(
+      glm::dvec4(scale, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, scale, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, scale, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
 
-            vertexBuffer.SetVertexTangents(
-                vertexIndex,
-                source.TangentX,
-                source.TangentY,
-                source.TangentZ);
-            for (uint32 uvIndex = 0; uvIndex < numberOfTextureCoordinates;
-                 uvIndex++) {
-              vertexBuffer.SetVertexUV(
-                  vertexIndex,
-                  uvIndex,
-                  source.UVs[uvIndex],
-                  false);
-            }
-          }
-        }
+  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
-        FStaticMeshSectionArray& Sections = LODResources.Sections;
-        FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-        // This will be ignored if the primitive contains points.
-        section.NumTriangles = workingData->indices.Num() / 3;
-        section.FirstIndex = 0;
-        section.MinVertexIndex = 0;
-        section.MaxVertexIndex = workingData->StaticMeshBuildVertices.Num() - 1;
-        section.bEnableCollision =
-            primitive.mode != MeshPrimitive::Mode::POINTS;
-        section.bCastShadow = true;
-        section.MaterialIndex = 0;
-
-        if (workingData->duplicateVertices) {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-          for (int32 i = 0; i < workingData->indices.Num(); i++) {
-            workingData->indices[i] = i;
-          }
-        }
-
-        {
-          TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
-          LODResources.IndexBuffer.SetIndices(
-              workingData->indices,
-              workingData->StaticMeshBuildVertices.Num() >=
-                      std::numeric_limits<uint16>::max()
-                  ? EIndexBufferStride::Type::Force32Bit
-                  : EIndexBufferStride::Type::Force16Bit);
-        }
-
-        LODResources.bHasDepthOnlyIndices = false;
-        LODResources.bHasReversedIndices = false;
-        LODResources.bHasReversedDepthOnlyIndices = false;
-
-        primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
-        primitiveResult.primitiveIndex = options.primitiveIndex;
-        primitiveResult.RenderData = MoveTemp(workingData->RenderData);
-        primitiveResult.pCollisionMesh = nullptr;
-
-        double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
-        glm::dmat4 scaleMatrix = glm::dmat4(
-            glm::dvec4(scale, 0.0, 0.0, 0.0),
-            glm::dvec4(0.0, scale, 0.0, 0.0),
-            glm::dvec4(0.0, 0.0, scale, 0.0),
-            glm::dvec4(0.0, 0.0, 0.0, 1.0));
-
-        primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
-
-        if (primitive.mode != MeshPrimitive::Mode::POINTS &&
-            options.pMeshOptions->pNodeOptions->pModelOptions
-                ->createPhysicsMeshes) {
-          if (workingData->StaticMeshBuildVertices.Num() != 0 &&
-              workingData->indices.Num() != 0) {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
-            primitiveResult.pCollisionMesh =
-                workingData->StaticMeshBuildVertices.Num() <
-                        TNumericLimits<uint16>::Max()
-                    ? BuildChaosTriangleMeshes<uint16>(
-                          workingData->StaticMeshBuildVertices,
-                          workingData->indices)
-                    : BuildChaosTriangleMeshes<int32>(
-                          workingData->StaticMeshBuildVertices,
-                          workingData->indices);
-          }
-        }
-      });
+  if (primitive.mode != MeshPrimitive::Mode::POINTS &&
+      options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
+    if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
+      primitiveResult.pCollisionMesh =
+          StaticMeshBuildVertices.Num() < TNumericLimits<uint16>::Max()
+              ? BuildChaosTriangleMeshes<uint16>(
+                    StaticMeshBuildVertices,
+                    indices)
+              : BuildChaosTriangleMeshes<int32>(
+                    StaticMeshBuildVertices,
+                    indices);
+    }
+  }
 }
 
-static CesiumAsync::SharedFuture<void> loadIndexedPrimitive(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static void loadIndexedPrimitive(
     LoadPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
@@ -1904,69 +1726,51 @@ static CesiumAsync::SharedFuture<void> loadIndexedPrimitive(
   if (indexAccessorGltf.componentType ==
       Accessor::ComponentType::UNSIGNED_BYTE) {
     AccessorView<uint8_t> indexAccessor(model, primitive.indices);
-    return loadPrimitive(
-               asyncSystem,
-               primitiveResult,
-               transform,
-               options,
-               positionAccessor,
-               positionView,
-               indexAccessor,
-               ellipsoid)
-        .thenImmediately(
-            [indexAccessor, pPrimitiveResult = &primitiveResult]() {
-              pPrimitiveResult->IndexAccessor = indexAccessor;
-            })
-        .share();
+    loadPrimitive(
+        primitiveResult,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor,
+        ellipsoid);
+    primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
       Accessor::ComponentType::UNSIGNED_SHORT) {
     AccessorView<uint16_t> indexAccessor(model, primitive.indices);
-    return loadPrimitive(
-               asyncSystem,
-               primitiveResult,
-               transform,
-               options,
-               positionAccessor,
-               positionView,
-               indexAccessor,
-               ellipsoid)
-        .thenImmediately(
-            [indexAccessor, pPrimitiveResult = &primitiveResult]() {
-              pPrimitiveResult->IndexAccessor = indexAccessor;
-            })
-        .share();
+    loadPrimitive(
+        primitiveResult,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor,
+        ellipsoid);
+    primitiveResult.IndexAccessor = indexAccessor;
   } else if (
       indexAccessorGltf.componentType ==
       Accessor::ComponentType::UNSIGNED_INT) {
     AccessorView<uint32_t> indexAccessor(model, primitive.indices);
-    return loadPrimitive(
-               asyncSystem,
-               primitiveResult,
-               transform,
-               options,
-               positionAccessor,
-               positionView,
-               indexAccessor,
-               ellipsoid)
-        .thenImmediately(
-            [indexAccessor, pPrimitiveResult = &primitiveResult]() {
-              pPrimitiveResult->IndexAccessor = indexAccessor;
-            })
-        .share();
+    loadPrimitive(
+        primitiveResult,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor,
+        ellipsoid);
+    primitiveResult.IndexAccessor = indexAccessor;
   } else {
     UE_LOG(
         LogCesium,
         VeryVerbose,
         TEXT(
             "Skip loading primitive due to invalid component type in its index accessor."));
-
-    return asyncSystem.createResolvedFuture().share();
   }
 }
 
-static CesiumAsync::SharedFuture<int> loadPrimitive(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
@@ -1981,7 +1785,7 @@ static CesiumAsync::SharedFuture<int> loadPrimitive(
   auto positionAccessorIt = primitive.attributes.find("POSITION");
   if (positionAccessorIt == primitive.attributes.end()) {
     // This primitive doesn't have a POSITION semantic, ignore it.
-    return asyncSystem.createResolvedFuture(0).share();
+    return;
   }
 
   int positionAccessorID = positionAccessorIt->second;
@@ -1989,7 +1793,7 @@ static CesiumAsync::SharedFuture<int> loadPrimitive(
       Model::getSafe(&model.accessors, positionAccessorID);
   if (!pPositionAccessor) {
     // Position accessor does not exist, so ignore this primitive.
-    return asyncSystem.createResolvedFuture(0).share();
+    return;
   }
 
   AccessorView<TMeshVector3> positionView(model, *pPositionAccessor);
@@ -2000,39 +1804,27 @@ static CesiumAsync::SharedFuture<int> loadPrimitive(
     for (uint32_t i = 0; i < positionView.size(); ++i) {
       syntheticIndexBuffer[i] = i;
     }
-    return loadPrimitive(
-               asyncSystem,
-               result,
-               transform,
-               options,
-               *pPositionAccessor,
-               positionView,
-               syntheticIndexBuffer,
-               ellipsoid)
-        .thenImmediately([positionView, pResult = &result]() {
-          pResult->PositionAccessor = std::move(positionView);
-          return 0;
-        })
-        .share();
+    loadPrimitive(
+        result,
+        transform,
+        options,
+        *pPositionAccessor,
+        positionView,
+        syntheticIndexBuffer,
+        ellipsoid);
   } else {
-    return loadIndexedPrimitive(
-               asyncSystem,
-               result,
-               transform,
-               options,
-               *pPositionAccessor,
-               positionView,
-               ellipsoid)
-        .thenImmediately([positionView, pResult = &result]() {
-          pResult->PositionAccessor = std::move(positionView);
-          return 0;
-        })
-        .share();
+    loadIndexedPrimitive(
+        result,
+        transform,
+        options,
+        *pPositionAccessor,
+        positionView,
+        ellipsoid);
   }
+  result.PositionAccessor = std::move(positionView);
 }
 
-static CesiumAsync::SharedFuture<int> loadMesh(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
     const CreateMeshOptions& options,
@@ -2040,32 +1832,21 @@ static CesiumAsync::SharedFuture<int> loadMesh(
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
-  const Model& model = *options.pNodeOptions->pModelOptions->pModel;
-  const Mesh& mesh = model.meshes[options.meshIndex];
+  Model& model = *options.pNodeOptions->pModelOptions->pModel;
+  Mesh& mesh = model.meshes[options.meshIndex];
 
   result = LoadMeshResult();
   result->primitiveResults.reserve(mesh.primitives.size());
-  std::vector<CesiumAsync::SharedFuture<int>> futures;
-  int32_t i = 0;
-  for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &*result, i++};
+  for (int32_t i = 0; i < mesh.primitives.size(); i++) {
+    CreatePrimitiveOptions primitiveOptions = {&options, &*result, i};
     auto& primitiveResult = result->primitiveResults.emplace_back();
-    futures.push_back(loadPrimitive(
-        asyncSystem,
-        primitiveResult,
-        transform,
-        primitiveOptions,
-        ellipsoid));
-  }
+    loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
-  return asyncSystem.all(std::move(futures))
-      .thenImmediately([pResult = &result](std::vector<int>&& result) {
-        std::erase_if(
-            (*pResult)->primitiveResults,
-            [](LoadPrimitiveResult& result) { return !result.RenderData; });
-        return 0;
-      })
-      .share();
+    // if it doesn't have render data, then it can't be loaded
+    if (!primitiveResult.RenderData) {
+      result->primitiveResults.pop_back();
+    }
+  }
 }
 
 // Helpers for different instancing rotation formats
@@ -2212,20 +1993,11 @@ static void loadInstancingData(
   }
 }
 
-static LoadNodeResult& addLoadNodeResult(
-    std::vector<LoadNodeResult>& loadNodeResults,
-    std::mutex& mutex) {
-  std::lock_guard lock(mutex);
-  return loadNodeResults.emplace_back();
-}
-
-static CesiumAsync::SharedFuture<int> loadNode(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options,
-    const CesiumGeospatial::Ellipsoid& ellipsoid,
-    std::mutex& loadNodeResultsMutex) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -2250,8 +2022,7 @@ static CesiumAsync::SharedFuture<int> loadNode(
   Model& model = *options.pModelOptions->pModel;
   const Node& node = *options.pNode;
 
-  LoadNodeResult& result =
-      addLoadNodeResult(loadNodeResults, loadNodeResultsMutex);
+  LoadNodeResult& result = loadNodeResults.emplace_back();
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -2299,54 +2070,25 @@ static CesiumAsync::SharedFuture<int> loadNode(
         nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
   }
 
-  int meshIndex = node.mesh;
-  CesiumAsync::SharedFuture<int> loadMeshFuture =
-      asyncSystem.createResolvedFuture(0).share();
-  if (meshIndex >= 0 && meshIndex < model.meshes.size()) {
+  int meshId = node.mesh;
+  if (meshId >= 0 && meshId < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
             node.getExtension<ExtensionExtMeshGpuInstancing>()) {
       loadInstancingData(model, result, pGpuInstancingExtension);
     }
-    CreateMeshOptions meshOptions = {&options, &result, meshIndex};
-    loadMeshFuture = loadMesh(
-        asyncSystem,
-        result.meshResult,
-        nodeTransform,
-        meshOptions,
-        ellipsoid);
+    CreateMeshOptions meshOptions = {&options, &result, meshId};
+    loadMesh(result.meshResult, nodeTransform, meshOptions, ellipsoid);
   }
 
-  return loadMeshFuture
-      .thenImmediately([node,
-                        model,
-                        asyncSystem,
-                        options,
-                        &loadNodeResultsMutex,
-                        pLoadNodeResults = &loadNodeResults,
-                        nodeTransform,
-                        ellipsoid](int result) {
-        std::vector<CesiumAsync::SharedFuture<int>> futures;
-        for (int childNodeId : node.children) {
-          if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
-            CreateNodeOptions childNodeOptions = {
-                options.pModelOptions,
-                options.pHalfConstructedModelResult,
-                &model.nodes[childNodeId]};
-            futures.push_back(loadNode(
-                asyncSystem,
-                *pLoadNodeResults,
-                nodeTransform,
-                childNodeOptions,
-                ellipsoid,
-                loadNodeResultsMutex));
-          }
-        }
-
-        return asyncSystem.all(std::move(futures))
-            .thenImmediately([](std::vector<int>&& results) { return 0; })
-            .share();
-      })
-      .share();
+  for (int childNodeId : node.children) {
+    if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
+      CreateNodeOptions childNodeOptions = {
+          options.pModelOptions,
+          options.pHalfConstructedModelResult,
+          &model.nodes[childNodeId]};
+      loadNode(loadNodeResults, nodeTransform, childNodeOptions, ellipsoid);
+    }
+  }
 }
 
 namespace {
@@ -2495,109 +2237,86 @@ loadModelAnyThreadPart(
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
-  auto pResult = MakeUnique<HalfConstructedReal>();
+  return createMipMapsForAllTextures(asyncSystem, *options.pModel)
+      .thenInWorkerThread(
+          [transform,
+           ellipsoid,
+           &options]() -> TUniquePtr<UCesiumGltfComponent::HalfConstructed> {
+            auto pResult = MakeUnique<HalfConstructedReal>();
 
-  Model& model = *options.pModel;
+            Model& model = *options.pModel;
+            loadModelMetadata(pResult->loadModelResult, options);
 
-  for (const Texture& texture : model.textures) {
-    const Sampler& sampler = model.getSafe(model.samplers, texture.sampler);
-    ImageCesium& image = *model.images[texture.source].cesium;
+            glm::dmat4x4 rootTransform = transform;
 
-    // Creates a future on the extension that generates mipmaps if necessary.
-    // We don't need to wait on this future now. That will happen when the
-    // texture is generated.
-    ExtensionUnrealTextureResource::preprocessImage(
-        asyncSystem,
-        sampler,
-        image);
-  }
+            {
+              rootTransform = CesiumGltfContent::GltfUtilities::applyRtcCenter(
+                  model,
+                  rootTransform);
+              applyGltfUpAxisTransform(model, rootTransform);
+            }
 
-  loadModelMetadata(pResult->loadModelResult, options);
+            if (model.scene >= 0 && model.scene < model.scenes.size()) {
+              // Show the default scene
+              const Scene& defaultScene = model.scenes[model.scene];
+              for (int nodeId : defaultScene.nodes) {
+                CreateNodeOptions nodeOptions = {
+                    &options,
+                    &pResult->loadModelResult,
+                    &model.nodes[nodeId]};
+                loadNode(
+                    pResult->loadModelResult.nodeResults,
+                    rootTransform,
+                    nodeOptions,
+                    ellipsoid);
+              }
+            } else if (model.scenes.size() > 0) {
+              // There's no default, so show the first scene
+              const Scene& defaultScene = model.scenes[0];
+              for (int nodeId : defaultScene.nodes) {
+                CreateNodeOptions nodeOptions = {
+                    &options,
+                    &pResult->loadModelResult,
+                    &model.nodes[nodeId]};
+                loadNode(
+                    pResult->loadModelResult.nodeResults,
+                    rootTransform,
+                    nodeOptions,
+                    ellipsoid);
+              }
+            } else if (model.nodes.size() > 0) {
+              // No scenes at all, use the first node as the root node.
+              CreateNodeOptions nodeOptions = {
+                  &options,
+                  &pResult->loadModelResult,
+                  &model.nodes[0]};
+              loadNode(
+                  pResult->loadModelResult.nodeResults,
+                  rootTransform,
+                  nodeOptions,
+                  ellipsoid);
+            } else if (model.meshes.size() > 0) {
+              // No nodes either, show all the meshes.
+              for (int32_t i = 0; i < model.meshes.size(); i++) {
+                CreateNodeOptions dummyNodeOptions = {
+                    &options,
+                    &pResult->loadModelResult,
+                    nullptr};
+                LoadNodeResult& dummyNodeResult =
+                    pResult->loadModelResult.nodeResults.emplace_back();
+                CreateMeshOptions meshOptions = {
+                    &dummyNodeOptions,
+                    &dummyNodeResult,
+                    i};
+                loadMesh(
+                    dummyNodeResult.meshResult,
+                    rootTransform,
+                    meshOptions,
+                    ellipsoid);
+              }
+            }
 
-  glm::dmat4x4 rootTransform = transform;
-
-  {
-    rootTransform =
-        CesiumGltfContent::GltfUtilities::applyRtcCenter(model, rootTransform);
-    applyGltfUpAxisTransform(model, rootTransform);
-  }
-
-  std::vector<CesiumAsync::SharedFuture<int>> futures;
-  std::mutex loadNodeResultsMutex;
-
-  if (model.scene >= 0 && model.scene < model.scenes.size()) {
-    // Show the default scene
-    const Scene& defaultScene = model.scenes[model.scene];
-    for (int nodeId : defaultScene.nodes) {
-      CreateNodeOptions nodeOptions = {
-          &options,
-          &pResult->loadModelResult,
-          &model.nodes[nodeId]};
-      futures.push_back(loadNode(
-          asyncSystem,
-          pResult->loadModelResult.nodeResults,
-          rootTransform,
-          nodeOptions,
-          ellipsoid,
-          loadNodeResultsMutex));
-    }
-  } else if (model.scenes.size() > 0) {
-    // There's no default, so show the first scene
-    const Scene& defaultScene = model.scenes[0];
-    for (int nodeId : defaultScene.nodes) {
-      CreateNodeOptions nodeOptions = {
-          &options,
-          &pResult->loadModelResult,
-          &model.nodes[nodeId]};
-      futures.push_back(loadNode(
-          asyncSystem,
-          pResult->loadModelResult.nodeResults,
-          rootTransform,
-          nodeOptions,
-          ellipsoid,
-          loadNodeResultsMutex));
-    }
-  } else if (model.nodes.size() > 0) {
-    // No scenes at all, use the first node as the root node.
-    CreateNodeOptions nodeOptions = {
-        &options,
-        &pResult->loadModelResult,
-        &model.nodes[0]};
-    futures.push_back(loadNode(
-        asyncSystem,
-        pResult->loadModelResult.nodeResults,
-        rootTransform,
-        nodeOptions,
-        ellipsoid,
-        loadNodeResultsMutex));
-  } else if (model.meshes.size() > 0) {
-    // No nodes either, show all the meshes.
-    int32_t i = 0;
-    for (Mesh& mesh : model.meshes) {
-      CreateNodeOptions dummyNodeOptions = {
-          &options,
-          &pResult->loadModelResult,
-          nullptr};
-      LoadNodeResult& dummyNodeResult =
-          pResult->loadModelResult.nodeResults.emplace_back();
-      CreateMeshOptions meshOptions = {
-          &dummyNodeOptions,
-          &dummyNodeResult,
-          i++};
-      futures.push_back(loadMesh(
-          asyncSystem,
-          dummyNodeResult.meshResult,
-          rootTransform,
-          meshOptions,
-          ellipsoid));
-    }
-  }
-
-  return asyncSystem.all(std::move(futures))
-      .thenImmediately(
-          [pResult = pResult.Release()](std::vector<int>&& results)
-              -> TUniquePtr<UCesiumGltfComponent::HalfConstructed> {
-            return TUniquePtr<UCesiumGltfComponent::HalfConstructed>(pResult);
+            return MoveTemp(pResult);
           });
 }
 
@@ -3427,12 +3146,12 @@ static void loadPrimitiveGameThreadPart(
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
-  MeshPrimitive* pMeshPrimitive =
-      &model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
+  MeshPrimitive& meshPrimitive =
+      model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-  if (pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
+  if (meshPrimitive.mode == MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
@@ -3475,8 +3194,7 @@ static void loadPrimitiveGameThreadPart(
     pMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     primData.pModel = &model;
-    primData.pMeshPrimitive = &model.meshes[loadResult.meshIndex]
-                                   .primitives[loadResult.primitiveIndex];
+    primData.pMeshPrimitive = &meshPrimitive;
     primData.boundingVolume = boundingVolume;
     pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
     pMesh->SetCustomDepthStencilWriteMask(
@@ -3497,11 +3215,9 @@ static void loadPrimitiveGameThreadPart(
     pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
   }
 
-  const Material& material =
-      loadResult.materialIndex >= 0 &&
-              loadResult.materialIndex < model.materials.size()
-          ? model.materials[loadResult.materialIndex]
-          : defaultMaterial;
+  const Material& material = loadResult.materialIndex != -1
+                                 ? model.materials[loadResult.materialIndex]
+                                 : defaultMaterial;
 
   const MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()

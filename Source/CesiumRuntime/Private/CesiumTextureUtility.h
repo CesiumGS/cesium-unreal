@@ -100,9 +100,7 @@ struct LoadedTextureResult {
  * nullptr before the first call to `loadTextureFromModelAnyThreadPart` during
  * the glTF load process.
  */
-CesiumAsync::Future<TUniquePtr<LoadedTextureResult>>
-loadTextureFromModelAnyThreadPart(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
     CesiumGltf::Texture& texture,
     bool sRGB);
@@ -123,9 +121,7 @@ loadTextureFromModelAnyThreadPart(
  * parameter is not nullptr, the provided image's `pixelData` is not required
  * and can be empty.
  */
-CesiumAsync::Future<TUniquePtr<LoadedTextureResult>>
-loadTextureFromImageAndSamplerAnyThreadPart(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
     CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
@@ -174,8 +170,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPartSync(
  * and can be empty.
  * @return A future that resolves to the loaded texture.
  */
-CesiumAsync::Future<TUniquePtr<LoadedTextureResult>> loadTextureAnyThreadPart(
-    const CesiumAsync::AsyncSystem& asyncSystem,
+TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
     TextureAddress addressX,
     TextureAddress addressY,
@@ -247,52 +242,8 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
  */
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
 
-struct ExtensionUnrealTexture {
-  static inline constexpr const char* TypeName = "ExtensionUnrealTexture";
-  static inline constexpr const char* ExtensionName = "PRIVATE_unreal_texture";
-
-  CesiumUtility::IntrusivePointer<
-      CesiumTextureUtility::ReferenceCountedUnrealTexture>
-      pTexture = nullptr;
-};
-
-struct ExtensionUnrealTextureResource {
-  static inline constexpr const char* TypeName =
-      "ExtensionUnrealTextureResource";
-  static inline constexpr const char* ExtensionName =
-      "PRIVATE_unreal_texture_resource";
-
-  ExtensionUnrealTextureResource() {}
-
-  TSharedPtr<FCesiumTextureResourceBase> pTextureResource = nullptr;
-
-  // If a preprocessing step is required (such as generating mipmaps), this
-  // future returns the preprocessed image. If no preprocessing is required,
-  // this just passes the image through.
-  TSharedPtr<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
-      preprocessFuture = nullptr;
-
-  TSharedPtr<CesiumAsync::SharedFuture<FCesiumTextureResourceBase*>>
-      resourceLoadingFuture = nullptr;
-
-  static void preprocessImage(
-      const CesiumAsync::AsyncSystem& asyncSystem,
-      const CesiumGltf::Sampler& sampler,
-      CesiumGltf::ImageCesium& image);
-
-  static CesiumAsync::Future<TUniquePtr<FCesiumTextureResourceBase>>
-  loadTextureResource(
-      const CesiumAsync::AsyncSystem& asyncSystem,
-      CesiumGltf::ImageCesium& imageCesium,
-      TextureAddress addressX,
-      TextureAddress addressY,
-      TextureFilter filter,
-      bool useMipMapsIfAvailable,
-      TextureGroup group,
-      bool sRGB,
-      std::optional<EPixelFormat> overridePixelFormat);
-
-  static std::recursive_mutex textureResourceMutex;
-};
+CesiumAsync::SharedFuture<void> createMipMapsForAllTextures(
+    const CesiumAsync::AsyncSystem& asyncSystem,
+    CesiumGltf::Model& model);
 
 } // namespace CesiumTextureUtility
