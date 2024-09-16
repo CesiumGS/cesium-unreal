@@ -87,7 +87,7 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
 
   struct TestResults {
     std::atomic<bool> queryFinished = false;
-    Cesium3DTilesSelection::Tileset::HeightResults heightResults;
+    Cesium3DTilesSelection::SampleHeightResult heightResults;
   };
 
   static TestResults testResults;
@@ -124,10 +124,10 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
     ACesium3DTileset* tileset = context.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    nativeTileset->getHeightsAtCoordinates(queryInputRadians)
+    nativeTileset->sampleHeightMostDetailed(queryInputRadians)
         .thenInMainThread(
             [&testResults](
-                Cesium3DTilesSelection::Tileset::HeightResults&& results) {
+                Cesium3DTilesSelection::SampleHeightResult&& results) {
               testResults.heightResults = std::move(results);
               testResults.queryFinished = true;
             });
@@ -165,15 +165,13 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
           UTF8_TO_TCHAR(warning.c_str()));
     }
 
-    size_t resultCount = testResults.heightResults.coordinateResults.size();
+    size_t resultCount = testResults.heightResults.positions.size();
     for (size_t resultIndex = 0; resultIndex < resultCount; ++resultIndex) {
-      auto& coordinateResult =
-          testResults.heightResults.coordinateResults[resultIndex];
+      const CesiumGeospatial::Cartographic& queryHit =
+          testResults.heightResults.positions[resultIndex];
 
-      if (!coordinateResult.heightAvailable)
+      if (!testResults.heightResults.heightSampled[resultIndex])
         continue;
-
-      CesiumGeospatial::Cartographic& queryHit = coordinateResult.coordinate;
 
       FVector hitCoordinate = {
           CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
@@ -340,10 +338,10 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
       std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
       queryInputRadians.push_back(queryObject.coordinateRadians);
 
-      nativeTileset->getHeightsAtCoordinates(queryInputRadians)
+      nativeTileset->sampleHeightMostDetailed(queryInputRadians)
           .thenInMainThread(
-              [&queryObject, tileset](
-                  Cesium3DTilesSelection::Tileset::HeightResults&& results) {
+              [&queryObject,
+               tileset](Cesium3DTilesSelection::SampleHeightResult&& results) {
                 queryObject.queryFinished = true;
 
                 // Log any warnings
@@ -355,7 +353,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                       UTF8_TO_TCHAR(warning.c_str()));
                 }
 
-                if (results.coordinateResults.size() != 1) {
+                if (results.positions.size() != 1) {
                   UE_LOG(
                       LogCesium,
                       Warning,
@@ -363,10 +361,11 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                   return;
                 }
 
-                auto& coordinateResult = results.coordinateResults[0];
+                CesiumGeospatial::Cartographic& newCoordinate =
+                    results.positions[0];
 
-                auto& originalCoordinate = queryObject.coordinateRadians;
-                auto& newCoordinate = coordinateResult.coordinate;
+                CesiumGeospatial::Cartographic& originalCoordinate =
+                    queryObject.coordinateRadians;
 
                 if (originalCoordinate.latitude != newCoordinate.latitude ||
                     originalCoordinate.longitude != newCoordinate.longitude) {
