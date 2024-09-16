@@ -50,6 +50,7 @@ void setupDenverHills(SceneGenerationContext& context) {
   worldTerrainTileset->SetIonAssetID(1);
   worldTerrainTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
+  worldTerrainTileset->MaximumCachedBytes = 0;
 
   // Bing Maps Aerial overlay
   UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
@@ -70,6 +71,7 @@ void setupDenverHills(SceneGenerationContext& context) {
   aerometrexTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
   aerometrexTileset->SetMaximumScreenSpaceError(2.0);
   aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
+  aerometrexTileset->MaximumCachedBytes = 0;
 
   context.tilesets.push_back(worldTerrainTileset);
   context.tilesets.push_back(aerometrexTileset);
@@ -170,8 +172,15 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
       const CesiumGeospatial::Cartographic& queryHit =
           testResults.heightResults.positions[resultIndex];
 
-      if (!testResults.heightResults.heightSampled[resultIndex])
+      if (!testResults.heightResults.heightSampled[resultIndex]) {
+        UE_LOG(
+            LogCesium,
+            Error,
+            TEXT("The height at (%f,%f) was not sampled successfully."),
+            CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
+            CesiumUtility::Math::radiansToDegrees(queryHit.latitude));
         continue;
+      }
 
       FVector hitCoordinate = {
           CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
@@ -339,64 +348,73 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
       queryInputRadians.push_back(queryObject.coordinateRadians);
 
       nativeTileset->sampleHeightMostDetailed(queryInputRadians)
-          .thenInMainThread(
-              [&queryObject,
-               tileset](Cesium3DTilesSelection::SampleHeightResult&& results) {
-                queryObject.queryFinished = true;
+          .thenInMainThread([&queryObject, tileset](
+                                Cesium3DTilesSelection::SampleHeightResult&&
+                                    results) {
+            queryObject.queryFinished = true;
 
-                // Log any warnings
-                for (auto& warning : results.warnings) {
-                  UE_LOG(
-                      LogCesium,
-                      Warning,
-                      TEXT("Height query traversal warning: %s"),
-                      UTF8_TO_TCHAR(warning.c_str()));
-                }
+            // Log any warnings
+            for (auto& warning : results.warnings) {
+              UE_LOG(
+                  LogCesium,
+                  Warning,
+                  TEXT("Height query traversal warning: %s"),
+                  UTF8_TO_TCHAR(warning.c_str()));
+            }
 
-                if (results.positions.size() != 1) {
-                  UE_LOG(
-                      LogCesium,
-                      Warning,
-                      TEXT("Unexpected number of results received"));
-                  return;
-                }
+            if (results.positions.size() != 1) {
+              UE_LOG(
+                  LogCesium,
+                  Warning,
+                  TEXT("Unexpected number of results received"));
+              return;
+            }
 
-                CesiumGeospatial::Cartographic& newCoordinate =
-                    results.positions[0];
+            CesiumGeospatial::Cartographic& newCoordinate =
+                results.positions[0];
+            if (!results.heightSampled[0]) {
+              UE_LOG(
+                  LogCesium,
+                  Error,
+                  TEXT("The height at (%f,%f) was not sampled successfully."),
+                  CesiumUtility::Math::radiansToDegrees(
+                      newCoordinate.longitude),
+                  CesiumUtility::Math::radiansToDegrees(
+                      newCoordinate.latitude));
+              return;
+            }
 
-                CesiumGeospatial::Cartographic& originalCoordinate =
-                    queryObject.coordinateRadians;
+            CesiumGeospatial::Cartographic& originalCoordinate =
+                queryObject.coordinateRadians;
 
-                if (originalCoordinate.latitude != newCoordinate.latitude ||
-                    originalCoordinate.longitude != newCoordinate.longitude) {
-                  UE_LOG(
-                      LogCesium,
-                      Warning,
-                      TEXT("Hit result doesn't match original input"));
-                  return;
-                }
+            if (originalCoordinate.latitude != newCoordinate.latitude ||
+                originalCoordinate.longitude != newCoordinate.longitude) {
+              UE_LOG(
+                  LogCesium,
+                  Warning,
+                  TEXT("Hit result doesn't match original input"));
+              return;
+            }
 
-                FVector hitCoordinate = {
-                    queryObject.coordinateDegrees.longitude,
-                    queryObject.coordinateDegrees.latitude,
-                    newCoordinate.height};
+            FVector hitCoordinate = {
+                queryObject.coordinateDegrees.longitude,
+                queryObject.coordinateDegrees.latitude,
+                newCoordinate.height};
 
-                FVector unrealPosition =
-                    tileset->ResolveGeoreference()
-                        ->TransformLongitudeLatitudeHeightPositionToUnreal(
-                            hitCoordinate);
+            FVector unrealPosition =
+                tileset->ResolveGeoreference()
+                    ->TransformLongitudeLatitudeHeightPositionToUnreal(
+                        hitCoordinate);
 
-                // Now bring the hit point to unreal world coordinates
-                FVector unrealWorldPosition =
-                    tileset->GetActorTransform().TransformFVector4(
-                        unrealPosition);
+            // Now bring the hit point to unreal world coordinates
+            FVector unrealWorldPosition =
+                tileset->GetActorTransform().TransformFVector4(unrealPosition);
 
-                queryObject.creationMeshActor->SetActorLocation(
-                    unrealWorldPosition);
+            queryObject.creationMeshActor->SetActorLocation(
+                unrealWorldPosition);
 
-                queryObject.playMeshActor->SetActorLocation(
-                    unrealWorldPosition);
-              });
+            queryObject.playMeshActor->SetActorLocation(unrealWorldPosition);
+          });
     }
   };
 
