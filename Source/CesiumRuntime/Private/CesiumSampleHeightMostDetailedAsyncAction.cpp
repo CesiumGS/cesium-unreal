@@ -3,22 +3,10 @@
 #include "Cesium3DTileset.h"
 #include "CesiumRuntime.h"
 
-namespace {
-
-void startTask(
-    UCesiumSampleHeightMostDetailedAsyncAction* pAsyncAction,
-    Cesium3DTilesSelection::Tileset* pTileset,
-    TArray<FVector2D>&& longitudesAndLatitudes) {
-  if (pTileset == nullptr) {
-  }
-}
-
-} // namespace
-
 /*static*/ UCesiumSampleHeightMostDetailedAsyncAction*
 UCesiumSampleHeightMostDetailedAsyncAction::SampleHeightMostDetailed(
     ACesium3DTileset* Tileset,
-    const TArray<FVector2D>& LongitudesAndLatitudes) {
+    const TArray<FVector>& LongitudeLatitudeHeightArray) {
   UCesiumSampleHeightMostDetailedAsyncAction* pAsyncAction =
       NewObject<UCesiumSampleHeightMostDetailedAsyncAction>();
 
@@ -31,13 +19,13 @@ UCesiumSampleHeightMostDetailedAsyncAction::SampleHeightMostDetailed(
                 [Tileset]() { return Tileset->GetTileset(); });
 
   std::vector<CesiumGeospatial::Cartographic> positions;
-  positions.reserve(LongitudesAndLatitudes.Num());
+  positions.reserve(LongitudeLatitudeHeightArray.Num());
 
-  for (const FVector2D& position : LongitudesAndLatitudes) {
+  for (const FVector& position : LongitudeLatitudeHeightArray) {
     positions.emplace_back(CesiumGeospatial::Cartographic::fromDegrees(
         position.X,
         position.Y,
-        0.0));
+        position.Z));
   }
 
   std::move(futureNativeTileset)
@@ -55,15 +43,27 @@ UCesiumSampleHeightMostDetailedAsyncAction::SampleHeightMostDetailed(
       })
       .thenInMainThread(
           [pAsyncAction](Cesium3DTilesSelection::SampleHeightResult&& result) {
-            TArray<FVector> positions;
-            positions.Reserve(result.positions.size());
+            check(result.positions.size() == result.heightSampled.size());
 
-            for (const CesiumGeospatial::Cartographic& position :
-                 result.positions) {
-              positions.Emplace(FVector(
+            // This should do nothing, but will prevent undefined behavior if
+            // the array sizes are unexpectedly different.
+            result.heightSampled.resize(result.positions.size(), false);
+
+            TArray<FSampleHeightResult> ue;
+            ue.Reserve(result.positions.size());
+
+            for (size_t i = 0; i < result.positions.size(); ++i) {
+              const CesiumGeospatial::Cartographic& position =
+                  result.positions[i];
+
+              FSampleHeightResult uePosition;
+              uePosition.LongitudeLatitudeHeight = FVector(
                   CesiumUtility::Math::radiansToDegrees(position.longitude),
                   CesiumUtility::Math::radiansToDegrees(position.latitude),
-                  position.height));
+                  position.height);
+              uePosition.HeightSampled = result.heightSampled[i];
+
+              ue.Emplace(std::move(uePosition));
             }
 
             TArray<FString> warnings;
@@ -73,7 +73,7 @@ UCesiumSampleHeightMostDetailedAsyncAction::SampleHeightMostDetailed(
               warnings.Emplace(UTF8_TO_TCHAR(warning.c_str()));
             }
 
-            pAsyncAction->OnFinished.Broadcast(positions, warnings);
+            pAsyncAction->OnHeightsSampled.Broadcast(ue, warnings);
             pAsyncAction->SetReadyToDestroy();
           });
 

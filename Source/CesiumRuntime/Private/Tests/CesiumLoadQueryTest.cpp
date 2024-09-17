@@ -131,18 +131,6 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
         .thenInMainThread([&testResults](
                               Cesium3DTilesSelection::SampleHeightResult&&
                                   results) {
-          UE_LOG(
-              LogCesium,
-              Warning,
-              TEXT(
-                  "Height query of %d positions took %d ms for requests and %d ms for computations."),
-              results.positions.size(),
-              std::chrono::duration_cast<std::chrono::milliseconds>(
-                  results.requestTime)
-                  .count(),
-              std::chrono::duration_cast<std::chrono::milliseconds>(
-                  results.computationTime)
-                  .count());
           testResults.heightResults = std::move(results);
           testResults.queryFinished = true;
         });
