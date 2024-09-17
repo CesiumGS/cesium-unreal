@@ -5,6 +5,7 @@
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "HAL/Platform.h"
+#include "Math/MathFwd.h"
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
