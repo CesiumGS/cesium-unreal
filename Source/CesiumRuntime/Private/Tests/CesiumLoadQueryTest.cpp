@@ -128,12 +128,12 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
     nativeTileset->sampleHeightMostDetailed(queryInputRadians)
-        .thenInMainThread([&testResults](
-                              Cesium3DTilesSelection::SampleHeightResult&&
-                                  results) {
-          testResults.heightResults = std::move(results);
-          testResults.queryFinished = true;
-        });
+        .thenInMainThread(
+            [&testResults](
+                Cesium3DTilesSelection::SampleHeightResult&& results) {
+              testResults.heightResults = std::move(results);
+              testResults.queryFinished = true;
+            });
   };
 
   auto waitForQueries = [this, &testResults = testResults](
