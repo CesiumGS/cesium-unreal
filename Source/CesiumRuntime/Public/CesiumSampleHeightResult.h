@@ -17,7 +17,7 @@ struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
    * property is true, or the original height provided on input if HeightSampled
    * is false.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   FVector LongitudeLatitudeHeight;
 
   /**
@@ -26,6 +26,6 @@ struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
    * wrong. If something went wrong, the Warnings pin of the sampling function
    * will have more information about the problem.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   bool HeightSampled;
 };
