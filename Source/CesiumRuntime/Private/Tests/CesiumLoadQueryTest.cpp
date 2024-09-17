@@ -16,6 +16,7 @@
 #include "Engine/StaticMeshActor.h"
 
 using namespace Cesium;
+using namespace std::chrono_literals;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumTerrainQuerySingleQuery,
@@ -127,12 +128,24 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
     nativeTileset->sampleHeightMostDetailed(queryInputRadians)
-        .thenInMainThread(
-            [&testResults](
-                Cesium3DTilesSelection::SampleHeightResult&& results) {
-              testResults.heightResults = std::move(results);
-              testResults.queryFinished = true;
-            });
+        .thenInMainThread([&testResults](
+                              Cesium3DTilesSelection::SampleHeightResult&&
+                                  results) {
+          UE_LOG(
+              LogCesium,
+              Warning,
+              TEXT(
+                  "Height query of %d positions took %d ms for requests and %d ms for computations."),
+              results.positions.size(),
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                  results.requestTime)
+                  .count(),
+              std::chrono::duration_cast<std::chrono::milliseconds>(
+                  results.computationTime)
+                  .count());
+          testResults.heightResults = std::move(results);
+          testResults.queryFinished = true;
+        });
   };
 
   auto waitForQueries = [this, &testResults = testResults](
