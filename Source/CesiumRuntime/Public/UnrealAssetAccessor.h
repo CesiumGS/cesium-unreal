@@ -4,6 +4,7 @@
 
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetAccessor.h"
+#include "Containers/Map.h"
 #include "Containers/UnrealString.h"
 #include "HAL/Platform.h"
 #include <cstddef>
