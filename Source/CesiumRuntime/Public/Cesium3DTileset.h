@@ -12,6 +12,7 @@
 #include "CesiumGeoreference.h"
 #include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
+#include "CesiumSampleHeightResult.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
@@ -46,6 +47,12 @@ class TileOcclusionRendererProxyPool;
 DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetLoadFailure,
     const FCesium3DTilesetLoadFailureDetails&);
+
+DECLARE_DELEGATE_ThreeParams(
+    FCesiumSampleHeightMostDetailedCallback,
+    ACesium3DTileset*,
+    const TArray<FCesiumSampleHeightResult>&,
+    const TArray<FString>&);
 
 /**
  * The delegate for the Acesium3DTileset::OnTilesetLoaded,
@@ -100,6 +107,10 @@ public:
   }
   UFUNCTION(BlueprintCallable, meta = (DeprecatedFunction))
   void SetMobility(EComponentMobility::Type NewMobility);
+
+  void SampleHeightMostDetailed(
+      const TArray<FVector>& LongitudeLatitudeHeightArray,
+      FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
 
 private:
   /**

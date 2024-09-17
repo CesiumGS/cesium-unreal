@@ -1,40 +1,25 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 #pragma once
 
+#include "CesiumSampleHeightResult.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "CesiumSampleHeightMostDetailedAsyncAction.generated.h"
 
 class ACesium3DTileset;
 
 /**
- * The result of sampling a height at a position.
+ * The delegate used to asynchronously return sampled heights.
+ * @param Result The result of the height sampling. This array has an element
+ * for each input longitude/latitude/height position. The element has a
+ * HeightSampled property indicating whether the height as successfully sampled
+ * at that position, and a LongitudeLatitudeHeight property with the complete
+ * position including sampled height.
+ * @param Warnings Provides information about problems, if any, that were
+ * encountered while sampling heights.
  */
-USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FSampleHeightResult {
-  GENERATED_BODY()
-
-  /**
-   * The Longitude (X) and Latitude (Y) are the same values provided on input.
-   * The Height (Z) is the height sampled from the tileset if the HeightSampled
-   * property is true, or the original height provided on input if HeightSampled
-   * is false.
-   */
-  UPROPERTY(BlueprintReadWrite)
-  FVector LongitudeLatitudeHeight;
-
-  /**
-   * True if the height as sampled from the tileset successfully. False if the
-   * tileset doesn't have any height at that position, or if something went
-   * wrong. If something went wrong, the Warnings pin of the sampling function
-   * will have more information about the problem.
-   */
-  UPROPERTY(BlueprintReadWrite)
-  bool HeightSampled;
-};
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FCesiumSampleHeightMostDetailedComplete,
-    const TArray<FSampleHeightResult>&,
+    const TArray<FCesiumSampleHeightResult>&,
     Result,
     const TArray<FString>&,
     Warnings);
@@ -46,10 +31,14 @@ class CESIUMRUNTIME_API UCesiumSampleHeightMostDetailedAsyncAction
 
 public:
   /**
-   * Samples the height of the tileset at a list of positions, each expressed as
-   * a Longitude (X) and Latitude (Y) in degrees. The Height (Z) provided on
-   * input is ignored unless the sampling fails at that position, in which case
-   * it is passed through to the output.
+   * Asynchronously samples the height of the tileset at a list of positions,
+   * each expressed as a Longitude (X) and Latitude (Y) in degrees. The Height
+   * (Z) provided on input is ignored unless the sampling fails at that
+   * position, in which case it is passed through to the output.
+   * @param Tileset The tileset from which to query heights.
+   * @param LongitudeLatitudeHeightArray The array of positions at which to
+   * query heights, with Longitude in the X component and Latitude in the Y
+   * component.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -67,4 +56,15 @@ public:
    */
   UPROPERTY(BlueprintAssignable)
   FCesiumSampleHeightMostDetailedComplete OnHeightsSampled;
+
+  virtual void Activate() override;
+
+private:
+  void RaiseOnHeightsSampled(
+      ACesium3DTileset*,
+      const TArray<FCesiumSampleHeightResult>&,
+      const TArray<FString>&);
+
+  ACesium3DTileset* _pTileset;
+  TArray<FVector> _longitudeLatitudeHeightArray;
 };
