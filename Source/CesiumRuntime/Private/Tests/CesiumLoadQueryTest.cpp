@@ -90,7 +90,8 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
 
   struct TestResults {
     std::atomic<bool> queryFinished = false;
-    Cesium3DTilesSelection::SampleHeightResult heightResults;
+    TArray<FCesiumSampleHeightResult> heightResults;
+    TArray<FString> warnings;
   };
 
   static TestResults testResults;
@@ -107,33 +108,35 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
     const size_t gridColumnCount = 20;
     double cartographicSpacing = 0.001;
 
-    std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
+    TArray<FVector> queryInput;
 
     for (size_t rowIndex = 0; rowIndex < gridRowCount; ++rowIndex) {
       double rowLatitude = testLatitude + (cartographicSpacing * rowIndex);
 
       for (size_t columnIndex = 0; columnIndex < gridColumnCount;
            ++columnIndex) {
-        CesiumGeospatial::Cartographic queryInstance = {
+        FVector queryInstance = {
             testLongitude + (cartographicSpacing * columnIndex),
-            rowLatitude};
+            rowLatitude,
+            0.0};
 
-        queryInputRadians.push_back(CesiumGeospatial::Cartographic::fromDegrees(
-            queryInstance.longitude,
-            queryInstance.latitude));
+        queryInput.Add(queryInstance);
       }
     }
 
     ACesium3DTileset* tileset = context.tilesets[0];
-    Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    nativeTileset->sampleHeightMostDetailed(queryInputRadians)
-        .thenInMainThread(
+    tileset->SampleHeightMostDetailed(
+        queryInput,
+        FCesiumSampleHeightMostDetailedCallback::CreateLambda(
             [&testResults](
-                Cesium3DTilesSelection::SampleHeightResult&& results) {
-              testResults.heightResults = std::move(results);
+                ACesium3DTileset* Tileset,
+                const TArray<FCesiumSampleHeightResult>& Results,
+                const TArray<FString>& Warnings) {
+              testResults.heightResults = Results;
+              testResults.warnings = Warnings;
               testResults.queryFinished = true;
-            });
+            }));
   };
 
   auto waitForQueries = [this, &testResults = testResults](
@@ -160,37 +163,29 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
     // Log any warnings
-    for (auto& warning : testResults.heightResults.warnings) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("Height query traversal warning: %s"),
-          UTF8_TO_TCHAR(warning.c_str()));
+    for (const FString& warning : testResults.warnings) {
+      UE_LOG(LogCesium, Warning, TEXT("Height query warning: %s"), *warning);
     }
 
-    size_t resultCount = testResults.heightResults.positions.size();
-    for (size_t resultIndex = 0; resultIndex < resultCount; ++resultIndex) {
-      const CesiumGeospatial::Cartographic& queryHit =
-          testResults.heightResults.positions[resultIndex];
+    int32 resultCount = testResults.heightResults.Num();
+    for (int32 resultIndex = 0; resultIndex < resultCount; ++resultIndex) {
+      const FVector& queryLongitudeLatitudeHeight =
+          testResults.heightResults[resultIndex].LongitudeLatitudeHeight;
 
-      if (!testResults.heightResults.heightSampled[resultIndex]) {
+      if (!testResults.heightResults[resultIndex].HeightSampled) {
         UE_LOG(
             LogCesium,
             Error,
             TEXT("The height at (%f,%f) was not sampled successfully."),
-            CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
-            CesiumUtility::Math::radiansToDegrees(queryHit.latitude));
+            queryLongitudeLatitudeHeight.X,
+            queryLongitudeLatitudeHeight.Y);
         continue;
       }
 
-      FVector hitCoordinate = {
-          CesiumUtility::Math::radiansToDegrees(queryHit.longitude),
-          CesiumUtility::Math::radiansToDegrees(queryHit.latitude),
-          queryHit.height};
-
       FVector unrealPosition =
           tileset->ResolveGeoreference()
-              ->TransformLongitudeLatitudeHeightPositionToUnreal(hitCoordinate);
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(
+                  queryLongitudeLatitudeHeight);
 
       // Now bring the hit point to unreal world coordinates
       FVector unrealWorldPosition =
@@ -225,10 +220,8 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
 }
 
 bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
-
   struct QueryObject {
-    CesiumGeospatial::Cartographic coordinateDegrees;
-    CesiumGeospatial::Cartographic coordinateRadians;
+    FVector coordinateDegrees;
 
     AStaticMeshActor* creationMeshActor = nullptr;
     AStaticMeshActor* playMeshActor = nullptr;
@@ -236,9 +229,11 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     bool queryFinished = false;
   };
 
-  static std::vector<QueryObject> queryObjects;
+  struct TestProcess {
+    std::vector<QueryObject> queryObjects;
+  };
 
-  queryObjects.clear();
+  auto pProcess = std::make_shared<TestProcess>();
 
   //
   // Setup all object positions that will receive queries
@@ -256,17 +251,14 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     double rowLatitude = testLatitude + (cartographicSpacing * rowIndex);
 
     for (size_t columnIndex = 0; columnIndex < gridColumnCount; ++columnIndex) {
-      CesiumGeospatial::Cartographic cartographicInstance = {
+      FVector position(
           testLongitude + (cartographicSpacing * columnIndex),
-          rowLatitude};
+          rowLatitude,
+          2190.0);
 
-      QueryObject newQueryObject = {
-          cartographicInstance,
-          CesiumGeospatial::Cartographic::fromDegrees(
-              cartographicInstance.longitude,
-              cartographicInstance.latitude)};
+      QueryObject newQueryObject = {position};
 
-      queryObjects.push_back(std::move(newQueryObject));
+      pProcess->queryObjects.push_back(std::move(newQueryObject));
     }
   }
 
@@ -276,7 +268,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     pCacheDatabase->clearAll();
   };
 
-  auto addTestObjects = [&queryObjects = queryObjects](
+  auto addTestObjects = [pProcess](
                             SceneGenerationContext& creationContext,
                             SceneGenerationContext& playContext,
                             TestPass::TestingParameter) {
@@ -290,19 +282,14 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     ACesium3DTileset* tileset = playContext.tilesets[0];
     Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    for (size_t queryIndex = 0; queryIndex < queryObjects.size();
+    for (size_t queryIndex = 0; queryIndex < pProcess->queryObjects.size();
          ++queryIndex) {
-      QueryObject& queryObject = queryObjects[queryIndex];
-
-      FVector startCoordinate = {
-          queryObject.coordinateDegrees.longitude,
-          queryObject.coordinateDegrees.latitude,
-          2190};
+      QueryObject& queryObject = pProcess->queryObjects[queryIndex];
 
       FVector unrealPosition =
           tileset->ResolveGeoreference()
               ->TransformLongitudeLatitudeHeightPositionToUnreal(
-                  startCoordinate);
+                  queryObject.coordinateDegrees);
 
       // Now bring the hit point to unreal world coordinates
       FVector unrealWorldPosition =
@@ -337,93 +324,87 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     return true;
   };
 
-  auto issueQueries = [this, &queryObjects = queryObjects](
+  auto issueQueries = [this, pProcess](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter) {
     ACesium3DTileset* tileset = context.tilesets[0];
-    Cesium3DTilesSelection::Tileset* nativeTileset = tileset->GetTileset();
 
-    for (QueryObject& queryObject : queryObjects) {
+    for (QueryObject& queryObject : pProcess->queryObjects) {
+      tileset->SampleHeightMostDetailed(
+          {queryObject.coordinateDegrees},
+          FCesiumSampleHeightMostDetailedCallback::CreateLambda(
+              [tileset, &queryObject](
+                  ACesium3DTileset* pTileset,
+                  const TArray<FCesiumSampleHeightResult>& results,
+                  const TArray<FString>& warnings) {
+                queryObject.queryFinished = true;
 
-      std::vector<CesiumGeospatial::Cartographic> queryInputRadians;
-      queryInputRadians.push_back(queryObject.coordinateRadians);
+                // Log any warnings
+                for (const FString& warning : warnings) {
+                  UE_LOG(
+                      LogCesium,
+                      Warning,
+                      TEXT("Height query traversal warning: %s"),
+                      *warning);
+                }
 
-      nativeTileset->sampleHeightMostDetailed(queryInputRadians)
-          .thenInMainThread([&queryObject, tileset](
-                                Cesium3DTilesSelection::SampleHeightResult&&
-                                    results) {
-            queryObject.queryFinished = true;
+                if (results.Num() != 1) {
+                  UE_LOG(
+                      LogCesium,
+                      Warning,
+                      TEXT("Unexpected number of results received"));
+                  return;
+                }
 
-            // Log any warnings
-            for (auto& warning : results.warnings) {
-              UE_LOG(
-                  LogCesium,
-                  Warning,
-                  TEXT("Height query traversal warning: %s"),
-                  UTF8_TO_TCHAR(warning.c_str()));
-            }
+                const FVector& newCoordinate =
+                    results[0].LongitudeLatitudeHeight;
+                if (!results[0].HeightSampled) {
+                  UE_LOG(
+                      LogCesium,
+                      Error,
+                      TEXT(
+                          "The height at (%f,%f) was not sampled successfully."),
+                      newCoordinate.X,
+                      newCoordinate.Y);
+                  return;
+                }
 
-            if (results.positions.size() != 1) {
-              UE_LOG(
-                  LogCesium,
-                  Warning,
-                  TEXT("Unexpected number of results received"));
-              return;
-            }
+                const FVector& originalCoordinate =
+                    queryObject.coordinateDegrees;
 
-            CesiumGeospatial::Cartographic& newCoordinate =
-                results.positions[0];
-            if (!results.heightSampled[0]) {
-              UE_LOG(
-                  LogCesium,
-                  Error,
-                  TEXT("The height at (%f,%f) was not sampled successfully."),
-                  CesiumUtility::Math::radiansToDegrees(
-                      newCoordinate.longitude),
-                  CesiumUtility::Math::radiansToDegrees(
-                      newCoordinate.latitude));
-              return;
-            }
+                if (!FMath::IsNearlyEqual(originalCoordinate.X, newCoordinate.X, 1e-12) ||
+                    !FMath::IsNearlyEqual(originalCoordinate.Y, newCoordinate.Y, 1e-12)) {
+                  UE_LOG(
+                      LogCesium,
+                      Warning,
+                      TEXT("Hit result doesn't match original input"));
+                  return;
+                }
 
-            CesiumGeospatial::Cartographic& originalCoordinate =
-                queryObject.coordinateRadians;
+                FVector unrealPosition =
+                    tileset->ResolveGeoreference()
+                        ->TransformLongitudeLatitudeHeightPositionToUnreal(
+                            newCoordinate);
 
-            if (originalCoordinate.latitude != newCoordinate.latitude ||
-                originalCoordinate.longitude != newCoordinate.longitude) {
-              UE_LOG(
-                  LogCesium,
-                  Warning,
-                  TEXT("Hit result doesn't match original input"));
-              return;
-            }
+                // Now bring the hit point to unreal world coordinates
+                FVector unrealWorldPosition =
+                    tileset->GetActorTransform().TransformFVector4(
+                        unrealPosition);
 
-            FVector hitCoordinate = {
-                queryObject.coordinateDegrees.longitude,
-                queryObject.coordinateDegrees.latitude,
-                newCoordinate.height};
+                queryObject.creationMeshActor->SetActorLocation(
+                    unrealWorldPosition);
 
-            FVector unrealPosition =
-                tileset->ResolveGeoreference()
-                    ->TransformLongitudeLatitudeHeightPositionToUnreal(
-                        hitCoordinate);
-
-            // Now bring the hit point to unreal world coordinates
-            FVector unrealWorldPosition =
-                tileset->GetActorTransform().TransformFVector4(unrealPosition);
-
-            queryObject.creationMeshActor->SetActorLocation(
-                unrealWorldPosition);
-
-            queryObject.playMeshActor->SetActorLocation(unrealWorldPosition);
-          });
+                queryObject.playMeshActor->SetActorLocation(
+                    unrealWorldPosition);
+              }));
     }
   };
 
-  auto waitForQueries = [this, &queryObjects = queryObjects](
+  auto waitForQueries = [this, pProcess](
                             SceneGenerationContext&,
                             SceneGenerationContext&,
                             TestPass::TestingParameter) {
-    for (QueryObject& queryObject : queryObjects) {
+    for (QueryObject& queryObject : pProcess->queryObjects) {
       if (!queryObject.queryFinished)
         return false;
     }
