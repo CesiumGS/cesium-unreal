@@ -704,47 +704,48 @@ public:
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
-    CesiumGltf::Model* pModel =
-        std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
-    if (!pModel)
+    TUniquePtr<CreateGltfOptions::CreateModelOptions> options =
+        MakeUnique<CreateGltfOptions::CreateModelOptions>(
+            std::move(tileLoadResult));
+    if (!options->getModel()) {
       return asyncSystem.createResolvedFuture(
           Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-              std::move(tileLoadResult),
+              std::move(options->tileLoadResult),
               nullptr});
+    }
 
-    CreateGltfOptions::CreateModelOptions options;
-    options.pModel = pModel;
-    options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
-    options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
+    options->alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
+    options->createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
 
-    options.ignoreKhrMaterialsUnlit =
+    options->ignoreKhrMaterialsUnlit =
         this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
     if (this->_pActor->_featuresMetadataDescription) {
-      options.pFeaturesMetadataDescription =
+      options->pFeaturesMetadataDescription =
           &(*this->_pActor->_featuresMetadataDescription);
     } else if (this->_pActor->_metadataDescription_DEPRECATED) {
-      options.pEncodedMetadataDescription_DEPRECATED =
+      options->pEncodedMetadataDescription_DEPRECATED =
           &(*this->_pActor->_metadataDescription_DEPRECATED);
     }
 
     const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
-    CesiumAsync::Future<TUniquePtr<UCesiumGltfComponent::HalfConstructed>>
+    CesiumAsync::Future<
+        TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult>>
         pHalfFuture = UCesiumGltfComponent::CreateOffGameThread(
             asyncSystem,
             transform,
-            options,
+            std::move(options),
             ellipsoid);
 
     return MoveTemp(pHalfFuture)
         .thenImmediately(
-            [tileLoadResult](
-                TUniquePtr<UCesiumGltfComponent::HalfConstructed>&& pHalf)
+            [](TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult>&&
+                   pResult)
                 -> Cesium3DTilesSelection::TileLoadResultAndRenderResources {
               return Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-                  std::move(tileLoadResult),
-                  pHalf.Release()};
+                  std::move(pResult->TileLoadResult),
+                  pResult->HalfConstructed.Release()};
             });
   }
 
@@ -814,8 +815,10 @@ public:
       }
     }
 
-    auto texture = CesiumTextureUtility::loadTextureAnyThreadPartSync(
-        image,
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageAsset(image);
+
+    auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
+        imageAsset,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,

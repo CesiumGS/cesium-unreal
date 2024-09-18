@@ -205,18 +205,19 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
             ? floorSqrtFeatureCount
             : (floorSqrtFeatureCount + 1);
 
-    CesiumGltf::ImageCesium image;
-    image.bytesPerChannel = encodedFormat.bytesPerChannel;
-    image.channels = encodedFormat.channels;
-    image.compressedPixelFormat = CesiumGltf::GpuCompressedPixelFormat::NONE;
-    image.height = image.width = ceilSqrtFeatureCount;
-    image.pixelData.resize(size_t(
-        image.width * image.height * image.channels * image.bytesPerChannel));
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> image;
+    image->bytesPerChannel = encodedFormat.bytesPerChannel;
+    image->channels = encodedFormat.channels;
+    image->compressedPixelFormat = CesiumGltf::GpuCompressedPixelFormat::NONE;
+    image->height = image->width = ceilSqrtFeatureCount;
+    image->pixelData.resize(size_t(
+        image->width * image->height * image->channels *
+        image->bytesPerChannel));
 
     if (isArray) {
       switch (gpuType) {
       case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        uint8* pWritePos = reinterpret_cast<uint8*>(image->pixelData.data());
         int64_t pixelSize =
             encodedFormat.channels * encodedFormat.bytesPerChannel;
         for (int64 i = 0; i < featureCount; ++i) {
@@ -232,7 +233,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        uint8* pWritePos = reinterpret_cast<uint8*>(image->pixelData.data());
         int64_t pixelSize =
             encodedFormat.channels * encodedFormat.bytesPerChannel;
         for (int64 i = 0; i < featureCount; ++i) {
@@ -256,7 +257,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     } else {
       switch (gpuType) {
       case ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(image.pixelData.data());
+        uint8* pWritePos = reinterpret_cast<uint8*>(image->pixelData.data());
         for (int64 i = 0; i < featureCount; ++i) {
           *pWritePos = UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
               property,
@@ -265,7 +266,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       case ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED: {
-        float* pWritePosF = reinterpret_cast<float*>(image.pixelData.data());
+        float* pWritePosF = reinterpret_cast<float*>(image->pixelData.data());
         for (int64 i = 0; i < featureCount; ++i) {
           *pWritePosF = UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
               property,
@@ -276,9 +277,8 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       }
     }
 
-    CesiumGltf::ImageCesium imageCopy(image);
-    encodedProperty.pTexture = loadTextureAnyThreadPartSync(
-        imageCopy,
+    encodedProperty.pTexture = loadTextureAnyThreadPart(
+        image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         TextureFilter::TF_Nearest,
@@ -410,9 +410,10 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     if (pMappedUnrealImageIt) {
       encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
     } else {
-      CesiumGltf::ImageCesium imageCopy(*pImage);
-      encodedFeatureTextureProperty.pTexture = MakeShared<LoadedTextureResult>(
-          std::move(*loadTextureAnyThreadPartSync(
+      CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageCopy =
+          CesiumGltf::SharedAsset(CesiumGltf::ImageCesium(*pImage));
+      encodedFeatureTextureProperty.pTexture =
+          MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
               imageCopy,
               TextureAddress::TA_Clamp,
               TextureAddress::TA_Clamp,
@@ -515,9 +516,11 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         if (pMappedUnrealImageIt) {
           encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
         } else {
-          CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
+          CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageCopy =
+              CesiumGltf::SharedAsset(
+                  CesiumGltf::ImageCesium(*pFeatureIdImage));
           encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
-              std::move(*loadTextureAnyThreadPartSync(
+              std::move(*loadTextureAnyThreadPart(
                   imageCopy,
                   TextureAddress::TA_Clamp,
                   TextureAddress::TA_Clamp,

@@ -1681,6 +1681,7 @@ static void loadPrimitive(
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
 
+  primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.pCollisionMesh = nullptr;
@@ -1827,7 +1828,7 @@ static void loadPrimitive(
 static void loadMesh(
     std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
-    const CreateMeshOptions& options,
+    CreateMeshOptions& options,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
@@ -1996,7 +1997,7 @@ static void loadInstancingData(
 static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
-    const CreateNodeOptions& options,
+    CreateNodeOptions& options,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
@@ -2139,7 +2140,7 @@ void applyGltfUpAxisTransform(const Model& model, glm::dmat4x4& rootTransform) {
 } // namespace
 
 static void
-loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
+loadModelMetadata(LoadModelResult& result, CreateModelOptions& options) {
   Model& model = *options.pModel;
 
   ExtensionModelExtStructuralMetadata* pModelMetadata =
@@ -2229,25 +2230,26 @@ loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
-static CesiumAsync::Future<TUniquePtr<UCesiumGltfComponent::HalfConstructed>>
+static CesiumAsync::Future<
+    TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult>>
 loadModelAnyThreadPart(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options,
+    TUniquePtr<CreateModelOptions> options,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
-  return createMipMapsForAllTextures(asyncSystem, *options.pModel)
+  return createMipMapsForAllTextures(asyncSystem, *options->pModel)
       .thenInWorkerThread(
-          [transform,
-           ellipsoid,
-           &options]() -> TUniquePtr<UCesiumGltfComponent::HalfConstructed> {
-            auto pResult = MakeUnique<HalfConstructedReal>();
+          [transform, ellipsoid, options = std::move(options)]()
+              -> TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult> {
+            auto pHalf = MakeUnique<HalfConstructedReal>();
 
-            Model& model = *options.pModel;
-            loadModelMetadata(pResult->loadModelResult, options);
+            loadModelMetadata(pHalf->loadModelResult, *options.Get());
 
             glm::dmat4x4 rootTransform = transform;
+
+            Model& model = *options->pModel;
 
             {
               rootTransform = CesiumGltfContent::GltfUtilities::applyRtcCenter(
@@ -2261,11 +2263,11 @@ loadModelAnyThreadPart(
               const Scene& defaultScene = model.scenes[model.scene];
               for (int nodeId : defaultScene.nodes) {
                 CreateNodeOptions nodeOptions = {
-                    &options,
-                    &pResult->loadModelResult,
+                    options.Get(),
+                    &pHalf->loadModelResult,
                     &model.nodes[nodeId]};
                 loadNode(
-                    pResult->loadModelResult.nodeResults,
+                    pHalf->loadModelResult.nodeResults,
                     rootTransform,
                     nodeOptions,
                     ellipsoid);
@@ -2275,11 +2277,11 @@ loadModelAnyThreadPart(
               const Scene& defaultScene = model.scenes[0];
               for (int nodeId : defaultScene.nodes) {
                 CreateNodeOptions nodeOptions = {
-                    &options,
-                    &pResult->loadModelResult,
+                    options.Get(),
+                    &pHalf->loadModelResult,
                     &model.nodes[nodeId]};
                 loadNode(
-                    pResult->loadModelResult.nodeResults,
+                    pHalf->loadModelResult.nodeResults,
                     rootTransform,
                     nodeOptions,
                     ellipsoid);
@@ -2287,11 +2289,11 @@ loadModelAnyThreadPart(
             } else if (model.nodes.size() > 0) {
               // No scenes at all, use the first node as the root node.
               CreateNodeOptions nodeOptions = {
-                  &options,
-                  &pResult->loadModelResult,
+                  options.Get(),
+                  &pHalf->loadModelResult,
                   &model.nodes[0]};
               loadNode(
-                  pResult->loadModelResult.nodeResults,
+                  pHalf->loadModelResult.nodeResults,
                   rootTransform,
                   nodeOptions,
                   ellipsoid);
@@ -2299,11 +2301,11 @@ loadModelAnyThreadPart(
               // No nodes either, show all the meshes.
               for (int32_t i = 0; i < model.meshes.size(); i++) {
                 CreateNodeOptions dummyNodeOptions = {
-                    &options,
-                    &pResult->loadModelResult,
+                    options.Get(),
+                    &pHalf->loadModelResult,
                     nullptr};
                 LoadNodeResult& dummyNodeResult =
-                    pResult->loadModelResult.nodeResults.emplace_back();
+                    pHalf->loadModelResult.nodeResults.emplace_back();
                 CreateMeshOptions meshOptions = {
                     &dummyNodeOptions,
                     &dummyNodeResult,
@@ -2315,6 +2317,11 @@ loadModelAnyThreadPart(
                     ellipsoid);
               }
             }
+
+            auto pResult =
+                MakeUnique<UCesiumGltfComponent::CreateOffGameThreadResult>();
+            pResult->HalfConstructed = std::move(pHalf);
+            pResult->TileLoadResult = std::move(options->tileLoadResult);
 
             return MoveTemp(pResult);
           });
@@ -3451,13 +3458,17 @@ static void loadPrimitiveGameThreadPart(
 }
 
 /*static*/ CesiumAsync::Future<
-    TUniquePtr<UCesiumGltfComponent::HalfConstructed>>
+    TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult>>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumAsync::AsyncSystem& AsyncSystem,
     const glm::dmat4x4& Transform,
-    const CreateModelOptions& Options,
+    TUniquePtr<CreateModelOptions> Options,
     const CesiumGeospatial::Ellipsoid& Ellipsoid) {
-  return loadModelAnyThreadPart(AsyncSystem, Transform, Options, Ellipsoid);
+  return loadModelAnyThreadPart(
+      AsyncSystem,
+      Transform,
+      std::move(Options),
+      Ellipsoid);
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(

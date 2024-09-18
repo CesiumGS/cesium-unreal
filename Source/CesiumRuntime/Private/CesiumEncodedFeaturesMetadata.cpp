@@ -141,9 +141,10 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     }
 
     // Copy the image, so that we can keep a copy of it in the glTF.
-    CesiumGltf::ImageCesium imageCopy(*pFeatureIdImage);
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageCopy =
+        CesiumGltf::SharedAsset(CesiumGltf::ImageCesium(*pFeatureIdImage));
     encodedFeatureIdTexture.pTexture =
-        MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPartSync(
+        MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
             imageCopy,
             addressX,
             addressY,
@@ -543,11 +544,11 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
               ? floorSqrtFeatureCount
               : (floorSqrtFeatureCount + 1);
 
-      CesiumGltf::ImageCesium image;
-      image.width = image.height = textureDimension;
-      image.bytesPerChannel = encodedFormat.bytesPerChannel;
-      image.channels = encodedFormat.channels;
-      image.pixelData.resize(
+      CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> image;
+      image->width = image->height = textureDimension;
+      image->bytesPerChannel = encodedFormat.bytesPerChannel;
+      image->channels = encodedFormat.channels;
+      image->pixelData.resize(
           textureDimension * textureDimension * encodedFormat.bytesPerChannel *
           encodedFormat.channels);
 
@@ -556,19 +557,18 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
         CesiumEncodedMetadataParseColorFromString::encode(
             *pDescription,
             property,
-            gsl::span(image.pixelData),
+            gsl::span(image->pixelData),
             encodedFormat.bytesPerChannel * encodedFormat.channels);
       } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */ {
         CesiumEncodedMetadataCoerce::encode(
             *pDescription,
             property,
-            gsl::span(image.pixelData),
+            gsl::span(image->pixelData),
             encodedFormat.bytesPerChannel * encodedFormat.channels);
       }
 
-      CesiumGltf::ImageCesium imageCopy(image);
-      encodedProperty.pTexture = loadTextureAnyThreadPartSync(
-          imageCopy,
+      encodedProperty.pTexture = loadTextureAnyThreadPart(
+          image,
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
           TextureFilter::TF_Nearest,
@@ -691,9 +691,10 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
         }
 
         // Copy the image, so that we can keep a copy of it in the glTF.
-        CesiumGltf::ImageCesium imageCopy(*pImage);
-        encodedProperty.pTexture = MakeShared<LoadedTextureResult>(
-            std::move(*loadTextureAnyThreadPartSync(
+        CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageCopy =
+            CesiumGltf::SharedAsset(CesiumGltf::ImageCesium(*pImage));
+        encodedProperty.pTexture =
+            MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
                 imageCopy,
                 addressX,
                 addressY,

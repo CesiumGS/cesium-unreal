@@ -15,15 +15,24 @@ struct CreateModelOptions {
   /**
    * A pointer to the glTF model.
    */
-  CesiumGltf::Model* pModel = nullptr;
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
       nullptr;
+  CesiumGltf::Model* pModel = nullptr;
+
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   const FMetadataDescription* pEncodedMetadataDescription_DEPRECATED = nullptr;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
   bool alwaysIncludeTangents = false;
   bool createPhysicsMeshes = true;
   bool ignoreKhrMaterialsUnlit = false;
+
+  Cesium3DTilesSelection::TileLoadResult tileLoadResult;
+
+public:
+  CreateModelOptions(Cesium3DTilesSelection::TileLoadResult&& tileLoadResult_)
+      : tileLoadResult(std::move(tileLoadResult_)) {
+    pModel = std::get_if<CesiumGltf::Model>(&this->tileLoadResult.contentKind);
+  }
 };
 
 struct CreateNodeOptions {

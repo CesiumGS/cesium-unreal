@@ -127,27 +127,6 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
     bool sRGB);
 
 /**
- * Does the asynchronous part of renderer resource preparation for a glTF
- * `Image` with the given `Sampler` settings.
- *
- * The `cesium.pixelData` will be removed from the image so that it can be
- * passed to Unreal's renderer thread without copying it.
- *
- * @param image The glTF image for each to create a texture.
- * @param sampler The sampler settings to use with the texture.
- * @param sRGB True if the texture should be treated as sRGB; false if it should
- * be treated as linear.
- * @param pExistingImageResource An existing RHI texture resource that has been
- * created for this image, or nullptr if one hasn't been created yet. When this
- * parameter is not nullptr, the provided image's `pixelData` is not required
- * and can be empty.
- */
-TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPartSync(
-    CesiumGltf::ImageCesium& image,
-    const CesiumGltf::Sampler& sampler,
-    bool sRGB);
-
-/**
  * @brief Does the asynchronous part of renderer resource preparation for
  * this image. Should be called in a background thread.
  *
@@ -172,21 +151,6 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPartSync(
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
-    TextureAddress addressX,
-    TextureAddress addressY,
-    TextureFilter filter,
-    bool useMipMapsIfAvailable,
-    TextureGroup group,
-    bool sRGB,
-    std::optional<EPixelFormat> overridePixelFormat);
-
-/**
- * @brief Equivalent to \link{loadTextureAnyThreadPart}, but returns the texture
- * itself rather than a future. Intended to be used for loading raster overlay
- * textures.
- */
-TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPartSync(
-    CesiumGltf::ImageCesium& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,

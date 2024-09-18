@@ -65,10 +65,17 @@ public:
     virtual ~HalfConstructed() = default;
   };
 
-  static CesiumAsync::Future<TUniquePtr<HalfConstructed>> CreateOffGameThread(
+  class CreateOffGameThreadResult {
+  public:
+    TUniquePtr<UCesiumGltfComponent::HalfConstructed> HalfConstructed;
+    Cesium3DTilesSelection::TileLoadResult TileLoadResult;
+  };
+
+  static CesiumAsync::Future<TUniquePtr<CreateOffGameThreadResult>>
+  CreateOffGameThread(
       const CesiumAsync::AsyncSystem& AsyncSystem,
       const glm::dmat4x4& Transform,
-      const CreateGltfOptions::CreateModelOptions& Options,
+      const TUniquePtr<CreateGltfOptions::CreateModelOptions> Options,
       const CesiumGeospatial::Ellipsoid& Ellipsoid =
           CesiumGeospatial::Ellipsoid::WGS84);
 

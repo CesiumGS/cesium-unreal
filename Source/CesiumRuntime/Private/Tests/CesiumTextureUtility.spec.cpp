@@ -104,8 +104,8 @@ void CesiumTextureUtilitySpec::Define() {
 
 void CesiumTextureUtilitySpec::RunTests() {
   It("ImageCesium non-sRGB", [this]() {
-    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPartSync(
-        *imageCesium,
+    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
+        imageCesium,
         TextureAddress::TA_Mirror,
         TextureAddress::TA_Wrap,
         TextureFilter::TF_Bilinear,
@@ -128,8 +128,8 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("ImageCesium sRGB", [this]() {
-    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPartSync(
-        *imageCesium,
+    TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
+        imageCesium,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Mirror,
         TextureFilter::TF_Trilinear,
