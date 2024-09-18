@@ -61,9 +61,9 @@ public:
 
 private:
   void RaiseOnHeightsSampled(
-      ACesium3DTileset*,
-      const TArray<FCesiumSampleHeightResult>&,
-      const TArray<FString>&);
+      ACesium3DTileset* Tileset,
+      const TArray<FCesiumSampleHeightResult>& Result,
+      const TArray<FString>& Warnings);
 
   ACesium3DTileset* _pTileset;
   TArray<FVector> _longitudeLatitudeHeightArray;
