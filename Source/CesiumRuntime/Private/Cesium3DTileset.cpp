@@ -707,7 +707,7 @@ public:
     TUniquePtr<CreateGltfOptions::CreateModelOptions> options =
         MakeUnique<CreateGltfOptions::CreateModelOptions>(
             std::move(tileLoadResult));
-    if (!options->getModel()) {
+    if (!options->pModel) {
       return asyncSystem.createResolvedFuture(
           Cesium3DTilesSelection::TileLoadResultAndRenderResources{
               std::move(options->tileLoadResult),
@@ -1899,6 +1899,17 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 
       DrawDebugString(World, unrealCenter, text, nullptr, FColor::Red, 0, true);
     }
+  }
+
+  if (this->LogAssetStats && this->_pTileset) {
+    const CesiumGltf::SingleAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
+        this->_pTileset->getSharedAssetDepot().getImageDepot();
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Images depot: %d distinct assets, %d total usages"),
+        imageDepot->getDistinctCount(),
+        imageDepot->getUsageCount());
   }
 
   if (!this->LogSelectionStats) {
