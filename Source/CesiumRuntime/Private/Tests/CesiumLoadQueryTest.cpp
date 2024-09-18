@@ -372,8 +372,14 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
                 const FVector& originalCoordinate =
                     queryObject.coordinateDegrees;
 
-                if (!FMath::IsNearlyEqual(originalCoordinate.X, newCoordinate.X, 1e-12) ||
-                    !FMath::IsNearlyEqual(originalCoordinate.Y, newCoordinate.Y, 1e-12)) {
+                if (!FMath::IsNearlyEqual(
+                        originalCoordinate.X,
+                        newCoordinate.X,
+                        1e-12) ||
+                    !FMath::IsNearlyEqual(
+                        originalCoordinate.Y,
+                        newCoordinate.Y,
+                        1e-12)) {
                   UE_LOG(
                       LogCesium,
                       Warning,
