@@ -18,16 +18,65 @@
 using namespace Cesium;
 using namespace std::chrono_literals;
 
+namespace {
+void setupDenverHillsCesiumWorldTerrain(SceneGenerationContext& context);
+void setupDenverHillsGoogle(SceneGenerationContext& context);
+bool RunSingleQueryTest(
+    const FString& testName,
+    std::function<void(SceneGenerationContext&)> setup);
+bool RunMultipleQueryTest(
+    const FString& testName,
+    std::function<void(SceneGenerationContext&)> setup);
+} // namespace
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumTerrainQuerySingleQuery,
-    "Cesium.TerrainQuery.SingleQuery",
+    FSampleHeightMostDetailedCesiumWorldTerrainSingle,
+    "Cesium.Performance.SampleHeightMostDetailed.Single query against Cesium World Terrain",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumTerrainQueryMultipleQueries,
-    "Cesium.TerrainQuery.MultipleQueries",
+    FSampleHeightMostDetailedCesiumWorldTerrainMultiple,
+    "Cesium.Performance.SampleHeightMostDetailed.Multiple queries against Cesium World Terrain",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSampleHeightMostDetailedGoogleSingle,
+    "Cesium.Performance.SampleHeightMostDetailed.Single query against Google Photorealistic 3D Tiles",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSampleHeightMostDetailedGoogleMultiple,
+    "Cesium.Performance.SampleHeightMostDetailed.Multiple queries against Google Photorealistic 3D Tiles",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+bool FSampleHeightMostDetailedCesiumWorldTerrainSingle::RunTest(
+    const FString& Parameters) {
+  return RunSingleQueryTest(
+      this->GetBeautifiedTestName(),
+      setupDenverHillsCesiumWorldTerrain);
+}
+
+bool FSampleHeightMostDetailedCesiumWorldTerrainMultiple::RunTest(
+    const FString& Parameters) {
+  return RunMultipleQueryTest(
+      this->GetBeautifiedTestName(),
+      setupDenverHillsCesiumWorldTerrain);
+}
+
+bool FSampleHeightMostDetailedGoogleSingle::RunTest(const FString& Parameters) {
+  return RunSingleQueryTest(
+      this->GetBeautifiedTestName(),
+      setupDenverHillsGoogle);
+}
+
+bool FSampleHeightMostDetailedGoogleMultiple::RunTest(
+    const FString& Parameters) {
+  return RunMultipleQueryTest(
+      this->GetBeautifiedTestName(),
+      setupDenverHillsGoogle);
+}
+
+namespace {
 // Our test model path
 //
 // Uses a simple cube, but to see trees instead, download 'temperate Vegetation:
@@ -37,7 +86,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 FString terrainQueryTestModelPath(
     TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 
-void setupDenverHills(SceneGenerationContext& context) {
+void setupDenverHillsCesiumWorldTerrain(SceneGenerationContext& context) {
   context.setCommonProperties(
       FVector(-105.238887, 39.756177, 1887.175525),
       FVector(0, 0, 0),
@@ -53,36 +102,33 @@ void setupDenverHills(SceneGenerationContext& context) {
   worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
   worldTerrainTileset->MaximumCachedBytes = 0;
 
-  // Bing Maps Aerial overlay
-  UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
-      worldTerrainTileset,
-      FName("Bing Maps Aerial"),
-      RF_Transactional);
-  pOverlay->MaterialLayerKey = TEXT("Overlay0");
-  pOverlay->IonAssetID = 2;
-  pOverlay->SetActive(true);
-  pOverlay->OnComponentCreated();
-  worldTerrainTileset->AddInstanceComponent(pOverlay);
-
-  // Aerometrex Denver
-  ACesium3DTileset* aerometrexTileset =
-      context.world->SpawnActor<ACesium3DTileset>();
-  aerometrexTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  aerometrexTileset->SetIonAssetID(354307);
-  aerometrexTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
-  aerometrexTileset->SetMaximumScreenSpaceError(2.0);
-  aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
-  aerometrexTileset->MaximumCachedBytes = 0;
-
   context.tilesets.push_back(worldTerrainTileset);
-  context.tilesets.push_back(aerometrexTileset);
 }
 
-bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
+void setupDenverHillsGoogle(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-105.238887, 39.756177, 1887.175525),
+      FVector(0, 0, 0),
+      FRotator(-7, -226, -5),
+      90.0f);
 
-  auto clearCache = [this](
-                        SceneGenerationContext& context,
-                        TestPass::TestingParameter parameter) {
+  // Add Cesium World Terrain
+  ACesium3DTileset* googleTileset =
+      context.world->SpawnActor<ACesium3DTileset>();
+  googleTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  googleTileset->SetIonAssetID(2275207);
+  googleTileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
+  googleTileset->SetActorLabel(TEXT("Google Photorealistic 3D Tiles"));
+  googleTileset->MaximumCachedBytes = 0;
+
+  context.tilesets.push_back(googleTileset);
+}
+
+bool RunSingleQueryTest(
+    const FString& testName,
+    std::function<void(SceneGenerationContext&)> setup) {
+  auto clearCache = [](SceneGenerationContext& context,
+                       TestPass::TestingParameter parameter) {
     std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
         getCacheDatabase();
     pCacheDatabase->clearAll();
@@ -96,7 +142,7 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
 
   static TestResults testResults;
 
-  auto issueQueries = [this, &testResults = testResults](
+  auto issueQueries = [&testResults = testResults](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter parameter) {
     // Test right at camera position
@@ -139,14 +185,14 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
             }));
   };
 
-  auto waitForQueries = [this, &testResults = testResults](
+  auto waitForQueries = [&testResults = testResults](
                             SceneGenerationContext& creationContext,
                             SceneGenerationContext& playContext,
                             TestPass::TestingParameter parameter) {
     return (bool)testResults.queryFinished;
   };
 
-  auto showResults = [this, &testResults = testResults](
+  auto showResults = [&testResults = testResults](
                          SceneGenerationContext& creationContext,
                          SceneGenerationContext& playContext,
                          TestPass::TestingParameter parameter) {
@@ -211,15 +257,12 @@ bool FCesiumTerrainQuerySingleQuery::RunTest(const FString& Parameters) {
   testPasses.push_back(
       TestPass{"Populate scene with results", nullptr, showResults});
 
-  return RunLoadTest(
-      GetBeautifiedTestName(),
-      setupDenverHills,
-      testPasses,
-      1280,
-      768);
+  return RunLoadTest(testName, setup, testPasses, 1280, 768);
 }
 
-bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
+bool RunMultipleQueryTest(
+    const FString& testName,
+    std::function<void(SceneGenerationContext&)> setup) {
   struct QueryObject {
     FVector coordinateDegrees;
 
@@ -324,7 +367,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     return true;
   };
 
-  auto issueQueries = [this, pProcess](
+  auto issueQueries = [pProcess](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter) {
     ACesium3DTileset* tileset = context.tilesets[0];
@@ -406,7 +449,7 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
     }
   };
 
-  auto waitForQueries = [this, pProcess](
+  auto waitForQueries = [pProcess](
                             SceneGenerationContext&,
                             SceneGenerationContext&,
                             TestPass::TestingParameter) {
@@ -433,12 +476,9 @@ bool FCesiumTerrainQueryMultipleQueries::RunTest(const FString& Parameters) {
       TestPass{"Issue height queries and wait", issueQueries, waitForQueries});
   testPasses.push_back(TestPass{"Show results", nullptr, showResults});
 
-  return RunLoadTest(
-      GetBeautifiedTestName(),
-      setupDenverHills,
-      testPasses,
-      1280,
-      720);
+  return RunLoadTest(testName, setup, testPasses, 1280, 720);
 }
+
+} // namespace
 
 #endif
