@@ -16,23 +16,23 @@
 using namespace Cesium;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumSampleDenver,
-    "Cesium.Performance.SampleLocaleDenver",
+    FLoadTilesetDenver,
+    "Cesium.Performance.Tileset Loading.Aerometrex Denver",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumSampleMelbourne,
-    "Cesium.Performance.SampleLocaleMelbourne",
+    FLoadTilesetMelbourne,
+    "Cesium.Performance.Tileset Loading.Melbourne photogrammetry (open data)",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumSampleMontrealPointCloud,
-    "Cesium.Performance.SampleTestPointCloud",
+    FLoadTilesetMontrealPointCloud,
+    "Cesium.Performance.Tileset Loading.Montreal point cloud (open data)",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FSampleMaxTileLoads,
-    "Cesium.Performance.SampleVaryMaxTileLoads",
+    FLoadTilesetMelbourneVaryMaxTileLoads,
+    "Cesium.Performance.Tileset Loading.Melbourne photogrammetry (open data), vary max tile loads",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 void samplesClearCache(SceneGenerationContext&, TestPass::TestingParameter) {
@@ -146,7 +146,7 @@ void setupForMontrealPointCloud(SceneGenerationContext& context) {
   context.tilesets.push_back(montrealTileset);
 }
 
-bool FCesiumSampleDenver::RunTest(const FString& Parameters) {
+bool FLoadTilesetDenver::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", samplesClearCache, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", samplesRefreshTilesets, nullptr});
@@ -159,7 +159,7 @@ bool FCesiumSampleDenver::RunTest(const FString& Parameters) {
       768);
 }
 
-bool FCesiumSampleMelbourne::RunTest(const FString& Parameters) {
+bool FLoadTilesetMelbourne::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", samplesClearCache, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", samplesRefreshTilesets, nullptr});
@@ -172,7 +172,7 @@ bool FCesiumSampleMelbourne::RunTest(const FString& Parameters) {
       768);
 }
 
-bool FCesiumSampleMontrealPointCloud::RunTest(const FString& Parameters) {
+bool FLoadTilesetMontrealPointCloud::RunTest(const FString& Parameters) {
   auto adjustCamera = [this](
                           SceneGenerationContext& context,
                           TestPass::TestingParameter parameter) {
@@ -227,7 +227,7 @@ bool FCesiumSampleMontrealPointCloud::RunTest(const FString& Parameters) {
       512);
 }
 
-bool FSampleMaxTileLoads::RunTest(const FString& Parameters) {
+bool FLoadTilesetMelbourneVaryMaxTileLoads::RunTest(const FString& Parameters) {
 
   auto setupPass = [this](
                        SceneGenerationContext& context,
