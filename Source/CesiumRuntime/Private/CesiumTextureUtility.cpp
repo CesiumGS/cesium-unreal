@@ -762,7 +762,8 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
   }
 }
 
-CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*> createMipMapsForSampler(
+std::optional<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
+createMipMapsForSampler(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const CesiumGltf::Sampler& sampler,
     CesiumGltf::ImageCesium& image) {
@@ -775,13 +776,6 @@ CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*> createMipMapsForSampler(
   if (extension.preprocessFuture.has_value()) {
     return extension.preprocessFuture.value();
   }
-
-  CesiumAsync::Promise<CesiumGltf::ImageCesium*> promise =
-      asyncSystem.createPromise<CesiumGltf::ImageCesium*>();
-
-  extension.preprocessFuture = promise.getFuture().share();
-
-  lock.unlock();
 
   // Generate mipmaps if needed.
   // An image needs mipmaps generated for it if:
@@ -806,9 +800,18 @@ CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*> createMipMapsForSampler(
   }
 
   if (!needsMipmaps || image.pixelData.empty()) {
-    promise.resolve(&image);
-    return *extension.preprocessFuture;
+    // If we don't need mipmaps, we don't want to create a future for them.
+    // This allows a future sampler using this image that does need mipmaps to
+    // generate them.
+    return std::nullopt;
   }
+
+  CesiumAsync::Promise<CesiumGltf::ImageCesium*> promise =
+      asyncSystem.createPromise<CesiumGltf::ImageCesium*>();
+
+  extension.preprocessFuture = promise.getFuture().share();
+
+  lock.unlock();
 
   // We need mipmaps generated.
   std::optional<std::string> errorMessage =
@@ -829,10 +832,16 @@ CesiumAsync::SharedFuture<void> createMipMapsForAllTextures(
     CesiumGltf::Model& model) {
   std::vector<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>> futures;
   for (const Texture& texture : model.textures) {
-    futures.push_back(createMipMapsForSampler(
-        asyncSystem,
-        model.getSafe(model.samplers, texture.sampler),
-        *model.images[texture.source].cesium));
+    const CesiumGltf::Sampler& sampler =
+        model.getSafe(model.samplers, texture.sampler);
+    std::optional<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
+        optionalFuture = createMipMapsForSampler(
+            asyncSystem,
+            sampler,
+            *model.images[texture.source].cesium);
+    if (optionalFuture.has_value()) {
+      futures.push_back(optionalFuture.value());
+    }
   }
 
   return asyncSystem.all(std::move(futures))
