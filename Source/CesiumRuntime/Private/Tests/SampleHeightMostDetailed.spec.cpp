@@ -28,8 +28,10 @@ void FSampleHeightMostDetailedSpec::Define() {
       UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
       pTileset = pWorld->SpawnActor<ACesium3DTileset>();
       pTileset->SetIonAssetID(1);
+#if WITH_EDITOR
       pTileset->SetIonAccessToken(Cesium::SceneGenerationContext::testIonToken);
       pTileset->SetActorLabel(TEXT("Cesium World Terrain"));
+#endif
     });
 
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
@@ -144,8 +146,10 @@ void FSampleHeightMostDetailedSpec::Define() {
       UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
       pTileset = pWorld->SpawnActor<ACesium3DTileset>();
       pTileset->SetIonAssetID(69380);
+#if WITH_EDITOR
       pTileset->SetIonAccessToken(Cesium::SceneGenerationContext::testIonToken);
       pTileset->SetActorLabel(TEXT("Melbourne Photogrammetry"));
+#endif
     });
 
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
