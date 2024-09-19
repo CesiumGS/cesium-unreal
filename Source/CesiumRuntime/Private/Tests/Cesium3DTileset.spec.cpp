@@ -1,5 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#if WITH_EDITOR
+
 #include "Cesium3DTileset.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumLoadTestCore.h"
@@ -93,3 +95,5 @@ bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
 }
 
 } // namespace Cesium
+
+#endif
