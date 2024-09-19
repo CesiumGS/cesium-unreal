@@ -2,6 +2,10 @@
 
 ### Next version (not released yet)
 
+##### Additions :tada:
+
+- Added `SampleHeightMostDetailed` function to `Cesium3DTileset`, which asynchronously queries the height of a tileset at a list of positions. It is callable from both C++ and Blueprints.
+
 ##### Fixes :wrench:
 
 - Drastically reduced tile mesh memory usage in UE 5.3 and 5.4 by working around a bug that causes those engine versions to add more texture coordinate sets than necessary.
