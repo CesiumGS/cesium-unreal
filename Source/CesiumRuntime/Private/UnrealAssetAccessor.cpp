@@ -9,7 +9,6 @@
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"
-#include "Containers/UnrealString.h"
 #include "HttpManager.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
