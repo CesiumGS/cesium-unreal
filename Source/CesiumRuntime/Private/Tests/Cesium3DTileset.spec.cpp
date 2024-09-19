@@ -9,6 +9,8 @@
 #include "Engine/World.h"
 #include "GlobeAwareDefaultPawn.h"
 #include "Misc/AutomationTest.h"
+#include "Tests/AutomationCommon.h"
+#include "Tests/AutomationTestSettings.h"
 #include <CesiumAsync/ICacheDatabase.h>
 
 #define TEST_SCREEN_WIDTH 1280
