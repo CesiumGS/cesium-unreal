@@ -2651,319 +2651,6 @@ void SetWaterParameterValues(
           loadResult.waterMaskScale));
 }
 
-static void SetFeatureIdTextureParameterValues(
-    const CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture&
-        encodedFeatureIdTexture,
-    const FString& name,
-    UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation association,
-    int32 index) {
-  pMaterial->SetTextureParameterValueByInfo(
-      FMaterialParameterInfo(
-          FName(name + CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
-          association,
-          index),
-      encodedFeatureIdTexture.pTexture->pTexture->getUnrealTexture());
-
-  size_t numChannels = encodedFeatureIdTexture.channels.size();
-  pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo(
-          FName(
-              name + CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
-          association,
-          index),
-      static_cast<float>(numChannels));
-
-  std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
-  for (size_t i = 0; i < numChannels; i++) {
-    channelsAsFloats[i] =
-        static_cast<float>(encodedFeatureIdTexture.channels[i]);
-  }
-
-  FLinearColor channels{
-      channelsAsFloats[0],
-      channelsAsFloats[1],
-      channelsAsFloats[2],
-      channelsAsFloats[3],
-  };
-
-  pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          FName(name + CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
-          association,
-          index),
-      channels);
-
-  if (!encodedFeatureIdTexture.textureTransform) {
-    return;
-  }
-
-  glm::dvec2 scale = encodedFeatureIdTexture.textureTransform->scale();
-  glm::dvec2 offset = encodedFeatureIdTexture.textureTransform->offset();
-
-  pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          FName(
-              name +
-              CesiumEncodedFeaturesMetadata::MaterialTextureScaleOffsetSuffix),
-          association,
-          index),
-      FLinearColor(scale[0], scale[1], offset[0], offset[1]));
-
-  glm::dvec2 rotation =
-      encodedFeatureIdTexture.textureTransform->rotationSineCosine();
-  pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          FName(
-              name +
-              CesiumEncodedFeaturesMetadata::MaterialTextureRotationSuffix),
-          association,
-          index),
-      FLinearColor(rotation[0], rotation[1], 0.0f, 1.0f));
-}
-
-static void SetPropertyParameterValue(
-    const FString& name,
-    ECesiumEncodedMetadataType type,
-    const FCesiumMetadataValue& value,
-    const float defaultValue,
-    UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation association,
-    int32 index) {
-  if (type == ECesiumEncodedMetadataType::Scalar) {
-    pMaterial->SetScalarParameterValueByInfo(
-        FMaterialParameterInfo(FName(name), association, index),
-        UCesiumMetadataValueBlueprintLibrary::GetFloat(value, defaultValue));
-  } else if (
-      type == ECesiumEncodedMetadataType::Vec2 ||
-      type == ECesiumEncodedMetadataType::Vec3 ||
-      type == ECesiumEncodedMetadataType::Vec4) {
-    FVector4 vector4Value = UCesiumMetadataValueBlueprintLibrary::GetVector4(
-        value,
-        FVector4(defaultValue, defaultValue, defaultValue, defaultValue));
-
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(FName(name), association, index),
-        FLinearColor(
-            static_cast<float>(vector4Value.X),
-            static_cast<float>(vector4Value.Y),
-            static_cast<float>(vector4Value.Z),
-            static_cast<float>(vector4Value.W)));
-  }
-}
-
-static void SetPropertyTableParameterValues(
-    const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
-        encodedPropertyTable,
-    UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation association,
-    int32 index) {
-  for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTableProperty&
-           encodedProperty : encodedPropertyTable.properties) {
-    FString fullPropertyName =
-        CesiumEncodedFeaturesMetadata::getMaterialNameForPropertyTableProperty(
-            encodedPropertyTable.name,
-            encodedProperty.name);
-
-    if (encodedProperty.pTexture) {
-      pMaterial->SetTextureParameterValueByInfo(
-          FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture->getUnrealTexture());
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
-            encodedProperty.offset)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyOffsetSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          0.0f,
-          pMaterial,
-          association,
-          index);
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(encodedProperty.scale)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyScaleSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          1.0f,
-          pMaterial,
-          association,
-          index);
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
-            encodedProperty.noData)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyNoDataSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          0.0f,
-          pMaterial,
-          association,
-          index);
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
-            encodedProperty.defaultValue)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyDefaultValueSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          0.0f,
-          pMaterial,
-          association,
-          index);
-
-      FString hasValueName = fullPropertyName =
-          CesiumEncodedFeaturesMetadata::MaterialPropertyHasValueSuffix;
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(FName(hasValueName), association, index),
-          encodedProperty.pTexture ? 1.0 : 0.0);
-    }
-  }
-}
-
-static void SetPropertyTextureParameterValues(
-    const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
-        encodedPropertyTexture,
-    UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation association,
-    int32 index) {
-  for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTextureProperty&
-           encodedProperty : encodedPropertyTexture.properties) {
-    FString fullPropertyName = CesiumEncodedFeaturesMetadata::
-        getMaterialNameForPropertyTextureProperty(
-            encodedPropertyTexture.name,
-            encodedProperty.name);
-
-    if (encodedProperty.pTexture) {
-      pMaterial->SetTextureParameterValueByInfo(
-          FMaterialParameterInfo(FName(fullPropertyName), association, index),
-          encodedProperty.pTexture->pTexture->getUnrealTexture());
-    }
-
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(
-                fullPropertyName +
-                CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
-            association,
-            index),
-        FLinearColor(
-            encodedProperty.channels[0],
-            encodedProperty.channels[1],
-            encodedProperty.channels[2],
-            encodedProperty.channels[3]));
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
-            encodedProperty.offset)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyOffsetSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          0.0f,
-          pMaterial,
-          association,
-          index);
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(encodedProperty.scale)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyScaleSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          1.0f,
-          pMaterial,
-          association,
-          index);
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
-            encodedProperty.noData)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyNoDataSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          0.0f,
-          pMaterial,
-          association,
-          index);
-    }
-
-    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
-            encodedProperty.defaultValue)) {
-      FString parameterName =
-          fullPropertyName +
-          CesiumEncodedFeaturesMetadata::MaterialPropertyDefaultValueSuffix;
-      SetPropertyParameterValue(
-          parameterName,
-          encodedProperty.type,
-          encodedProperty.offset,
-          0.0f,
-          pMaterial,
-          association,
-          index);
-
-      FString hasValueName = fullPropertyName =
-          CesiumEncodedFeaturesMetadata::MaterialPropertyHasValueSuffix;
-      pMaterial->SetScalarParameterValueByInfo(
-          FMaterialParameterInfo(FName(hasValueName), association, index),
-          encodedProperty.pTexture ? 1.0 : 0.0);
-    }
-
-    if (!encodedProperty.textureTransform) {
-      continue;
-    }
-
-    glm::dvec2 scale = encodedProperty.textureTransform->scale();
-    glm::dvec2 offset = encodedProperty.textureTransform->offset();
-
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(
-                fullPropertyName + CesiumEncodedFeaturesMetadata::
-                                       MaterialTextureScaleOffsetSuffix),
-            association,
-            index),
-        FLinearColor(scale[0], scale[1], offset[0], offset[1]));
-
-    glm::dvec2 rotation =
-        encodedProperty.textureTransform->rotationSineCosine();
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(
-                fullPropertyName +
-                CesiumEncodedFeaturesMetadata::MaterialTextureRotationSuffix),
-            association,
-            index),
-        FLinearColor(rotation[0], rotation[1], 0.0f, 1.0f));
-  }
-}
-
 static void SetFeaturesMetadataParameterValues(
     const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
@@ -3000,31 +2687,31 @@ static void SetFeaturesMetadataParameterValues(
       }
 
       if (encodedFeatureIdSet.texture) {
-        SetFeatureIdTextureParameterValues(
-            *encodedFeatureIdSet.texture,
-            SafeName,
+        CesiumEncodedFeaturesMetadata::SetFeatureIdTextureParameterValues(
             pMaterial,
             association,
-            index);
+            index,
+            SafeName,
+            *encodedFeatureIdSet.texture);
       }
     }
 
     for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
              propertyTexture : gltfComponent.EncodedMetadata.propertyTextures) {
-      SetPropertyTextureParameterValues(
-          propertyTexture,
+      CesiumEncodedFeaturesMetadata::SetPropertyTextureParameterValues(
           pMaterial,
           association,
-          index);
+          index,
+          propertyTexture);
     }
 
     for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
              propertyTable : gltfComponent.EncodedMetadata.propertyTables) {
-      SetPropertyTableParameterValues(
-          propertyTable,
+      CesiumEncodedFeaturesMetadata::SetPropertyTableParameterValues(
           pMaterial,
           association,
-          index);
+          index,
+          propertyTable);
     }
   }
 }
