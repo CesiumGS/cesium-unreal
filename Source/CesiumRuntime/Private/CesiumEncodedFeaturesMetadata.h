@@ -29,7 +29,7 @@ struct FCesiumPrimitiveMetadataDescription;
 
 struct FCesiumMetadataPropertyDetails;
 class UMaterialInstanceDynamic;
-enum EMaterialParameterAssociation;
+enum EMaterialParameterAssociation : int;
 
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
