@@ -2062,6 +2062,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
+  UE_LOG(LogCesium, Warning, TEXT("!!! TICKING %s"), *this->GetName());
+
   if (!this->_pTileset) {
     LoadTileset();
 
