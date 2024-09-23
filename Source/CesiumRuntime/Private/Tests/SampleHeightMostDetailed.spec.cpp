@@ -25,6 +25,8 @@ END_DEFINE_SPEC(FSampleHeightMostDetailedSpec)
 void FSampleHeightMostDetailedSpec::Define() {
   Describe("Cesium World Terrain", [this]() {
     BeforeEach([this]() {
+      CesiumTestHelpers::pushAllowTickInEditor();
+
       UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
       pTileset = pWorld->SpawnActor<ACesium3DTileset>();
       pTileset->SetIonAssetID(1);
@@ -36,6 +38,8 @@ void FSampleHeightMostDetailedSpec::Define() {
 
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       pTileset->Destroy();
+
+      CesiumTestHelpers::popAllowTickInEditor();
     });
 
     LatentIt(
@@ -59,13 +63,10 @@ void FSampleHeightMostDetailedSpec::Define() {
         "works with a single position",
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          CesiumAsync::Promise<void> foo =
-              getAsyncSystem().createPromise<void>();
-
           pTileset->SampleHeightMostDetailed(
               {FVector(-105.1, 40.1, 1.0)},
               FCesiumSampleHeightMostDetailedCallback::CreateLambda(
-                  [this, done, foo](
+                  [this, done](
                       ACesium3DTileset* pTileset,
                       const TArray<FCesiumSampleHeightResult>& result,
                       const TArray<FString>& warnings) {
@@ -88,17 +89,8 @@ void FSampleHeightMostDetailedSpec::Define() {
                             result[0].LongitudeLatitudeHeight.Z,
                             1.0,
                             1.0));
-                    foo.resolve();
-                    // done.ExecuteIfBound();
+                    done.ExecuteIfBound();
                   }));
-
-          CesiumTestHelpers::waitFor(
-              done,
-              CesiumTestHelpers::getGlobalWorldContext(),
-              30.0f,
-              [future = foo.getFuture().share()]() {
-                return future.isReady();
-              });
         });
 
     LatentIt(

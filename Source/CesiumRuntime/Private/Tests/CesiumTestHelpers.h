@@ -138,6 +138,20 @@ FName getUniqueTag(AActor* pActor);
 /// <returns>The unique tag.</returns>
 FName getUniqueTag(UActorComponent* pComponent);
 
+/// <summary>
+/// By default, UE 5.3+ don't tick in a headless Editor, which is often used to
+/// run tests. Call this at the start of a test that requires ticking to
+/// override this default. Call popAllowTickInEditor after the test to restore
+/// the default.
+/// </summary>
+void pushAllowTickInEditor();
+
+/// <summary>
+/// Call this after a test that needs working ticking to restore the default
+/// state.
+/// </summary>
+void popAllowTickInEditor();
+
 #if WITH_EDITOR
 
 /// <summary>
