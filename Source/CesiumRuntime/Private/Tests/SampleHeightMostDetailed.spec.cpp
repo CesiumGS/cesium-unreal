@@ -59,10 +59,13 @@ void FSampleHeightMostDetailedSpec::Define() {
         "works with a single position",
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
+          CesiumAsync::Promise<void> foo =
+              getAsyncSystem().createPromise<void>();
+
           pTileset->SampleHeightMostDetailed(
               {FVector(-105.1, 40.1, 1.0)},
               FCesiumSampleHeightMostDetailedCallback::CreateLambda(
-                  [this, done](
+                  [this, done, foo](
                       ACesium3DTileset* pTileset,
                       const TArray<FCesiumSampleHeightResult>& result,
                       const TArray<FString>& warnings) {
@@ -85,8 +88,17 @@ void FSampleHeightMostDetailedSpec::Define() {
                             result[0].LongitudeLatitudeHeight.Z,
                             1.0,
                             1.0));
-                    done.ExecuteIfBound();
+                    foo.resolve();
+                    // done.ExecuteIfBound();
                   }));
+
+          CesiumTestHelpers::waitFor(
+              done,
+              CesiumTestHelpers::getGlobalWorldContext(),
+              30.0f,
+              [future = foo.getFuture().share()]() {
+                return future.isReady();
+              });
         });
 
     LatentIt(

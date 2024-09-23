@@ -52,7 +52,10 @@ void waitForImpl(
     done.Execute();
   } else {
     pWorld->GetTimerManager().SetTimerForNextTick(
-        [done, pWorld, condition, timerHandle]() mutable {
+        [done,
+         pWorld,
+         condition = std::forward<T>(condition),
+         timerHandle]() mutable {
           waitForImpl<T>(done, pWorld, std::move(condition), timerHandle);
         });
   }
