@@ -147,6 +147,8 @@ void FSampleHeightMostDetailedSpec::Define() {
 
   Describe("Melbourne Photogrammetry", [this]() {
     BeforeEach([this]() {
+      CesiumTestHelpers::pushAllowTickInEditor();
+
       UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
       pTileset = pWorld->SpawnActor<ACesium3DTileset>();
       pTileset->SetIonAssetID(69380);
@@ -158,6 +160,8 @@ void FSampleHeightMostDetailedSpec::Define() {
 
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       pTileset->Destroy();
+
+      CesiumTestHelpers::popAllowTickInEditor();
     });
 
     LatentIt(
