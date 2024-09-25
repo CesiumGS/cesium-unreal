@@ -111,7 +111,7 @@ private:
 class FCesiumCreateNewTextureResource : public FCesiumTextureResourceBase {
 public:
   FCesiumCreateNewTextureResource(
-      CesiumGltf::ImageCesium& image,
+      CesiumGltf::ImageCesium&& image,
       TextureGroup textureGroup,
       uint32 width,
       uint32 height,

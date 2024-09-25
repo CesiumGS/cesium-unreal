@@ -71,11 +71,10 @@ public:
     Cesium3DTilesSelection::TileLoadResult TileLoadResult;
   };
 
-  static CesiumAsync::Future<TUniquePtr<CreateOffGameThreadResult>>
-  CreateOffGameThread(
+  static CesiumAsync::Future<CreateOffGameThreadResult> CreateOffGameThread(
       const CesiumAsync::AsyncSystem& AsyncSystem,
       const glm::dmat4x4& Transform,
-      const TUniquePtr<CreateGltfOptions::CreateModelOptions> Options,
+      CreateGltfOptions::CreateModelOptions&& Options,
       const CesiumGeospatial::Ellipsoid& Ellipsoid =
           CesiumGeospatial::Ellipsoid::WGS84);
 

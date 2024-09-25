@@ -285,7 +285,7 @@ FTextureRHIRef FCesiumUseExistingTextureResource::InitializeTextureRHI() {
 }
 
 FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
-    CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageCesium&& image,
     TextureGroup textureGroup,
     uint32 width,
     uint32 height,

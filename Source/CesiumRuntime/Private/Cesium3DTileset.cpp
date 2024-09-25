@@ -704,34 +704,31 @@ public:
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
-    TUniquePtr<CreateGltfOptions::CreateModelOptions> options =
-        MakeUnique<CreateGltfOptions::CreateModelOptions>(
-            std::move(tileLoadResult));
-    if (!options->pModel) {
+    CreateGltfOptions::CreateModelOptions options(std::move(tileLoadResult));
+    if (!options.pModel) {
       return asyncSystem.createResolvedFuture(
           Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-              std::move(options->tileLoadResult),
+              std::move(options.tileLoadResult),
               nullptr});
     }
 
-    options->alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
-    options->createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
+    options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
+    options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
 
-    options->ignoreKhrMaterialsUnlit =
+    options.ignoreKhrMaterialsUnlit =
         this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
     if (this->_pActor->_featuresMetadataDescription) {
-      options->pFeaturesMetadataDescription =
+      options.pFeaturesMetadataDescription =
           &(*this->_pActor->_featuresMetadataDescription);
     } else if (this->_pActor->_metadataDescription_DEPRECATED) {
-      options->pEncodedMetadataDescription_DEPRECATED =
+      options.pEncodedMetadataDescription_DEPRECATED =
           &(*this->_pActor->_metadataDescription_DEPRECATED);
     }
 
     const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
-    CesiumAsync::Future<
-        TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult>>
+    CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
         pHalfFuture = UCesiumGltfComponent::CreateOffGameThread(
             asyncSystem,
             transform,
@@ -740,12 +737,11 @@ public:
 
     return MoveTemp(pHalfFuture)
         .thenImmediately(
-            [](TUniquePtr<UCesiumGltfComponent::CreateOffGameThreadResult>&&
-                   pResult)
+            [](UCesiumGltfComponent::CreateOffGameThreadResult&& result)
                 -> Cesium3DTilesSelection::TileLoadResultAndRenderResources {
               return Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-                  std::move(pResult->TileLoadResult),
-                  pResult->HalfConstructed.Release()};
+                  std::move(result.TileLoadResult),
+                  result.HalfConstructed.Release()};
             });
   }
 
@@ -815,7 +811,8 @@ public:
       }
     }
 
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageAsset(image);
+    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageAsset(
+        std::move(image));
 
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         imageAsset,
@@ -1876,10 +1873,11 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     const UWorld* World = GetWorld();
     check(World);
 
-    const TSoftObjectPtr<ACesiumGeoreference> Georeference = GetGeoreference();
+    const TSoftObjectPtr<ACesiumGeoreference> Georeference =
+        ResolveGeoreference();
     check(Georeference);
 
-    for (auto& tile : result.tilesToRenderThisFrame) {
+    for (Cesium3DTilesSelection::Tile* tile : result.tilesToRenderThisFrame) {
 
       CesiumGeometry::OrientedBoundingBox obb =
           Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
@@ -1892,27 +1890,17 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 
       FString text = FString::Printf(
           TEXT("ID %s (%p)"),
-          Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
-              tile->getTileID())
-              .c_str(),
+          UTF8_TO_TCHAR(
+              Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                  tile->getTileID())
+                  .c_str()),
           tile);
 
       DrawDebugString(World, unrealCenter, text, nullptr, FColor::Red, 0, true);
     }
   }
 
-  if (this->LogAssetStats && this->_pTileset) {
-    const CesiumGltf::SingleAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
-        this->_pTileset->getSharedAssetDepot().getImageDepot();
-    UE_LOG(
-        LogCesium,
-        Display,
-        TEXT("Images depot: %d distinct assets, %d total usages"),
-        imageDepot->getDistinctCount(),
-        imageDepot->getUsageCount());
-  }
-
-  if (!this->LogSelectionStats) {
+  if (!this->LogSelectionStats && !this->LogAssetStats) {
     return;
   }
 
@@ -1943,24 +1931,44 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.tilesWaitingForOcclusionResults;
     this->_lastMaxDepthVisited = result.maxDepthVisited;
 
-    UE_LOG(
-        LogCesium,
-        Display,
-        TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
-        *this->GetName(),
-        (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
-            1000000,
-        result.tilesVisited,
-        result.culledTilesVisited,
-        result.tilesToRenderThisFrame.size(),
-        result.tilesCulled,
-        result.tilesOccluded,
-        result.tilesWaitingForOcclusionResults,
-        result.maxDepthVisited,
-        result.workerThreadTileLoadQueueLength,
-        result.mainThreadTileLoadQueueLength,
-        this->LoadProgress);
+    if (this->LogSelectionStats) {
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT(
+              "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
+          *this->GetName(),
+          (std::chrono::high_resolution_clock::now() - this->_startTime)
+                  .count() /
+              1000000,
+          result.tilesVisited,
+          result.culledTilesVisited,
+          result.tilesToRenderThisFrame.size(),
+          result.tilesCulled,
+          result.tilesOccluded,
+          result.tilesWaitingForOcclusionResults,
+          result.maxDepthVisited,
+          result.workerThreadTileLoadQueueLength,
+          result.mainThreadTileLoadQueueLength,
+          this->LoadProgress);
+    }
+
+    if (this->LogAssetStats && this->_pTileset) {
+      const CesiumGltf::SingleAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
+          this->_pTileset->getSharedAssetDepot().getImageDepot();
+      float averageAge;
+      size_t deletionCount;
+      imageDepot->getDeletionStats(averageAge, deletionCount);
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT(
+              "Images depot: %d distinct assets, %d total usages, %d assets pending deletion, %f average age"),
+          imageDepot->getDistinctCount(),
+          imageDepot->getUsageCount(),
+          deletionCount,
+          averageAge);
+    }
   }
 }
 
@@ -2134,6 +2142,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   this->UpdateLoadStatus();
+
+  if (this->_pTileset) {
+    this->_pTileset->getSharedAssetDepot().deletionTick();
+  }
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {

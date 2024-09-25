@@ -340,7 +340,7 @@ TUniquePtr<FCesiumTextureResourceBase> createTextureResourceFromImageCesium(
     }
 
     return MakeUnique<FCesiumCreateNewTextureResource>(
-        imageCesium,
+        std::move(imageCesium),
         group,
         imageCesium.width,
         imageCesium.height,
@@ -371,9 +371,6 @@ struct ExtensionUnrealTextureResource {
   // this just passes the image through.
   std::optional<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
       preprocessFuture = std::nullopt;
-
-  std::optional<CesiumAsync::SharedFuture<FCesiumTextureResourceBase*>>
-      resourceLoadingFuture = std::nullopt;
 
   static TUniquePtr<FCesiumTextureResourceBase> loadTextureResource(
       CesiumGltf::ImageCesium& imageCesium,
@@ -846,8 +843,8 @@ CesiumAsync::SharedFuture<void> createMipMapsForAllTextures(
 
   return asyncSystem.all(std::move(futures))
       .thenImmediately(
-          []([[maybe_unused]] std::vector<CesiumGltf::ImageCesium*>&& results)
-              -> void {})
+          []([[maybe_unused]] std::vector<
+              CesiumGltf::ImageCesium*>&& /*results*/) -> void {})
       .share();
 }
 

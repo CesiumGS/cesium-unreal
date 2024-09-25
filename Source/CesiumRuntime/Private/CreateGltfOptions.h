@@ -12,9 +12,6 @@
 // TODO: internal documentation
 namespace CreateGltfOptions {
 struct CreateModelOptions {
-  /**
-   * A pointer to the glTF model.
-   */
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
       nullptr;
   CesiumGltf::Model* pModel = nullptr;
@@ -31,6 +28,17 @@ struct CreateModelOptions {
 public:
   CreateModelOptions(Cesium3DTilesSelection::TileLoadResult&& tileLoadResult_)
       : tileLoadResult(std::move(tileLoadResult_)) {
+    pModel = std::get_if<CesiumGltf::Model>(&this->tileLoadResult.contentKind);
+  }
+
+  CreateModelOptions(CreateModelOptions&& other)
+      : pFeaturesMetadataDescription(other.pFeaturesMetadataDescription),
+        pEncodedMetadataDescription_DEPRECATED(
+            other.pEncodedMetadataDescription_DEPRECATED),
+        alwaysIncludeTangents(other.alwaysIncludeTangents),
+        createPhysicsMeshes(other.createPhysicsMeshes),
+        ignoreKhrMaterialsUnlit(other.ignoreKhrMaterialsUnlit),
+        tileLoadResult(std::move(other.tileLoadResult)) {
     pModel = std::get_if<CesiumGltf::Model>(&this->tileLoadResult.contentKind);
   }
 };
