@@ -27,6 +27,10 @@ struct FCesiumModelMetadataDescription;
 struct FCesiumPrimitiveFeaturesDescription;
 struct FCesiumPrimitiveMetadataDescription;
 
+struct FCesiumMetadataPropertyDetails;
+class UMaterialInstanceDynamic;
+enum EMaterialParameterAssociation : int;
+
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
  * metadata from EXT_structural_metadata. "Encoding" refers broadly to the
@@ -499,6 +503,53 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 
 #pragma endregion
 
+#pragma region Utility
+
+struct EncodedPixelFormat {
+  EPixelFormat format;
+  int32_t bytesPerChannel;
+  int32_t channels;
+};
+
+// TODO: consider picking better pixel formats when they are available for the
+// current platform.
+EncodedPixelFormat getPixelFormat(
+    ECesiumEncodedMetadataType Type,
+    ECesiumEncodedMetadataComponentType ComponentType);
+
 FString createHlslSafeName(const FString& rawName);
+
+bool isSupportedPropertyTextureProperty(
+    const FCesiumMetadataPropertyDetails& PropertyDetails);
+
+void SetPropertyParameterValue(
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index,
+    const FString& name,
+    ECesiumEncodedMetadataType type,
+    const FCesiumMetadataValue& value,
+    float defaultValue);
+
+void SetFeatureIdTextureParameterValues(
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index,
+    const FString& name,
+    const EncodedFeatureIdTexture& encodedFeatureIdTexture);
+
+void SetPropertyTableParameterValues(
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index,
+    const EncodedPropertyTable& encodedPropertyTable);
+
+void SetPropertyTextureParameterValues(
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index,
+    const EncodedPropertyTexture& encodedPropertyTexture);
+
+#pragma endregion
 
 } // namespace CesiumEncodedFeaturesMetadata
