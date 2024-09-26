@@ -9,11 +9,12 @@ class ACesium3DTileset;
 
 /**
  * The delegate used to asynchronously return sampled heights.
- * @param Result The result of the height sampling. This array has an element
- * for each input longitude/latitude/height position. The element has a
- * HeightSampled property indicating whether the height as successfully sampled
- * at that position, and a LongitudeLatitudeHeight property with the complete
- * position including sampled height.
+ * @param Result The result of the height sampling. This array contains the
+ * outputs for each input cartographic position. Each result has a HeightSampled
+ * property indicating whether the height was successfully sampled at that
+ * position, and a LongitudeLatitudeHeight property with the complete position,
+ * including the sampled height. If the sample was unsuccessful, the original
+ * position is returned.
  * @param Warnings Provides information about problems, if any, that were
  * encountered while sampling heights.
  */
@@ -31,14 +32,14 @@ class CESIUMRUNTIME_API UCesiumSampleHeightMostDetailedAsyncAction
 
 public:
   /**
-   * Asynchronously samples the height of the tileset at a list of positions,
-   * each expressed as a Longitude (X) and Latitude (Y) in degrees. The Height
-   * (Z) provided on input is ignored unless the sampling fails at that
-   * position, in which case it is passed through to the output.
+   * Asynchronously samples the height of the tileset at a list of cartographic
+   * positions, each expressed as a Longitude (X) and Latitude (Y) in degrees.
+   * The Height (Z) provided on input is ignored unless the sampling fails at
+   * that position, in which case it is passed through to the output.
    * @param Tileset The tileset from which to query heights.
-   * @param LongitudeLatitudeHeightArray The array of positions at which to
-   * query heights, with Longitude in the X component and Latitude in the Y
-   * component.
+   * @param LongitudeLatitudeHeightArray The array of cartographic positions at
+   * which to query heights, with Longitude in the X component and Latitude in
+   * the Y component.
    */
   UFUNCTION(
       BlueprintCallable,

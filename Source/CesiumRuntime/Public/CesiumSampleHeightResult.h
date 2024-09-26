@@ -5,7 +5,8 @@
 #include "CesiumSampleHeightResult.generated.h"
 
 /**
- * The result of sampling a height at a position.
+ * The result of sampling the height on a tileset at the given cartographic
+ * position.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
