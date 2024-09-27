@@ -164,11 +164,11 @@ void ACesium3DTileset::SampleHeightMostDetailed(
         if (!IsValid(this))
           return;
 
-        check(result.positions.size() == result.heightSampled.size());
+        check(result.positions.size() == result.sampleSuccess.size());
 
         // This should do nothing, but will prevent undefined behavior if
         // the array sizes are unexpectedly different.
-        result.heightSampled.resize(result.positions.size(), false);
+        result.sampleSuccess.resize(result.positions.size(), false);
 
         TArray<FCesiumSampleHeightResult> sampleHeightResults;
         sampleHeightResults.Reserve(result.positions.size());
@@ -181,7 +181,7 @@ void ACesium3DTileset::SampleHeightMostDetailed(
               CesiumUtility::Math::radiansToDegrees(position.longitude),
               CesiumUtility::Math::radiansToDegrees(position.latitude),
               position.height);
-          unrealResult.HeightSampled = result.heightSampled[i];
+          unrealResult.SampleSuccess = result.sampleSuccess[i];
 
           sampleHeightResults.Emplace(std::move(unrealResult));
         }

@@ -14,8 +14,8 @@ struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
 
   /**
    * The Longitude (X) and Latitude (Y) are the same values provided on input.
-   * The Height (Z) is the height sampled from the tileset if the HeightSampled
-   * property is true, or the original height provided on input if HeightSampled
+   * The Height (Z) is the height sampled from the tileset if the SampleSuccess
+   * property is true, or the original height provided on input if SampleSuccess
    * is false.
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
@@ -28,5 +28,5 @@ struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
    * will have more information about the problem.
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
-  bool HeightSampled;
+  bool SampleSuccess;
 };

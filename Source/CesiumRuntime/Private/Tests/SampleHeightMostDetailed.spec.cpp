@@ -72,7 +72,7 @@ void FSampleHeightMostDetailedSpec::Define() {
                       const TArray<FString>& warnings) {
                     TestEqual("Number of results", result.Num(), 1);
                     TestEqual("Number of warnings", warnings.Num(), 0);
-                    TestTrue("HeightSampled", result[0].HeightSampled);
+                    TestTrue("SampleSuccess", result[0].SampleSuccess);
                     TestEqual(
                         "Longitude",
                         result[0].LongitudeLatitudeHeight.X,
@@ -106,7 +106,7 @@ void FSampleHeightMostDetailedSpec::Define() {
                       const TArray<FString>& warnings) {
                     TestEqual("Number of results", result.Num(), 2);
                     TestEqual("Number of warnings", warnings.Num(), 0);
-                    TestTrue("HeightSampled", result[0].HeightSampled);
+                    TestTrue("SampleSuccess", result[0].SampleSuccess);
                     TestEqual(
                         "Longitude",
                         result[0].LongitudeLatitudeHeight.X,
@@ -123,7 +123,7 @@ void FSampleHeightMostDetailedSpec::Define() {
                             result[0].LongitudeLatitudeHeight.Z,
                             1.0,
                             1.0));
-                    TestTrue("HeightSampled", result[1].HeightSampled);
+                    TestTrue("SampleSuccess", result[1].SampleSuccess);
                     TestEqual(
                         "Longitude",
                         result[1].LongitudeLatitudeHeight.X,
@@ -178,7 +178,7 @@ void FSampleHeightMostDetailedSpec::Define() {
                       const TArray<FString>& warnings) {
                     TestEqual("Number of results", result.Num(), 1);
                     TestEqual("Number of warnings", warnings.Num(), 0);
-                    TestTrue("HeightSampled", !result[0].HeightSampled);
+                    TestTrue("SampleSuccess", !result[0].SampleSuccess);
                     TestEqual(
                         "Longitude",
                         result[0].LongitudeLatitudeHeight.X,
@@ -215,7 +215,7 @@ void FSampleHeightMostDetailedSpec::Define() {
                   const TArray<FString>& warnings) {
                 TestEqual("Number of results", result.Num(), 1);
                 TestEqual("Number of warnings", warnings.Num(), 0);
-                TestTrue("HeightSampled", result[0].HeightSampled);
+                TestTrue("SampleSuccess", result[0].SampleSuccess);
                 TestEqual(
                     "Longitude",
                     result[0].LongitudeLatitudeHeight.X,

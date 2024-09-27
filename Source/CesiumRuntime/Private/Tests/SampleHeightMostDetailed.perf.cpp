@@ -218,7 +218,7 @@ bool RunSingleQueryTest(
       const FVector& queryLongitudeLatitudeHeight =
           testResults.heightResults[resultIndex].LongitudeLatitudeHeight;
 
-      if (!testResults.heightResults[resultIndex].HeightSampled) {
+      if (!testResults.heightResults[resultIndex].SampleSuccess) {
         UE_LOG(
             LogCesium,
             Error,
@@ -401,7 +401,7 @@ bool RunMultipleQueryTest(
 
                 const FVector& newCoordinate =
                     results[0].LongitudeLatitudeHeight;
-                if (!results[0].HeightSampled) {
+                if (!results[0].SampleSuccess) {
                   UE_LOG(
                       LogCesium,
                       Error,
