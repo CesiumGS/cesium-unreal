@@ -153,8 +153,8 @@ void ACesium3DTileset::SampleHeightMostDetailed(
         } else {
           return getAsyncSystem().createResolvedFuture(
               Cesium3DTilesSelection::SampleHeightResult{
-                  {},
-                  {},
+                  std::move(positions),
+                  std::vector<bool>(positions.size(), false),
                   {"Could not sample heights from tileset because it has not been created."}});
         }
       })
