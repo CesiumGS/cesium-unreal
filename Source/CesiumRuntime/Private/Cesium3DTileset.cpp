@@ -128,12 +128,9 @@ void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
 void ACesium3DTileset::SampleHeightMostDetailed(
     const TArray<FVector>& LongitudeLatitudeHeightArray,
     FCesiumSampleHeightMostDetailedCallback OnHeightsSampled) {
-  CesiumAsync::Future<Cesium3DTilesSelection::Tileset*> futureNativeTileset =
-      this->GetTileset()
-          ? getAsyncSystem().createResolvedFuture(this->GetTileset())
-          : getAsyncSystem().runInMainThread([this]() {
-              return IsValid(this) ? this->GetTileset() : nullptr;
-            });
+  if (this->_pTileset == nullptr) {
+    this->LoadTileset();
+  }
 
   std::vector<CesiumGeospatial::Cartographic> positions;
   positions.reserve(LongitudeLatitudeHeightArray.Num());
@@ -145,22 +142,19 @@ void ACesium3DTileset::SampleHeightMostDetailed(
         position.Z));
   }
 
-  std::move(futureNativeTileset)
-      .thenImmediately([positions = std::move(positions)](
-                           Cesium3DTilesSelection::Tileset* pTileset) {
-        if (pTileset) {
-          return pTileset->sampleHeightMostDetailed(positions);
-        } else {
-          return getAsyncSystem().createResolvedFuture(
-              Cesium3DTilesSelection::SampleHeightResult{
-                  std::move(positions),
-                  std::vector<bool>(positions.size(), false),
-                  {"Could not sample heights from tileset because it has not been created."}});
-        }
-      })
-      .thenInMainThread([this, OnHeightsSampled = std::move(OnHeightsSampled)](
-                            Cesium3DTilesSelection::SampleHeightResult&&
-                                result) {
+  CesiumAsync::Future<Cesium3DTilesSelection::SampleHeightResult> future =
+      this->_pTileset
+          ? this->_pTileset->sampleHeightMostDetailed(positions)
+          : getAsyncSystem().createResolvedFuture(
+                Cesium3DTilesSelection::SampleHeightResult{
+                    std::move(positions),
+                    std::vector<bool>(positions.size(), false),
+                    {"Could not sample heights from tileset because it has not "
+                     "been created."}});
+
+  std::move(future).thenImmediately(
+      [this, OnHeightsSampled = std::move(OnHeightsSampled)](
+          Cesium3DTilesSelection::SampleHeightResult&& result) {
         if (!IsValid(this))
           return;
 

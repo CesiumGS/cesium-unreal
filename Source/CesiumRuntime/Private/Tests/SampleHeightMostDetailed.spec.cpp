@@ -238,4 +238,64 @@ void FSampleHeightMostDetailedSpec::Define() {
           pAsync->Activate();
         });
   });
+
+  Describe("Two tilesets in rapid succession", [this]() {
+    BeforeEach([this]() { CesiumTestHelpers::pushAllowTickInEditor(); });
+
+    AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+      CesiumTestHelpers::popAllowTickInEditor();
+    });
+
+    LatentIt(
+        "",
+        EAsyncExecution::TaskGraphMainThread,
+        [this](const FDoneDelegate& done) {
+          UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
+
+          ACesium3DTileset* pTileset1 = pWorld->SpawnActor<ACesium3DTileset>();
+          pTileset1->SetIonAssetID(1);
+#if WITH_EDITOR
+          pTileset1->SetIonAccessToken(
+              Cesium::SceneGenerationContext::testIonToken);
+#endif
+
+          pTileset1->SampleHeightMostDetailed(
+              {FVector(-105.1, 40.1, 1.0)},
+              FCesiumSampleHeightMostDetailedCallback::CreateLambda(
+                  [this, pWorld, done](
+                      ACesium3DTileset* pTileset,
+                      const TArray<FCesiumSampleHeightResult>& result,
+                      const TArray<FString>& warnings) {
+                    TestEqual("Number of results", result.Num(), 1);
+                    TestEqual("Number of warnings", warnings.Num(), 0);
+                    TestTrue("SampleSuccess", result[0].SampleSuccess);
+
+                    ACesium3DTileset* pTileset2 =
+                        pWorld->SpawnActor<ACesium3DTileset>();
+                    pTileset2->SetIonAssetID(1);
+#if WITH_EDITOR
+                    pTileset2->SetIonAccessToken(
+                        Cesium::SceneGenerationContext::testIonToken);
+#endif
+                    pTileset2->SampleHeightMostDetailed(
+                        {FVector(105.1, 40.1, 1.0)},
+                        FCesiumSampleHeightMostDetailedCallback::CreateLambda(
+                            [this, pWorld, done](
+                                ACesium3DTileset* pTileset,
+                                const TArray<FCesiumSampleHeightResult>& result,
+                                const TArray<FString>& warnings) {
+                              TestEqual("Number of results", result.Num(), 1);
+                              TestEqual(
+                                  "Number of warnings",
+                                  warnings.Num(),
+                                  0);
+                              TestTrue(
+                                  "SampleSuccess",
+                                  result[0].SampleSuccess);
+
+                              done.ExecuteIfBound();
+                            }));
+                  }));
+        });
+  });
 }
