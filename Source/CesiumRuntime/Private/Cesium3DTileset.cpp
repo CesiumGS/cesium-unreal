@@ -125,6 +125,72 @@ void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
   }
 }
 
+void ACesium3DTileset::SampleHeightMostDetailed(
+    const TArray<FVector>& LongitudeLatitudeHeightArray,
+    FCesiumSampleHeightMostDetailedCallback OnHeightsSampled) {
+  if (this->_pTileset == nullptr) {
+    this->LoadTileset();
+  }
+
+  std::vector<CesiumGeospatial::Cartographic> positions;
+  positions.reserve(LongitudeLatitudeHeightArray.Num());
+
+  for (const FVector& position : LongitudeLatitudeHeightArray) {
+    positions.emplace_back(CesiumGeospatial::Cartographic::fromDegrees(
+        position.X,
+        position.Y,
+        position.Z));
+  }
+
+  CesiumAsync::Future<Cesium3DTilesSelection::SampleHeightResult> future =
+      this->_pTileset
+          ? this->_pTileset->sampleHeightMostDetailed(positions)
+          : getAsyncSystem().createResolvedFuture(
+                Cesium3DTilesSelection::SampleHeightResult{
+                    std::move(positions),
+                    std::vector<bool>(positions.size(), false),
+                    {"Could not sample heights from tileset because it has not "
+                     "been created."}});
+
+  std::move(future).thenImmediately(
+      [this, OnHeightsSampled = std::move(OnHeightsSampled)](
+          Cesium3DTilesSelection::SampleHeightResult&& result) {
+        if (!IsValid(this))
+          return;
+
+        check(result.positions.size() == result.sampleSuccess.size());
+
+        // This should do nothing, but will prevent undefined behavior if
+        // the array sizes are unexpectedly different.
+        result.sampleSuccess.resize(result.positions.size(), false);
+
+        TArray<FCesiumSampleHeightResult> sampleHeightResults;
+        sampleHeightResults.Reserve(result.positions.size());
+
+        for (size_t i = 0; i < result.positions.size(); ++i) {
+          const CesiumGeospatial::Cartographic& position = result.positions[i];
+
+          FCesiumSampleHeightResult unrealResult;
+          unrealResult.LongitudeLatitudeHeight = FVector(
+              CesiumUtility::Math::radiansToDegrees(position.longitude),
+              CesiumUtility::Math::radiansToDegrees(position.latitude),
+              position.height);
+          unrealResult.SampleSuccess = result.sampleSuccess[i];
+
+          sampleHeightResults.Emplace(std::move(unrealResult));
+        }
+
+        TArray<FString> warnings;
+        warnings.Reserve(result.warnings.size());
+
+        for (const std::string& warning : result.warnings) {
+          warnings.Emplace(UTF8_TO_TCHAR(warning.c_str()));
+        }
+
+        OnHeightsSampled.ExecuteIfBound(this, sampleHeightResults, warnings);
+      });
+}
+
 void ACesium3DTileset::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
   this->Georeference = NewGeoreference;

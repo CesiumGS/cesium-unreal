@@ -14,11 +14,14 @@ namespace Cesium {
 struct TestPass {
   typedef swl::variant<int, float> TestingParameter;
   typedef std::function<void(SceneGenerationContext&, TestingParameter)>
-      PassCallback;
+      SetupCallback;
+  typedef std::function<
+      bool(SceneGenerationContext&, SceneGenerationContext&, TestingParameter)>
+      VerifyCallback;
 
   FString name;
-  PassCallback setupStep;
-  PassCallback verifyStep;
+  SetupCallback setupStep;
+  VerifyCallback verifyStep;
   TestingParameter optionalParameter;
 
   bool testInProgress = false;
