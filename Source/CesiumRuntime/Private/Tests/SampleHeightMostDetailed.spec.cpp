@@ -298,4 +298,56 @@ void FSampleHeightMostDetailedSpec::Define() {
                   }));
         });
   });
+
+  Describe("Broken tileset", [this]() {
+    BeforeEach([this]() { CesiumTestHelpers::pushAllowTickInEditor(); });
+
+    AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+      CesiumTestHelpers::popAllowTickInEditor();
+    });
+
+    LatentIt(
+        "",
+        EAsyncExecution::TaskGraphMainThread,
+        [this](const FDoneDelegate& done) {
+          this->AddExpectedError(TEXT("error occurred"));
+
+          UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
+
+          ACesium3DTileset* pTileset = pWorld->SpawnActor<ACesium3DTileset>();
+          pTileset->SetTilesetSource(ETilesetSource::FromUrl);
+          pTileset->SetUrl("http://localhost/notgonnawork");
+
+          pTileset->SampleHeightMostDetailed(
+              {FVector(-105.1, 40.1, 1.0)},
+              FCesiumSampleHeightMostDetailedCallback::CreateLambda(
+                  [this, done](
+                      ACesium3DTileset* pTileset,
+                      const TArray<FCesiumSampleHeightResult>& result,
+                      const TArray<FString>& warnings) {
+                    TestEqual("Number of results", result.Num(), 1);
+                    TestEqual("Number of warnings", warnings.Num(), 1);
+                    TestFalse("SampleSuccess", result[0].SampleSuccess);
+                    TestEqual(
+                        "Longitude",
+                        result[0].LongitudeLatitudeHeight.X,
+                        -105.1,
+                        1e-12);
+                    TestEqual(
+                        "Latitude",
+                        result[0].LongitudeLatitudeHeight.Y,
+                        40.1,
+                        1e-12);
+                    TestEqual(
+                        "Height",
+                        result[0].LongitudeLatitudeHeight.Z,
+                        1.0,
+                        1e-12);
+                    TestTrue(
+                        "Error message",
+                        warnings[0].Contains(TEXT("failed to load")));
+                    done.ExecuteIfBound();
+                  }));
+        });
+  });
 }
