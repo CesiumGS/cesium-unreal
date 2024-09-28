@@ -310,7 +310,10 @@ void FSampleHeightMostDetailedSpec::Define() {
         "",
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          this->AddExpectedError(TEXT("error occurred"));
+          // Two slightly different error messages will occur, depending on
+          // whether there's a web server running on localhost.
+          this->AddExpectedError(
+              TEXT("(Errors when loading)|(error occurred)"));
 
           UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
 
