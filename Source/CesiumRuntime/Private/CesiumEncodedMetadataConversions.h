@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "HAL/Platform.h"
 #include <gsl/span>
 
 enum class ECesiumMetadataType : uint8;

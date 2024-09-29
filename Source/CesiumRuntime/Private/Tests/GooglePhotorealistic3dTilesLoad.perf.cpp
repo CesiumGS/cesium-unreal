@@ -15,48 +15,48 @@
 using namespace Cesium;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesPompidou,
-    "Cesium.Performance.GoogleTiles.LocalePompidou",
+    FLoadTilesetGooglePompidou,
+    "Cesium.Performance.Tileset Loading.Google P3DT Pompidou",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesChrysler,
-    "Cesium.Performance.GoogleTiles.LocaleChrysler",
+    FLoadTilesetGoogleChrysler,
+    "Cesium.Performance.Tileset Loading.Google P3DT Chrysler",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesChryslerWarm,
-    "Cesium.Performance.GoogleTiles.LocaleChrysler (Warm)",
+    FLoadTilesetGoogleChryslerWarm,
+    "Cesium.Performance.Tileset Loading.Google P3DT Chrysler, warm cache",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesGuggenheim,
-    "Cesium.Performance.GoogleTiles.LocaleGuggenheim",
+    FLoadTilesetGoogleGuggenheim,
+    "Cesium.Performance.Tileset Loading.Google P3DT Guggenheim",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesDeathValley,
-    "Cesium.Performance.GoogleTiles.LocaleDeathValley",
+    FLoadTilesetGoogleDeathValley,
+    "Cesium.Performance.Tileset Loading.Google P3DT DeathValley",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesDeathValleyWarm,
-    "Cesium.Performance.GoogleTiles.LocaleDeathValley (Warm)",
+    FLoadTilesetGoogleDeathValleyWarm,
+    "Cesium.Performance.Tileset Loading.Google P3DT DeathValley, warm cache",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesTokyo,
-    "Cesium.Performance.GoogleTiles.LocaleTokyo",
+    FLoadTilesetGoogleTokyo,
+    "Cesium.Performance.Tileset Loading.Google P3DT Tokyo",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesGoogleplex,
-    "Cesium.Performance.GoogleTiles.LocaleGoogleplex",
+    FLoadTilesetGoogleGoogleplex,
+    "Cesium.Performance.Tileset Loading.Google P3DT Googleplex",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FGoogleTilesMaxTileLoads,
-    "Cesium.Performance.GoogleTiles.VaryMaxTileLoads",
+    FLoadTilesetGoogleChryslerVaryMaxTileLoads,
+    "Cesium.Performance.Tileset Loading.Google P3DT Chrysler, vary max tile loads",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 #define TEST_SCREEN_WIDTH 1280
@@ -183,7 +183,7 @@ void setupForGoogleplex(SceneGenerationContext& context) {
   context.tilesets.push_back(tileset);
 }
 
-bool FGoogleTilesPompidou::RunTest(const FString& Parameters) {
+bool FLoadTilesetGooglePompidou::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", googleSetupClearCache, nullptr});
 
@@ -195,7 +195,7 @@ bool FGoogleTilesPompidou::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleChrysler::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", googleSetupClearCache, nullptr});
 
@@ -207,7 +207,7 @@ bool FGoogleTilesChrysler::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesChryslerWarm::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleChryslerWarm::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(
       TestPass{"Warm Cache", googleSetupRefreshTilesets, nullptr});
@@ -220,7 +220,7 @@ bool FGoogleTilesChryslerWarm::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleGuggenheim::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", googleSetupClearCache, nullptr});
 
@@ -232,7 +232,7 @@ bool FGoogleTilesGuggenheim::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleDeathValley::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", googleSetupClearCache, nullptr});
 
@@ -244,7 +244,7 @@ bool FGoogleTilesDeathValley::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesDeathValleyWarm::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleDeathValleyWarm::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(
       TestPass{"Warm Cache", googleSetupRefreshTilesets, nullptr});
@@ -257,7 +257,7 @@ bool FGoogleTilesDeathValleyWarm::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleTokyo::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", googleSetupClearCache, nullptr});
 
@@ -269,7 +269,7 @@ bool FGoogleTilesTokyo::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleGoogleplex::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
   testPasses.push_back(TestPass{"Cold Cache", googleSetupClearCache, nullptr});
 
@@ -281,7 +281,8 @@ bool FGoogleTilesGoogleplex::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-bool FGoogleTilesMaxTileLoads::RunTest(const FString& Parameters) {
+bool FLoadTilesetGoogleChryslerVaryMaxTileLoads::RunTest(
+    const FString& Parameters) {
   auto setupPass = [this](
                        SceneGenerationContext& context,
                        TestPass::TestingParameter parameter) {
