@@ -948,7 +948,7 @@ public:
     const Cesium3DTilesSelection::TileContent& content = tile.getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
-    if (pRenderContent) {
+    if (pMainThreadRendererResources != nullptr && pRenderContent != nullptr) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(
               pRenderContent->getRenderResources());
@@ -978,7 +978,7 @@ public:
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(
               pRenderContent->getRenderResources());
-      if (pGltfContent) {
+      if (pMainThreadRendererResources != nullptr && pGltfContent != nullptr) {
         pGltfContent->DetachRasterTile(
             tile,
             rasterTile,

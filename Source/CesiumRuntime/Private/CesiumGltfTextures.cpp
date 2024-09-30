@@ -4,6 +4,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
 #include "CesiumTextureUtility.h"
+#include "ExtensionImageCesiumUnreal.h"
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/AttributeSemantics.h>
 #include <CesiumGltf/Model.h>
@@ -36,7 +37,7 @@ SharedFuture<void> createTextureInLoadThread(
 
 } // namespace
 
-/*static*/ CesiumAsync::Future<void> CesiumGltfTextures::createInLoadThread(
+/*static*/ CesiumAsync::Future<void> CesiumGltfTextures::createInWorkerThread(
     const CesiumAsync::AsyncSystem& asyncSystem,
     CesiumGltf::Model& model) {
   // This array is parallel to model.images and indicates whether each image
@@ -183,39 +184,6 @@ bool doesTextureUseMipmaps(const Model& gltf, const Texture& texture) {
   }
 }
 
-struct ExtensionUnrealTextureResource {
-  static inline constexpr const char* TypeName =
-      "ExtensionUnrealTextureResource";
-  static inline constexpr const char* ExtensionName =
-      "PRIVATE_unreal_texture_resource";
-
-  ExtensionUnrealTextureResource() {}
-
-  TSharedPtr<FCesiumTextureResourceBase> pTextureResource = nullptr;
-  std::optional<CesiumAsync::SharedFuture<void>> createFuture = std::nullopt;
-};
-
-std::mutex textureResourceMutex;
-
-// Returns a Future that will resolve when the image is loaded. It _may_ also
-// return a Promise, in which case the calling thread is responsible for doing
-// the loading and should resolve the Promise when it's done.
-std::pair<SharedFuture<void>, std::optional<Promise<void>>>
-getOrCreateImageFuture(const AsyncSystem& asyncSystem, Image& image) {
-  std::scoped_lock lock(textureResourceMutex);
-
-  ExtensionUnrealTextureResource& extension =
-      image.cesium->addExtension<ExtensionUnrealTextureResource>();
-  if (extension.createFuture) {
-    // Another thread is already working on this image.
-    return {*extension.createFuture, std::nullopt};
-  } else {
-    // This thread will work on this image.
-    Promise<void> promise = asyncSystem.createPromise<void>();
-    return {promise.getFuture().share(), promise};
-  }
-}
-
 SharedFuture<void> createTextureInLoadThread(
     const AsyncSystem& asyncSystem,
     Model& gltf,
@@ -233,35 +201,13 @@ SharedFuture<void> createTextureInLoadThread(
   check(pTexture->source >= 0 && pTexture->source < imageNeedsMipmaps.size());
   bool needsMips = imageNeedsMipmaps[pTexture->source];
 
-  auto [future, maybePromise] = getOrCreateImageFuture(asyncSystem, *pImage);
-  if (!maybePromise) {
-    // Another thread is already loading this image.
-    return future;
-  }
+  const ExtensionImageCesiumUnreal& extension = ExtensionImageCesiumUnreal::GetOrCreate(
+      asyncSystem,
+      *pImage->cesium,
+      needsMips,
+      std::nullopt);
 
-  // Proceed to load the image in this thread.
-  ImageCesium& cesium = *pImage->cesium;
-
-  if (needsMips && !cesium.pixelData.empty()) {
-    std::optional<std::string> errorMessage =
-        CesiumGltfReader::GltfReader::generateMipMaps(cesium);
-    if (errorMessage) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("%s"),
-          UTF8_TO_TCHAR(errorMessage->c_str()));
-    }
-  }
-
-  CesiumTextureUtility::loadTextureFromModelAnyThreadPart(
-      gltf,
-      *pTexture,
-      sRGB);
-
-  maybePromise->resolve();
-
-  return future;
+  return extension.getFuture();
 }
 
 } // namespace

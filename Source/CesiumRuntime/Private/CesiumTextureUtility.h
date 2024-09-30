@@ -47,18 +47,13 @@ struct ReferenceCountedUnrealTexture
   void setUnrealTexture(const TObjectPtr<UTexture2D>& p);
 
   // The renderer / RHI FTextureResource holding the pixel data.
-  const TSharedPtr<FCesiumTextureResourceBase>& getTextureResource() const;
-  TSharedPtr<FCesiumTextureResourceBase>& getTextureResource();
-  void setTextureResource(TSharedPtr<FCesiumTextureResourceBase>&& p);
-
-  /// The SharedAsset<ImageCesium> that this texture was created from.
-  CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> getSharedImage() const;
-  void setSharedImage(CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image);
+  const FCesiumTextureResourceUniquePtr& getTextureResource() const;
+  FCesiumTextureResourceUniquePtr& getTextureResource();
+  void setTextureResource(FCesiumTextureResourceUniquePtr&& p);
 
 private:
   TObjectPtr<UTexture2D> _pUnrealTexture;
-  TSharedPtr<FCesiumTextureResourceBase> _pTextureResource;
-  CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> _pImageCesium;
+  FCesiumTextureResourceUniquePtr _pTextureResource;
 };
 
 /**
@@ -191,7 +186,7 @@ loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
  * intended to be later used with `FCesiumUseExistingTextureResource`, which
  * will supply sampler, texture group, and other settings.
  */
-TSharedPtr<FCesiumTextureResourceBase> createTextureResource(
+TSharedPtr<FCesiumTextureResource> createTextureResource(
     CesiumGltf::ImageCesium& imageCesium,
     bool sRGB,
     std::optional<EPixelFormat> overridePixelFormat);
@@ -216,8 +211,8 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
  */
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
 
-CesiumAsync::SharedFuture<void> createMipMapsForAllTextures(
-    const CesiumAsync::AsyncSystem& asyncSystem,
-    CesiumGltf::Model& model);
+std::optional<EPixelFormat> getPixelFormatForImageCesium(
+    const CesiumGltf::ImageCesium& imageCesium,
+    const std::optional<EPixelFormat> overridePixelFormat);
 
 } // namespace CesiumTextureUtility

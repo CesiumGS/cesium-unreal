@@ -18,7 +18,7 @@ public:
    * Creates all of the textures that are required by the given glTF, and adds
    * `ExtensionUnrealTexture` to each.
    */
-  static CesiumAsync::Future<void> createInLoadThread(
+  static CesiumAsync::Future<void> createInWorkerThread(
       const CesiumAsync::AsyncSystem& asyncSystem,
       CesiumGltf::Model& model);
 };

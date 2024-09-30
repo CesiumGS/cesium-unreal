@@ -8,6 +8,7 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfTextures.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
@@ -400,22 +401,22 @@ struct ColorVisitor {
 template <class T>
 static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     CesiumGltf::Model& model,
-    const std::optional<T>& gltfTexture,
+    const std::optional<T>& gltfTextureInfo,
     bool sRGB) {
-  if (!gltfTexture || gltfTexture.value().index < 0 ||
-      gltfTexture.value().index >= model.textures.size()) {
-    if (gltfTexture && gltfTexture.value().index >= 0) {
+  if (!gltfTextureInfo || gltfTextureInfo.value().index < 0 ||
+      gltfTextureInfo.value().index >= model.textures.size()) {
+    if (gltfTextureInfo && gltfTextureInfo.value().index >= 0) {
       UE_LOG(
           LogCesium,
           Warning,
           TEXT("Texture index must be less than %d, but is %d"),
           model.textures.size(),
-          gltfTexture.value().index);
+          gltfTextureInfo.value().index);
     }
     return nullptr;
   }
 
-  int32_t textureIndex = gltfTexture.value().index;
+  int32_t textureIndex = gltfTextureInfo.value().index;
   CesiumGltf::Texture& texture = model.textures[textureIndex];
   return loadTextureFromModelAnyThreadPart(model, texture, sRGB);
 }
@@ -1061,7 +1062,7 @@ std::string constrainLength(const std::string& s, const size_t maxLength) {
 }
 
 /**
- * @brief Create an FName from the given strings.
+ * @brief CreateNew an FName from the given strings.
  *
  * This will combine the prefix and the suffix and create an FName.
  * If the string would be longer than the given length, then
@@ -2238,7 +2239,7 @@ loadModelAnyThreadPart(
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
-  return createMipMapsForAllTextures(asyncSystem, *options.pModel)
+  return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]()
               -> UCesiumGltfComponent::CreateOffGameThreadResult {
