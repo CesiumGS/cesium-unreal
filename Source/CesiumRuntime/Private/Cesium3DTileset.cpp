@@ -142,8 +142,6 @@ void ACesium3DTileset::SampleHeightMostDetailed(
         position.Z));
   }
 
-  size_t count = positions.size();
-
   auto sampleHeights = [this, &positions]() mutable {
     if (this->_pTileset) {
       return this->_pTileset->sampleHeightMostDetailed(positions)
