@@ -498,7 +498,7 @@ loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
       pTextureResource->SetTextureReference(
           pTexture->TextureReference.TextureReferenceRHI);
 #if ENGINE_VERSION_5_3_OR_HIGHER
-      pCesiumTextureResource->InitResource(
+      pTextureResource->InitResource(
           FRHICommandListImmediate::Get()); // Init Resource now requires a
                                             // command list.
 #else
