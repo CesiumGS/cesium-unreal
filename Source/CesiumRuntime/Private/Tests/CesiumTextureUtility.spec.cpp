@@ -2,8 +2,10 @@
 
 #include "CesiumTextureUtility.h"
 #include "CesiumAsync/AsyncSystem.h"
+#include "ExtensionImageCesiumUnreal.h"
 #include "Misc/AutomationTest.h"
 #include "RenderingThread.h"
+#include <CesiumGltfReader/GltfReader.h>
 #include <UnrealTaskProcessor.h>
 #include <memory>
 
@@ -18,12 +20,14 @@ BEGIN_DEFINE_SPEC(
         EAutomationTestFlags::ProductFilter | EAutomationTestFlags::NonNullRHI)
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
+std::vector<uint8_t> expectedMipPixelsIfGenerated;
 SharedAsset<ImageCesium> imageCesium;
 
 void RunTests();
 
 void CheckPixels(
-    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture);
+    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture,
+    bool requireMips = false);
 void CheckSRGB(
     const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture,
     bool expectedSRGB);
@@ -62,6 +66,20 @@ void CesiumTextureUtilitySpec::Define() {
           imageCesium->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
+
+      ImageCesium copy = *imageCesium;
+      CesiumGltfReader::GltfReader::generateMipMaps(copy);
+
+      expectedMipPixelsIfGenerated.clear();
+
+      if (copy.mipPositions.size() >= 2) {
+        expectedMipPixelsIfGenerated.resize(copy.mipPositions[1].byteSize);
+        for (size_t iSrc = copy.mipPositions[1].byteOffset, iDest = 0;
+             iDest < copy.mipPositions[1].byteSize;
+             ++iSrc, ++iDest) {
+          expectedMipPixelsIfGenerated[iDest] = uint8_t(copy.pixelData[iSrc]);
+        }
+      }
     });
 
     RunTests();
@@ -117,7 +135,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, false);
     CheckAddress(
         pRefCountedTexture,
@@ -141,7 +159,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -167,7 +185,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, false);
     CheckSRGB(pRefCountedTexture, false);
     CheckAddress(
         pRefCountedTexture,
@@ -200,7 +218,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -251,7 +269,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture2 =
         loadTextureGameThreadPart(model, pHalfLoaded2.Get());
 
-    CheckPixels(pRefCountedTexture1);
+    CheckPixels(pRefCountedTexture1, true);
     CheckSRGB(pRefCountedTexture1, true);
     CheckAddress(
         pRefCountedTexture1,
@@ -260,7 +278,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     CheckFilter(pRefCountedTexture1, TextureFilter::TF_Default);
     CheckGroup(pRefCountedTexture1, TextureGroup::TEXTUREGROUP_World);
 
-    CheckPixels(pRefCountedTexture2);
+    CheckPixels(pRefCountedTexture2, false);
     CheckSRGB(pRefCountedTexture2, false);
     CheckAddress(
         pRefCountedTexture2,
@@ -300,7 +318,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -349,7 +367,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -376,7 +394,8 @@ void CesiumTextureUtilitySpec::RunTests() {
 }
 
 void CesiumTextureUtilitySpec::CheckPixels(
-    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture) {
+    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture,
+    bool requireMips) {
   TestNotNull("pRefCountedTexture", pRefCountedTexture.get());
   TestNotNull(
       "pRefCountedTexture->getUnrealTexture()",
@@ -426,27 +445,35 @@ void CesiumTextureUtilitySpec::CheckPixels(
     TestEqual("pixel-alpha", readPixels[i].A, originalPixels[i * 4 + 3]);
   }
 
+  if (requireMips) {
+    TestTrue("Has Mips", !readPixelsMip1.IsEmpty());
+  }
+
   if (!readPixelsMip1.IsEmpty()) {
+    std::vector<uint8_t>& pixelsToMatch = originalMipPixels.empty()
+                                              ? expectedMipPixelsIfGenerated
+                                              : originalMipPixels;
+
     TestEqual(
         "read buffer size",
         readPixelsMip1.Num() * 4,
-        originalMipPixels.size());
+        pixelsToMatch.size());
     for (size_t i = 0;
-         i < readPixelsMip1.Num() && (i * 4 + 3) < originalMipPixels.size();
+         i < readPixelsMip1.Num() && (i * 4 + 3) < pixelsToMatch.size();
          ++i) {
-      TestEqual("mip pixel-red", readPixelsMip1[i].R, originalMipPixels[i * 4]);
+      TestEqual("mip pixel-red", readPixelsMip1[i].R, pixelsToMatch[i * 4]);
       TestEqual(
           "mip pixel-green",
           readPixelsMip1[i].G,
-          originalMipPixels[i * 4 + 1]);
+          pixelsToMatch[i * 4 + 1]);
       TestEqual(
           "mip pixel-blue",
           readPixelsMip1[i].B,
-          originalMipPixels[i * 4 + 2]);
+          pixelsToMatch[i * 4 + 2]);
       TestEqual(
           "mip pixel-alpha",
           readPixelsMip1[i].A,
-          originalMipPixels[i * 4 + 3]);
+          pixelsToMatch[i * 4 + 3]);
     }
   }
 }

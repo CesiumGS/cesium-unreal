@@ -117,17 +117,17 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    const CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageCesium& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
- * a texture. The given image _must_ be prepared before calling this method by
+ * a texture.The given image _must_ be prepared before calling this method by
  * calling {@link ExtensionImageCesiumUnreal::getOrCreate} and then waiting
  * for {@link ExtensionImageCesiumUnreal::getFuture} to resolve. This method
  * should be called in a background thread.
- *
+ * 
  * @param imageCesium The image.
  * @param addressX The X addressing mode.
  * @param addressY The Y addressing mode.
@@ -141,7 +141,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    const CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageCesium& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,

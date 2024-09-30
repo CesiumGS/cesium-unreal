@@ -366,7 +366,7 @@ bool getUseMipmapsIfAvailableFromSampler(const CesiumGltf::Sampler& sampler) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    const CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageCesium& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB) {
   return loadTextureAnyThreadPart(
@@ -411,7 +411,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    const CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageCesium& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -421,15 +421,20 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     std::optional<EPixelFormat> overridePixelFormat) {
   // The FCesiumTextureResource for the ImageCesium should already be created at
   // this point, if it can be.
-  const ExtensionImageCesiumUnreal* pExtension =
-      image.getExtension<ExtensionImageCesiumUnreal>();
-  check(pExtension != nullptr);
-  if (pExtension == nullptr || pExtension->getTextureResource() == nullptr) {
+  const ExtensionImageCesiumUnreal& extension =
+      ExtensionImageCesiumUnreal::getOrCreate(
+          CesiumAsync::AsyncSystem(nullptr),
+          image,
+          sRGB,
+          useMipMapsIfAvailable,
+          overridePixelFormat);
+  check(extension.getFuture().isReady());
+  if (extension.getTextureResource() == nullptr) {
     return nullptr;
   }
 
   auto pResource = FCesiumTextureResource::CreateWrapped(
-      pExtension->getTextureResource(),
+      extension.getTextureResource(),
       group,
       filter,
       addressX,

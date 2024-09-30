@@ -45,7 +45,8 @@ struct ExtensionImageCesiumUnreal {
    * `FTextureResource` from it is kicked off. On successive invocations
    * (perhaps from other threads), the existing instance is returned. It is safe
    * to call this method on the same `ImageCesium` instance from multiple
-   * threads simultaneously.
+   * threads simultaneously as long as no other thread is modifying the instance
+   * at the same time.
    *
    * To determine if the asynchronous `FTextureResource` creation process has
    * completed, use {@link getFuture}.
