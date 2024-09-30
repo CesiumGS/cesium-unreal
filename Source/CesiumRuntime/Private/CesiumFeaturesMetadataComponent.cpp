@@ -920,24 +920,6 @@ FString GetSwizzleForEncodedType(ECesiumEncodedMetadataType Type) {
   };
 }
 
-bool IsSupportedPropertyTextureProperty(
-    const FCesiumMetadataPropertyDetails& PropertyDetails) {
-  if (PropertyDetails.bIsArray &&
-      PropertyDetails.Type != ECesiumMetadataType::Scalar) {
-    // Only scalar arrays are supported.
-    return false;
-  }
-
-  uint32 byteSize = GetMetadataTypeByteSize(
-      PropertyDetails.Type,
-      PropertyDetails.ComponentType);
-  if (PropertyDetails.bIsArray) {
-    byteSize *= PropertyDetails.ArraySize;
-  }
-
-  return byteSize > 0 && byteSize <= 4;
-}
-
 /**
  * @brief Generates code for assembling metadata values from a scalar property
  * texture property.
@@ -2062,7 +2044,7 @@ void GenerateNodesForPropertyTexture(
 
   for (const FCesiumPropertyTexturePropertyDescription& Property :
        PropertyTexture.Properties) {
-    if (!IsSupportedPropertyTextureProperty(Property.PropertyDetails)) {
+    if (!isSupportedPropertyTextureProperty(Property.PropertyDetails)) {
       // Ignore properties that are unsupported, i.e., properties that require
       // more than four bytes to parse values from. This limitation is imposed
       // by cesium-native because only single-byte channels are supported.

@@ -1,9 +1,9 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumGltf/Model.h"
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const FCesiumPrimitiveFeatures& PrimitiveFeatures,

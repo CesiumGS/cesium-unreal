@@ -12,6 +12,7 @@
 #include "CesiumGeoreference.h"
 #include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
+#include "CesiumSampleHeightResult.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
@@ -46,6 +47,12 @@ class TileOcclusionRendererProxyPool;
 DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetLoadFailure,
     const FCesium3DTilesetLoadFailureDetails&);
+
+DECLARE_DELEGATE_ThreeParams(
+    FCesiumSampleHeightMostDetailedCallback,
+    ACesium3DTileset*,
+    const TArray<FCesiumSampleHeightResult>&,
+    const TArray<FString>&);
 
 /**
  * The delegate for the Acesium3DTileset::OnTilesetLoaded,
@@ -100,6 +107,27 @@ public:
   }
   UFUNCTION(BlueprintCallable, meta = (DeprecatedFunction))
   void SetMobility(EComponentMobility::Type NewMobility);
+
+  /**
+   * @brief Initiates an asynchronous query for the height of this tileset at a
+   * list of cartographic positions, where the Longitude (X) and Latitude (Y)
+   * are given in degrees. The most detailed available tiles are used to
+   * determine each height.
+   *
+   * The height of the input positions is ignored, unless height sampling fails
+   * at that location. The output height is expressed in meters above the
+   * ellipsoid (usually WGS84), which should not be confused with a height above
+   * mean sea level.
+   *
+   * @param LongitudeLatitudeHeightArray The cartographic positions for which to
+   * sample heights. The Longitude (X) and Latitude (Y) are expressed in
+   * degrees, while Height (Z) is given in meters.
+   * @param OnHeightsSampled A callback that is invoked in the game thread when
+   * heights have been sampled for all positions.
+   */
+  void SampleHeightMostDetailed(
+      const TArray<FVector>& LongitudeLatitudeHeightArray,
+      FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
 
 private:
   /**
