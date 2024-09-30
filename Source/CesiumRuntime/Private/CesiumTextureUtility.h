@@ -117,16 +117,16 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    const CesiumGltf::ImageCesium& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
- * this image. Should be called in a background thread.
- *
- * The `pixelData` will be removed from the image so that it can be
- * passed to Unreal's renderer thread without copying it.
+ * a texture. The given image _must_ be prepared before calling this method by
+ * calling {@link ExtensionImageCesiumUnreal::GetOrCreate} and then waiting
+ * for {@link ExtensionImageCesiumUnreal::getFuture} to resolve. This method
+ * should be called in a background thread.
  *
  * @param imageCesium The image.
  * @param addressX The X addressing mode.
@@ -138,14 +138,10 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @param sRGB Whether this texture uses a sRGB color space.
  * @param overridePixelFormat The explicit pixel format to use. If std::nullopt,
  * the pixel format is inferred from the image.
- * @param pExistingImageResource An existing RHI texture resource that has been
- * created for this image, or nullptr if one hasn't been created yet. When this
- * parameter is not nullptr, the provided image's `pixelData` is not required
- * and can be empty.
- * @return A future that resolves to the loaded texture.
+ * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    const CesiumGltf::ImageCesium& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -180,16 +176,6 @@ loadTextureGameThreadPart(
  */
 CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
 loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
-
-/**
- * Creates a `FCesiumTextureResource` for an image. This texture resource is
- * intended to be later used with `FCesiumUseExistingTextureResource`, which
- * will supply sampler, texture group, and other settings.
- */
-TSharedPtr<FCesiumTextureResource> createTextureResource(
-    CesiumGltf::ImageCesium& imageCesium,
-    bool sRGB,
-    std::optional<EPixelFormat> overridePixelFormat);
 
 /**
  * @brief Convert a glTF {@link CesiumGltf::Sampler::WrapS} value to an Unreal

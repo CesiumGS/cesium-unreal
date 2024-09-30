@@ -304,7 +304,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
       model.getSafe(model.samplers, texture.sampler);
 
   TUniquePtr<LoadedTextureResult> result =
-      loadTextureFromImageAndSamplerAnyThreadPart(image.cesium, sampler, sRGB);
+      loadTextureFromImageAndSamplerAnyThreadPart(*image.cesium, sampler, sRGB);
 
   if (result) {
     extension.pTexture = result->pTexture;
@@ -366,7 +366,7 @@ bool getUseMipmapsIfAvailableFromSampler(const CesiumGltf::Sampler& sampler) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    const CesiumGltf::ImageCesium& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB) {
   return loadTextureAnyThreadPart(
@@ -411,7 +411,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    const CesiumGltf::ImageCesium& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -421,8 +421,9 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     std::optional<EPixelFormat> overridePixelFormat) {
   // The FCesiumTextureResource for the ImageCesium should already be created at
   // this point, if it can be.
-  ExtensionImageCesiumUnreal* pExtension =
-      image->getExtension<ExtensionImageCesiumUnreal>();
+  const ExtensionImageCesiumUnreal* pExtension =
+      image.getExtension<ExtensionImageCesiumUnreal>();
+  check(pExtension != nullptr);
   if (pExtension == nullptr || pExtension->getTextureResource() == nullptr) {
     return nullptr;
   }

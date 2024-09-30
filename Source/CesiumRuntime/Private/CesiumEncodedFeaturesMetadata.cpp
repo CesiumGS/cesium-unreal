@@ -147,7 +147,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
         CesiumGltf::SharedAsset(CesiumGltf::ImageCesium(*pFeatureIdImage));
     encodedFeatureIdTexture.pTexture =
         MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-            imageCopy,
+            *imageCopy,
             addressX,
             addressY,
             TextureFilter::TF_Nearest,
@@ -534,7 +534,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       }
 
       encodedProperty.pTexture = loadTextureAnyThreadPart(
-          image,
+          *image,
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
           TextureFilter::TF_Nearest,
@@ -661,7 +661,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
             CesiumGltf::SharedAsset(CesiumGltf::ImageCesium(*pImage));
         encodedProperty.pTexture =
             MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-                imageCopy,
+                *imageCopy,
                 addressX,
                 addressY,
                 // TODO: account for texture filter

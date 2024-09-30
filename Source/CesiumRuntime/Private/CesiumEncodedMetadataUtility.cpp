@@ -278,7 +278,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     encodedProperty.pTexture = loadTextureAnyThreadPart(
-        image,
+        *image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         TextureFilter::TF_Nearest,
@@ -414,7 +414,7 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
           CesiumGltf::SharedAsset(CesiumGltf::ImageCesium(*pImage));
       encodedFeatureTextureProperty.pTexture =
           MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
-              imageCopy,
+              *imageCopy,
               TextureAddress::TA_Clamp,
               TextureAddress::TA_Clamp,
               TextureFilter::TF_Nearest,
@@ -521,7 +521,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
                   CesiumGltf::ImageCesium(*pFeatureIdImage));
           encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>(
               std::move(*loadTextureAnyThreadPart(
-                  imageCopy,
+                  *imageCopy,
                   TextureAddress::TA_Clamp,
                   TextureAddress::TA_Clamp,
                   TextureFilter::TF_Nearest,

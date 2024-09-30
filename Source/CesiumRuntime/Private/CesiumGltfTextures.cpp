@@ -116,6 +116,38 @@ SharedFuture<void> createTextureInLoadThread(
               *pMaterial->occlusionTexture,
               false,
               imageNeedsMipmaps));
+
+        // Initialize water mask if needed.
+        auto onlyWaterIt = primitive.extras.find("OnlyWater");
+        auto onlyLandIt = primitive.extras.find("OnlyLand");
+        if (onlyWaterIt != primitive.extras.end() &&
+            onlyWaterIt->second.isBool() &&
+            onlyLandIt != primitive.extras.end() &&
+            onlyLandIt->second.isBool()) {
+          bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
+          bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
+
+          if (!onlyWater && !onlyLand) {
+            // We have to use the water mask
+            auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
+            if (waterMaskTextureIdIt != primitive.extras.end() &&
+                waterMaskTextureIdIt->second.isInt64()) {
+              int32_t waterMaskTextureId = static_cast<int32_t>(
+                  waterMaskTextureIdIt->second.getInt64OrDefault(-1));
+              TextureInfo waterMaskInfo;
+              waterMaskInfo.index = waterMaskTextureId;
+              if (waterMaskTextureId >= 0 &&
+                  waterMaskTextureId < gltf.textures.size()) {
+                futures.emplace_back(createTextureInLoadThread(
+                    asyncSystem,
+                    gltf,
+                    waterMaskInfo,
+                    false,
+                    imageNeedsMipmaps));
+              }
+            }
+          }
+        }
       });
 
   return asyncSystem.all(std::move(futures));

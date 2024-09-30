@@ -41,6 +41,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "ExtensionImageCesiumUnreal.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
@@ -877,19 +878,31 @@ public:
       }
     }
 
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageAsset(
-        std::move(image));
+    // TODO: sRGB should probably be configurable on the raster overlay.
+    bool sRGB = true;
+
+    const ExtensionImageCesiumUnreal& extension =
+        ExtensionImageCesiumUnreal::GetOrCreate(
+            CesiumAsync::AsyncSystem(nullptr), // TODO
+            image,
+            sRGB,
+            pOptions->useMipmaps,
+            std::nullopt);
+
+    // Because raster overlay images are never shared (at least currently!), the
+    // future should already be resolved by the time we get here.
+    check(extension.getFuture().isReady());
 
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        imageAsset,
+        image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,
         pOptions->useMipmaps,
         pOptions->group,
-        // TODO: sRGB should probably be configurable on the raster overlay.
-        true,
+        sRGB,
         std::nullopt);
+
     return texture.Release();
   }
 
