@@ -127,7 +127,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * calling {@link ExtensionImageCesiumUnreal::getOrCreate} and then waiting
  * for {@link ExtensionImageCesiumUnreal::getFuture} to resolve. This method
  * should be called in a background thread.
- * 
+ *
  * @param imageCesium The image.
  * @param addressX The X addressing mode.
  * @param addressY The Y addressing mode.
