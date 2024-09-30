@@ -1062,7 +1062,7 @@ std::string constrainLength(const std::string& s, const size_t maxLength) {
 }
 
 /**
- * @brief CreateNew an FName from the given strings.
+ * @brief Create an FName from the given strings.
  *
  * This will combine the prefix and the suffix and create an FName.
  * If the string would be longer than the given length, then
