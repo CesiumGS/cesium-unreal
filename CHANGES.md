@@ -1,6 +1,6 @@
 # Change Log
 
-### Next version (not released yet)
+### v2.9.0 - 2024-10-01
 
 ##### Additions :tada:
 
