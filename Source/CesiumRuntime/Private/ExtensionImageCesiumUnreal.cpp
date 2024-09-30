@@ -23,6 +23,7 @@ getOrCreateImageFuture(
 ExtensionImageCesiumUnreal::GetOrCreate(
     const CesiumAsync::AsyncSystem& asyncSystem,
     CesiumGltf::ImageCesium& imageCesium,
+    bool sRGB,
     bool needsMipMaps,
     const std::optional<EPixelFormat>& overridePixelFormat) {
   auto [extension, maybePromise] =
@@ -41,7 +42,7 @@ ExtensionImageCesiumUnreal::GetOrCreate(
           TextureFilter::TF_Default,
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
-          false,
+          sRGB,
           needsMipMaps);
 
   extension._pTextureResource =

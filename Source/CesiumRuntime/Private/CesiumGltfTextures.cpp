@@ -201,11 +201,13 @@ SharedFuture<void> createTextureInLoadThread(
   check(pTexture->source >= 0 && pTexture->source < imageNeedsMipmaps.size());
   bool needsMips = imageNeedsMipmaps[pTexture->source];
 
-  const ExtensionImageCesiumUnreal& extension = ExtensionImageCesiumUnreal::GetOrCreate(
-      asyncSystem,
-      *pImage->cesium,
-      needsMips,
-      std::nullopt);
+  const ExtensionImageCesiumUnreal& extension =
+      ExtensionImageCesiumUnreal::GetOrCreate(
+          asyncSystem,
+          *pImage->cesium,
+          sRGB,
+          needsMips,
+          std::nullopt);
 
   return extension.getFuture();
 }
