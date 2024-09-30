@@ -20,7 +20,7 @@ getOrCreateImageFuture(
 } // namespace
 
 /*static*/ const ExtensionImageCesiumUnreal&
-ExtensionImageCesiumUnreal::GetOrCreate(
+ExtensionImageCesiumUnreal::getOrCreate(
     const CesiumAsync::AsyncSystem& asyncSystem,
     CesiumGltf::ImageCesium& imageCesium,
     bool sRGB,

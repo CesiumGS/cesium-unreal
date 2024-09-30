@@ -882,7 +882,7 @@ public:
     bool sRGB = true;
 
     const ExtensionImageCesiumUnreal& extension =
-        ExtensionImageCesiumUnreal::GetOrCreate(
+        ExtensionImageCesiumUnreal::getOrCreate(
             CesiumAsync::AsyncSystem(nullptr), // TODO
             image,
             sRGB,

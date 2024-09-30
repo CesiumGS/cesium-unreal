@@ -124,7 +124,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
  * a texture. The given image _must_ be prepared before calling this method by
- * calling {@link ExtensionImageCesiumUnreal::GetOrCreate} and then waiting
+ * calling {@link ExtensionImageCesiumUnreal::getOrCreate} and then waiting
  * for {@link ExtensionImageCesiumUnreal::getFuture} to resolve. This method
  * should be called in a background thread.
  *

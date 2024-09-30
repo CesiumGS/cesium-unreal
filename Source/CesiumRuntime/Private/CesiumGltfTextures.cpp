@@ -234,7 +234,7 @@ SharedFuture<void> createTextureInLoadThread(
   bool needsMips = imageNeedsMipmaps[pTexture->source];
 
   const ExtensionImageCesiumUnreal& extension =
-      ExtensionImageCesiumUnreal::GetOrCreate(
+      ExtensionImageCesiumUnreal::getOrCreate(
           asyncSystem,
           *pImage->cesium,
           sRGB,

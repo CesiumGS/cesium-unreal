@@ -50,7 +50,7 @@ struct ExtensionImageCesiumUnreal {
    * To determine if the asynchronous `FTextureResource` creation process has
    * completed, use {@link getFuture}.
    */
-  static const ExtensionImageCesiumUnreal& GetOrCreate(
+  static const ExtensionImageCesiumUnreal& getOrCreate(
       const CesiumAsync::AsyncSystem& asyncSystem,
       CesiumGltf::ImageCesium& imageCesium,
       bool sRGB,
