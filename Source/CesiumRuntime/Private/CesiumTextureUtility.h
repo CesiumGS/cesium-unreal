@@ -182,7 +182,7 @@ CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
 loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
 /**
- * Creates a `FCesiumTextureResourceBase` for an image. This texture resource is
+ * Creates a `FCesiumTextureResource` for an image. This texture resource is
  * intended to be later used with `FCesiumUseExistingTextureResource`, which
  * will supply sampler, texture group, and other settings.
  */

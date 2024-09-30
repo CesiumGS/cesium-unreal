@@ -461,7 +461,7 @@ FCesiumTextureResource::FCesiumTextureResource(
 }
 
 #if ENGINE_VERSION_5_3_OR_HIGHER
-void FCesiumTextureResourceBase::InitRHI(FRHICommandListBase& RHICmdList) {
+void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
 #else
 void FCesiumTextureResource::InitRHI() {
 #endif
