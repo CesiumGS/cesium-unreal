@@ -11,6 +11,8 @@
 - Drastically reduced tile mesh memory usage in UE 5.3 and 5.4 by working around a bug that causes those engine versions to add more texture coordinate sets than necessary.
 - Fixed a bug where the `scale`, `noData`, and `default` values of a property in `EXT_strutural_metadata` were not correctly passed to the tileset's material.
 
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.39.0 to v0.40.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.8.0 - 2024-09-02
 
 ##### Additions :tada:
