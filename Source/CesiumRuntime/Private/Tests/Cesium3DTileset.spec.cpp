@@ -10,6 +10,7 @@
 #include "CesiumTestHelpers.h"
 #include "Engine/World.h"
 #include "GlobeAwareDefaultPawn.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationTestSettings.h"
@@ -26,6 +27,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 static void setupForSharedImages(SceneGenerationContext& context) {
+  static FString Path =
+      IPluginManager::Get().FindPlugin(TEXT("CesiumForUnreal"))->GetBaseDir();
+  // IPluginManager returns a relative path by default - convert it to an
+  // absolute path.
+  const FString FullPluginsPath =
+      IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*Path);
+  static FString TilesetPath =
+      TEXT("file://") / FullPluginsPath /
+      TEXT("Resources/Tests/SharedImages/tileset.json");
+
   context.setCommonProperties(
       FVector(21.16677692, -67.38013505, -6375355.1944),
       FVector(-12, -1300, -5),
@@ -46,14 +57,7 @@ static void setupForSharedImages(SceneGenerationContext& context) {
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetTilesetSource(ETilesetSource::FromUrl);
-  // Unreal returns the relative path of the plugins directory by default
-  FString FullPluginsPath =
-      IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(
-          *FPaths::ProjectPluginsDir());
-  tileset->SetUrl(FString::Printf(
-      TEXT(
-          "file://%scesium-unreal/extern/cesium-native/Cesium3DTilesSelection/test/data/SharedImages/tileset.json"),
-      *FullPluginsPath));
+  tileset->SetUrl(TilesetPath);
 
   tileset->SetActorLabel(TEXT("SharedImages"));
   tileset->SetGeoreference(georeference);
