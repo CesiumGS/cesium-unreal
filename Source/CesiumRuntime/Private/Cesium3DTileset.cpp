@@ -144,17 +144,29 @@ void ACesium3DTileset::SampleHeightMostDetailed(
         position.Z));
   }
 
-  CesiumAsync::Future<Cesium3DTilesSelection::SampleHeightResult> future =
-      this->_pTileset
-          ? this->_pTileset->sampleHeightMostDetailed(positions)
-          : getAsyncSystem().createResolvedFuture(
-                Cesium3DTilesSelection::SampleHeightResult{
-                    std::move(positions),
-                    std::vector<bool>(positions.size(), false),
-                    {"Could not sample heights from tileset because it has not "
-                     "been created."}});
+  auto sampleHeights = [this, &positions]() mutable {
+    if (this->_pTileset) {
+      return this->_pTileset->sampleHeightMostDetailed(positions)
+          .catchImmediately([positions = std::move(positions)](
+                                std::exception&& exception) mutable {
+            std::vector<bool> sampleSuccess(positions.size(), false);
+            return Cesium3DTilesSelection::SampleHeightResult{
+                std::move(positions),
+                std::move(sampleSuccess),
+                {exception.what()}};
+          });
+    } else {
+      std::vector<bool> sampleSuccess(positions.size(), false);
+      return getAsyncSystem().createResolvedFuture(
+          Cesium3DTilesSelection::SampleHeightResult{
+              std::move(positions),
+              std::move(sampleSuccess),
+              {"Could not sample heights from tileset because it has not "
+               "been created."}});
+    }
+  };
 
-  std::move(future).thenImmediately(
+  sampleHeights().thenImmediately(
       [this, OnHeightsSampled = std::move(OnHeightsSampled)](
           Cesium3DTilesSelection::SampleHeightResult&& result) {
         if (!IsValid(this))
