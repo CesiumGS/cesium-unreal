@@ -268,13 +268,23 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   genTangSpaceDefault(&MikkTContext);
 }
 
-static void setUniformNormals(
+static void setUnlitNormals(
     TArray<FStaticMeshBuildVertex>& vertices,
-    TMeshVector3 normal) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    const glm::dmat4& vertexToEllipsoidFixed) {
+  glm::dmat4 ellipsoidFixedToVertex =
+      glm::affineInverse(vertexToEllipsoidFixed);
+
   for (int i = 0; i < vertices.Num(); i++) {
     FStaticMeshBuildVertex& v = vertices[i];
     v.TangentX = v.TangentY = TMeshVector3(0.0f);
-    v.TangentZ = normal;
+
+    glm::dvec3 positionFixed = glm::dvec3(
+        vertexToEllipsoidFixed *
+        glm::dvec4(VecMath::createVector3D(FVector(v.Position)), 1.0));
+    glm::dvec3 normal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+    v.TangentZ = FVector3f(VecMath::createVector(
+        glm::normalize(ellipsoidFixedToVertex * glm::dvec4(normal, 0.0))));
   }
 }
 
@@ -1525,6 +1535,13 @@ static void loadPrimitive(
     }
   }
 
+  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
+  glm::dmat4 scaleMatrix = glm::dmat4(
+      glm::dvec4(scale, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, scale, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, scale, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
   // TangentX: Tangent
   // TangentY: Bi-tangent
   // TangentZ: Normal
@@ -1556,16 +1573,10 @@ static void loadPrimitive(
     }
   } else {
     if (primitiveResult.isUnlit) {
-      glm::dvec3 ecefCenter = glm::dvec3(
-          transform *
-          glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
-      TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
-          glm::affineInverse(transform) *
-          glm::dvec4(
-              ellipsoid.geodeticSurfaceNormal(glm::dvec3(ecefCenter)),
-              0.0)));
-      upDir.Y *= -1;
-      setUniformNormals(StaticMeshBuildVertices, upDir);
+      setUnlitNormals(
+          StaticMeshBuildVertices,
+          ellipsoid,
+          transform * yInvertMatrix * scaleMatrix);
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
       computeFlatNormals(StaticMeshBuildVertices);
@@ -1700,13 +1711,6 @@ static void loadPrimitive(
   primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
-
-  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
-  glm::dmat4 scaleMatrix = glm::dmat4(
-      glm::dvec4(scale, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, scale, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, scale, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
 
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
