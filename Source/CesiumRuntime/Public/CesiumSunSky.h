@@ -48,7 +48,7 @@ public:
   /**
    * The Globe Anchor Component that precisely ties this Actor to the Globe.
    */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   /**
@@ -294,6 +294,21 @@ protected:
       meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
       Category = "Cesium|Atmosphere")
   double CircumscribedGroundThreshold = 100.0;
+
+  /**
+   * The height at which to place the bottom of the atmosphere when the player
+   * pawn is above the CircumscribedGroundThreshold. This is expressed as a
+   * height in kilometers above the maximum radius of the ellipsoid (usually
+   * WGS84). To avoid dark splotchy artifacts in the atmosphere when zoomed out
+   * far from the globe, this value must be above the greatest height achieved
+   * by any part of the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
+      Category = "Cesium|Atmosphere")
+  double CircumscribedGroundHeight = 0.0;
 
   /**
    * The height of the atmosphere layer above the ground, in kilometers. This
