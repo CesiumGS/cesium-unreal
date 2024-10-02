@@ -1367,7 +1367,10 @@ static void loadPrimitive(
   // vertices shared by multiple triangles. If we don't have tangents, but
   // need them, we need to use a tangent space generation algorithm which
   // requires duplicated vertices.
-  bool duplicateVertices = !hasNormals || (needsTangents && !hasTangents);
+  bool normalsAreRequired = !primitiveResult.isUnlit;
+  bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
+  bool needToGenerateTangents = needsTangents && !hasTangents;
+  bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
   duplicateVertices =
       duplicateVertices && primitive.mode != MeshPrimitive::Mode::POINTS;
 
