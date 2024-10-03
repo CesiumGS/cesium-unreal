@@ -2242,8 +2242,8 @@ loadModelAnyThreadPart(
 
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
-          [transform, ellipsoid, options = std::move(options)]()
-              -> UCesiumGltfComponent::CreateOffGameThreadResult {
+          [transform, ellipsoid, options = std::move(options)]() mutable
+          -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
