@@ -58,10 +58,30 @@ struct ExtensionImageCesiumUnreal {
       bool needsMipMaps,
       const std::optional<EPixelFormat>& overridePixelFormat);
 
+  /**
+   * Constructs a new instance.
+   *
+   * @param future The future that will resolve when loading of the
+   * {@link getTextureResource} is complete.
+   */
   ExtensionImageCesiumUnreal(const CesiumAsync::SharedFuture<void>& future);
 
+  /**
+   * Gets the created texture resource. This resource should not be accessed or
+   * used before the future returned by {@link getFuture} resolves.
+   */
   const TSharedPtr<FCesiumTextureResource>& getTextureResource() const;
+
+  /**
+   * Gets the future that will resolve when loading of the
+   * {@link getTextureResource} is complete. This future will not reject.
+   */
   CesiumAsync::SharedFuture<void>& getFuture();
+
+  /**
+   * Gets the future that will resolve when loading of the
+   * {@link getTextureResource} is complete. This future will not reject.
+   */
   const CesiumAsync::SharedFuture<void>& getFuture() const;
 
 private:

@@ -75,9 +75,10 @@ ExtensionImageCesiumUnreal::getFuture() const {
 
 namespace {
 
-// Returns a Future that will resolve when the image is loaded. It _may_ also
-// return a Promise, in which case the calling thread is responsible for doing
-// the loading and should resolve the Promise when it's done.
+// Returns the ExtensionImageCesiumUnreal, which is created if it does not
+// already exist. It _may_ also return a Promise, in which case the calling
+// thread is responsible for doing the loading and should resolve the Promise
+// when it's done.
 std::pair<ExtensionImageCesiumUnreal&, std::optional<Promise<void>>>
 getOrCreateImageFuture(
     const AsyncSystem& asyncSystem,

@@ -16,7 +16,7 @@ using namespace CesiumGltf;
 namespace {
 
 // Determines if a glTF primitive is usable for our purposes.
-bool isValidPrimitive(Model& gltf, MeshPrimitive& primitive);
+bool isValidPrimitive(const Model& gltf, const MeshPrimitive& primitive);
 
 // Determines if an Accessor's componentType is valid for an index buffer.
 bool isSupportedIndexComponentType(int32_t componentType);
@@ -169,8 +169,8 @@ bool isSupportedPrimitiveMode(int32_t primitiveMode) {
 
 // Determines if a glTF primitive is usable for our purposes.
 bool isValidPrimitive(
-    CesiumGltf::Model& gltf,
-    CesiumGltf::MeshPrimitive& primitive) {
+    const CesiumGltf::Model& gltf,
+    const CesiumGltf::MeshPrimitive& primitive) {
   if (!isSupportedPrimitiveMode(primitive.mode)) {
     // This primitive's mode is not supported.
     return false;
@@ -190,7 +190,8 @@ bool isValidPrimitive(
     return false;
   }
 
-  Accessor* pIndexAccessor = Model::getSafe(&gltf.accessors, primitive.indices);
+  const Accessor* pIndexAccessor =
+      Model::getSafe(&gltf.accessors, primitive.indices);
   if (pIndexAccessor &&
       !isSupportedIndexComponentType(pIndexAccessor->componentType)) {
     // This primitive's indices are not a supported type, so the primitive is
