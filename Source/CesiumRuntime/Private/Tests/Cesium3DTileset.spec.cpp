@@ -27,16 +27,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
 static void setupForSharedImages(SceneGenerationContext& context) {
-  static FString Path =
-      IPluginManager::Get().FindPlugin(TEXT("CesiumForUnreal"))->GetBaseDir();
-  // IPluginManager returns a relative path by default - convert it to an
-  // absolute path.
-  const FString FullPluginsPath =
-      IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*Path);
-  static FString TilesetPath =
-      TEXT("file://") / FullPluginsPath /
-      TEXT("Resources/Tests/SharedImages/tileset.json");
-
   context.setCommonProperties(
       FVector(21.16677692, -67.38013505, -6375355.1944),
       FVector(-12, -1300, -5),
@@ -56,8 +46,8 @@ static void setupForSharedImages(SceneGenerationContext& context) {
   georeference->SetOriginPlacement(EOriginPlacement::TrueOrigin);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
-  tileset->SetUrl(TilesetPath);
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2757071);
 
   tileset->SetActorLabel(TEXT("SharedImages"));
   tileset->SetGeoreference(georeference);
