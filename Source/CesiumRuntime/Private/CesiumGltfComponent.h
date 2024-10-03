@@ -91,7 +91,6 @@ public:
       bool createNavCollision);
 
   UCesiumGltfComponent();
-  virtual ~UCesiumGltfComponent();
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterial = nullptr;
