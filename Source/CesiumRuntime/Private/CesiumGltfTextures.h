@@ -15,8 +15,8 @@ struct Model;
 class CesiumGltfTextures {
 public:
   /**
-   * Creates all of the textures that are required by the given glTF, and adds
-   * `ExtensionUnrealTexture` to each.
+   * Creates all of the texture resources that are required by the given glTF,
+   * and adds `ExtensionImageCesiumUnreal` to each.
    */
   static CesiumAsync::Future<void> createInWorkerThread(
       const CesiumAsync::AsyncSystem& asyncSystem,
