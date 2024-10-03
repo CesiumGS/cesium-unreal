@@ -6,8 +6,8 @@
 #include "CesiumTextureUtility.h"
 #include "ExtensionImageCesiumUnreal.h"
 #include <CesiumGltf/AccessorView.h>
-#include <CesiumGltf/AttributeSemantics.h>
 #include <CesiumGltf/Model.h>
+#include <CesiumGltf/VertexAttributeSemantics.h>
 #include <CesiumGltfReader/GltfReader.h>
 
 using namespace CesiumAsync;
@@ -177,7 +177,7 @@ bool isValidPrimitive(
   }
 
   auto positionAccessorIt =
-      primitive.attributes.find(AttributeSemantics::POSITION);
+      primitive.attributes.find(VertexAttributeSemantics::POSITION);
   if (positionAccessorIt == primitive.attributes.end()) {
     // This primitive doesn't have a POSITION semantic, so it's not valid.
     return false;

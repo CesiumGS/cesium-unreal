@@ -16,7 +16,8 @@ class CesiumGltfTextures {
 public:
   /**
    * Creates all of the texture resources that are required by the given glTF,
-   * and adds `ExtensionImageCesiumUnreal` to each.
+   * and adds `ExtensionImageCesiumUnreal` to each. This is intended to be
+   * called from a worker thread.
    */
   static CesiumAsync::Future<void> createInWorkerThread(
       const CesiumAsync::AsyncSystem& asyncSystem,
