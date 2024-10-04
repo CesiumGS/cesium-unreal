@@ -71,8 +71,8 @@ static void setupForSharedImages(SceneGenerationContext& context) {
 void tilesetPass(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
-  CesiumGltf::SharedAssetDepots& assetDepot =
-      context.tilesets[0]->GetTileset()->getSharedAssetDepot();
+  CesiumGltf::SharedAssetSystem& assetSystem =
+      context.tilesets[0]->GetTileset()->getSharedAssetSystem();
   assert(assetDepot.getImagesCount() == 2);
 }
 

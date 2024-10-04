@@ -2045,18 +2045,18 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumGltf::SharedAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
-          this->_pTileset->getSharedAssetDepot().getImageDepot();
+      const CesiumGltf::SharedAssetDepot<CesiumGltf::ImageCesium>& imageDepot =
+          this->_pTileset->getSharedAssetSystem().image();
       float averageAge;
       size_t deletionCount;
-      imageDepot->getDeletionStats(averageAge, deletionCount);
+      imageDepot.getDeletionStats(averageAge, deletionCount);
       UE_LOG(
           LogCesium,
           Display,
           TEXT(
               "Images depot: %d distinct assets, %d total usages, %d assets pending deletion, %f average age"),
-          imageDepot->getDistinctCount(),
-          imageDepot->getUsageCount(),
+          imageDepot.getDistinctCount(),
+          imageDepot.getUsageCount(),
           deletionCount,
           averageAge);
     }
@@ -2235,7 +2235,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   this->UpdateLoadStatus();
 
   if (this->_pTileset) {
-    this->_pTileset->getSharedAssetDepot().deletionTick();
+    this->_pTileset->getSharedAssetSystem().deletionTick();
   }
 }
 
