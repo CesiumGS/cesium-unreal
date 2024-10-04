@@ -21,7 +21,7 @@ BEGIN_DEFINE_SPEC(
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 std::vector<uint8_t> expectedMipPixelsIfGenerated;
-SharedAsset<ImageCesium> imageCesium;
+CesiumUtility::IntrusivePointer<ImageCesium> pImageCesium;
 
 void RunTests();
 
@@ -51,33 +51,33 @@ void CesiumTextureUtilitySpec::Define() {
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
       originalMipPixels.clear();
 
-      ImageCesium image{};
-      imageCesium = SharedAsset<ImageCesium>(image);
-      imageCesium->width = 3;
-      imageCesium->height = 2;
+      pImageCesium.emplace();
+      pImageCesium->width = 3;
+      pImageCesium->height = 2;
       TestEqual(
           "image buffer size is correct",
           originalPixels.size(),
-          imageCesium->width * imageCesium->height *
-              imageCesium->bytesPerChannel * imageCesium->channels);
-      imageCesium->pixelData.resize(originalPixels.size());
+          pImageCesium->width * pImageCesium->height *
+              pImageCesium->bytesPerChannel * pImageCesium->channels);
+      pImageCesium->pixelData.resize(originalPixels.size());
 
       std::memcpy(
-          imageCesium->pixelData.data(),
+          pImageCesium->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
 
-      ImageCesium copy = *imageCesium;
-      CesiumGltfReader::GltfReader::generateMipMaps(copy);
+      CesiumUtility::IntrusivePointer<ImageCesium> pCopy =
+          new ImageCesium(*pImageCesium);
+      CesiumGltfReader::GltfReader::generateMipMaps(*pCopy);
 
       expectedMipPixelsIfGenerated.clear();
 
-      if (copy.mipPositions.size() >= 2) {
-        expectedMipPixelsIfGenerated.resize(copy.mipPositions[1].byteSize);
-        for (size_t iSrc = copy.mipPositions[1].byteOffset, iDest = 0;
-             iDest < copy.mipPositions[1].byteSize;
+      if (pCopy->mipPositions.size() >= 2) {
+        expectedMipPixelsIfGenerated.resize(pCopy->mipPositions[1].byteSize);
+        for (size_t iSrc = pCopy->mipPositions[1].byteOffset, iDest = 0;
+             iDest < pCopy->mipPositions[1].byteSize;
              ++iSrc, ++iDest) {
-          expectedMipPixelsIfGenerated[iDest] = uint8_t(copy.pixelData[iSrc]);
+          expectedMipPixelsIfGenerated[iDest] = uint8_t(pCopy->pixelData[iSrc]);
         }
       }
     });
@@ -87,31 +87,31 @@ void CesiumTextureUtilitySpec::Define() {
 
   Describe("With Mips", [this]() {
     BeforeEach([this]() {
-      imageCesium = {};
-      imageCesium->width = 3;
-      imageCesium->height = 2;
+      pImageCesium.emplace();
+      pImageCesium->width = 3;
+      pImageCesium->height = 2;
 
       // Original image (3x2)
       originalPixels = {0x20, 0x40, 0x80, 0xF0, 0x21, 0x41, 0x81, 0xF1,
                         0x22, 0x42, 0x82, 0xF2, 0x23, 0x43, 0x83, 0xF3,
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
-      imageCesium->mipPositions.emplace_back(
+      pImageCesium->mipPositions.emplace_back(
           ImageCesiumMipPosition{0, originalPixels.size()});
 
       // Mip 1 (1x1)
       originalMipPixels = {0x26, 0x46, 0x86, 0xF6};
-      imageCesium->mipPositions.emplace_back(ImageCesiumMipPosition{
-          imageCesium->mipPositions[0].byteSize,
+      pImageCesium->mipPositions.emplace_back(ImageCesiumMipPosition{
+          pImageCesium->mipPositions[0].byteSize,
           originalMipPixels.size()});
 
-      imageCesium->pixelData.resize(
+      pImageCesium->pixelData.resize(
           originalPixels.size() + originalMipPixels.size());
       std::memcpy(
-          imageCesium->pixelData.data(),
+          pImageCesium->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
       std::memcpy(
-          imageCesium->pixelData.data() + originalPixels.size(),
+          pImageCesium->pixelData.data() + originalPixels.size(),
           originalMipPixels.data(),
           originalMipPixels.size());
     });
@@ -123,7 +123,7 @@ void CesiumTextureUtilitySpec::Define() {
 void CesiumTextureUtilitySpec::RunTests() {
   It("ImageCesium non-sRGB", [this]() {
     TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
-        *imageCesium,
+        *pImageCesium,
         TextureAddress::TA_Mirror,
         TextureAddress::TA_Wrap,
         TextureFilter::TF_Bilinear,
@@ -147,7 +147,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
   It("ImageCesium sRGB", [this]() {
     TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
-        *imageCesium,
+        *pImageCesium,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Mirror,
         TextureFilter::TF_Trilinear,
@@ -178,7 +178,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
         loadTextureFromImageAndSamplerAnyThreadPart(
-            *imageCesium,
+            *pImageCesium,
             sampler,
             false);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
@@ -199,7 +199,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    image.pCesium = pImageCesium;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -232,7 +232,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    image.pCesium = pImageCesium;
 
     Sampler& sampler1 = model.samplers.emplace_back();
     sampler1.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -299,7 +299,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    image.pCesium = pImageCesium;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -348,7 +348,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    image.pCesium = pImageCesium;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;

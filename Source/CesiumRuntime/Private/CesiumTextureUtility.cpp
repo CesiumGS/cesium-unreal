@@ -304,7 +304,10 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
       model.getSafe(model.samplers, texture.sampler);
 
   TUniquePtr<LoadedTextureResult> result =
-      loadTextureFromImageAndSamplerAnyThreadPart(*image.cesium, sampler, sRGB);
+      loadTextureFromImageAndSamplerAnyThreadPart(
+          *image.pCesium,
+          sampler,
+          sRGB);
 
   if (result) {
     extension.pTexture = result->pTexture;

@@ -2045,7 +2045,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumGltf::SingleAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
+      const CesiumGltf::SharedAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
           this->_pTileset->getSharedAssetDepot().getImageDepot();
       float averageAge;
       size_t deletionCount;
