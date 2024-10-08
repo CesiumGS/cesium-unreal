@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/Model.h"
 #include "CesiumGltf/SharedAssetDepot.h"
+#include "CesiumGltf/Texture.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"
 #include "Engine/Texture.h"
@@ -200,5 +201,8 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
 std::optional<EPixelFormat> getPixelFormatForImageCesium(
     const CesiumGltf::ImageCesium& imageCesium,
     const std::optional<EPixelFormat> overridePixelFormat);
+
+std::optional<ReferenceCountedUnrealTexture>
+getUnrealTextureFromGltfTexture(const CesiumGltf::Texture& texture);
 
 } // namespace CesiumTextureUtility

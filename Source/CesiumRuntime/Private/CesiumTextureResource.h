@@ -90,7 +90,8 @@ public:
       TextureAddress addressY,
       bool sRGB,
       bool useMipsIfAvailable,
-      uint32 extData);
+      uint32 extData,
+      bool isPrimary);
 
   uint32 GetSizeX() const override { return this->_width; }
   uint32 GetSizeY() const override { return this->_height; }
@@ -120,4 +121,5 @@ protected:
   uint32 _platformExtData;
   FName _lodGroupStatName;
   uint64 _textureSize;
+  bool _isPrimary;
 };

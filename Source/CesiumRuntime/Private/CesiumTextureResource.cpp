@@ -31,7 +31,8 @@ public:
       TextureAddress addressY,
       bool sRGB,
       bool useMipsIfAvailable,
-      uint32 extData);
+      uint32 extData,
+      bool isPrimary);
 
   FCesiumUseExistingTextureResource(
       const TSharedPtr<FTextureResource>& pExistingTexture,
@@ -44,7 +45,8 @@ public:
       TextureAddress addressY,
       bool sRGB,
       bool useMipsIfAvailable,
-      uint32 extData);
+      uint32 extData,
+      bool isPrimary);
 
 protected:
   virtual FTextureRHIRef InitializeTextureRHI() override;
@@ -182,6 +184,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
     ETextureCreateFlags Flags,
     void** InitialMipData,
     uint32 NumInitialMips) {
+
 #if ENGINE_VERSION_5_4_OR_HIGHER
   FGraphEventRef CompletionEvent;
 
@@ -352,6 +355,8 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
 
     FTexture2DRHIRef textureReference =
         CreateRHITexture2D_Async(imageCesium, *maybePixelFormat, sRGB);
+    textureReference->SetName(
+        FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
     auto pResult = TUniquePtr<
         FCesiumUseExistingTextureResource,
         FCesiumTextureResourceDeleter>(new FCesiumUseExistingTextureResource(
@@ -365,7 +370,8 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
         addressY,
         sRGB,
         needsMipMaps,
-        0));
+        0,
+        true));
 
     // Clear the now-unnecessary copy of the pixel data.
     // Calling clear() isn't good enough because it
@@ -421,7 +427,8 @@ FCesiumTextureResourceUniquePtr FCesiumTextureResource::CreateWrapped(
       addressY,
       sRGB,
       useMipMapsIfAvailable,
-      0));
+      0,
+      false));
 }
 
 /*static*/ void FCesiumTextureResource::Destroy(FCesiumTextureResource* p) {
@@ -445,7 +452,8 @@ FCesiumTextureResource::FCesiumTextureResource(
     TextureAddress addressY,
     bool sRGB,
     bool useMipsIfAvailable,
-    uint32 extData)
+    uint32 extData,
+    bool isPrimary)
     : _textureGroup(textureGroup),
       _width(width),
       _height(height),
@@ -454,7 +462,8 @@ FCesiumTextureResource::FCesiumTextureResource(
       _addressX(convertAddressMode(addressX)),
       _addressY(convertAddressMode(addressY)),
       _useMipsIfAvailable(useMipsIfAvailable),
-      _platformExtData(extData) {
+      _platformExtData(extData),
+      _isPrimary(isPrimary) {
   this->bGreyScaleFormat = (_format == PF_G8) || (_format == PF_BC4);
   this->bSRGB = sRGB;
   STAT(this->_lodGroupStatName = TextureGroupStatFNames[this->_textureGroup]);
@@ -500,32 +509,42 @@ void FCesiumTextureResource::InitRHI() {
   RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
 
 #if STATS
-  ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
-  if (this->bSRGB) {
-    textureFlags |= TexCreate_SRGB;
+  if (this->_isPrimary) {
+    ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+    if (this->bSRGB) {
+      textureFlags |= TexCreate_SRGB;
+    }
+
+    const FIntPoint MipExtents =
+        CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
+    const FRHIResourceCreateInfo CreateInfo(this->_platformExtData);
+
+    FDynamicRHI::FRHICalcTextureSizeResult result = RHICalcTexturePlatformSize(
+        FRHITextureDesc::Create2D(
+            MipExtents,
+            this->_format,
+            CreateInfo.ClearValueBinding,
+            textureFlags,
+            this->GetCurrentMipCount(),
+            1,
+            CreateInfo.ExtData),
+        0);
+
+    this->_textureSize = result.Size;
+
+    INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
   }
-
-  const FIntPoint MipExtents =
-      CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
-  uint32 alignment;
-  this->_textureSize = RHICalcTexture2DPlatformSize(
-      MipExtents.X,
-      MipExtents.Y,
-      this->_format,
-      this->GetCurrentMipCount(),
-      1,
-      textureFlags,
-      FRHIResourceCreateInfo(this->_platformExtData),
-      alignment);
-
-  INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
-  INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
 #endif
 }
 
 void FCesiumTextureResource::ReleaseRHI() {
-  DEC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
-  DEC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+#if STATS
+  if (this->_isPrimary) {
+    DEC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
+    DEC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
+  }
+#endif
 
   RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
 
@@ -570,7 +589,8 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
     TextureAddress addressY,
     bool sRGB,
     bool useMipsIfAvailable,
-    uint32 extData)
+    uint32 extData,
+    bool isPrimary)
     : FCesiumTextureResource(
           textureGroup,
           width,
@@ -581,7 +601,8 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
           addressY,
           sRGB,
           useMipsIfAvailable,
-          extData),
+          extData,
+          isPrimary),
       _pExistingTexture(nullptr) {
   this->TextureRHI = std::move(existingTexture);
 }
@@ -597,7 +618,8 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
     TextureAddress addressY,
     bool sRGB,
     bool useMipsIfAvailable,
-    uint32 extData)
+    uint32 extData,
+    bool isPrimary)
     : FCesiumTextureResource(
           textureGroup,
           width,
@@ -608,7 +630,8 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
           addressY,
           sRGB,
           useMipsIfAvailable,
-          extData),
+          extData,
+          isPrimary),
       _pExistingTexture(pExistingTexture) {}
 
 FTextureRHIRef FCesiumUseExistingTextureResource::InitializeTextureRHI() {
@@ -641,11 +664,19 @@ FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
           addressY,
           sRGB,
           useMipsIfAvailable,
-          extData),
+          extData,
+          true),
       _image(std::move(image)) {}
 
 FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
-  FRHIResourceCreateInfo createInfo{TEXT("CesiumTextureUtility")};
+  // Use the asset ID as the name of the texture so it will be visible in the
+  // Render Resource Viewer.
+  FString debugName = TEXT("CesiumTextureUtility");
+  if (!this->_image.getUniqueAssetId().empty()) {
+    debugName = UTF8_TO_TCHAR(this->_image.getUniqueAssetId().c_str());
+  }
+
+  FRHIResourceCreateInfo createInfo{*debugName};
   createInfo.BulkData = nullptr;
   createInfo.ExtData = _platformExtData;
 
