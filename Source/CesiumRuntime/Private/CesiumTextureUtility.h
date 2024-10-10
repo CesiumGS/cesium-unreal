@@ -2,8 +2,9 @@
 
 #pragma once
 
+#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumGltf/SharedAssetDepot.h"
+#include "CesiumGltf/Texture.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"
 #include "Engine/Texture.h"
@@ -16,7 +17,7 @@
 #include <CesiumUtility/ReferenceCounted.h>
 
 namespace CesiumGltf {
-struct ImageCesium;
+struct ImageAsset;
 struct Texture;
 } // namespace CesiumGltf
 
@@ -47,18 +48,13 @@ struct ReferenceCountedUnrealTexture
   void setUnrealTexture(const TObjectPtr<UTexture2D>& p);
 
   // The renderer / RHI FTextureResource holding the pixel data.
-  const TUniquePtr<FCesiumTextureResourceBase>& getTextureResource() const;
-  TUniquePtr<FCesiumTextureResourceBase>& getTextureResource();
-  void setTextureResource(TUniquePtr<FCesiumTextureResourceBase>&& p);
-
-  /// The SharedAsset<ImageCesium> that this texture was created from.
-  CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> getSharedImage() const;
-  void setSharedImage(CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image);
+  const FCesiumTextureResourceUniquePtr& getTextureResource() const;
+  FCesiumTextureResourceUniquePtr& getTextureResource();
+  void setTextureResource(FCesiumTextureResourceUniquePtr&& p);
 
 private:
   TObjectPtr<UTexture2D> _pUnrealTexture;
-  TUniquePtr<FCesiumTextureResourceBase> _pTextureResource;
-  CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> _pImageCesium;
+  FCesiumTextureResourceUniquePtr _pTextureResource;
 };
 
 /**
@@ -122,16 +118,16 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    CesiumGltf::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
- * this image. Should be called in a background thread.
- *
- * The `pixelData` will be removed from the image so that it can be
- * passed to Unreal's renderer thread without copying it.
+ * a texture.The given image _must_ be prepared before calling this method by
+ * calling {@link ExtensionImageAssetUnreal::getOrCreate} and then waiting
+ * for {@link ExtensionImageAssetUnreal::getFuture} to resolve. This method
+ * should be called in a background thread.
  *
  * @param imageCesium The image.
  * @param addressX The X addressing mode.
@@ -143,14 +139,10 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @param sRGB Whether this texture uses a sRGB color space.
  * @param overridePixelFormat The explicit pixel format to use. If std::nullopt,
  * the pixel format is inferred from the image.
- * @param pExistingImageResource An existing RHI texture resource that has been
- * created for this image, or nullptr if one hasn't been created yet. When this
- * parameter is not nullptr, the provided image's `pixelData` is not required
- * and can be empty.
- * @return A future that resolves to the loaded texture.
+ * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    CesiumGltf::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -206,8 +198,11 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
  */
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
 
-CesiumAsync::SharedFuture<void> createMipMapsForAllTextures(
-    const CesiumAsync::AsyncSystem& asyncSystem,
-    CesiumGltf::Model& model);
+std::optional<EPixelFormat> getPixelFormatForImageAsset(
+    const CesiumGltf::ImageAsset& imageCesium,
+    const std::optional<EPixelFormat> overridePixelFormat);
+
+std::optional<ReferenceCountedUnrealTexture>
+getUnrealTextureFromGltfTexture(const CesiumGltf::Texture& texture);
 
 } // namespace CesiumTextureUtility

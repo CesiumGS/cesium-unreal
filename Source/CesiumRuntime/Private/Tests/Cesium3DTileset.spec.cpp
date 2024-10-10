@@ -4,12 +4,14 @@
 
 #include "Cesium3DTileset.h"
 #include "CesiumGlobeAnchorComponent.h"
+#include "CesiumGltfComponent.h"
 #include "CesiumLoadTestCore.h"
 #include "CesiumSceneGeneration.h"
 #include "CesiumSunSky.h"
 #include "CesiumTestHelpers.h"
 #include "Engine/World.h"
 #include "GlobeAwareDefaultPawn.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationTestSettings.h"
@@ -45,15 +47,8 @@ static void setupForSharedImages(SceneGenerationContext& context) {
   georeference->SetOriginPlacement(EOriginPlacement::TrueOrigin);
 
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
-  // Unreal returns the relative path of the plugins directory by default
-  FString FullPluginsPath =
-      IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(
-          *FPaths::ProjectPluginsDir());
-  tileset->SetUrl(FString::Printf(
-      TEXT(
-          "file://%scesium-unreal/extern/cesium-native/Cesium3DTilesSelection/test/data/SharedImages/tileset.json"),
-      *FullPluginsPath));
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2757071);
 
   tileset->SetActorLabel(TEXT("SharedImages"));
   tileset->SetGeoreference(georeference);
@@ -77,8 +72,8 @@ static void setupForSharedImages(SceneGenerationContext& context) {
 void tilesetPass(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
-  CesiumGltf::SharedAssetDepot& assetDepot =
-      context.tilesets[0]->GetTileset()->getSharedAssetDepot();
+  CesiumGltfReader::GltfSharedAssetSystem& assetSystem =
+      context.tilesets[0]->GetTileset()->getSharedAssetSystem();
   assert(assetDepot.getImagesCount() == 2);
 }
 
@@ -89,6 +84,50 @@ bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
   return RunLoadTest(
       GetBeautifiedTestName(),
       setupForSharedImages,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesium3DTilesetSnowdonBenchmark,
+    "Cesium.Performance.3DTileset.SnowdonBenchmark",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter);
+
+static void setupForSnowdon(SceneGenerationContext& context) {
+  context.setCommonProperties(
+      FVector(-79.8867314431, 40.0223377722, 197.1008007424),
+      FVector(-293.823058, 6736.144397, 2730.501500),
+      FRotator(-13.400000, -87.799997, 0.000000),
+      60.0f);
+
+  context.sunSky->TimeZone = 5.0f;
+  context.sunSky->UpdateSun();
+
+  ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
+  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  tileset->SetIonAssetID(2758251);
+
+  tileset->SetActorLabel(TEXT("Snowdon"));
+  tileset->SuspendUpdate = false;
+  tileset->LogSelectionStats = true;
+  context.tilesets.push_back(tileset);
+
+  ADirectionalLight* Light = context.world->SpawnActor<ADirectionalLight>();
+  Light->SetActorRotation(FQuat::MakeFromEuler(FVector(0, 0, 270)));
+}
+
+void snowdonPass(
+    SceneGenerationContext& context,
+    TestPass::TestingParameter parameter) {}
+
+bool FCesium3DTilesetSnowdonBenchmark::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Refresh Pass", snowdonPass, nullptr});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForSnowdon,
       testPasses,
       TEST_SCREEN_WIDTH,
       TEST_SCREEN_HEIGHT);

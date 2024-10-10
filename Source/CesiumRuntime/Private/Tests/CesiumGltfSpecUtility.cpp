@@ -70,12 +70,13 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
     const int32_t samplerWrapS,
     const int32_t samplerWrapT) {
   CesiumGltf::Image& image = model.images.emplace_back();
-  image.cesium->bytesPerChannel = 1;
-  image.cesium->channels = 1;
-  image.cesium->width = imageWidth;
-  image.cesium->height = imageHeight;
+  image.pCesium.emplace();
+  image.pCesium->bytesPerChannel = 1;
+  image.pCesium->channels = 1;
+  image.pCesium->width = imageWidth;
+  image.pCesium->height = imageHeight;
 
-  std::vector<std::byte>& data = image.cesium->pixelData;
+  std::vector<std::byte>& data = image.pCesium->pixelData;
   data.resize(imageWidth * imageHeight);
   std::memcpy(data.data(), featureIDs.data(), data.size());
 

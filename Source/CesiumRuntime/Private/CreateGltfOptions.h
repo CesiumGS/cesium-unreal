@@ -41,6 +41,10 @@ public:
         tileLoadResult(std::move(other.tileLoadResult)) {
     pModel = std::get_if<CesiumGltf::Model>(&this->tileLoadResult.contentKind);
   }
+
+  CreateModelOptions(const CreateModelOptions&) = delete;
+  CreateModelOptions& operator=(const CreateModelOptions&) = delete;
+  CreateModelOptions& operator=(CreateModelOptions&&) = delete;
 };
 
 struct CreateNodeOptions {

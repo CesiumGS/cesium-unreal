@@ -10,6 +10,7 @@
 #include "CesiumTextureResource.h"
 #include "Containers/ResourceArray.h"
 #include "DynamicRHI.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "PixelFormat.h"
 #include "RHICommandList.h"
@@ -22,7 +23,7 @@
 #include "UObject/Package.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ExtensionTextureWebp.h>
-#include <CesiumGltf/ImageCesium.h>
+#include <CesiumGltf/ImageAsset.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumGltfReader/GltfReader.h>
 #include <CesiumUtility/IntrusivePointer.h>
@@ -40,69 +41,7 @@ struct ExtensionUnrealTexture {
       pTexture = nullptr;
 };
 
-std::optional<EPixelFormat> getPixelFormatForImageCesium(
-    const ImageCesium& imageCesium,
-    const std::optional<EPixelFormat> overridePixelFormat) {
-  if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
-    switch (imageCesium.compressedPixelFormat) {
-    case GpuCompressedPixelFormat::ETC1_RGB:
-      return EPixelFormat::PF_ETC1;
-      break;
-    case GpuCompressedPixelFormat::ETC2_RGBA:
-      return EPixelFormat::PF_ETC2_RGBA;
-      break;
-    case GpuCompressedPixelFormat::BC1_RGB:
-      return EPixelFormat::PF_DXT1;
-      break;
-    case GpuCompressedPixelFormat::BC3_RGBA:
-      return EPixelFormat::PF_DXT5;
-      break;
-    case GpuCompressedPixelFormat::BC4_R:
-      return EPixelFormat::PF_BC4;
-      break;
-    case GpuCompressedPixelFormat::BC5_RG:
-      return EPixelFormat::PF_BC5;
-      break;
-    case GpuCompressedPixelFormat::BC7_RGBA:
-      return EPixelFormat::PF_BC7;
-      break;
-    case GpuCompressedPixelFormat::ASTC_4x4_RGBA:
-      return EPixelFormat::PF_ASTC_4x4;
-      break;
-    case GpuCompressedPixelFormat::PVRTC2_4_RGBA:
-      return EPixelFormat::PF_PVRTC2;
-      break;
-    case GpuCompressedPixelFormat::ETC2_EAC_R11:
-      return EPixelFormat::PF_ETC2_R11_EAC;
-      break;
-    case GpuCompressedPixelFormat::ETC2_EAC_RG11:
-      return EPixelFormat::PF_ETC2_RG11_EAC;
-      break;
-    default:
-      // Unsupported compressed texture format.
-      return std::nullopt;
-    };
-  } else if (overridePixelFormat) {
-    return *overridePixelFormat;
-  } else {
-    switch (imageCesium.channels) {
-    case 1:
-      return PF_R8;
-      break;
-    case 2:
-      return PF_R8G8;
-      break;
-    case 3:
-    case 4:
-    default:
-      return PF_R8G8B8A8;
-    };
-  }
-
-  return std::nullopt;
-}
-
-FTexture2DRHIRef createAsyncTextureAndWait(
+FTexture2DRHIRef createAsyncTextureAndWaitOld(
     uint32 SizeX,
     uint32 SizeY,
     uint8 Format,
@@ -169,8 +108,8 @@ FTexture2DRHIRef createAsyncTextureAndWait(
  * @param Whether to use a sRGB color-space.
  * @return The RHI texture reference.
  */
-FTexture2DRHIRef CreateRHITexture2D_Async(
-    const CesiumGltf::ImageCesium& image,
+FTexture2DRHIRef CreateRHITexture2D_AsyncOld(
+    const CesiumGltf::ImageAsset& image,
     EPixelFormat format,
     bool sRGB) {
   check(GRHISupportsAsyncTextureCreation);
@@ -196,11 +135,11 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
 
     void* mipsData[16];
     for (size_t i = 0; i < mipCount; ++i) {
-      const CesiumGltf::ImageCesiumMipPosition& mipPos = image.mipPositions[i];
+      const CesiumGltf::ImageAssetMipPosition& mipPos = image.mipPositions[i];
       mipsData[i] = (void*)(&image.pixelData[mipPos.byteOffset]);
     }
 
-    return createAsyncTextureAndWait(
+    return createAsyncTextureAndWaitOld(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
         format,
@@ -210,7 +149,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
         mipCount);
   } else {
     void* pTextureData = (void*)(image.pixelData.data());
-    return createAsyncTextureAndWait(
+    return createAsyncTextureAndWaitOld(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
         format,
@@ -265,186 +204,20 @@ void ReferenceCountedUnrealTexture::setUnrealTexture(
   this->_pUnrealTexture = p;
 }
 
-const TUniquePtr<FCesiumTextureResourceBase>&
+const FCesiumTextureResourceUniquePtr&
 ReferenceCountedUnrealTexture::getTextureResource() const {
   return this->_pTextureResource;
 }
 
-TUniquePtr<FCesiumTextureResourceBase>&
+FCesiumTextureResourceUniquePtr&
 ReferenceCountedUnrealTexture::getTextureResource() {
   return this->_pTextureResource;
 }
 
 void ReferenceCountedUnrealTexture::setTextureResource(
-    TUniquePtr<FCesiumTextureResourceBase>&& p) {
+    FCesiumTextureResourceUniquePtr&& p) {
   this->_pTextureResource = std::move(p);
 }
-
-CesiumGltf::SharedAsset<ImageCesium>
-ReferenceCountedUnrealTexture::getSharedImage() const {
-  return this->_pImageCesium;
-}
-
-void ReferenceCountedUnrealTexture::setSharedImage(
-    CesiumGltf::SharedAsset<ImageCesium>& image) {
-  this->_pImageCesium = image;
-}
-
-TUniquePtr<FCesiumTextureResourceBase> createTextureResourceFromImageCesium(
-    CesiumGltf::ImageCesium& imageCesium,
-    TextureAddress addressX,
-    TextureAddress addressY,
-    TextureFilter filter,
-    bool useMipMapsIfAvailable,
-    TextureGroup group,
-    bool sRGB,
-    EPixelFormat pixelFormat) {
-  if (GRHISupportsAsyncTextureCreation && !imageCesium.pixelData.empty()) {
-    // Create RHI texture resource on this worker
-    // thread, and then hand it off to the renderer
-    // thread.
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
-
-    FTexture2DRHIRef textureReference =
-        CreateRHITexture2D_Async(imageCesium, pixelFormat, sRGB);
-    TUniquePtr<FCesiumTextureResourceBase> textureResource =
-        MakeUnique<FCesiumUseExistingTextureResource>(
-            textureReference,
-            group,
-            imageCesium.width,
-            imageCesium.height,
-            pixelFormat,
-            filter,
-            addressX,
-            addressY,
-            sRGB,
-            useMipMapsIfAvailable,
-            0);
-
-    // Clear the now-unnecessary copy of the pixel data.
-    // Calling clear() isn't good enough because it
-    // won't actually release the memory.
-    std::vector<std::byte> pixelData;
-    imageCesium.pixelData.swap(pixelData);
-
-    std::vector<CesiumGltf::ImageCesiumMipPosition> mipPositions;
-    imageCesium.mipPositions.swap(mipPositions);
-
-    return textureResource;
-  } else {
-    // The RHI texture will be created later on the
-    // render thread, directly from this texture source.
-    // We need valid pixelData here, though.
-    if (imageCesium.pixelData.empty()) {
-      return nullptr;
-    }
-
-    return MakeUnique<FCesiumCreateNewTextureResource>(
-        std::move(imageCesium),
-        group,
-        imageCesium.width,
-        imageCesium.height,
-        pixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        useMipMapsIfAvailable,
-        0);
-  }
-}
-
-static std::mutex textureResourceMutex;
-
-struct ExtensionUnrealTextureResource {
-  static inline constexpr const char* TypeName =
-      "ExtensionUnrealTextureResource";
-  static inline constexpr const char* ExtensionName =
-      "PRIVATE_unreal_texture_resource";
-
-  ExtensionUnrealTextureResource() {}
-
-  TSharedPtr<FCesiumTextureResourceBase> pTextureResource = nullptr;
-
-  // If a preprocessing step is required (such as generating mipmaps), this
-  // future returns the preprocessed image. If no preprocessing is required,
-  // this just passes the image through.
-  std::optional<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
-      preprocessFuture = std::nullopt;
-
-  static TUniquePtr<FCesiumTextureResourceBase> loadTextureResource(
-      CesiumGltf::ImageCesium& imageCesium,
-      TextureAddress addressX,
-      TextureAddress addressY,
-      TextureFilter filter,
-      bool useMipMapsIfAvailable,
-      TextureGroup group,
-      bool sRGB,
-      std::optional<EPixelFormat> overridePixelFormat) {
-    std::optional<EPixelFormat> optionalPixelFormat =
-        getPixelFormatForImageCesium(imageCesium, overridePixelFormat);
-    if (!optionalPixelFormat.has_value()) {
-      return nullptr;
-    }
-
-    EPixelFormat pixelFormat = optionalPixelFormat.value();
-
-    std::lock_guard lock(textureResourceMutex);
-
-    ExtensionUnrealTextureResource& extension =
-        imageCesium.addExtension<ExtensionUnrealTextureResource>();
-
-    // Already have a texture resource, just use that.
-    if (extension.pTextureResource != nullptr) {
-      return MakeUnique<FCesiumUseExistingTextureResource>(
-          extension.pTextureResource.Get(),
-          group,
-          imageCesium.width,
-          imageCesium.height,
-          pixelFormat,
-          filter,
-          addressX,
-          addressY,
-          sRGB,
-          useMipMapsIfAvailable,
-          0);
-    }
-
-    // Store the current size of the pixel data, because
-    // we're about to clear it but we still want to have
-    // an accurate estimation of the size of the image for
-    // caching purposes.
-    imageCesium.sizeBytes = int64_t(imageCesium.pixelData.size());
-
-    TUniquePtr<FCesiumTextureResourceBase> textureResource =
-        createTextureResourceFromImageCesium(
-            imageCesium,
-            addressX,
-            addressY,
-            filter,
-            useMipMapsIfAvailable,
-            group,
-            sRGB,
-            pixelFormat);
-
-    check(textureResource != nullptr);
-
-    extension.pTextureResource =
-        TSharedPtr<FCesiumTextureResourceBase>(textureResource.Release());
-    return MakeUnique<FCesiumUseExistingTextureResource>(
-        extension.pTextureResource.Get(),
-        group,
-        imageCesium.width,
-        imageCesium.height,
-        pixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        useMipMapsIfAvailable,
-        0);
-  }
-};
 
 std::optional<int32_t> getSourceIndexFromModelAndTexture(
     const CesiumGltf::Model& model,
@@ -531,7 +304,10 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
       model.getSafe(model.samplers, texture.sampler);
 
   TUniquePtr<LoadedTextureResult> result =
-      loadTextureFromImageAndSamplerAnyThreadPart(image.cesium, sampler, sRGB);
+      loadTextureFromImageAndSamplerAnyThreadPart(
+          *image.pCesium,
+          sampler,
+          sRGB);
 
   if (result) {
     extension.pTexture = result->pTexture;
@@ -593,7 +369,7 @@ bool getUseMipmapsIfAvailableFromSampler(const CesiumGltf::Sampler& sampler) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    CesiumGltf::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB) {
   return loadTextureAnyThreadPart(
@@ -638,7 +414,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium>& image,
+    CesiumGltf::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -646,16 +422,28 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     TextureGroup group,
     bool sRGB,
     std::optional<EPixelFormat> overridePixelFormat) {
-  TUniquePtr<FCesiumTextureResourceBase> textureResource =
-      ExtensionUnrealTextureResource::loadTextureResource(
-          *image,
-          addressX,
-          addressY,
-          filter,
-          useMipMapsIfAvailable,
-          group,
+  // The FCesiumTextureResource for the ImageAsset should already be created at
+  // this point, if it can be.
+  const ExtensionImageAssetUnreal& extension =
+      ExtensionImageAssetUnreal::getOrCreate(
+          CesiumAsync::AsyncSystem(nullptr),
+          image,
           sRGB,
+          useMipMapsIfAvailable,
           overridePixelFormat);
+  check(extension.getFuture().isReady());
+  if (extension.getTextureResource() == nullptr) {
+    return nullptr;
+  }
+
+  auto pResource = FCesiumTextureResource::CreateWrapped(
+      extension.getTextureResource(),
+      group,
+      filter,
+      addressX,
+      addressY,
+      sRGB,
+      useMipMapsIfAvailable);
 
   TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
   pResult->pTexture = new ReferenceCountedUnrealTexture();
@@ -665,9 +453,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->filter = filter;
   pResult->group = group;
   pResult->sRGB = sRGB;
+  pResult->pTexture->setTextureResource(MoveTemp(pResource));
 
-  pResult->pTexture->setTextureResource(MoveTemp(textureResource));
-  pResult->pTexture->setSharedImage(image);
   return pResult;
 }
 
@@ -697,7 +484,7 @@ CesiumUtility::IntrusivePointer<ReferenceCountedUnrealTexture>
 loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
 
-  TUniquePtr<FCesiumTextureResourceBase>& pTextureResource =
+  FCesiumTextureResourceUniquePtr& pTextureResource =
       pHalfLoadedTexture->pTexture->getTextureResource();
   if (pTextureResource == nullptr) {
     // Texture is already loaded (or unloadable).
@@ -709,21 +496,21 @@ loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return nullptr;
   }
 
-  FCesiumTextureResourceBase* pCesiumTextureResource =
-      pTextureResource.Release();
-  if (pCesiumTextureResource) {
-    pTexture->SetResource(pCesiumTextureResource);
+  if (pTextureResource) {
+    // Give the UTexture2D exclusive ownership of this FCesiumTextureResource.
+    pTexture->SetResource(pTextureResource.Release());
 
     ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
-    ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
-      pCesiumTextureResource->SetTextureReference(
+    ([pTexture, pTextureResource = pTexture->GetResource()](
+         FRHICommandListImmediate& RHICmdList) {
+      pTextureResource->SetTextureReference(
           pTexture->TextureReference.TextureReferenceRHI);
 #if ENGINE_VERSION_5_3_OR_HIGHER
-      pCesiumTextureResource->InitResource(
+      pTextureResource->InitResource(
           FRHICommandListImmediate::Get()); // Init Resource now requires a
                                             // command list.
 #else
-      pCesiumTextureResource->InitResource();
+      pTextureResource->InitResource();
 #endif
     });
   }
@@ -759,93 +546,66 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
   }
 }
 
-std::optional<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
-createMipMapsForSampler(
-    const CesiumAsync::AsyncSystem& asyncSystem,
-    const CesiumGltf::Sampler& sampler,
-    CesiumGltf::ImageCesium& image) {
-  std::unique_lock lock(textureResourceMutex);
-
-  ExtensionUnrealTextureResource& extension =
-      image.addExtension<ExtensionUnrealTextureResource>();
-
-  // Future already exists, we don't need to do anything else.
-  if (extension.preprocessFuture.has_value()) {
-    return extension.preprocessFuture.value();
+std::optional<EPixelFormat> getPixelFormatForImageAsset(
+    const ImageAsset& imageCesium,
+    const std::optional<EPixelFormat> overridePixelFormat) {
+  if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
+    switch (imageCesium.compressedPixelFormat) {
+    case GpuCompressedPixelFormat::ETC1_RGB:
+      return EPixelFormat::PF_ETC1;
+      break;
+    case GpuCompressedPixelFormat::ETC2_RGBA:
+      return EPixelFormat::PF_ETC2_RGBA;
+      break;
+    case GpuCompressedPixelFormat::BC1_RGB:
+      return EPixelFormat::PF_DXT1;
+      break;
+    case GpuCompressedPixelFormat::BC3_RGBA:
+      return EPixelFormat::PF_DXT5;
+      break;
+    case GpuCompressedPixelFormat::BC4_R:
+      return EPixelFormat::PF_BC4;
+      break;
+    case GpuCompressedPixelFormat::BC5_RG:
+      return EPixelFormat::PF_BC5;
+      break;
+    case GpuCompressedPixelFormat::BC7_RGBA:
+      return EPixelFormat::PF_BC7;
+      break;
+    case GpuCompressedPixelFormat::ASTC_4x4_RGBA:
+      return EPixelFormat::PF_ASTC_4x4;
+      break;
+    case GpuCompressedPixelFormat::PVRTC2_4_RGBA:
+      return EPixelFormat::PF_PVRTC2;
+      break;
+    case GpuCompressedPixelFormat::ETC2_EAC_R11:
+      return EPixelFormat::PF_ETC2_R11_EAC;
+      break;
+    case GpuCompressedPixelFormat::ETC2_EAC_RG11:
+      return EPixelFormat::PF_ETC2_RG11_EAC;
+      break;
+    default:
+      // Unsupported compressed texture format.
+      return std::nullopt;
+    };
+  } else if (overridePixelFormat) {
+    return *overridePixelFormat;
+  } else {
+    switch (imageCesium.channels) {
+    case 1:
+      return PF_R8;
+      break;
+    case 2:
+      return PF_R8G8;
+      break;
+    case 3:
+    case 4:
+    default:
+      return PF_R8G8B8A8;
+    };
   }
 
-  // Generate mipmaps if needed.
-  // An image needs mipmaps generated for it if:
-  // 1. It is used by a Texture that has a Sampler with a mipmap filtering
-  // mode, and
-  // 2. It does not already have mipmaps.
-  // It's ok if an image has mipmaps even if not all textures will use them.
-  // There's no reason to have two RHI textures, one with and one without
-  // mips.
-  bool needsMipmaps;
-  switch (sampler.minFilter.value_or(
-      CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR)) {
-  case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
-  case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
-  case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
-  case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
-    needsMipmaps = true;
-    break;
-  default: // LINEAR and NEAREST
-    needsMipmaps = false;
-    break;
-  }
-
-  if (!needsMipmaps || image.pixelData.empty()) {
-    // If we don't need mipmaps, we don't want to create a future for them.
-    // This allows a future sampler using this image that does need mipmaps to
-    // generate them.
-    return std::nullopt;
-  }
-
-  CesiumAsync::Promise<CesiumGltf::ImageCesium*> promise =
-      asyncSystem.createPromise<CesiumGltf::ImageCesium*>();
-
-  extension.preprocessFuture = promise.getFuture().share();
-
-  lock.unlock();
-
-  // We need mipmaps generated.
-  std::optional<std::string> errorMessage =
-      CesiumGltfReader::GltfReader::generateMipMaps(image);
-  if (errorMessage) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("%s"),
-        UTF8_TO_TCHAR(errorMessage->c_str()));
-  }
-  promise.resolve(&image);
-  return *extension.preprocessFuture;
-}
-
-CesiumAsync::SharedFuture<void> createMipMapsForAllTextures(
-    const CesiumAsync::AsyncSystem& asyncSystem,
-    CesiumGltf::Model& model) {
-  std::vector<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>> futures;
-  for (const Texture& texture : model.textures) {
-    const CesiumGltf::Sampler& sampler =
-        model.getSafe(model.samplers, texture.sampler);
-    std::optional<CesiumAsync::SharedFuture<CesiumGltf::ImageCesium*>>
-        optionalFuture = createMipMapsForSampler(
-            asyncSystem,
-            sampler,
-            *model.images[texture.source].cesium);
-    if (optionalFuture.has_value()) {
-      futures.push_back(optionalFuture.value());
-    }
-  }
-
-  return asyncSystem.all(std::move(futures))
-      .thenImmediately(
-          []([[maybe_unused]] std::vector<
-              CesiumGltf::ImageCesium*>&& /*results*/) -> void {})
-      .share();
+  return std::nullopt;
 }
 
 } // namespace CesiumTextureUtility

@@ -11,15 +11,15 @@
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
+#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/GlobeTransforms.h"
-#include "CesiumGltf/ImageCesium.h"
+#include "CesiumGltf/ImageAsset.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
-#include "CesiumGltf/SharedAssetDepot.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -41,6 +41,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
@@ -866,7 +867,7 @@ public:
   }
 
   virtual void* prepareRasterInLoadThread(
-      CesiumGltf::ImageCesium& image,
+      CesiumGltf::ImageAsset& image,
       const std::any& rendererOptions) override {
     auto ppOptions =
         std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
@@ -889,19 +890,31 @@ public:
       }
     }
 
-    CesiumGltf::SharedAsset<CesiumGltf::ImageCesium> imageAsset(
-        std::move(image));
+    // TODO: sRGB should probably be configurable on the raster overlay.
+    bool sRGB = true;
+
+    const ExtensionImageAssetUnreal& extension =
+        ExtensionImageAssetUnreal::getOrCreate(
+            CesiumAsync::AsyncSystem(nullptr), // TODO
+            image,
+            sRGB,
+            pOptions->useMipmaps,
+            std::nullopt);
+
+    // Because raster overlay images are never shared (at least currently!), the
+    // future should already be resolved by the time we get here.
+    check(extension.getFuture().isReady());
 
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        imageAsset,
+        image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,
         pOptions->useMipmaps,
         pOptions->group,
-        // TODO: sRGB should probably be configurable on the raster overlay.
-        true,
+        sRGB,
         std::nullopt);
+
     return texture.Release();
   }
 
@@ -960,7 +973,7 @@ public:
     const Cesium3DTilesSelection::TileContent& content = tile.getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
-    if (pRenderContent) {
+    if (pMainThreadRendererResources != nullptr && pRenderContent != nullptr) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(
               pRenderContent->getRenderResources());
@@ -990,7 +1003,7 @@ public:
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(
               pRenderContent->getRenderResources());
-      if (pGltfContent) {
+      if (pMainThreadRendererResources != nullptr && pGltfContent != nullptr) {
         pGltfContent->DetachRasterTile(
             tile,
             rasterTile,
@@ -2032,20 +2045,17 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumGltf::SingleAssetDepot<CesiumGltf::ImageCesium>* imageDepot =
-          this->_pTileset->getSharedAssetDepot().getImageDepot();
-      float averageAge;
-      size_t deletionCount;
-      imageDepot->getDeletionStats(averageAge, deletionCount);
+      const CesiumAsync::SharedAssetDepot<CesiumGltf::ImageAsset>& imageDepot =
+          *this->_pTileset->getSharedAssetSystem().pImage;
       UE_LOG(
           LogCesium,
           Display,
           TEXT(
-              "Images depot: %d distinct assets, %d total usages, %d assets pending deletion, %f average age"),
-          imageDepot->getDistinctCount(),
-          imageDepot->getUsageCount(),
-          deletionCount,
-          averageAge);
+              "Images depot: %d distinct assets, %d total usages, %d assets pending deletion, %d total size in bytes"),
+          imageDepot.getDistinctCount(),
+          imageDepot.getUsageCount(),
+          imageDepot.getDeletionCandidateCount(),
+          imageDepot.getDeletionCandidateTotalSizeBytes());
     }
   }
 }
@@ -2220,10 +2230,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   this->UpdateLoadStatus();
-
-  if (this->_pTileset) {
-    this->_pTileset->getSharedAssetDepot().deletionTick();
-  }
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {

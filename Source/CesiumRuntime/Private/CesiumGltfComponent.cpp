@@ -8,6 +8,7 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfTextures.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
@@ -400,22 +401,22 @@ struct ColorVisitor {
 template <class T>
 static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     CesiumGltf::Model& model,
-    const std::optional<T>& gltfTexture,
+    const std::optional<T>& gltfTextureInfo,
     bool sRGB) {
-  if (!gltfTexture || gltfTexture.value().index < 0 ||
-      gltfTexture.value().index >= model.textures.size()) {
-    if (gltfTexture && gltfTexture.value().index >= 0) {
+  if (!gltfTextureInfo || gltfTextureInfo.value().index < 0 ||
+      gltfTextureInfo.value().index >= model.textures.size()) {
+    if (gltfTextureInfo && gltfTextureInfo.value().index >= 0) {
       UE_LOG(
           LogCesium,
           Warning,
           TEXT("Texture index must be less than %d, but is %d"),
           model.textures.size(),
-          gltfTexture.value().index);
+          gltfTextureInfo.value().index);
     }
     return nullptr;
   }
 
-  int32_t textureIndex = gltfTexture.value().index;
+  int32_t textureIndex = gltfTextureInfo.value().index;
   CesiumGltf::Texture& texture = model.textures[textureIndex];
   return loadTextureFromModelAnyThreadPart(model, texture, sRGB);
 }
@@ -1765,9 +1766,10 @@ static void loadIndexedPrimitive(
   } else {
     UE_LOG(
         LogCesium,
-        VeryVerbose,
+        Warning,
         TEXT(
-            "Skip loading primitive due to invalid component type in its index accessor."));
+            "Ignoring a glTF primitive because the componentType (%d) of its indices is not supported."),
+        indexAccessorGltf.componentType);
   }
 }
 
@@ -2131,8 +2133,8 @@ void applyGltfUpAxisTransform(const Model& model, glm::dmat4x4& rootTransform) {
   } else {
     UE_LOG(
         LogCesium,
-        VeryVerbose,
-        TEXT("Unknown gltfUpAxis value: {}"),
+        Warning,
+        TEXT("Ignoring unknown gltfUpAxis value: {}"),
         gltfUpAxisValue);
   }
 }
@@ -2238,10 +2240,10 @@ loadModelAnyThreadPart(
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
-  return createMipMapsForAllTextures(asyncSystem, *options.pModel)
+  return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
-          [transform, ellipsoid, options = std::move(options)]()
-              -> UCesiumGltfComponent::CreateOffGameThreadResult {
+          [transform, ellipsoid, options = std::move(options)]() mutable
+          -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3255,10 +3257,6 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
-}
-
-UCesiumGltfComponent::~UCesiumGltfComponent() {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("~UCesiumGltfComponent"));
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(
