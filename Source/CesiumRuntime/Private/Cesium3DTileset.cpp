@@ -18,7 +18,7 @@
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/GlobeTransforms.h"
-#include "CesiumGltf/ImageCesium.h"
+#include "CesiumGltf/ImageAsset.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsSceneProxyUpdater.h"
@@ -41,7 +41,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "ExtensionImageCesiumUnreal.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
@@ -867,7 +867,7 @@ public:
   }
 
   virtual void* prepareRasterInLoadThread(
-      CesiumGltf::ImageCesium& image,
+      CesiumGltf::ImageAsset& image,
       const std::any& rendererOptions) override {
     auto ppOptions =
         std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
@@ -893,8 +893,8 @@ public:
     // TODO: sRGB should probably be configurable on the raster overlay.
     bool sRGB = true;
 
-    const ExtensionImageCesiumUnreal& extension =
-        ExtensionImageCesiumUnreal::getOrCreate(
+    const ExtensionImageAssetUnreal& extension =
+        ExtensionImageAssetUnreal::getOrCreate(
             CesiumAsync::AsyncSystem(nullptr), // TODO
             image,
             sRGB,
@@ -2045,7 +2045,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumAsync::SharedAssetDepot<CesiumGltf::ImageCesium>& imageDepot =
+      const CesiumAsync::SharedAssetDepot<CesiumGltf::ImageAsset>& imageDepot =
           *this->_pTileset->getSharedAssetSystem().pImage;
       UE_LOG(
           LogCesium,

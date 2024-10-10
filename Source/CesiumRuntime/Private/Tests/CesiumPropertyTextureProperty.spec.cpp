@@ -81,7 +81,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -170,7 +170,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.normalized = true;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -235,7 +235,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.count = 2;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -312,7 +312,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.defaultProperty = defaultValue;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -434,7 +434,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -472,7 +472,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT16;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -526,7 +526,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.defaultProperty = defaultValue;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -590,7 +590,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -634,7 +634,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -688,7 +688,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.defaultProperty = defaultValue;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -758,7 +758,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -804,7 +804,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -848,7 +848,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.scale = scale;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -912,7 +912,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.normalized = true;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -955,7 +955,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1008,7 +1008,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.scale = scale;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 1;
@@ -1066,7 +1066,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -1110,7 +1110,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1168,7 +1168,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.defaultProperty = {defaultValue[0], defaultValue[1]};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -1239,7 +1239,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.normalized = true;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -1290,7 +1290,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -1342,7 +1342,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.scale = {scale[0], scale[1]};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -1409,7 +1409,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 3;
@@ -1453,7 +1453,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1514,7 +1514,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           defaultValue[2]};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 3;
@@ -1585,7 +1585,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.normalized = true;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 3;
@@ -1637,7 +1637,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 3;
@@ -1689,7 +1689,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.scale = {scale[0], scale[1], scale[2]};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 3;
@@ -1757,7 +1757,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.normalized = true;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1814,7 +1814,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT8;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1872,7 +1872,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.scale = {scale[0], scale[1], scale[2], scale[3]};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1923,7 +1923,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -1999,7 +1999,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.count = 2;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -2067,7 +2067,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.noData = {0, 0};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -2155,7 +2155,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.defaultProperty = {10, 20};
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 2;
@@ -2256,7 +2256,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -2316,7 +2316,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.scale = scale;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -2373,7 +2373,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.noData = noData;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;
@@ -2441,7 +2441,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       classProperty.defaultProperty = defaultValue;
 
       Sampler sampler;
-      ImageCesium image;
+      ImageAsset image;
       image.width = 2;
       image.height = 2;
       image.channels = 4;

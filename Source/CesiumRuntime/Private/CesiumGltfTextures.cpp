@@ -4,7 +4,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
 #include "CesiumTextureUtility.h"
-#include "ExtensionImageCesiumUnreal.h"
+#include "ExtensionImageAssetUnreal.h"
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/Model.h>
 #include <CesiumGltf/VertexAttributeSemantics.h>
@@ -234,8 +234,8 @@ SharedFuture<void> createTextureInLoadThread(
   check(pTexture->source >= 0 && pTexture->source < imageNeedsMipmaps.size());
   bool needsMips = imageNeedsMipmaps[pTexture->source];
 
-  const ExtensionImageCesiumUnreal& extension =
-      ExtensionImageCesiumUnreal::getOrCreate(
+  const ExtensionImageAssetUnreal& extension =
+      ExtensionImageAssetUnreal::getOrCreate(
           asyncSystem,
           *pImage->pCesium,
           sRGB,

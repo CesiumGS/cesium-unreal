@@ -333,13 +333,13 @@ const CesiumGltf::Sampler* FCesiumPropertyTextureProperty::getSampler() const {
       });
 }
 
-const CesiumGltf::ImageCesium*
+const CesiumGltf::ImageAsset*
 FCesiumPropertyTextureProperty::getImage() const {
-  return propertyTexturePropertyCallback<const CesiumGltf::ImageCesium*>(
+  return propertyTexturePropertyCallback<const CesiumGltf::ImageAsset*>(
       this->_property,
       this->_valueType,
       this->_normalized,
-      [](const auto& view) -> const CesiumGltf::ImageCesium* {
+      [](const auto& view) -> const CesiumGltf::ImageAsset* {
         return view.getImage();
       });
 }
