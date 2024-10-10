@@ -90,8 +90,6 @@ struct LoadedTextureResult {
  * associated Unreal texture.
  * @param sRGB True if the texture should be treated as sRGB; false if it should
  * be treated as linear.
- * @param textureResources Unreal RHI texture resources that have already been
- * created for this model. This array must have the same size as `model`'s
  * {@link CesiumGltf::Model::images}, and all pointers must be initialized to
  * nullptr before the first call to `loadTextureFromModelAnyThreadPart` during
  * the glTF load process.
@@ -112,10 +110,6 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * @param sampler The sampler settings to use with the texture.
  * @param sRGB True if the texture should be treated as sRGB; false if it should
  * be treated as linear.
- * @param pExistingImageResource An existing RHI texture resource that has been
- * created for this image, or nullptr if one hasn't been created yet. When this
- * parameter is not nullptr, the provided image's `pixelData` is not required
- * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
     CesiumGltf::ImageAsset& image,
@@ -129,7 +123,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * for {@link ExtensionImageAssetUnreal::getFuture} to resolve. This method
  * should be called in a background thread.
  *
- * @param imageCesium The image.
+ * @param image The image.
  * @param addressX The X addressing mode.
  * @param addressY The Y addressing mode.
  * @param filter The sampler filtering to use for this texture.

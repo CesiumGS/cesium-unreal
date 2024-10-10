@@ -362,7 +362,6 @@ bool getUseMipmapsIfAvailableFromSampler(const CesiumGltf::Sampler& sampler) {
   case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
   case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
     return true;
-    break;
   default: // LINEAR and NEAREST
     return false;
   }
