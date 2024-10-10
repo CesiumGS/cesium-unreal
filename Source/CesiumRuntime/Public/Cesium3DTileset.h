@@ -627,6 +627,20 @@ public:
   bool LogSelectionStats = false;
 
   /**
+   * If true, logs stats on the assets in this tileset's asset depot to the
+   * Output Log.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool LogAssetStats = false;
+
+  /**
+   * If true, draws debug text above each tile being rendered with information
+   * about that tile.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool DrawTileInfo = false;
+
+  /**
    * Define the collision profile for all the 3D tiles created inside this
    * actor.
    */

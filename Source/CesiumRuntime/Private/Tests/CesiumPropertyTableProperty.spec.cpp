@@ -1,8 +1,8 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPropertyTableProperty.h"
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
-#include "CesiumPropertyTableProperty.h"
 #include "Misc/AutomationTest.h"
 #include <limits>
 

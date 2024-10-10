@@ -1,8 +1,8 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPrimitiveFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumPrimitiveFeatures.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;

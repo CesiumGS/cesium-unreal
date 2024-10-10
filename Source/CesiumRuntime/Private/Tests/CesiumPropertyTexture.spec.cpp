@@ -1,11 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPropertyTexture.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumPropertyTexture.h"
 #include "Misc/AutomationTest.h"
 #include <limits>
 

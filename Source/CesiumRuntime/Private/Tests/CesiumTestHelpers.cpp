@@ -6,6 +6,7 @@
 
 #if WITH_EDITOR
 #include "Editor/EditorPerformanceSettings.h"
+#include "Interfaces/IPluginManager.h"
 #endif
 
 namespace CesiumTestHelpers {

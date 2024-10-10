@@ -2,9 +2,9 @@
 
 #if WITH_EDITOR
 
+#include "CesiumOriginShiftComponent.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGlobeAnchorComponent.h"
-#include "CesiumOriginShiftComponent.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumTestHelpers.h"
 #include "Editor.h"

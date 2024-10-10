@@ -98,7 +98,7 @@ public:
 
   const int64 getTexCoordSetIndex() const;
   const CesiumGltf::Sampler* getSampler() const;
-  const CesiumGltf::ImageCesium* getImage() const;
+  const CesiumGltf::ImageAsset* getImage() const;
   const std::optional<CesiumGltf::KhrTextureTransform>
   getTextureTransform() const;
 
