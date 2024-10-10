@@ -9,14 +9,14 @@
 #include <optional>
 
 namespace CesiumGltf {
-struct ImageCesium;
+struct ImageAsset;
 }
 
 /**
- * @brief An extension attached to an ImageCesium in order to hold
+ * @brief An extension attached to an ImageAsset in order to hold
  * Unreal-specific information about it.
  *
- * ImageCesium instances are shared between multiple textures on a single model,
+ * ImageAsset instances are shared between multiple textures on a single model,
  * and even between models in some cases, but we strive to have only one copy of
  * the image bytes in GPU memory.
  *
@@ -31,29 +31,29 @@ struct ImageCesium;
  * Because we'll never be sampling from this texture resource, the texture
  * filtering and addressing parameters have default values.
  */
-struct ExtensionImageCesiumUnreal {
-  static inline constexpr const char* TypeName = "ExtensionImageCesiumUnreal";
+struct ExtensionImageAssetUnreal {
+  static inline constexpr const char* TypeName = "ExtensionImageAssetUnreal";
   static inline constexpr const char* ExtensionName =
-      "PRIVATE_ImageCesium_Unreal";
+      "PRIVATE_ImageAsset_Unreal";
 
   /**
-   * @brief Gets an Unreal texture resource from the given `ImageCesium`,
+   * @brief Gets an Unreal texture resource from the given `ImageAsset`,
    * creating it if necessary.
    *
    * When this function is called for the first time on a particular
-   * `ImageCesium`, the asynchronous process to create an Unreal
+   * `ImageAsset`, the asynchronous process to create an Unreal
    * `FTextureResource` from it is kicked off. On successive invocations
    * (perhaps from other threads), the existing instance is returned. It is safe
-   * to call this method on the same `ImageCesium` instance from multiple
+   * to call this method on the same `ImageAsset` instance from multiple
    * threads simultaneously as long as no other thread is modifying the instance
    * at the same time.
    *
    * To determine if the asynchronous `FTextureResource` creation process has
    * completed, use {@link getFuture}.
    */
-  static const ExtensionImageCesiumUnreal& getOrCreate(
+  static const ExtensionImageAssetUnreal& getOrCreate(
       const CesiumAsync::AsyncSystem& asyncSystem,
-      CesiumGltf::ImageCesium& imageCesium,
+      CesiumGltf::ImageAsset& imageCesium,
       bool sRGB,
       bool needsMipMaps,
       const std::optional<EPixelFormat>& overridePixelFormat);
@@ -64,7 +64,7 @@ struct ExtensionImageCesiumUnreal {
    * @param future The future that will resolve when loading of the
    * {@link getTextureResource} is complete.
    */
-  ExtensionImageCesiumUnreal(const CesiumAsync::SharedFuture<void>& future);
+  ExtensionImageAssetUnreal(const CesiumAsync::SharedFuture<void>& future);
 
   /**
    * Gets the created texture resource. This resource should not be accessed or

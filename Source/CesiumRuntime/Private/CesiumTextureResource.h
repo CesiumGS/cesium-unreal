@@ -5,8 +5,8 @@
 #include "CesiumCommon.h"
 #include "Engine/Texture.h"
 #include "TextureResource.h"
-#include <CesiumGltf/ImageCesium.h>
-#include <CesiumGltf/SharedAssetDepot.h>
+#include <CesiumAsync/SharedAssetDepot.h>
+#include <CesiumGltf/ImageAsset.h>
 
 class FCesiumTextureResource;
 
@@ -25,7 +25,7 @@ using FCesiumTextureResourceUniquePtr =
 class FCesiumTextureResource : public FTextureResource {
 public:
   /**
-   * Create a new FCesiumTextureResource from an ImageCesium and the given
+   * Create a new FCesiumTextureResource from an `ImageAsset` and the given
    * sampling parameters. This method is intended to be called from a worker
    * thread, not from the game or render thread.
    *
@@ -34,7 +34,7 @@ public:
    * `sizeBytes` will be set to its previous size.
    * @param textureGroup The texture group in which to create this texture.
    * @param overridePixelFormat Overrides the pixel format. If std::nullopt, the
-   * format is inferred from the `ImageCesium`.
+   * format is inferred from the `ImageAsset`.
    * @param filter The texture filtering to use when sampling this texture.
    * @param addressX The X texture addressing mode to use when sampling this
    * texture.
@@ -48,7 +48,7 @@ public:
    * created.
    */
   static FCesiumTextureResourceUniquePtr CreateNew(
-      CesiumGltf::ImageCesium& imageCesium,
+      CesiumGltf::ImageAsset& imageCesium,
       TextureGroup textureGroup,
       const std::optional<EPixelFormat>& overridePixelFormat,
       TextureFilter filter,

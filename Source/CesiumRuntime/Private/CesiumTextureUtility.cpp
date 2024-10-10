@@ -10,7 +10,7 @@
 #include "CesiumTextureResource.h"
 #include "Containers/ResourceArray.h"
 #include "DynamicRHI.h"
-#include "ExtensionImageCesiumUnreal.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 #include "PixelFormat.h"
 #include "RHICommandList.h"
@@ -23,7 +23,7 @@
 #include "UObject/Package.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ExtensionTextureWebp.h>
-#include <CesiumGltf/ImageCesium.h>
+#include <CesiumGltf/ImageAsset.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumGltfReader/GltfReader.h>
 #include <CesiumUtility/IntrusivePointer.h>
@@ -109,7 +109,7 @@ FTexture2DRHIRef createAsyncTextureAndWaitOld(
  * @return The RHI texture reference.
  */
 FTexture2DRHIRef CreateRHITexture2D_AsyncOld(
-    const CesiumGltf::ImageCesium& image,
+    const CesiumGltf::ImageAsset& image,
     EPixelFormat format,
     bool sRGB) {
   check(GRHISupportsAsyncTextureCreation);
@@ -135,7 +135,7 @@ FTexture2DRHIRef CreateRHITexture2D_AsyncOld(
 
     void* mipsData[16];
     for (size_t i = 0; i < mipCount; ++i) {
-      const CesiumGltf::ImageCesiumMipPosition& mipPos = image.mipPositions[i];
+      const CesiumGltf::ImageAssetMipPosition& mipPos = image.mipPositions[i];
       mipsData[i] = (void*)(&image.pixelData[mipPos.byteOffset]);
     }
 
@@ -369,7 +369,7 @@ bool getUseMipmapsIfAvailableFromSampler(const CesiumGltf::Sampler& sampler) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB) {
   return loadTextureAnyThreadPart(
@@ -414,7 +414,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -422,10 +422,10 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     TextureGroup group,
     bool sRGB,
     std::optional<EPixelFormat> overridePixelFormat) {
-  // The FCesiumTextureResource for the ImageCesium should already be created at
+  // The FCesiumTextureResource for the ImageAsset should already be created at
   // this point, if it can be.
-  const ExtensionImageCesiumUnreal& extension =
-      ExtensionImageCesiumUnreal::getOrCreate(
+  const ExtensionImageAssetUnreal& extension =
+      ExtensionImageAssetUnreal::getOrCreate(
           CesiumAsync::AsyncSystem(nullptr),
           image,
           sRGB,
@@ -546,8 +546,8 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
   }
 }
 
-std::optional<EPixelFormat> getPixelFormatForImageCesium(
-    const ImageCesium& imageCesium,
+std::optional<EPixelFormat> getPixelFormatForImageAsset(
+    const ImageAsset& imageCesium,
     const std::optional<EPixelFormat> overridePixelFormat) {
   if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
     switch (imageCesium.compressedPixelFormat) {

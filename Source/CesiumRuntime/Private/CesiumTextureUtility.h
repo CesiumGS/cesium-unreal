@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumGltf/SharedAssetDepot.h"
 #include "CesiumGltf/Texture.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"
@@ -17,7 +17,7 @@
 #include <CesiumUtility/ReferenceCounted.h>
 
 namespace CesiumGltf {
-struct ImageCesium;
+struct ImageAsset;
 struct Texture;
 } // namespace CesiumGltf
 
@@ -118,15 +118,15 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
  * a texture.The given image _must_ be prepared before calling this method by
- * calling {@link ExtensionImageCesiumUnreal::getOrCreate} and then waiting
- * for {@link ExtensionImageCesiumUnreal::getFuture} to resolve. This method
+ * calling {@link ExtensionImageAssetUnreal::getOrCreate} and then waiting
+ * for {@link ExtensionImageAssetUnreal::getFuture} to resolve. This method
  * should be called in a background thread.
  *
  * @param imageCesium The image.
@@ -142,7 +142,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageCesium& image,
+    CesiumGltf::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -198,8 +198,8 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
  */
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
 
-std::optional<EPixelFormat> getPixelFormatForImageCesium(
-    const CesiumGltf::ImageCesium& imageCesium,
+std::optional<EPixelFormat> getPixelFormatForImageAsset(
+    const CesiumGltf::ImageAsset& imageCesium,
     const std::optional<EPixelFormat> overridePixelFormat);
 
 std::optional<ReferenceCountedUnrealTexture>

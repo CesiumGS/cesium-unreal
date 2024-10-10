@@ -1,7 +1,7 @@
-#include "ExtensionImageCesiumUnreal.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
-#include <CesiumGltf/ImageCesium.h>
+#include <CesiumGltf/ImageAsset.h>
 #include <CesiumGltfReader/GltfReader.h>
 
 using namespace CesiumAsync;
@@ -12,17 +12,15 @@ namespace {
 
 std::mutex createExtensionMutex;
 
-std::pair<ExtensionImageCesiumUnreal&, std::optional<Promise<void>>>
-getOrCreateImageFuture(
-    const AsyncSystem& asyncSystem,
-    ImageCesium& imageCesium);
+std::pair<ExtensionImageAssetUnreal&, std::optional<Promise<void>>>
+getOrCreateImageFuture(const AsyncSystem& asyncSystem, ImageAsset& imageCesium);
 
 } // namespace
 
-/*static*/ const ExtensionImageCesiumUnreal&
-ExtensionImageCesiumUnreal::getOrCreate(
+/*static*/ const ExtensionImageAssetUnreal&
+ExtensionImageAssetUnreal::getOrCreate(
     const CesiumAsync::AsyncSystem& asyncSystem,
-    CesiumGltf::ImageCesium& imageCesium,
+    CesiumGltf::ImageAsset& imageCesium,
     bool sRGB,
     bool needsMipMaps,
     const std::optional<EPixelFormat>& overridePixelFormat) {
@@ -55,43 +53,43 @@ ExtensionImageCesiumUnreal::getOrCreate(
   return extension;
 }
 
-ExtensionImageCesiumUnreal::ExtensionImageCesiumUnreal(
+ExtensionImageAssetUnreal::ExtensionImageAssetUnreal(
     const CesiumAsync::SharedFuture<void>& future)
     : _pTextureResource(nullptr), _futureCreateResource(future) {}
 
 const TSharedPtr<FCesiumTextureResource>&
-ExtensionImageCesiumUnreal::getTextureResource() const {
+ExtensionImageAssetUnreal::getTextureResource() const {
   return this->_pTextureResource;
 }
 
-CesiumAsync::SharedFuture<void>& ExtensionImageCesiumUnreal::getFuture() {
+CesiumAsync::SharedFuture<void>& ExtensionImageAssetUnreal::getFuture() {
   return this->_futureCreateResource;
 }
 
 const CesiumAsync::SharedFuture<void>&
-ExtensionImageCesiumUnreal::getFuture() const {
+ExtensionImageAssetUnreal::getFuture() const {
   return this->_futureCreateResource;
 }
 
 namespace {
 
-// Returns the ExtensionImageCesiumUnreal, which is created if it does not
+// Returns the ExtensionImageAssetUnreal, which is created if it does not
 // already exist. It _may_ also return a Promise, in which case the calling
 // thread is responsible for doing the loading and should resolve the Promise
 // when it's done.
-std::pair<ExtensionImageCesiumUnreal&, std::optional<Promise<void>>>
+std::pair<ExtensionImageAssetUnreal&, std::optional<Promise<void>>>
 getOrCreateImageFuture(
     const AsyncSystem& asyncSystem,
-    ImageCesium& imageCesium) {
+    ImageAsset& imageCesium) {
   std::scoped_lock lock(createExtensionMutex);
 
-  ExtensionImageCesiumUnreal* pExtension =
-      imageCesium.getExtension<ExtensionImageCesiumUnreal>();
+  ExtensionImageAssetUnreal* pExtension =
+      imageCesium.getExtension<ExtensionImageAssetUnreal>();
   if (!pExtension) {
     // This thread will work on this image.
     Promise<void> promise = asyncSystem.createPromise<void>();
-    ExtensionImageCesiumUnreal& extension =
-        imageCesium.addExtension<ExtensionImageCesiumUnreal>(
+    ExtensionImageAssetUnreal& extension =
+        imageCesium.addExtension<ExtensionImageAssetUnreal>(
             promise.getFuture().share());
     return {extension, std::move(promise)};
   } else {

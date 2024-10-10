@@ -106,7 +106,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<
-        const CesiumGltf::ImageCesium*,
+        const CesiumGltf::ImageAsset*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
         featureTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,

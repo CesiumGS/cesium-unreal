@@ -2,7 +2,7 @@
 
 #include "CesiumTextureUtility.h"
 #include "CesiumAsync/AsyncSystem.h"
-#include "ExtensionImageCesiumUnreal.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "Misc/AutomationTest.h"
 #include "RenderingThread.h"
 #include <CesiumGltfReader/GltfReader.h>
@@ -21,7 +21,7 @@ BEGIN_DEFINE_SPEC(
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 std::vector<uint8_t> expectedMipPixelsIfGenerated;
-CesiumUtility::IntrusivePointer<ImageCesium> pImageCesium;
+CesiumUtility::IntrusivePointer<ImageAsset> pImageAsset;
 
 void RunTests();
 
@@ -51,23 +51,23 @@ void CesiumTextureUtilitySpec::Define() {
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
       originalMipPixels.clear();
 
-      pImageCesium.emplace();
-      pImageCesium->width = 3;
-      pImageCesium->height = 2;
+      pImageAsset.emplace();
+      pImageAsset->width = 3;
+      pImageAsset->height = 2;
       TestEqual(
           "image buffer size is correct",
           originalPixels.size(),
-          pImageCesium->width * pImageCesium->height *
-              pImageCesium->bytesPerChannel * pImageCesium->channels);
-      pImageCesium->pixelData.resize(originalPixels.size());
+          pImageAsset->width * pImageAsset->height *
+              pImageAsset->bytesPerChannel * pImageAsset->channels);
+      pImageAsset->pixelData.resize(originalPixels.size());
 
       std::memcpy(
-          pImageCesium->pixelData.data(),
+          pImageAsset->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
 
-      CesiumUtility::IntrusivePointer<ImageCesium> pCopy =
-          new ImageCesium(*pImageCesium);
+      CesiumUtility::IntrusivePointer<ImageAsset> pCopy =
+          new ImageAsset(*pImageAsset);
       CesiumGltfReader::GltfReader::generateMipMaps(*pCopy);
 
       expectedMipPixelsIfGenerated.clear();
@@ -87,31 +87,31 @@ void CesiumTextureUtilitySpec::Define() {
 
   Describe("With Mips", [this]() {
     BeforeEach([this]() {
-      pImageCesium.emplace();
-      pImageCesium->width = 3;
-      pImageCesium->height = 2;
+      pImageAsset.emplace();
+      pImageAsset->width = 3;
+      pImageAsset->height = 2;
 
       // Original image (3x2)
       originalPixels = {0x20, 0x40, 0x80, 0xF0, 0x21, 0x41, 0x81, 0xF1,
                         0x22, 0x42, 0x82, 0xF2, 0x23, 0x43, 0x83, 0xF3,
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
-      pImageCesium->mipPositions.emplace_back(
-          ImageCesiumMipPosition{0, originalPixels.size()});
+      pImageAsset->mipPositions.emplace_back(
+          ImageAssetMipPosition{0, originalPixels.size()});
 
       // Mip 1 (1x1)
       originalMipPixels = {0x26, 0x46, 0x86, 0xF6};
-      pImageCesium->mipPositions.emplace_back(ImageCesiumMipPosition{
-          pImageCesium->mipPositions[0].byteSize,
+      pImageAsset->mipPositions.emplace_back(ImageAssetMipPosition{
+          pImageAsset->mipPositions[0].byteSize,
           originalMipPixels.size()});
 
-      pImageCesium->pixelData.resize(
+      pImageAsset->pixelData.resize(
           originalPixels.size() + originalMipPixels.size());
       std::memcpy(
-          pImageCesium->pixelData.data(),
+          pImageAsset->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
       std::memcpy(
-          pImageCesium->pixelData.data() + originalPixels.size(),
+          pImageAsset->pixelData.data() + originalPixels.size(),
           originalMipPixels.data(),
           originalMipPixels.size());
     });
@@ -121,9 +121,9 @@ void CesiumTextureUtilitySpec::Define() {
 }
 
 void CesiumTextureUtilitySpec::RunTests() {
-  It("ImageCesium non-sRGB", [this]() {
+  It("ImageAsset non-sRGB", [this]() {
     TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
-        *pImageCesium,
+        *pImageAsset,
         TextureAddress::TA_Mirror,
         TextureAddress::TA_Wrap,
         TextureFilter::TF_Bilinear,
@@ -145,9 +145,9 @@ void CesiumTextureUtilitySpec::RunTests() {
     CheckGroup(pRefCountedTexture, TextureGroup::TEXTUREGROUP_Cinematic);
   });
 
-  It("ImageCesium sRGB", [this]() {
+  It("ImageAsset sRGB", [this]() {
     TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
-        *pImageCesium,
+        *pImageAsset,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Mirror,
         TextureFilter::TF_Trilinear,
@@ -178,7 +178,7 @@ void CesiumTextureUtilitySpec::RunTests() {
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
         loadTextureFromImageAndSamplerAnyThreadPart(
-            *pImageCesium,
+            *pImageAsset,
             sampler,
             false);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
@@ -199,7 +199,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageCesium;
+    image.pCesium = pImageAsset;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -232,7 +232,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageCesium;
+    image.pCesium = pImageAsset;
 
     Sampler& sampler1 = model.samplers.emplace_back();
     sampler1.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -299,7 +299,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageCesium;
+    image.pCesium = pImageAsset;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -348,7 +348,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageCesium;
+    image.pCesium = pImageAsset;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;

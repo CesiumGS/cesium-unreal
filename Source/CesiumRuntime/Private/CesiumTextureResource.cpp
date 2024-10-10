@@ -65,7 +65,7 @@ private:
 class FCesiumCreateNewTextureResource : public FCesiumTextureResource {
 public:
   FCesiumCreateNewTextureResource(
-      CesiumGltf::ImageCesium&& image,
+      CesiumGltf::ImageAsset&& image,
       TextureGroup textureGroup,
       uint32 width,
       uint32 height,
@@ -81,7 +81,7 @@ protected:
   virtual FTextureRHIRef InitializeTextureRHI() override;
 
 private:
-  CesiumGltf::ImageCesium _image;
+  CesiumGltf::ImageAsset _image;
 };
 
 ESamplerFilter convertFilter(TextureFilter filter) {
@@ -126,7 +126,7 @@ void CopyMip(
     void* pDest,
     uint32 destPitch,
     EPixelFormat format,
-    const CesiumGltf::ImageCesium& src,
+    const CesiumGltf::ImageAsset& src,
     uint32 mipIndex) {
   size_t byteOffset = 0;
   size_t byteSize = 0;
@@ -134,7 +134,7 @@ void CopyMip(
     byteOffset = 0;
     byteSize = src.pixelData.size();
   } else {
-    const CesiumGltf::ImageCesiumMipPosition& mipPos =
+    const CesiumGltf::ImageAssetMipPosition& mipPos =
         src.mipPositions[mipIndex];
     byteOffset = mipPos.byteOffset;
     byteSize = mipPos.byteSize;
@@ -245,7 +245,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
  * @return The RHI texture reference.
  */
 FTexture2DRHIRef CreateRHITexture2D_Async(
-    const CesiumGltf::ImageCesium& image,
+    const CesiumGltf::ImageAsset& image,
     EPixelFormat format,
     bool sRGB) {
   check(GRHISupportsAsyncTextureCreation);
@@ -271,7 +271,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
 
     void* mipsData[16];
     for (size_t i = 0; i < mipCount; ++i) {
-      const CesiumGltf::ImageCesiumMipPosition& mipPos = image.mipPositions[i];
+      const CesiumGltf::ImageAssetMipPosition& mipPos = image.mipPositions[i];
       mipsData[i] = (void*)(&image.pixelData[mipPos.byteOffset]);
     }
 
@@ -303,7 +303,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
 }
 
 /*static*/ FCesiumTextureResourceUniquePtr FCesiumTextureResource::CreateNew(
-    CesiumGltf::ImageCesium& imageCesium,
+    CesiumGltf::ImageAsset& imageCesium,
     TextureGroup textureGroup,
     const std::optional<EPixelFormat>& overridePixelFormat,
     TextureFilter filter,
@@ -328,7 +328,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
   }
 
   std::optional<EPixelFormat> maybePixelFormat =
-      CesiumTextureUtility::getPixelFormatForImageCesium(
+      CesiumTextureUtility::getPixelFormatForImageAsset(
           imageCesium,
           overridePixelFormat);
   if (!maybePixelFormat) {
@@ -379,7 +379,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
     std::vector<std::byte> pixelData;
     imageCesium.pixelData.swap(pixelData);
 
-    std::vector<CesiumGltf::ImageCesiumMipPosition> mipPositions;
+    std::vector<CesiumGltf::ImageAssetMipPosition> mipPositions;
     imageCesium.mipPositions.swap(mipPositions);
 
     return pResult;
@@ -519,18 +519,16 @@ void FCesiumTextureResource::InitRHI() {
         CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
     const FRHIResourceCreateInfo CreateInfo(this->_platformExtData);
 
-    FDynamicRHI::FRHICalcTextureSizeResult result = RHICalcTexturePlatformSize(
-        FRHITextureDesc::Create2D(
-            MipExtents,
-            this->_format,
-            CreateInfo.ClearValueBinding,
-            textureFlags,
-            this->GetCurrentMipCount(),
-            1,
-            CreateInfo.ExtData),
-        0);
-
-    this->_textureSize = result.Size;
+    uint32 alignment;
+    this->_textureSize = RHICalcTexture2DPlatformSize(
+        MipExtents.X,
+        MipExtents.Y,
+        this->_format,
+        this->GetCurrentMipCount(),
+        1,
+        textureFlags,
+        FRHIResourceCreateInfo(this->_platformExtData),
+        alignment);
 
     INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
     INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
@@ -643,7 +641,7 @@ FTextureRHIRef FCesiumUseExistingTextureResource::InitializeTextureRHI() {
 }
 
 FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
-    CesiumGltf::ImageCesium&& image,
+    CesiumGltf::ImageAsset&& image,
     TextureGroup textureGroup,
     uint32 width,
     uint32 height,
@@ -732,7 +730,7 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   std::vector<std::byte> pixelData;
   this->_image.pixelData.swap(pixelData);
 
-  std::vector<CesiumGltf::ImageCesiumMipPosition> mipPositions;
+  std::vector<CesiumGltf::ImageAssetMipPosition> mipPositions;
   this->_image.mipPositions.swap(mipPositions);
 
   return rhiTexture;
