@@ -5,8 +5,8 @@
 #include "CesiumCommon.h"
 #include "Engine/Texture.h"
 #include "TextureResource.h"
+#include <CesiumAsync/SharedAssetDepot.h>
 #include <CesiumGltf/ImageCesium.h>
-#include <CesiumGltf/SharedAssetDepot.h>
 
 class FCesiumTextureResource;
 

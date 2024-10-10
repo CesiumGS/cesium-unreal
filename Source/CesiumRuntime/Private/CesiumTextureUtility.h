@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumGltf/SharedAssetDepot.h"
 #include "CesiumGltf/Texture.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"

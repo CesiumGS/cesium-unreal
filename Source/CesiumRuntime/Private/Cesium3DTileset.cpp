@@ -11,6 +11,7 @@
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
+#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
@@ -19,7 +20,6 @@
 #include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
-#include "CesiumGltf/SharedAssetDepot.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -2045,8 +2045,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumGltf::SharedAssetDepot<CesiumGltf::ImageCesium>& imageDepot =
-          this->_pTileset->getSharedAssetSystem().image();
+      const CesiumAsync::SharedAssetDepot<CesiumGltf::ImageCesium>& imageDepot =
+          *this->_pTileset->getSharedAssetSystem().pImage;
       UE_LOG(
           LogCesium,
           Display,
