@@ -99,6 +99,20 @@ public:
   GetAsFeatureIDAttribute(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
+   * Gets this feature ID set as an feature ID attribute for instances. This can
+   * be used for more fine-grained interaction with the attribute itself. If
+   * this feature ID is not defined as an attribute, then the returned attribute
+   * will be invalid.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDSet")
+  static const FCesiumFeatureIdAttribute&
+  GetAsFeatureIDInstanceAttribute(UPARAM(ref)
+                                      const FCesiumFeatureIdSet& FeatureIDSet);
+
+  /**
    * Gets this feature ID set as a feature ID texture. This can be used for more
    * fine-grained interaction with the texture itself. If this feature ID is
    * not defined as a texture, then the returned texture will be invalid.

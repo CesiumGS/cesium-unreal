@@ -115,6 +115,16 @@ UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
   return EmptyFeatureIDAttribute;
 }
 
+const FCesiumFeatureIdAttribute&
+UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDInstanceAttribute(
+    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
+  if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Instance) {
+    return std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
+  }
+
+  return EmptyFeatureIDAttribute;
+}
+
 const FCesiumFeatureIdTexture&
 UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
