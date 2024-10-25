@@ -535,7 +535,8 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
       pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
-  double maxRadius = pEllipsoid->GetMaximumRadius();
+  double maxRadius =
+      pEllipsoid->GetMaximumRadius() + this->CircumscribedGroundHeight * 1000.0;
 
   if (llh.Z / 1000.0 > this->CircumscribedGroundThreshold) {
     this->SetSkyAtmosphereGroundRadius(
