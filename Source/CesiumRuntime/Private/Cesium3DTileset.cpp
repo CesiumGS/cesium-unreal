@@ -2045,7 +2045,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumGltfReader::NetworkImageAssetDepot& imageDepot =
+      const CesiumGltfReader::GltfSharedAssetSystem::ImageDepot& imageDepot =
           *this->_pTileset->getSharedAssetSystem().pImage;
       UE_LOG(
           LogCesium,
