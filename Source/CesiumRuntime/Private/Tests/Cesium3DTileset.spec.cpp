@@ -15,6 +15,7 @@
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationTestSettings.h"
+#include <Cesium3DTilesSelection/TilesetSharedAssetSystem.h>
 #include <CesiumAsync/ICacheDatabase.h>
 
 #define TEST_SCREEN_WIDTH 1280
@@ -72,9 +73,9 @@ static void setupForSharedImages(SceneGenerationContext& context) {
 void tilesetPass(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
-  CesiumGltfReader::GltfSharedAssetSystem& assetSystem =
+  Cesium3DTilesSelection::TilesetSharedAssetSystem& assetSystem =
       context.tilesets[0]->GetTileset()->getSharedAssetSystem();
-  assert(assetDepot.getImagesCount() == 2);
+  check(assetSystem.pImage->getAssetCount() == 2);
 }
 
 bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
