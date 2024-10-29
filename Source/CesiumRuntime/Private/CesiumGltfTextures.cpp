@@ -237,7 +237,7 @@ SharedFuture<void> createTextureInLoadThread(
   const ExtensionImageAssetUnreal& extension =
       ExtensionImageAssetUnreal::getOrCreate(
           asyncSystem,
-          *pImage->pCesium,
+          *pImage->pAsset,
           sRGB,
           needsMips,
           std::nullopt);

@@ -199,7 +199,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageAsset;
+    image.pAsset = pImageAsset;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -232,7 +232,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageAsset;
+    image.pAsset = pImageAsset;
 
     Sampler& sampler1 = model.samplers.emplace_back();
     sampler1.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -299,7 +299,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageAsset;
+    image.pAsset = pImageAsset;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
@@ -348,7 +348,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     Model model;
 
     Image& image = model.images.emplace_back();
-    image.pCesium = pImageAsset;
+    image.pAsset = pImageAsset;
 
     Sampler& sampler = model.samplers.emplace_back();
     sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;

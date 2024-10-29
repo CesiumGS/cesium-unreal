@@ -200,16 +200,16 @@ CesiumGltf::PropertyTextureProperty& AddPropertyTexturePropertyToModel(
   classProperty.componentType = componentType;
 
   CesiumGltf::Image& image = model.images.emplace_back();
-  image.pCesium.emplace();
-  image.pCesium->width = 2;
-  image.pCesium->height = 2;
-  image.pCesium->channels = sizeof(T);
-  image.pCesium->bytesPerChannel = 1;
-  image.pCesium->pixelData.resize(values.size() * sizeof(T));
+  image.pAsset.emplace();
+  image.pAsset->width = 2;
+  image.pAsset->height = 2;
+  image.pAsset->channels = sizeof(T);
+  image.pAsset->bytesPerChannel = 1;
+  image.pAsset->pixelData.resize(values.size() * sizeof(T));
   std::memcpy(
-      image.pCesium->pixelData.data(),
+      image.pAsset->pixelData.data(),
       values.data(),
-      image.pCesium->pixelData.size());
+      image.pAsset->pixelData.size());
 
   CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
   sampler.wrapS = CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE;
