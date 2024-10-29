@@ -1,5 +1,17 @@
 # Change Log
 
+### Next Version - Not Released Yet
+
+##### Additions :tada:
+
+- Added `CircumscribedGroundHeight` property to `CesiumSunSky`. It defaults to 0, which is consistent with the previous behavior. It can be set to a larger value (like 40) to avoid dark splotchy artifacts when zoomed out far from the globe in certain tilesets where geometry extends very far beyond the ellipsoid in the low-detail representation, such as Google Photorealistic 3D Tiles.
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused incorrect lighting for tilesets using `KHR_materials_unlit`.
+- Reduced the memory used by tiles with `KHR_materials_unlit`.
+- `CesiumGlobeAnchor` properties are no longer shown on the main `CesiumSunSky` Details panel, because it is almost never necessary to set these. They can still be set on the component's own Details panel if needed.
+
 ### v2.9.0 - 2024-10-01
 
 ##### Additions :tada:
