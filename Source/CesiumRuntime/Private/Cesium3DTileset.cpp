@@ -8,6 +8,7 @@
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
+#include "Cesium3DTilesSelection/TilesetSharedAssetSystem.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
@@ -2045,17 +2046,16 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
 
     if (this->LogAssetStats && this->_pTileset) {
-      const CesiumAsync::SharedAssetDepot<CesiumGltf::ImageAsset>& imageDepot =
-          *this->_pTileset->getSharedAssetSystem().pImage;
+      const Cesium3DTilesSelection::TilesetSharedAssetSystem::ImageDepot&
+          imageDepot = *this->_pTileset->getSharedAssetSystem().pImage;
       UE_LOG(
           LogCesium,
           Display,
           TEXT(
-              "Images depot: %d distinct assets, %d total usages, %d assets pending deletion, %d total size in bytes"),
-          imageDepot.getDistinctCount(),
-          imageDepot.getUsageCount(),
-          imageDepot.getDeletionCandidateCount(),
-          imageDepot.getDeletionCandidateTotalSizeBytes());
+              "Images shared asset depot: %d distinct assets, %d inactive assets pending deletion (%d bytes)"),
+          imageDepot.getAssetCount(),
+          imageDepot.getInactiveAssetCount(),
+          imageDepot.getInactiveAssetTotalSizeBytes());
     }
   }
 }

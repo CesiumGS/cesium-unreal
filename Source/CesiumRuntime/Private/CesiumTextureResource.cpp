@@ -355,8 +355,8 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
 
     FTexture2DRHIRef textureReference =
         CreateRHITexture2D_Async(imageCesium, *maybePixelFormat, sRGB);
-    textureReference->SetName(
-        FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
+    // textureReference->SetName(
+    //     FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
     auto pResult = TUniquePtr<
         FCesiumUseExistingTextureResource,
         FCesiumTextureResourceDeleter>(new FCesiumUseExistingTextureResource(
@@ -670,9 +670,9 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   // Use the asset ID as the name of the texture so it will be visible in the
   // Render Resource Viewer.
   FString debugName = TEXT("CesiumTextureUtility");
-  if (!this->_image.getUniqueAssetId().empty()) {
-    debugName = UTF8_TO_TCHAR(this->_image.getUniqueAssetId().c_str());
-  }
+  // if (!this->_image.getUniqueAssetId().empty()) {
+  //   debugName = UTF8_TO_TCHAR(this->_image.getUniqueAssetId().c_str());
+  // }
 
   FRHIResourceCreateInfo createInfo{*debugName};
   createInfo.BulkData = nullptr;
