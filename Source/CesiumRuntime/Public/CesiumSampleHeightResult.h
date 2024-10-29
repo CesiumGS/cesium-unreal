@@ -19,7 +19,7 @@ struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
    * is false.
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
-  FVector LongitudeLatitudeHeight;
+  FVector LongitudeLatitudeHeight{0.0, 0.0, 0.0};
 
   /**
    * True if the height as sampled from the tileset successfully. False if the
@@ -28,5 +28,5 @@ struct CESIUMRUNTIME_API FCesiumSampleHeightResult {
    * will have more information about the problem.
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
-  bool SampleSuccess;
+  bool SampleSuccess{false};
 };
