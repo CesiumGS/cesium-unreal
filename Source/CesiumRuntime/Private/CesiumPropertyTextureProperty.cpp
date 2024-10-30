@@ -8,8 +8,6 @@
 #include <cstdint>
 #include <limits>
 
-using namespace CesiumGltf;
-
 namespace {
 /**
  * Callback on a std::any, assuming that it contains a

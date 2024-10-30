@@ -7,15 +7,13 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-using namespace CesiumGltf;
-
 static FCesiumFeatureIdAttribute EmptyFeatureIDAttribute;
 static FCesiumFeatureIdTexture EmptyFeatureIDTexture;
 
 FCesiumFeatureIdSet::FCesiumFeatureIdSet(
-    const Model& InModel,
-    const MeshPrimitive& Primitive,
-    const FeatureId& FeatureID)
+    const CesiumGltf::Model& InModel,
+    const CesiumGltf::MeshPrimitive& Primitive,
+    const CesiumGltf::FeatureId& FeatureID)
     : _featureID(),
       _featureIDSetType(ECesiumFeatureIdSetType::None),
       _featureCount(FeatureID.featureCount),
@@ -25,12 +23,13 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   FString propertyTableName;
 
   // For backwards compatibility with GetFeatureTableName.
-  const ExtensionModelExtStructuralMetadata* pMetadata =
-      InModel.getExtension<ExtensionModelExtStructuralMetadata>();
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pMetadata =
+      InModel.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   if (pMetadata && _propertyTableIndex >= 0) {
     size_t index = static_cast<size_t>(_propertyTableIndex);
     if (index < pMetadata->propertyTables.size()) {
-      const PropertyTable& propertyTable = pMetadata->propertyTables[index];
+      const CesiumGltf::PropertyTable& propertyTable =
+          pMetadata->propertyTables[index];
       std::string name = propertyTable.name.value_or("");
       propertyTableName = FString(name.c_str());
     }

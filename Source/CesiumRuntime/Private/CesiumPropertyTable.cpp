@@ -3,21 +3,19 @@
 #include "CesiumPropertyTable.h"
 #include "CesiumGltf/PropertyTableView.h"
 
-using namespace CesiumGltf;
-
 static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 
 FCesiumPropertyTable::FCesiumPropertyTable(
-    const Model& Model,
-    const PropertyTable& PropertyTable)
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::PropertyTable& PropertyTable)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
       _name(PropertyTable.name.value_or("").c_str()),
       _className(PropertyTable.classProperty.c_str()),
       _count(PropertyTable.count),
       _properties() {
-  PropertyTableView propertyTableView{Model, PropertyTable};
+  CesiumGltf::PropertyTableView propertyTableView{Model, PropertyTable};
   switch (propertyTableView.status()) {
-  case PropertyTableViewStatus::Valid:
+  case CesiumGltf::PropertyTableViewStatus::Valid:
     _status = ECesiumPropertyTableStatus::Valid;
     break;
   default:

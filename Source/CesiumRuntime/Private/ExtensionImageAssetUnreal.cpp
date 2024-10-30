@@ -5,7 +5,6 @@
 #include <CesiumGltfReader/GltfReader.h>
 
 using namespace CesiumAsync;
-using namespace CesiumGltf;
 using namespace CesiumGltfReader;
 
 namespace {
@@ -13,7 +12,9 @@ namespace {
 std::mutex createExtensionMutex;
 
 std::pair<ExtensionImageAssetUnreal&, std::optional<Promise<void>>>
-getOrCreateImageFuture(const AsyncSystem& asyncSystem, ImageAsset& imageCesium);
+getOrCreateImageFuture(
+    const AsyncSystem& asyncSystem,
+    CesiumGltf::ImageAsset& imageCesium);
 
 } // namespace
 
@@ -80,7 +81,7 @@ namespace {
 std::pair<ExtensionImageAssetUnreal&, std::optional<Promise<void>>>
 getOrCreateImageFuture(
     const AsyncSystem& asyncSystem,
-    ImageAsset& imageCesium) {
+    CesiumGltf::ImageAsset& imageCesium) {
   std::scoped_lock lock(createExtensionMutex);
 
   ExtensionImageAssetUnreal* pExtension =

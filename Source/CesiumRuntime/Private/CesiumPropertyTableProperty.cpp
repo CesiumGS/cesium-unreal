@@ -6,8 +6,6 @@
 #include "UnrealMetadataConversions.h"
 #include <utility>
 
-using namespace CesiumGltf;
-
 namespace {
 /**
  * Callback on a std::any, assuming that it contains a PropertyTablePropertyView

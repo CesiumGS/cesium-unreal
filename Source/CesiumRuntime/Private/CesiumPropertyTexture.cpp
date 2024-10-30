@@ -6,8 +6,6 @@
 #include "CesiumGltf/PropertyTextureView.h"
 #include "CesiumMetadataPickingBlueprintLibrary.h"
 
-using namespace CesiumGltf;
-
 static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 
 FCesiumPropertyTexture::FCesiumPropertyTexture(
@@ -16,9 +14,9 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTextureClass),
       _name(PropertyTexture.name.value_or("").c_str()),
       _className(PropertyTexture.classProperty.c_str()) {
-  PropertyTextureView propertyTextureView(Model, PropertyTexture);
+  CesiumGltf::PropertyTextureView propertyTextureView(Model, PropertyTexture);
   switch (propertyTextureView.status()) {
-  case PropertyTextureViewStatus::Valid:
+  case CesiumGltf::PropertyTextureViewStatus::Valid:
     _status = ECesiumPropertyTextureStatus::Valid;
     break;
   default:
@@ -35,7 +33,7 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
         continue;
       }
 
-      TextureViewOptions options;
+      CesiumGltf::TextureViewOptions options;
       options.applyKhrTextureTransformExtension = true;
 
       if (propertyPair->second.extras.find("makeImageCopy") !=

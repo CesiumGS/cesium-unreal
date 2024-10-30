@@ -28,8 +28,6 @@
 #include <CesiumGltfReader/GltfReader.h>
 #include <CesiumUtility/IntrusivePointer.h>
 
-using namespace CesiumGltf;
-
 namespace {
 
 struct ExtensionUnrealTexture {
@@ -424,41 +422,42 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
 }
 
 std::optional<EPixelFormat> getPixelFormatForImageAsset(
-    const ImageAsset& imageCesium,
+    const CesiumGltf::ImageAsset& imageCesium,
     const std::optional<EPixelFormat> overridePixelFormat) {
-  if (imageCesium.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
+  if (imageCesium.compressedPixelFormat !=
+      CesiumGltf::GpuCompressedPixelFormat::NONE) {
     switch (imageCesium.compressedPixelFormat) {
-    case GpuCompressedPixelFormat::ETC1_RGB:
+    case CesiumGltf::GpuCompressedPixelFormat::ETC1_RGB:
       return EPixelFormat::PF_ETC1;
       break;
-    case GpuCompressedPixelFormat::ETC2_RGBA:
+    case CesiumGltf::GpuCompressedPixelFormat::ETC2_RGBA:
       return EPixelFormat::PF_ETC2_RGBA;
       break;
-    case GpuCompressedPixelFormat::BC1_RGB:
+    case CesiumGltf::GpuCompressedPixelFormat::BC1_RGB:
       return EPixelFormat::PF_DXT1;
       break;
-    case GpuCompressedPixelFormat::BC3_RGBA:
+    case CesiumGltf::GpuCompressedPixelFormat::BC3_RGBA:
       return EPixelFormat::PF_DXT5;
       break;
-    case GpuCompressedPixelFormat::BC4_R:
+    case CesiumGltf::GpuCompressedPixelFormat::BC4_R:
       return EPixelFormat::PF_BC4;
       break;
-    case GpuCompressedPixelFormat::BC5_RG:
+    case CesiumGltf::GpuCompressedPixelFormat::BC5_RG:
       return EPixelFormat::PF_BC5;
       break;
-    case GpuCompressedPixelFormat::BC7_RGBA:
+    case CesiumGltf::GpuCompressedPixelFormat::BC7_RGBA:
       return EPixelFormat::PF_BC7;
       break;
-    case GpuCompressedPixelFormat::ASTC_4x4_RGBA:
+    case CesiumGltf::GpuCompressedPixelFormat::ASTC_4x4_RGBA:
       return EPixelFormat::PF_ASTC_4x4;
       break;
-    case GpuCompressedPixelFormat::PVRTC2_4_RGBA:
+    case CesiumGltf::GpuCompressedPixelFormat::PVRTC2_4_RGBA:
       return EPixelFormat::PF_PVRTC2;
       break;
-    case GpuCompressedPixelFormat::ETC2_EAC_R11:
+    case CesiumGltf::GpuCompressedPixelFormat::ETC2_EAC_R11:
       return EPixelFormat::PF_ETC2_R11_EAC;
       break;
-    case GpuCompressedPixelFormat::ETC2_EAC_RG11:
+    case CesiumGltf::GpuCompressedPixelFormat::ETC2_EAC_RG11:
       return EPixelFormat::PF_ETC2_RG11_EAC;
       break;
     default:

@@ -5,20 +5,18 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-using namespace CesiumGltf;
-
 static FCesiumPrimitiveFeatures EmptyPrimitiveFeatures;
 
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
-    const Model& Model,
-    const MeshPrimitive& Primitive,
-    const ExtensionExtMeshFeatures& Features)
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::MeshPrimitive& Primitive,
+    const CesiumGltf::ExtensionExtMeshFeatures& Features)
     : _vertexCount(0), _primitiveMode(Primitive.mode) {
   this->_indexAccessor = CesiumGltf::getIndexAccessorView(Model, Primitive);
 
   auto positionIt = Primitive.attributes.find("POSITION");
   if (positionIt != Primitive.attributes.end()) {
-    const Accessor& positionAccessor =
+    const CesiumGltf::Accessor& positionAccessor =
         Model.getSafe(Model.accessors, positionIt->second);
     _vertexCount = positionAccessor.count;
   }
