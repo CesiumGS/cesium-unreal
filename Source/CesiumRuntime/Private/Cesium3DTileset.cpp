@@ -1992,7 +1992,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
   }
 
-  if (!this->LogSelectionStats && !this->LogAssetStats) {
+  if (!this->LogSelectionStats && !this->LogSharedAssetStats) {
     return;
   }
 
@@ -2045,7 +2045,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           this->LoadProgress);
     }
 
-    if (this->LogAssetStats && this->_pTileset) {
+    if (this->LogSharedAssetStats && this->_pTileset) {
       const Cesium3DTilesSelection::TilesetSharedAssetSystem::ImageDepot&
           imageDepot = *this->_pTileset->getSharedAssetSystem().pImage;
       UE_LOG(
