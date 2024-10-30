@@ -317,7 +317,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
 
   if (needsMipMaps) {
     std::optional<std::string> errorMessage =
-        CesiumGltfReader::GltfReader::generateMipMaps(imageCesium);
+        CesiumGltfReader::ImageDecoder::generateMipMaps(imageCesium);
     if (errorMessage) {
       UE_LOG(
           LogCesium,

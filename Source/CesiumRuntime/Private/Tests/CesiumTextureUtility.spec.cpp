@@ -68,7 +68,7 @@ void CesiumTextureUtilitySpec::Define() {
 
       CesiumUtility::IntrusivePointer<ImageAsset> pCopy =
           new ImageAsset(*pImageAsset);
-      CesiumGltfReader::GltfReader::generateMipMaps(*pCopy);
+      CesiumGltfReader::ImageDecoder::generateMipMaps(*pCopy);
 
       expectedMipPixelsIfGenerated.clear();
 

@@ -881,7 +881,7 @@ public:
 
     if (pOptions->useMipmaps) {
       std::optional<std::string> errorMessage =
-          CesiumGltfReader::GltfReader::generateMipMaps(image);
+          CesiumGltfReader::ImageDecoder::generateMipMaps(image);
       if (errorMessage) {
         UE_LOG(
             LogCesium,
