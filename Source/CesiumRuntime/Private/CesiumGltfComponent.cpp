@@ -2877,6 +2877,36 @@ static void SetMetadataParameterValues_DEPRECATED(
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
+namespace {
+void addInstanceFeatureIds(UCesiumGltfInstancedComponent* pInstancedComponent) {
+  const FCesiumInstanceFeatures& instanceFeatures =
+      UCesiumInstanceFeaturesBlueprintLibrary::GetInstanceFeatures(
+          pInstancedComponent);
+  const TArray<FCesiumFeatureIdSet>& featureIdSets =
+      UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDSets(
+          instanceFeatures);
+  int32 featureSetCount = featureIdSets.Num();
+  pInstancedComponent->NumCustomDataFloats = featureSetCount;
+  if (featureSetCount == 0) {
+    return;
+  }
+  int32 numInstances = pInstancedComponent->GetInstanceCount();
+  pInstancedComponent->PerInstanceSMCustomData.SetNum(
+      featureSetCount * numInstances);
+  for (int32 j = 0; j < featureSetCount; ++j) {
+    for (int32 i = 0; i < numInstances; ++i) {
+      int64 featureId =
+          UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+              instanceFeatures,
+              i,
+              j);
+      pInstancedComponent->PerInstanceSMCustomData[i * featureSetCount + j] =
+          static_cast<float>(featureId);
+    }
+  }
+}
+} // namespace
+
 static void loadPrimitiveGameThreadPart(
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
@@ -2920,6 +2950,7 @@ static void loadPrimitiveGameThreadPart(
       pInstancedComponent->AddInstance(transform, false);
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
+    addInstanceFeatureIds(pInstancedComponent);
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
