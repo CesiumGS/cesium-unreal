@@ -72,8 +72,7 @@ static void setupForSharedImages(SceneGenerationContext& context) {
 
 void tilesetPass(
     SceneGenerationContext& context,
-    TestPass::TestingParameter parameter) {
-}
+    TestPass::TestingParameter parameter) {}
 
 bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
