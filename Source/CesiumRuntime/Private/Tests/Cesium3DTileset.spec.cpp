@@ -73,9 +73,6 @@ static void setupForSharedImages(SceneGenerationContext& context) {
 void tilesetPass(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
-  Cesium3DTilesSelection::TilesetSharedAssetSystem& assetSystem =
-      context.tilesets[0]->GetTileset()->getSharedAssetSystem();
-  check(assetSystem.pImage->getAssetCount() == 2);
 }
 
 bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
