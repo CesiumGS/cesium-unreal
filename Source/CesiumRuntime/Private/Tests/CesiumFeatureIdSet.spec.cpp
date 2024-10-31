@@ -7,31 +7,29 @@
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdSetSpec,
     "Cesium.Unit.FeatureIdSet",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-Model model;
-MeshPrimitive* pPrimitive;
+CesiumGltf::Model model;
+CesiumGltf::MeshPrimitive* pPrimitive;
 TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
 END_DEFINE_SPEC(FCesiumFeatureIdSetSpec)
 
 void FCesiumFeatureIdSetSpec::Define() {
   Describe("Constructor", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
     });
 
     It("constructs from empty feature ID set", [this]() {
       // This is technically disallowed by the spec, but just make sure it's
       // handled reasonably.
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
@@ -46,7 +44,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("constructs implicit feature ID set", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -64,7 +62,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("constructs set with feature ID attribute", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+      CesiumGltf::FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -91,7 +89,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+      CesiumGltf::FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -114,7 +112,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("constructs with null feature ID", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
       featureId.nullFeatureId = 0;
 
@@ -135,7 +133,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("constructs with property table index", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
       featureId.propertyTable = 1;
 
@@ -159,13 +157,13 @@ void FCesiumFeatureIdSetSpec::Define() {
 
   Describe("GetAsFeatureIDAttribute", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
     });
 
     It("returns empty instance for non-attribute feature ID set", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -183,7 +181,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("returns valid instance for attribute feature ID set", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+      CesiumGltf::FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -208,13 +206,13 @@ void FCesiumFeatureIdSetSpec::Define() {
 
   Describe("GetAsFeatureIDTexture", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
     });
 
     It("returns empty instance for non-texture feature ID set", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -231,7 +229,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       TestEqual(
           "FeatureIDTextureViewStatus",
           featureIDTextureView.status(),
-          FeatureIdTextureViewStatus::ErrorUninitialized);
+          CesiumGltf::FeatureIdTextureViewStatus::ErrorUninitialized);
     });
 
     It("returns valid instance for texture feature ID set", [this]() {
@@ -242,7 +240,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+      CesiumGltf::FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -266,14 +264,14 @@ void FCesiumFeatureIdSetSpec::Define() {
       TestEqual(
           "FeatureIDTextureViewStatus",
           featureIDTextureView.status(),
-          FeatureIdTextureViewStatus::Valid);
+          CesiumGltf::FeatureIdTextureViewStatus::Valid);
     });
   });
 
   Describe("GetFeatureIDForVertex", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
     });
 
@@ -288,7 +286,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns -1 for out of bounds index", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -307,7 +305,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns correct value for implicit set", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -324,7 +322,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("returns correct value for attribute set", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+      CesiumGltf::FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -350,7 +348,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureID = AddFeatureIDsAsTextureToModel(
+      CesiumGltf::FeatureId& featureID = AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -374,8 +372,8 @@ void FCesiumFeatureIdSetSpec::Define() {
 
   Describe("GetFeatureIDFromHit", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
       pPrimitive->mode = CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
       pPrimitiveComponent = NewObject<UCesiumGltfPrimitiveComponent>();
@@ -394,8 +392,8 @@ void FCesiumFeatureIdSetSpec::Define() {
           model,
           *pPrimitive,
           "POSITION",
-          AccessorSpec::Type::VEC3,
-          AccessorSpec::ComponentType::FLOAT,
+          CesiumGltf::AccessorSpec::Type::VEC3,
+          CesiumGltf::AccessorSpec::ComponentType::FLOAT,
           positions);
     });
 
@@ -410,7 +408,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns -1 for invalid hit component", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 6;
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.PositionAccessor = CesiumGltf::AccessorView<FVector3f>(
@@ -446,7 +444,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 1),
           glm::vec2(1, 0)};
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      FeatureId& featureID = AddFeatureIDsAsTextureToModel(
+      CesiumGltf::FeatureId& featureID = AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -461,7 +459,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
       primData.TexCoordAccessorMap.emplace(
           0,
-          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+          CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
               static_cast<int32_t>(model.accessors.size() - 1)));
 
@@ -489,7 +487,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns correct value for implicit set", [this]() {
-      FeatureId featureId;
+      CesiumGltf::FeatureId featureId;
       featureId.featureCount = 6;
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
@@ -526,7 +524,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           static_cast<int32_t>(model.accessors.size() - 1);
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
+      CesiumGltf::FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
           model,
           *pPrimitive,
           featureIDs,
@@ -565,8 +563,8 @@ void FCesiumFeatureIdSetSpec::Define() {
 
   Describe("Deprecated", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
     });
 
@@ -574,7 +572,7 @@ void FCesiumFeatureIdSetSpec::Define() {
        [this]() {
          const int64 attributeIndex = 0;
          const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-         FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+         CesiumGltf::FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
              model,
              *pPrimitive,
              featureIDs,
@@ -584,9 +582,10 @@ void FCesiumFeatureIdSetSpec::Define() {
 
          const std::string expectedName = "PropertyTableName";
 
-         ExtensionModelExtStructuralMetadata& metadataExtension =
-             model.addExtension<ExtensionModelExtStructuralMetadata>();
-         PropertyTable& propertyTable =
+         CesiumGltf::ExtensionModelExtStructuralMetadata& metadataExtension =
+             model.addExtension<
+                 CesiumGltf::ExtensionModelExtStructuralMetadata>();
+         CesiumGltf::PropertyTable& propertyTable =
              metadataExtension.propertyTables.emplace_back();
          propertyTable.name = expectedName;
 
@@ -615,7 +614,7 @@ void FCesiumFeatureIdSetSpec::Define() {
              glm::vec2(0, 0.5),
              glm::vec2(0.5, 0.5)};
 
-         FeatureId& featureID = AddFeatureIDsAsTextureToModel(
+         CesiumGltf::FeatureId& featureID = AddFeatureIDsAsTextureToModel(
              model,
              *pPrimitive,
              featureIDs,
@@ -628,9 +627,10 @@ void FCesiumFeatureIdSetSpec::Define() {
 
          const std::string expectedName = "PropertyTableName";
 
-         ExtensionModelExtStructuralMetadata& metadataExtension =
-             model.addExtension<ExtensionModelExtStructuralMetadata>();
-         PropertyTable& propertyTable =
+         CesiumGltf::ExtensionModelExtStructuralMetadata& metadataExtension =
+             model.addExtension<
+                 CesiumGltf::ExtensionModelExtStructuralMetadata>();
+         CesiumGltf::PropertyTable& propertyTable =
              metadataExtension.propertyTables.emplace_back();
          propertyTable.name = expectedName;
 

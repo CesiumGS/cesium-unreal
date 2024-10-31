@@ -1,7 +1,5 @@
 #include "CesiumGltfSpecUtility.h"
 
-using namespace CesiumGltf;
-
 int32_t AddBufferToModel(
     CesiumGltf::Model& model,
     const std::string& type,
@@ -22,8 +20,8 @@ int32_t AddBufferToModel(
   accessor.componentType = componentType;
 
   const int64_t elementByteSize =
-      Accessor::computeByteSizeOfComponent(componentType) *
-      Accessor::computeNumberOfComponents(type);
+      CesiumGltf::Accessor::computeByteSizeOfComponent(componentType) *
+      CesiumGltf::Accessor::computeNumberOfComponents(type);
   accessor.count = buffer.byteLength / elementByteSize;
 
   return static_cast<int32_t>(model.accessors.size() - 1);
@@ -45,13 +43,14 @@ CesiumGltf::FeatureId& AddFeatureIDsAsAttributeToModel(
       CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
       std::move(values));
 
-  ExtensionExtMeshFeatures* pExtension =
-      primitive.getExtension<ExtensionExtMeshFeatures>();
+  CesiumGltf::ExtensionExtMeshFeatures* pExtension =
+      primitive.getExtension<CesiumGltf::ExtensionExtMeshFeatures>();
   if (pExtension == nullptr) {
-    pExtension = &primitive.addExtension<ExtensionExtMeshFeatures>();
+    pExtension =
+        &primitive.addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
   }
 
-  FeatureId& featureID = pExtension->featureIds.emplace_back();
+  CesiumGltf::FeatureId& featureID = pExtension->featureIds.emplace_back();
   featureID.featureCount = featureCount;
   featureID.attribute = setIndex;
 
@@ -80,7 +79,7 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
   data.resize(imageWidth * imageHeight);
   std::memcpy(data.data(), featureIDs.data(), data.size());
 
-  Sampler& sampler = model.samplers.emplace_back();
+  CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
   sampler.wrapS = samplerWrapS;
   sampler.wrapT = samplerWrapT;
 
@@ -97,16 +96,17 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
       CesiumGltf::AccessorSpec::ComponentType::FLOAT,
       std::move(values));
 
-  ExtensionExtMeshFeatures* pExtension =
-      primitive.getExtension<ExtensionExtMeshFeatures>();
+  CesiumGltf::ExtensionExtMeshFeatures* pExtension =
+      primitive.getExtension<CesiumGltf::ExtensionExtMeshFeatures>();
   if (pExtension == nullptr) {
-    pExtension = &primitive.addExtension<ExtensionExtMeshFeatures>();
+    pExtension =
+        &primitive.addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
   }
 
-  FeatureId& featureID = pExtension->featureIds.emplace_back();
+  CesiumGltf::FeatureId& featureID = pExtension->featureIds.emplace_back();
   featureID.featureCount = featureCount;
 
-  FeatureIdTexture featureIDTexture;
+  CesiumGltf::FeatureIdTexture featureIDTexture;
   featureIDTexture.channels = {0};
   featureIDTexture.index = 0;
   featureIDTexture.texCoord = texcoordSetIndex;

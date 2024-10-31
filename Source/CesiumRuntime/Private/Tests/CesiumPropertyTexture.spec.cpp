@@ -9,8 +9,6 @@
 #include "Misc/AutomationTest.h"
 #include <limits>
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTextureSpec,
     "Cesium.Unit.PropertyTexture",

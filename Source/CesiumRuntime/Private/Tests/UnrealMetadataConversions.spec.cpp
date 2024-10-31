@@ -6,8 +6,6 @@
 
 #include <limits>
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FUnrealMetadataConversionsSpec,
     "Cesium.Unit.MetadataConversions",

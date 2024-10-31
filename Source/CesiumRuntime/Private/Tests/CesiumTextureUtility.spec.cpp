@@ -9,7 +9,6 @@
 #include <UnrealTaskProcessor.h>
 #include <memory>
 
-using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
 using namespace CesiumUtility;
 
@@ -21,7 +20,7 @@ BEGIN_DEFINE_SPEC(
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 std::vector<uint8_t> expectedMipPixelsIfGenerated;
-CesiumUtility::IntrusivePointer<ImageAsset> pImageAsset;
+CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pImageAsset;
 
 void RunTests();
 
@@ -66,8 +65,8 @@ void CesiumTextureUtilitySpec::Define() {
           originalPixels.data(),
           originalPixels.size());
 
-      CesiumUtility::IntrusivePointer<ImageAsset> pCopy =
-          new ImageAsset(*pImageAsset);
+      CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pCopy =
+          new CesiumGltf::ImageAsset(*pImageAsset);
       CesiumGltfReader::ImageDecoder::generateMipMaps(*pCopy);
 
       expectedMipPixelsIfGenerated.clear();
@@ -96,11 +95,11 @@ void CesiumTextureUtilitySpec::Define() {
                         0x22, 0x42, 0x82, 0xF2, 0x23, 0x43, 0x83, 0xF3,
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
       pImageAsset->mipPositions.emplace_back(
-          ImageAssetMipPosition{0, originalPixels.size()});
+          CesiumGltf::ImageAssetMipPosition{0, originalPixels.size()});
 
       // Mip 1 (1x1)
       originalMipPixels = {0x26, 0x46, 0x86, 0xF6};
-      pImageAsset->mipPositions.emplace_back(ImageAssetMipPosition{
+      pImageAsset->mipPositions.emplace_back(CesiumGltf::ImageAssetMipPosition{
           pImageAsset->mipPositions[0].byteSize,
           originalMipPixels.size()});
 
@@ -170,11 +169,11 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Image and Sampler", [this]() {
-    Sampler sampler;
-    sampler.minFilter = Sampler::MinFilter::NEAREST;
-    sampler.magFilter = Sampler::MagFilter::NEAREST;
-    sampler.wrapS = Sampler::WrapS::MIRRORED_REPEAT;
-    sampler.wrapT = Sampler::WrapT::CLAMP_TO_EDGE;
+    CesiumGltf::Sampler sampler;
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::NEAREST;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::NEAREST;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
         loadTextureFromImageAndSamplerAnyThreadPart(
@@ -196,18 +195,18 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Model", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
+    CesiumGltf::Image& image = model.images.emplace_back();
     image.pAsset = pImageAsset;
 
-    Sampler& sampler = model.samplers.emplace_back();
-    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler.magFilter = Sampler::MagFilter::LINEAR;
-    sampler.wrapS = Sampler::WrapS::REPEAT;
-    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture = model.textures.emplace_back();
+    CesiumGltf::Texture& texture = model.textures.emplace_back();
     texture.source = 0;
     texture.sampler = 0;
 
@@ -229,28 +228,28 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Two textures referencing one image", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
+    CesiumGltf::Image& image = model.images.emplace_back();
     image.pAsset = pImageAsset;
 
-    Sampler& sampler1 = model.samplers.emplace_back();
-    sampler1.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler1.magFilter = Sampler::MagFilter::LINEAR;
-    sampler1.wrapS = Sampler::WrapS::REPEAT;
-    sampler1.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler1 = model.samplers.emplace_back();
+    sampler1.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler1.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler1.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler1.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture1 = model.textures.emplace_back();
+    CesiumGltf::Texture& texture1 = model.textures.emplace_back();
     texture1.source = 0;
     texture1.sampler = 0;
 
-    Sampler& sampler2 = model.samplers.emplace_back();
-    sampler2.minFilter = Sampler::MinFilter::NEAREST;
-    sampler2.magFilter = Sampler::MagFilter::NEAREST;
-    sampler2.wrapS = Sampler::WrapS::MIRRORED_REPEAT;
-    sampler2.wrapT = Sampler::WrapT::REPEAT;
+    CesiumGltf::Sampler& sampler2 = model.samplers.emplace_back();
+    sampler2.minFilter = CesiumGltf::Sampler::MinFilter::NEAREST;
+    sampler2.magFilter = CesiumGltf::Sampler::MagFilter::NEAREST;
+    sampler2.wrapS = CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT;
+    sampler2.wrapT = CesiumGltf::Sampler::WrapT::REPEAT;
 
-    Texture& texture2 = model.textures.emplace_back();
+    CesiumGltf::Texture& texture2 = model.textures.emplace_back();
     texture2.source = 0;
     texture2.sampler = 1;
 
@@ -296,18 +295,18 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Loading the same texture twice", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
+    CesiumGltf::Image& image = model.images.emplace_back();
     image.pAsset = pImageAsset;
 
-    Sampler& sampler = model.samplers.emplace_back();
-    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler.magFilter = Sampler::MagFilter::LINEAR;
-    sampler.wrapS = Sampler::WrapS::REPEAT;
-    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture = model.textures.emplace_back();
+    CesiumGltf::Texture& texture = model.textures.emplace_back();
     texture.source = 0;
     texture.sampler = 0;
 
@@ -330,7 +329,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     // Copy the model and load the same texture again.
     // This time there's no more pixel data, so it's necessary to use the
     // previously-created texture.
-    Model model2 = model;
+    CesiumGltf::Model model2 = model;
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
         loadTextureFromModelAnyThreadPart(model2, model.textures[0], true);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
@@ -345,18 +344,18 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Loading the same texture twice from one model", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
+    CesiumGltf::Image& image = model.images.emplace_back();
     image.pAsset = pImageAsset;
 
-    Sampler& sampler = model.samplers.emplace_back();
-    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler.magFilter = Sampler::MagFilter::LINEAR;
-    sampler.wrapS = Sampler::WrapS::REPEAT;
-    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture = model.textures.emplace_back();
+    CesiumGltf::Texture& texture = model.textures.emplace_back();
     texture.source = 0;
     texture.sampler = 0;
 

@@ -11,12 +11,13 @@
 #include <CesiumGltfReader/GltfReader.h>
 
 using namespace CesiumAsync;
-using namespace CesiumGltf;
 
 namespace {
 
 // Determines if a glTF primitive is usable for our purposes.
-bool isValidPrimitive(const Model& gltf, const MeshPrimitive& primitive);
+bool isValidPrimitive(
+    const CesiumGltf::Model& gltf,
+    const CesiumGltf::MeshPrimitive& primitive);
 
 // Determines if an Accessor's componentType is valid for an index buffer.
 bool isSupportedIndexComponentType(int32_t componentType);
@@ -25,13 +26,15 @@ bool isSupportedIndexComponentType(int32_t componentType);
 bool isSupportedPrimitiveMode(int32_t primitiveMode);
 
 // Determines if the given texture uses mipmaps.
-bool doesTextureUseMipmaps(const Model& gltf, const Texture& texture);
+bool doesTextureUseMipmaps(
+    const CesiumGltf::Model& gltf,
+    const CesiumGltf::Texture& texture);
 
 // Creates a single texture in the load thread.
 SharedFuture<void> createTextureInLoadThread(
     const AsyncSystem& asyncSystem,
-    Model& gltf,
-    TextureInfo& textureInfo,
+    CesiumGltf::Model& gltf,
+    CesiumGltf::TextureInfo& textureInfo,
     bool sRGB,
     const std::vector<bool>& imageNeedsMipmaps);
 
@@ -44,7 +47,7 @@ SharedFuture<void> createTextureInLoadThread(
   // requires mipmaps. An image requires mipmaps if any of its textures have a
   // sampler that will use them.
   std::vector<bool> imageNeedsMipmaps(model.images.size(), false);
-  for (const Texture& texture : model.textures) {
+  for (const CesiumGltf::Texture& texture : model.textures) {
     int32_t imageIndex = texture.source;
     if (imageIndex < 0 || imageIndex >= model.images.size()) {
       continue;
@@ -60,17 +63,17 @@ SharedFuture<void> createTextureInLoadThread(
   model.forEachPrimitiveInScene(
       -1,
       [&imageNeedsMipmaps, &asyncSystem, &futures](
-          Model& gltf,
-          Node& node,
-          Mesh& mesh,
-          MeshPrimitive& primitive,
+          CesiumGltf::Model& gltf,
+          CesiumGltf::Node& node,
+          CesiumGltf::Mesh& mesh,
+          CesiumGltf::MeshPrimitive& primitive,
           const glm::dmat4& transform) {
         if (!isValidPrimitive(gltf, primitive)) {
           return;
         }
 
-        Material* pMaterial =
-            Model::getSafe(&gltf.materials, primitive.material);
+        CesiumGltf::Material* pMaterial =
+            CesiumGltf::Model::getSafe(&gltf.materials, primitive.material);
         if (!pMaterial) {
           // A primitive using the default material will not have any textures.
           return;
@@ -134,7 +137,7 @@ SharedFuture<void> createTextureInLoadThread(
                 waterMaskTextureIdIt->second.isInt64()) {
               int32_t waterMaskTextureId = static_cast<int32_t>(
                   waterMaskTextureIdIt->second.getInt64OrDefault(-1));
-              TextureInfo waterMaskInfo;
+              CesiumGltf::TextureInfo waterMaskInfo;
               waterMaskInfo.index = waterMaskTextureId;
               if (waterMaskTextureId >= 0 &&
                   waterMaskTextureId < gltf.textures.size()) {
@@ -156,15 +159,15 @@ SharedFuture<void> createTextureInLoadThread(
 namespace {
 
 bool isSupportedIndexComponentType(int32_t componentType) {
-  return componentType == Accessor::ComponentType::UNSIGNED_BYTE ||
-         componentType == Accessor::ComponentType::UNSIGNED_SHORT ||
-         componentType == Accessor::ComponentType::UNSIGNED_INT;
+  return componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE ||
+         componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT ||
+         componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_INT;
 }
 
 bool isSupportedPrimitiveMode(int32_t primitiveMode) {
-  return primitiveMode == MeshPrimitive::Mode::TRIANGLES ||
-         primitiveMode == MeshPrimitive::Mode::TRIANGLE_STRIP ||
-         primitiveMode == MeshPrimitive::Mode::POINTS;
+  return primitiveMode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
+         primitiveMode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP ||
+         primitiveMode == CesiumGltf::MeshPrimitive::Mode::POINTS;
 }
 
 // Determines if a glTF primitive is usable for our purposes.
@@ -177,21 +180,23 @@ bool isValidPrimitive(
   }
 
   auto positionAccessorIt =
-      primitive.attributes.find(VertexAttributeSemantics::POSITION);
+      primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::POSITION);
   if (positionAccessorIt == primitive.attributes.end()) {
     // This primitive doesn't have a POSITION semantic, so it's not valid.
     return false;
   }
 
-  AccessorView<FVector3f> positionView(gltf, positionAccessorIt->second);
-  if (positionView.status() != AccessorViewStatus::Valid) {
+  CesiumGltf::AccessorView<FVector3f> positionView(
+      gltf,
+      positionAccessorIt->second);
+  if (positionView.status() != CesiumGltf::AccessorViewStatus::Valid) {
     // This primitive's POSITION accessor is invalid, so the primitive is not
     // valid.
     return false;
   }
 
-  const Accessor* pIndexAccessor =
-      Model::getSafe(&gltf.accessors, primitive.indices);
+  const CesiumGltf::Accessor* pIndexAccessor =
+      CesiumGltf::Model::getSafe(&gltf.accessors, primitive.indices);
   if (pIndexAccessor &&
       !isSupportedIndexComponentType(pIndexAccessor->componentType)) {
     // This primitive's indices are not a supported type, so the primitive is
@@ -202,8 +207,11 @@ bool isValidPrimitive(
   return true;
 }
 
-bool doesTextureUseMipmaps(const Model& gltf, const Texture& texture) {
-  const Sampler& sampler = Model::getSafe(gltf.samplers, texture.sampler);
+bool doesTextureUseMipmaps(
+    const CesiumGltf::Model& gltf,
+    const CesiumGltf::Texture& texture) {
+  const CesiumGltf::Sampler& sampler =
+      CesiumGltf::Model::getSafe(gltf.samplers, texture.sampler);
 
   switch (sampler.minFilter.value_or(
       CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR)) {
@@ -219,15 +227,17 @@ bool doesTextureUseMipmaps(const Model& gltf, const Texture& texture) {
 
 SharedFuture<void> createTextureInLoadThread(
     const AsyncSystem& asyncSystem,
-    Model& gltf,
-    TextureInfo& textureInfo,
+    CesiumGltf::Model& gltf,
+    CesiumGltf::TextureInfo& textureInfo,
     bool sRGB,
     const std::vector<bool>& imageNeedsMipmaps) {
-  Texture* pTexture = Model::getSafe(&gltf.textures, textureInfo.index);
+  CesiumGltf::Texture* pTexture =
+      CesiumGltf::Model::getSafe(&gltf.textures, textureInfo.index);
   if (pTexture == nullptr)
     return asyncSystem.createResolvedFuture().share();
 
-  Image* pImage = Model::getSafe(&gltf.images, pTexture->source);
+  CesiumGltf::Image* pImage =
+      CesiumGltf::Model::getSafe(&gltf.images, pTexture->source);
   if (pImage == nullptr)
     return asyncSystem.createResolvedFuture().share();
 

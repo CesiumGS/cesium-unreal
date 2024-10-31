@@ -6,8 +6,6 @@
 
 #include <limits>
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataValueSpec,
     "Cesium.Unit.MetadataValue",
@@ -90,7 +88,7 @@ void FCesiumMetadataValueSpec::Define() {
     });
 
     It("constructs array value with correct type", [this]() {
-      PropertyArrayCopy<uint8_t> arrayView;
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView;
       FCesiumMetadataValue value(arrayView);
       FCesiumMetadataValueType valueType =
           UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
@@ -1131,7 +1129,8 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets array from array value", [this]() {
       std::vector<uint8_t> arrayValues{1, 2};
-      PropertyArrayCopy<uint8_t> arrayView = std::vector(arrayValues);
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView =
+          std::vector(arrayValues);
 
       FCesiumMetadataValue value(arrayView);
       FCesiumPropertyArray array =
@@ -1196,7 +1195,7 @@ void FCesiumMetadataValueSpec::Define() {
     });
 
     It("returns false for array value", [this]() {
-      PropertyArrayCopy<uint8_t> arrayView;
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView;
       FCesiumMetadataValue value(arrayView);
       TestFalse(
           "IsEmpty",
@@ -1217,7 +1216,9 @@ void FCesiumMetadataValueSpec::Define() {
       values.Add({"scalar", FCesiumMetadataValue(-1)});
       values.Add({"vec2", FCesiumMetadataValue(glm::u8vec2(2, 3))});
       values.Add(
-          {"array", FCesiumMetadataValue(PropertyArrayCopy<uint8>({1, 2, 3}))});
+          {"array",
+           FCesiumMetadataValue(
+               CesiumGltf::PropertyArrayCopy<uint8>({1, 2, 3}))});
 
       const auto strings =
           UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(values);
