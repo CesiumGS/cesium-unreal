@@ -272,9 +272,9 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
       [&DefaultValue](auto value) -> FString {
         using ValueType = decltype(value);
         if constexpr (
-            IsMetadataVecN<ValueType>::value ||
-            IsMetadataMatN<ValueType>::value ||
-            IsMetadataString<ValueType>::value) {
+            CesiumGltf::IsMetadataVecN<ValueType>::value ||
+            CesiumGltf::IsMetadataMatN<ValueType>::value ||
+            CesiumGltf::IsMetadataString<ValueType>::value) {
           return UnrealMetadataConversions::toString(value);
         } else {
           auto maybeString = CesiumGltf::
