@@ -11,6 +11,7 @@
 - Fixed a bug that caused incorrect lighting for tilesets using `KHR_materials_unlit`.
 - Reduced the memory used by tiles with `KHR_materials_unlit`.
 - `CesiumGlobeAnchor` properties are no longer shown on the main `CesiumSunSky` Details panel, because it is almost never necessary to set these. They can still be set on the component's own Details panel if needed.
+- Fixed error messages in the Unreal log about uninitialized fields in `FCesiumSampleHeightResult`.
 
 ### v2.9.0 - 2024-10-01
 
