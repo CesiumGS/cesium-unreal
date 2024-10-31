@@ -87,51 +87,6 @@ bool FCesium3DTilesetSharedImages::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesium3DTilesetSnowdonBenchmark,
-    "Cesium.Performance.3DTileset.SnowdonBenchmark",
-    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter);
-
-static void setupForSnowdon(SceneGenerationContext& context) {
-  context.setCommonProperties(
-      FVector(-79.8867314431, 40.0223377722, 197.1008007424),
-      FVector(-293.823058, 6736.144397, 2730.501500),
-      FRotator(-13.400000, -87.799997, 0.000000),
-      60.0f);
-
-  context.sunSky->TimeZone = 5.0f;
-  context.sunSky->UpdateSun();
-
-  ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
-  tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  tileset->SetIonAssetID(2758251);
-  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
-
-  tileset->SetActorLabel(TEXT("Snowdon"));
-  tileset->SuspendUpdate = false;
-  tileset->LogSelectionStats = true;
-  context.tilesets.push_back(tileset);
-
-  ADirectionalLight* Light = context.world->SpawnActor<ADirectionalLight>();
-  Light->SetActorRotation(FQuat::MakeFromEuler(FVector(0, 0, 270)));
-}
-
-void snowdonPass(
-    SceneGenerationContext& context,
-    TestPass::TestingParameter parameter) {}
-
-bool FCesium3DTilesetSnowdonBenchmark::RunTest(const FString& Parameters) {
-  std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Refresh Pass", snowdonPass, nullptr});
-
-  return RunLoadTest(
-      GetBeautifiedTestName(),
-      setupForSnowdon,
-      testPasses,
-      TEST_SCREEN_WIDTH,
-      TEST_SCREEN_HEIGHT);
-}
-
 } // namespace Cesium
 
 #endif
