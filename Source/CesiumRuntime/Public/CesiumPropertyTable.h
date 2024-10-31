@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumGltf/Class.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyTableProperty.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
