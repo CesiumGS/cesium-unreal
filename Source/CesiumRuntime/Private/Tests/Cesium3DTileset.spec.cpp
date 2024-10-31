@@ -50,6 +50,7 @@ static void setupForSharedImages(SceneGenerationContext& context) {
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
   tileset->SetIonAssetID(2757071);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
 
   tileset->SetActorLabel(TEXT("SharedImages"));
   tileset->SetGeoreference(georeference);
@@ -104,6 +105,7 @@ static void setupForSnowdon(SceneGenerationContext& context) {
   ACesium3DTileset* tileset = context.world->SpawnActor<ACesium3DTileset>();
   tileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
   tileset->SetIonAssetID(2758251);
+  tileset->SetIonAccessToken(SceneGenerationContext::testIonToken);
 
   tileset->SetActorLabel(TEXT("Snowdon"));
   tileset->SuspendUpdate = false;
