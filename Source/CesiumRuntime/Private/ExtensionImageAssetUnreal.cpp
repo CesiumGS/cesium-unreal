@@ -49,6 +49,22 @@ ExtensionImageAssetUnreal::getOrCreate(
         FCesiumTextureResource ::Destroy(p);
       });
 
+  // For texture resources created from glTF _textures_, this will happen later
+  // (after we created the UTexture2D). But this texture resource, created for
+  // an ImageAsset, will never have a UTexture2D, so we initialize its resources
+  // here.
+  ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
+  ([pResource = extension._pTextureResource](
+       FRHICommandListImmediate& RHICmdList) mutable {
+#if ENGINE_VERSION_5_3_OR_HIGHER
+    pResource->InitResource(
+        FRHICommandListImmediate::Get()); // Init Resource now requires a
+                                          // command list.
+#else
+    pResource->InitResource();
+#endif
+  });
+
   maybePromise->resolve();
 
   return extension;

@@ -61,11 +61,15 @@ private:
  * `GRHISupportsAsyncTextureCreation` is false (everywhere but Direct3D), we can
  * only create a `FRHITexture` on the render thread, so this is the code that
  * does it.
+ *
+ * Upon passing an `ImageAsset` to this class's constructor, its `pixelData` and
+ * `mipPositions` fields are cleared. That is, this class takes ownership of
+ * that data.
  */
 class FCesiumCreateNewTextureResource : public FCesiumTextureResource {
 public:
   FCesiumCreateNewTextureResource(
-      CesiumGltf::ImageAsset&& image,
+      CesiumGltf::ImageAsset& image,
       TextureGroup textureGroup,
       uint32 width,
       uint32 height,
@@ -81,7 +85,8 @@ protected:
   virtual FTextureRHIRef InitializeTextureRHI() override;
 
 private:
-  CesiumGltf::ImageAsset _image;
+  std::vector<CesiumGltf::ImageAssetMipPosition> _mipPositions;
+  std::vector<std::byte> _pixelData;
 };
 
 ESamplerFilter convertFilter(TextureFilter filter) {
@@ -126,25 +131,27 @@ void CopyMip(
     void* pDest,
     uint32 destPitch,
     EPixelFormat format,
-    const CesiumGltf::ImageAsset& src,
+    int32_t width,
+    int32_t height,
+    const std::vector<std::byte>& srcPixelData,
+    const std::vector<CesiumGltf::ImageAssetMipPosition>& srcMipPositions,
     uint32 mipIndex) {
   size_t byteOffset = 0;
   size_t byteSize = 0;
-  if (src.mipPositions.empty()) {
+  if (srcMipPositions.empty()) {
     byteOffset = 0;
-    byteSize = src.pixelData.size();
+    byteSize = srcPixelData.size();
   } else {
-    const CesiumGltf::ImageAssetMipPosition& mipPos =
-        src.mipPositions[mipIndex];
+    const CesiumGltf::ImageAssetMipPosition& mipPos = srcMipPositions[mipIndex];
     byteOffset = mipPos.byteOffset;
     byteSize = mipPos.byteSize;
   }
   uint32 mipWidth =
-      FMath::Max<uint32>(static_cast<uint32>(src.width) >> mipIndex, 1);
+      FMath::Max<uint32>(static_cast<uint32>(width) >> mipIndex, 1);
   uint32 mipHeight =
-      FMath::Max<uint32>(static_cast<uint32>(src.height) >> mipIndex, 1);
+      FMath::Max<uint32>(static_cast<uint32>(height) >> mipIndex, 1);
 
-  const void* pSrcData = static_cast<const void*>(&src.pixelData[byteOffset]);
+  const void* pSrcData = static_cast<const void*>(&srcPixelData[byteOffset]);
 
   // for platforms that returned 0 pitch from Lock, we need to just use the bulk
   // data directly, never do runtime block size checking, conversion, or the
@@ -357,21 +364,20 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
         CreateRHITexture2D_Async(imageCesium, *maybePixelFormat, sRGB);
     // textureReference->SetName(
     //     FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
-    auto pResult = TUniquePtr<
-        FCesiumUseExistingTextureResource,
-        FCesiumTextureResourceDeleter>(new FCesiumUseExistingTextureResource(
-        textureReference,
-        textureGroup,
-        imageCesium.width,
-        imageCesium.height,
-        *maybePixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        needsMipMaps,
-        0,
-        true));
+    auto pResult =
+        FCesiumTextureResourceUniquePtr(new FCesiumUseExistingTextureResource(
+            textureReference,
+            textureGroup,
+            imageCesium.width,
+            imageCesium.height,
+            *maybePixelFormat,
+            filter,
+            addressX,
+            addressY,
+            sRGB,
+            needsMipMaps,
+            0,
+            true));
 
     // Clear the now-unnecessary copy of the pixel data.
     // Calling clear() isn't good enough because it
@@ -387,20 +393,19 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
     // The RHI texture will be created later on the
     // render thread, directly from this texture source.
     // We need valid pixelData here, though.
-    auto pResult = TUniquePtr<
-        FCesiumCreateNewTextureResource,
-        FCesiumTextureResourceDeleter>(new FCesiumCreateNewTextureResource(
-        std::move(imageCesium),
-        textureGroup,
-        imageCesium.width,
-        imageCesium.height,
-        *maybePixelFormat,
-        filter,
-        addressX,
-        addressY,
-        sRGB,
-        needsMipMaps,
-        0));
+    auto pResult =
+        FCesiumTextureResourceUniquePtr(new FCesiumCreateNewTextureResource(
+            imageCesium,
+            textureGroup,
+            imageCesium.width,
+            imageCesium.height,
+            *maybePixelFormat,
+            filter,
+            addressX,
+            addressY,
+            sRGB,
+            needsMipMaps,
+            0));
     return pResult;
   }
 }
@@ -641,7 +646,7 @@ FTextureRHIRef FCesiumUseExistingTextureResource::InitializeTextureRHI() {
 }
 
 FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
-    CesiumGltf::ImageAsset&& image,
+    CesiumGltf::ImageAsset& image,
     TextureGroup textureGroup,
     uint32 width,
     uint32 height,
@@ -664,7 +669,8 @@ FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
           useMipsIfAvailable,
           extData,
           true),
-      _image(std::move(image)) {}
+      _mipPositions(std::move(image.mipPositions)),
+      _pixelData(std::move(image.pixelData)) {}
 
 FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   // Use the asset ID as the name of the texture so it will be visible in the
@@ -697,7 +703,7 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   }
 
   uint32 mipCount =
-      FMath::Max(1, static_cast<int32>(this->_image.mipPositions.size()));
+      FMath::Max(1, static_cast<int32>(this->_mipPositions.size()));
 
   // Create a new RHI texture, initially empty.
 
@@ -721,17 +727,25 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
     uint32 DestPitch;
     void* pDestination =
         RHILockTexture2D(rhiTexture, i, RLM_WriteOnly, DestPitch, false);
-    CopyMip(pDestination, DestPitch, _format, this->_image, i);
+    CopyMip(
+        pDestination,
+        DestPitch,
+        this->_format,
+        this->_width,
+        this->_height,
+        this->_pixelData,
+        this->_mipPositions,
+        i);
     RHIUnlockTexture2D(rhiTexture, i, false);
   }
 
   // Clear the now-unnecessary copy of the pixel data. Calling clear() isn't
   // good enough because it won't actually release the memory.
   std::vector<std::byte> pixelData;
-  this->_image.pixelData.swap(pixelData);
+  this->_pixelData.swap(pixelData);
 
   std::vector<CesiumGltf::ImageAssetMipPosition> mipPositions;
-  this->_image.mipPositions.swap(mipPositions);
+  this->_mipPositions.swap(mipPositions);
 
   return rhiTexture;
 }
