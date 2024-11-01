@@ -6,8 +6,6 @@
 #include <CesiumGltf/MetadataConversions.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 
-using namespace CesiumGltf;
-
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumMetadataValue&& rhs) =
     default;
 
@@ -18,7 +16,7 @@ FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
     : _value(), _valueType(rhs._valueType), _storage(rhs._storage) {
   swl::visit(
       [this](const auto& value) {
-        if constexpr (IsMetadataArray<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
           if (!this->_storage.empty()) {
             this->_value = decltype(value)(this->_storage);
           } else {
@@ -274,9 +272,9 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
       [&DefaultValue](auto value) -> FString {
         using ValueType = decltype(value);
         if constexpr (
-            IsMetadataVecN<ValueType>::value ||
-            IsMetadataMatN<ValueType>::value ||
-            IsMetadataString<ValueType>::value) {
+            CesiumGltf::IsMetadataVecN<ValueType>::value ||
+            CesiumGltf::IsMetadataMatN<ValueType>::value ||
+            CesiumGltf::IsMetadataString<ValueType>::value) {
           return UnrealMetadataConversions::toString(value);
         } else {
           auto maybeString = CesiumGltf::

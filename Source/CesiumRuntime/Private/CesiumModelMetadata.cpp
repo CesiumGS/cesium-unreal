@@ -6,16 +6,14 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-using namespace CesiumGltf;
-
 static FCesiumModelMetadata EmptyModelMetadata;
 
 static FCesiumPropertyTable EmptyPropertyTable;
 static FCesiumPropertyTexture EmptyPropertyTexture;
 
 FCesiumModelMetadata::FCesiumModelMetadata(
-    const Model& InModel,
-    const ExtensionModelExtStructuralMetadata& Metadata) {
+    const CesiumGltf::Model& InModel,
+    const CesiumGltf::ExtensionModelExtStructuralMetadata& Metadata) {
   this->_propertyTables.Reserve(Metadata.propertyTables.size());
   for (const auto& propertyTable : Metadata.propertyTables) {
     this->_propertyTables.Emplace(FCesiumPropertyTable(InModel, propertyTable));

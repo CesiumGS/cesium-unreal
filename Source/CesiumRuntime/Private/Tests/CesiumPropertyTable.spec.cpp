@@ -1,29 +1,28 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPropertyTable.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumPropertyTable.h"
 #include "Misc/AutomationTest.h"
 #include <limits>
-
-using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTableSpec,
     "Cesium.Unit.PropertyTable",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-Model model;
-ExtensionModelExtStructuralMetadata* pExtension;
-PropertyTable* pPropertyTable;
+CesiumGltf::Model model;
+CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension;
+CesiumGltf::PropertyTable* pPropertyTable;
 END_DEFINE_SPEC(FCesiumPropertyTableSpec)
 
 void FCesiumPropertyTableSpec::Define() {
   BeforeEach([this]() {
-    model = Model();
-    pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-    pExtension->schema = Schema();
+    model = CesiumGltf::Model();
+    pExtension =
+        &model.addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+    pExtension->schema = CesiumGltf::Schema();
     pPropertyTable = &pExtension->propertyTables.emplace_back();
   });
 
@@ -83,8 +82,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           propertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -111,8 +110,9 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           propertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32, // Incorrect component type
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32, // Incorrect
+                                                           // component type
           values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -152,8 +152,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -167,8 +167,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -251,8 +251,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           propertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -311,8 +311,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -326,8 +326,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       std::string invalidPropertyName("badProperty");
@@ -336,8 +336,9 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           invalidPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32, // Incorrect component type
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32, // Incorrect
+                                                           // component type
           invalidPropertyValues);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -378,8 +379,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           propertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -418,8 +419,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -433,8 +434,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -513,8 +514,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -528,8 +529,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -568,8 +569,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -583,8 +584,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -642,8 +643,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           propertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           propertyValues);
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
 
@@ -696,8 +697,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -711,8 +712,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -747,8 +748,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::string vec2PropertyName("vec2Property");
@@ -762,8 +763,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
@@ -817,8 +818,8 @@ void FCesiumPropertyTableSpec::Define() {
           model,
           *pPropertyTable,
           propertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           propertyValues);
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
 

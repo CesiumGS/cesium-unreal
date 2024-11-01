@@ -3,8 +3,6 @@
 #include "CesiumPropertyArray.h"
 #include <CesiumGltf/PropertyTypeTraits.h>
 
-using namespace CesiumGltf;
-
 FCesiumPropertyArray::FCesiumPropertyArray(FCesiumPropertyArray&& rhs) =
     default;
 
@@ -15,7 +13,7 @@ FCesiumPropertyArray::FCesiumPropertyArray(const FCesiumPropertyArray& rhs)
     : _value(), _elementType(rhs._elementType), _storage(rhs._storage) {
   swl::visit(
       [this](const auto& value) {
-        if constexpr (IsMetadataArray<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
           if (!this->_storage.empty()) {
             this->_value = decltype(value)(this->_storage);
           } else {

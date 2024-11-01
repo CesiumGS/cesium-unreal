@@ -1,5 +1,6 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
@@ -7,23 +8,20 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "Misc/AutomationTest.h"
-
-using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataPickingSpec,
     "Cesium.Unit.MetadataPicking",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-Model model;
-MeshPrimitive* pPrimitive;
-ExtensionExtMeshFeatures* pMeshFeatures;
-ExtensionModelExtStructuralMetadata* pModelMetadata;
-ExtensionMeshPrimitiveExtStructuralMetadata* pPrimitiveMetadata;
-PropertyTable* pPropertyTable;
-PropertyTexture* pPropertyTexture;
+CesiumGltf::Model model;
+CesiumGltf::MeshPrimitive* pPrimitive;
+CesiumGltf::ExtensionExtMeshFeatures* pMeshFeatures;
+CesiumGltf::ExtensionModelExtStructuralMetadata* pModelMetadata;
+CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata* pPrimitiveMetadata;
+CesiumGltf::PropertyTable* pPropertyTable;
+CesiumGltf::PropertyTexture* pPropertyTexture;
 TObjectPtr<UCesiumGltfComponent> pModelComponent;
 TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
 END_DEFINE_SPEC(FCesiumMetadataPickingSpec)
@@ -31,8 +29,8 @@ END_DEFINE_SPEC(FCesiumMetadataPickingSpec)
 void FCesiumMetadataPickingSpec::Define() {
   Describe("FindUVFromHit", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
       pPrimitive->mode = CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
       pPrimitiveComponent = NewObject<UCesiumGltfPrimitiveComponent>();
@@ -50,8 +48,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPrimitive,
           "POSITION",
-          AccessorSpec::Type::VEC3,
-          AccessorSpec::ComponentType::FLOAT,
+          CesiumGltf::AccessorSpec::Type::VEC3,
+          CesiumGltf::AccessorSpec::ComponentType::FLOAT,
           positions);
       int32_t positionAccessorIndex =
           static_cast<int32_t>(model.accessors.size() - 1);
@@ -70,16 +68,16 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPrimitive,
           "TEXCOORD_0",
-          AccessorSpec::Type::VEC2,
-          AccessorSpec::ComponentType::FLOAT,
+          CesiumGltf::AccessorSpec::Type::VEC2,
+          CesiumGltf::AccessorSpec::ComponentType::FLOAT,
           texCoords);
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.PositionAccessor =
-          AccessorView<FVector3f>(model, positionAccessorIndex);
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
       primData.TexCoordAccessorMap.emplace(
           0,
-          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+          CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
               static_cast<int32_t>(model.accessors.size() - 1)));
     });
@@ -152,11 +150,11 @@ void FCesiumMetadataPickingSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.IndexAccessor = AccessorView<uint8_t>(
+      primData.IndexAccessor = CesiumGltf::AccessorView<uint8_t>(
           model,
           static_cast<int32_t>(model.accessors.size() - 1));
 
@@ -199,10 +197,10 @@ void FCesiumMetadataPickingSpec::Define() {
 
   Describe("GetPropertyTableValuesFromHit", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pPrimitive->mode = MeshPrimitive::Mode::TRIANGLES;
+      pPrimitive->mode = CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
 
       // Two disconnected triangles.
       std::vector<glm::vec3> positions{
@@ -219,13 +217,15 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPrimitive,
           "POSITION",
-          AccessorSpec::Type::VEC3,
-          AccessorSpec::ComponentType::FLOAT,
+          CesiumGltf::AccessorSpec::Type::VEC3,
+          CesiumGltf::AccessorSpec::ComponentType::FLOAT,
           std::move(positionData));
 
-      pMeshFeatures = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pMeshFeatures =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
       pModelMetadata =
-          &model.addExtension<ExtensionModelExtStructuralMetadata>();
+          &model
+               .addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
 
       std::string className = "testClass";
       pModelMetadata->schema.emplace();
@@ -248,13 +248,13 @@ void FCesiumMetadataPickingSpec::Define() {
           static_cast<int32_t>(model.accessors.size() - 1);
 
       std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureId =
+      CesiumGltf::FeatureId& featureId =
           AddFeatureIDsAsAttributeToModel(model, *pPrimitive, featureIDs, 2, 0);
       featureId.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.PositionAccessor =
-          AccessorView<FVector3f>(model, positionAccessorIndex);
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
       pPropertyTable->count = static_cast<int64_t>(scalarValues.size());
@@ -263,8 +263,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
@@ -286,14 +286,14 @@ void FCesiumMetadataPickingSpec::Define() {
           static_cast<int32_t>(model.accessors.size() - 1);
 
       std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureId =
+      CesiumGltf::FeatureId& featureId =
           AddFeatureIDsAsAttributeToModel(model, *pPrimitive, featureIDs, 2, 0);
       featureId.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.PositionAccessor =
-          AccessorView<FVector3f>(model, positionAccessorIndex);
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
       pPropertyTable->count = static_cast<int64_t>(scalarValues.size());
@@ -302,8 +302,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
@@ -340,7 +340,7 @@ void FCesiumMetadataPickingSpec::Define() {
          CesiumPrimitiveData& primData =
              pPrimitiveComponent->getPrimitiveData();
          primData.PositionAccessor =
-             AccessorView<FVector3f>(model, positionAccessorIndex);
+             CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
 
          std::vector<int32_t> scalarValues{1, 2};
          pPropertyTable->count = static_cast<int64_t>(scalarValues.size());
@@ -349,8 +349,8 @@ void FCesiumMetadataPickingSpec::Define() {
              model,
              *pPropertyTable,
              scalarPropertyName,
-             ClassProperty::Type::SCALAR,
-             ClassProperty::ComponentType::INT32,
+             CesiumGltf::ClassProperty::Type::SCALAR,
+             CesiumGltf::ClassProperty::ComponentType::INT32,
              scalarValues);
 
          std::vector<glm::vec2> vec2Values{
@@ -361,8 +361,8 @@ void FCesiumMetadataPickingSpec::Define() {
              model,
              *pPropertyTable,
              vec2PropertyName,
-             ClassProperty::Type::VEC2,
-             ClassProperty::ComponentType::FLOAT32,
+             CesiumGltf::ClassProperty::Type::VEC2,
+             CesiumGltf::ClassProperty::ComponentType::FLOAT32,
              vec2Values);
 
          pModelComponent->Metadata =
@@ -384,14 +384,14 @@ void FCesiumMetadataPickingSpec::Define() {
           static_cast<int32_t>(model.accessors.size() - 1);
 
       std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      FeatureId& featureId =
+      CesiumGltf::FeatureId& featureId =
           AddFeatureIDsAsAttributeToModel(model, *pPrimitive, featureIDs, 2, 0);
       featureId.propertyTable =
           static_cast<int64_t>(pModelMetadata->propertyTables.size() - 1);
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.PositionAccessor =
-          AccessorView<FVector3f>(model, positionAccessorIndex);
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
       pPropertyTable->count = static_cast<int64_t>(scalarValues.size());
@@ -400,8 +400,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::vector<glm::vec2> vec2Values{
@@ -412,8 +412,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
@@ -469,14 +469,14 @@ void FCesiumMetadataPickingSpec::Define() {
           static_cast<int32_t>(model.accessors.size() - 1);
 
       std::vector<uint8_t> featureIDs0{1, 1, 1, 0, 0, 0};
-      FeatureId& featureId0 = AddFeatureIDsAsAttributeToModel(
+      CesiumGltf::FeatureId& featureId0 = AddFeatureIDsAsAttributeToModel(
           model,
           *pPrimitive,
           featureIDs0,
           2,
           0);
       std::vector<uint8_t> featureIDs1{0, 0, 0, 1, 1, 1};
-      FeatureId& featureId1 = AddFeatureIDsAsAttributeToModel(
+      CesiumGltf::FeatureId& featureId1 = AddFeatureIDsAsAttributeToModel(
           model,
           *pPrimitive,
           featureIDs1,
@@ -487,7 +487,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.PositionAccessor =
-          AccessorView<FVector3f>(model, positionAccessorIndex);
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
 
       std::vector<int32_t> scalarValues{1, 2};
       pPropertyTable->count = static_cast<int64_t>(scalarValues.size());
@@ -496,8 +496,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTable,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT32,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
           scalarValues);
 
       std::vector<glm::vec2> vec2Values{
@@ -508,8 +508,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTable,
           vec2PropertyName,
-          ClassProperty::Type::VEC2,
-          ClassProperty::ComponentType::FLOAT32,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
       pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
@@ -562,10 +562,10 @@ void FCesiumMetadataPickingSpec::Define() {
 
   Describe("GetPropertyTextureValuesFromHit", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pPrimitive->mode = MeshPrimitive::Mode::TRIANGLES;
+      pPrimitive->mode = CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
 
       std::vector<glm::vec3> positions{
           glm::vec3(-1, 0, 0),
@@ -580,8 +580,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPrimitive,
           "POSITION",
-          AccessorSpec::Type::VEC3,
-          AccessorSpec::ComponentType::FLOAT,
+          CesiumGltf::AccessorSpec::Type::VEC3,
+          CesiumGltf::AccessorSpec::ComponentType::FLOAT,
           GetValuesAsBytes(positions));
 
       int32_t positionAccessorIndex =
@@ -602,12 +602,13 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPrimitive,
           "TEXCOORD_0",
-          AccessorSpec::Type::VEC2,
-          AccessorSpec::ComponentType::FLOAT,
+          CesiumGltf::AccessorSpec::Type::VEC2,
+          CesiumGltf::AccessorSpec::ComponentType::FLOAT,
           texCoords0);
 
       pModelMetadata =
-          &model.addExtension<ExtensionModelExtStructuralMetadata>();
+          &model
+               .addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
 
       std::string className = "testClass";
       pModelMetadata->schema.emplace();
@@ -616,9 +617,8 @@ void FCesiumMetadataPickingSpec::Define() {
       pPropertyTexture = &pModelMetadata->propertyTextures.emplace_back();
       pPropertyTexture->classProperty = className;
 
-      pPrimitiveMetadata =
-          &pPrimitive
-               ->addExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
+      pPrimitiveMetadata = &pPrimitive->addExtension<
+          CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata>();
       pPrimitiveMetadata->propertyTextures.push_back(0);
 
       pModelComponent = NewObject<UCesiumGltfComponent>();
@@ -632,10 +632,10 @@ void FCesiumMetadataPickingSpec::Define() {
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.pMeshPrimitive = pPrimitive;
       primData.PositionAccessor =
-          AccessorView<FVector3f>(model, positionAccessorIndex);
+          CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
       primData.TexCoordAccessorMap.emplace(
           0,
-          AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+          CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
               static_cast<int32_t>(model.accessors.size() - 1)));
     });
@@ -647,8 +647,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTexture,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT8,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT8,
           scalarValues,
           {0});
 
@@ -675,8 +675,8 @@ void FCesiumMetadataPickingSpec::Define() {
              model,
              *pPropertyTexture,
              scalarPropertyName,
-             ClassProperty::Type::SCALAR,
-             ClassProperty::ComponentType::INT8,
+             CesiumGltf::ClassProperty::Type::SCALAR,
+             CesiumGltf::ClassProperty::ComponentType::INT8,
              scalarValues,
              {0});
 
@@ -710,8 +710,8 @@ void FCesiumMetadataPickingSpec::Define() {
              model,
              *pPropertyTexture,
              scalarPropertyName,
-             ClassProperty::Type::SCALAR,
-             ClassProperty::ComponentType::INT8,
+             CesiumGltf::ClassProperty::Type::SCALAR,
+             CesiumGltf::ClassProperty::ComponentType::INT8,
              scalarValues,
              {0});
 
@@ -741,8 +741,8 @@ void FCesiumMetadataPickingSpec::Define() {
              model,
              *pPropertyTexture,
              scalarPropertyName,
-             ClassProperty::Type::SCALAR,
-             ClassProperty::ComponentType::INT8,
+             CesiumGltf::ClassProperty::Type::SCALAR,
+             CesiumGltf::ClassProperty::ComponentType::INT8,
              scalarValues,
              {0});
 
@@ -756,8 +756,8 @@ void FCesiumMetadataPickingSpec::Define() {
              model,
              *pPropertyTexture,
              vec2PropertyName,
-             ClassProperty::Type::VEC2,
-             ClassProperty::ComponentType::UINT8,
+             CesiumGltf::ClassProperty::Type::VEC2,
+             CesiumGltf::ClassProperty::ComponentType::UINT8,
              vec2Values,
              {0, 1});
 
@@ -831,13 +831,13 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           *pPropertyTexture,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT8,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT8,
           scalarValues,
           {0});
 
       // Make another property texture
-      PropertyTexture& propertyTexture =
+      CesiumGltf::PropertyTexture& propertyTexture =
           pModelMetadata->propertyTextures.emplace_back();
       propertyTexture.classProperty = "testClass";
       std::array<int8_t, 4> newScalarValues = {100, -20, 33, -4};
@@ -845,8 +845,8 @@ void FCesiumMetadataPickingSpec::Define() {
           model,
           propertyTexture,
           scalarPropertyName,
-          ClassProperty::Type::SCALAR,
-          ClassProperty::ComponentType::INT8,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT8,
           newScalarValues,
           {0});
 
@@ -897,8 +897,8 @@ void FCesiumMetadataPickingSpec::Define() {
   Describe("Deprecated", [this]() {
     Describe("GetMetadataValuesForFace", [this]() {
       BeforeEach([this]() {
-        model = Model();
-        Mesh& mesh = model.meshes.emplace_back();
+        model = CesiumGltf::Model();
+        CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
         pPrimitive = &mesh.primitives.emplace_back();
 
         // Two disconnected triangles.
@@ -917,13 +917,14 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPrimitive,
             "POSITION",
-            AccessorSpec::Type::VEC3,
-            AccessorSpec::ComponentType::FLOAT,
+            CesiumGltf::AccessorSpec::Type::VEC3,
+            CesiumGltf::AccessorSpec::ComponentType::FLOAT,
             std::move(positionData));
 
-        pMeshFeatures = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
-        pModelMetadata =
-            &model.addExtension<ExtensionModelExtStructuralMetadata>();
+        pMeshFeatures =
+            &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
+        pModelMetadata = &model.addExtension<
+            CesiumGltf::ExtensionModelExtStructuralMetadata>();
 
         std::string className = "testClass";
         pModelMetadata->schema.emplace();
@@ -944,7 +945,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
       It("returns empty map for invalid face index", [this]() {
         std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-        FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
+        CesiumGltf::FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
             model,
             *pPrimitive,
             featureIDs,
@@ -960,8 +961,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             scalarPropertyName,
-            ClassProperty::Type::SCALAR,
-            ClassProperty::ComponentType::INT32,
+            CesiumGltf::ClassProperty::Type::SCALAR,
+            CesiumGltf::ClassProperty::ComponentType::INT32,
             scalarValues);
 
         pModelComponent->Metadata =
@@ -987,7 +988,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
       It("returns empty map for invalid feature ID set index", [this]() {
         std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-        FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
+        CesiumGltf::FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
             model,
             *pPrimitive,
             featureIDs,
@@ -1003,8 +1004,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             scalarPropertyName,
-            ClassProperty::Type::SCALAR,
-            ClassProperty::ComponentType::INT32,
+            CesiumGltf::ClassProperty::Type::SCALAR,
+            CesiumGltf::ClassProperty::ComponentType::INT32,
             scalarValues);
 
         pModelComponent->Metadata =
@@ -1047,8 +1048,8 @@ void FCesiumMetadataPickingSpec::Define() {
                model,
                *pPropertyTable,
                scalarPropertyName,
-               ClassProperty::Type::SCALAR,
-               ClassProperty::ComponentType::INT32,
+               CesiumGltf::ClassProperty::Type::SCALAR,
+               CesiumGltf::ClassProperty::ComponentType::INT32,
                scalarValues);
 
            std::vector<glm::vec2> vec2Values{
@@ -1059,8 +1060,8 @@ void FCesiumMetadataPickingSpec::Define() {
                model,
                *pPropertyTable,
                vec2PropertyName,
-               ClassProperty::Type::VEC2,
-               ClassProperty::ComponentType::FLOAT32,
+               CesiumGltf::ClassProperty::Type::VEC2,
+               CesiumGltf::ClassProperty::ComponentType::FLOAT32,
                vec2Values);
 
            pModelComponent->Metadata =
@@ -1079,7 +1080,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
       It("returns values for first feature ID set by default", [this]() {
         std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-        FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
+        CesiumGltf::FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
             model,
             *pPrimitive,
             featureIDs,
@@ -1095,8 +1096,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             scalarPropertyName,
-            ClassProperty::Type::SCALAR,
-            ClassProperty::ComponentType::INT32,
+            CesiumGltf::ClassProperty::Type::SCALAR,
+            CesiumGltf::ClassProperty::ComponentType::INT32,
             scalarValues);
 
         std::vector<glm::vec2> vec2Values{
@@ -1107,8 +1108,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             vec2PropertyName,
-            ClassProperty::Type::VEC2,
-            ClassProperty::ComponentType::FLOAT32,
+            CesiumGltf::ClassProperty::Type::VEC2,
+            CesiumGltf::ClassProperty::ComponentType::FLOAT32,
             vec2Values);
 
         pModelComponent->Metadata =
@@ -1159,14 +1160,14 @@ void FCesiumMetadataPickingSpec::Define() {
 
       It("returns values for specified feature ID set", [this]() {
         std::vector<uint8_t> featureIDs0{1, 1, 1, 0, 0, 0};
-        FeatureId& featureId0 = AddFeatureIDsAsAttributeToModel(
+        CesiumGltf::FeatureId& featureId0 = AddFeatureIDsAsAttributeToModel(
             model,
             *pPrimitive,
             featureIDs0,
             2,
             0);
         std::vector<uint8_t> featureIDs1{0, 0, 0, 1, 1, 1};
-        FeatureId& featureId1 = AddFeatureIDsAsAttributeToModel(
+        CesiumGltf::FeatureId& featureId1 = AddFeatureIDsAsAttributeToModel(
             model,
             *pPrimitive,
             featureIDs1,
@@ -1182,8 +1183,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             scalarPropertyName,
-            ClassProperty::Type::SCALAR,
-            ClassProperty::ComponentType::INT32,
+            CesiumGltf::ClassProperty::Type::SCALAR,
+            CesiumGltf::ClassProperty::ComponentType::INT32,
             scalarValues);
 
         std::vector<glm::vec2> vec2Values{
@@ -1194,8 +1195,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             vec2PropertyName,
-            ClassProperty::Type::VEC2,
-            ClassProperty::ComponentType::FLOAT32,
+            CesiumGltf::ClassProperty::Type::VEC2,
+            CesiumGltf::ClassProperty::ComponentType::FLOAT32,
             vec2Values);
 
         pModelComponent->Metadata =
@@ -1242,8 +1243,8 @@ void FCesiumMetadataPickingSpec::Define() {
 
     Describe("GetMetadataValuesForFaceAsStrings", [this]() {
       BeforeEach([this]() {
-        model = Model();
-        Mesh& mesh = model.meshes.emplace_back();
+        model = CesiumGltf::Model();
+        CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
         pPrimitive = &mesh.primitives.emplace_back();
 
         // Two disconnected triangles.
@@ -1262,13 +1263,14 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPrimitive,
             "POSITION",
-            AccessorSpec::Type::VEC3,
-            AccessorSpec::ComponentType::FLOAT,
+            CesiumGltf::AccessorSpec::Type::VEC3,
+            CesiumGltf::AccessorSpec::ComponentType::FLOAT,
             std::move(positionData));
 
-        pMeshFeatures = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
-        pModelMetadata =
-            &model.addExtension<ExtensionModelExtStructuralMetadata>();
+        pMeshFeatures =
+            &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
+        pModelMetadata = &model.addExtension<
+            CesiumGltf::ExtensionModelExtStructuralMetadata>();
 
         std::string className = "testClass";
         pModelMetadata->schema.emplace();
@@ -1289,7 +1291,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
       It("returns values for first feature ID set by default", [this]() {
         std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-        FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
+        CesiumGltf::FeatureId& featureId = AddFeatureIDsAsAttributeToModel(
             model,
             *pPrimitive,
             featureIDs,
@@ -1305,8 +1307,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             scalarPropertyName,
-            ClassProperty::Type::SCALAR,
-            ClassProperty::ComponentType::INT32,
+            CesiumGltf::ClassProperty::Type::SCALAR,
+            CesiumGltf::ClassProperty::ComponentType::INT32,
             scalarValues);
 
         std::vector<glm::vec2> vec2Values{
@@ -1317,8 +1319,8 @@ void FCesiumMetadataPickingSpec::Define() {
             model,
             *pPropertyTable,
             vec2PropertyName,
-            ClassProperty::Type::VEC2,
-            ClassProperty::ComponentType::FLOAT32,
+            CesiumGltf::ClassProperty::Type::VEC2,
+            CesiumGltf::ClassProperty::ComponentType::FLOAT32,
             vec2Values);
 
         pModelComponent->Metadata =

@@ -4,11 +4,9 @@
 #include <CesiumGltf/Accessor.h>
 #include <CesiumGltf/Model.h>
 
-using namespace CesiumGltf;
-
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
-    const Model& Model,
-    const MeshPrimitive& Primitive,
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::MeshPrimitive& Primitive,
     const int64 FeatureIDAttribute,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
@@ -23,9 +21,9 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     return;
   }
 
-  const Accessor* accessor =
-      Model.getSafe<Accessor>(&Model.accessors, featureID->second);
-  if (!accessor || accessor->type != Accessor::Type::SCALAR) {
+  const CesiumGltf::Accessor* accessor =
+      Model.getSafe<CesiumGltf::Accessor>(&Model.accessors, featureID->second);
+  if (!accessor || accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
     this->_status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
     return;
   }
@@ -37,7 +35,7 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
 
   this->_status = std::visit(
       [](auto view) {
-        if (view.status() != AccessorViewStatus::Valid) {
+        if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {
           return ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
         }
 
@@ -59,13 +57,15 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
-  return std::visit(CountFromAccessor{}, FeatureIDAttribute._featureIdAccessor);
+  return std::visit(
+      CesiumGltf::CountFromAccessor{},
+      FeatureIDAttribute._featureIdAccessor);
 }
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 VertexIndex) {
   return std::visit(
-      FeatureIdFromAccessor{VertexIndex},
+      CesiumGltf::FeatureIdFromAccessor{VertexIndex},
       FeatureIDAttribute._featureIdAccessor);
 }

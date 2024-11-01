@@ -8,19 +8,17 @@
 
 #include <optional>
 
-using namespace CesiumGltf;
-
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
-    const Model& Model,
-    const MeshPrimitive& Primitive,
-    const FeatureIdTexture& FeatureIdTexture,
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::MeshPrimitive& Primitive,
+    const CesiumGltf::FeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
       _featureIdTextureView(),
       _texCoordAccessor(),
       _textureCoordinateSetIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
-  TextureViewOptions options;
+  CesiumGltf::TextureViewOptions options;
   options.applyKhrTextureTransformExtension = true;
 
   if (FeatureIdTexture.extras.find("makeImageCopy") !=
@@ -30,13 +28,13 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   }
 
   this->_featureIdTextureView =
-      FeatureIdTextureView(Model, FeatureIdTexture, options);
+      CesiumGltf::FeatureIdTextureView(Model, FeatureIdTexture, options);
 
   switch (_featureIdTextureView.status()) {
-  case FeatureIdTextureViewStatus::Valid:
+  case CesiumGltf::FeatureIdTextureViewStatus::Valid:
     this->_status = ECesiumFeatureIdTextureStatus::Valid;
     break;
-  case FeatureIdTextureViewStatus::ErrorInvalidChannels:
+  case CesiumGltf::FeatureIdTextureViewStatus::ErrorInvalidChannels:
     this->_status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
     return;
   default:

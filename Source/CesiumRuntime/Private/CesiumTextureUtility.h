@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltf/Texture.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"
 #include "Engine/Texture.h"
@@ -15,7 +17,7 @@
 #include <CesiumUtility/ReferenceCounted.h>
 
 namespace CesiumGltf {
-struct ImageCesium;
+struct ImageAsset;
 struct Texture;
 } // namespace CesiumGltf
 
@@ -46,13 +48,13 @@ struct ReferenceCountedUnrealTexture
   void setUnrealTexture(const TObjectPtr<UTexture2D>& p);
 
   // The renderer / RHI FTextureResource holding the pixel data.
-  const TUniquePtr<FCesiumTextureResourceBase>& getTextureResource() const;
-  TUniquePtr<FCesiumTextureResourceBase>& getTextureResource();
-  void setTextureResource(TUniquePtr<FCesiumTextureResourceBase>&& p);
+  const FCesiumTextureResourceUniquePtr& getTextureResource() const;
+  FCesiumTextureResourceUniquePtr& getTextureResource();
+  void setTextureResource(FCesiumTextureResourceUniquePtr&& p);
 
 private:
   TObjectPtr<UTexture2D> _pUnrealTexture;
-  TUniquePtr<FCesiumTextureResourceBase> _pTextureResource;
+  FCesiumTextureResourceUniquePtr _pTextureResource;
 };
 
 /**
@@ -88,8 +90,6 @@ struct LoadedTextureResult {
  * associated Unreal texture.
  * @param sRGB True if the texture should be treated as sRGB; false if it should
  * be treated as linear.
- * @param textureResources Unreal RHI texture resources that have already been
- * created for this model. This array must have the same size as `model`'s
  * {@link CesiumGltf::Model::images}, and all pointers must be initialized to
  * nullptr before the first call to `loadTextureFromModelAnyThreadPart` during
  * the glTF load process.
@@ -97,8 +97,7 @@ struct LoadedTextureResult {
 TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
     CesiumGltf::Model& model,
     CesiumGltf::Texture& texture,
-    bool sRGB,
-    std::vector<FCesiumTextureResourceBase*>& textureResources);
+    bool sRGB);
 
 /**
  * Does the asynchronous part of renderer resource preparation for a glTF
@@ -111,25 +110,20 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * @param sampler The sampler settings to use with the texture.
  * @param sRGB True if the texture should be treated as sRGB; false if it should
  * be treated as linear.
- * @param pExistingImageResource An existing RHI texture resource that has been
- * created for this image, or nullptr if one hasn't been created yet. When this
- * parameter is not nullptr, the provided image's `pixelData` is not required
- * and can be empty.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::Image& image,
+    CesiumGltf::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
-    bool sRGB,
-    FCesiumTextureResourceBase* pExistingImageResource);
+    bool sRGB);
 
 /**
  * @brief Does the asynchronous part of renderer resource preparation for
- * this image. Should be called in a background thread.
+ * a texture.The given image _must_ be prepared before calling this method by
+ * calling {@link ExtensionImageAssetUnreal::getOrCreate} and then waiting
+ * for {@link ExtensionImageAssetUnreal::getFuture} to resolve. This method
+ * should be called in a background thread.
  *
- * The `pixelData` will be removed from the image so that it can be
- * passed to Unreal's renderer thread without copying it.
- *
- * @param imageCesium The image.
+ * @param image The image.
  * @param addressX The X addressing mode.
  * @param addressY The Y addressing mode.
  * @param filter The sampler filtering to use for this texture.
@@ -139,22 +133,17 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @param sRGB Whether this texture uses a sRGB color space.
  * @param overridePixelFormat The explicit pixel format to use. If std::nullopt,
  * the pixel format is inferred from the image.
- * @param pExistingImageResource An existing RHI texture resource that has been
- * created for this image, or nullptr if one hasn't been created yet. When this
- * parameter is not nullptr, the provided image's `pixelData` is not required
- * and can be empty.
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageCesium& imageCesium,
+    CesiumGltf::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
     bool useMipMapsIfAvailable,
     TextureGroup group,
     bool sRGB,
-    std::optional<EPixelFormat> overridePixelFormat,
-    FCesiumTextureResourceBase* pExistingImageResource);
+    std::optional<EPixelFormat> overridePixelFormat);
 
 /**
  * @brief Does the main-thread part of render resource preparation for this
@@ -202,5 +191,12 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
  * value is unknown or invalid.
  */
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
+
+std::optional<EPixelFormat> getPixelFormatForImageAsset(
+    const CesiumGltf::ImageAsset& imageCesium,
+    const std::optional<EPixelFormat> overridePixelFormat);
+
+std::optional<ReferenceCountedUnrealTexture>
+getUnrealTextureFromGltfTexture(const CesiumGltf::Texture& texture);
 
 } // namespace CesiumTextureUtility
