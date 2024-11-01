@@ -14,6 +14,8 @@
 - `CesiumGlobeAnchor` properties are no longer shown on the main `CesiumSunSky` Details panel, because it is almost never necessary to set these. They can still be set on the component's own Details panel if needed.
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumSampleHeightResult`.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.40.1 to v0.41.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.9.0 - 2024-10-01
 
 ##### Additions :tada:
