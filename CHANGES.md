@@ -1,6 +1,6 @@
 # Change Log
 
-### Next Version - Not Released Yet
+### v2.10.0 - 2024-11-01
 
 ##### Additions :tada:
 
