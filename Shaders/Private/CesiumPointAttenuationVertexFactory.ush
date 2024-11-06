@@ -40,7 +40,7 @@ struct FVertexFactoryInput
 #endif
 };
 
-/** 
+/**
  * Per-vertex inputs. Used by passes with a trimmed down position-only shader.
  */
 struct FPositionOnlyVertexFactoryInput
@@ -54,7 +54,7 @@ struct FPositionOnlyVertexFactoryInput
 #endif
 };
 
-/** 
+/**
  * Per-vertex inputs. Used by passes with a trimmed down position-and-normal-only shader.
  */
 struct FPositionAndNormalOnlyVertexFactoryInput
@@ -83,7 +83,7 @@ struct FVertexFactoryIntermediates
   	half TangentToWorldSign;
 
   	half4 Color;
-		
+
   	/** Cached primitive and instance data */
   	FSceneDataIntermediates SceneData;
 };
@@ -119,7 +119,7 @@ half3x3 CalculateTangentToLocal(uint PointIndex, out float TangentSign)
 {
   	half3 TangentInputX = PackedTangentsBuffer[2 * PointIndex + 0].xyz;
   	half4 TangentInputZ = PackedTangentsBuffer[2 * PointIndex + 1].xyzw;
-		
+
   	half3 TangentX = TangentBias(TangentInputX);
   	half4 TangentZ = TangentBias(TangentInputZ);
 
@@ -127,7 +127,7 @@ half3x3 CalculateTangentToLocal(uint PointIndex, out float TangentSign)
 
   	// Derive the binormal by getting the cross product of the normal and tangent
   	half3 TangentY = cross(TangentZ.xyz, TangentX) * TangentZ.w;
-	
+
   	// Recalculate TangentX off of the other two vectors
   	// This corrects quantization errors since TangentX was passed in as a quantized vertex input
   	half3x3 Result;
@@ -158,7 +158,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
 {
   	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates)0;
   	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
-		
+
   	uint PointIndex = Input.VertexId / 4;
   	uint CornerIndex = Input.VertexId - (PointIndex * 4);
 
@@ -213,19 +213,19 @@ FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(
   	Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
   	Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
   	Interpolants.Color = Intermediates.Color;
-  
+
   	#if NUM_TEX_COORD_INTERPOLATORS
   	float2 CustomizedUVs[NUM_TEX_COORD_INTERPOLATORS];
   	GetMaterialCustomizedUVs(VertexParameters, CustomizedUVs);
   	GetCustomInterpolators(VertexParameters, CustomizedUVs);
-	
+
   	UNROLL
   	for (int CoordinateIndex = 0; CoordinateIndex < NUM_TEX_COORD_INTERPOLATORS; CoordinateIndex++)
   	{
   	SetUV(Interpolants, CoordinateIndex, CustomizedUVs[CoordinateIndex]);
   	}
 #endif
-  
+
 #if INSTANCED_STEREO
   	Interpolants.EyeIndex = 0;
 #endif
@@ -336,7 +336,7 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	half3x3 TangentToLocal)
 {
   	FMaterialVertexParameters Result = (FMaterialVertexParameters)0;
-    
+
   	Result.SceneData = Intermediates.SceneData;
   	Result.WorldPosition = WorldPosition;
   	Result.TangentToWorld = Intermediates.TangentToWorld;
@@ -355,6 +355,16 @@ FMaterialVertexParameters GetMaterialVertexParameters(
 #endif
 
   	return Result;
+}
+
+FMaterialVertexParameters GetMaterialVertexParameters(
+  	FVertexFactoryInput Input,
+  	FVertexFactoryIntermediates Intermediates,
+  	float3 WorldPosition,
+  	half3x3 TangentToLocal,
+		bool noIdeaWhatThisIs)
+{
+	return GetMaterialVertexParameters(Input, Intermediates, WorldPosition, TangentToLocal);
 }
 
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
@@ -439,7 +449,7 @@ FVertexFactoryRayTracingInterpolants VertexFactoryInterpolate(
   	float bInterp)
 {
   	FVertexFactoryRayTracingInterpolants O;
-	
+
   	INTERPOLATE_MEMBER(InterpolantsVSToPS.TangentToWorld0.xyz);
   	INTERPOLATE_MEMBER(InterpolantsVSToPS.TangentToWorld2);
 

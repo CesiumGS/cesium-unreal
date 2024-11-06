@@ -9,7 +9,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataValueSpec,
     "Cesium.Unit.MetadataValue",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumMetadataValueSpec)
 

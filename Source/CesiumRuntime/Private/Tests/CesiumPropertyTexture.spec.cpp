@@ -12,7 +12,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTextureSpec,
     "Cesium.Unit.PropertyTexture",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 Model model;
 MeshPrimitive* pPrimitive;

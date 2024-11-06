@@ -59,9 +59,9 @@ public:
     return this->_headers;
   }
 
-  virtual gsl::span<const std::byte> data() const override {
+  virtual std::span<const std::byte> data() const override {
     const TArray<uint8>& content = this->_pResponse->GetContent();
-    return gsl::span(
+    return std::span(
         reinterpret_cast<const std::byte*>(content.GetData()),
         content.Num());
   }
@@ -235,7 +235,7 @@ UnrealAssetAccessor::request(
     const std::string& verb,
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-    const gsl::span<const std::byte>& contentPayload) {
+    const std::span<const std::byte>& contentPayload) {
 
   const FString& userAgent = this->_userAgent;
   const TMap<FString, FString>& cesiumRequestHeaders =
@@ -319,8 +319,8 @@ public:
 
   virtual std::string contentType() const override { return std::string(); }
 
-  virtual gsl::span<const std::byte> data() const override {
-    return gsl::span<const std::byte>(
+  virtual std::span<const std::byte> data() const override {
+    return std::span<const std::byte>(
         reinterpret_cast<const std::byte*>(this->_data.GetData()),
         size_t(this->_data.Num()));
   }
