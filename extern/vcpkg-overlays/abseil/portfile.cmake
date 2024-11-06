@@ -5,7 +5,7 @@ endif()
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO abseil/abseil-cpp
-    REF "${VERSION}"
+    REF "20240722.0"
     SHA512 bd2cca8f007f2eee66f51c95a979371622b850ceb2ce3608d00ba826f7c494a1da0fba3c1427728f2c173fe50d59b701da35c2c9fdad2752a5a49746b1c8ef31
     HEAD_REF master
 )
@@ -49,5 +49,15 @@ if(VCPKG_TARGET_IS_WINDOWS AND VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
     vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "defined(ABSL_CONSUME_DLL)" "1")
     vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/internal/thread_identity.h" "defined(ABSL_CONSUME_DLL)" "1")
 endif()
+
+# Don't let our customized version of Abseil pose as the real thing.
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/options.h" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722_cesium_for_unreal")
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "#define ABSL_LTS_RELEASE_VERSION 20240722" "//#define ABSL_LTS_RELEASE_VERSION 20240722")
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "#define ABSL_LTS_RELEASE_PATCH_LEVEL 0" "//#define ABSL_LTS_RELEASE_PATCH_LEVEL 0")
+
+# Apply this patch to fix C++20 build with Android NDK r25
+# https://github.com/abseil/abseil-cpp/pull/1728
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/time/time.h" "__cpp_impl_three_way_comparison" "__cpp_lib_three_way_comparison")
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/strings/cord.h" "__cpp_impl_three_way_comparison" "__cpp_lib_three_way_comparison")
 
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
