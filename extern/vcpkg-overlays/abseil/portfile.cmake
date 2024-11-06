@@ -51,9 +51,9 @@ if(VCPKG_TARGET_IS_WINDOWS AND VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
 endif()
 
 # Don't let our customized version of Abseil pose as the real thing.
-vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/options.h" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722_cesium_for_unreal")
-vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "#define ABSL_LTS_RELEASE_VERSION 20240722" "//#define ABSL_LTS_RELEASE_VERSION 20240722")
-vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "#define ABSL_LTS_RELEASE_PATCH_LEVEL 0" "//#define ABSL_LTS_RELEASE_PATCH_LEVEL 0")
+# vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/options.h" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722_cesium_for_unreal")
+# vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "#define ABSL_LTS_RELEASE_VERSION 20240722" "//#define ABSL_LTS_RELEASE_VERSION 20240722")
+# vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/absl/base/config.h" "#define ABSL_LTS_RELEASE_PATCH_LEVEL 0" "//#define ABSL_LTS_RELEASE_PATCH_LEVEL 0")
 
 # Apply this patch to fix C++20 build with Android NDK r25
 # https://github.com/abseil/abseil-cpp/pull/1728
