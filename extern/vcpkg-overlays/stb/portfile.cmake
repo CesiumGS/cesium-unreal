@@ -14,3 +14,6 @@ file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/vcpkg-cmake-wrapper.cmake" DESTINATION "
 file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/usage" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")
 
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
+
+# Even when told to create static symbols, STB creates two symbols globally, which breaks packaging in UE 5.4. Fix that.
+vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/stb_image_resize2.h" "STBIR__SIMDI_CONST(stbir__s" "STBIRDEF STBIR__SIMDI_CONST(stbir__s")
