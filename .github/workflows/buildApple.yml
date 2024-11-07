@@ -31,6 +31,8 @@ jobs:
           ls /Applications
           brew uninstall google-chrome
           sudo rm -rf /Users/runner/Library/Android
+          sudo rm -rf /Applications/Xcode_14.3.app
+          sudo rm -rf /Applications/Xcode_14.3.1.app
           sudo rm -rf /Applications/Xcode_15.0.1.app
           sudo rm -rf /Applications/Xcode_15.0.app
           sudo rm -rf /Applications/Xcode_15.1.0.app
@@ -39,8 +41,8 @@ jobs:
           sudo rm -rf /Applications/Xcode_15.2.app
           sudo rm -rf /Applications/Xcode_15.3.0.app
           sudo rm -rf /Applications/Xcode_15.3.app
-          sudo rm -rf /Applications/Xcode_15.4.0.app
-          sudo rm -rf /Applications/Xcode_15.4.app
+          #sudo rm -rf /Applications/Xcode_15.4.0.app
+          #sudo rm -rf /Applications/Xcode_15.4.app
           sudo rm -rf /Applications/Xcode_16.0.0.app
           sudo rm -rf /Applications/Xcode_16.0.app
           sudo rm -rf /Applications/Xcode_16.1.0.app
