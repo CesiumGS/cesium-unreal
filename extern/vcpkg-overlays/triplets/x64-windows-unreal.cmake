@@ -30,5 +30,17 @@ list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_C_FLAGS_DEBUG:STRING=/MD /Z7 
 # When building official binaries on CI, use a very specific MSVC toolset version (which must be installed).
 # When building locally, use the default.
 if(DEFINED ENV{CI})
+  # Toolset version should be 14.38 on UE 5.5+, 14.34 on prior versions.
   set(VCPKG_PLATFORM_TOOLSET_VERSION "14.34")
+
+  set(UNREAL_ENGINE_BUILD_VERSION_FILENAME "$ENV{UNREAL_ENGINE_ROOT}/Engine/Build/Build.version")
+  if(EXISTS "${UNREAL_ENGINE_BUILD_VERSION_FILENAME}")
+    file(READ "${UNREAL_ENGINE_BUILD_VERSION_FILENAME}" UNREAL_ENGINE_BUILD_VERSION)
+    string(JSON UNREAL_MAJOR_VERSION GET "${UNREAL_ENGINE_BUILD_VERSION}" "MajorVersion")
+    string(JSON UNREAL_MINOR_VERSION GET "${UNREAL_ENGINE_BUILD_VERSION}" "MinorVersion")
+    if("${UNREAL_MAJOR_VERSION}" GREATER "5" OR "${UNREAL_MINOR_VERSION}" GREATER_EQUAL "5")
+      # This is UE 5.5+, so use MSVC 14.38.
+      set(VCPKG_PLATFORM_TOOLSET_VERSION "14.38")
+    endif()
+  endif()
 endif()
