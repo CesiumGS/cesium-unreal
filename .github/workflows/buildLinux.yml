@@ -34,6 +34,8 @@ jobs:
           sudo swapon --show
           cat /proc/meminfo
           apt list --installed
+          sudo dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
+          sudo snap list
       - name: Removed unneeded packages to gain disk space
         run: |
           sudo apt update
