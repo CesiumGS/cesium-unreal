@@ -21,6 +21,8 @@ const std::vector<FVector2D> texCoords{
 END_DEFINE_SPEC(FCesiumPropertyTexturePropertySpec)
 
 void FCesiumPropertyTexturePropertySpec::Define() {
+  using namespace CesiumGltf;
+
   Describe("Constructor", [this]() {
     It("constructs invalid instance by default", [this]() {
       FCesiumPropertyTextureProperty property;
