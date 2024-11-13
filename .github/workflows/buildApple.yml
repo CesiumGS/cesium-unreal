@@ -31,8 +31,9 @@ jobs:
           # - We limit parallel actions because our builds use a lot more memory than UBT thinks they will.
           # - We set the source code control Provider to None so UBT includes all files in the unity build.
           printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
-          mkdir -p ~/Unreal\ Engine/UnrealBuildTool
-          cp ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml ~/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
+          # In UE 5.5, UBT apparently loads from ~/Documents instead of ~/.config
+          mkdir -p ~/Documents/Unreal\ Engine/UnrealBuildTool
+          cp ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml ~/Documents/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
       - name: Make some more disk space
         run: |
           df -h
