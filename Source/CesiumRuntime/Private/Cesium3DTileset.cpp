@@ -2164,9 +2164,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   updateTilesetOptionsFromProperties();
 
   std::vector<FCesiumCamera> cameras = this->GetCameras();
-  if (cameras.empty()) {
-    return;
-  }
 
   glm::dmat4 ueTilesetToUeWorld =
       VecMath::createMatrix4D(this->GetActorTransform().ToMatrixWithScale());
