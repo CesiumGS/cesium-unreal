@@ -14,10 +14,10 @@ BEGIN_DEFINE_SPEC(
     "Cesium.Unit.PropertyTexture",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-Model model;
-MeshPrimitive* pPrimitive;
-ExtensionModelExtStructuralMetadata* pExtension;
-PropertyTexture* pPropertyTexture;
+CesiumGltf::Model model;
+CesiumGltf::MeshPrimitive* pPrimitive;
+CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension;
+CesiumGltf::PropertyTexture* pPropertyTexture;
 TObjectPtr<UCesiumGltfComponent> pModelComponent;
 TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
 
@@ -29,6 +29,8 @@ const std::vector<FVector2D> texCoords{
 END_DEFINE_SPEC(FCesiumPropertyTextureSpec)
 
 void FCesiumPropertyTextureSpec::Define() {
+  using namespace CesiumGltf;
+
   BeforeEach([this]() {
     model = Model();
     pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
