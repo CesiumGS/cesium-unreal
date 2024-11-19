@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - 2024-12-02
+
+##### Fixes :wrench:
+
+- Fixed a crash that could occur when using `SampleHeightMostDetailed` on a `Cesium3DTileset` with a raster overlay.
+
 ### v2.10.0 - 2024-11-01
 
 ##### Additions :tada:
