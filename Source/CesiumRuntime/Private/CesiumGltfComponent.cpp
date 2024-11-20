@@ -1522,9 +1522,7 @@ static void loadPrimitive(
             material.emissiveTexture,
             gltfToUnrealTexCoordMap);
 
-    for (size_t i = 0;
-         i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
-         ++i) {
+    for (size_t i = 0; i < 3; ++i) {
       std::string attributeName = "_CESIUMOVERLAY_" + std::to_string(i);
       auto overlayIt = primitive.attributes.find(attributeName);
       if (overlayIt != primitive.attributes.end()) {
@@ -3404,6 +3402,10 @@ void UCesiumGltfComponent::AttachRasterTile(
                   rasterTile.getOverlay().getName(),
                   "_TranslationScale"),
               translationAndScale);
+          check(
+              primData.overlayTextureCoordinateIDToUVIndex.find(
+                  textureCoordinateID) !=
+              primData.overlayTextureCoordinateIDToUVIndex.end());
           pMaterial->SetScalarParameterValue(
               createSafeName(
                   rasterTile.getOverlay().getName(),
