@@ -2,6 +2,10 @@
 
 ### ? - 2024-12-02
 
+##### Additions :tada:
+
+- Added a "From Ellipsoid" option to `Cesium3DTileset` to generate a tileset by tesselating the surface of the ellipsoid, producing a simple globe tileset without terrain features.
+
 ##### Fixes :wrench:
 
 - Fixed a crash that could occur when using `SampleHeightMostDetailed` on a `Cesium3DTileset` with a raster overlay.

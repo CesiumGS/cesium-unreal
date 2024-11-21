@@ -4,6 +4,7 @@
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTilesSelection/EllipsoidTilesetLoader.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
@@ -93,7 +94,6 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMovieUseLodTransitions{true},
 
       _tilesetsBeingDestroyed(0) {
-
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
@@ -553,7 +553,6 @@ void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
 
 #if WITH_EDITOR
 void ACesium3DTileset::OnFocusEditorViewportOnThis() {
-
   UE_LOG(
       LogCesium,
       Verbose,
@@ -674,7 +673,6 @@ ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
 }
 
 void ACesium3DTileset::UpdateTransformFromCesium() {
-
   const glm::dmat4& CesiumToUnreal =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   TArray<UCesiumGltfComponent*> gltfComponents;
@@ -928,7 +926,6 @@ public:
   virtual void* prepareRasterInMainThread(
       CesiumRasterOverlays::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult) override {
-
     TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
         static_cast<CesiumTextureUtility::LoadedTextureResult*>(
             pLoadThreadResult)};
@@ -1067,7 +1064,6 @@ void ACesium3DTileset::UpdateLoadStatus() {
 }
 
 namespace {
-
 const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
 getCesiumViewExtension() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
@@ -1075,7 +1071,6 @@ getCesiumViewExtension() {
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
   return cesiumViewExtension;
 }
-
 } // namespace
 
 void ACesium3DTileset::LoadTileset() {
@@ -1284,6 +1279,14 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.applyTextureTransform = false;
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from ellipsoid"));
+    this->_pTileset = TUniquePtr<Cesium3DTilesSelection::Tileset>(
+        Cesium3DTilesSelection::EllipsoidTilesetLoader::createTileset(
+            externals,
+            options)
+            .release());
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
     this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
@@ -1336,6 +1339,9 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from ellipsoid done"));
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
@@ -1374,6 +1380,9 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset from ellipsoid"));
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
@@ -1424,6 +1433,9 @@ void ACesium3DTileset::DestroyTileset() {
   this->_pTileset.Reset();
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset from ellipsoid done"));
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
@@ -1500,7 +1512,6 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
   for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
        playerControllerIt;
        playerControllerIt++) {
-
     const TWeakObjectPtr<APlayerController> pPlayerController =
         *playerControllerIt;
     if (pPlayerController == nullptr) {
@@ -1680,7 +1691,6 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset,
     UCesiumEllipsoid* ellipsoid) {
-
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
 
@@ -1976,7 +1986,6 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     check(Georeference);
 
     for (Cesium3DTilesSelection::Tile* tile : result.tilesToRenderThisFrame) {
-
       CesiumGeometry::OrientedBoundingBox obb =
           Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
               tile->getBoundingVolume(),
@@ -2014,7 +2023,6 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.tilesWaitingForOcclusionResults !=
           this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
-
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
     this->_lastWorkerThreadTileLoadQueueLength =
         result.workerThreadTileLoadQueueLength;
