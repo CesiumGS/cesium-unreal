@@ -74,7 +74,12 @@ enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from the specified Url.
    */
-  FromUrl UMETA(DisplayName = "From Url")
+  FromUrl UMETA(DisplayName = "From Url"),
+
+  /**
+   * The tileset will be loaded from the georeference ellipsoid.
+   */
+  FromEllipsoid UMETA(DisplayName = "From Ellipsoid")
 };
 
 UENUM(BlueprintType)

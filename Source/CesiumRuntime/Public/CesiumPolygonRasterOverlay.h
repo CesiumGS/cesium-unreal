@@ -29,7 +29,7 @@ public:
    * The polygons to rasterize for this overlay.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TArray<ACesiumCartographicPolygon*> Polygons;
+  TArray<TSoftObjectPtr<ACesiumCartographicPolygon>> Polygons;
 
   /**
    * Whether to invert the selection specified by the polygons.
