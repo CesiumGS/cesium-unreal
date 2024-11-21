@@ -131,6 +131,12 @@ void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
 void ACesium3DTileset::SampleHeightMostDetailed(
     const TArray<FVector>& LongitudeLatitudeHeightArray,
     FCesiumSampleHeightMostDetailedCallback OnHeightsSampled) {
+  // It's possible to call this function before a Tick happens, so make sure
+  // that the necessary variables are resolved.
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
+
   if (this->_pTileset == nullptr) {
     this->LoadTileset();
   }

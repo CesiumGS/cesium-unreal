@@ -1,10 +1,15 @@
 # Change Log
 
-## Not Released Yet
+### ? - 2024-12-02
 
 ##### Additions :tada:
 
 - Added a "From Ellipsoid" option to `Cesium3DTileset` to generate a tileset by tesselating the surface of the ellipsoid, producing a simple globe tileset without terrain features.
+
+##### Fixes :wrench:
+
+- Fixed a crash that could occur when using `SampleHeightMostDetailed` on a `Cesium3DTileset` with a raster overlay.
+- `CesiumPolygonRasterOverlay` now references `CesiumCartographicPolygon` instances using `TSoftObjectPtr`, which allows, for example, a raster overlay in the persistent level to use a polygon in a sub-level.
 
 ### v2.10.0 - 2024-11-01
 
