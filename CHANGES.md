@@ -1,5 +1,11 @@
 # Change Log
 
+### Not Released Yet
+
+##### Fixes :wrench:
+
+- `CesiumPolygonRasterOverlay` now references `CesiumCartographicPolygon` instances using `TSoftObjectPtr`, which allows, for example, a raster overlay in the persistent level to use a polygon in a sub-level.
+
 ### v2.10.0 - 2024-11-01
 
 ##### Additions :tada:
