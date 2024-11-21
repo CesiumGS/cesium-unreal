@@ -6,8 +6,6 @@
 #include "Misc/AutomationTest.h"
 #include <limits>
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTablePropertySpec,
     "Cesium.Unit.PropertyTableProperty",
@@ -16,6 +14,8 @@ BEGIN_DEFINE_SPEC(
 END_DEFINE_SPEC(FCesiumPropertyTablePropertySpec)
 
 void FCesiumPropertyTablePropertySpec::Define() {
+  using namespace CesiumGltf;
+
   Describe("Constructor", [this]() {
     It("constructs invalid instance by default", [this]() {
       FCesiumPropertyTableProperty property;
