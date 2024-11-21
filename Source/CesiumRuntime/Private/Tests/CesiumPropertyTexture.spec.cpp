@@ -36,7 +36,7 @@ void FCesiumPropertyTextureSpec::Define() {
   BeforeEach([this]() {
     model = Model();
     pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-    pExtension->schema = Schema();
+    pExtension->schema.emplace();
     pPropertyTexture = &pExtension->propertyTextures.emplace_back();
   });
 
@@ -55,7 +55,7 @@ void FCesiumPropertyTextureSpec::Define() {
     });
 
     It("constructs invalid instance for missing schema", [this]() {
-      pExtension->schema = std::nullopt;
+      pExtension->schema.reset();
 
       FCesiumPropertyTexture propertyTexture(model, *pPropertyTexture);
       TestEqual(
