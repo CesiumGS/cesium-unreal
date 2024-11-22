@@ -391,16 +391,6 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	return Result;
 }
 
-FMaterialVertexParameters GetMaterialVertexParameters(
-  	FVertexFactoryInput Input,
-  	FVertexFactoryIntermediates Intermediates,
-  	float3 WorldPosition,
-  	half3x3 TangentToLocal,
-		bool bIsPreviousFrame = false)
-{
-	return GetMaterialVertexParameters(Input, Intermediates, WorldPosition, TangentToLocal);
-}
-
 FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
 {
   	FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
