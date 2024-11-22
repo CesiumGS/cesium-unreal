@@ -4,6 +4,10 @@
 	CesiumPointAttenuationVertexFactory.ush: point attenuation vertex factory shader code.
 =============================================================================*/
 
+#ifndef ENGINE_VERSION_5_5_OR_HIGHER
+#define ENGINE_VERSION_5_5_OR_HIGHER 0
+#endif
+
 #include "/Engine/Private/Common.ush"
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
@@ -253,6 +257,13 @@ float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput In
   	return GetWorldPosition(Input.VertexId);
 }
 
+// local position relative to instance
+float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+	// No support for instancing, so instance == primitive
+  return Intermediates.Position;
+}
+
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)
 {
   	float3 PointNormal = GetPointNormal(Input.VertexId);
@@ -273,6 +284,13 @@ float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexF
     return mul(float4(Intermediates.Position, 1),
   	  	LWCMultiplyTranslation(Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation));
   #endif
+}
+
+// local position relative to instance
+float3 VertexFactoryGetPreviousInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+	// No support for instancing, so instance == primitive
+  return Intermediates.Position;
 }
 
 float4 ApplyAttenuation(float4 WorldPosition, uint CornerIndex) {
@@ -333,9 +351,23 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	FVertexFactoryInput Input,
   	FVertexFactoryIntermediates Intermediates,
   	float3 WorldPosition,
-  	half3x3 TangentToLocal)
+  	half3x3 TangentToLocal,
+  	bool bIsPreviousFrame = false)
 {
+#if ENGINE_VERSION_5_5_OR_HIGHER
+    FMaterialVertexParameters Result = MakeInitializedMaterialVertexParameters();
+    if (bIsPreviousFrame)
+    {
+      Result.PositionInstanceSpace = VertexFactoryGetPreviousInstanceSpacePosition(Input, Intermediates);
+    }
+    else
+    {
+      Result.PositionInstanceSpace = VertexFactoryGetInstanceSpacePosition(Input, Intermediates);
+    }
+    Result.PositionPrimitiveSpace = Result.PositionInstanceSpace; // No support for instancing, so instance == primitive
+#else
   	FMaterialVertexParameters Result = (FMaterialVertexParameters)0;
+#endif
 
   	Result.SceneData = Intermediates.SceneData;
   	Result.WorldPosition = WorldPosition;
@@ -353,7 +385,9 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	  	Result.TexCoords[CoordinateIndex] = TexCoordBuffer[NumTexCoords * Intermediates.PointIndex + ClampedCoordinateIndex];
   	}
 #endif
-
+  
+  	Result.LWCData = MakeMaterialLWCData(Result);
+  
   	return Result;
 }
 
@@ -362,7 +396,7 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	FVertexFactoryIntermediates Intermediates,
   	float3 WorldPosition,
   	half3x3 TangentToLocal,
-		bool noIdeaWhatThisIs)
+		bool bIsPreviousFrame = false)
 {
 	return GetMaterialVertexParameters(Input, Intermediates, WorldPosition, TangentToLocal);
 }

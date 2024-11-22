@@ -70,6 +70,10 @@ public:
   static bool ShouldCompilePermutation(
       const FVertexFactoryShaderPermutationParameters& Parameters);
 
+  static void ModifyCompilationEnvironment(
+      const FVertexFactoryShaderPermutationParameters& Parameters,
+      FShaderCompilerEnvironment& OutEnvironment);
+
 private:
   virtual void INIT_RHI_SIGNATURE override;
   virtual void ReleaseRHI() override;

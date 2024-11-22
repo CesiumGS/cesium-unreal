@@ -171,6 +171,15 @@ bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
          Parameters.MaterialParameters.bIsSpecialEngineMaterial;
 }
 
+void FCesiumPointAttenuationVertexFactory::ModifyCompilationEnvironment(
+    const FVertexFactoryShaderPermutationParameters& Parameters,
+    FShaderCompilerEnvironment& OutEnvironment) {
+  FLocalVertexFactory::ModifyCompilationEnvironment(Parameters, OutEnvironment);
+#if ENGINE_VERSION_5_5_OR_HIGHER
+  OutEnvironment.SetDefine(TEXT("ENGINE_VERSION_5_5_OR_HIGHER"), TEXT("1"));
+#endif
+}
+
 void FCesiumPointAttenuationVertexFactory::INIT_RHI_SIGNATURE {
   FVertexDeclarationElementList Elements;
   Elements.Add(AccessStreamComponent(
