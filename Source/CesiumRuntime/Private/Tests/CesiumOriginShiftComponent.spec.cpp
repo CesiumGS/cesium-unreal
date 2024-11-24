@@ -18,7 +18,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumOriginShiftComponentSpec,
     "Cesium.Unit.OriginShiftComponent",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<UWorld> pWorld;

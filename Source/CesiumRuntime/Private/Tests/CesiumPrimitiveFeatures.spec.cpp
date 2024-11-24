@@ -8,7 +8,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPrimitiveFeaturesSpec,
     "Cesium.Unit.PrimitiveFeatures",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 CesiumGltf::Model model;
 CesiumGltf::MeshPrimitive* pPrimitive;

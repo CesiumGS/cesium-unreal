@@ -2,8 +2,11 @@
 
 ### ? - 2024-12-02
 
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.2. Future versions will require Unreal Engine v5.3+.
+
 ##### Additions :tada:
 
+- Added support for Unreal Engine 5.5.
 - Added a "From Ellipsoid" option to `Cesium3DTileset` to generate a tileset by tesselating the surface of the ellipsoid, producing a simple globe tileset without terrain features.
 
 ##### Fixes :wrench:

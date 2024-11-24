@@ -12,7 +12,9 @@
 BEGIN_DEFINE_SPEC(
     FUnrealAssetAccessorSpec,
     "Cesium.Unit.UnrealAssetAccessor",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 FString Filename;
@@ -31,7 +33,7 @@ void TestAccessorRequest(const FString& Uri, const std::string& expectedData) {
             if (!Response)
               return;
 
-            gsl::span<const std::byte> data = Response->data();
+            std::span<const std::byte> data = Response->data();
             TestEqual("data length", data.size(), expectedData.size());
             std::string s(
                 reinterpret_cast<const char*>(data.data()),

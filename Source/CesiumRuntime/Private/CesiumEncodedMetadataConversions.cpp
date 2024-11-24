@@ -135,7 +135,7 @@ template <typename T>
 void coerceAndEncodeArrays(
     const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
@@ -180,7 +180,7 @@ void coerceAndEncodeArrays(
 template <typename T>
 void coerceAndEncodeScalars(
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData) {
+    const std::span<std::byte>& textureData) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
   if (textureData.size() < propertySize * sizeof(T)) {
@@ -208,7 +208,7 @@ void coerceAndEncodeScalars(
 template <typename T>
 void coerceAndEncodeVec2s(
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
@@ -254,7 +254,7 @@ void coerceAndEncodeVec2s(
 template <typename T>
 void coerceAndEncodeVec3s(
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
@@ -298,7 +298,7 @@ void coerceAndEncodeVec3s(
 template <typename T>
 void coerceAndEncodeVec4s(
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
@@ -383,7 +383,7 @@ bool CesiumEncodedMetadataCoerce::canEncode(
 void CesiumEncodedMetadataCoerce::encode(
     const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   if (propertyDescription.PropertyDetails.bIsArray) {
     if (propertyDescription.EncodingDetails.ComponentType ==
@@ -497,7 +497,7 @@ glm::u8vec3 getRgbColorFromString(const FString& rgbString) {
 template <typename T>
 void parseAndEncodeColors(
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
@@ -555,7 +555,7 @@ bool CesiumEncodedMetadataParseColorFromString::canEncode(
 void CesiumEncodedMetadataParseColorFromString::encode(
     const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
-    const gsl::span<std::byte>& textureData,
+    const std::span<std::byte>& textureData,
     size_t pixelSize) {
   if (propertyDescription.EncodingDetails.ComponentType ==
       ECesiumEncodedMetadataComponentType::Uint8) {
