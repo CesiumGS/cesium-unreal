@@ -3393,6 +3393,10 @@ void UCesiumGltfComponent::AttachRasterTile(
                     EMaterialParameterAssociation::LayerParameter,
                     i),
                 translationAndScale);
+            check(
+                textureCoordinateID >= 0 &&
+                textureCoordinateID <
+                    primData.overlayTextureCoordinateIDToUVIndex.size());
             pMaterial->SetScalarParameterValueByInfo(
                 FMaterialParameterInfo(
                     "TextureCoordinateIndex",
