@@ -27,16 +27,6 @@ endif()
 # Don't let Abseil clobber our CMAKE_MSVC_RUNTIME_LIBRARY choice.
 vcpkg_replace_string("${SOURCE_PATH}/CMakeLists.txt" "set(CMAKE_MSVC_RUNTIME_LIBRARY \"MultiThreaded$<$<CONFIG:Debug>:Debug>DLL\")" "#set(CMAKE_MSVC_RUNTIME_LIBRARY \"MultiThreaded$<$<CONFIG:Debug>:Debug>DLL\")")
 
-vcpkg_cmake_configure(
-    SOURCE_PATH "${SOURCE_PATH}"
-    DISABLE_PARALLEL_CONFIGURE
-    OPTIONS
-        -DABSL_PROPAGATE_CXX_STD=OFF
-        -DCMAKE_CXX_STANDARD=14
-        ${ABSL_USE_CXX17_OPTION}
-        ${ABSL_STATIC_RUNTIME_OPTION}
-)
-
 # Don't let our customized version of Abseil pose as the real thing.
 vcpkg_replace_string("${SOURCE_PATH}/absl/base/options.h" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722" "ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20240722_cesium_for_unreal")
 vcpkg_replace_string("${SOURCE_PATH}/absl/base/options.h" "ABSL_OPTION_USE_STD_ANY 2" "ABSL_OPTION_USE_STD_ANY 0")
@@ -51,6 +41,16 @@ vcpkg_replace_string("${SOURCE_PATH}/absl/base/config.h" "#define ABSL_LTS_RELEA
 # https://github.com/abseil/abseil-cpp/pull/1728
 vcpkg_replace_string("${SOURCE_PATH}/absl/time/time.h" "__cpp_impl_three_way_comparison" "__cpp_lib_three_way_comparison")
 vcpkg_replace_string("${SOURCE_PATH}/absl/strings/cord.h" "__cpp_impl_three_way_comparison" "__cpp_lib_three_way_comparison")
+
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    DISABLE_PARALLEL_CONFIGURE
+    OPTIONS
+        -DABSL_PROPAGATE_CXX_STD=OFF
+        -DCMAKE_CXX_STANDARD=14
+        ${ABSL_USE_CXX17_OPTION}
+        ${ABSL_STATIC_RUNTIME_OPTION}
+)
 
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(PACKAGE_NAME absl CONFIG_PATH lib/cmake/absl)
