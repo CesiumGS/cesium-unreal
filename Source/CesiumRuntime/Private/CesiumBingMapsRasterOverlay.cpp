@@ -43,6 +43,5 @@ UCesiumBingMapsRasterOverlay::CreateOverlay(
       TCHAR_TO_UTF8(*this->BingMapsKey),
       mapStyle,
       "",
-      CesiumGeospatial::Ellipsoid::WGS84,
       options);
 }

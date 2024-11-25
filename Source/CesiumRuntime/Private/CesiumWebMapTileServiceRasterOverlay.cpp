@@ -57,8 +57,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
   wmtsOptions.tileWidth = this->TileWidth;
   wmtsOptions.tileHeight = this->TileHeight;
 
-  const CesiumGeospatial::Ellipsoid& ellipsoid =
-      options.ellipsoid.value_or(CesiumGeospatial::Ellipsoid::WGS84);
+  const CesiumGeospatial::Ellipsoid& ellipsoid = options.ellipsoid;
 
   if (this->Projection ==
       ECesiumWebMapTileServiceRasterOverlayProjection::Geographic) {
