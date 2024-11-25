@@ -4,6 +4,10 @@
 	CesiumPointAttenuationVertexFactory.ush: point attenuation vertex factory shader code.
 =============================================================================*/
 
+#ifndef ENGINE_VERSION_5_4_OR_HIGHER
+#define ENGINE_VERSION_5_5_OR_HIGHER 0
+#endif
+
 #ifndef ENGINE_VERSION_5_5_OR_HIGHER
 #define ENGINE_VERSION_5_5_OR_HIGHER 0
 #endif
@@ -385,8 +389,10 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	  	Result.TexCoords[CoordinateIndex] = TexCoordBuffer[NumTexCoords * Intermediates.PointIndex + ClampedCoordinateIndex];
   	}
 #endif
-  
+
+#if ENGINE_VERSION_5_4_OR_HIGHER
   	Result.LWCData = MakeMaterialLWCData(Result);
+#endif
   
   	return Result;
 }
