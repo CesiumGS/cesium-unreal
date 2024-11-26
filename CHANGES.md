@@ -7,12 +7,13 @@ This is the last release of Cesium for Unreal that will support Unreal Engine v5
 ##### Additions :tada:
 
 - Added support for Unreal Engine 5.5.
-- Added a "From Ellipsoid" option to `Cesium3DTileset` to generate a tileset by tesselating the surface of the ellipsoid, producing a simple globe tileset without terrain features.
+- Added a "From Ellipsoid" option to `Cesium3DTileset` to generate a tileset by tessellating the surface of the ellipsoid, producing a simple globe tileset without terrain features.
 
 ##### Fixes :wrench:
 
 - Fixed a crash that could occur when using `SampleHeightMostDetailed` on a `Cesium3DTileset` with a raster overlay.
 - `CesiumPolygonRasterOverlay` now references `CesiumCartographicPolygon` instances using `TSoftObjectPtr`, which allows, for example, a raster overlay in the persistent level to use a polygon in a sub-level.
+- Fixed a bug that occurred when a `Cesium3DTileset` had three or more overlays.
 
 ### v2.10.0 - 2024-11-01
 
