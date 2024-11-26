@@ -17,7 +17,9 @@
 BEGIN_DEFINE_SPEC(
     FGlobeAwareDefaultPawnSpec,
     "Cesium.Unit.GlobeAwareDefaultPawn",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 FDelegateHandle subscriptionPostPIEStarted;

@@ -224,6 +224,8 @@ void ACesiumSunSky::EndPlay(const EEndPlayReason::Type EndPlayReason) {
         this->_transformUpdatedSubscription);
     this->_transformUpdatedSubscription.Reset();
   }
+
+  Super::EndPlay(EndPlayReason);
 }
 
 void ACesiumSunSky::Serialize(FArchive& Ar) {

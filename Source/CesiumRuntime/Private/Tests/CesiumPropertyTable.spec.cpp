@@ -10,7 +10,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTableSpec,
     "Cesium.Unit.PropertyTable",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 CesiumGltf::Model model;
 CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension;
