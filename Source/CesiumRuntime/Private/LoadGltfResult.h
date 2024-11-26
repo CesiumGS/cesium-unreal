@@ -36,12 +36,7 @@ namespace LoadGltfResult {
  * well as any data that needs to be transferred to the corresponding
  * CesiumGltfPrimitiveComponent after it is created on the main thread.
  *
- * After introducing pInstanceFeatures as a TSharedPtr in LoadNodeResult, the
- * compiler complained about calling the copy constructor which is deleted by
- * default (because of the TUniquePtr usage).  Of course we really want to use
- * move constructors with all these unique pointers. So, we explicitly write the
- * move constructors and delete the copy constructor, in part to document what
- * should happen.
+ * This type is move-only due to the use of TUniquePtr.
  */
 struct LoadPrimitiveResult {
 #pragma region Temporary render data
@@ -49,47 +44,8 @@ struct LoadPrimitiveResult {
   LoadPrimitiveResult(const LoadPrimitiveResult&) = delete;
 
   LoadPrimitiveResult() {}
+  LoadPrimitiveResult(LoadPrimitiveResult&& other) = default;
 
-  LoadPrimitiveResult(LoadPrimitiveResult&& other)
-      : RenderData(std::move(other.RenderData)),
-        pMaterial(other.pMaterial),
-        transform(other.transform),
-        pCollisionMesh(std::move(other.pCollisionMesh)),
-        name(std::move(other.name)),
-        baseColorTexture(std::move(other.baseColorTexture)),
-        metallicRoughnessTexture(std::move(other.metallicRoughnessTexture)),
-        normalTexture(std::move(other.normalTexture)),
-        emissiveTexture(std::move(other.emissiveTexture)),
-        occlusionTexture(std::move(other.occlusionTexture)),
-        waterMaskTexture(std::move(other.waterMaskTexture)),
-        textureCoordinateParameters(
-            std::move(other.textureCoordinateParameters)),
-        FeaturesMetadataTexCoordParameters(
-            std::move(other.FeaturesMetadataTexCoordParameters)),
-        isUnlit(other.isUnlit),
-        onlyLand(other.onlyLand),
-        onlyWater(other.onlyWater),
-        waterMaskTranslationX(other.waterMaskTranslationX),
-        waterMaskTranslationY(other.waterMaskTranslationY),
-        waterMaskScale(other.waterMaskScale),
-        dimensions(other.dimensions),
-        pModel(other.pModel),
-        pMeshPrimitive(other.pMeshPrimitive),
-        Features(std::move(other.Features)),
-        Metadata(std::move(other.Metadata)),
-        EncodedFeatures(std::move(other.EncodedFeatures)),
-        EncodedMetadata(std::move(other.EncodedMetadata)),
-        Metadata_DEPRECATED(std::move(other.Metadata_DEPRECATED)),
-        overlayTextureCoordinateIDToUVIndex(
-            std::move(other.overlayTextureCoordinateIDToUVIndex)),
-        GltfToUnrealTexCoordMap(std::move(other.GltfToUnrealTexCoordMap)),
-        TexCoordAccessorMap(std::move(other.TexCoordAccessorMap)),
-        PositionAccessor(std::move(other.PositionAccessor)),
-        IndexAccessor(std::move(other.IndexAccessor)) {
-    if (other.EncodedMetadata_DEPRECATED) {
-      EncodedMetadata_DEPRECATED = std::move(*other.EncodedMetadata_DEPRECATED);
-    }
-  }
   /**
    * The render data. This is populated so it can be set on the static mesh
    * created on the main thread.
