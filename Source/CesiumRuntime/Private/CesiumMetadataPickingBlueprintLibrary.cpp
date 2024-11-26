@@ -191,9 +191,9 @@ getInstancePropertyTableValues(const FHitResult& Hit, int64 FeatureIDSetIndex) {
   const FCesiumPropertyTable& propertyTable =
       propertyTables[propertyTableIndex];
   int64 featureID =
-      UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromHit(
+      UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
           instanceFeatures,
-          Hit,
+          Hit.Item,
           FeatureIDSetIndex);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataValue>();

@@ -79,13 +79,3 @@ int64 UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
       featureIDSet,
       InstanceIndex);
 }
-
-int64 UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromHit(
-    const FCesiumInstanceFeatures& InstanceFeatures,
-    const FHitResult& Hit,
-    int64 FeatureIDSetIndex) {
-  return GetFeatureIDFromInstance(
-      InstanceFeatures,
-      Hit.Item,
-      FeatureIDSetIndex);
-}
