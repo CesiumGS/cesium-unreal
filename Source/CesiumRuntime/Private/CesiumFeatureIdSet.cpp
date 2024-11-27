@@ -82,7 +82,8 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   if (pMetadata && _propertyTableIndex >= 0) {
     size_t index = static_cast<size_t>(_propertyTableIndex);
     if (index < pMetadata->propertyTables.size()) {
-      const CesiumGltf::PropertyTable& propertyTable = pMetadata->propertyTables[index];
+      const CesiumGltf::PropertyTable& propertyTable =
+          pMetadata->propertyTables[index];
       std::string name = propertyTable.name.value_or("");
       propertyTableName = FString(name.c_str());
     }
@@ -214,6 +215,18 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForInstance(
 int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
     const FHitResult& Hit) {
+  // FeatureIDs from instanced geometry take precedence.
+  const auto* pInstancedComponent =
+      Cast<UCesiumGltfInstancedComponent>(Hit.Component);
+  if (IsValid(pInstancedComponent)) {
+    const FCesiumInstanceFeatures& instanceFeatures =
+        UCesiumInstanceFeaturesBlueprintLibrary::GetInstanceFeatures(
+            pInstancedComponent);
+    return UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+        instanceFeatures,
+        Hit.Item);
+  }
+
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Texture) {
     FCesiumFeatureIdTexture texture =
         std::get<FCesiumFeatureIdTexture>(FeatureIDSet._featureID);
@@ -222,18 +235,6 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
         Hit);
   }
 
-  {
-    const auto* pInstancedComponent =
-        Cast<UCesiumGltfInstancedComponent>(Hit.Component);
-    if (IsValid(pInstancedComponent)) {
-      const FCesiumInstanceFeatures& instanceFeatures =
-          UCesiumInstanceFeaturesBlueprintLibrary::GetInstanceFeatures(
-              pInstancedComponent);
-      return UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
-          instanceFeatures,
-          Hit.Item);
-    }
-  }
   // Find the first vertex of the face.
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(Hit.Component);

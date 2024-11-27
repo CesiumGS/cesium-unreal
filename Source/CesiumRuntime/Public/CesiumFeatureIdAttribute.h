@@ -63,10 +63,11 @@ public:
       const FString& PropertyTableName);
 
   /**
-   * @brief Constructs a feature ID attribute instance from instance metadata.
+   * @brief Constructs a feature ID attribute instance from
+   * EXT_instance_features data.
    *
    * @param Model The model.
-   * @param Node The "mesh node" containing the feature ID attribute.
+   * @param Node The node containing the feature ID attribute.
    * @param FeatureIDAttribute The attribute index specified by the FeatureId.
    * @param PropertyTableName The name of the property table this attribute
    * corresponds to, if one exists, for backwards compatibility.

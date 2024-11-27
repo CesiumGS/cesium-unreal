@@ -196,7 +196,9 @@ struct LoadNodeResult {
    */
   std::vector<FTransform> InstanceTransforms;
   /**
-   * Instance features
+   * Features from EXT_instance_features. A pointer is used for shared ownership
+   * because there may be multiple primitives in the same mesh belonging to a
+   * single instance.
    */
   TSharedPtr<FCesiumInstanceFeatures> pInstanceFeatures = nullptr;
 };

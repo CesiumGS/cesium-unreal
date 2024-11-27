@@ -23,15 +23,15 @@ struct CESIUMRUNTIME_API FCesiumInstanceFeatures {
 
 public:
   /**
-   * Constructs an empty primitive features instance.
+   * Constructs an empty instance features object.
    */
   FCesiumInstanceFeatures() : _instanceCount(0) {}
 
   /**
-   * Constructs an instance feature.
+   * Constructs an instance feature object.
    *
    * @param Model The model that contains the EXT_instance_features extension
-   * @param Node The node that stores instance data
+   * @param Node The node that stores EXT_instance_features
    * extension
    */
   FCesiumInstanceFeatures(
@@ -52,8 +52,9 @@ class CESIUMRUNTIME_API UCesiumInstanceFeaturesBlueprintLibrary
 
 public:
   /**
-   * Gets the instance features of a glTF primitive component. If component is
-   * not a Cesium glTF primitive component, the returned features are empty.
+   * Gets the instance features of an instanced glTF primitive component. If
+   * component is not an instanced Cesium glTF component, the returned features
+   * are empty.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -63,8 +64,8 @@ public:
   GetInstanceFeatures(const UPrimitiveComponent* component);
 
   /**
-   * Gets all the feature ID sets that are associated with the
-   * primitive.
+   * Gets all the feature ID sets that are associated with the features
+   * associated with an instanced primitive.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -86,7 +87,7 @@ public:
       ECesiumFeatureIdSetType Type);
 
   /**
-   * Gets the feature ID associated with an instance number
+   * Gets the feature ID associated with an instance at an index.
    *
    */
   UFUNCTION(

@@ -2,7 +2,6 @@
 
 #include "CesiumFeatureIdAttribute.h"
 #include <CesiumGltf/Accessor.h>
-#include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/Model.h>
 
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(

@@ -30,8 +30,9 @@ enum class ECesiumFeatureIdSetType : uint8 {
 /**
  * @brief A blueprint-accessible wrapper for a feature ID set from a glTF
  * primitive. A feature ID can be defined as a per-vertex attribute, as a
- * feature texture, or implicitly via vertex ID. These can be used with the
- * corresponding {@link FCesiumPropertyTable} to access per-vertex metadata.
+ * feature texture, implicitly via vertex ID, or associated with glTF
+ * instances. These can be used with the corresponding {@link
+ * FCesiumPropertyTable} to access the metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
@@ -189,12 +190,14 @@ public:
       int64 VertexIndex);
 
   /**
-   * Gets the feature ID associated with a given instance. The feature ID can be
-   * used with a FCesiumPropertyTable to retrieve the corresponding metadata.
+   * Gets the feature ID associated with a given instance in glTF models using
+   * the EXT_mesh_gpu_instancing and EXT_instance_features extensions. The
+   * feature ID can be used with a FCesiumPropertyTable to retrieve the
+   * corresponding metadata.
    *
    * This returns -1 if the given instance is out-of-bounds, if the feature ID
    * set is not for instances, or if the feature ID set is invalid (e.g., it
-   * contains an invalid feature ID texture).
+   * contains an invalid feature ID attribute).
    */
   UFUNCTION(
       BlueprintCallable,
