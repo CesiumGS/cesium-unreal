@@ -238,7 +238,7 @@ SharedFuture<void> createTextureInLoadThread(
 
   CesiumGltf::Image* pImage =
       CesiumGltf::Model::getSafe(&gltf.images, pTexture->source);
-  if (pImage == nullptr)
+  if (pImage == nullptr || pImage->pAsset == nullptr)
     return asyncSystem.createResolvedFuture().share();
 
   check(pTexture->source >= 0 && pTexture->source < imageNeedsMipmaps.size());

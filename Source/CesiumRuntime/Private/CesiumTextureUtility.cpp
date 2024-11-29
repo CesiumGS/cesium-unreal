@@ -179,6 +179,10 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
   };
 
   CesiumGltf::Image& image = model.images[*optionalSourceIndex];
+  if (image.pAsset == nullptr) {
+    return nullptr;
+  }
+
   const CesiumGltf::Sampler& sampler =
       model.getSafe(model.samplers, texture.sampler);
 
