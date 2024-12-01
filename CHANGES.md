@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - 2024-12-02
+### v2.11.0 - 2024-12-02
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.2. Future versions will require Unreal Engine v5.3+.
 
@@ -13,7 +13,9 @@ This is the last release of Cesium for Unreal that will support Unreal Engine v5
 
 - Fixed a crash that could occur when using `SampleHeightMostDetailed` on a `Cesium3DTileset` with a raster overlay.
 - `CesiumPolygonRasterOverlay` now references `CesiumCartographicPolygon` instances using `TSoftObjectPtr`, which allows, for example, a raster overlay in the persistent level to use a polygon in a sub-level.
-- Fixed a bug that occurred when a `Cesium3DTileset` had three or more overlays.
+- Fixed an overlay artifact bug that could occur when a `Cesium3DTileset` had three or more overlays.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.41.0 to v0.42.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.10.0 - 2024-11-01
 
