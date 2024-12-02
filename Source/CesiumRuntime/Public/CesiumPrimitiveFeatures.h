@@ -15,7 +15,10 @@ struct ExtensionExtMeshFeatures;
 
 /**
  * A Blueprint-accessible wrapper for a glTF Primitive's mesh features. It holds
- * views of the feature ID sets associated with this primitive.
+ * views of the feature ID sets associated with this primitive. The collection
+ * of features in the EXT_instance_features is very similar to that in
+ * EXT_mesh_features, so FCesiumPrimitiveFeatures can be used to handle those
+ * features too.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
@@ -41,9 +44,21 @@ public:
       const CesiumGltf::MeshPrimitive& Primitive,
       const CesiumGltf::ExtensionExtMeshFeatures& Features);
 
+  /**
+   * Constructs an instance feature object.
+   *
+   * @param Model The model that contains the EXT_instance_features extension
+   * @param Node The node that stores EXT_instance_features
+   * extension
+   */
+  FCesiumPrimitiveFeatures(
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::Node& Node);
+
 private:
   TArray<FCesiumFeatureIdSet> _featureIdSets;
   CesiumGltf::IndexAccessorType _indexAccessor;
+  // Vertex count = 0 and _primitiveMode = -1 indicates instance features
   int64_t _vertexCount;
   int32_t _primitiveMode;
 
@@ -130,6 +145,19 @@ public:
   static int64 GetFeatureIDFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
       int64 FaceIndex,
+      int64 FeatureIDSetIndex = 0);
+
+  /**
+   * Gets the feature ID associated with an instance at an index.
+   *
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|Features")
+  static int64 GetFeatureIDFromInstance(
+      UPARAM(ref) const FCesiumPrimitiveFeatures& InstanceFeatures,
+      int64 InstanceIndex,
       int64 FeatureIDSetIndex = 0);
 
   /**
