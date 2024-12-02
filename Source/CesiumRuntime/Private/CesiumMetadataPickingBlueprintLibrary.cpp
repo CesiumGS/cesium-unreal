@@ -167,14 +167,14 @@ getInstancePropertyTableValues(
   if (!IsValid(pInstancedComponent)) {
     return std::nullopt;
   }
-  const TSharedPtr<FCesiumInstanceFeatures> pInstanceFeatures =
+  const TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures =
       pInstancedComponent->pInstanceFeatures;
   if (!pInstanceFeatures) {
     return std::nullopt;
   }
 
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
-      UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDSets(
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
           *pInstanceFeatures);
   if (FeatureIDSetIndex < 0 || FeatureIDSetIndex >= featureIDSets.Num()) {
     return TMap<FString, FCesiumMetadataValue>();
@@ -192,7 +192,7 @@ getInstancePropertyTableValues(
   const FCesiumPropertyTable& propertyTable =
       propertyTables[propertyTableIndex];
   int64 featureID =
-      UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
           *pInstanceFeatures,
           Hit.Item,
           FeatureIDSetIndex);

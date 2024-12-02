@@ -2032,7 +2032,8 @@ static void loadInstancingData(
     result.InstanceTransforms[i].SetFromMatrix(unrealFMatrix);
   }
   if (pInstanceFeatures) {
-    result.pInstanceFeatures = MakeShared<FCesiumInstanceFeatures>(model, node);
+    result.pInstanceFeatures =
+        MakeShared<FCesiumPrimitiveFeatures>(model, node);
   }
 }
 
@@ -2885,7 +2886,7 @@ static void loadPrimitiveGameThreadPart(
     bool createNavCollision,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
-    TSharedPtr<FCesiumInstanceFeatures> pInstanceFeatures) {
+    TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES

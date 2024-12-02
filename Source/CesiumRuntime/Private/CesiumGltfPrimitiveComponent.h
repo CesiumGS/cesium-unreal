@@ -3,8 +3,8 @@
 #pragma once
 
 #include "Cesium3DTilesSelection/BoundingVolume.h"
-#include "CesiumInstanceFeatures.h"
 #include "CesiumPrimitive.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -63,7 +63,7 @@ public:
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
 
-  TSharedPtr<FCesiumInstanceFeatures> pInstanceFeatures;
+  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
 private:
   CesiumPrimitiveData _cesiumData;

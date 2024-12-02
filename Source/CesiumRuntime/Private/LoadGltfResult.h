@@ -4,7 +4,6 @@
 
 #include "CesiumCommon.h"
 #include "CesiumEncodedFeaturesMetadata.h"
-#include "CesiumInstanceFeatures.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -200,7 +199,7 @@ struct LoadNodeResult {
    * because there may be multiple primitives in the same mesh belonging to a
    * single instance.
    */
-  TSharedPtr<FCesiumInstanceFeatures> pInstanceFeatures = nullptr;
+  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures = nullptr;
 };
 
 /**

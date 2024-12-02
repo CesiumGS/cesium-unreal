@@ -7,7 +7,6 @@
 #include "CesiumGltf/FeatureId.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
-#include "CesiumInstanceFeatures.h"
 
 static FCesiumFeatureIdAttribute EmptyFeatureIDAttribute;
 static FCesiumFeatureIdTexture EmptyFeatureIDTexture;
@@ -219,10 +218,9 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
   const auto* pInstancedComponent =
       Cast<UCesiumGltfInstancedComponent>(Hit.Component);
   if (IsValid(pInstancedComponent)) {
-    const FCesiumInstanceFeatures& instanceFeatures =
-        UCesiumInstanceFeaturesBlueprintLibrary::GetInstanceFeatures(
-            pInstancedComponent);
-    return UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+    const FCesiumPrimitiveFeatures& instanceFeatures =
+        *pInstancedComponent->pInstanceFeatures;
+    return UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
         instanceFeatures,
         Hit.Item);
   }
