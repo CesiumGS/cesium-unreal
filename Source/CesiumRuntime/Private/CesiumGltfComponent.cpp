@@ -2879,23 +2879,28 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 namespace {
 void addInstanceFeatureIds(UCesiumGltfInstancedComponent* pInstancedComponent) {
-  const FCesiumInstanceFeatures& instanceFeatures =
-      UCesiumInstanceFeaturesBlueprintLibrary::GetInstanceFeatures(
-          pInstancedComponent);
+  const TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures =
+      pInstancedComponent->pInstanceFeatures;
+  if (!pInstanceFeatures) {
+    return;
+  }
   const TArray<FCesiumFeatureIdSet>& featureIdSets =
-      UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDSets(
-          instanceFeatures);
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+          *pInstanceFeatures);
   int32 featureSetCount = featureIdSets.Num();
   if (featureSetCount == 0) {
     return;
   }
-  pInstancedComponent->SetNumCustomDataFloats(featureSetCount);
+  // Note: in UE 5.3 we will want to use SetNumCustomDataFloats().
+  pInstancedComponent->NumCustomDataFloats = featureSetCount;
   int32 numInstances = pInstancedComponent->GetInstanceCount();
+  pInstancedComponent->PerInstanceSMCustomData.SetNum(
+      featureSetCount * numInstances);
   for (int32 j = 0; j < featureSetCount; ++j) {
     for (int32 i = 0; i < numInstances; ++i) {
       int64 featureId =
-          UCesiumInstanceFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
-              instanceFeatures,
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+              *pInstanceFeatures,
               i,
               j);
       pInstancedComponent
