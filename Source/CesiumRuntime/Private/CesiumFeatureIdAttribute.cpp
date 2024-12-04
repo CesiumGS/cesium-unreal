@@ -44,6 +44,31 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
       this->_featureIdAccessor);
 }
 
+FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::Node& Node,
+    const int64 FeatureIDAttribute,
+    const FString& PropertyTableName)
+    : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
+      _featureIdAccessor(),
+      _attributeIndex(FeatureIDAttribute),
+      _propertyTableName(PropertyTableName) {
+  this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
+      Model,
+      Node,
+      static_cast<int32_t>(this->_attributeIndex));
+
+  this->_status = std::visit(
+      [](auto&& view) {
+        if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {
+          return ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
+        }
+
+        return ECesiumFeatureIdAttributeStatus::Valid;
+      },
+      this->_featureIdAccessor);
+}
+
 const FString& UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return FeatureIDAttribute._propertyTableName;
