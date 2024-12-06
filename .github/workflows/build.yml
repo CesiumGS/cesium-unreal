@@ -23,7 +23,8 @@ jobs:
           submodules: recursive
       - name: Generate Documentation
         run: |
-          doxygen ./Documentation/Doxyfile
+          npm install
+          npm run doxygen
       - name: Publish Documentation Artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
