@@ -1,12 +1,15 @@
+# Developer Setup {#developer-setup-unreal}
+
 ## Overview
 
-This is a summary of a setup and workflows for developers who want to work with the *Cesium for Unreal* plugin. Such a setup consists of three main components:
+This is a summary of a setup and workflows for developers who want to work with the _Cesium for Unreal_ plugin. Such a setup consists of three main components:
 
-- [`cesium-native`](https://github.com/CesiumGS/cesium-native) : A collection of engine-independent libraries for 3D Tiles, geospatial, etc. Most of the functionality of *Cesium for Unreal* is built based on these libraries.
-- [`cesium-unreal`](https://github.com/CesiumGS/cesium-unreal) : The source code of the actual *Cesium for Unreal* plugin.
+- [`cesium-native`](https://github.com/CesiumGS/cesium-native) : A collection of engine-independent libraries for 3D Tiles, geospatial, etc. Most of the functionality of _Cesium for Unreal_ is built based on these libraries.
+- [`cesium-unreal`](https://github.com/CesiumGS/cesium-unreal) : The source code of the actual _Cesium for Unreal_ plugin.
 - An Unreal project that uses the plugin. We will use the [`cesium-unreal-samples`](https://github.com/CesiumGS/cesium-unreal-samples) as an example here, to get started quickly. It contains sample levels for different use cases, and can therefore be used to quickly check for possible regressions of feature changes.
 
-> Note: It is generally possible to work with `cesium-native` *independent* of `cesium-unreal`. But any modification in `cesium-native` will have to be checked carefully for possible breaking changes in the API or the build process. So the following describes the developer setup from the perspective of someone who wants to work with `cesium-native` mainly in the context of `cesium-unreal`.
+> Note: It is generally possible to work with `cesium-native` _independent_ of `cesium-unreal`. But any modification in `cesium-native` will have to be checked carefully for possible breaking changes in the API or the build process. So the following describes the developer setup from the perspective of someone who wants to work with `cesium-native` mainly in the context of `cesium-unreal`.
+<!--! [TOC] -->
 
 ## Principles
 
@@ -21,14 +24,14 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 
 ## Platform-specific setup instructions
 
-* [Windows](developer-setup-windows.md)
-* [Linux](developer-setup-linux.md)
-* [macOS](developer-setup-osx.md)
+- <!--! \cond DOXYGEN_EXCLUDE !--> [Windows](developer-setup-windows.md) <!--! \endcond --><!--! \subpage developer-setup-windows "Windows" -->
+- <!--! \cond DOXYGEN_EXCLUDE !--> [Linux](developer-setup-linux.md) <!--! \endcond --><!--! \subpage developer-setup-linux "Linux" -->
+- <!--! \cond DOXYGEN_EXCLUDE !--> [macOS](developer-setup-osx.md) <!--! \endcond --><!--! \subpage developer-setup-osx "macOS" -->
 
 ## Deployment instructions
 
-* The [Packaging Guide](packaging-guide.md) describes how to create a package and use it in a local Unreal installation. This is similar to installing it from the Unreal Engine Marketplace, but allows testing non-release branches.
-* The [Release Process](release-process.md) describes the necessary steps to publish a new version of the plugin to the Unreal Marketplace.
+- The [Packaging Guide](packaging-guide.md) describes how to create a package and use it in a local Unreal installation. This is similar to installing it from the Unreal Engine Marketplace, but allows testing non-release branches.
+- The [Release Process](release-process.md) describes the necessary steps to publish a new version of the plugin to the Unreal Marketplace.
 
 ## Run the tests
 

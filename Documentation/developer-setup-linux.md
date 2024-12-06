@@ -1,4 +1,7 @@
+# Developer Setup for Linux {#developer-setup-linux}
+
 Detailed instructions for setting up a Cesium for Unreal development environment on Linux. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
+<!--! [TOC] -->
 
 # Prerequisities
 
@@ -22,7 +25,7 @@ The following illustrates the recommended directory layout for developers:
 
 - `~/dev` - Your own root directory for development.
 - `~/dev/cesium-unreal-samples` - The directory for the Unreal project that will use the plugin.
-- `~/dev/cesium-unreal` - The directory for the actual *Cesium for Unreal* plugin.
+- `~/dev/cesium-unreal` - The directory for the actual _Cesium for Unreal_ plugin.
 - `~/dev/cesium-unreal/extern/cesium-native` - The directory for the base libraries project.
 
 In this setup, we will build the Cesium for Unreal plugin separately from any project, and then install it as an Engine plugin.
@@ -42,7 +45,7 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 ## CMake command-line
 
 Configure the CMake project in the `~/dev/cesium-unreal/extern` directory by following the instructions below.
-**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
+**Note**: The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
 

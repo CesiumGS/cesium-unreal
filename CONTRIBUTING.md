@@ -1,4 +1,7 @@
+# Contribution Guide {#contributing-unreal}
+
 Thanks for contributing to Cesium for Unreal!
+<!--! [TOC] -->
 
 Here are the guidelines that we use for all contributions to this project:
 
@@ -76,7 +79,7 @@ Our code is our lifeblood so maintaining Cesium's high code quality is important
   - If your pull request needs additional work, include a [task list](https://github.com/blog/1375%0A-task-lists-in-gfm-issues-pulls-comments).
   - Once you are done making new commits to address feedback, add a comment to the pull request such as `"this is ready"` since GitHub doesn't notify us about commits.
   - Follow the [Coding Guide](https://github.com/CesiumGS/cesium-native/blob/main/doc/style-guide.md).
-  - Verify your is formatted, as described in the Coding Guide. 
+  - Verify your is formatted, as described in the Coding Guide.
 
 ## Code of Conduct
 

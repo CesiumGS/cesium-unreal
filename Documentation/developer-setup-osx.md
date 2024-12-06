@@ -1,4 +1,7 @@
+# Developer Setup for macOS {#developer-setup-osx}
+
 Detailed instructions for setting up a Cesium for Unreal development environment on macOS. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
+<!--! [TOC] -->
 
 # Prerequisities
 
@@ -13,10 +16,10 @@ The following illustrates the recommended directory layout for developers:
 
 - `~/dev` - Your own root directory for development.
 - `~/dev/cesium-unreal-samples` - The directory for the Unreal project that will use the plugin.
-- `~/dev/cesium-unreal-samples/Plugins/cesium-unreal` - The directory for the actual *Cesium for Unreal* plugin.
+- `~/dev/cesium-unreal-samples/Plugins/cesium-unreal` - The directory for the actual _Cesium for Unreal_ plugin.
 - `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern/cesium-native` - The directory for the base libraries project.
 
-You may use any directory for the project, but the directory for the actual *Cesium for Unreal* plugin **MUST** be in a subdirectory `Plugins/cesium-unreal` of the project directory. This way, Unreal will automatically find the Plugin when running the project, and pick up any changes that have been made to the plugin.
+You may use any directory for the project, but the directory for the actual _Cesium for Unreal_ plugin **MUST** be in a subdirectory `Plugins/cesium-unreal` of the project directory. This way, Unreal will automatically find the Plugin when running the project, and pick up any changes that have been made to the plugin.
 
 This can be set up with the following sequence of commands, on the console, starting in the `~/dev` directory:
 
@@ -37,7 +40,7 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 ## CMake command-line
 
 First, configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below.
-**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
+**Note**: The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
 
@@ -55,7 +58,7 @@ To build a Release version, do the following:
 
 Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one use for macOS as this will require compiling for a different architecture.
 
-**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
+**Note**: The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Release version of cesium-native:
 
