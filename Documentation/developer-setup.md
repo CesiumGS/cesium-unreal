@@ -45,6 +45,7 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 ## Generate Reference Documentation
 
 - Install Doxygen and make sure `doxygen` is in your path.
+- Run `npm install`
 - Run `npm run doxygen`
 
 The reference documentation will be written to `Documentation/Reference`.
