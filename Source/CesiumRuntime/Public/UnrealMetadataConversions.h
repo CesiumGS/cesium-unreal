@@ -57,7 +57,7 @@ public:
    * written in the "X=... Y=... Z=..." format. If this function fails to parse
    * a FIntVector, the default value is returned.
    *
-   * @param from The std::string_view to be parsed.
+   * @param string The std::string_view to be parsed.
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FIntVector
@@ -83,7 +83,6 @@ public:
    * will return a string in the format "X=... Y=... Z=...".
    *
    * @param from The glm::vecN to be converted.
-   * @param defaultValue The default value to be returned if conversion fails.
    */
   template <glm::length_t N, typename T>
   static FString toString(const glm::vec<N, T>& from) {
@@ -105,10 +104,8 @@ public:
    * returned in square brackets, e.g. "[1 2 3 4]", with spaces in-between.
    *
    * @param from The glm::matN to be converted.
-   * @param defaultValue The default value to be returned if conversion fails.
    */
   template <glm::length_t N, typename T>
-
   static FString toString(const glm::mat<N, N, T>& from) {
     std::string result;
     // glm::matNs are column-major, but Unreal matrices are row-major and print

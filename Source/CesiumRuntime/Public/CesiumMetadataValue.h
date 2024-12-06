@@ -341,6 +341,7 @@ public:
    *
    * All other types return the default value.
    *
+   * @param value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a Boolean.
    * @return The value as a Boolean.
@@ -370,6 +371,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a Byte.
    * @return The value as a Byte.
@@ -401,6 +403,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to an Integer.
    * @return The value as an Integer.
@@ -432,6 +435,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to an Integer64.
    * @return The value as an Integer64.
@@ -463,6 +467,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a Float.
    * @return The value as a Float.
@@ -492,6 +497,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a Float64.
    * @return The value as a Float64.
@@ -526,6 +532,7 @@ public:
    * any of the relevant components cannot be represented as a 32-bit signed,
    * the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FIntPoint.
    * @return The value as a FIntPoint.
@@ -558,6 +565,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FIntPoint.
    * @return The value as a FIntPoint.
@@ -595,6 +603,7 @@ public:
    * any of the relevant components cannot be represented as a 32-bit signed
    * integer, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FIntVector.
    * @return The value as a FIntVector.
@@ -633,6 +642,7 @@ public:
    * any of the relevant components cannot be represented as a single-precision
    * float, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FVector3f.
    * @return The value as a FVector3f.
@@ -668,6 +678,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FVector.
    * @return The value as a FVector.
@@ -705,6 +716,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FVector4.
    * @return The value as a FVector4.
@@ -743,6 +755,7 @@ public:
    *
    * In all other cases, the default value is returned.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FMatrix.
    * @return The value as a FMatrix.
@@ -773,6 +786,7 @@ public:
    *
    * Array properties return the default value.
    *
+   * @param Value The metadata value to retrieve.
    * @param DefaultValue The default value to use if the given value cannot
    * be converted to a FString.
    * @return The value as a FString.
@@ -789,6 +803,7 @@ public:
    * Attempts to retrieve the value as a FCesiumPropertyArray. If the property
    * is not an array type, this returns an empty array.
    *
+   * @param Value The metadata value to retrieve.
    * @return The value as a FCesiumPropertyArray.
    */
   UFUNCTION(
@@ -805,6 +820,7 @@ public:
    * matches the property's specified "no data" value, it will return an empty
    * FCesiumMetadataValue.
    *
+   * @param Value The metadata value to retrieve.
    * @return Whether the value is empty.
    */
   UFUNCTION(

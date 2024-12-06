@@ -28,7 +28,7 @@ enum class ECesiumFeatureIdAttributeStatus : uint8 {
 /**
  * @brief A blueprint-accessible wrapper for a feature ID attribute from a glTF
  * primitive. Provides access to per-vertex feature IDs which can be used with
- * the corresponding {@link FCesiumFeatureTable} to access per-vertex metadata.
+ * the corresponding {@link FCesiumPropertyTable} to access per-vertex metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {

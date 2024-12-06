@@ -6,7 +6,7 @@ Cesium for Unreal brings the 3D geospatial ecosystem to Unreal Engine. By combin
 
 [Cesium for Unreal Homepage](https://cesium.com/cesium-for-unreal?utm_source=github&utm_medium=github&utm_campaign=unreal)
 
-### :rocket: Get Started
+### 🚀 Get Started
 
 **[Download Cesium for Unreal from Unreal Engine Marketplace](https://cesium.com/unreal-marketplace?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal)**
 
@@ -14,7 +14,7 @@ Cesium for Unreal brings the 3D geospatial ecosystem to Unreal Engine. By combin
 
 Have questions? Ask them on the [community forum](https://community.cesium.com).
 
-### :clap: Featured Demos
+### 👏 Featured Demos
 
 <p>
 <a href="https://github.com/CesiumGS/cesium-unreal-samples"><img src="https://images.prismic.io/cesium/bfa9f768-26eb-4a6f-a427-8e9cecbe16b1_melbourne.jpg" width="48%" /></a>&nbsp;
@@ -23,7 +23,7 @@ Have questions? Ask them on the [community forum](https://community.cesium.com).
 <br/>
 </p>
 
-### :house_with_garden: Cesium for Unreal and the 3D Geospatial Ecosystem
+### 🏡 Cesium for Unreal and the 3D Geospatial Ecosystem
 
 Cesium for Unreal streams real-world 3D content such as high-resolution photogrammetry, terrain, imagery, and 3D buildings from [Cesium ion](https://cesium.com/cesium-ion) and other sources, available as optional commercial subscriptions. The plugin includes Cesium ion integration for instant access to global high-resolution 3D content ready for runtime streaming. Cesium ion users can also leverage cloud-based 3D tiling pipelines to create end-to-end workflows to transform massive heterogenous content into semantically-rich 3D Tiles, ready for streaming to Unreal Engine.
 
@@ -33,15 +33,15 @@ Cesium for Unreal supports cloud and private network content and services based 
 
 Using Cesium ion helps support Cesium for Unreal development. :heart:
 
-### :chains: Unreal Engine Integration
+### ⛓️ Unreal Engine Integration
 
 Cesium for Unreal is tightly integrated with Unreal Engine making it possible to visualize and interact with real-world content in editor and at runtime. The plugin also has support for Unreal Engine physics, collisions, character interaction, and landscaping tools. Leverage decades worth of cutting-edge advancements in Unreal Engine and geospatial to create cohesive, interactive, and realistic simulations and applications with Cesium for Unreal.
 
-### :green_book: License
+### 📗 License
 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html). Cesium for Unreal is free for both commercial and non-commercial use.
 
-### :package: Installing Cesium for Unreal
+### 📦 Installing Cesium for Unreal
 
 The easiest way to install Cesium for Unreal is by downloading the officially released version from the [Unreal Engine Marketplace](https://cesium.com/unreal-marketplace?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal).
 
@@ -53,6 +53,6 @@ You can also find all releases on the [Releases](https://github.com/CesiumGS/ces
 
 You can also [use pre-release packages](Documentation/using-prerelease-packages.md).
 
-### :computer: Developing with Unreal Engine
+### 💻 Developing with Unreal Engine
 
 See the [Developer Setup Guide](Documentation/developer-setup.md) to learn how to set up a development environment for Cesium for Unreal, allowing you to compile it, customize it, and contribute to its development.

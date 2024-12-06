@@ -1,11 +1,12 @@
-# Using Pre-Release Packages
+# Using Pre-Release Packages {#using-prerelease}
 
 Cesium for Unreal has a continous integration (CI) system that automatically builds an installable version of the plugin for every commit in every branch. You can download and install these yourself to try out new features before they're released.
+<!--! [TOC] -->
 
 _Before you begin, **back up your project**. Cesium for Unreal can not guarantee that levels saved with a pre-release version will be loadable in other versions of the plugin._
 
-* [Download a pre-release version from a Pull Request](#download-a-pre-release-version-from-a-pull-request)
-* [Download a pre-release version from a Branch or Commit](#download-a-pre-release-version-from-a-branch-or-commit)
+- [Download a pre-release version from a Pull Request](#download-a-pre-release-version-from-a-pull-request)
+- [Download a pre-release version from a Branch or Commit](#download-a-pre-release-version-from-a-branch-or-commit)
 
 ## Download a pre-release version from a Pull Request
 

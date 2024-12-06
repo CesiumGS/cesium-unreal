@@ -31,11 +31,11 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
    * unlabeled, a name will be generated like so:
    *
    * - If the feature ID set is an attribute, this will appear as
-   * "_FEATURE_ID_<index>", where <index> is the set index specified in
+   * "_FEATURE_ID_\<index\>", where \<index\> is the set index specified in
    * the attribute.
    * - If the feature ID set is a texture, this will appear as
-   * "_FEATURE_ID_TEXTURE_<index>", where <index> increments with the number of
-   * feature ID textures seen in an individual primitive.
+   * "_FEATURE_ID_TEXTURE_\<index\>", where \<index\> increments with the number
+   * of feature ID textures seen in an individual primitive.
    * - If the feature ID set is an implicit set, this will appear as
    * "_IMPLICIT_FEATURE_ID". Implicit feature ID sets don't vary in definition,
    * so any additional implicit feature ID sets across the primitives are

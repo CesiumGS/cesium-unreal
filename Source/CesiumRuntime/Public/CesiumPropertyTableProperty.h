@@ -57,7 +57,7 @@ public:
   /**
    * Construct a wrapper for the property table property view.
    *
-   * @param value The PropertyTablePropertyView to be stored in this struct.
+   * @param Property The PropertyTablePropertyView to be stored in this struct.
    */
   template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
@@ -119,6 +119,8 @@ public:
   /**
    * Gets the status of the property table property. If this property table
    * property is invalid in any way, this will briefly indicate why.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -131,6 +133,8 @@ public:
    * Gets the best-fitting type for the property that is accessible from
    * Blueprints. For the most precise representation of the values possible in
    * Blueprints, you should retrieve it using this type.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -143,6 +147,8 @@ public:
    * Gets the best-fitting Blueprints type for the elements in this property's
    * array values. If the given property does not contain array values, this
    * returns None.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -156,6 +162,8 @@ public:
    * Gets the best-fitting Blueprints type for the elements in this property's
    * array values. If the given property does not contain array values, this
    * returns None.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -172,6 +180,8 @@ public:
    * Gets the type of the metadata value as defined in the
    * EXT_structural_metadata extension. Many of these types are not accessible
    * from Blueprints, but can be converted to a Blueprint-accessible type.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -184,6 +194,8 @@ public:
   /**
    * Gets true type of the value. Many of these types are not accessible
    * from Blueprints, but can be converted to a Blueprint-accessible type.
+   *
+   * @param Value The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -200,6 +212,8 @@ public:
    * array property, the component type will be None. Many of these types are
    * not accessible from Blueprints, but can be converted to a
    * Blueprint-accessible type.
+   *
+   * @param Value The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -215,6 +229,8 @@ public:
 
   /**
    * Gets the number of values in the property.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -226,6 +242,8 @@ public:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the number of values in this property.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -240,6 +258,8 @@ public:
   /**
    * Gets the number of elements in an array of this property. Only
    * applicable when the property is a fixed-length array type.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -252,6 +272,8 @@ public:
   /**
    * Gets the number of elements in an array of this property. Only
    * applicable when the property is a fixed-length array type.
+   *
+   * @param Property The property table property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -289,6 +311,7 @@ public:
    * out-of-range, or if the property table property is somehow invalid, the
    * user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a Boolean.
@@ -330,6 +353,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a Byte.
@@ -374,6 +398,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as an Integer.
@@ -417,6 +442,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as an Integer64.
@@ -461,6 +487,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a Float.
@@ -504,6 +531,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a Float64.
@@ -552,6 +580,7 @@ public:
    * If the feature ID is out-of-range, or if the property table property is
    * somehow invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FIntPoint.
@@ -596,6 +625,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FVector2D.
@@ -647,6 +677,7 @@ public:
    * If the feature ID is out-of-range, or if the property table property is
    * somehow invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FIntVector.
@@ -698,6 +729,7 @@ public:
    * If the feature ID is out-of-range, or if the property table property is
    * somehow invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FVector3f.
@@ -745,6 +777,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FVector.
@@ -794,6 +827,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FVector4.
@@ -844,6 +878,7 @@ public:
    * feature ID is out-of-range, or if the property table property is somehow
    * invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FMatrix.
@@ -887,6 +922,7 @@ public:
    * If the feature ID is out-of-range, or if the property table property is
    * somehow invalid, the user-defined default value is returned.
    *
+   * @param Property The property table property.
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
    * @return The property value as a FString.
@@ -912,7 +948,8 @@ public:
    * the property-defined default value cannot be converted, or does not exist,
    * then the user-defined default value is returned.
    *
-   * @param featureID The ID of the feature.
+   * @param Property The property table property.
+   * @param FeatureID The ID of the feature.
    * @return The property value as a FCesiumPropertyArray.
    */
   UFUNCTION(
@@ -934,7 +971,8 @@ public:
    * empty value will be returned. However, if the property itself specifies a
    * default value, then the property-defined default value will be returned.
    *
-   * @param featureID The ID of the feature.
+   * @param Property The property table property.
+   * @param FeatureID The ID of the feature.
    * @return The property value.
    */
   UFUNCTION(
@@ -951,7 +989,8 @@ public:
    * value to be acted on more generically; its true value can be retrieved
    * later as a specific Blueprints type.
    *
-   * @param featureID The ID of the feature.
+   * @param Property The property table property.
+   * @param FeatureID The ID of the feature.
    * @return The property value.
    */
   UFUNCTION(
@@ -972,7 +1011,9 @@ public:
    *
    * If this property is an empty property with a specified default value, it
    * will not have any raw data to retrieve. The returned value will be empty.
-   * @param featureID The ID of the feature.
+
+   * @param Property The property table property.
+   * @param FeatureID The ID of the feature.
    * @return The raw property value.
    */
   UFUNCTION(
@@ -987,6 +1028,7 @@ public:
    * Whether this property is normalized. Only applicable when this property has
    * an integer component type.
    *
+   * @param Property The property table property.
    * @return Whether this property is normalized.
    */
   UFUNCTION(
@@ -1004,6 +1046,7 @@ public:
    * integer component types. If an offset is not defined or applicable, this
    * returns an empty value.
    *
+   * @param Property The property table property.
    * @return The offset of the property.
    */
   UFUNCTION(
@@ -1021,6 +1064,7 @@ public:
    * integer component types. If a scale is not defined or applicable, this
    * returns an empty value.
    *
+   * @param Property The property table property.
    * @return The scale of the property.
    */
   UFUNCTION(
@@ -1040,6 +1084,7 @@ public:
    * offset, and scale applied. If a minimum value is not defined or
    * applicable, this returns an empty value.
    *
+   * @param Property The property table property.
    * @return The minimum value of the property.
    */
   UFUNCTION(
@@ -1059,6 +1104,7 @@ public:
    * offset, and scale applied. If a maximum value is not defined or applicable,
    * this returns an empty value.
    *
+   * @param Property The property table property.
    * @return The maximum value of the property.
    */
   UFUNCTION(
@@ -1077,6 +1123,7 @@ public:
    * This is not applicable to boolean properties. If a "no data" value is
    * not defined or applicable, this returns an empty value.
    *
+   * @param Property The property table property.
    * @return The "no data" value of the property.
    */
   UFUNCTION(
@@ -1093,6 +1140,7 @@ public:
    *
    * If a default value is not defined, this returns an empty value.
    *
+   * @param Property The property table property.
    * @return The default value of the property.
    */
   UFUNCTION(

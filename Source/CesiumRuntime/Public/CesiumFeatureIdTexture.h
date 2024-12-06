@@ -95,7 +95,7 @@ public:
   /**
    * Gets the name of the feature table corresponding to this feature ID
    * texture. The name can be used to fetch the appropriate
-   * FCesiumFeatureTable from the FCesiumMetadataModel.
+   * {@link FCesiumPropertyTable} from the FCesiumMetadataModel.
    */
   UFUNCTION(
       BlueprintCallable,
