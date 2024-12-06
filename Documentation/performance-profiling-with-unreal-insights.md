@@ -20,7 +20,7 @@ In this example, we will use our Cesium performance tests. Follow the steps outl
 4. Click Tools->Run Unreal Insights
 5. In Unreal Insights, click on the "Connection" tab (don't connect yet)
 
-> You can also find UnrealInsights.exe in UE_5.X\Engine\Binaries\Win64
+> You can also find UnrealInsights.exe in `UE_5.X/Engine/Binaries/Win64`
 
 ![](Images/profilingUnrealInsightsSessionBrowser.png)
 

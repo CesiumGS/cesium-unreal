@@ -22,16 +22,17 @@ The following illustrates the recommended directory layout for developers:
 You may use any directory for the project, but the directory for the actual _Cesium for Unreal_ plugin **MUST** be in a subdirectory `Plugins/cesium-unreal` of the project directory. This way, Unreal will automatically find the Plugin when running the project, and pick up any changes that have been made to the plugin.
 
 This can be set up with the following sequence of commands, on the console, starting in the `~/dev` directory:
-
-    git clone https://github.com/CesiumGS/cesium-unreal-samples.git
-    cd cesium-unreal-samples
-    mkdir Plugins
-    cd Plugins
-    git clone --recursive https://github.com/CesiumGS/cesium-unreal.git
-
-> Note: The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
-
-     git submodule update --init --recursive
+```
+git clone https://github.com/CesiumGS/cesium-unreal-samples.git
+cd cesium-unreal-samples
+mkdir Plugins
+cd Plugins
+git clone --recursive https://github.com/CesiumGS/cesium-unreal.git
+```
+<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
+```
+git submodule update --init --recursive
+```
 
 # Building cesium-native
 
@@ -40,29 +41,31 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 ## CMake command-line
 
 First, configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below.
-**Note**: The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
+<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
-
-      cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug
-      cmake --build build --target install
+```
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --target install
+```
 
 To build a Release version, do the following:
-
-      cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-      cmake --build build --target install
+```
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target install
+```
 
 ## CMake command-line for iOS
 
 **Note**: It is recommended that the build steps for CMake command-line for macOS (above) be completed first. Unreal Engine Editor will not launch without the host side binaries compiled as well.
 
 Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one use for macOS as this will require compiling for a different architecture.
-
-**Note**: The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
+<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note -->  The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Release version of cesium-native:
-
-      cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-      cmake --build build-ios --target install --config Release
+```
+cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-ios --target install --config Release
+```
 
 You can also build and install the debug version by using `Debug` or `RelWithDebInfo` instead of `Release`.
