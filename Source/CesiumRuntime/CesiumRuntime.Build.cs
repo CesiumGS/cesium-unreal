@@ -116,7 +116,10 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_SIZE_T_LENGTH",
                 "TIDY_STATIC",
                 "URI_STATIC_BUILD",
-                "SWL_VARIANT_NO_CONSTEXPR_EMPLACE"
+                "SWL_VARIANT_NO_CONSTEXPR_EMPLACE",
+                // Define to record the state of every tile, every frame, to a SQLite database.
+                // The database will be found in [Project Dir]/Saved/CesiumDebugTileStateDatabase.
+                // "CESIUM_DEBUG_TILE_STATES",
             }
         );
 

@@ -27,6 +27,10 @@
 #include <vector>
 #include "Cesium3DTileset.generated.h"
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+#include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
+#endif
+
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 class ACesiumCameraManager;
@@ -1237,6 +1241,10 @@ private:
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+
+#ifdef CESIUM_DEBUG_TILE_STATES
+  TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
+#endif
 
   std::optional<FCesiumFeaturesMetadataDescription>
       _featuresMetadataDescription;
