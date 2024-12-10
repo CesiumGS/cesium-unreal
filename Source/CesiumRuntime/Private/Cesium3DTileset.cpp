@@ -2033,10 +2033,6 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
   }
 
-  if (!this->LogSelectionStats && !this->LogSharedAssetStats) {
-    return;
-  }
-
 #ifdef CESIUM_DEBUG_TILE_STATES
   if (this->_pStateDebug && GetWorld()->IsPlayInEditor()) {
     this->_pStateDebug->recordAllTileStates(
@@ -2044,6 +2040,10 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         *this->_pTileset);
   }
 #endif
+
+  if (!this->LogSelectionStats && !this->LogSharedAssetStats) {
+    return;
+  }
 
   if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
       result.workerThreadTileLoadQueueLength !=
