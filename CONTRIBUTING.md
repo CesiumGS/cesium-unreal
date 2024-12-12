@@ -2,7 +2,9 @@
 
 Thanks for contributing to Cesium for Unreal!
 
-<!--! [TOC] -->
+<!--!
+[TOC]
+-->
 
 Here are the guidelines that we use for all contributions to this project:
 
