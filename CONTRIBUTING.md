@@ -1,4 +1,10 @@
+# Contribution Guide {#contributing-unreal}
+
 Thanks for contributing to Cesium for Unreal!
+
+<!--!
+[TOC]
+-->
 
 Here are the guidelines that we use for all contributions to this project:
 
@@ -8,7 +14,7 @@ Here are the guidelines that we use for all contributions to this project:
 
 To ensure an inclusive community, contributors and users in the Cesium community should follow the [code of conduct](./CODE_OF_CONDUCT.md).
 
-# Submitting an Issue
+# Submitting an Issue {#submitting-an-issue}
 
 If you have a question, do not submit an issue; instead, search the [Cesium community forum](https://community.cesium.com/). The forum is very active and there are years of informative archives for the Cesium platform, often with answers from the core Cesium team. If you do not find an answer to your question, start a new thread and you'll likely get a quick response.
 
@@ -27,7 +33,7 @@ If a related issue does not exist, submit a new one. Please be concise and inclu
 - A link to the thread if this was discussed on the [Cesium community forum](https://community.cesium.com/) or elsewhere.
 - Ideas for how to fix or workaround the issue. Also mention if you are willing to help fix it. If so, the Cesium team can often provide guidance and the issue may get fixed more quickly with your help.
 
-# Getting Started Contributing
+# Getting Started Contributing {#getting-started-contributing}
 
 Everyone is welcome to contribute to Cesium for Unreal!
 
@@ -48,7 +54,7 @@ See the [build guide](https://github.com/CesiumGS/cesium-unreal#computer-develop
 
 Always feel free to introduce yourself on the [Cesium community forum](https://community.cesium.com/) to brainstorm ideas and ask for guidance.
 
-# Opening a Pull Request
+# Opening a Pull Request {#opening-a-pull-request}
 
 We love pull requests. We strive to promptly review them, provide feedback, and merge. Interest in Cesium is at an all-time high so the core team is busy. Following the tips in this guide will help your pull request get merged quickly.
 
@@ -63,7 +69,7 @@ Before we can review a pull request, we require a signed Contributor License Agr
 
 This only needs to be completed once, and enables contributions to all of the projects under the [CesiumGS](https://github.com/CesiumGS) organization, including Cesium for Unreal. The CLA ensures you retain copyright to your contributions, and provides us the right to use, modify, and redistribute your contributions using the [Apache 2.0 License](LICENSE). If you have already signed a CLA for CesiumJS or other contributions to Cesium, you will not need to sign it again.
 
-If you have any questions, feel free to reach out to [hello@cesium.com](mailto:hello@cesium)!
+If you have any questions, feel free to reach out to hello@cesium.com!
 
 ## Pull Request Guidelines
 
@@ -76,7 +82,7 @@ Our code is our lifeblood so maintaining Cesium's high code quality is important
   - If your pull request needs additional work, include a [task list](https://github.com/blog/1375%0A-task-lists-in-gfm-issues-pulls-comments).
   - Once you are done making new commits to address feedback, add a comment to the pull request such as `"this is ready"` since GitHub doesn't notify us about commits.
   - Follow the [Coding Guide](https://github.com/CesiumGS/cesium-native/blob/main/doc/style-guide.md).
-  - Verify your is formatted, as described in the Coding Guide. 
+  - Verify your is formatted, as described in the Coding Guide.
 
 ## Code of Conduct
 

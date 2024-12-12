@@ -48,8 +48,8 @@ enum class ECesiumEncodedMetadataConversion : uint8 {
   /**
    * Attempt to parse a color from a string property value. This supports
    * the following formats:
-   * - rgb(R, G, B), where R, G, and B are values in the range [0, 255]
-   * - hexcode colors, e.g. #ff0000
+   * - `rgb(R, G, B)`, where R, G, and B are values in the range [0, 255]
+   * - hexcode colors, e.g. `#ff0000`
    */
   ParseColorFromString
 };
