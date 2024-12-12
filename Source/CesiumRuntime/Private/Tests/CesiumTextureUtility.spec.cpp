@@ -15,7 +15,7 @@ using namespace CesiumUtility;
 BEGIN_DEFINE_SPEC(
     CesiumTextureUtilitySpec,
     "Cesium.Unit.CesiumTextureUtility",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
         EAutomationTestFlags::ProductFilter | EAutomationTestFlags::NonNullRHI)
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;

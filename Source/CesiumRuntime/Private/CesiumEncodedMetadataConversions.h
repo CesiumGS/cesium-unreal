@@ -3,7 +3,7 @@
 #pragma once
 
 #include "HAL/Platform.h"
-#include <gsl/span>
+#include <span>
 
 enum class ECesiumMetadataType : uint8;
 enum class ECesiumEncodedMetadataType : uint8;
@@ -80,7 +80,7 @@ struct CesiumEncodedMetadataCoerce {
   static void encode(
       const FCesiumPropertyTablePropertyDescription& propertyDescription,
       const FCesiumPropertyTableProperty& property,
-      const gsl::span<std::byte>& pTextureData,
+      const std::span<std::byte>& pTextureData,
       size_t pixelSize);
 };
 
@@ -113,6 +113,6 @@ struct CesiumEncodedMetadataParseColorFromString {
   static void encode(
       const FCesiumPropertyTablePropertyDescription& propertyDescription,
       const FCesiumPropertyTableProperty& property,
-      const gsl::span<std::byte>& textureData,
+      const std::span<std::byte>& textureData,
       size_t pixelSize);
 };

@@ -7,7 +7,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyArraySpec,
     "Cesium.Unit.PropertyArray",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumPropertyArraySpec)
 

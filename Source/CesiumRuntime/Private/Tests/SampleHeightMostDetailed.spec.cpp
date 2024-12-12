@@ -10,7 +10,9 @@
 BEGIN_DEFINE_SPEC(
     FSampleHeightMostDetailedSpec,
     "Cesium.Unit.SampleHeightMostDetailed",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<ACesium3DTileset> pTileset;
