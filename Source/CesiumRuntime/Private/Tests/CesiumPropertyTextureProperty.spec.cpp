@@ -9,7 +9,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTexturePropertySpec,
     "Cesium.Unit.PropertyTextureProperty",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 const std::vector<FVector2D> texCoords{
     FVector2D(0, 0),

@@ -9,7 +9,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumGlobeAnchorSpec,
     "Cesium.Unit.GlobeAnchor",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<AActor> pActor;

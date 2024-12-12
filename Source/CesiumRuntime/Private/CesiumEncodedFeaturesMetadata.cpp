@@ -542,13 +542,13 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
         CesiumEncodedMetadataParseColorFromString::encode(
             *pDescription,
             property,
-            gsl::span(pImage->pixelData),
+            std::span(pImage->pixelData),
             encodedFormat.bytesPerChannel * encodedFormat.channels);
       } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */ {
         CesiumEncodedMetadataCoerce::encode(
             *pDescription,
             property,
-            gsl::span(pImage->pixelData),
+            std::span(pImage->pixelData),
             encodedFormat.bytesPerChannel * encodedFormat.channels);
       }
 

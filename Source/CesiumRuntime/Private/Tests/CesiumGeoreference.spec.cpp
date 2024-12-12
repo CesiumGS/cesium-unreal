@@ -13,7 +13,9 @@ using namespace CesiumUtility;
 BEGIN_DEFINE_SPEC(
     FCesiumGeoreferenceSpec,
     "Cesium.Unit.Georeference",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<ACesiumGeoreference> pGeoreferenceNullIsland;
