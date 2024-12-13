@@ -35,8 +35,8 @@ jobs:
       - name: Deploy to cesium.com
         if: ${{ github.ref_name == 'cesium.com' }}
         run: |
-          aws s3 sync build/doc/html/ s3://cesium-website/cesium-unreal/ref-doc/ --cache-control "public, max-age=1800" --delete
+          aws s3 sync Documentation/Reference/html/ s3://cesium-website/cesium-unreal/ref-doc/ --cache-control "public, max-age=1800" --delete
       - name: Deploy to cesium.com staging
         if: ${{ github.ref_name == 'cesium.com-staging' }}
         run: |
-          aws s3 sync build/doc/html/ s3://cesium-website/cesium-unreal/ref-doc-staging/ --cache-control "public, max-age=1800" --delete
+          aws s3 sync Documentation/Reference/html/ s3://cesium-website/cesium-unreal/ref-doc-staging/ --cache-control "public, max-age=1800" --delete
