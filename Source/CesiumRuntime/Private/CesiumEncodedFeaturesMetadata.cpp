@@ -52,6 +52,20 @@ FString getNameForFeatureIDSet(
     }
   }
 
+  if (type == ECesiumFeatureIdSetType::Instance) {
+    FCesiumFeatureIdAttribute attribute =
+        UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
+            featureIDSet);
+    ECesiumFeatureIdAttributeStatus status =
+        UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
+            attribute);
+    if (status == ECesiumFeatureIdAttributeStatus::Valid) {
+      std::string generatedName = "_FEATURE_INSTANCE_ID_" +
+                                  std::to_string(attribute.getAttributeIndex());
+      return FString(generatedName.c_str());
+    }
+  }
+
   if (type == ECesiumFeatureIdSetType::Texture) {
     std::string generatedName =
         "_FEATURE_ID_TEXTURE_" + std::to_string(FeatureIdTextureCounter);
@@ -61,6 +75,10 @@ FString getNameForFeatureIDSet(
 
   if (type == ECesiumFeatureIdSetType::Implicit) {
     return FString("_IMPLICIT_FEATURE_ID");
+  }
+
+  if (type == ECesiumFeatureIdSetType::InstanceImplicit) {
+    return FString("_IMPLICIT_FEATURE_INSTANCE_ID");
   }
 
   // If for some reason an empty / invalid feature ID set was constructed,

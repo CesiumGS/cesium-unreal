@@ -2883,6 +2883,42 @@ static void SetMetadataParameterValues_DEPRECATED(
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
+namespace {
+void addInstanceFeatureIds(UCesiumGltfInstancedComponent* pInstancedComponent) {
+  const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures =
+      pInstancedComponent->pInstanceFeatures;
+  if (!pInstanceFeatures) {
+    return;
+  }
+  const TArray<FCesiumFeatureIdSet>& featureIdSets =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+          *pInstanceFeatures);
+  int32 featureSetCount = featureIdSets.Num();
+  if (featureSetCount == 0) {
+    return;
+  }
+#if ENGINE_VERSION_5_3_OR_HIGHER
+  pInstancedComponent->SetNumCustomDataFloats(featureSetCount);
+#else
+  pInstancedComponent->NumCustomDataFloats = featureSetCount;
+#endif
+  int32 numInstances = pInstancedComponent->GetInstanceCount();
+  pInstancedComponent->PerInstanceSMCustomData.SetNum(
+      featureSetCount * numInstances);
+  for (int32 j = 0; j < featureSetCount; ++j) {
+    for (int32 i = 0; i < numInstances; ++i) {
+      int64 featureId =
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+              *pInstanceFeatures,
+              i,
+              j);
+      pInstancedComponent
+          ->SetCustomDataValue(i, j, static_cast<float>(featureId), true);
+    }
+  }
+}
+} // namespace
+
 static void loadPrimitiveGameThreadPart(
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
@@ -2926,6 +2962,7 @@ static void loadPrimitiveGameThreadPart(
       pInstancedComponent->AddInstance(transform, false);
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
+    addInstanceFeatureIds(pInstancedComponent);
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
