@@ -41,6 +41,7 @@
 #include <CesiumGeometry/Transforms.h>
 #include <CesiumGltf/AccessorUtility.h>
 #include <CesiumGltf/AccessorView.h>
+#include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
@@ -1913,8 +1914,10 @@ inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
 
 static void loadInstancingData(
     const CesiumGltf::Model& model,
+    const CesiumGltf::Node& node,
     LoadNodeResult& result,
-    const CesiumGltf::ExtensionExtMeshGpuInstancing* pGpuInstancing) {
+    const CesiumGltf::ExtensionExtMeshGpuInstancing* pGpuInstancing,
+    const CesiumGltf::ExtensionExtInstanceFeatures* pInstanceFeatures) {
   auto getInstanceAccessor =
       [&](const char* name) -> const CesiumGltf::Accessor* {
     if (auto accessorItr = pGpuInstancing->attributes.find(name);
@@ -2034,6 +2037,10 @@ static void loadInstancingData(
     auto unrealFMatrix = VecMath::createMatrix(unrealMat);
     result.InstanceTransforms[i].SetFromMatrix(unrealFMatrix);
   }
+  if (pInstanceFeatures) {
+    result.pInstanceFeatures =
+        MakeShared<FCesiumPrimitiveFeatures>(model, node, *pInstanceFeatures);
+  }
 }
 
 static void loadNode(
@@ -2117,7 +2124,12 @@ static void loadNode(
   if (meshId >= 0 && meshId < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
             node.getExtension<CesiumGltf::ExtensionExtMeshGpuInstancing>()) {
-      loadInstancingData(model, result, pGpuInstancingExtension);
+      loadInstancingData(
+          model,
+          node,
+          result,
+          pGpuInstancingExtension,
+          node.getExtension<CesiumGltf::ExtensionExtInstanceFeatures>());
     }
     CreateMeshOptions meshOptions = {&options, &result, meshId};
     loadMesh(result.meshResult, nodeTransform, meshOptions, ellipsoid);
@@ -2879,7 +2891,8 @@ static void loadPrimitiveGameThreadPart(
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
     ACesium3DTileset* pTilesetActor,
-    const std::vector<FTransform>& instanceTransforms) {
+    const std::vector<FTransform>& instanceTransforms,
+    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -2912,6 +2925,7 @@ static void loadPrimitiveGameThreadPart(
     for (const FTransform& transform : instanceTransforms) {
       pInstancedComponent->AddInstance(transform, false);
     }
+    pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
@@ -3270,7 +3284,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             tile,
             createNavCollision,
             pTilesetActor,
-            node.InstanceTransforms);
+            node.InstanceTransforms,
+            node.pInstanceFeatures);
       }
     }
   }
