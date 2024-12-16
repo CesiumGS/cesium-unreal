@@ -11,6 +11,7 @@
 
 namespace CesiumGltf {
 struct ExtensionExtMeshFeatures;
+struct ExtensionExtInstanceFeatures;
 } // namespace CesiumGltf
 
 /**
@@ -36,8 +37,7 @@ public:
    * @param Model The model that contains the EXT_mesh_features extension
    * @param Primitive The mesh primitive that stores EXT_mesh_features
    * extension
-   * @param Features The EXT_mesh_features of the glTF mesh primitive.
-   * primitive
+   * @param Features The EXT_mesh_features of the glTF mesh primitive
    */
   FCesiumPrimitiveFeatures(
       const CesiumGltf::Model& Model,
@@ -50,10 +50,13 @@ public:
    * @param Model The model that contains the EXT_instance_features extension
    * @param Node The node that stores EXT_instance_features
    * extension
+   * @param InstanceFeatures The EXT_Instance_features of the glTF mesh
+   * primitive
    */
   FCesiumPrimitiveFeatures(
       const CesiumGltf::Model& Model,
-      const CesiumGltf::Node& Node);
+      const CesiumGltf::Node& Node,
+      const CesiumGltf::ExtensionExtInstanceFeatures& InstanceFeatures);
 
 private:
   TArray<FCesiumFeatureIdSet> _featureIdSets;

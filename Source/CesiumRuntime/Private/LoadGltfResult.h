@@ -162,15 +162,8 @@ struct LoadMeshResult {
   LoadMeshResult() {}
 
   LoadMeshResult(const LoadMeshResult&) = delete;
-
-  LoadMeshResult(LoadMeshResult&& other) {
-    primitiveResults.swap(other.primitiveResults);
-  }
-
-  LoadMeshResult& operator=(LoadMeshResult&& other) {
-    primitiveResults.swap(other.primitiveResults);
-    return *this;
-  }
+  LoadMeshResult(LoadMeshResult&& other) = default;
+  LoadMeshResult& operator=(LoadMeshResult&& other) = default;
 
   std::vector<LoadPrimitiveResult> primitiveResults{};
 };
@@ -182,12 +175,7 @@ struct LoadNodeResult {
   LoadNodeResult() {}
 
   LoadNodeResult(const LoadNodeResult&) = delete;
-
-  LoadNodeResult(LoadNodeResult&& other)
-      : pInstanceFeatures(std::move(other.pInstanceFeatures)) {
-    InstanceTransforms.swap(other.InstanceTransforms);
-    meshResult.swap(other.meshResult);
-  }
+  LoadNodeResult(LoadNodeResult&& other) = default;
 
   std::optional<LoadMeshResult> meshResult = std::nullopt;
   /**

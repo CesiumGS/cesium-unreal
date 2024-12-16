@@ -78,7 +78,7 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   // For backwards compatibility with GetFeatureTableName.
   const CesiumGltf::ExtensionModelExtStructuralMetadata* pMetadata =
       InModel.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
-  if (pMetadata && _propertyTableIndex >= 0) {
+  if (pMetadata && this->_propertyTableIndex >= 0) {
     size_t index = static_cast<size_t>(_propertyTableIndex);
     if (index < pMetadata->propertyTables.size()) {
       const CesiumGltf::PropertyTable& propertyTable =
@@ -173,14 +173,6 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
 
   return -1;
 }
-
-namespace {
-struct FeatureIdFromAccessorView : public CesiumGltf::FeatureIdFromAccessor {
-  FeatureIdFromAccessorView(int64_t index_) { index = index_; }
-
-  int64_t operator()(std::monostate) { return -1; }
-};
-} // namespace
 
 int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForInstance(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
