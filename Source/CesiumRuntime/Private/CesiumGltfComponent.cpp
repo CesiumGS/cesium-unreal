@@ -2885,7 +2885,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 namespace {
 void addInstanceFeatureIds(UCesiumGltfInstancedComponent* pInstancedComponent) {
-  const TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures =
+  const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures =
       pInstancedComponent->pInstanceFeatures;
   if (!pInstanceFeatures) {
     return;
@@ -2897,8 +2897,11 @@ void addInstanceFeatureIds(UCesiumGltfInstancedComponent* pInstancedComponent) {
   if (featureSetCount == 0) {
     return;
   }
-  // Note: in UE 5.3 we will want to use SetNumCustomDataFloats().
+#if ENGINE_VERSION_5_3_OR_HIGHER
+  pInstancedComponent->SetNumCustomDataFloats(featureSetCount);
+#else
   pInstancedComponent->NumCustomDataFloats = featureSetCount;
+#endif
   int32 numInstances = pInstancedComponent->GetInstanceCount();
   pInstancedComponent->PerInstanceSMCustomData.SetNum(
       featureSetCount * numInstances);
