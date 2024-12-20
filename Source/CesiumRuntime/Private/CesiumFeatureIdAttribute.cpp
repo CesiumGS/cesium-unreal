@@ -73,7 +73,7 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
   return FeatureIDAttribute._status;
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return std::visit(
       CesiumGltf::CountFromAccessor{},

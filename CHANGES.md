@@ -5,6 +5,7 @@
 ##### Breaking Changes :mega:
 
 - Renamed `FCesiumFeatureIdAttribute::GetFeatureIDForVertex` to `FCesiumFeatureIdAttribute::GetFeatureID`.
+- Renamed `FCesiumFeatureIdAttribute::GetVertexCount` to `FCesiumFeatureIdAttribute::GetFeatureIDCount`.
 
 ### v2.11.0 - 2024-12-02
 

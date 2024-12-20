@@ -126,7 +126,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
     });
   });
 
-  Describe("GetVertexCount", [this]() {
+  Describe("GetFeatureIDCount", [this]() {
     BeforeEach([this]() {
       model = CesiumGltf::Model();
       CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
@@ -149,7 +149,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
           ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor);
       TestEqual(
           "VertexCount",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
               featureIDAttribute),
           0);
     });
@@ -177,7 +177,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
           ECesiumFeatureIdAttributeStatus::Valid);
       TestEqual(
           "VertexCount",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
               featureIDAttribute),
           vertexCount);
     });

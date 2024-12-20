@@ -720,7 +720,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
               featureIDSet);
 
       int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
               featureIDAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
@@ -879,7 +879,7 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           textureCoordinateIndex);
 
       int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
               featureIdAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
