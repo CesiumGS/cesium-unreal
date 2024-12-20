@@ -30,21 +30,14 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
 
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     const CesiumGltf::Model& Model,
-    const CesiumGltf::Node& Node)
+    const CesiumGltf::Node& Node,
+    const CesiumGltf::ExtensionExtInstanceFeatures& InstanceFeatures)
     : _vertexCount(0), _primitiveMode(-1) {
   if (Node.mesh < 0 || Node.mesh >= Model.meshes.size()) {
     return;
   }
-  const auto* pInstancing =
-      Node.getExtension<CesiumGltf::ExtensionExtMeshGpuInstancing>();
-  if (!pInstancing) {
-    return;
-  }
-  if (const auto* pInstanceFeatures =
-          Node.getExtension<CesiumGltf::ExtensionExtInstanceFeatures>()) {
-    for (const auto& featureId : pInstanceFeatures->featureIds) {
-      _featureIdSets.Emplace(Model, Node, featureId);
-    }
+  for (const auto& featureId : InstanceFeatures.featureIds) {
+    this->_featureIdSets.Emplace(Model, Node, featureId);
   }
 }
 
