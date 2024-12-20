@@ -720,7 +720,7 @@ static void updateTextureCoordinatesForFeaturesMetadata(
               featureIDSet);
 
       int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
               featureIDAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
@@ -731,8 +731,9 @@ static void updateTextureCoordinatesForFeaturesMetadata(
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIDAttribute, vertexIndex));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIDAttribute,
+                    vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -743,8 +744,9 @@ static void updateTextureCoordinatesForFeaturesMetadata(
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIDAttribute, i));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIDAttribute,
+                    i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -877,7 +879,7 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           textureCoordinateIndex);
 
       int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
               featureIdAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
@@ -888,8 +890,9 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIdAttribute, vertexIndex));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIdAttribute,
+                    vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -900,8 +903,9 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIdAttribute, i));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIdAttribute,
+                    i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);

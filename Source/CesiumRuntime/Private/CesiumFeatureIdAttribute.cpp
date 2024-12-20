@@ -73,14 +73,14 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
   return FeatureIDAttribute._status;
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return std::visit(
       CesiumGltf::CountFromAccessor{},
       FeatureIDAttribute._featureIdAccessor);
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 VertexIndex) {
   return std::visit(

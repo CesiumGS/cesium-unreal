@@ -5,6 +5,8 @@
 ##### Breaking Changes :mega:
 
 - Removed support for Unreal Engine 5.2. Unreal Engine 5.3 or later is now required.
+- Renamed `FCesiumFeatureIdAttribute::GetFeatureIDForVertex` to `FCesiumFeatureIdAttribute::GetFeatureID`.
+- Renamed `FCesiumFeatureIdAttribute::GetVertexCount` to `FCesiumFeatureIdAttribute::GetFeatureIDCount`.
 
 ### v2.11.0 - 2024-12-02
 
