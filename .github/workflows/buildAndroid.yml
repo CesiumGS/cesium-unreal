@@ -77,7 +77,7 @@ jobs:
           rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.2.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.3.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Customize BuildConfiguration.xml
         run: |
           mkdir -p "$env:USERPROFILE\AppData\Roaming\Unreal Engine\UnrealBuildTool"

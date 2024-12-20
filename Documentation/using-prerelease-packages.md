@@ -24,7 +24,7 @@ And scroll down to the Artifacts section:
 
 If there is no Artifacts section on that page, it's probably because the CI run is still in progress. Artifacts don't appear until the build is complete.
 
-Find the appropriate ZIP file for your version of Unreal Engine. For example, `CesiumForUnreal-52-*.zip` is for Unreal Engine 5.2. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports. So in most cases you should download an artifact without any platform in its name.
+Find the appropriate ZIP file for your version of Unreal Engine. For example, `CesiumForUnreal-53-*.zip` is for Unreal Engine 5.3. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports. So in most cases you should download an artifact without any platform in its name.
 
 Once you've downloaded the appropriate ZIP, move on to [installing a Cesium for Unreal ZIP](#installing-a-cesium-for-unreal-zip).
 
@@ -48,7 +48,7 @@ And scroll down to the Artifacts section:
 
 If there is no Artifacts section on that page, it's probably because the CI run is still in progress. Artifacts don't appear until the build is complete.
 
-Find the appropriate ZIP file for your version of Unreal Engine. For example, `CesiumForUnreal-52-*.zip` is for Unreal Engine 5.2. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports. So in most cases you should download an artifact without any platform in its name.
+Find the appropriate ZIP file for your version of Unreal Engine. For example, `CesiumForUnreal-53-*.zip` is for Unreal Engine 5.3. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports. So in most cases you should download an artifact without any platform in its name.
 
 Once you've downloaded the appropriate ZIP, move on to [installing a Cesium for Unreal ZIP](#installing-a-cesium-for-unreal-zip).
 
@@ -57,6 +57,6 @@ Once you've downloaded the appropriate ZIP, move on to [installing a Cesium for 
 Once you've download a pre-release ZIP file using one of the methods above, you can install it into your Unreal Engine as follows:
 
 1. If you previously installed the Cesium for Unreal plugin via the Unreal Engine Marketplace, uninstall it first.
-2. Find Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.2 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.2\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
+2. Find Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.3 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.3\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
 3. If the `CesiumForUnreal` subdirectory already exists in this `Marketplace` directory, delete it first to make sure you're getting a clean installation.
 4. Extract the release ZIP into this `Marketplace` directory. If you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory.

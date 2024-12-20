@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- Removed support for Unreal Engine 5.2. Unreal Engine 5.3 or later is now required.
+
 ### v2.11.0 - 2024-12-02
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.2. Future versions will require Unreal Engine v5.3+.

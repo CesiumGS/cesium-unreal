@@ -96,11 +96,7 @@ public:
   uint32 GetSizeX() const override { return this->_width; }
   uint32 GetSizeY() const override { return this->_height; }
 
-#if ENGINE_VERSION_5_3_OR_HIGHER
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-#else
-  virtual void InitRHI() override;
-#endif
   virtual void ReleaseRHI() override;
 
 #if STATS
