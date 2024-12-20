@@ -18,6 +18,8 @@ class CESIUMRUNTIME_API UCesiumPropertyArrayBlueprintLibrary
 public:
   /**
    * Gets the best-fitting Blueprints type for the elements of this array.
+   *
+   * @param array The array.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -30,6 +32,8 @@ public:
    * Gets the true value type of the elements in the array. Many of these types
    * are not accessible from Blueprints, but can be converted to a
    * Blueprint-accessible type.
+   *
+   * @param array The array.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -42,6 +46,7 @@ public:
    * Gets the number of elements in the array. Returns 0 if the elements have
    * an unknown type.
    *
+   * @param Array The array.
    * @return The number of elements in the array.
    */
   UFUNCTION(
@@ -57,6 +62,7 @@ public:
    * If the index is out-of-bounds, this returns a bogus FCesiumMetadataValue of
    * an unknown type.
    *
+   * @param Array The array.
    * @param Index The index of the array element to retrieve.
    * @return The element as a FCesiumMetadataValue.
    */
@@ -70,6 +76,8 @@ public:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the best-fitting Blueprints type for the elements of this array.
+   *
+   * @param array The array.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -84,6 +92,8 @@ public:
    * Gets true type of the elements in the array. Many of these types are not
    * accessible from Blueprints, but can be converted to a Blueprint-accessible
    * type.
+   *
+   * @param array The array.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -99,6 +109,7 @@ public:
    * Gets the number of elements in the array. Returns 0 if the elements have
    * an unknown type.
    *
+   * @param Array The array.
    * @return The number of elements in the array.
    */
   UFUNCTION(
@@ -125,6 +136,7 @@ public:
    *
    * Other types of elements will return the default value.
    *
+   * @param Array The array.
    * @param Index The index of the array element to retrieve.
    * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.
@@ -161,6 +173,7 @@ public:
    *
    * Otherwise, the default value is returned.
    *
+   * @param Array The array.
    * @param Index The index of the array element to retrieve.
    * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.
@@ -198,6 +211,7 @@ public:
    *
    * Otherwise, the default value is returned.
    *
+   * @param Array The array.
    * @param Index The index of the array element to retrieve.
    * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.
@@ -238,8 +252,9 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param index The index of the array element to retrieve.
-   * @param defaultValue The default value to use if the index is invalid
+   * @param Array The array.
+   * @param Index The index of the array element to retrieve.
+   * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.
    * @return The element value.
    */
@@ -274,7 +289,8 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param Index The index of the array element to retrieve.
+   * @param array The array.
+   * @param index The index of the array element to retrieve.
    * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.
    * @return The element value.
@@ -310,7 +326,8 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param Index The index of the array element to retrieve.
+   * @param array The array.
+   * @param index The index of the array element to retrieve.
    * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.
    * @return The element value.
@@ -338,6 +355,7 @@ public:
    *
    * String elements are returned directly.
    *
+   * @param Array The array.
    * @param Index The index of the array element to retrieve.
    * @param DefaultValue The default value to use if the index is invalid
    * or the element's value cannot be converted.

@@ -75,8 +75,10 @@ class CESIUMRUNTIME_API UCesiumPrimitiveFeaturesBlueprintLibrary
 
 public:
   /**
-   * Gets the primitive features of a glTF primitive component. If component is
-   * not a Cesium glTF primitive component, the returned features are empty.
+   * Gets the primitive features of a glTF primitive component. If `component`
+   * is not a Cesium glTF primitive component, the returned features are empty.
+   *
+   * @param component The component to get the features of.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -88,6 +90,8 @@ public:
   /**
    * Gets all the feature ID sets that are associated with the
    * primitive.
+   *
+   * @param PrimitiveFeatures The primitive.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -98,7 +102,10 @@ public:
                        const FCesiumPrimitiveFeatures& PrimitiveFeatures);
 
   /**
-   * Gets all the feature ID sets of the given type. If the primitive has no
+   * Gets all the feature ID sets of the given type.
+   *
+   * @param PrimitiveFeatures The primitive.
+   * @param Type The type of feature ID set to obtain. If the primitive has no
    * sets of that type, the returned array will be empty.
    */
   UFUNCTION(
@@ -111,6 +118,8 @@ public:
 
   /**
    * Get the number of vertices in the primitive.
+   *
+   * @param PrimitiveFeatures The primitive.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -123,6 +132,7 @@ public:
    * Gets the index of the first vertex that makes up a given face of this
    * primitive.
    *
+   * @param PrimitiveFeatures The primitive.
    * @param FaceIndex The index of the face.
    */
   UFUNCTION(
@@ -136,10 +146,12 @@ public:
   /**
    * Gets the feature ID associated with the given face.
    *
-   * A primitive may have multiple feature ID sets, so this allows a feature ID
-   * set to be specified by index. This value should index into the array of
-   * CesiumFeatureIdSets in the CesiumPrimitiveFeatures. If the specified
-   * feature ID set index is invalid, this returns -1.
+   * @param PrimitiveFeatures The primitive.
+   * @param FaceIndex The index of the face to obtain the feature ID of.
+   * @param FeatureIDSetIndex  A primitive may have multiple feature ID sets, so
+   * this allows a feature ID set to be specified by index. This value should
+   * index into the array of CesiumFeatureIdSets in the CesiumPrimitiveFeatures.
+   * If the specified feature ID set index is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -166,10 +178,12 @@ public:
    * Gets the feature ID from the given line trace hit, assuming it
    * has hit a glTF primitive component containing this CesiumPrimitiveFeatures.
    *
-   * A primitive may have multiple feature ID sets, so this allows a feature ID
-   * set to be specified by index. This value should index into the array of
-   * CesiumFeatureIdSets in the CesiumPrimitiveFeatures. If the specified
-   * feature ID set index is invalid, this returns -1.
+   * @param PrimitiveFeatures The primitive.
+   * @param Hit The line trace hit to try to obtain a feature ID from.
+   * @param FeatureIDSetIndex A primitive may have multiple feature ID sets, so
+   * this allows a feature ID set to be specified by index. This value should
+   * index into the array of CesiumFeatureIdSets in the CesiumPrimitiveFeatures.
+   * If the specified feature ID set index is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,

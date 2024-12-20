@@ -90,11 +90,7 @@ namespace {
 
 const TSet<FPrimitiveOcclusionHistory, FPrimitiveOcclusionHistoryKeyFuncs>&
 getOcclusionHistorySet(const FSceneViewState* pViewState) {
-#if ENGINE_VERSION_5_3_OR_HIGHER
   return pViewState->Occlusion.PrimitiveOcclusionHistorySet;
-#else
-  return pViewState->PrimitiveOcclusionHistorySet;
-#endif
 }
 
 } // namespace
