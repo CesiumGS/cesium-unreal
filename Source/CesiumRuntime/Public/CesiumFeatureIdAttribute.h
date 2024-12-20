@@ -143,15 +143,15 @@ public:
                      const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 
   /**
-   * Gets the feature ID associated with the given vertex. The feature ID can be
-   * used with a FCesiumFeatureTable to retrieve the per-vertex metadata. If
-   * the feature ID attribute is invalid, this returns -1.
+   * Gets the feature ID at the given index. A feature ID can be used with a
+   * FCesiumPropertyTable to retrieve the metadata for that ID. If the feature
+   * ID attribute is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Features|FeatureIDAttribute")
-  static int64 GetFeatureIDForVertex(
+  static int64 GetFeatureID(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
-      int64 VertexIndex);
+      int64 Index);
 };

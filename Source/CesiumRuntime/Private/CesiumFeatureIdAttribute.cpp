@@ -80,7 +80,7 @@ int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
       FeatureIDAttribute._featureIdAccessor);
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 VertexIndex) {
   return std::visit(
