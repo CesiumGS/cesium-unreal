@@ -34,9 +34,16 @@ namespace LoadGltfResult {
  * Temporarily holds render data that will be used in the Unreal material, as
  * well as any data that needs to be transferred to the corresponding
  * CesiumGltfPrimitiveComponent after it is created on the main thread.
+ *
+ * This type is move-only due to the use of TUniquePtr.
  */
 struct LoadPrimitiveResult {
 #pragma region Temporary render data
+
+  LoadPrimitiveResult(const LoadPrimitiveResult&) = delete;
+
+  LoadPrimitiveResult() {}
+  LoadPrimitiveResult(LoadPrimitiveResult&& other) = default;
 
   /**
    * The render data. This is populated so it can be set on the static mesh
@@ -152,6 +159,12 @@ struct LoadPrimitiveResult {
  * Represents the result of loading a glTF mesh on a game thread.
  */
 struct LoadMeshResult {
+  LoadMeshResult() {}
+
+  LoadMeshResult(const LoadMeshResult&) = delete;
+  LoadMeshResult(LoadMeshResult&& other) = default;
+  LoadMeshResult& operator=(LoadMeshResult&& other) = default;
+
   std::vector<LoadPrimitiveResult> primitiveResults{};
 };
 
@@ -159,11 +172,22 @@ struct LoadMeshResult {
  * Represents the result of loading a glTF node on a game thread.
  */
 struct LoadNodeResult {
+  LoadNodeResult() {}
+
+  LoadNodeResult(const LoadNodeResult&) = delete;
+  LoadNodeResult(LoadNodeResult&& other) = default;
+
   std::optional<LoadMeshResult> meshResult = std::nullopt;
   /**
    * Array of instance transforms, if any.
    */
   std::vector<FTransform> InstanceTransforms;
+  /**
+   * Features from EXT_instance_features. A pointer is used for shared ownership
+   * because there may be multiple primitives in the same mesh belonging to a
+   * single instance.
+   */
+  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures = nullptr;
 };
 
 /**

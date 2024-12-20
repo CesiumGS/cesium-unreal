@@ -21,13 +21,6 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     return;
   }
 
-  const CesiumGltf::Accessor* accessor =
-      Model.getSafe<CesiumGltf::Accessor>(&Model.accessors, featureID->second);
-  if (!accessor || accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
-    this->_status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
-    return;
-  }
-
   this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
       Model,
       Primitive,
@@ -35,6 +28,31 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
 
   this->_status = std::visit(
       [](auto view) {
+        if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {
+          return ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
+        }
+
+        return ECesiumFeatureIdAttributeStatus::Valid;
+      },
+      this->_featureIdAccessor);
+}
+
+FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::Node& Node,
+    const int64 FeatureIDAttribute,
+    const FString& PropertyTableName)
+    : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
+      _featureIdAccessor(),
+      _attributeIndex(FeatureIDAttribute),
+      _propertyTableName(PropertyTableName) {
+  this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
+      Model,
+      Node,
+      static_cast<int32_t>(this->_attributeIndex));
+
+  this->_status = std::visit(
+      [](auto&& view) {
         if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {
           return ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
         }
