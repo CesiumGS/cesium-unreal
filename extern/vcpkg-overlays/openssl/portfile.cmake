@@ -5,7 +5,7 @@
 # The environment variable `UNREAL_ENGINE_ROOT` must be set to the root of the
 # Unreal Engine installation to use. It should use forward slashes even on Windows
 # and it should _not_ end with a slash.
-# For example: `C:/Program Files/Epic Games/UE_5.2`
+# For example: `C:/Program Files/Epic Games/UE_5.3`
 
 set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
 
@@ -16,7 +16,7 @@ endif()
 message(STATUS "Using Unreal Engine installation at $ENV{UNREAL_ENGINE_ROOT}")
 
 # Some old versions of UE used to have multiple versions of OpenSSL, with different versions used on different platforms.
-# That is no longer the case in UE 5.2, 5.3, and 5.4, but the below logic may need to change if that ever happens again.
+# That is no longer the case in UE 5.3, 5.4, and 5.5, but the below logic may need to change if that ever happens again.
 set(OPENSSL_VERSIONS_DIR "$ENV{UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/OpenSSL")
 file(GLOB OPENSSL_POSSIBLE_ROOT_DIRS LIST_DIRECTORIES true "${OPENSSL_VERSIONS_DIR}/*")
 

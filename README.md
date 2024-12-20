@@ -48,7 +48,7 @@ The easiest way to install Cesium for Unreal is by downloading the officially re
 You can also find all releases on the [Releases](https://github.com/CesiumGS/cesium-unreal/releases) page. This is useful if you want an older version, or if you can't or don't want to use the Unreal Engine Marketplace. In particular, if you're using Linux, the Releases page is a better option. To install any of these releases:
 
 1. If you previously installed the Cesium for Unreal plugin via the Unreal Engine Marketplace, uninstall it.
-2. Extract the release ZIP to Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.2 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.2\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
+2. Extract the release ZIP to Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.3 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.3\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
 3. If you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory, and the plugin is ready to use.
 
 You can also [use pre-release packages](Documentation/using-prerelease-packages.md).
