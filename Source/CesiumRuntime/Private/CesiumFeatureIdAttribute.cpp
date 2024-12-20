@@ -13,21 +13,6 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
       _featureIdAccessor(),
       _attributeIndex(FeatureIDAttribute),
       _propertyTableName(PropertyTableName) {
-  const std::string attributeName =
-      "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
-
-  auto featureID = Primitive.attributes.find(attributeName);
-  if (featureID == Primitive.attributes.end()) {
-    return;
-  }
-
-  const CesiumGltf::Accessor* accessor =
-      Model.getSafe<CesiumGltf::Accessor>(&Model.accessors, featureID->second);
-  if (!accessor || accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
-    this->_status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
-    return;
-  }
-
   this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
       Model,
       Primitive,

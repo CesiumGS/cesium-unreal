@@ -151,8 +151,7 @@ public:
       int64 FeatureIDSetIndex = 0);
 
   /**
-   * Gets the feature ID associated with an instance at an index.
-   *
+   * Gets the feature ID associated with the instance at the given index.
    */
   UFUNCTION(
       BlueprintCallable,

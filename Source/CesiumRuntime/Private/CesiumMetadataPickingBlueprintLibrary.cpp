@@ -152,9 +152,9 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
 
 namespace {
 /*
- * Returns std:nullopt if the component isnt an instanced static mesh or doesn't
- * have instance feature ID data, which will allow
- * GetPropertyTableValuesFromHit() to search for feature IDs in primitive
+ * Returns std:nullopt if the component isn't an instanced static mesh or
+ * if it doesn't have instance feature IDs. This will prompt
+ * GetPropertyTableValuesFromHit() to search for feature IDs in the primitive's
  * attributes.
  */
 std::optional<TMap<FString, FCesiumMetadataValue>>
@@ -167,7 +167,7 @@ getInstancePropertyTableValues(
   if (!IsValid(pInstancedComponent)) {
     return std::nullopt;
   }
-  const TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures =
+  const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures =
       pInstancedComponent->pInstanceFeatures;
   if (!pInstanceFeatures) {
     return std::nullopt;
@@ -210,25 +210,31 @@ UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesFromHit(
     const FHitResult& Hit,
     int64 FeatureIDSetIndex) {
   const UCesiumGltfComponent* pModel = nullptr;
+
   if (const auto* pPrimComponent = Cast<UPrimitiveComponent>(Hit.Component);
       !IsValid(pPrimComponent)) {
     return TMap<FString, FCesiumMetadataValue>();
   } else {
     pModel = Cast<UCesiumGltfComponent>(pPrimComponent->GetOuter());
-    if (!IsValid(pModel)) {
-      return TMap<FString, FCesiumMetadataValue>();
-    }
   }
-  std::optional<TMap<FString, FCesiumMetadataValue>> instanceProperties =
+
+  if (!IsValid(pModel)) {
+    return TMap<FString, FCesiumMetadataValue>();
+  }
+
+  // Query for instance-level metadata first. (EXT_instance_features)
+  std::optional<TMap<FString, FCesiumMetadataValue>> maybeProperties =
       getInstancePropertyTableValues(Hit, pModel, FeatureIDSetIndex);
-  if (instanceProperties) {
-    return *instanceProperties;
+  if (maybeProperties) {
+    return *maybeProperties;
   }
+
   const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(Hit.Component);
   if (!pCesiumPrimitive) {
     return TMap<FString, FCesiumMetadataValue>();
   }
 
+  // Query for primitive-level metadata. (EXT_mesh_features)
   const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
   const FCesiumPrimitiveFeatures& features = primData.Features;
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
