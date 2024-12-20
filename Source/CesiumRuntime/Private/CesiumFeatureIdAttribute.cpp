@@ -13,6 +13,14 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
       _featureIdAccessor(),
       _attributeIndex(FeatureIDAttribute),
       _propertyTableName(PropertyTableName) {
+  const std::string attributeName =
+      "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
+
+  auto featureID = Primitive.attributes.find(attributeName);
+  if (featureID == Primitive.attributes.end()) {
+    return;
+  }
+
   this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
       Model,
       Primitive,
