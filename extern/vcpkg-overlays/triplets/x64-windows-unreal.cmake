@@ -15,7 +15,7 @@ set(VCPKG_POLICY_ONLY_RELEASE_CRT enabled)
 # Yeah that's not just the Windows SDK, but anything that passes structs across the boundary
 # between compilation units using different versions of that flag. We compile cesium-native
 # with this same option to avoid super-dodgy and hard to debug issues.
-# https://github.com/EpicGames/UnrealEngine/blob/5.2.1-release/Engine/Source/Programs/UnrealBuildTool/Platform/Windows/VCToolChain.cs
+# https://github.com/EpicGames/UnrealEngine/blob/5.3.2-release/Engine/Source/Programs/UnrealBuildTool/Platform/Windows/VCToolChain.cs
 set(VCPKG_CXX_FLAGS "/Zp8")
 set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")
 

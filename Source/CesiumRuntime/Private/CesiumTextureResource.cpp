@@ -212,7 +212,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
   }
 
   return result;
-#elif ENGINE_VERSION_5_3_OR_HIGHER
+#else
   FGraphEventRef CompletionEvent;
 
   FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
@@ -230,15 +230,6 @@ FTexture2DRHIRef createAsyncTextureAndWait(
   }
 
   return result;
-#else
-  return RHIAsyncCreateTexture2D(
-      SizeX,
-      SizeY,
-      Format,
-      NumMips,
-      Flags,
-      InitialMipData,
-      NumInitialMips);
 #endif
 }
 
@@ -474,11 +465,7 @@ FCesiumTextureResource::FCesiumTextureResource(
   STAT(this->_lodGroupStatName = TextureGroupStatFNames[this->_textureGroup]);
 }
 
-#if ENGINE_VERSION_5_3_OR_HIGHER
 void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
-#else
-void FCesiumTextureResource::InitRHI() {
-#endif
   FSamplerStateInitializerRHI samplerStateInitializer(
       this->_filter,
       this->_addressX,

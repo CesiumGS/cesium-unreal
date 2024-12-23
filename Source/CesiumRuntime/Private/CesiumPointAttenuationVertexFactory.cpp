@@ -10,17 +10,8 @@
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
 
-#if ENGINE_VERSION_5_3_OR_HIGHER
-#define RHI_CREATE_BUFFER RHICmdList.CreateBuffer
-#define RHI_LOCK_BUFFER RHICmdList.LockBuffer
-#define RHI_UNLOCK_BUFFER RHICmdList.UnlockBuffer
-#else
-#define RHI_CREATE_BUFFER RHICreateBuffer
-#define RHI_LOCK_BUFFER RHILockBuffer
-#define RHI_UNLOCK_BUFFER RHIUnlockBuffer
-#endif
-
-void FCesiumPointAttenuationIndexBuffer::INIT_RHI_SIGNATURE {
+void FCesiumPointAttenuationIndexBuffer::InitRHI(
+    FRHICommandListBase& RHICmdList) {
   if (!bAttenuationSupported) {
     return;
   }
@@ -32,7 +23,7 @@ void FCesiumPointAttenuationIndexBuffer::INIT_RHI_SIGNATURE {
   const uint32 NumIndices = NumPoints * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
-  IndexBufferRHI = RHI_CREATE_BUFFER(
+  IndexBufferRHI = RHICmdList.CreateBuffer(
       Size,
       BUF_Static | BUF_IndexBuffer,
       sizeof(uint32),
@@ -40,7 +31,7 @@ void FCesiumPointAttenuationIndexBuffer::INIT_RHI_SIGNATURE {
       CreateInfo);
 
   uint32* Data =
-      (uint32*)RHI_LOCK_BUFFER(IndexBufferRHI, 0, Size, RLM_WriteOnly);
+      (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
 
   for (uint32 index = 0, bufferIndex = 0; bufferIndex < NumIndices;
        index += 4) {
@@ -54,7 +45,7 @@ void FCesiumPointAttenuationIndexBuffer::INIT_RHI_SIGNATURE {
     Data[bufferIndex++] = index + 3;
   }
 
-  RHI_UNLOCK_BUFFER(IndexBufferRHI);
+  RHICmdList.UnlockBuffer(IndexBufferRHI);
 }
 
 class FCesiumPointAttenuationVertexFactoryShaderParameters
@@ -129,25 +120,29 @@ private:
  */
 class FCesiumPointAttenuationDummyVertexBuffer : public FVertexBuffer {
 public:
-  virtual void INIT_RHI_SIGNATURE override;
+  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 };
 
-void FCesiumPointAttenuationDummyVertexBuffer::INIT_RHI_SIGNATURE {
+void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
+    FRHICommandListBase& RHICmdList) {
   FRHIResourceCreateInfo CreateInfo(
       TEXT("FCesiumPointAttenuationDummyVertexBuffer"));
-  VertexBufferRHI = RHI_CREATE_BUFFER(
+  VertexBufferRHI = RHICmdList.CreateBuffer(
       sizeof(FVector3f) * 4,
       BUF_Static | BUF_VertexBuffer,
       0,
       ERHIAccess::VertexOrIndexBuffer,
       CreateInfo);
-  FVector3f* DummyContents = (FVector3f*)
-      RHI_LOCK_BUFFER(VertexBufferRHI, 0, sizeof(FVector3f) * 4, RLM_WriteOnly);
+  FVector3f* DummyContents = (FVector3f*)RHICmdList.LockBuffer(
+      VertexBufferRHI,
+      0,
+      sizeof(FVector3f) * 4,
+      RLM_WriteOnly);
   DummyContents[0] = FVector3f(0.0f, 0.0f, 0.0f);
   DummyContents[1] = FVector3f(1.0f, 0.0f, 0.0f);
   DummyContents[2] = FVector3f(0.0f, 1.0f, 0.0f);
   DummyContents[3] = FVector3f(1.0f, 1.0f, 0.0f);
-  RHI_UNLOCK_BUFFER(VertexBufferRHI);
+  RHICmdList.UnlockBuffer(VertexBufferRHI);
 }
 
 TGlobalResource<FCesiumPointAttenuationDummyVertexBuffer>
@@ -184,7 +179,8 @@ void FCesiumPointAttenuationVertexFactory::ModifyCompilationEnvironment(
 #endif
 }
 
-void FCesiumPointAttenuationVertexFactory::INIT_RHI_SIGNATURE {
+void FCesiumPointAttenuationVertexFactory::InitRHI(
+    FRHICommandListBase& RHICmdList) {
   FVertexDeclarationElementList Elements;
   Elements.Add(AccessStreamComponent(
       FVertexStreamComponent(

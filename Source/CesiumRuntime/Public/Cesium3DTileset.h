@@ -1100,8 +1100,10 @@ public:
    * This method is not supposed to be called by clients. It is currently
    * only required by the UnrealResourcePreparer.
    *
+   * @internal
    * See {@link
-   * Cesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   * UCesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   * @endinternal
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 

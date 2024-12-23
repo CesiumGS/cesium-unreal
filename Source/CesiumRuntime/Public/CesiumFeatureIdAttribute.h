@@ -9,6 +9,7 @@
 namespace CesiumGltf {
 struct Model;
 struct Accessor;
+struct Node;
 } // namespace CesiumGltf
 
 /**
@@ -28,7 +29,7 @@ enum class ECesiumFeatureIdAttributeStatus : uint8 {
 /**
  * @brief A blueprint-accessible wrapper for a feature ID attribute from a glTF
  * primitive. Provides access to per-vertex feature IDs which can be used with
- * the corresponding {@link FCesiumFeatureTable} to access per-vertex metadata.
+ * the corresponding {@link FCesiumPropertyTable} to access per-vertex metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
@@ -58,6 +59,22 @@ public:
   FCesiumFeatureIdAttribute(
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
+      const int64 FeatureIDAttribute,
+      const FString& PropertyTableName);
+
+  /**
+   * @brief Constructs a feature ID attribute instance from
+   * EXT_instance_features data.
+   *
+   * @param Model The model.
+   * @param Node The node containing the feature ID attribute.
+   * @param FeatureIDAttribute The attribute index specified by the FeatureId.
+   * @param PropertyTableName The name of the property table this attribute
+   * corresponds to, if one exists, for backwards compatibility.
+   */
+  FCesiumFeatureIdAttribute(
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::Node& Node,
       const int64 FeatureIDAttribute,
       const FString& PropertyTableName);
 
