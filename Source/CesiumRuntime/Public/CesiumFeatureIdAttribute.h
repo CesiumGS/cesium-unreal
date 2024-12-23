@@ -109,7 +109,6 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIdAttribute",
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
@@ -131,16 +130,17 @@ public:
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 
   /**
-   * Get the number of feature IDs in this attribute. If the feature ID
-   * attribute is invalid, this returns 0.
+   * Gets the number of elements in the attribute. This is distinct from the
+   * number of unique feature IDs within the attribute.
+   *
+   * If the feature ID attribute is invalid, this returns 0.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Features|FeatureIDAttribute")
   static int64
-  GetFeatureIDCount(UPARAM(ref)
-                        const FCesiumFeatureIdAttribute& FeatureIDAttribute);
+  GetCount(UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 
   /**
    * Gets the feature ID at the given index. A feature ID can be used with a
