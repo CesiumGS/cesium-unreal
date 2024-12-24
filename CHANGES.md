@@ -8,6 +8,10 @@
 - Renamed `FCesiumFeatureIdAttribute::GetFeatureIDForVertex` to `FCesiumFeatureIdAttribute::GetFeatureID`.
 - Renamed `FCesiumFeatureIdAttribute::GetVertexCount` to `FCesiumFeatureIdAttribute::GetCount`.
 
+##### Additions :tada:
+
+- Added support for metadata querying and styling on instanced models.
+
 ##### Fixes :wrench:
 
 - Fixed a bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
