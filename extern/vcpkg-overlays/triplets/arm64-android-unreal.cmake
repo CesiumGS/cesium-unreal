@@ -9,6 +9,6 @@ set(VCPKG_CMAKE_CONFIGURE_OPTIONS -DANDROID_ABI=arm64-v8a)
 set(VCPKG_CMAKE_SYSTEM_VERSION 21)
 
 # From Unreal Build Tool:
-# https://github.com/EpicGames/UnrealEngine/blob/5.2.1-release/Engine/Source/Programs/UnrealBuildTool/Platform/Android/AndroidToolChain.cs
+# https://github.com/EpicGames/UnrealEngine/blob/5.3.2-release/Engine/Source/Programs/UnrealBuildTool/Platform/Android/AndroidToolChain.cs
 set(VCPKG_CXX_FLAGS "-fvisibility=hidden -fvisibility-inlines-hidden")
 set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")

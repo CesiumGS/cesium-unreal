@@ -358,7 +358,7 @@ public:
    * If AdjustOrientationForGlobeWhenMoving is enabled, this method will
    * also update the orientation based on the globe curvature.
    *
-   * @param newPosition The new position.
+   * @param EarthCenteredEarthFixedPosition The new position.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void MoveToEarthCenteredEarthFixedPosition(

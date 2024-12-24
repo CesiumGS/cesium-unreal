@@ -21,13 +21,6 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     return;
   }
 
-  const CesiumGltf::Accessor* accessor =
-      Model.getSafe<CesiumGltf::Accessor>(&Model.accessors, featureID->second);
-  if (!accessor || accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
-    this->_status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
-    return;
-  }
-
   this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
       Model,
       Primitive,
@@ -80,17 +73,17 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
   return FeatureIDAttribute._status;
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return std::visit(
       CesiumGltf::CountFromAccessor{},
       FeatureIDAttribute._featureIdAccessor);
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
-    int64 VertexIndex) {
+    int64 Index) {
   return std::visit(
-      CesiumGltf::FeatureIdFromAccessor{VertexIndex},
+      CesiumGltf::FeatureIdFromAccessor{Index},
       FeatureIDAttribute._featureIdAccessor);
 }

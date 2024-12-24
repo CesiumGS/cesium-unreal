@@ -144,12 +144,12 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
         case ELevelStreamingState::MakingVisible:
           anyLevelsStillLoaded = true;
           break;
-        case ELevelStreamingState::FailedToLoad:
         case ELevelStreamingState::LoadedNotVisible:
         case ELevelStreamingState::LoadedVisible:
           pSubLevel->UnloadLevelInstance();
           anyLevelsStillLoaded = true;
           break;
+        case ELevelStreamingState::FailedToLoad:
         case ELevelStreamingState::Removed:
         case ELevelStreamingState::Unloaded:
           break;

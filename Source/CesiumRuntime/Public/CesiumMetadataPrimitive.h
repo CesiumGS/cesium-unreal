@@ -46,6 +46,8 @@ public:
    * IDs in the glTF mesh primitive.
    * @param PrimitiveMetadata The FCesiumPrimitiveMetadata containing references
    * to the metadata for the glTF mesh primitive.
+   * @param ModelMetadata The FCesiumModelMetadata containing the property
+   * tables and textures contained in a glTF model.
    */
   FCesiumMetadataPrimitive(
       const FCesiumPrimitiveFeatures& PrimitiveFeatures,
@@ -71,6 +73,9 @@ public:
   /**
    * Get all the feature ID attributes that are associated with the
    * primitive.
+   *
+   * @param MetadataPrimitive The {@link FCesiumMetadataPrimitive} to obtain the
+   * feature ID attributes from.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -87,6 +92,9 @@ public:
   /**
    * Get all the feature ID textures that are associated with the
    * primitive.
+   *
+   * @param MetadataPrimitive The {@link FCesiumMetadataPrimitive} to obtain the
+   * feature ID textures from.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -103,6 +111,9 @@ public:
   /**
    * @brief Get all the feature textures that are associated with the
    * primitive.
+   *
+   * @param MetadataPrimitive The {@link FCesiumMetadataPrimitive} to obtain the
+   * feature texture names from.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -120,7 +131,9 @@ public:
    * Gets the ID of the first vertex that makes up a given face of this
    * primitive.
    *
-   * @param faceID The ID of the face.
+   * @param MetadataPrimitive The {@link FCesiumMetadataPrimitive} to obtain the
+   * vertex ID from.
+   * @param FaceID The ID of the face.
    */
   UFUNCTION(
       BlueprintCallable,

@@ -56,13 +56,9 @@ ExtensionImageAssetUnreal::getOrCreate(
   ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
   ([pResource = extension._pTextureResource](
        FRHICommandListImmediate& RHICmdList) mutable {
-#if ENGINE_VERSION_5_3_OR_HIGHER
     pResource->InitResource(
         FRHICommandListImmediate::Get()); // Init Resource now requires a
                                           // command list.
-#else
-    pResource->InitResource();
-#endif
   });
 
   maybePromise->resolve();

@@ -56,16 +56,11 @@ void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
   AttenuationVertexFactory.InitResource(RHICmdList);
   AttenuationIndexBuffer.InitResource(RHICmdList);
 }
-#elif ENGINE_VERSION_5_3_OR_HIGHER
+#else
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
   FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
   AttenuationVertexFactory.InitResource(RHICmdList);
   AttenuationIndexBuffer.InitResource(RHICmdList);
-}
-#else
-void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
-  AttenuationVertexFactory.InitResource();
-  AttenuationIndexBuffer.InitResource();
 }
 #endif
 
