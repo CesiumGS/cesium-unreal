@@ -15,7 +15,7 @@ set(VCPKG_POLICY_ONLY_RELEASE_CRT enabled)
 # Yeah that's not just the Windows SDK, but anything that passes structs across the boundary
 # between compilation units using different versions of that flag. We compile cesium-native
 # with this same option to avoid super-dodgy and hard to debug issues.
-# https://github.com/EpicGames/UnrealEngine/blob/5.2.1-release/Engine/Source/Programs/UnrealBuildTool/Platform/Windows/VCToolChain.cs
+# https://github.com/EpicGames/UnrealEngine/blob/5.3.2-release/Engine/Source/Programs/UnrealBuildTool/Platform/Windows/VCToolChain.cs
 set(VCPKG_CXX_FLAGS "/Zp8")
 set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")
 
@@ -30,5 +30,17 @@ list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_C_FLAGS_DEBUG:STRING=/MD /Z7 
 # When building official binaries on CI, use a very specific MSVC toolset version (which must be installed).
 # When building locally, use the default.
 if(DEFINED ENV{CI})
+  # Toolset version should be 14.38 on UE 5.5+, 14.34 on prior versions.
   set(VCPKG_PLATFORM_TOOLSET_VERSION "14.34")
+
+  set(UNREAL_ENGINE_BUILD_VERSION_FILENAME "$ENV{UNREAL_ENGINE_ROOT}/Engine/Build/Build.version")
+  if(EXISTS "${UNREAL_ENGINE_BUILD_VERSION_FILENAME}")
+    file(READ "${UNREAL_ENGINE_BUILD_VERSION_FILENAME}" UNREAL_ENGINE_BUILD_VERSION)
+    string(JSON UNREAL_MAJOR_VERSION GET "${UNREAL_ENGINE_BUILD_VERSION}" "MajorVersion")
+    string(JSON UNREAL_MINOR_VERSION GET "${UNREAL_ENGINE_BUILD_VERSION}" "MinorVersion")
+    if("${UNREAL_MAJOR_VERSION}" GREATER "5" OR "${UNREAL_MINOR_VERSION}" GREATER_EQUAL "5")
+      # This is UE 5.5+, so use MSVC 14.38.
+      set(VCPKG_PLATFORM_TOOLSET_VERSION "14.38")
+    endif()
+  endif()
 endif()

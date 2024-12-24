@@ -9,7 +9,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTexturePropertySpec,
     "Cesium.Unit.PropertyTextureProperty",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 const std::vector<FVector2D> texCoords{
     FVector2D(0, 0),
@@ -19,6 +21,8 @@ const std::vector<FVector2D> texCoords{
 END_DEFINE_SPEC(FCesiumPropertyTexturePropertySpec)
 
 void FCesiumPropertyTexturePropertySpec::Define() {
+  using namespace CesiumGltf;
+
   Describe("Constructor", [this]() {
     It("constructs invalid instance by default", [this]() {
       FCesiumPropertyTextureProperty property;

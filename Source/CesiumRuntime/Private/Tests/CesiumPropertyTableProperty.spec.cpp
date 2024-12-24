@@ -6,16 +6,18 @@
 #include "Misc/AutomationTest.h"
 #include <limits>
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTablePropertySpec,
     "Cesium.Unit.PropertyTableProperty",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumPropertyTablePropertySpec)
 
 void FCesiumPropertyTablePropertySpec::Define() {
+  using namespace CesiumGltf;
+
   Describe("Constructor", [this]() {
     It("constructs invalid instance by default", [this]() {
       FCesiumPropertyTableProperty property;
@@ -96,7 +98,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -177,7 +179,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -239,9 +241,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::None,
               PropertyComponentType::None);
 
@@ -305,11 +307,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(
                   offsetsData.data(),
                   offsetsData.size()),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::Uint16,
               PropertyComponentType::None);
 
@@ -382,7 +384,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -497,7 +499,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               static_cast<int64_t>(values.size()),
-              gsl::span<const std::byte>(data.data(), data.size()));
+              std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -693,7 +695,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(8),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -729,7 +731,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(8),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -786,9 +788,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint32);
 
@@ -844,7 +846,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -880,7 +882,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -917,7 +919,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -961,7 +963,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1023,7 +1025,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1063,7 +1065,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1106,7 +1108,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1150,7 +1152,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1216,7 +1218,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1256,7 +1258,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1297,7 +1299,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1341,7 +1343,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1405,7 +1407,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1441,7 +1443,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1482,7 +1484,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1531,7 +1533,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1585,7 +1587,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1625,7 +1627,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1663,7 +1665,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1720,9 +1722,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -1771,7 +1773,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1829,7 +1831,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1874,7 +1876,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1915,7 +1917,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1965,7 +1967,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2030,7 +2032,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2075,7 +2077,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2117,7 +2119,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2175,9 +2177,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -2229,7 +2231,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2291,7 +2293,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2336,7 +2338,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2378,7 +2380,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2433,7 +2435,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2498,7 +2500,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2543,7 +2545,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2585,7 +2587,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2640,7 +2642,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2702,7 +2704,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2747,7 +2749,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2789,7 +2791,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2851,9 +2853,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -2905,7 +2907,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2967,7 +2969,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3012,7 +3014,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3058,7 +3060,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3125,9 +3127,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -3179,7 +3181,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3252,7 +3254,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3308,7 +3310,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3371,7 +3373,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3424,7 +3426,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3474,7 +3476,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3537,7 +3539,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3588,7 +3590,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -3652,9 +3654,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::None,
               PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
@@ -3710,9 +3712,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::None,
               PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
@@ -3778,11 +3780,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(
                   offsetsData.data(),
                   offsetsData.size()),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::Uint16,
               PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
@@ -3854,9 +3856,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::None,
               PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
@@ -3942,9 +3944,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
               propertyTableProperty,
               classProperty,
               size,
-              gsl::span<const std::byte>(data.data(), data.size()),
-              gsl::span<const std::byte>(),
-              gsl::span<const std::byte>(),
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
               PropertyComponentType::None,
               PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
@@ -4045,7 +4047,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4087,7 +4089,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4137,7 +4139,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4184,7 +4186,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4242,7 +4244,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",

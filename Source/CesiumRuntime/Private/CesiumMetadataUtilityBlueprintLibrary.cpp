@@ -100,7 +100,7 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
     UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 FaceID) {
-  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
       FeatureIDAttribute,
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
           Primitive,

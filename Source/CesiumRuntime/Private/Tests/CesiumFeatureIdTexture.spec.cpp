@@ -11,7 +11,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdTextureSpec,
     "Cesium.Unit.FeatureIdTexture",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 CesiumGltf::Model model;
 CesiumGltf::MeshPrimitive* pPrimitive;

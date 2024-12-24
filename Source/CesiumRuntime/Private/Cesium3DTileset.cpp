@@ -4,6 +4,7 @@
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTilesSelection/EllipsoidTilesetLoader.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
@@ -55,6 +56,11 @@
 #include <memory>
 #include <spdlog/spdlog.h>
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+#include "HAL/PlatformFileManager.h"
+#include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
+#endif
+
 FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
 #if WITH_EDITOR
@@ -76,6 +82,10 @@ ACesium3DTileset::ACesium3DTileset()
 
       _pTileset(nullptr),
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+      _pStateDebug(nullptr),
+#endif
+
       _lastTilesRendered(0),
       _lastWorkerThreadTileLoadQueueLength(0),
       _lastMainThreadTileLoadQueueLength(0),
@@ -93,7 +103,6 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMovieUseLodTransitions{true},
 
       _tilesetsBeingDestroyed(0) {
-
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
@@ -131,6 +140,12 @@ void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
 void ACesium3DTileset::SampleHeightMostDetailed(
     const TArray<FVector>& LongitudeLatitudeHeightArray,
     FCesiumSampleHeightMostDetailedCallback OnHeightsSampled) {
+  // It's possible to call this function before a Tick happens, so make sure
+  // that the necessary variables are resolved.
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
+
   if (this->_pTileset == nullptr) {
     this->LoadTileset();
   }
@@ -547,7 +562,6 @@ void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
 
 #if WITH_EDITOR
 void ACesium3DTileset::OnFocusEditorViewportOnThis() {
-
   UE_LOG(
       LogCesium,
       Verbose,
@@ -668,7 +682,6 @@ ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
 }
 
 void ACesium3DTileset::UpdateTransformFromCesium() {
-
   const glm::dmat4& CesiumToUnreal =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   TArray<UCesiumGltfComponent*> gltfComponents;
@@ -922,7 +935,6 @@ public:
   virtual void* prepareRasterInMainThread(
       CesiumRasterOverlays::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult) override {
-
     TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
         static_cast<CesiumTextureUtility::LoadedTextureResult*>(
             pLoadThreadResult)};
@@ -1061,7 +1073,6 @@ void ACesium3DTileset::UpdateLoadStatus() {
 }
 
 namespace {
-
 const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
 getCesiumViewExtension() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
@@ -1069,7 +1080,6 @@ getCesiumViewExtension() {
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
   return cesiumViewExtension;
 }
-
 } // namespace
 
 void ACesium3DTileset::LoadTileset() {
@@ -1278,6 +1288,14 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.applyTextureTransform = false;
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from ellipsoid"));
+    this->_pTileset = TUniquePtr<Cesium3DTilesSelection::Tileset>(
+        Cesium3DTilesSelection::EllipsoidTilesetLoader::createTileset(
+            externals,
+            options)
+            .release());
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
     this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
@@ -1317,6 +1335,23 @@ void ACesium3DTileset::LoadTileset() {
     break;
   }
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+  FString dbDirectory = FPaths::Combine(
+      FPaths::ProjectSavedDir(),
+      TEXT("CesiumDebugTileStateDatabase"));
+
+  IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+  if (!PlatformFile.DirectoryExists(*dbDirectory)) {
+    PlatformFile.CreateDirectory(*dbDirectory);
+  }
+
+  FString dbFile =
+      FPaths::Combine(dbDirectory, this->GetName() + TEXT(".sqlite"));
+  this->_pStateDebug =
+      MakeUnique<Cesium3DTilesSelection::DebugTileStateDatabase>(
+          TCHAR_TO_UTF8(*dbFile));
+#endif
+
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
       pOverlay->AddToTileset();
@@ -1330,6 +1365,9 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from ellipsoid done"));
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
@@ -1368,6 +1406,9 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset from ellipsoid"));
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
@@ -1418,6 +1459,9 @@ void ACesium3DTileset::DestroyTileset() {
   this->_pTileset.Reset();
 
   switch (this->TilesetSource) {
+  case ETilesetSource::FromEllipsoid:
+    UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset from ellipsoid done"));
+    break;
   case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
@@ -1494,7 +1538,6 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
   for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
        playerControllerIt;
        playerControllerIt++) {
-
     const TWeakObjectPtr<APlayerController> pPlayerController =
         *playerControllerIt;
     if (pPlayerController == nullptr) {
@@ -1674,7 +1717,6 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset,
     UCesiumEllipsoid* ellipsoid) {
-
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
 
@@ -1970,7 +2012,6 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     check(Georeference);
 
     for (Cesium3DTilesSelection::Tile* tile : result.tilesToRenderThisFrame) {
-
       CesiumGeometry::OrientedBoundingBox obb =
           Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
               tile->getBoundingVolume(),
@@ -1992,6 +2033,14 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
   }
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+  if (this->_pStateDebug && GetWorld()->IsPlayInEditor()) {
+    this->_pStateDebug->recordAllTileStates(
+        result.frameNumber,
+        *this->_pTileset);
+  }
+#endif
+
   if (!this->LogSelectionStats && !this->LogSharedAssetStats) {
     return;
   }
@@ -2008,7 +2057,6 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.tilesWaitingForOcclusionResults !=
           this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
-
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
     this->_lastWorkerThreadTileLoadQueueLength =
         result.workerThreadTileLoadQueueLength;
@@ -2028,11 +2076,13 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           LogCesium,
           Display,
           TEXT(
-              "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
+              "%s: %d ms, Unreal Frame #%d, Tileset Frame: #%d, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
           *this->GetName(),
           (std::chrono::high_resolution_clock::now() - this->_startTime)
                   .count() /
               1000000,
+          GFrameCounter,
+          result.frameNumber,
           result.tilesVisited,
           result.culledTilesVisited,
           result.tilesToRenderThisFrame.size(),
@@ -2164,9 +2214,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   updateTilesetOptionsFromProperties();
 
   std::vector<FCesiumCamera> cameras = this->GetCameras();
-  if (cameras.empty()) {
-    return;
-  }
 
   glm::dmat4 ueTilesetToUeWorld =
       VecMath::createMatrix4D(this->GetActorTransform().ToMatrixWithScale());

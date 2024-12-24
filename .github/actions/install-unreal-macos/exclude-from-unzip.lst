@@ -1,14 +1,3 @@
-UE_5.2/Engine/Binaries/Mac/LiveLinkHub-Mac-Shipping.app/*
-UE_5.2/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame.app/*
-UE_5.2/Engine/Binaries/Mac/UnrealGame.app/*
-UE_5.2/Engine/Binaries/Mac/UnrealGame-Mac-Shipping.app/*
-UE_5.2/Engine/Binaries/Mac/Android/*
-UE_5.2/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame
-UE_5.2/Engine/Binaries/Mac/UnrealGame
-UE_5.2/Engine/Binaries/Mac/UnrealGame-Mac-Shipping
-UE_5.2/Engine/Binaries/Mac/*.dSYM
-UE_5.2/Engine/Plugins/Experimental/NNERuntimeIREE/*
-UE_5.2/Engine/Plugins/Experimental/Avalanche/*
 UE_5.3/Engine/Binaries/Mac/LiveLinkHub-Mac-Shipping.app/*
 UE_5.3/Engine/Binaries/Mac/UnrealGame-Mac-DebugGame.app/*
 UE_5.3/Engine/Binaries/Mac/UnrealGame.app/*

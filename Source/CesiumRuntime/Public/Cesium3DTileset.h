@@ -27,6 +27,10 @@
 #include <vector>
 #include "Cesium3DTileset.generated.h"
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+#include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
+#endif
+
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 class ACesiumCameraManager;
@@ -74,7 +78,12 @@ enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from the specified Url.
    */
-  FromUrl UMETA(DisplayName = "From Url")
+  FromUrl UMETA(DisplayName = "From Url"),
+
+  /**
+   * The tileset will be loaded from the georeference ellipsoid.
+   */
+  FromEllipsoid UMETA(DisplayName = "From Ellipsoid")
 };
 
 UENUM(BlueprintType)
@@ -1091,8 +1100,10 @@ public:
    * This method is not supposed to be called by clients. It is currently
    * only required by the UnrealResourcePreparer.
    *
+   * @internal
    * See {@link
-   * Cesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   * UCesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   * @endinternal
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
@@ -1232,6 +1243,10 @@ private:
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+
+#ifdef CESIUM_DEBUG_TILE_STATES
+  TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
+#endif
 
   std::optional<FCesiumFeaturesMetadataDescription>
       _featuresMetadataDescription;

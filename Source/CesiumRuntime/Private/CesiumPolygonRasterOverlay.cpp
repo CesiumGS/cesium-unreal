@@ -28,7 +28,7 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
   std::vector<CartographicPolygon> polygons;
   polygons.reserve(this->Polygons.Num());
 
-  for (ACesiumCartographicPolygon* pPolygon : this->Polygons) {
+  for (auto& pPolygon : this->Polygons) {
     if (!pPolygon) {
       continue;
     }

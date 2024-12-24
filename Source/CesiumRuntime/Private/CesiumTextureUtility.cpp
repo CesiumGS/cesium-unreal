@@ -179,6 +179,10 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
   };
 
   CesiumGltf::Image& image = model.images[*optionalSourceIndex];
+  if (image.pAsset == nullptr) {
+    return nullptr;
+  }
+
   const CesiumGltf::Sampler& sampler =
       model.getSafe(model.samplers, texture.sampler);
 
@@ -380,13 +384,9 @@ loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
          FRHICommandListImmediate& RHICmdList) {
       pTextureResource->SetTextureReference(
           pTexture->TextureReference.TextureReferenceRHI);
-#if ENGINE_VERSION_5_3_OR_HIGHER
       pTextureResource->InitResource(
           FRHICommandListImmediate::Get()); // Init Resource now requires a
                                             // command list.
-#else
-      pTextureResource->InitResource();
-#endif
     });
   }
 

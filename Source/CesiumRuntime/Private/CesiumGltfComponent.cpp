@@ -41,6 +41,7 @@
 #include <CesiumGeometry/Transforms.h>
 #include <CesiumGltf/AccessorUtility.h>
 #include <CesiumGltf/AccessorView.h>
+#include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
@@ -718,9 +719,10 @@ static void updateTextureCoordinatesForFeaturesMetadata(
           UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
               featureIDSet);
 
-      int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
-              featureIDAttribute);
+      // Each feature ID corresponds to a vertex, so the vertex count is just
+      // the length of the attribute.
+      int64 vertexCount = UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
+          featureIDAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
       // a texture coordinate slot.
@@ -730,8 +732,9 @@ static void updateTextureCoordinatesForFeaturesMetadata(
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIDAttribute, vertexIndex));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIDAttribute,
+                    vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -742,8 +745,9 @@ static void updateTextureCoordinatesForFeaturesMetadata(
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIDAttribute, i));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIDAttribute,
+                    i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -875,9 +879,10 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           encodedFeatureIdAttribute.name,
           textureCoordinateIndex);
 
-      int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
-              featureIdAttribute);
+      // Each feature ID corresponds to a vertex, so the vertex count is just
+      // the length of the attribute.
+      int64 vertexCount = UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
+          featureIdAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
       // a texture coordinate slot.
@@ -887,8 +892,9 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIdAttribute, vertexIndex));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIdAttribute,
+                    vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -899,8 +905,9 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIdAttribute, i));
+                UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                    featureIdAttribute,
+                    i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -1715,6 +1722,12 @@ static void loadPrimitive(
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
 
+#if ENGINE_VERSION_5_5_OR_HIGHER
+  // UE 5.5 requires that we do this in order to avoid a crash when ray tracing
+  // is enabled.
+  RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+#endif
+
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.RenderData = std::move(RenderData);
@@ -1907,8 +1920,10 @@ inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
 
 static void loadInstancingData(
     const CesiumGltf::Model& model,
+    const CesiumGltf::Node& node,
     LoadNodeResult& result,
-    const CesiumGltf::ExtensionExtMeshGpuInstancing* pGpuInstancing) {
+    const CesiumGltf::ExtensionExtMeshGpuInstancing* pGpuInstancing,
+    const CesiumGltf::ExtensionExtInstanceFeatures* pInstanceFeatures) {
   auto getInstanceAccessor =
       [&](const char* name) -> const CesiumGltf::Accessor* {
     if (auto accessorItr = pGpuInstancing->attributes.find(name);
@@ -2028,6 +2043,10 @@ static void loadInstancingData(
     auto unrealFMatrix = VecMath::createMatrix(unrealMat);
     result.InstanceTransforms[i].SetFromMatrix(unrealFMatrix);
   }
+  if (pInstanceFeatures) {
+    result.pInstanceFeatures =
+        MakeShared<FCesiumPrimitiveFeatures>(model, node, *pInstanceFeatures);
+  }
 }
 
 static void loadNode(
@@ -2111,7 +2130,12 @@ static void loadNode(
   if (meshId >= 0 && meshId < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
             node.getExtension<CesiumGltf::ExtensionExtMeshGpuInstancing>()) {
-      loadInstancingData(model, result, pGpuInstancingExtension);
+      loadInstancingData(
+          model,
+          node,
+          result,
+          pGpuInstancingExtension,
+          node.getExtension<CesiumGltf::ExtensionExtInstanceFeatures>());
     }
     CreateMeshOptions meshOptions = {&options, &result, meshId};
     loadMesh(result.meshResult, nodeTransform, meshOptions, ellipsoid);
@@ -2873,7 +2897,8 @@ static void loadPrimitiveGameThreadPart(
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
     ACesium3DTileset* pTilesetActor,
-    const std::vector<FTransform>& instanceTransforms) {
+    const std::vector<FTransform>& instanceTransforms,
+    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -2906,6 +2931,7 @@ static void loadPrimitiveGameThreadPart(
     for (const FTransform& transform : instanceTransforms) {
       pInstancedComponent->AddInstance(transform, false);
     }
+    pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
@@ -3264,7 +3290,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             tile,
             createNavCollision,
             pTilesetActor,
-            node.InstanceTransforms);
+            node.InstanceTransforms,
+            node.pInstanceFeatures);
       }
     }
   }
@@ -3387,6 +3414,10 @@ void UCesiumGltfComponent::AttachRasterTile(
                     EMaterialParameterAssociation::LayerParameter,
                     i),
                 translationAndScale);
+            check(
+                textureCoordinateID >= 0 &&
+                textureCoordinateID <
+                    primData.overlayTextureCoordinateIDToUVIndex.size());
             pMaterial->SetScalarParameterValueByInfo(
                 FMaterialParameterInfo(
                     "TextureCoordinateIndex",

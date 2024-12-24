@@ -10,7 +10,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTableSpec,
     "Cesium.Unit.PropertyTable",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 CesiumGltf::Model model;
 CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension;
@@ -22,7 +24,7 @@ void FCesiumPropertyTableSpec::Define() {
     model = CesiumGltf::Model();
     pExtension =
         &model.addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
-    pExtension->schema = CesiumGltf::Schema();
+    pExtension->schema.emplace();
     pPropertyTable = &pExtension->propertyTables.emplace_back();
   });
 
@@ -42,7 +44,7 @@ void FCesiumPropertyTableSpec::Define() {
     });
 
     It("constructs invalid instance for missing schema", [this]() {
-      pExtension->schema = std::nullopt;
+      pExtension->schema.reset();
 
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
       TestEqual(

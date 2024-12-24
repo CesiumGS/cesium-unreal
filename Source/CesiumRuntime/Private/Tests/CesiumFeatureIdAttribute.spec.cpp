@@ -8,7 +8,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdAttributeSpec,
     "Cesium.Unit.FeatureIdAttribute",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 CesiumGltf::Model model;
 CesiumGltf::MeshPrimitive* pPrimitive;
@@ -124,7 +126,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
     });
   });
 
-  Describe("GetVertexCount", [this]() {
+  Describe("GetCount", [this]() {
     BeforeEach([this]() {
       model = CesiumGltf::Model();
       CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
@@ -147,7 +149,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
           ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor);
       TestEqual(
           "VertexCount",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
               featureIDAttribute),
           0);
     });
@@ -175,13 +177,13 @@ void FCesiumFeatureIdAttributeSpec::Define() {
           ECesiumFeatureIdAttributeStatus::Valid);
       TestEqual(
           "VertexCount",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
               featureIDAttribute),
           vertexCount);
     });
   });
 
-  Describe("GetFeatureIDForVertex", [this]() {
+  Describe("GetFeatureID", [this]() {
     BeforeEach([this]() {
       model = CesiumGltf::Model();
       CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
@@ -204,7 +206,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
           ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor);
       TestEqual(
           "FeatureIDForVertex",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
               featureIDAttribute,
               0),
           -1);
@@ -232,13 +234,13 @@ void FCesiumFeatureIdAttributeSpec::Define() {
           ECesiumFeatureIdAttributeStatus::Valid);
       TestEqual(
           "FeatureIDForNegativeVertex",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
               featureIDAttribute,
               -1),
           -1);
       TestEqual(
           "FeatureIDForOutOfBoundsVertex",
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
               featureIDAttribute,
               10),
           -1);
@@ -267,7 +269,7 @@ void FCesiumFeatureIdAttributeSpec::Define() {
       for (size_t i = 0; i < featureIDs.size(); i++) {
         TestEqual(
             "FeatureIDForVertex",
-            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
                 featureIDAttribute,
                 static_cast<int64>(i)),
             featureIDs[i]);

@@ -1,6 +1,6 @@
 {
   "name": "cesium-unreal",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "description": "Cesium for Unreal",
   "main": "index.js",
   "directories": {
@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/CesiumGS/cesium-unreal#readme",
   "devDependencies": {
-    "clang-format": "^1.5.0"
+    "clang-format": "^1.5.0",
+    "doxygen-awesome-css": "https://github.com/jothepro/doxygen-awesome-css#v2.3.4"
   }
 }
