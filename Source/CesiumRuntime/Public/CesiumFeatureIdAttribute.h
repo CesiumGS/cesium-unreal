@@ -29,7 +29,8 @@ enum class ECesiumFeatureIdAttributeStatus : uint8 {
 /**
  * @brief A blueprint-accessible wrapper for a feature ID attribute from a glTF
  * model. Provides access to feature IDs which can be used with the
- * corresponding {@link FCesiumPropertyTable} to access metadata.
+ * corresponding {@link FCesiumPropertyTable} to access metadata. These feature
+ * IDs may be defined per-vertex or per-instance.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
@@ -133,6 +134,9 @@ public:
    * Gets the number of elements in the attribute. This is distinct from the
    * number of unique feature IDs within the attribute.
    *
+   * For a feature ID attribute of a regular mesh, this is the number of
+   * vertices. For a per-instance feature ID, this is the number of instances.
+   *
    * If the feature ID attribute is invalid, this returns 0.
    */
   UFUNCTION(
@@ -146,6 +150,10 @@ public:
    * Gets the feature ID at the given index. A feature ID can be used with a
    * FCesiumPropertyTable to retrieve the metadata for that ID. If the feature
    * ID attribute is invalid, this returns -1.
+   *
+   * For a feature ID attribute of a regular mesh, the provided Index is the
+   * index of a vertex within the mesh. For a per-instance feature ID, the
+   * provided Index is the index of the instance.
    */
   UFUNCTION(
       BlueprintCallable,

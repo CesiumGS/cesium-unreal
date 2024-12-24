@@ -82,8 +82,8 @@ int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
-    int64 VertexIndex) {
+    int64 Index) {
   return std::visit(
-      CesiumGltf::FeatureIdFromAccessor{VertexIndex},
+      CesiumGltf::FeatureIdFromAccessor{Index},
       FeatureIDAttribute._featureIdAccessor);
 }
