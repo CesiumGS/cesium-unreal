@@ -16,20 +16,117 @@ This guide will explicitly link to sections in the above resources when relevant
 
 ## Table of Contents
 
-- [Types](#types)
 - [Naming](#naming)
+- [Types](#types)
 - [File Organization](#file-organization)
-- [Macros](#macros)
 
 (TODO)
+
+## Naming
+
+First, check out the [Naming Conventions](https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine#namingconventions) section in the Unreal Engine coding standard. Then, read below.
+
+### Prefixes
+
+- Follow Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
+
+- Although the names should be prefixed in the code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
+
+### Public API
+
+Functions and fields in the public API should be written in `PascalCase`. However, use `lowerCamelCase` for any private members or anonymous namespace functions.
+
+```c++
+USTRUCT()
+struct CesiumStruct {
+    public:
+    float PublicField;
+    void DoSomething(float Input);
+
+    private:
+    float _privateField;
+    void doSomethingPrivate(float input);
+}
+```
+
+Additionally, preface every `struct` or `class` in the public API with the word "Cesium". This helps to clearly separate our API from other elements in Unreal, and allows users to more easily search for our components in Unreal.
+
+```c++
+// Don't do this.
+public AGeoreference : public AActor {...}
+
+// Do this.
+public ACesiumGeoreference : public AActor {...}
+```
+
+### Function and Variable Names
+
+Functions and variables should be given names that are descriptive yet succinct. This is important for public-facing API, but even private code should aspire to this standard.
+
+When in doubt, err on the side of being overly explicit.
+Try to be precise about scope and meaning.
+
+For example, consider the context of multiple frames of reference in Cesium for Unreal. The plugin has to operate in multiple coordinate systems: Unreal's coordinate system, Earth-Centered Earth-Fixed coordinates, and cartographic coordinates (longitude, latitude, height). Whenever something deals with position or orientation, it is important to distinguish what space it is operating in.
+
+For instance, this intentionally vague example leaves a lot to be desired. From a glance, it is not clear what the intended frame-of-reference is. The function body might tell us otherwise, but the declaration itself could afford more clarity.
+
+```c++
+void MoveToLocation(FVector Location) {...}
+```
+
+Adding documentation will definitely help here, and in some cases that will be enough to dispel ambiguity.
+
+```c++
+/**
+* Moves the object to the given cartographic position, where
+* - x = longitude
+* - y = latitude
+* - z = height above the WGS84 ellipsoid in meters.
+*/
+void MoveToLocation(FVector Location) {...}
+```
+
+However, we can take this even a step further. Let's rename the function and its parameter so that the intent is very obvious from the start.
+
+```c++
+/**
+* Moves the object to the given cartographic position, where
+* - x = longitude
+* - y = latitude
+* - z = height above the WGS84 ellipsoid in meters.
+*/
+void MoveToLongitudeLatitudeHeight(FVector LongitudeLatitudeHeight) {...}
+```
+
+For reference, here is what the counterpart for Unreal coordinate system might look like.
+
+```c++
+/**
+* Moves the object to the given position in Unreal's coordinate system.
+*/
+void MoveToUnrealPosition(FVector UnrealPosition) {...}
+```
+
+## Units
+
+Although Unreal uses centimeter units, Cesium for Unreal uses meters, which is standard across our runtimes. To avoid confusion, it is best to make remarks about the expected units of a function in its documentation. Be consistent with scale.
+
+Let's use the function from the previous example. Unreal's coordinate system uses centimeters. We don't want to randomly change the scale.
+
+```c++
+// Confusing!
+
+/**
+* Moves the object to the given position in Unreal's coordinate system (in meters).
+*/
+void MoveToUnrealPosition(FVector UnrealPositionInMeters) {...}
+```
 
 ## Types
 
 ### Pointers
 
-Unreal provides engine-specific pointer types that may not be obvious to distinguish from one another. This [community guide](https://dev.epicgames.com/community/learning/tutorials/kx/unreal-engine-all-about-soft-and-weak-pointers) goes into detail about the differences between these types. They are summarized for convenience below.
-
-Generally, use these whenever you instantiate something that inherits from an Unreal type (e.g., `UObject`, `USceneComponent`):
+Unreal provides engine-specific pointer types that may not be obvious to distinguish from one another. This [community guide](https://dev.epicgames.com/community/learning/tutorials/kx/unreal-engine-all-about-soft-and-weak-pointers) goes into detail about the differences between these types, but they are summarized for convenience below.
 
 | Type | Description |
 | ---- | ----------- |
@@ -37,7 +134,21 @@ Generally, use these whenever you instantiate something that inherits from an Un
 | `TSoftObjectPtr` | Used in UProperties.|
 | `TWeakObjectPtr` | Used to reference already instantiated objects. Will resolve to null if the object gets destroyed or garbage collected.|
 
-Unreal also provides `TUniquePtr` and `TSharedPtr` definitions, equivalent to their `std` counterparts. Use these whenever the type `T` is a `UObject`. For everything else – especially structs and classes in Cesium Native – stick with `std`.
+Generally, the above pointers are used whenever you instantiate something that inherits from an Unreal type (e.g., `UObject`, `USceneComponent`). Of course, raw pointers may be used where ownership is not required.
+
+Unreal also provides `TUniquePtr` and `TSharedPtr` definitions, equivalent to their `std` counterparts. For consistency, Cesium for Unreal prefers using `TUniquePtr` and `TSharedPtr`. This is especially important when the type `T` is a `UObject`.
+
+When any pointers are used in the public API—whether as public fields or as parameters for functions—omit the `p` prefix. For instance:
+
+```c++
+// Don't do this.
+UCesiumEllipsoid* pEllipsoid;
+void SetEllipsoid(UCesiumEllipsoid* pNewEllipsoid)
+
+// Do this.
+UCesiumEllipsoid* Ellipsoid;
+void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid)
+```
 
 ### Math
 
@@ -53,52 +164,6 @@ This is especially recommended for matrix math. Previously, `FMatrix` made stron
 >
 > (This may no longer be true, but it has ultimately proven safer to use `glm::dmat4` over Unreal's built-in matrix.)
 
-## Naming
-
-First, check out the [Naming Conventions](https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine#namingconventions) section in the Unreal Engine coding standard. Then, read below.
-
-### Prefixes
-
-- Follow Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
-
-- Although the names should be prefixed in the code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
-
-
-### Public API
-
-Functions and fields in the public API should be written in `PascalCase`. However, use `lowerCamelCase` for any private members or anonymous namespace functions.
-
-```c++
-USTRUCT()
-public CesiumStruct {
-    public:
-    float PublicField;
-    void DoSomething(float Input);
-
-    private:
-    float _privateField;
-    void doSomethingPrivate(float input);
-}
-```
-
-For parameters that are pointers, omit the `p` prefix. For instance:
-
-```c++
-// Don't do this.
-
-
-// Do this.
-```
-
-Additionally, preface every `struct` or `class` in the public API with the word "Cesium". This helps to clearly separate our API from other elements in Unreal, and allows users to more easily search for our components in Unreal.
-
-```c++
-// Don't do this.
-public AGeoreference : public AActor {...}
-
-// Do this.
-public ACesiumGeoreference : public AActor {...}
-```
 
 ## File Organization
 
@@ -112,19 +177,3 @@ Within the `Runtime` folder are two subfolders: `Public` and `Private`.
 - The `Private` folder contains everything else: private classes, functions, etc. that users will never have to deal with.
 
 Be aware that the `Private` folder can reference files in the `Public` folder, but not vice versa. It's possible that a class in `Public` needs to `#include` something that would otherwise exist in the `Private` folder, e.g., the type of a private member variable. Use forward declarations to avoid this where possible, but you ultimately may have to move that class to the `Public` folder, even if it's not public API. This is fine.
-
-## Macros
-
-Unreal Engine uses several macros that we also use in our code. There is no dedicated page that explains the workings of these macros, but the most relevant ones are summarized below.
-
-### Class-Level Macros
-
-Most structs and classes use top-level macros depending on the type of class they are. Upon building the plugin, these macros are intercepted by the Unreal Header Tool and used to generate boilerplate code for us. This results in features like interoperability with the Blueprint system and `UObject` garbage collection.
-
-We primarily deal with `USTRUCT()`, `UCLASS()`. This results in `.generated.h` files being auto-generated for our classes.
-
-Unreal's build tools will alert you of this, but for the record, the `.generated.h` file should be the very last include at the top of the file.
-
-## Units
-
-Although Unreal uses centimeter units, Cesium for Unreal uses meters, which is standard across our runtimes. To avoid confusion, it is best to make remarks about the expected units of a function in its documentation. Be as consistent with scale.
