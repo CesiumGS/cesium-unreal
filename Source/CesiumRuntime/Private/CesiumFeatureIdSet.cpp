@@ -152,7 +152,7 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
     FCesiumFeatureIdAttribute attribute =
         std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
-    return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+    return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
         attribute,
         VertexIndex);
   }
@@ -189,7 +189,7 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForInstance(
   }
   const auto& featureIdAttribute =
       std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
-  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
       featureIdAttribute,
       InstanceIndex);
 }
@@ -239,7 +239,7 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
     FCesiumFeatureIdAttribute attribute =
         std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
-    return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+    return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
         attribute,
         VertexIndex);
   }
