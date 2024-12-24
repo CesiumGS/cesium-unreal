@@ -56,6 +56,11 @@
 #include <memory>
 #include <spdlog/spdlog.h>
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+#include "HAL/PlatformFileManager.h"
+#include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
+#endif
+
 FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
 #if WITH_EDITOR
@@ -76,6 +81,10 @@ ACesium3DTileset::ACesium3DTileset()
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
+
+#ifdef CESIUM_DEBUG_TILE_STATES
+      _pStateDebug(nullptr),
+#endif
 
       _lastTilesRendered(0),
       _lastWorkerThreadTileLoadQueueLength(0),
@@ -1326,6 +1335,23 @@ void ACesium3DTileset::LoadTileset() {
     break;
   }
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+  FString dbDirectory = FPaths::Combine(
+      FPaths::ProjectSavedDir(),
+      TEXT("CesiumDebugTileStateDatabase"));
+
+  IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+  if (!PlatformFile.DirectoryExists(*dbDirectory)) {
+    PlatformFile.CreateDirectory(*dbDirectory);
+  }
+
+  FString dbFile =
+      FPaths::Combine(dbDirectory, this->GetName() + TEXT(".sqlite"));
+  this->_pStateDebug =
+      MakeUnique<Cesium3DTilesSelection::DebugTileStateDatabase>(
+          TCHAR_TO_UTF8(*dbFile));
+#endif
+
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
       pOverlay->AddToTileset();
@@ -2007,6 +2033,14 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     }
   }
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+  if (this->_pStateDebug && GetWorld()->IsPlayInEditor()) {
+    this->_pStateDebug->recordAllTileStates(
+        result.frameNumber,
+        *this->_pTileset);
+  }
+#endif
+
   if (!this->LogSelectionStats && !this->LogSharedAssetStats) {
     return;
   }
@@ -2042,11 +2076,13 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           LogCesium,
           Display,
           TEXT(
-              "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
+              "%s: %d ms, Unreal Frame #%d, Tileset Frame: #%d, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
           *this->GetName(),
           (std::chrono::high_resolution_clock::now() - this->_startTime)
                   .count() /
               1000000,
+          GFrameCounter,
+          result.frameNumber,
           result.tilesVisited,
           result.culledTilesVisited,
           result.tilesToRenderThisFrame.size(),
