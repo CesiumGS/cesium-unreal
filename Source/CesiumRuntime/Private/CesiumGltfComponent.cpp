@@ -2890,34 +2890,59 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
 namespace {
-void addInstanceFeatureIds(UCesiumGltfInstancedComponent* pInstancedComponent) {
+void addInstanceFeatureIds(
+    UCesiumGltfInstancedComponent* pInstancedComponent,
+    const FCesiumFeaturesMetadataDescription& featuresDescription) {
   const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures =
       pInstancedComponent->pInstanceFeatures;
   if (!pInstanceFeatures) {
     return;
   }
-  const TArray<FCesiumFeatureIdSet>& featureIdSets =
+  const TArray<FCesiumFeatureIdSet>& allFeatureIdSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
           *pInstanceFeatures);
-  int32 featureSetCount = featureIdSets.Num();
+
+  const TArray<FCesiumFeatureIdSetDescription>& featureIDSetDescriptions =
+      featuresDescription.Features.FeatureIdSets;
+
+  int32_t featureIdTextureCounter = 0;
+
+  TArray<int32> activeFeatureIdSets;
+
+  for (int32 i = 0; i < allFeatureIdSets.Num(); ++i) {
+    FString name = CesiumEncodedFeaturesMetadata::getNameForFeatureIDSet(
+        allFeatureIdSets[i],
+        featureIdTextureCounter);
+
+    const FCesiumFeatureIdSetDescription* pDescription =
+        featureIDSetDescriptions.FindByPredicate(
+            [&name](
+                const FCesiumFeatureIdSetDescription& existingFeatureIDSet) {
+              return existingFeatureIDSet.Name == name;
+            });
+
+    if (pDescription) {
+      activeFeatureIdSets.Emplace(i);
+    }
+  }
+
+  int32 featureSetCount = activeFeatureIdSets.Num();
   if (featureSetCount == 0) {
     return;
   }
-#if ENGINE_VERSION_5_3_OR_HIGHER
   pInstancedComponent->SetNumCustomDataFloats(featureSetCount);
-#else
-  pInstancedComponent->NumCustomDataFloats = featureSetCount;
-#endif
   int32 numInstances = pInstancedComponent->GetInstanceCount();
   pInstancedComponent->PerInstanceSMCustomData.SetNum(
       featureSetCount * numInstances);
   for (int32 j = 0; j < featureSetCount; ++j) {
+    int64_t setIndex = activeFeatureIdSets[j];
+
     for (int32 i = 0; i < numInstances; ++i) {
       int64 featureId =
           UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
               *pInstanceFeatures,
               i,
-              j);
+              setIndex);
       pInstancedComponent
           ->SetCustomDataValue(i, j, static_cast<float>(featureId), true);
     }
@@ -2968,7 +2993,14 @@ static void loadPrimitiveGameThreadPart(
       pInstancedComponent->AddInstance(transform, false);
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
-    addInstanceFeatureIds(pInstancedComponent);
+
+    const std::optional<FCesiumFeaturesMetadataDescription>&
+        maybeFeaturesDescription =
+            pTilesetActor->getFeaturesMetadataDescription();
+    if (maybeFeaturesDescription) {
+      addInstanceFeatureIds(pInstancedComponent, *maybeFeaturesDescription);
+    }
+
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
