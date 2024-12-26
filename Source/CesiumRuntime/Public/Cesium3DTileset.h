@@ -1114,6 +1114,11 @@ public:
     return this->_pTileset.Get();
   }
 
+  const std::optional<FCesiumFeaturesMetadataDescription>&
+  getFeaturesMetadataDescription() const {
+    return this->_featuresMetadataDescription;
+  }
+
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
