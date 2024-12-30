@@ -1,0 +1,42 @@
+name: prod
+on:
+  push:
+    branches:
+      - 'cesium.com'
+      - 'cesium.com-staging'
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-22.04
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.NATIVE_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.NATIVE_SECRET_KEY }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: Install Doxygen
+        run: |
+          cd ~
+          wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
+          tar xzf doxygen-1.12.0.linux.bin.tar.gz
+          export PATH=$PWD/doxygen-1.12.0/bin:$PATH
+          echo "PATH=$PATH" >> "$GITHUB_ENV"
+          doxygen --version
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Mark documentation official
+        if: ${{ github.ref_name == 'cesium.com' }}
+        run: |
+          sed -i 's/PRE-RELEASE/ /g' Documentation/Doxyfile
+      - name: Generate Documentation
+        run: |
+          npm install
+          npm run doxygen
+      - name: Deploy to cesium.com
+        if: ${{ github.ref_name == 'cesium.com' }}
+        run: |
+          aws s3 sync Documentation/Reference/html/ s3://cesium-website/cesium-unreal/ref-doc/ --cache-control "public, max-age=1800" --delete
+      - name: Deploy to cesium.com staging
+        if: ${{ github.ref_name == 'cesium.com-staging' }}
+        run: |
+          aws s3 sync Documentation/Reference/html/ s3://cesium-website/cesium-unreal/ref-doc-staging/ --cache-control "public, max-age=1800" --delete
