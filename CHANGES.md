@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v2.12.0 - 2025-01-02
 
 ##### Breaking Changes :mega:
 
@@ -15,6 +15,8 @@
 ##### Fixes :wrench:
 
 - Fixed a bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.43.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.11.0 - 2024-12-02
 
