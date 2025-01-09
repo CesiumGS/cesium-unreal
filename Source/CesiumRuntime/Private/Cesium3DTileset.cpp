@@ -385,6 +385,31 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   }
 }
 
+bool CompareMaps(
+    const TMap<FString, FString>& Lhs,
+    const TMap<FString, FString>& Rhs) {
+  if (Lhs.Num() != Rhs.Num()) {
+    return false;
+  }
+
+  for (auto& [Key, Value] : Lhs) {
+    const FString* RhsVal = Rhs.Find(Key);
+    if (!RhsVal || *RhsVal != Value) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void ACesium3DTileset::SetRequestHeaders(
+    const TMap<FString, FString>& InRequestHeaders) {
+  if (!CompareMaps(InRequestHeaders, this->RequestHeaders)) {
+    this->DestroyTileset();
+    this->RequestHeaders = RequestHeaders;
+  }
+}
+
 void ACesium3DTileset::SetUrl(const FString& InUrl) {
   if (InUrl != this->Url) {
     if (this->TilesetSource == ETilesetSource::FromUrl) {
@@ -1286,6 +1311,14 @@ void ACesium3DTileset::LoadTileset() {
       CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
 
   options.contentOptions.applyTextureTransform = false;
+
+  options.requestHeaders.reserve(this->RequestHeaders.Num());
+
+  for (auto& [Key, Value] : this->RequestHeaders) {
+    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
+        std::string(TCHAR_TO_UTF8(*Key)),
+        std::string(TCHAR_TO_UTF8(*Value))});
+  }
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromEllipsoid:

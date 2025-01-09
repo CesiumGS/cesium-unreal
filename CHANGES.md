@@ -1,5 +1,10 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+- Added `RequestHeaders` property to `Cesium3DTileset`, allowing per-tileset headers to be specified.
+
 ### v2.12.0 - 2025-01-02
 
 ##### Breaking Changes :mega:
