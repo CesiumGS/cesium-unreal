@@ -49,7 +49,7 @@ public:
    * - `{reverseY}` - The tile Y coordinate in the tiling scheme, where 0 is the
    * southernmost tile.
    * - `{reverseZ}` - The tile Z coordinate in the tiling scheme, where 0 is
-   * equivalent to `urlTemplateOptions.maximumLevel`.
+   * equivalent to `MaximumLevel`.
    * - `{westDegrees}` - The western edge of the tile in geodetic degrees.
    * - `{southDegrees}` - The southern edge of the tile in geodetic degrees.
    * - `{eastDegrees}` - The eastern edge of the tile in geodetic degrees.
