@@ -27,6 +27,10 @@
 #include <vector>
 #include "Cesium3DTileset.generated.h"
 
+#ifdef CESIUM_DEBUG_TILE_STATES
+#include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
+#endif
+
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 class ACesiumCameraManager;
@@ -1110,6 +1114,11 @@ public:
     return this->_pTileset.Get();
   }
 
+  const std::optional<FCesiumFeaturesMetadataDescription>&
+  getFeaturesMetadataDescription() const {
+    return this->_featuresMetadataDescription;
+  }
+
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -1239,6 +1248,10 @@ private:
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+
+#ifdef CESIUM_DEBUG_TILE_STATES
+  TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
+#endif
 
   std::optional<FCesiumFeaturesMetadataDescription>
       _featuresMetadataDescription;
