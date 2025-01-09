@@ -406,7 +406,7 @@ void ACesium3DTileset::SetRequestHeaders(
     const TMap<FString, FString>& InRequestHeaders) {
   if (!CompareMaps(InRequestHeaders, this->RequestHeaders)) {
     this->DestroyTileset();
-    this->RequestHeaders = RequestHeaders;
+    this->RequestHeaders = InRequestHeaders;
   }
 }
 
