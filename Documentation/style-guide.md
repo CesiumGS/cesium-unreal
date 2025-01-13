@@ -20,21 +20,19 @@ This guide will explicitly link to sections in the above resources when relevant
 - [Types](#types)
 - [File Organization](#file-organization)
 
-(TODO)
-
 ## Naming
 
 First, check out the [Naming Conventions](https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine#namingconventions) section in the Unreal Engine coding standard. Then, read below.
 
-### Prefixes
+### Unreal Prefixes
 
-- Follow Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
+You will have to Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
 
-- Although the names should be prefixed in the code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
+Although the names should be prefixed in code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
 
-### Public API
+### Public vs. Private
 
-Functions and fields in the public API should be written in `PascalCase`. However, use `lowerCamelCase` for any private members or anonymous namespace functions.
+Functions and fields in the public API should be written in `PascalCase`. However, prefer to use `lowerCamelCase` for any private members or anonymous namespace functions.
 
 ```c++
 USTRUCT()
@@ -49,7 +47,19 @@ struct CesiumStruct {
 }
 ```
 
-Additionally, preface every `struct` or `class` in the public API with the word "Cesium". This helps to clearly separate our API from other elements in Unreal, and allows users to more easily search for our components in Unreal.
+When any pointers are used in the public API—whether as public fields or as parameters for functions—omit the `p` prefix. For instance:
+
+```c++
+// Don't do this.
+UCesiumEllipsoid* pEllipsoid;
+void SetEllipsoid(UCesiumEllipsoid* pNewEllipsoid)
+
+// Do this.
+UCesiumEllipsoid* Ellipsoid;
+void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid)
+```
+
+Finally, every `struct` or `class` in the public API should be prefaced with the word "Cesium". This helps to clearly separate our API from other elements in Unreal, and allows users to more easily search for our components in Unreal.
 
 ```c++
 // Don't do this.
@@ -59,12 +69,13 @@ public AGeoreference : public AActor {...}
 public ACesiumGeoreference : public AActor {...}
 ```
 
-### Function and Variable Names
+Note that the above is not enforced for classes used in private implementations. For example, users won't ever interact directly with the `LoadModelResult` or `UnrealAssetAccessor` classes, so there is no need to add a "Cesium" prefix.
 
-Functions and variables should be given names that are descriptive yet succinct. This is important for public-facing API, but even private code should aspire to this standard.
+### Clarity
 
-When in doubt, err on the side of being overly explicit.
-Try to be precise about scope and meaning.
+Functions and variables should be assigned names that are descriptive yet succinct. This is important for public-facing API, but even private code should aspire to this standard.
+
+**When in doubt, err on the side of being overly explicit.** Aim to be precise about scope and meaning.
 
 For example, consider the context of multiple frames of reference in Cesium for Unreal. The plugin has to operate in multiple coordinate systems: Unreal's coordinate system, Earth-Centered Earth-Fixed coordinates, and cartographic coordinates (longitude, latitude, height). Whenever something deals with position or orientation, it is important to distinguish what space it is operating in.
 
@@ -107,19 +118,39 @@ For reference, here is what the counterpart for Unreal coordinate system might l
 void MoveToUnrealPosition(FVector UnrealPosition) {...}
 ```
 
-## Units
+Finally, in the same vein, avoid abbreviations unless they are commonly accepted. This improves readability, such that code is understandable to new developers from a first glance. Additionally, consider developers for whom English is not their first language; those arbitrary abbreviations can be even more confusing.
 
-Although Unreal uses centimeter units, Cesium for Unreal uses meters, which is standard across our runtimes. To avoid confusion, it is best to make remarks about the expected units of a function in its documentation. Be consistent with scale.
+In general, it is good practice for code to read close to plain English. It does not have to be *verbose* English, but it should be succinctly and sufficiently understandable from a glance.
 
-Let's use the function from the previous example. Unreal's coordinate system uses centimeters. We don't want to randomly change the scale.
+``` c++
+
+// You might know what this means from a glance, but it can be jarring for newcomers.
+static FQuat CalcRotAtLoc(FVector UELoc) {...}
+
+// Better!
+static FQuat CalculateRotationAtLocation(FVector UnrealLocation) {...}
+```
+
+### Units
+
+Ensure that units stay consistent across the API to avoid confusion as values are passed. In particular:
+
+- Although Unreal uses centimeter units, Cesium for Unreal uses meters, which is standard across our runtimes.
+- For cartographic positions, longitude and latitude are expressed in degrees. Height above the WGS84 ellipsoid is expressed in meters.
+
+It's encouraged to leave documentation about the expected units and/or frame of reference for a function and its parameters. This comment in `CesiumGeoreference.h` is a good example:
 
 ```c++
-// Confusing!
-
-/**
-* Moves the object to the given position in Unreal's coordinate system (in meters).
-*/
-void MoveToUnrealPosition(FVector UnrealPositionInMeters) {...}
+  /**
+   * Transforms a position in Unreal coordinates into longitude in degrees (x),
+   * latitude in degrees (y), and height above the ellipsoid in meters (z). The
+   * position should generally not be an Unreal _world_ position, but rather a
+   * position expressed in some parent Actor's reference frame as defined by its
+   * transform. This way, the chain of Unreal transforms places and orients the
+   * "globe" in the Unreal world.
+   */
+  FVector TransformUnrealPositionToLongitudeLatitudeHeight(
+      const FVector& UnrealPosition) const;
 ```
 
 ## Types
@@ -138,18 +169,6 @@ Generally, the above pointers are used whenever you instantiate something that i
 
 Unreal also provides `TUniquePtr` and `TSharedPtr` definitions, equivalent to their `std` counterparts. For consistency, Cesium for Unreal prefers using `TUniquePtr` and `TSharedPtr`. This is especially important when the type `T` is a `UObject`.
 
-When any pointers are used in the public API—whether as public fields or as parameters for functions—omit the `p` prefix. For instance:
-
-```c++
-// Don't do this.
-UCesiumEllipsoid* pEllipsoid;
-void SetEllipsoid(UCesiumEllipsoid* pNewEllipsoid)
-
-// Do this.
-UCesiumEllipsoid* Ellipsoid;
-void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid)
-```
-
 ### Math
 
 Unreal contains various vector and matrix classes that are functionally similar to the classes in `glm`, e.g., `FVector` for `glm::dvec3`, `FMatrix` for `glm::dmat4`.
@@ -163,7 +182,6 @@ This is especially recommended for matrix math. Previously, `FMatrix` made stron
 > The `FMatrix::operator*` composed matrices in the opposite of the normal order. If you wanted a matrix that transforms by `A` then by `B`, Unreal would want you to multiply `A * B`. You would otherwise multiply `B * A` in `glm`.
 >
 > (This may no longer be true, but it has ultimately proven safer to use `glm::dmat4` over Unreal's built-in matrix.)
-
 
 ## File Organization
 

@@ -2,7 +2,7 @@
 
 Cesium for Unreal aims to unlock geospatial capabilities in Unreal Engine, while also enabling developers to take advantage of in-engine features. As a result, people who use the plugin can often come with existing Unreal knowledge.
 
-In order to make Cesium's integration as seamless as possible, we aim to mirror the paradigms and APIs of the engine where we can.
+In order to make Cesium's integration as seamless as possible, we aim to mirror the paradigms and APIs of the engine where we can. This guide provides best practices for how we do that.
 
 ## Table of Contents
 
@@ -100,14 +100,28 @@ As a result, `BlueprintReadWrite` is rarely used for properties in Cesium for Un
 
 We have settled on the following standards for properties that require post-change logic:
 
-- Declare in the `private:` section of the class. This prevents the property from being get or set directly from outside the class in C++ (which is important, because there is no mechanism like `PostEditChangeProperty` or `BlueprintSetter` available in code).
-- Add `Meta = (AllowPrivateAccess)`.
-- Add `BlueprintGetter` and `BlueprintSetter` functions.
-- Overide the `PostEditChangeProperty` method to be notified of changes to the property in the Editor.
+1. Declare properties as `private` in the class. This prevents the property from being get or set directly from outside the class in C++ (which is important, because there is no mechanism like `PostEditChangeProperty` or `BlueprintSetter` available in code).
+2. Add `Meta = (AllowPrivateAccess)` to the `UPROPERTY`.
+3. Add `BlueprintGetter` and `BlueprintSetter` functions.
+4. Override the `PostEditChangeProperty` method on the class. This allows it to be notified of changes to the property in the Editor.
 
-Perhaps there is a rare-case property where no action is necessary after setting a property from C++ (and it's unlikely to be needed in the future). In this case, the property can be declared in the `public:` section. Such a property is not likely to need a `PostEditChangeProperty` or `BlueprintSetter` either.
+There may be a rare case where no action is necessary after setting a certain property from C++. In this case—and as long as this behavior is unlikely to change—the property can be declared in the `public:` section. Such a property is not likely to need `PostEditChangeProperty` or `BlueprintSetter` either.
 
 #### Details Panel
+
+Properties should be organized or modified in the Details panel such that they provide an intuitive user experience. There are many modifiers that facilitate this, also listed in the cheat sheet.
+
+In general, be mindful of how properties are organized, and in what order. By default, properties will appear in the order that they are listed in the C++ code. A good principle is to start with properties that are fundamental to the functionality, then cascade into more advanced settings.
+
+Properties should be organized into sensible categories, or as much as is reasonably possible, using the `Category` modifier. They should also be grouped together in C++ to reinforce this.
+
+```c++
+
+```
+
+Often times, a `UObject` will have various properties that apply depending on the state of other properties. In this case, the `Meta=EditCondition` modifier is should be used for visual clarity. The dependent properties should be listed below the one that controls whether they're active.
+
+Typically, such settings should depend on either a boolean setting or an enum setting. For instance, in `Cesium3DTileset`, the `Source` property affects whether the URL property can be edited. The `Enable Culling` flag
 
 ### Cheat Sheet
 
@@ -115,25 +129,89 @@ For convenience, here is a cheat sheet of some of the most relevant modifiers fo
 
 #### `UPROPERTY`
 
-| Name | How (and when) to use |
-| ---- | --------------------- |
-| `VisibleAnywhere` | Property is read-only in the Details panel. For editable properties, use `EditAnywhere`. Don't use this for variables that shouldn't be visible to the user (e.g., implementation details, internal state management). |
-| `EditAnywhere` | Property is editable in the Details panel. Use `VisibleAnywhere` for read-only variables. |
-| `BlueprintReadOnly` | Property is accessible in Blueprints but read-only. |
-| `BlueprintReadWrite` | Property is editable from Blueprints. Use when the "set" logic is simple enough that nothing additional must happen after the property is set. If additional logic is required, use `BlueprintSetter` instead. |
+| Name | What | When to Use |
+| ---- | ----- | --------------- |
+| `VisibleAnywhere` | Property is read-only in the Details panel. | Use for read-only variables. Don't use this for variables that shouldn't be visible to the user (e.g., implementation details, internal state management). |
+| `EditAnywhere` | Property is editable in the Details panel. | Use for properties that should be user-editable through the Editor UI. |
+| `BlueprintReadOnly` | Property is accessible in Blueprints but read-only. | Self-explanatory. | 
+| `BlueprintReadWrite` | Property is editable from Blueprints. | Use when the "set" logic is simple enough that nothing additional must happen after the property is set. If additional logic is required, use `BlueprintSetter` instead. |
+| `BlueprintGetter` | Property uses the specified function to get the value. | Use whenever you have to use `BlueprintSetter`. | 
+| `BlueprintSetter` | Property uses the specified function to set the value. | Use whenever you have to do additional work after setting a property, e.g., recomputing the object's internal state. |
 
-## Blueprints
+#### `UFUNCTION`
 
-Blueprints are a visual scripting option in Unreal Engine that many users use over C++ code. Thus, part of API design includes creating sensible Blueprints for less code-savvy users.
+| Name | What | When to Use |
+| ---- | ----- | --------------- |
+| `BlueprintPure` | Function will be executed in a Blueprint graph without affect the owning object in any way. | Use for static Blueprints functions. |
+| `meta = (ReturnDisplayName = "")` | Function output on the Blueprint node will be labeled with the specified name. | Use in general. |
 
-### Integrate with Existing Blueprints
+## Blueprints 
 
-Try to defer to Unreal Engine's naming schemes. For example, texture coordinates are referred to as "UV", so any parameters that represent texture coordinates should also be called UV.
+Blueprints are a visual scripting option in Unreal Engine that many users use over C++ code. Thus, part of the API design in Cesium for Unreal includes creating sensible Blueprints for less code-savvy users.
+
+### Copy Parameter Names
+
+Try to defer to Unreal Engine's naming schemes for existing Blueprint functions and parameters. For example, texture coordinates in Blueprints are often referred to as "UV". Cesium for Unreal tries to match this by naming its own texture coordinate parameters as "UV".
 
 ![](Images/matchUnrealNaming.png)
 
-## Materials
+## Deprecation and Backwards Compatibility
 
-## Deprecation
+Ideally, APIs should not change frequently so that users aren't left confused and frustrated as they upgrade versions. But changes do happen from time to time. Thankfully, there are several measures in Unreal Engine to help prevent user frustration from API changes.
 
-## Backwards Compatibility
+### Macros and Modifiers
+
+First, read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-symbols/) by Jonathan Hale that explains how to deprecate anything in Unreal Engine. This section expands briefly on some points, but most of it is already covered.
+
+- Use the `DeprecationMessage` should succinctly inform the user of the deprecation and redirect them to its replacement, if applicable.
+
+```c++
+  UFUNCTION(
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Get the associated property texture indices from CesiumPrimitiveMetadata instead."))
+  static const TArray<FString>
+  GetFeatureTextureNames(UPARAM(ref)
+                             const FCesiumMetadataPrimitive& MetadataPrimitive);
+```
+
+- If a `struct` or `class` is deprecated, prefer to use the `UE_DEPRECATED` macro in a forward declaration of the class before it is actually defined. For example:
+
+```c++
+// Forward declare the class with the UE_DEPRECATED macro.
+struct UE_DEPRECATED(
+    5.0,
+    "FCesiumMetadataPrimitive is deprecated. Instead, use FCesiumPrimitiveFeatures and FCesiumPrimitiveMetadata to retrieve feature IDs and metadata from a glTF primitive.")
+    FCesiumMetadataPrimitive;
+
+// Actual definition below.
+USTRUCT(BlueprintType)
+struct CESIUMRUNTIME_API FCesiumMetadataPrimitive { ... }
+```
+
+- For backwards compatibility, sometimes you'll need to keep references to the deprecated classes or functions in C++ code. If this is the case, then be sure to wrap the relevant lines in `PRAGMA_DISABLE_DEPRECATION_WARNINGS` and `PRAGMA_ENABLE_DEPRECATION_WARNINGS`. This will reduce the spam in the Unreal logs that can otherwise occur during the build process.
+
+```c++
+struct LoadPrimitiveResult { 
+  // List of properties here...
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  // For backwards compatibility with CesiumEncodedMetadataComponent.
+  FCesiumMetadataPrimitive Metadata_DEPRECATED{};
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  // Other properties here...
+};
+```
+
+### Core Redirects
+
+> [Official Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/core-redirects-in-unreal-engine).
+
+Whether you're renaming a class, function, property, or even an enum, it is possible to link between the old and new names to preserve existing Blueprint scripts. This is done using the `[CoreRedirects]` item in `Config/Engine.ini`.
+
+One note: ensure that any entries are on the same line, otherwise they will not be parsed correctly.
+
+### Versioning
+
