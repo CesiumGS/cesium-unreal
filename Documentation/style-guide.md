@@ -18,50 +18,22 @@ This guide will explicitly link to sections in the above resources when relevant
 
 - [Naming](#naming)
 - [Types](#types)
+- [Documentation](#documentation)
 - [File Organization](#file-organization)
 
 ## Naming
 
 First, check out the [Naming Conventions](https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine#namingconventions) section in the Unreal Engine coding standard. Then, read below.
 
-### Unreal Prefixes
+### General
 
-You will have to Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
+- You will have to Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
 
-Although the names should be prefixed in code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
+- Although the names should be prefixed in code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
 
-### Public vs. Private
+- Every `struct` or `class` in the public API should be prefaced with the word "Cesium". This helps to clearly separate our API from other elements in Unreal, and allows users to more easily search for our components in Unreal.
 
-Functions and fields in the public API should be written in `PascalCase`. However, prefer to use `lowerCamelCase` for any private members or anonymous namespace functions.
-
-```c++
-USTRUCT()
-struct CesiumStruct {
-    public:
-    float PublicField;
-    void DoSomething(float Input);
-
-    private:
-    float _privateField;
-    void doSomethingPrivate(float input);
-}
-```
-
-When any pointers are used in the public API—whether as public fields or as parameters for functions—omit the `p` prefix. For instance:
-
-```c++
-// Don't do this.
-UCesiumEllipsoid* pEllipsoid;
-void SetEllipsoid(UCesiumEllipsoid* pNewEllipsoid)
-
-// Do this.
-UCesiumEllipsoid* Ellipsoid;
-void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid)
-```
-
-Finally, every `struct` or `class` in the public API should be prefaced with the word "Cesium". This helps to clearly separate our API from other elements in Unreal, and allows users to more easily search for our components in Unreal.
-
-```c++
+```cpp
 // Don't do this.
 public AGeoreference : public AActor {...}
 
@@ -69,74 +41,96 @@ public AGeoreference : public AActor {...}
 public ACesiumGeoreference : public AActor {...}
 ```
 
-Note that the above is not enforced for classes used in private implementations. For example, users won't ever interact directly with the `LoadModelResult` or `UnrealAssetAccessor` classes, so there is no need to add a "Cesium" prefix.
+> Note that the above is not enforced for classes that are used in private implementations. For example, users won't ever interact directly with `LoadModelResult` or `UnrealAssetAccessor`, so these do not include a "Cesium" prefix.
+
+### Public vs. Private Style
+
+Functions and fields in the public API should be written in `PascalCase`. However, continue to use `lowerCamelCase` for any private members or anonymous namespace functions.
+
+```cpp
+USTRUCT()
+struct CesiumStruct {
+    public:
+    float PublicField;
+    void DoSomethingPublic(float Input);
+
+    private:
+    float _privateField;
+    void doSomethingPrivate(float input);
+}
+```
+
+For pointer variables that are mentioned in the public API, e.g., public fields or function parameters, omit the `p` prefix. However, continue to use `p` to prefix pointers in private code.
+
+```cpp
+UCLASS()
+class CesiumClass {
+    public:
+    UCesiumEllipsoid* Ellipsoid;
+    void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid)
+
+    private:
+    ACesium3DTileset* _pTilesetActor;
+    void setTileset(ACesium3DTileset* pNewTileset);
+}
+```
 
 ### Clarity
 
-Functions and variables should be assigned names that are descriptive yet succinct. This is important for public-facing API, but even private code should aspire to this standard.
+Aim to assign names to variables, functions, etc. that are succinctly descriptive. This is crucial for creating an intuitive user experience with the public API, but even private code should aspire to this standard.
 
-**When in doubt, err on the side of being overly explicit.** Aim to be precise about scope and meaning.
+**When in doubt, err on the side of being overly explicit.** Try to be precise about scope and meaning.
 
 For example, consider the context of multiple frames of reference in Cesium for Unreal. The plugin has to operate in multiple coordinate systems: Unreal's coordinate system, Earth-Centered Earth-Fixed coordinates, and cartographic coordinates (longitude, latitude, height). Whenever something deals with position or orientation, it is important to distinguish what space it is operating in.
 
-For instance, this intentionally vague example leaves a lot to be desired. From a glance, it is not clear what the intended frame-of-reference is. The function body might tell us otherwise, but the declaration itself could afford more clarity.
+This intentionally vague example leaves a lot to be desired:
 
 ```c++
-void MoveToLocation(FVector Location) {...}
+FMatrix ComputeTransform(FVector Location) {...}
 ```
 
-Adding documentation will definitely help here, and in some cases that will be enough to dispel ambiguity.
+From a glance, it is not clear what the intended frame-of-reference is. (Maybe you assumed it was in Unreal space due to "`Location`", but what is `Transform` for?) The function body might give us a hint, but the declaration could use more clarity. Adding documentation will definitely help here, and in some cases that is enough to avoid ambiguity.
 
 ```c++
 /**
-* Moves the object to the given cartographic position, where
-* - x = longitude
-* - y = latitude
-* - z = height above the WGS84 ellipsoid in meters.
-*/
-void MoveToLocation(FVector Location) {...}
+ * Computes the matrix that transforms from an East-South-Up frame centered at
+ * a given location to the Unreal frame.
+ * 
+ * [Detailed explanation of East-South-Up.]
+ */
+FMatrix ComputeTransform(FVector Location) {...}
 ```
 
 However, we can take this even a step further. Let's rename the function and its parameter so that the intent is very obvious from the start.
 
 ```c++
 /**
-* Moves the object to the given cartographic position, where
-* - x = longitude
-* - y = latitude
-* - z = height above the WGS84 ellipsoid in meters.
-*/
-void MoveToLongitudeLatitudeHeight(FVector LongitudeLatitudeHeight) {...}
+ * Computes the matrix that transforms from an East-South-Up frame centered at
+ * a given location to the Unreal frame.
+ * 
+ * [Detailed explanation of East-South-Up.]
+ */
+FMatrix ComputeEastSouthUpToUnrealTransformation(FVector UnrealLocation) {...}
 ```
 
-For reference, here is what the counterpart for Unreal coordinate system might look like.
-
-```c++
-/**
-* Moves the object to the given position in Unreal's coordinate system.
-*/
-void MoveToUnrealPosition(FVector UnrealPosition) {...}
-```
-
-Finally, in the same vein, avoid abbreviations unless they are commonly accepted. This improves readability, such that code is understandable to new developers from a first glance. Additionally, consider developers for whom English is not their first language; those arbitrary abbreviations can be even more confusing.
-
-In general, it is good practice for code to read close to plain English. It does not have to be *verbose* English, but it should be succinctly and sufficiently understandable from a glance.
+In the same vein, avoid abbreviations unless they are commonly accepted or used across the codebase. This improves readability such that code is understandable to new developers from a glance. (Additionally, consider developers for whom English is not their first language; the arbitrary abbreviations can be even more confusing.)
 
 ``` c++
+// Not great.
+static void CompBoundingRect(FVector BL, FVector TR) {...}
 
-// You might know what this means from a glance, but it can be jarring for newcomers.
-static FQuat CalcRotAtLoc(FVector UELoc) {...}
-
-// Better!
-static FQuat CalculateRotationAtLocation(FVector UnrealLocation) {...}
+// Better.
+static void ComputeBoundingRectangle(FVector BottomLeft, FVector TopRight) {...}
 ```
+
+We also write out "Earth-Centered, Earth-Fixed" and "Longitude, Latitude, Height" in the plugin. Though this makes for longer names, it is helpful for users who are new to geospatial and aren't familiar with abbreviations like ECEF. However, we still use WGS84 because the full name is cumbersome, and less helpful when spelled out.
 
 ### Units
 
-Ensure that units stay consistent across the API to avoid confusion as values are passed. In particular:
+Units should stay consistent across the API to avoid confusion as values are passed. In particular:
 
-- Although Unreal uses centimeter units, Cesium for Unreal uses meters, which is standard across our runtimes.
-- For cartographic positions, longitude and latitude are expressed in degrees. Height above the WGS84 ellipsoid is expressed in meters.
+- Unreal uses centimeter units, while Cesium for Unreal uses meters. Meters are the standard units across our runtimes (like CesiumJS).
+- Longitude and latitude are expressed in degrees, while height above the WGS84 ellipsoid is expressed in meters.
 
 It's encouraged to leave documentation about the expected units and/or frame of reference for a function and its parameters. This comment in `CesiumGeoreference.h` is a good example:
 
@@ -182,6 +176,12 @@ This is especially recommended for matrix math. Previously, `FMatrix` made stron
 > The `FMatrix::operator*` composed matrices in the opposite of the normal order. If you wanted a matrix that transforms by `A` then by `B`, Unreal would want you to multiply `A * B`. You would otherwise multiply `B * A` in `glm`.
 >
 > (This may no longer be true, but it has ultimately proven safer to use `glm::dmat4` over Unreal's built-in matrix.)
+
+## Documentation
+
+Documentation is generated by Doxygen before being published [online](https://cesium.com/learn/cesium-unreal/ref-doc). Therefore, any public API should be documented with Doxygen-compatible comments that follow the standards put forth by [Cesium Native](https://github.com/CesiumGS/cesium-native/blob/main/doc/topics/style-guide.md#-documentation).
+
+**EXCEPTION**: avoid the use of `@copydoc` in Cesium for Unreal. This is because Unreal Engine uses the comments to generate tooltips for object properties and Blueprints functions. When the user hovers over such items, the tooltip will include the comment text verbatim. While this isn't a problem for most comments, for `@copydoc` the documentation is essentially missing for that item. Manually copy the documentation.
 
 ## File Organization
 

@@ -226,11 +226,9 @@ Group them together:
   bool PreloadAncestors;
 ```
 
-Additionally, keep in mind the order in which properties will appear. A good principle is to start with properties that are fundamental to the `UObject`. They can then cascade into more advanced settings further down the Details panel.
+Additionally, keep in mind the order in which properties will appear. A good principle is to start with properties that are fundamental to the `UObject`. They can then cascade into more advanced settings further down the Details panel. For instance, this is the order of properties as they appear in `CesiumGeoreference.h`:
 
 ```c++
-  // In CesiumGeoreference.h:
-
   // This determines whether latitude / longitude / height are even used, so it appears first.
   UPROPERTY()
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
@@ -239,10 +237,10 @@ Additionally, keep in mind the order in which properties will appear. A good pri
   double OriginLatitude;
 
   UPROPERTY()
-  double OriginPlacement;
+  double OriginLongitude;
   
   UPROPERTY()
-  double OriginPlacement;
+  double OriginHeight;
 
   // Users are less likely to modify the scale of the georeference, so it appears near the end.
   UPROPERTY()
