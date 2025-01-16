@@ -30,9 +30,10 @@ If a related issue does not exist, then you can submit a new one. Please include
 - Are there any error messages in the console? Any stack traces or logs? Please include them if so. Logs are stored as `Saved\Logs\cesiumunreal.log` in your project directory.
 - Share a screenshot, video or animated `.gif` if appropriate. Screenshots are particularly useful for exceptions and rendering artifacts.
 - Link to threads on the [Cesium community forum](https://community.cesium.com/) if this was discussed on there.
+- Include step-by-step instructions for us to reproduce the issue from scratch.
 - Any ideas for how to fix or workaround the issue. Also mention if you are willing to help fix it. If so, the Cesium team can often provide guidance and the issue may get fixed more quickly with your help.
 
-It is difficult for us to debug everyone's individual projects. It is better for us to receive the reproduction steps. nreal project (and data or IDs of Cesium ion assets that have been used) where the issue can be reproduced.
+Note: it is difficult for us to debug everyone's individual projects. We can triage issues faster when we receive steps to reproduce the issue, starting from either the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) or from a blank project. We will only request your Unreal project and/or data as a last resort.
 
 # Getting Started Contributing {#getting-started-contributing}
 
