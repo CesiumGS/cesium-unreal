@@ -1315,7 +1315,9 @@ void ACesium3DTileset::LoadTileset() {
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
   for (const auto& [Key, Value] : this->RequestHeaders) {
-    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{TCHAR_TO_UTF8(*Key), TCHAR_TO_UTF8(*Value)});
+    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
   }
 
   switch (this->TilesetSource) {
