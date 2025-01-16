@@ -37,7 +37,7 @@ public:
    * @brief The URL containing template parameters that will be substituted when
    * loading tiles.
    *
-   * The following template parameters are supported:
+   * The following template parameters are supported in `url`:
    * - `{x}` - The tile X coordinate in the tiling scheme, where 0 is the
    * westernmost tile.
    * - `{y}` - The tile Y coordinate in the tiling scheme, where 0 is the
@@ -49,19 +49,19 @@ public:
    * - `{reverseY}` - The tile Y coordinate in the tiling scheme, where 0 is the
    * southernmost tile.
    * - `{reverseZ}` - The tile Z coordinate in the tiling scheme, where 0 is
-   * equivalent to `MaximumLevel`.
+   * equivalent to `urlTemplateOptions.maximumLevel`.
    * - `{westDegrees}` - The western edge of the tile in geodetic degrees.
    * - `{southDegrees}` - The southern edge of the tile in geodetic degrees.
    * - `{eastDegrees}` - The eastern edge of the tile in geodetic degrees.
    * - `{northDegrees}` - The northern edge of the tile in geodetic degrees.
-   * - `{westProjected}` - The western edge of the tile in projected coordinates
-   * of the tiling scheme.
-   * - `{southProjected}` - The southern edge of the tile in projected
-   * coordinates of the tiling scheme.
-   * - `{eastProjected}` - The eastern edge of the tile in projected coordinates
-   * of the tiling scheme.
-   * - `{northProjected}` - The northern edge of the tile in projected
-   * coordinates of the tiling scheme.
+   * - `{minimumX}` - The minimum X coordinate of the tile's projected
+   * coordinates.
+   * - `{minimumY}` - The minimum Y coordinate of the tile's projected
+   * coordinates.
+   * - `{maximumX}` - The maximum X coordinate of the tile's projected
+   * coordinates.
+   * - `{maximumY}` - The maximum Y coordinate of the tile's projected
+   * coordinates.
    * - `{width}` - The width of each tile in pixels.
    * - `{height}` - The height of each tile in pixels.
    */
