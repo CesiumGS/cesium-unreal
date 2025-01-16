@@ -45,11 +45,23 @@ The `UPROPERTY` macro identifies such properties. This macro should be put above
 
 `UFUNCTION` is the equivalent of `UPROPERTY` for C++ functions. By using this macro, a function can be made accessible to Blueprints, or even as a button in the Editor interface.
 
+### Structs
+
+> [Official Unreal Engine Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/structs-in-unreal-engine)
+
+`USTRUCT` is the macro to expose `struct`s to Unreal Engine. They are fairly straightforward, but a few elements of note are:
+
+- `USTRUCT`s don't inherit from `UObject`, so they are not managed by the Garbage Collection system.
+- `USTRUCT`s can contain `UPROPERTY`s, and `UObject`s can also have `USTRUCT` type properties.
+- `USTRUCT`s can be used in Blueprints depending on their specifiers.
+   - `USTRUCT(BlueprintType)` enables the `Make` node (to create the struct).
+   - For properties to appear in the `Break` node (for retrieval), they must have either `BlueprintReadOnly` or `BlueprintReadWrite` specifiers.
+
 #### Enums
 
 `UENUM` is used for any enum classes that Unreal should use in a `UObject` context, e.g., as a type for `UPROPERTY` or Blueprints. `UENUM` should be used on an `enum class` of `uint8`; it typically does not work on pure `enum`s.
 
-```c++
+```cpp
 UENUM()
 enum class EMyEnum : uint8
 {
@@ -63,7 +75,7 @@ Many `UObject` macros take arguments that influence their scope and behavior. Th
 
 For example, check out the `MaximumScreenSpaceError` property on `ACesium3DTileset`:
 
-```c++
+```cpp
   UPROPERTY(
       EditAnywhere,
       BlueprintGetter = GetMaximumScreenSpaceError,
@@ -75,7 +87,7 @@ For example, check out the `MaximumScreenSpaceError` property on `ACesium3DTiles
 
 - The `EditAnywhere` specifier allows the property to show up in the Details panel of the Unreal Editor. The user can thus modify the value directly.
 - The `BlueprintGetter` and `BlueprintSetter` define specific functions for getting and setting the value in Blueprints (see [UFunctions](#ufunctions)).
-- The `Category` indicates how the property should be organized in the Details panel. It appears under the "Level of Detail" category, which itself is under a larger "Cesium" category.
+- The `Category` indicates how the property should be organized in the Details panel. It appears under the "Level of Detail" category, which itself is nested in the "Cesium" category.
 - Finally, `meta` refers to additional metadata that can augment how the property functions or appears. Here, `ClampMin` prevents it from being set to an invalid value.
 
 The official documentation for `UPROPERTY` explains the fundamentals, but it is not comprehensive. This [masterlist](https://benui.ca/unreal/uproperty/) of `UPROPERTY` specifiers by ben ui provides a more extensive look into what's possible. 
@@ -83,7 +95,7 @@ The official documentation for `UPROPERTY` explains the fundamentals, but it is 
 The `UFUNCTION` macro also takes multiple arguments to influence its behavior. 
 For instance,
 
-```c++
+```cpp
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
@@ -99,18 +111,6 @@ For instance,
 `UFUNCTION` must be used for any functions that are used for `BlueprintGetter` or `BlueprintSetter`. For `BlueprintSetter`, the function should be `public` and serve as the mechanism for setting the property from C++. A corresponding `BlueprintGetter` is usually needed for use by C++, even though it is often not needed for Blueprints.
 
 Again, the official documentation for `UFUNCTION` explains the fundamentals, but this [masterlist](https://benui.ca/unreal/uproperty/) of `UFUNCTION` specifiers by ben ui is more extensive. 
-
-### Structs
-
-> [Official Unreal Engine Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/structs-in-unreal-engine)
-
-`USTRUCT` is the macro to expose `struct`s to Unreal Engine. They are fairly straightforward, but a few elements of note are:
-
-- `USTRUCT`s don't inherit from `UObject`, so they are not managed by the Garbage Collection system.
-- `USTRUCT`s can contain `UPROPERTY`s, and `UObject`s can also have `USTRUCT` type properties.
-- `USTRUCT`s can be used in Blueprints depending on their specifiers.
-   - `USTRUCT(BlueprintType)` enables the `Make` node (to create the struct).
-   - For properties to appear in the `Break` node (for retrieval), they must have either `BlueprintReadOnly` or `BlueprintReadWrite` specifiers.
 
 ### Best Practices
 
@@ -144,7 +144,7 @@ In Cesium for Unreal, many `UObject`s have properties that depend on each other 
 
 You can use the `meta = (EditCondition = "")` specifier to implement these conditions. Make sure that conditional properties are listed _below_ the properties that they depend on, both in C++ code and in the Details panel. This reinforces that logic and results in visual clarity.
 
-```c++
+```cpp
   UPROPERTY()
   bool EnableRandomness;
 
@@ -155,7 +155,7 @@ You can use the `meta = (EditCondition = "")` specifier to implement these condi
 
 The `EditCondition` is able to parse complex boolean logic, but it currently cannot reference functions.
 
-```c++
+```cpp
 public:
   UPROPERTY()
   EDataType Type;
@@ -186,7 +186,7 @@ Properties should be organized or modified in the Details panel such that they p
 
 Aside from implementing clear [Conditional Properties](#conditional-properties), be diligent about organizing properties in reasonable groups using the `Category` specifier. Most classes, properties, and functions in Cesium for Unreal are put under a broad `Cesium` category. But there are typically subcategories that should be accounted for, too. This can be achieved by using the `|` delimiter in the category name.
 
-```c++
+```cpp
 // Falls under the general "Cesium" category.
  UFUNCTION(Category = "Cesium")
  void RefreshTileset();
@@ -202,7 +202,7 @@ This categorization will apply to Blueprints as well. Use categories to make the
 
 Properties under the same category should also be adjacent in C++ to reinforce the logical grouping. For example, don't interleave categories like this in C++ code:
 
-```c++
+```cpp
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
   bool SuspendUpdate;
 
@@ -215,7 +215,7 @@ Properties under the same category should also be adjacent in C++ to reinforce t
 
 Group them together:
 
-```c++
+```cpp
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
   bool SuspendUpdate;
 
@@ -226,9 +226,9 @@ Group them together:
   bool PreloadAncestors;
 ```
 
-Additionally, keep in mind the order in which properties will appear. A good principle is to start with properties that are fundamental to the `UObject`. They can then cascade into more advanced settings further down the Details panel. For instance, this is the order of properties as they appear in `CesiumGeoreference.h`:
+Additionally, keep in mind the order in which properties will appear. A good principle is to start with properties that are more simple or fundamental to the `UObject`. They can cascade into the more advanced settings further down the Details panel. For instance, this is the order of properties as they appear in `CesiumGeoreference.h`:
 
-```c++
+```cpp
   // This determines whether latitude / longitude / height are even used, so it appears first.
   UPROPERTY()
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
@@ -265,8 +265,8 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 | ---- | ----- | --------------- |
 | `BlueprintReadOnly` | Property is accessible in Blueprints but read-only. | Self-explanatory. | 
 | `BlueprintReadWrite` | Property is editable from Blueprints. | When the "set" logic is simple enough that nothing additional must happen after the property is set. If additional logic is required, use `BlueprintSetter` instead. |
-| `BlueprintGetter` | Property uses the specified function to get the value. | Whenever you have to use `BlueprintSetter`. | 
-| `BlueprintSetter` | Property uses the specified function to set the value. | Whenever you have to do additional work after setting a property, e.g., recomputing the object's internal state. |
+| `BlueprintGetter=[FunctionName]` | Property uses the specified function to get the value. | Whenever you have to use `BlueprintSetter`. | 
+| `BlueprintSetter=[FunctionName]` | Property uses the specified function to set the value. | Whenever you have to do additional work after setting a property, e.g., recomputing the object's internal state. |
 | `BlueprintAssignable` | For delegate or event properties, allows the property to be assigned in Blueprints. | Self-explanatory. |
 
 ##### `UFUNCTION`
@@ -274,9 +274,11 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 | Name | What | When to Use |
 | ---- | ----- | --------------- |
 | `BlueprintCallable` | Function can be executed in a Blueprint or Level Blueprint graph. | For functions that depend on a sequence of node execution. For example, `UCesiumEllipsoid::Create` requires that the ellipsoid be created before something is done on it.<br><br>`BlueprintCallable` results in an "execution pin" to indicate what happens after the Blueprint moves on. For `const` functions, no execution pin will be generated, similar to `BlueprintPure`. |
-| `BlueprintPure` | Function can be executed in a Blueprint or Level Blueprint graph without an execution pin. | For functions whose execution does not require explicit sequencing logic. For example, `UCesiumEllipsoid::ScaleToGeodeticSurface` will implicitly execute before its value is used, so it does not have to be connected in an explicit execution sequence. |
-| `BlueprintNativeEvent` | For functions that are designed to be overridden by a Blueprint, this indicates that there is a default native implementation. The implementation function must be named `[OriginalFunctionName]_Implementation`. | For achieving behavior in Blueprints similar to virtual functions. In reality, not used that often. |
-| `meta = (ReturnDisplayName = "")` | Function output on the Blueprint node will be labeled with the specified name. | Good to use in general for visual clarity. |
+| `BlueprintPure` | Function can be executed in a Blueprint or Level Blueprint graph without an execution pin. | For functions whose execution does not require explicit sequencing logic, and for which it will not affect the owning object. For example, `UCesiumEllipsoid::ScaleToGeodeticSurface` will implicitly execute before its value is used, and it does not change the `UCesiumEllipsoid` itself, so it can be a "pure" function. |
+| `BlueprintGetter` | Function can be used as a `BlueprintGetter` for a `UPROPERTY`. | Required to work with `BlueprintGetter` in `UPROPERTY`. Unreal complains if this is not present. |
+| `BlueprintSetter` | Function can be used as a `BlueprintSetter` for a `UPROPERTY`. | Required to work with `BlueprintSetter` in `UPROPERTY`. Unreal complains if this is not present. |
+| `BlueprintNativeEvent` | For functions that are designed to be overridden by a Blueprint, this indicates that there is a default native implementation. The implementation function must be named `[OriginalFunctionName]_Implementation`. | For achieving behavior in Blueprints similar to virtual functions. Not used often by the plugin. |
+| `meta = (ReturnDisplayName = "")` | Function output on the Blueprint node will be labeled with the specified name. | Good in general for visual clarity. |
 
 #### Details Panel
 
@@ -294,15 +296,14 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 | `meta = (ClampMin = 0)` | Property is clamped to the minimum value or higher when edited in the Details panel. | To avoid invalid numeric values, e.g., an `OriginLatitude` below -90 degrees. |
 | `meta = (ClampMax = 0)` | Property is clamped to the maximum value or lower when edited in the Details panel. | To avoid invalid numeric values, e.g., an `OriginLatitude` above 90 degrees. |
 | `meta = (ShowOnlyInnerProperties)` | For `struct` properties, display their properties without nesting them in an expandable dropdown. | Use sparingly. This can help reduce visual clutter, e.g., to remove a level from multiple nested dropdowns. However, don't use this when the `struct`'s name is important for clarity. |
-| `meta = (ValidEnumValues="A, B")` | Property is restricted to the enum values listed in the string. | Useful for limiting which values are acceptable for property. Avoids having to duplicate enum values or handling special cases. |
-| `meta = (InvalidEnumValues="A, B")` | Property is disallowed from being the enum values listed in the string. | When writing the above specifier is too tedious. |
+| `meta = (ValidEnumValues="A, B")` | Property is restricted to the enum values listed in the string. | Useful for limiting which values are acceptable for property. Avoids having to create duplicate enums or handle special cases. |
+| `meta = (InvalidEnumValues="A, B")` | Property is disallowed from being the enum values listed in the string. | When using the above is too tedious. |
 
 ##### `UFUNCTION`
 
 | Name | What | When to Use |
 | ---- | ----- | --------------- |
 | `CallInEditor` | Function can be executed using a button in the Details panel. | Any helpful in-editor functionality that a user can easily access, e.g., `RefreshTileset`. Note that the function must have _no parameters_ and _no return value_. |
-|
 
 #### Miscellaneous
 
@@ -310,7 +311,7 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 
 | Name | What | When to Use |
 | ---- | ----- | --------------- |
-| `Transient` | Property is editable in the Details panel. | For properties that should be user-editable through the Editor UI. |
+| `Transient` | Property is not serialized when the `UObject` is saved. | For anything that shouldn't be saved, e.g., temporary references to objects at runtime. |
 | `meta = (AllowPrivateAccess)` | Property that is `private` in C++ can be accessed in Blueprints. | Use in accordance with the practices under [Change Detection](#change-detection). |
 | `meta = (DeprecatedProperty) ` | Property is marked as deprecated. | See [Deprecation and Backwards Compatibility](#deprecation-and-backwards-compatibility). |
 
@@ -322,21 +323,41 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 
 ## Blueprints 
 
-Blueprints are a visual scripting option in Unreal Engine that many users use over C++ code. Thus, part of the API design in Cesium for Unreal includes creating sensible Blueprints for less code-savvy users.
+Blueprints are a visual scripting option in Unreal Engine that useres may use over C++ code. Part of the API design in Cesium for Unreal therefore includes creating sensible Blueprints for less code-savvy users.
 
-Try to defer to Unreal Engine's naming schemes for existing Blueprint functions and parameters. For example, texture coordinates in Blueprints are often referred to as "UV". Cesium for Unreal tries to match this by naming its own texture coordinate parameters as "UV".
+First, defer to Unreal Engine's naming schemes for existing Blueprint functions and parameters. For example, texture coordinates in Blueprints are often referred to as "UV". Cesium for Unreal tries to match this by naming its own texture coordinate parameters as "UV".
 
 ![](Images/matchUnrealNaming.png)
 
-Ideally, the language between our Blueprints and those of Unreal Engine should be well-integrated. Users should not be confused translating the same concepts between Blueprints sets.
+Ideally, the language between our Blueprints and those of Unreal Engine should be well integrated, and users should not feel like they have to "translate" ideas between different Blueprints.
+
+Additionally, parameters should be listed in order of from most to least important, or from most to least essential. This means that when you write the function in C++, the first parameters should be the most fundamental or necessary ones. The more advanced parameters can come after. For example:
+
+```cpp
+TMap<FString, FCesiumMetadataValue> GetPropertyTableValuesFromHit(
+    const FHitResult& Hit,
+    int64 FeatureIDSetIndex = 0);
+```
+
+This function's most important input is the `Hit`, so it is litsed first. `FeatureIDSetIndex` is an advanced parameter that users are less likely to have to use. The order here translates to the Blueprint, since `Hit` appears at the top:
+
+<img src="Images/getPropertyTableValuesFromHit.png" width="400px"/>
 
 ## Deprecation and Backwards Compatibility
 
-Sometimes API changes happen. Thankfully, in Unreal Engine there are several measures to help users transition and prevent frustration such changes.
+Sometimes API changes can result in breaking or unexpected behavior between versions. To avoid user frustration, we implement several measures to help users upgrade to new versions.
 
-### Macros and Specifiers
+### Core Redirects
 
-First, read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-symbols/) by Jonathan Hale that explains how to deprecate anything in Unreal Engine. This section expands briefly on some points, but most of it is already covered.
+> [Official Unreal Engine Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/core-redirects-in-unreal-engine)
+
+If you end up renaming a class, function, property, or even an enum, it is possible to link between the old and new names to preserve existing Blueprint scripts using `[CoreRedirects]`. These configurations can be found in `Config/Engine.ini`.
+
+The official documentation includes examples for every kind of redirect, but there are plenty of previous cases in Cesium for Unreal. Note that each redirect must take up one line; adding line breaks will prevent it from being parsed correctly.
+
+### Deprecation Specifiers 
+
+Read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-symbols/) by Jonathan Hale that explains how to deprecate anything in Unreal Engine. This section expands briefly on some points, but most of it is already covered.
 
 - Use the `DeprecationMessage` should succinctly inform the user of the deprecation and redirect them to its replacement, if applicable.
 
@@ -380,14 +401,61 @@ struct LoadPrimitiveResult {
 };
 ```
 
-### Core Redirects
+### Custom Versions
 
-> [Official Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/core-redirects-in-unreal-engine).
+Sometimes a property on a `UObject` is deprecated, or replaced by an alternative solution. However, it may have been set by the user with some value that should successfully translate to the new implementation. This can be resolved by creating "custom versions" of the plugin that are specially handled at load time.
 
-Whether you're renaming a class, function, property, or even an enum, it is possible to link between the old and new names to preserve existing Blueprint scripts. This is done using the `[CoreRedirects]` item in `Config/Engine.ini`.
+Custom versions boil down to an `enum` called `Versions` that captures the current state of the plugin. `Versions` is stored in `CesiumCustomVersion.h` and can be expanded in the future. When objects are loaded from serialization, their properties can be specially handled if saved under a previous version.
 
-One note: ensure that any entries are on the same line, otherwise they will not be parsed correctly.
+We'll walk through an existing code example below using version `WebMapTileServiceProjectionAsEnum`. In this version, a boolean property on `UCesiumWebMapTileServiceRasterOverlay` was replaced with an enum.
 
-### Versioning
+First, deprecate the old property by following the guide linked in [Deprecation Specifiers](#deprecation-specifiers). Use the [Core Redirects](#core-redirects) as needed to redirect properties to their `_DEPRECATED` counterparts.
 
-`CesiumCustomVersion.h`
+Then, create a new version in the `Versions` enum. The enum value should:
+  - Have a useful name that briefly summarizes the nature of the change.
+  - Have a comment with further explanation.
+  - Appear between the last custom version and `VersionPlusOne`.
+
+```cpp
+enum Versions {
+    // Other versions omitted.
+    // [...]
+
+    // Replaced the UseWebMercatorProjection property in
+    // CesiumWebMapTileServiceOverlay with the enum Projection property.
+    WebMapTileServiceProjectionAsEnum = 8,
+
+    VersionPlusOne,
+    LatestVersion = VersionPlusOne - 1
+}
+```
+
+After that, add the `virtual` `Serialize` function to the target class (if it does not yet exist).
+
+```cpp
+class UCesiumWebMapTileServiceRasterOverlay {
+  protected:
+    virtual void Serialize(FArchive& Ar) override;
+}
+```
+
+In `Serialize`, you can retrieve the version associated with the `UObject` and implement compatibility measures. Here, the deprecated value of `UseWebMercatorProjection` (which has been redirected by `[CoreRedirects]`) is used to set the new property as needed.
+
+```cpp
+void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+  const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::WebMapTileServiceProjectionAsEnum) {
+    // In previous versions, the projection of the overlay was controlled by
+    // boolean, rather than being explicitly specified by an enum.
+    this->Projection =
+        this->UseWebMercatorProjection_DEPRECATED
+            ? ECesiumWebMapTileServiceRasterOverlayProjection::WebMercator
+            : ECesiumWebMapTileServiceRasterOverlayProjection::Geographic;
+  }
+}
+```
