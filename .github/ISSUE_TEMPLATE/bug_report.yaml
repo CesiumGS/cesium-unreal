@@ -7,9 +7,9 @@ body:
       value: |
         Thanks for helping us improve Cesium for Unreal!
         
-        First, check if the issue already exists in the [issues](https://github.com/CesiumGS/cesium-unreal/issues) page. If it does, leave a comment on the existing issue instead.
+        First, check if the issue already exists in the [issues](https://github.com/CesiumGS/cesium-unreal/issues) page. If it does, please leave a **comment** on the existing issue instead.
         
-        Otherwise, if you can't find a similar issue, please describe what is happening and provide more information below.
+        Otherwise, if you can't find a similar issue, describe what is happening using the text fields below.
   - type: textarea
     id: what-happened
     attributes:
@@ -50,8 +50,6 @@ body:
   - type: markdown
     attributes:
       value: |
-        If you can also contribute a fix, we'd absolutely appreciate it! Fixing a bug in Cesium for Unreal often means fixing a bug for numerous applications and end users.
+        If you can also contribute a fix, we'd absolutely appreciate it! Fixing a bug in Cesium for Unreal often means fixing a bug for numerous applications and end users. Check out the contributor guide to get started: [CONTRIBUTING.md](https://github.com/CesiumGS/cesium-unreal/tree/main/CONTRIBUTING.md)
 
-        Check out the contributor guide to get started: [CONTRIBUTING.md](https://github.com/CesiumGS/cesium-unreal/tree/main/CONTRIBUTING.md)
-
-        Just let us know you're working on it and we'd be happy to provide advice and feedback.
+        Let us know you're working on it, and we'd be happy to provide advice and feedback.
