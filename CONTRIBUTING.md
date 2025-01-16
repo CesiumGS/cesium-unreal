@@ -33,7 +33,7 @@ If a related issue does not exist, then you can submit a new one. Please include
 - Include step-by-step instructions for us to reproduce the issue from scratch.
 - Any ideas for how to fix or workaround the issue. Also mention if you are willing to help fix it. If so, the Cesium team can often provide guidance and the issue may get fixed more quickly with your help.
 
-Note: it is difficult for us to debug everyone's individual projects. We can triage issues faster when we receive steps to reproduce the issue, starting from either the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) or from a blank project. We will only request your Unreal project and/or data as a last resort.
+**Note**: It is difficult for us to debug everyone's individual projects. We can triage issues faster when we receive steps to reproduce the issue from scratch—either from [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) or from a blank project. We will only request your Unreal project and/or data as a last resort.
 
 # Getting Started Contributing {#getting-started-contributing}
 
@@ -53,7 +53,7 @@ For ideas for Cesium for Unreal code contributions, see:
 - issues labeled [`low hanging fruit`](https://github.com/CesiumGS/cesium-unreal/labels/low%20hanging%20fruit), and
 - issues labeled [`enhancement`](https://github.com/CesiumGS/cesium-unreal/labels/enhancement).
 
-See [Developer Setup](https://github.com/CesiumGS/cesium-unreal/blob/main/Documentation/developer-setup.md) for how to build and run Cesium for Unreal.
+See [Developer Setup](https://cesium.com/learn/cesium-unreal/ref-doc/developer-setup-unreal.html) for how to build and run Cesium for Unreal.
 
 Always feel free to introduce yourself on the [Cesium community forum](https://community.cesium.com/) to brainstorm ideas and ask for guidance.
 
