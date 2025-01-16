@@ -392,7 +392,7 @@ bool CompareMaps(
     return false;
   }
 
-  for (auto& [Key, Value] : Lhs) {
+  for (const auto& [Key, Value] : Lhs) {
     const FString* RhsVal = Rhs.Find(Key);
     if (!RhsVal || *RhsVal != Value) {
       return false;
@@ -1314,10 +1314,8 @@ void ACesium3DTileset::LoadTileset() {
 
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
-  for (auto& [Key, Value] : this->RequestHeaders) {
-    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
-        std::string(TCHAR_TO_UTF8(*Key)),
-        std::string(TCHAR_TO_UTF8(*Value))});
+  for (const auto& [Key, Value] : this->RequestHeaders) {
+    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{TCHAR_TO_UTF8(*Key), TCHAR_TO_UTF8(*Value)});
   }
 
   switch (this->TilesetSource) {
@@ -2401,6 +2399,7 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Root) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CesiumIonServer) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RequestHeaders) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
