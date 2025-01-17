@@ -51,7 +51,7 @@ Functions and fields in the public API should be written in `PascalCase`. Howeve
 
 ```cpp
 USTRUCT()
-struct FCesiumStruct {
+struct CESIUMRUNTIME_API FCesiumStruct {
     GENERATED_BODY()
 
 public:
@@ -68,7 +68,7 @@ For pointer variables that are mentioned in the public API, e.g., public fields 
 
 ```cpp
 UCLASS()
-class UCesiumClass {
+class CESIUMRUNTIME_API UCesiumClass {
     GENERATED_BODY()
 
 public:
@@ -80,6 +80,8 @@ private:
     void setTileset(ACesium3DTileset* pNewTileset);
 }
 ```
+
+If you're wondering about `CESIUMRUNTIME_API`, this macro is necessary for all public types in our plugin (and free functions, if we have any) to be DLL-exported. Otherwise, they won't be usable by other modules on Windows. Make sure to include this macro in the `public` class, struct, or function definition. (If you're working in the Editor module, use `CESIUMEDITOR_API` instead.)
 
 ### Clarity
 
