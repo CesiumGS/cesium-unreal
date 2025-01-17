@@ -224,7 +224,6 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           *GetActorLabel(this->_pCurrent.Get()));
       this->_isTransitioningSubLevels = true;
       break;
-    case ELevelStreamingState::FailedToLoad:
     case ELevelStreamingState::LoadedNotVisible:
     case ELevelStreamingState::LoadedVisible:
       UE_LOG(
@@ -235,6 +234,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       this->_isTransitioningSubLevels = true;
       this->_pCurrent->UnloadLevelInstance();
       break;
+    case ELevelStreamingState::FailedToLoad:
     case ELevelStreamingState::Removed:
     case ELevelStreamingState::Unloaded:
       UE_LOG(
