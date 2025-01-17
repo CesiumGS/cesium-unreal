@@ -25,11 +25,12 @@ The [Overview](#overview) points out some of the components involved when design
 
 > [Official Unreal Engine Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/objects-in-unreal-engine)
 
-The official documentation already contains a summary of `UObject`, so we won't duplicate that here. However, the [UObject Creation](https://dev.epicgames.com/documentation/en-us/unreal-engine/objects-in-unreal-engine#uobjectcreation) and [Destroying Objects](https://dev.epicgames.com/documentation/en-us/unreal-engine/objects-in-unreal-engine#destroyingobjects) sections have a few elements of note:
+The official documentation already contains a summary of `UObject`, so we won't duplicate that here. However, we build on a few elements in [UObject Creation](https://dev.epicgames.com/documentation/en-us/unreal-engine/objects-in-unreal-engine#uobjectcreation) and [Destroying Objects](https://dev.epicgames.com/documentation/en-us/unreal-engine/objects-in-unreal-engine#destroyingobjects) below.
 
 - `UObject`s may only use default constructors. In other words, a `UObject` cannot have a constructor with arguments.
-- For Actors or Actor Components, use the `BeginPlay()` method for specific initialization behavior.
+- The documentation says to use the `BeginPlay` method for specific initialization behavior. But most of our objects need to work in the Editor as well, where `BeginPlay` isn't called. We rely on a variety of other methods, like `OnConstruction`, `PostLoad`, `Serialize`, etc. to manage various aspects of the initialization. See [Initialization](#initialization) for more detail.
 - `UObject`s are automatically garbage collected when they are no longer referenced. Therefore, be mindful of "strong references" that can keep them alive (e.g., UProperties, class instances, `TStrongObjectPtr`).
+  - A regular pointer to a `UObject` will become invalid after it's garbage collected, and dereferencing the pointer will lead to undefined behavior.
 
 #### Properties
 
@@ -45,7 +46,7 @@ The `UPROPERTY` macro identifies such properties. This macro should be put above
 
 `UFUNCTION` is the equivalent of `UPROPERTY` for C++ functions. By using this macro, a function can be made accessible to Blueprints, or even as a button in the Editor interface.
 
-### Structs
+#### Structs
 
 > [Official Unreal Engine Documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/structs-in-unreal-engine)
 
@@ -55,7 +56,7 @@ The `UPROPERTY` macro identifies such properties. This macro should be put above
 - `USTRUCT`s can contain `UPROPERTY`s, and `UObject`s can also have `USTRUCT` type properties.
 - `USTRUCT`s can be used in Blueprints depending on their specifiers.
    - `USTRUCT(BlueprintType)` enables the `Make` node (to create the struct).
-   - For properties to appear in the `Break` node (for retrieval), they must have either `BlueprintReadOnly` or `BlueprintReadWrite` specifiers.
+   - For properties to appear in the `Break` node (for retrieval), they must have either `BlueprintReadOnly` or `BlueprintReadWrite` specifiers. See [Specifiers](#specifiers) below.
 
 #### Enums
 
@@ -85,10 +86,10 @@ For example, check out the `MaximumScreenSpaceError` property on `ACesium3DTiles
   double MaximumScreenSpaceError = 16.0;
   ```
 
-- The `EditAnywhere` specifier allows the property to show up in the Details panel of the Unreal Editor. The user can thus modify the value directly.
+- The `EditAnywhere` specifier allows the property to appear and be modifiable by the user in the Details panel of the Editor.
 - The `BlueprintGetter` and `BlueprintSetter` define specific functions for getting and setting the value in Blueprints (see [UFunctions](#ufunctions)).
 - The `Category` indicates how the property should be organized in the Details panel. It appears under the "Level of Detail" category, which itself is nested in the "Cesium" category.
-- Finally, `meta` refers to additional metadata that can augment how the property functions or appears. Here, `ClampMin` prevents it from being set to an invalid value.
+- Finally, `meta` refers to additional metadata that augments how the property functions or appears. Here, `ClampMin` prevents the Details UI from setting it to smaller values. (It may still be set through C++ or Blueprints.)
 
 The official documentation for `UPROPERTY` explains the fundamentals, but it is not comprehensive. This [masterlist](https://benui.ca/unreal/uproperty/) of `UPROPERTY` specifiers by ben ui provides a more extensive look into what's possible. 
 
@@ -106,7 +107,7 @@ For instance,
 
 - The `BlueprintPure` specifier allows the function to be executed in a Blueprint graph. The `Pure` keyword indicates that the function will not affect the owning object (`ACesiumGeoreference`) in any way.
 - The `Category` indicates how the property should be organized in Blueprint selection panel, under "Cesium" category.
-- Finally, `meta` refers to additional metadata that can augment how the property functions or appears. Here, `ReturnDisplayName` specifies how the output will be labeled in the Blueprint node.
+- Finally, `meta` refers to additional metadata that augments how the property functions or appears. Here, `ReturnDisplayName` specifies how the output will be labeled in the Blueprint node.
 
 `UFUNCTION` must be used for any functions that are used for `BlueprintGetter` or `BlueprintSetter`. For `BlueprintSetter`, the function should be `public` and serve as the mechanism for setting the property from C++. A corresponding `BlueprintGetter` is usually needed for use by C++, even though it is often not needed for Blueprints.
 
@@ -129,7 +130,18 @@ We have settled on the following standards for properties that require post-chan
 3. Add `BlueprintGetter` and `BlueprintSetter` functions.
 4. Override the `PostEditChangeProperty` method on the class. This allows it to be notified of changes to the property in the Editor.
 
-There may be a rare case where no action is necessary after setting a certain property from C++. In this case—and as long as this behavior is unlikely to change—the property can be declared in the `public:` section. Such a property is not likely to need `PostEditChangeProperty` or `BlueprintSetter` either.
+If your `UObject` has a `struct` `UPROPERTY`, then you may also need to override `PostEditChangeChainProperty`. Similar to `PostEditChangeProperty`, this method works on chains of property changes—e.g., when a property inside the `struct` is changed. 
+
+#### Initialization
+
+Most objects in Cesium for Unreal must work in the Editor as well as Play Mode. But these call different methods for life cycle and management, which can make things complicated. We rely on a variety of methods to manage internal state; the most relevant ones are listed below.
+
+| Name | What |
+| ---- | ---- |
+| `PostLoad` | Called in both the Editor and during gameplay for actors that are already placed in a level. This is **not** called for newly spawned actors. |
+| `OnConstruction` | Called whenever objects are placed in the Editor or spawned during gameplay. May also be triggered after Blueprints are changed. |
+| `Serialize` | Called when the project loads or saves. |
+| `PostInitProperties` | Called after the C++ constructor of the `UObject` and after its properties have been initialized, including those loaded from config. |
 
 #### Conditional Properties
 
@@ -145,10 +157,11 @@ In Cesium for Unreal, many `UObject`s have properties that depend on each other 
 You can use the `meta = (EditCondition = "")` specifier to implement these conditions. Make sure that conditional properties are listed _below_ the properties that they depend on, both in C++ code and in the Details panel. This reinforces that logic and results in visual clarity.
 
 ```cpp
-  UPROPERTY()
+  UPROPERTY(EditAnywhere)
   bool EnableRandomness;
 
   UPROPERTY(
+      EditAnywhere,
       meta = (EditCondition = "EnableRandomness"))
   int RandomSeed = 0;
 ```
@@ -178,13 +191,15 @@ public:
 
 It can only parse `UPROPERTY` values, too, so don't reference any variables that aren't made accessible to Unreal Engine.
 
-> There exists another specifier, `EditConditionHides`, that hides the property from the Details panel rather than making it read-only (visible but greyed out). However, Cesium for Unreal prefers to simply show the properties as read-only. 
+> There exists another specifier, `EditConditionHides`, that hides the property from the Details panel instead of making it read-only (visible but greyed out). However, Cesium for Unreal prefers to simply show the properties as read-only. 
 
 #### Organization
 
 Properties should be organized or modified in the Details panel such that they provide an intuitive user experience. Are the properties ordered in a logical manner? Is it clear which properties depend on each other?
 
-Aside from implementing clear [Conditional Properties](#conditional-properties), be diligent about organizing properties in reasonable groups using the `Category` specifier. Most classes, properties, and functions in Cesium for Unreal are put under a broad `Cesium` category. But there are typically subcategories that should be accounted for, too. This can be achieved by using the `|` delimiter in the category name.
+Aside from implementing clear [Conditional Properties](#conditional-properties), be diligent about organizing properties in reasonable groups using the `Category` specifier. In fact, failing to give a category to public properties can cause a failure at packaging time!
+
+Most classes, properties, and functions in Cesium for Unreal are put under a broad `Cesium` category. But there are typically subcategories that should be accounted for, too. This can be achieved by using the `|` delimiter in the category name.
 
 ```cpp
 // Falls under the general "Cesium" category.
@@ -206,7 +221,7 @@ Properties under the same category should also be adjacent in C++ to reinforce t
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
   bool SuspendUpdate;
 
-  UPROPERTY(Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
   bool PreloadAncestors;
 
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
@@ -222,7 +237,7 @@ Group them together:
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
   bool UpdateInEditor;
 
-  UPROPERTY(Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
   bool PreloadAncestors;
 ```
 
@@ -311,6 +326,7 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 
 | Name | What | When to Use |
 | ---- | ----- | --------------- |
+| `Category = ""` | Property will appear under the given category in the Details panel. | Required on all public `UPROPERTY`s. |
 | `Transient` | Property is not serialized when the `UObject` is saved. | For anything that shouldn't be saved, e.g., temporary references to objects at runtime. |
 | `meta = (AllowPrivateAccess)` | Property that is `private` in C++ can be accessed in Blueprints. | Use in accordance with the practices under [Change Detection](#change-detection). |
 | `meta = (DeprecatedProperty) ` | Property is marked as deprecated. | See [Deprecation and Backwards Compatibility](#deprecation-and-backwards-compatibility). |
@@ -339,7 +355,7 @@ TMap<FString, FCesiumMetadataValue> GetPropertyTableValuesFromHit(
     int64 FeatureIDSetIndex = 0);
 ```
 
-This function's most important input is the `Hit`, so it is listed first. `FeatureIDSetIndex` is an advanced parameter that users are less likely to have to use. The order here translates to the Blueprint, since `Hit` appears at the top:
+This function's most important input is the `Hit`, so it is listed first. `FeatureIDSetIndex` is an advanced parameter that users are less likely   ave to use. The order here translates to the Blueprint, since `Hit` appears at the top:
 
 <img src="Images/getPropertyTableValuesFromHit.png" width="400px"/>
 
@@ -359,7 +375,7 @@ The official documentation includes examples for every kind of redirect, but the
 
 Read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-symbols/) by Jonathan Hale that explains how to deprecate anything in Unreal Engine. This section expands briefly on some points, but most of it is already covered.
 
-- Use the `DeprecationMessage` should succinctly inform the user of the deprecation and redirect them to its replacement, if applicable.
+- Use `DeprecationMessage` to succinctly inform the user of the deprecation and redirect them to its replacement, if applicable.
 
 ```cpp
   UFUNCTION(
@@ -376,8 +392,10 @@ Read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-sy
 
 ```cpp
 // Forward declare the class with the UE_DEPRECATED macro.
+// The first string notes the plugin or engine version for which the thing is deprecated.
+// The second string contains the deprecation message.
 struct UE_DEPRECATED(
-    5.0,
+    "Cesium For Unreal v2.0",
     "FCesiumMetadataPrimitive is deprecated. Instead, use FCesiumPrimitiveFeatures and FCesiumPrimitiveMetadata to retrieve feature IDs and metadata from a glTF primitive.")
     FCesiumMetadataPrimitive;
 
@@ -459,3 +477,5 @@ void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
   }
 }
 ```
+
+However, note that when `Serialize` is called, properties that refer to other objects will not reliably be set, and attempting to set one risks it being overwritten later in the load process. So if any of that is necessary, the solution is to also override `PostLoad` and use `GetLinkerCustomVersion` to determine if upgrading is necessary. We have a few examples of this.
