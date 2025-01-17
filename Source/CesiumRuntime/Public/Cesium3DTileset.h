@@ -765,6 +765,16 @@ private:
   UCesiumIonServer* CesiumIonServer;
 
   /**
+   * Headers to be attached to each request made for this tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRequestHeaders,
+      BlueprintSetter = SetRequestHeaders,
+      Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
+
+  /**
    * Check if the Cesium ion token used to access this tileset is working
    * correctly, and fix it if necessary.
    */
@@ -971,6 +981,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetUrl(const FString& InUrl);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  TMap<FString, FString> GetRequestHeaders() const { return RequestHeaders; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetRequestHeaders(const TMap<FString, FString>& InRequestHeaders);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   int64 GetIonAssetID() const { return IonAssetID; }
