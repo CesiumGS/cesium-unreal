@@ -1,9 +1,14 @@
 # Change Log
 
-### ? - ? 
+### ? - ?
 
 ##### Additions :tada:
+
 - Added `CesiumUrlTemplateRasterOverlay`, allowing a raster overlay to be added using tiles requested based on a specified URL template.
+
+##### Fixes :wrench:
+
+- Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
 
 ### v2.12.0 - 2025-01-02
 
