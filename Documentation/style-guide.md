@@ -27,7 +27,7 @@ First, check out the [Naming Conventions](https://dev.epicgames.com/documentatio
 
 ### General
 
-- You will have to Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
+- You will have to follow Unreal's conventions for naming new structs or classes, e.g, prefixing structs with `F` or actor subclasses with `A`. If these prefixes are absent, the Unreal Header Tool will likely complain during the build process, and subsequently fail to compile your code.
 
 - Although the names should be prefixed in code, the files containing them should *not* follow this rule. For example, `ACesium3DTileset` is defined in `Cesium3DTileset.h` and implemented in `Cesium3DTileset.cpp`, and *not* `ACesium3DTileset.h` or `ACesium3DTileset.cpp`.
 
@@ -49,12 +49,14 @@ Functions and fields in the public API should be written in `PascalCase`. Howeve
 
 ```cpp
 USTRUCT()
-struct CesiumStruct {
-    public:
+struct FCesiumStruct {
+    GENERATED_BODY()
+
+public:
     float PublicField;
     void DoSomethingPublic(float Input);
 
-    private:
+private:
     float _privateField;
     void doSomethingPrivate(float input);
 }
@@ -64,12 +66,14 @@ For pointer variables that are mentioned in the public API, e.g., public fields 
 
 ```cpp
 UCLASS()
-class CesiumClass {
-    public:
+class UCesiumClass {
+    GENERATED_BODY()
+
+public:
     UCesiumEllipsoid* Ellipsoid;
     void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid)
 
-    private:
+private:
     ACesium3DTileset* _pTilesetActor;
     void setTileset(ACesium3DTileset* pNewTileset);
 }
@@ -85,13 +89,13 @@ For example, consider the context of multiple frames of reference in Cesium for 
 
 This intentionally vague example leaves a lot to be desired:
 
-```c++
+```cpp
 FMatrix ComputeTransform(FVector Location) {...}
 ```
 
-From a glance, it is not clear what the intended frame-of-reference is. (Maybe you assumed it was in Unreal space due to "`Location`", but what is `Transform` for?) The function body might give us a hint, but the declaration could use more clarity. Adding documentation will definitely help here, and in some cases that is enough to avoid ambiguity.
+From a glance, it is not clear what the intended frame-of-reference is. (Maybe you assumed it was in Unreal space due to `Location`, but what is `Transform` for?) The function body might give us a hint, but the declaration could use more clarity. Adding documentation will definitely help here, and in some cases that is enough to avoid ambiguity.
 
-```c++
+```cpp
 /**
  * Computes the matrix that transforms from an East-South-Up frame centered at
  * a given location to the Unreal frame.
@@ -103,7 +107,7 @@ FMatrix ComputeTransform(FVector Location) {...}
 
 However, we can take this even a step further. Let's rename the function and its parameter so that the intent is very obvious from the start.
 
-```c++
+```cpp
 /**
  * Computes the matrix that transforms from an East-South-Up frame centered at
  * a given location to the Unreal frame.
@@ -115,7 +119,7 @@ FMatrix ComputeEastSouthUpToUnrealTransformation(FVector UnrealLocation) {...}
 
 In the same vein, avoid abbreviations unless they are commonly accepted or used across the codebase. This improves readability such that code is understandable to new developers from a glance. (Additionally, consider developers for whom English is not their first language; the arbitrary abbreviations can be even more confusing.)
 
-``` c++
+```cpp
 // Not great.
 static void CompBoundingRect(FVector BL, FVector TR) {...}
 
@@ -134,7 +138,7 @@ Units should stay consistent across the API to avoid confusion as values are pas
 
 It's encouraged to leave documentation about the expected units and/or frame of reference for a function and its parameters. This comment in `CesiumGeoreference.h` is a good example:
 
-```c++
+```cpp
   /**
    * Transforms a position in Unreal coordinates into longitude in degrees (x),
    * latitude in degrees (y), and height above the ellipsoid in meters (z). The

@@ -323,7 +323,7 @@ For convenience, here is a cheat sheet of some of the most relevant and/or helpf
 
 ## Blueprints 
 
-Blueprints are a visual scripting option in Unreal Engine that useres may use over C++ code. Part of the API design in Cesium for Unreal therefore includes creating sensible Blueprints for less code-savvy users.
+Blueprints are a visual scripting option in Unreal Engine that users may use over C++ code. Part of the API design in Cesium for Unreal therefore includes creating sensible Blueprints for less code-savvy users.
 
 First, defer to Unreal Engine's naming schemes for existing Blueprint functions and parameters. For example, texture coordinates in Blueprints are often referred to as "UV". Cesium for Unreal tries to match this by naming its own texture coordinate parameters as "UV".
 
@@ -339,7 +339,7 @@ TMap<FString, FCesiumMetadataValue> GetPropertyTableValuesFromHit(
     int64 FeatureIDSetIndex = 0);
 ```
 
-This function's most important input is the `Hit`, so it is litsed first. `FeatureIDSetIndex` is an advanced parameter that users are less likely to have to use. The order here translates to the Blueprint, since `Hit` appears at the top:
+This function's most important input is the `Hit`, so it is listed first. `FeatureIDSetIndex` is an advanced parameter that users are less likely to have to use. The order here translates to the Blueprint, since `Hit` appears at the top:
 
 <img src="Images/getPropertyTableValuesFromHit.png" width="400px"/>
 
@@ -361,7 +361,7 @@ Read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-sy
 
 - Use the `DeprecationMessage` should succinctly inform the user of the deprecation and redirect them to its replacement, if applicable.
 
-```c++
+```cpp
   UFUNCTION(
       Meta =
           (DeprecatedFunction,
@@ -374,7 +374,7 @@ Read this short and sweet [overview](https://squareys.de/blog/ue4-deprecating-sy
 
 - If a `struct` or `class` is deprecated, prefer to use the `UE_DEPRECATED` macro in a forward declaration of the class before it is actually defined. For example:
 
-```c++
+```cpp
 // Forward declare the class with the UE_DEPRECATED macro.
 struct UE_DEPRECATED(
     5.0,
@@ -388,7 +388,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPrimitive { ... }
 
 - For backwards compatibility, sometimes you'll need to keep references to the deprecated classes or functions in C++ code. If this is the case, then be sure to wrap the relevant lines in `PRAGMA_DISABLE_DEPRECATION_WARNINGS` and `PRAGMA_ENABLE_DEPRECATION_WARNINGS`. This will reduce the spam in the Unreal logs that can otherwise occur during the build process.
 
-```c++
+```cpp
 struct LoadPrimitiveResult { 
   // List of properties here...
 
