@@ -31,7 +31,7 @@ Cesium for Unreal supports cloud and private network content and services based 
 
 [![Cesium for Unreal Ecosystem Architecture](https://prismic-io.s3.amazonaws.com/cesium/b1505fbc-5769-4032-9233-364a4f52acf6_unreal-pipeline-ice-blue-background.png)](https://cesium.com/cesium-for-unreal?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal)
 
-Using Cesium ion helps support Cesium for Unreal development. :heart:
+Using Cesium ion helps support Cesium for Unreal development. ❤️
 
 ### ⛓️ Unreal Engine Integration
 

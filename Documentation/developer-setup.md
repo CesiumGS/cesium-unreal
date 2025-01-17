@@ -7,7 +7,9 @@ This is a summary of a setup and workflows for developers who want to work with 
 - [`cesium-native`](https://github.com/CesiumGS/cesium-native) : A collection of engine-independent libraries for 3D Tiles, geospatial, etc. Most of the functionality of _Cesium for Unreal_ is built based on these libraries.
 - [`cesium-unreal`](https://github.com/CesiumGS/cesium-unreal) : The source code of the actual _Cesium for Unreal_ plugin.
 - An Unreal project that uses the plugin. We will use the [`cesium-unreal-samples`](https://github.com/CesiumGS/cesium-unreal-samples) as an example here, to get started quickly. It contains sample levels for different use cases, and can therefore be used to quickly check for possible regressions of feature changes.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> It is generally possible to work with `cesium-native` _independent_ of `cesium-unreal`. But any modification in `cesium-native` will have to be checked carefully for possible breaking changes in the API or the build process. So the following describes the developer setup from the perspective of someone who wants to work with `cesium-native` mainly in the context of `cesium-unreal`.
+
+> [!note]
+> It is generally possible to work with `cesium-native` _independent_ of `cesium-unreal`. But any modification in `cesium-native` will have to be checked carefully for possible breaking changes in the API or the build process. So the following describes the developer setup from the perspective of someone who wants to work with `cesium-native` mainly in the context of `cesium-unreal`.
 
 <!--! [TOC] -->
 
@@ -24,9 +26,14 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 
 ## Platform-specific setup instructions
 
-- <!--! \cond DOXYGEN_EXCLUDE !--> [Windows](developer-setup-windows.md) <!--! \endcond --><!--! \subpage developer-setup-windows "Windows" -->
-- <!--! \cond DOXYGEN_EXCLUDE !--> [Linux](developer-setup-linux.md) <!--! \endcond --><!--! \subpage developer-setup-linux "Linux" -->
-- <!--! \cond DOXYGEN_EXCLUDE !--> [macOS](developer-setup-osx.md) <!--! \endcond --><!--! \subpage developer-setup-osx "macOS" -->
+<!--! \cond DOXYGEN_EXCLUDE !--> 
+- [Windows](developer-setup-windows.md)
+- [Linux](developer-setup-linux.md) 
+- [macOS](developer-setup-osx.md)
+<!--! \endcond -->
+<!--! \li \subpage developer-setup-windows "Windows" -->
+<!--! \li \subpage developer-setup-linux "Linux" -->
+<!--! \li \subpage developer-setup-osx "macOS" -->
 
 ## Deployment instructions
 
@@ -40,7 +47,8 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 - In the Session Frontend Window, look for the Automation tab, and find the "Cesium" group of tests
 - Check the Cesium group
 - Click on "Start Tests"
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The TestsProject uses the Cesium and Functional Testing Editor plugins. You can run the tests from any project as long as you have both of these plugins enabled
+> [!note]
+> The TestsProject uses the Cesium and Functional Testing Editor plugins. You can run the tests from any project as long as you have both of these plugins enabled
 
 ## Generate Reference Documentation
 
