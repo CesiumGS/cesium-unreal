@@ -6,7 +6,7 @@ That said, the Cesium for Unreal plugin is a bit special. It combines code from 
 
 Before diving into this guide, we recommend the following:
 
-1. Browse Cesium Native's [C++ style guide](https://github.com/CesiumGS/cesium-native/blob/main/doc/style-guide.md) to familiarize yourself with fundamental principles and expectations for C++ development.
+1. Browse Cesium Native's [C++ style guide](https://cesium.com/learn/cesium-native/ref-doc/style-guide.html) to familiarize yourself with fundamental principles and expectations for C++ development.
 
 2. Go through the [Unreal Engine Coding Standard](https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine) for the official coding guidelines for Unreal Engine.
 

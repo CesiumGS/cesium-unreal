@@ -436,7 +436,7 @@ Sometimes, a `UObject`'s property is deprecated or replaced by an alternative so
 
 Custom versions boil down to an `enum` called `Versions` that captures the current state of the plugin. `Versions` is stored in `CesiumCustomVersion.h` and can be expanded in the future. When objects are loaded from serialization, their properties can be intercepted if saved under a previous version.
 
-Depending on the type of property, there are two methods to override. Simple properties like `bool`s and `enum`s can be set in `Serialize`, which handles object state while loading and saving. However, properties that refer to other objects (e.g., pointers) must be set in `PostLoad`. Otherwise, their values will not be reliably be set by `Serialize`—they may be overwritten later in the load process. 
+Depending on the type of property, there are two methods to override. Simple properties like `bool`s and `enum`s can be set in `Serialize`, which handles object state during loads and saves. However, properties that refer to other objects (e.g., pointers) must be set in `PostLoad`. Otherwise, their values will not be reliably be set by `Serialize`—they can be overwritten later in the load process. 
 
 #### Create a New Version
 
@@ -478,7 +478,7 @@ In `Serialize`, you can retrieve the version associated with the `UObject` and i
 
 ```cpp
 void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
-  // Don't forget to call this on `Super`.
+  // Don't forget to call `Super`.
   Super::Serialize(Ar);
 
   Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
@@ -498,13 +498,14 @@ void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
 
 #### `PostLoad`
 
-Now let's look at how a pointer property would be set in `PostLoad`, using an example from `ACesium3DTileset`. In version `CesiumIonServer`, we released support for configuring multiple Cesium ion servers. But that meant that every existing project had to resolve the Cesium ion server that it was implicitly referencing.
+Now, let's look at a different property—one that would have to be set in `PostLoad`. Previously, we released support for configuring multiple and/or self-hosted Cesium ion servers on an Unreal project. This depended on `CesiumIonServer`, a new data asset that no project could have contained prior to the release. If we didn't handle this, everyone's project would be "missing" a Cesium ion server, and their data would fail to stream.
 
-In `PostLoad`, you can use `GetLinkerCustomVersion` to get the custom version that the `UObject` was saved with. Then, use a similar `if` statement to check for the version and do something if necessary.
+`CesiumIonServer`s are referenced by pointers, so we have to handle this case in `ACesium3DTileset::PostLoad`. You can use `GetLinkerCustomVersion` to get the custom version that the `UObject` was saved with. Then, use a similar `if` statement to check for the version and resolve internal state as necessary. 
 
 ```cpp
 void ACesium3DTileset::PostLoad() {
-  /// Some code omitted for simplicity...
+  // Don't forget to call `Super`.
+  Super::PostLoad();
 
 #if WITH_EDITOR
   const int32 CesiumVersion =
@@ -519,5 +520,3 @@ void ACesium3DTileset::PostLoad() {
 #endif
 }
 ```
-
-**Note**: You may need to do more work for properties that are references to other objects. `Serialize` is called, properties that refer to other objects will not reliably be set, and attempting to set one risks it being overwritten later in the load process. So if any of that is necessary, the solution is to also override `PostLoad` and use `GetLinkerCustomVersion` to determine if upgrading is necessary. We have a few examples of this.
