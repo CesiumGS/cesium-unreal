@@ -117,6 +117,26 @@ Again, the official documentation for `UFUNCTION` explains the fundamentals, but
 
 The following sections describe some best practices for designing `UObjects` in Cesium for Unreal.
 
+#### Initialization
+
+Most classes in Cesium for Unreal must work in Unreal Editor as well as Play Mode. But between the two modes, there are different methods that affect an object during its creation and loading process. We rely on a variety of methods to properly initialize the `UObject`, listed below.
+
+| Name | What |
+| ---- | ---- |
+| `PostLoad` | Called in both the Editor and during gameplay for actors that are already placed in a level. This is **not** called for newly spawned actors at runtime. |
+| `OnConstruction` | Called whenever objects are placed in the Editor or spawned during gameplay. May also be triggered after Blueprints are changed. |
+| `Serialize` | Called when the object is serialized during project load or save. |
+| `PostInitProperties` | Called after the C++ constructor of the `UObject` and after its properties have been initialized. |
+| `BeginPlay` | Called at the start of Play Mode. |
+
+In other words,
+
+- Use`PostLoad` to initialize existing objects, and `OnConstruction` for newly-created ones.
+- Use `Serialize` for scenarios like [Deprecation and Backwards Compatibility](#deprecation-and-backwards-compatibility).
+- Use `BeginPlay` for exclusively runtime behavior.
+
+`PostInitProperties` is not used often in Cesium for Unreal. When it *has* been used, it was to intercept the object immediately after default construction in C++ to transfer specific settings. But this is a rare case.
+
 #### Change Detection
 
 Many Cesium for Unreal classes manage an internal state that must be carefully maintained when modifying properties. For instance, when properties on the `ACesiumGeoreference` are changed, it must call `UpdateGeoreference()` immediately after to ensure that all other properties are synced in response.
@@ -130,18 +150,9 @@ We have settled on the following standards for properties that require post-chan
 3. Add `BlueprintGetter` and `BlueprintSetter` functions.
 4. Override the `PostEditChangeProperty` method on the class. This allows it to be notified of changes to the property in the Editor.
 
-If your `UObject` has a `struct` `UPROPERTY`, then you may also need to override `PostEditChangeChainProperty`. Similar to `PostEditChangeProperty`, this method works on chains of property changes—e.g., when a property inside the `struct` is changed. 
+If a `UPROPERTY` is a `struct` type, then you may also need to override `PostEditChangeChainProperty`. This method works on chains of property changes—e.g., when a property inside the `struct` is changed. 
 
-#### Initialization
-
-Most objects in Cesium for Unreal must work in the Editor as well as Play Mode. But these call different methods for life cycle and management, which can make things complicated. We rely on a variety of methods to manage internal state; the most relevant ones are listed below.
-
-| Name | What |
-| ---- | ---- |
-| `PostLoad` | Called in both the Editor and during gameplay for actors that are already placed in a level. This is **not** called for newly spawned actors. |
-| `OnConstruction` | Called whenever objects are placed in the Editor or spawned during gameplay. May also be triggered after Blueprints are changed. |
-| `Serialize` | Called when the project loads or saves. |
-| `PostInitProperties` | Called after the C++ constructor of the `UObject` and after its properties have been initialized, including those loaded from config. |
+Finally, beware of any consequences from users undoing modifications on a `UObject`, or even copy-pasting it. These changes can be handled by `PostEditUndo` and `PostEditImport` respectively.
 
 #### Conditional Properties
 
@@ -421,11 +432,15 @@ struct LoadPrimitiveResult {
 
 ### Custom Versions
 
-Sometimes a property on a `UObject` is deprecated, or replaced by an alternative solution. However, it may have been set by the user with some value that should successfully translate to the new implementation. This can be resolved by creating "custom versions" of the plugin that are specially handled at load time.
+Sometimes, a `UObject`'s property is deprecated or replaced by an alternative solution. However, it may have been set with a value that must translate successfully to the new implementation. This can be resolved by creating "custom versions" of the plugin for resolving differences at load time.
 
-Custom versions boil down to an `enum` called `Versions` that captures the current state of the plugin. `Versions` is stored in `CesiumCustomVersion.h` and can be expanded in the future. When objects are loaded from serialization, their properties can be specially handled if saved under a previous version.
+Custom versions boil down to an `enum` called `Versions` that captures the current state of the plugin. `Versions` is stored in `CesiumCustomVersion.h` and can be expanded in the future. When objects are loaded from serialization, their properties can be intercepted if saved under a previous version.
 
-We'll walk through an existing code example below using version `WebMapTileServiceProjectionAsEnum`. In this version, a boolean property on `UCesiumWebMapTileServiceRasterOverlay` was replaced with an enum.
+Depending on the type of property, there are two methods to override. Simple properties like `bool`s and `enum`s can be set in `Serialize`, which handles object state while loading and saving. However, properties that refer to other objects (e.g., pointers) must be set in `PostLoad`. Otherwise, their values will not be reliably be set by `Serialize`—they may be overwritten later in the load process. 
+
+#### Create a New Version
+
+Let's look at how to create a new version called `WebMapTileServiceProjectionAsEnum`. In this version, a boolean property on `UCesiumWebMapTileServiceRasterOverlay` will be replaced with an enum.
 
 First, deprecate the old property by following the guide linked in [Deprecation Specifiers](#deprecation-specifiers). Use the [Core Redirects](#core-redirects) as needed to redirect properties to their `_DEPRECATED` counterparts.
 
@@ -437,7 +452,7 @@ Then, create a new version in the `Versions` enum. The enum value should:
 ```cpp
 enum Versions {
     // Other versions omitted.
-    // [...]
+    // (...)
 
     // Replaced the UseWebMercatorProjection property in
     // CesiumWebMapTileServiceOverlay with the enum Projection property.
@@ -448,7 +463,9 @@ enum Versions {
 }
 ```
 
-After that, add the `virtual` `Serialize` function to the target class (if it does not yet exist).
+#### `Serialize`
+
+An `enum` property is simple enough that it can be handled in `Serialize`. Add the `virtual` `Serialize` function to the target class, if it does not already exist.
 
 ```cpp
 class UCesiumWebMapTileServiceRasterOverlay {
@@ -461,6 +478,7 @@ In `Serialize`, you can retrieve the version associated with the `UObject` and i
 
 ```cpp
 void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
+  // Don't forget to call this on `Super`.
   Super::Serialize(Ar);
 
   Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
@@ -478,4 +496,28 @@ void UCesiumWebMapTileServiceRasterOverlay::Serialize(FArchive& Ar) {
 }
 ```
 
-However, note that when `Serialize` is called, properties that refer to other objects will not reliably be set, and attempting to set one risks it being overwritten later in the load process. So if any of that is necessary, the solution is to also override `PostLoad` and use `GetLinkerCustomVersion` to determine if upgrading is necessary. We have a few examples of this.
+#### `PostLoad`
+
+Now let's look at how a pointer property would be set in `PostLoad`, using an example from `ACesium3DTileset`. In version `CesiumIonServer`, we released support for configuring multiple Cesium ion servers. But that meant that every existing project had to resolve the Cesium ion server that it was implicitly referencing.
+
+In `PostLoad`, you can use `GetLinkerCustomVersion` to get the custom version that the `UObject` was saved with. Then, use a similar `if` statement to check for the version and do something if necessary.
+
+```cpp
+void ACesium3DTileset::PostLoad() {
+  /// Some code omitted for simplicity...
+
+#if WITH_EDITOR
+  const int32 CesiumVersion =
+      this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  if (CesiumVersion < FCesiumCustomVersion::CesiumIonServer) {
+    this->CesiumIonServer = UCesiumIonServer::GetBackwardCompatibleServer(
+        this->IonAssetEndpointUrl_DEPRECATED);
+  }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#endif
+}
+```
+
+**Note**: You may need to do more work for properties that are references to other objects. `Serialize` is called, properties that refer to other objects will not reliably be set, and attempting to set one risks it being overwritten later in the load process. So if any of that is necessary, the solution is to also override `PostLoad` and use `GetLinkerCustomVersion` to determine if upgrading is necessary. We have a few examples of this.
