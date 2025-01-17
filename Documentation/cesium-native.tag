@@ -125,6 +125,13 @@
       <anchor>af24426725108032772dc61d798d195ca</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSparse.html</anchorfile>
+      <anchor>ad0558d7ef1dcb128dc797f5febd96950</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AccessorSparseIndices</name>
@@ -157,6 +164,13 @@
       <name>componentType</name>
       <anchorfile>structCesiumGltf_1_1AccessorSparseIndices.html</anchorfile>
       <anchor>a006d43fe1993533eb03e451733fe1d3b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSparseIndices.html</anchorfile>
+      <anchor>a71a95094ffc9b75d7e4f627899424e03</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -275,6 +289,13 @@
       <name>byteOffset</name>
       <anchorfile>structCesiumGltf_1_1AccessorSparseValues.html</anchorfile>
       <anchor>af7f3abadd609b58d0aadfc5b839ae75a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSparseValues.html</anchorfile>
+      <anchor>a99c6c4faa422804a91a49b08b6318800</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -400,6 +421,13 @@
       <anchor>a2628e03ba37a0e150df64a6f61dbe09b</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec.html</anchorfile>
+      <anchor>a8dfcfb6120f98f7dab87627ba06ae63f</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type></type>
       <name>AccessorSpec</name>
@@ -487,6 +515,13 @@
       <arglist>() const noexcept</arglist>
     </member>
     <member kind="function">
+      <type>int64_t</type>
+      <name>offset</name>
+      <anchorfile>classCesiumGltf_1_1AccessorView.html</anchorfile>
+      <anchor>a0d598da3ffc2ba8cb8ec405950097640</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>const std::byte *</type>
       <name>data</name>
       <anchorfile>classCesiumGltf_1_1AccessorView.html</anchorfile>
@@ -498,6 +533,13 @@
     <name>CesiumGltf::AccessorWriter</name>
     <filename>classCesiumGltf_1_1AccessorWriter.html</filename>
     <templarg>class T</templarg>
+    <member kind="typedef">
+      <type>T</type>
+      <name>value_type</name>
+      <anchorfile>classCesiumGltf_1_1AccessorWriter.html</anchorfile>
+      <anchor>afd49f7e0263714046dd30a160ba428ac</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type></type>
       <name>AccessorWriter</name>
@@ -554,10 +596,52 @@
       <anchor>aee3456f99a5f02b7de979b6d8244f1c9</anchor>
       <arglist>() const noexcept</arglist>
     </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>stride</name>
+      <anchorfile>classCesiumGltf_1_1AccessorWriter.html</anchorfile>
+      <anchor>abb270866fcf41f8c8f2e618c7320dfa4</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>offset</name>
+      <anchorfile>classCesiumGltf_1_1AccessorWriter.html</anchorfile>
+      <anchor>a5c7a28368429699481e3ceb45067d550</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>std::byte *</type>
+      <name>data</name>
+      <anchorfile>classCesiumGltf_1_1AccessorWriter.html</anchorfile>
+      <anchor>a342621004058c9cd2abeec1516306fbc</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Material::AlphaMode</name>
     <filename>structCesiumGltf_1_1Material_1_1AlphaMode.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>OPAQUE</name>
+      <anchorfile>structCesiumGltf_1_1Material_1_1AlphaMode.html</anchorfile>
+      <anchor>a6cc748d9932a645e9a8f4cf4897d4c49</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MASK</name>
+      <anchorfile>structCesiumGltf_1_1Material_1_1AlphaMode.html</anchorfile>
+      <anchor>a98a233ea4cb36c6cc07c6d7a1de56213</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>BLEND</name>
+      <anchorfile>structCesiumGltf_1_1Material_1_1AlphaMode.html</anchorfile>
+      <anchor>a935bd13af77d3a64555a459d406e409c</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Animation</name>
@@ -584,6 +668,13 @@
       <anchor>a8313620625f9ee581954e35ff7a7463f</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Animation.html</anchorfile>
+      <anchor>a53af6f94496c168c57415d9a9e4f5000</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AnimationChannel</name>
@@ -608,6 +699,13 @@
       <name>target</name>
       <anchorfile>structCesiumGltf_1_1AnimationChannel.html</anchorfile>
       <anchor>a082ba5e0a25dde3296875497e24a0f67</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AnimationChannel.html</anchorfile>
+      <anchor>a516391af248c82c734342a7d25227e0f</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -681,6 +779,13 @@
       <name>path</name>
       <anchorfile>structCesiumGltf_1_1AnimationChannelTarget.html</anchorfile>
       <anchor>ab9cd40c8072a8d1ed814555c7a0a49e0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AnimationChannelTarget.html</anchorfile>
+      <anchor>a014311decdb2a3b31842ed9b518dc309</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -809,6 +914,13 @@
       <anchor>a43b0b16e5ffeec8c47d859549b532733</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1AnimationSampler.html</anchorfile>
+      <anchor>aa8f47c00b3675457666abe5a0543b0ac</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::AnimationSamplerReader</name>
@@ -859,6 +971,13 @@
   <compound kind="struct">
     <name>CesiumIonClient::ApplicationData</name>
     <filename>structCesiumIonClient_1_1ApplicationData.html</filename>
+    <member kind="function">
+      <type>bool</type>
+      <name>needsOauthAuthentication</name>
+      <anchorfile>structCesiumIonClient_1_1ApplicationData.html</anchorfile>
+      <anchor>a81d7758c1294f29f1a87e5dea63c7075</anchor>
+      <arglist>() const</arglist>
+    </member>
     <member kind="variable">
       <type>AuthenticationMode</type>
       <name>authenticationMode</name>
@@ -887,16 +1006,331 @@
     <templarg>typename T</templarg>
     <templarg>typename THandler</templarg>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="typedef">
+      <type>std::vector&lt; T &gt;</type>
+      <name>ValueType</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a23979c0a31b960e2df3fc74664478eae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>ArrayJsonHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a8e74166a803429e73184f631e3b62cd8</anchor>
+      <arglist>(Ts &amp;&amp;... args) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a288b3e24d7cd8cd602e221cc11fcd797</anchor>
+      <arglist>(IJsonHandler *pParent, std::vector&lt; T &gt; *pArray)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>ab74d4dafb34f4183ef9149bd20d580f8</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>ab56d2d64d8f6361d79d5a11889ce5fa6</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>abd4ab85e2db1bd9b6cef3d0bac0b9de2</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a5798e1f8808efa3dd6734d6899ca5dde</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a475b57f5291e7d7f183973c2e03f727d</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a99978cc34438d9b83532e3ced5e7e5e3</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>aa9f26771c975f2fcffcb6836b938f230</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a5e5d6c4a578c734f659ea598ca813697</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a1f338a01b02379799b29c10ae623540c</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a3a4a4ac8f54321efad241ed9c92d7811</anchor>
+      <arglist>(const std::string_view &amp;) noexcept override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>af3488edcb5fe1a9c7d05eb155d04a7aa</anchor>
+      <arglist>() noexcept override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a206cf240bcc43d176a0b2227986c95db</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>a6c78f9a8093f1f6af0b2405c99c0a159</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler.html</anchorfile>
+      <anchor>ae8f38ed2772ffdb1577c97603f1f71f9</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::ArrayJsonHandler&lt; double, DoubleJsonHandler &gt;</name>
     <filename>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="typedef">
+      <type>std::vector&lt; double &gt;</type>
+      <name>ValueType</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a6b025e431b7fa24c4c01048e86c31593</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>ab3ad675c831400709dc77d37383c6b4f</anchor>
+      <arglist>(IJsonHandler *pParent, std::vector&lt; double &gt; *pArray)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a35886e5178d973783eb67034267599c3</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a89a1f51b11ce9ef1ad47f4509d152cfc</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>af81b468d55262de9d621dc69616300e2</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a877d758fcfaa99a9d0d803e32b270ef7</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a1131723fc5b9fd60a2f7c47e4b8c5d22</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a1476b44f94aec64f452d296a27f48a4d</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a60cf7fd8c2b4add4452b536236e16bba</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a7d6c050cd13054973dc6c237d95d801b</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a6a01b844b36697710cee9b1023d33680</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a97f3c41ecd130e5600b6767f50e037f8</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>a9deb96709aa2f2a5b36a4a89cf91cec7</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01double_00_01DoubleJsonHandler_01_4.html</anchorfile>
+      <anchor>add1b228a823dfc90e8c7f222f7c99a9a</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::ArrayJsonHandler&lt; std::string, StringJsonHandler &gt;</name>
     <filename>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="typedef">
+      <type>std::vector&lt; std::string &gt;</type>
+      <name>ValueType</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>ab08bfb3b04cc3b18d84446ef4209d7ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a6e593164fdd9cdb871b88f2e9cad7ecd</anchor>
+      <arglist>(IJsonHandler *pParent, std::vector&lt; std::string &gt; *pArray)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a8ae0d6c1c5e4f6564f47daf13e1a9d26</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a919c087133dc6f9f3fb5e3883e07caaa</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a1bd141a3720ca82a82a2038f931a64e8</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a36a848fdc39f4073aff260668b875a4b</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a99be19250a89fa4ca7f80e460cf6e038</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>ae9ee6c2e5787f40cf0f1cdef66a646fc</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a6998304b1c9bc3df7dab435c1fa33f82</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a3f6a1eb82de7b71bffb6afb23e552a30</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a208ebd85e18e94d8b922050cb1d4b4bf</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>a133a74ecacfc33fa68e81d2f08808d59</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>aad299eae15b32a77e86e4abe69a62439</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1string_00_01StringJsonHandler_01_4.html</anchorfile>
+      <anchor>ac000d8cbe4d726e8c8d4c3ebcb14381a</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::ArrayJsonHandler&lt; std::vector&lt; T &gt;, ArrayJsonHandler&lt; T, THandler &gt; &gt;</name>
@@ -904,20 +1338,279 @@
     <templarg>typename T</templarg>
     <templarg>typename THandler</templarg>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="typedef">
+      <type>std::vector&lt; T &gt;</type>
+      <name>ValueType</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>abc046ca381d4e856e4f94e0b3b5f52c5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>ArrayJsonHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>ac0b5d8aa383bc5454f72a6828e6832cc</anchor>
+      <arglist>(Ts &amp;&amp;... args) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a7b781f83da7650dc05f830b84f294c2c</anchor>
+      <arglist>(IJsonHandler *pParent, std::vector&lt; std::vector&lt; T &gt; &gt; *pArray)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a04c516af58364c1cafb44b9a48fcd34f</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>aa15d7d4ab0c2e206ba31d7e18c1ee6fb</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>af4c65b227ac2df79c04ff634bf0c27c6</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a2ce3649caffda5f405a383036cc13cd7</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>ad079f0fb9e498f73c20fbbddb38d2a09</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a6fd73c0ace2a7fcdd450faca2ca835e6</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a923cc29dfc17474a2c148acb88e47270</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a9be5ae18e3a218542529713f74b9ff42</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>aa021cf8f63546b96dd681695b30fbe54</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a4bb4f59741af94f394dfb9c4333d705f</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a633047e6086e3aeb3aad34967c917efb</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01std_1_1vector_3_01T_01_4_00_01ArrayJsonHandler_3_01T_00_01THandler_01_4_01_4.html</anchorfile>
+      <anchor>a14f78d78667da3d8fc94461afec620a1</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::ArrayJsonHandler&lt; T, IntegerJsonHandler&lt; T &gt; &gt;</name>
     <filename>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="typedef">
+      <type>std::vector&lt; T &gt;</type>
+      <name>ValueType</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a532ee10e664d59e7eb1aa6dfe1a49854</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>abbc769eda63da924f1b2cdb15d97cffc</anchor>
+      <arglist>(IJsonHandler *pParent, std::vector&lt; T &gt; *pArray)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>aa11b271e159071f1848bd39a35bd09d3</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>af1283cdfce0a6ec41cb251ae5f52553c</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>ae1053c59d61c6ff49236d8ef136b5bf0</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a075710c033445604ed9948377af3432f</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>acefeb70dba47489dcb37518c72fcf5f4</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a4546f3722acc181eb5b0ef37bfe7667c</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a8330ae7693fe49ea5b761c8d86878c73</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a09b7e19edba44647f59ff9d9e51c6a05</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a10caa1a4b5cb2edc7ff4da0801978cd1</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a1d009503199e80c6be06008641091be8</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a272ef9edf61abeecd77cf014311b25ab</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1ArrayJsonHandler_3_01T_00_01IntegerJsonHandler_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a1fa876f495d13a074c884468ebe99a05</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::PropertyTableProperty::ArrayOffsetType</name>
     <filename>structCesium3DTiles_1_1PropertyTableProperty_1_1ArrayOffsetType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>a18bc51ec3f41b8e22be4112d32619bda</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>a85601f34db611f4f8398691184d8a0be</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>aabdc114ff35989164901823d92c379f0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>a8017176ef575d9be90dffea9ac9d4088</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::PropertyTableProperty::ArrayOffsetType</name>
     <filename>structCesiumGltf_1_1PropertyTableProperty_1_1ArrayOffsetType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>a9028b381029bc6a78be167cb1d8a20ec</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>a01e4e768961dd31392b5034d3d1fd2da</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>aff6ab4932452b9e472ab9815bd6fb024</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1ArrayOffsetType.html</anchorfile>
+      <anchor>a6ae6b7ce4a510b77d46854e2a46b6cb7</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Asset</name>
@@ -942,6 +1635,13 @@
       <name>tilesetVersion</name>
       <anchorfile>structCesium3DTiles_1_1Asset.html</anchorfile>
       <anchor>a7554ae14f92d04e06780e47a33a12fd7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Asset.html</anchorfile>
+      <anchor>a5dd4fb06c3ab0b2bfdf142a655f335ad</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -982,6 +1682,13 @@
       <name>minVersion</name>
       <anchorfile>structCesiumGltf_1_1Asset.html</anchorfile>
       <anchor>a7ccf50855d2357385933a62edf6a9bf3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Asset.html</anchorfile>
+      <anchor>abec8fe60a4d37521341ed7da7c158844</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -1055,10 +1762,80 @@
   <compound kind="struct">
     <name>Cesium3DTilesContent::AssetFetcher</name>
     <filename>structCesium3DTilesContent_1_1AssetFetcher.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>AssetFetcher</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>ae25448bfa224d023a7fef97ca1809f7b</anchor>
+      <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem_, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor_, const std::string &amp;baseUrl_, const glm::dmat4 tileTransform_, const std::vector&lt; CesiumAsync::IAssetAccessor::THeader &gt; &amp;requestHeaders_, CesiumGeometry::Axis upAxis_)</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumAsync::Future&lt; AssetFetcherResult &gt;</type>
+      <name>get</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>ac53008bc95732175c36a647811c2284a</anchor>
+      <arglist>(const std::string &amp;relativeUrl) const</arglist>
+    </member>
+    <member kind="variable">
+      <type>CesiumAsync::AsyncSystem</type>
+      <name>asyncSystem</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>a93ee3171e0a9a628efade1170ba4c20a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt;</type>
+      <name>pAssetAccessor</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>adf722736ae4d086450980e66cf6cf43d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>std::string</type>
+      <name>baseUrl</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>ac61ae6d6656b445fb1e6c69ed6c3b8f7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>glm::dmat4</type>
+      <name>tileTransform</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>a0acbe3e4c018070e3c01b2ed3f4cfef7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>std::vector&lt; CesiumAsync::IAssetAccessor::THeader &gt;</type>
+      <name>requestHeaders</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>ab3e29fc5b47e8dc9b3e07148406028a5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>CesiumGeometry::Axis</type>
+      <name>upAxis</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcher.html</anchorfile>
+      <anchor>a95855dd820b71a4777eff5c21fd39c58</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTilesContent::AssetFetcherResult</name>
     <filename>structCesium3DTilesContent_1_1AssetFetcherResult.html</filename>
+    <member kind="variable">
+      <type>std::vector&lt; std::byte &gt;</type>
+      <name>bytes</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcherResult.html</anchorfile>
+      <anchor>acb924d4641fd5dd89da20c13d7c0bd9e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>CesiumUtility::ErrorList</type>
+      <name>errorList</name>
+      <anchorfile>structCesium3DTilesContent_1_1AssetFetcherResult.html</anchorfile>
+      <anchor>aac476a9e956f6108180fdee5d634b9f5</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::AssetReader</name>
@@ -1344,10 +2121,38 @@
       <anchor>a34c3b9dbf3b36a1662641d3b04103f9b</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Availability.html</anchorfile>
+      <anchor>a07f167557e1cb381b4fb34361ff02737</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGeometry::AvailabilityAccessor</name>
     <filename>classCesiumGeometry_1_1AvailabilityAccessor.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>AvailabilityAccessor</name>
+      <anchorfile>classCesiumGeometry_1_1AvailabilityAccessor.html</anchorfile>
+      <anchor>a7670d4f0d7544b8212678e383065b4e8</anchor>
+      <arglist>(const AvailabilityView &amp;view, const AvailabilitySubtree &amp;subtree) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>isBufferView</name>
+      <anchorfile>classCesiumGeometry_1_1AvailabilityAccessor.html</anchorfile>
+      <anchor>a575240ebb08fe71eb4c7b57e38c7a097</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>isConstant</name>
+      <anchorfile>classCesiumGeometry_1_1AvailabilityAccessor.html</anchorfile>
+      <anchor>af39326656ab9ad300669ce32a1a04126</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
     <member kind="function">
       <type>bool</type>
       <name>getConstant</name>
@@ -1494,6 +2299,13 @@
       <anchor>a1ed1a43d037de64f28cb728fe6f68fee</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumQuantizedMeshTerrain_1_1AvailabilityRectangle.html</anchorfile>
+      <anchor>ad7754c92c3ab6b3b4246f603b128e626</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumQuantizedMeshTerrain::AvailabilityRectangleReader</name>
@@ -1544,14 +2356,70 @@
   <compound kind="struct">
     <name>CesiumGeometry::AvailabilitySubtree</name>
     <filename>structCesiumGeometry_1_1AvailabilitySubtree.html</filename>
+    <member kind="variable">
+      <type>AvailabilityView</type>
+      <name>tileAvailability</name>
+      <anchorfile>structCesiumGeometry_1_1AvailabilitySubtree.html</anchorfile>
+      <anchor>a9addf00a1686d7343a43b217a8e593fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>AvailabilityView</type>
+      <name>contentAvailability</name>
+      <anchorfile>structCesiumGeometry_1_1AvailabilitySubtree.html</anchorfile>
+      <anchor>a52412fce93adbb7b1858c6e3fd2f648a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>AvailabilityView</type>
+      <name>subtreeAvailability</name>
+      <anchorfile>structCesiumGeometry_1_1AvailabilitySubtree.html</anchorfile>
+      <anchor>a8a6d6c4e801c3c2097e7646ec710c8a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>std::vector&lt; std::vector&lt; std::byte &gt; &gt;</type>
+      <name>buffers</name>
+      <anchorfile>structCesiumGeometry_1_1AvailabilitySubtree.html</anchorfile>
+      <anchor>a5c0bd6c36f25f3cf9260a434a77f27c8</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGeometry::AvailabilityTree</name>
     <filename>structCesiumGeometry_1_1AvailabilityTree.html</filename>
+    <member kind="variable">
+      <type>std::unique_ptr&lt; AvailabilityNode &gt;</type>
+      <name>pRoot</name>
+      <anchorfile>structCesiumGeometry_1_1AvailabilityTree.html</anchorfile>
+      <anchor>a2cc234ae8dccae0d459acafee49814b0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGeometry::AxisAlignedBox</name>
     <filename>structCesiumGeometry_1_1AxisAlignedBox.html</filename>
+    <member kind="function">
+      <type>constexpr</type>
+      <name>AxisAlignedBox</name>
+      <anchorfile>structCesiumGeometry_1_1AxisAlignedBox.html</anchorfile>
+      <anchor>a43432397c0ce51bdb3f2527ec11b0931</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr</type>
+      <name>AxisAlignedBox</name>
+      <anchorfile>structCesiumGeometry_1_1AxisAlignedBox.html</anchorfile>
+      <anchor>a6a37ba657f7ad4446b498f37fd901121</anchor>
+      <arglist>(double minimumX_, double minimumY_, double minimumZ_, double maximumX_, double maximumY_, double maximumZ_) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr bool</type>
+      <name>contains</name>
+      <anchorfile>structCesiumGeometry_1_1AxisAlignedBox.html</anchorfile>
+      <anchor>ad165d4a176e9bb11b1f06ea7436b45f2</anchor>
+      <arglist>(const glm::dvec3 &amp;position) const noexcept</arglist>
+    </member>
     <member kind="variable">
       <type>double</type>
       <name>minimumX</name>
@@ -1626,10 +2494,24 @@
   <compound kind="struct">
     <name>Cesium3DTilesContent::B3dmToGltfConverter</name>
     <filename>structCesium3DTilesContent_1_1B3dmToGltfConverter.html</filename>
+    <member kind="function" static="yes">
+      <type>static CesiumAsync::Future&lt; GltfConverterResult &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesium3DTilesContent_1_1B3dmToGltfConverter.html</anchorfile>
+      <anchor>a7015c4aa6bbfffa8de150eddd4067c81</anchor>
+      <arglist>(const std::span&lt; const std::byte &gt; &amp;b3dmBinary, const CesiumGltfReader::GltfReaderOptions &amp;options, const AssetFetcher &amp;assetFetcher)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTilesContent::BinaryToGltfConverter</name>
     <filename>structCesium3DTilesContent_1_1BinaryToGltfConverter.html</filename>
+    <member kind="function" static="yes">
+      <type>static CesiumAsync::Future&lt; GltfConverterResult &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesium3DTilesContent_1_1BinaryToGltfConverter.html</anchorfile>
+      <anchor>a6c9096193c8fb29ad372903423b55d6d</anchor>
+      <arglist>(const std::span&lt; const std::byte &gt; &amp;gltfBinary, const CesiumGltfReader::GltfReaderOptions &amp;options, const AssetFetcher &amp;assetFetcher)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumRasterOverlays::BingMapsRasterOverlay</name>
@@ -1728,6 +2610,20 @@
     <name>CesiumJsonReader::BoolJsonHandler</name>
     <filename>classCesiumJsonReader_1_1BoolJsonHandler.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1BoolJsonHandler.html</anchorfile>
+      <anchor>a9ae9d6e37786a5ba5e5ae573ffd5ed14</anchor>
+      <arglist>(IJsonHandler *pParent, bool *pBool)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1BoolJsonHandler.html</anchorfile>
+      <anchor>aa0e5fe1c859a9c9ffa901194ae9288c5</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGeospatial::BoundingRegion</name>
@@ -1973,6 +2869,13 @@
       <anchor>aa57801122d404f5262f93dc72e9bc505</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1BoundingVolume.html</anchorfile>
+      <anchor>af2dec43373ae448e9e36084320097305</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::BoundingVolumeReader</name>
@@ -2190,6 +3093,13 @@
       <anchor>aa39a02d8b0e6d3245a89b8b347229582</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1BufferSpec.html</anchorfile>
+      <anchor>ab6fe363de9f15346f6a2da7ce20d5eef</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type></type>
       <name>BufferSpec</name>
@@ -2221,6 +3131,13 @@
       <name>byteLength</name>
       <anchorfile>structCesiumGltf_1_1BufferSpec.html</anchorfile>
       <anchor>ab2f382179ccf84e24031eda51154ac7a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1BufferSpec.html</anchorfile>
+      <anchor>a6733dd35bbb555df0ab6b208747b3ee2</anchor>
       <arglist></arglist>
     </member>
     <member kind="function" protection="protected">
@@ -2270,6 +3187,13 @@
       <anchor>a5955d40a7dbd61c4394e60cb266106b1</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1BufferView.html</anchorfile>
+      <anchor>aaa2b5029646a472bf47a5826a8155a9c</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::BufferView</name>
@@ -2316,6 +3240,13 @@
       <name>target</name>
       <anchorfile>structCesiumGltf_1_1BufferView.html</anchorfile>
       <anchor>af064520f3dd908b80cd3019fa225226f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1BufferView.html</anchorfile>
+      <anchor>a8b610c430c56e316ff968c14f6a0d341</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -2573,6 +3504,13 @@
       <anchor>a04050ab09a7414de836f810681031d3f</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Camera.html</anchorfile>
+      <anchor>ac2046020c3a821610e167b5d1d7c0488</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::CameraOrthographic</name>
@@ -2611,6 +3549,13 @@
       <name>znear</name>
       <anchorfile>structCesiumGltf_1_1CameraOrthographic.html</anchorfile>
       <anchor>afc8c1580ca24e25c3320f5ffd9b8db84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1CameraOrthographic.html</anchorfile>
+      <anchor>a26a250ddf5738643c4443593024f792f</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -2697,6 +3642,13 @@
       <name>znear</name>
       <anchorfile>structCesiumGltf_1_1CameraPerspective.html</anchorfile>
       <anchor>a0c2987550be9c637d64a0f3843de9e29</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1CameraPerspective.html</anchorfile>
+      <anchor>a02cf584b1e26676e3d1dd52a390fe785</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -2951,6 +3903,13 @@
   <compound kind="struct">
     <name>CesiumAsync::CaseInsensitiveCompare</name>
     <filename>structCesiumAsync_1_1CaseInsensitiveCompare.html</filename>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumAsync_1_1CaseInsensitiveCompare.html</anchorfile>
+      <anchor>aa5b6cfb5a86d37d1bc53f47fb4f3fd8f</anchor>
+      <arglist>(const std::string &amp;s1, const std::string &amp;s2) const</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Class</name>
@@ -2984,6 +3943,13 @@
       <anchor>aebbb186f69044d061c70db95177adbfc</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Class.html</anchorfile>
+      <anchor>a7824be6f4d736efa40f97d435716cb11</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Class</name>
@@ -3015,6 +3981,13 @@
       <name>properties</name>
       <anchorfile>structCesiumGltf_1_1Class.html</anchorfile>
       <anchor>a8e0a6e2b33b3e81a0167177e7cef1c84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Class.html</anchorfile>
+      <anchor>a59acfaead7f3360331618a004f8ad6d4</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -3143,6 +4116,13 @@
       <anchor>a9ecda024b08bf08d9c9eadb4c742abe2</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty.html</anchorfile>
+      <anchor>abd9fd3adde80bf07f1b1a75c9e966116</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ClassProperty</name>
@@ -3267,6 +4247,13 @@
       <name>semantic</name>
       <anchorfile>structCesiumGltf_1_1ClassProperty.html</anchorfile>
       <anchor>a11c2857c8d5e1889325b5a659ff213a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty.html</anchorfile>
+      <anchor>a9491b0ea0e2590a062dae2d11c63a772</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -3479,6 +4466,13 @@
       <anchor>ab10705e6d0ef9fd31a3b017b96b5a557</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1ClassStatistics.html</anchorfile>
+      <anchor>a95cd4df49e5334a20915dddc2b76b0e9</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::ClassStatisticsReader</name>
@@ -3529,22 +4523,260 @@
   <compound kind="struct">
     <name>Cesium3DTilesContent::CmptToGltfConverter</name>
     <filename>structCesium3DTilesContent_1_1CmptToGltfConverter.html</filename>
+    <member kind="function" static="yes">
+      <type>static CesiumAsync::Future&lt; GltfConverterResult &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesium3DTilesContent_1_1CmptToGltfConverter.html</anchorfile>
+      <anchor>ae84cad1649c44bec6e019b62540eb88a</anchor>
+      <arglist>(const std::span&lt; const std::byte &gt; &amp;cmptBinary, const CesiumGltfReader::GltfReaderOptions &amp;options, const AssetFetcher &amp;assetFetcher)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::ClassProperty::ComponentType</name>
     <filename>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT8</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>ab5b0d4d341d1dc3c7afb62a42422a6e8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a5cbc8c650fe826d47aecb9feb3cffef9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT16</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>aed9b82c41f541f467b5f7918b775dae3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a968730b80b335737652c15ed88e5e01e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT32</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a765ed84f2af7556b20b36d75635a6510</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a96a441d37b7cb5d07269327d82313385</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT64</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a7eeb6d6a5382f7fd21a991ae2a5174d1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a71afb5d394f32ec788a14b717720f020</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>FLOAT32</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>ac16be1b070983c6806c8bfde7b3ee7ab</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>FLOAT64</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a3700b2212cf986d0bec0fdd955c46406</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AccessorSparseIndices::ComponentType</name>
     <filename>structCesiumGltf_1_1AccessorSparseIndices_1_1ComponentType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_BYTE</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSparseIndices_1_1ComponentType.html</anchorfile>
+      <anchor>a7f992d147f36352d6938bdb22ceed15a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_SHORT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSparseIndices_1_1ComponentType.html</anchorfile>
+      <anchor>a7a9dd7600033157109ee21f9462fb0a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_INT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSparseIndices_1_1ComponentType.html</anchorfile>
+      <anchor>a5fc72d972fa9d268ba3cb8a264f40b91</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AccessorSpec::ComponentType</name>
     <filename>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>BYTE</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>ae6704f2c19a872491a362d7f1bd2ff00</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_BYTE</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>a8cedd75806a8672ec0418e0b68a615fe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>SHORT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>ab67abd402f27e244fa3663a6effb2dbf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_SHORT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>a254d739bc6924f214e1375af30735555</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>INT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>a0cc9f75083fc3fbbcb789acd00de4d3a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_INT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>a7569032aec80aabaa45de8c2efe71492</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>INT64</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>ad0b00ad0d4066ce74d5e28ae919a92ad</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNSIGNED_INT64</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>ad0897c582c8ec163290c5139483a9779</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>FLOAT</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>ae8027e78bab6b768ad560622ffc4318a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>DOUBLE</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1ComponentType.html</anchorfile>
+      <anchor>a0a45e5f1943ef176104cda97b0955359</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ClassProperty::ComponentType</name>
     <filename>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT8</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a2be1fe5485a6353b68ce50e4269024b3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a48809ce0da72697fd85baca4ddda8796</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT16</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a13e5f96843d3b7178e9637f79c16be11</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>aacc882dcac48edddde154f0cb0aeb9f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT32</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a093f101640cf448c33d33d80e32635e1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a9816d76569df6a45284ffd2f38713b2a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT64</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a429eace0a5a775b9cf8bd3f06bd02103</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>ad2fdab343a2de6b363dd0f79f775d45b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>FLOAT32</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>a244bb8aa59fd0234da5080a9f94a526a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>FLOAT64</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1ComponentType.html</anchorfile>
+      <anchor>aaa451be93e1cd374defa0f34793e44bb</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumIonClient::Connection</name>
@@ -3669,6 +4901,13 @@
       <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::string &amp;apiUrl=&quot;https://api.cesium.com&quot;)</arglist>
     </member>
     <member kind="function" static="yes">
+      <type>static CesiumAsync::Future&lt; std::optional&lt; std::string &gt; &gt;</type>
+      <name>getApiUrl</name>
+      <anchorfile>classCesiumIonClient_1_1Connection.html</anchorfile>
+      <anchor>a0aeeeb27a050a118ba892638d8b4c9b8</anchor>
+      <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::string &amp;ionUrl)</arglist>
+    </member>
+    <member kind="function" static="yes">
       <type>static std::optional&lt; std::string &gt;</type>
       <name>getIdFromToken</name>
       <anchorfile>classCesiumIonClient_1_1Connection.html</anchorfile>
@@ -3679,10 +4918,31 @@
   <compound kind="struct">
     <name>Cesium3DTiles::Availability::Constant</name>
     <filename>structCesium3DTiles_1_1Availability_1_1Constant.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>UNAVAILABLE</name>
+      <anchorfile>structCesium3DTiles_1_1Availability_1_1Constant.html</anchorfile>
+      <anchor>a0a22eba7bb476e1738e64895eaf7ce1e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>AVAILABLE</name>
+      <anchorfile>structCesium3DTiles_1_1Availability_1_1Constant.html</anchorfile>
+      <anchor>a2de9535cad3bff0fde538f4b593109a0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGeometry::ConstantAvailability</name>
     <filename>structCesiumGeometry_1_1ConstantAvailability.html</filename>
+    <member kind="variable">
+      <type>bool</type>
+      <name>constant</name>
+      <anchorfile>structCesiumGeometry_1_1ConstantAvailability.html</anchorfile>
+      <anchor>a092c3116c037bbfb037a73fa3e669f26</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Content</name>
@@ -3721,6 +4981,13 @@
       <name>group</name>
       <anchorfile>structCesium3DTiles_1_1Content.html</anchorfile>
       <anchor>a38f1fdf93ad987776e18c2b475b14878</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Content.html</anchorfile>
+      <anchor>a5e77dc7d8fed066b7ce4386a0bdea68b</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -3773,6 +5040,20 @@
   <compound kind="struct">
     <name>CesiumGltf::CountFromAccessor</name>
     <filename>structCesiumGltf_1_1CountFromAccessor.html</filename>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1CountFromAccessor.html</anchorfile>
+      <anchor>ad18105c88159aea3fc87b2f75e77b719</anchor>
+      <arglist>(std::monostate)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1CountFromAccessor.html</anchorfile>
+      <anchor>ad01dfa5720c0c2aa5c93a90184e9b586</anchor>
+      <arglist>(const AccessorView&lt; T &gt; &amp;value)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumUtility::Credit</name>
@@ -3903,6 +5184,31 @@
       <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::shared_ptr&lt; CesiumUtility::CreditSystem &gt; &amp;pCreditSystem, const std::shared_ptr&lt; IPrepareRasterOverlayRendererResources &gt; &amp;pPrepareRendererResources, const std::shared_ptr&lt; spdlog::logger &gt; &amp;pLogger, CesiumUtility::IntrusivePointer&lt; const RasterOverlay &gt; pOwner) const override</arglist>
     </member>
   </compound>
+  <compound kind="class">
+    <name>Cesium3DTilesSelection::DebugTileStateDatabase</name>
+    <filename>classCesium3DTilesSelection_1_1DebugTileStateDatabase.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>DebugTileStateDatabase</name>
+      <anchorfile>classCesium3DTilesSelection_1_1DebugTileStateDatabase.html</anchorfile>
+      <anchor>a35fe039b345b4bc80ee1a2827795eb3d</anchor>
+      <arglist>(const std::string &amp;databaseFilename)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>recordAllTileStates</name>
+      <anchorfile>classCesium3DTilesSelection_1_1DebugTileStateDatabase.html</anchorfile>
+      <anchor>a1ded739d7d5ddcc13e36f9e36d4233fd</anchor>
+      <arglist>(int32_t frameNumber, const Tileset &amp;tileset)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>recordTileState</name>
+      <anchorfile>classCesium3DTilesSelection_1_1DebugTileStateDatabase.html</anchorfile>
+      <anchor>ac69d4e5c46cb284e2b07e061620e5a3f</anchor>
+      <arglist>(int32_t frameNumber, const Tile &amp;tile)</arglist>
+    </member>
+  </compound>
   <compound kind="struct">
     <name>CesiumIonClient::DefaultAssets</name>
     <filename>structCesiumIonClient_1_1DefaultAssets.html</filename>
@@ -3946,17 +5252,109 @@
       <arglist></arglist>
     </member>
   </compound>
+  <compound kind="struct">
+    <name>CesiumAsync::DeleteSqliteConnection</name>
+    <filename>structCesiumAsync_1_1DeleteSqliteConnection.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumAsync_1_1DeleteSqliteConnection.html</anchorfile>
+      <anchor>ade276a55f087e13bcb188b82747986ed</anchor>
+      <arglist>(CESIUM_SQLITE(sqlite3 *) pConnection) noexcept</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>CesiumAsync::DeleteSqliteStatement</name>
+    <filename>structCesiumAsync_1_1DeleteSqliteStatement.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumAsync_1_1DeleteSqliteStatement.html</anchorfile>
+      <anchor>ad2c484daddb6e82e64f56c42f0ae197e</anchor>
+      <arglist>(CESIUM_SQLITE(sqlite3_stmt *) pStatement) noexcept</arglist>
+    </member>
+  </compound>
   <compound kind="class">
     <name>CesiumJsonReader::DictionaryJsonHandler</name>
     <filename>classCesiumJsonReader_1_1DictionaryJsonHandler.html</filename>
     <templarg>typename T</templarg>
     <templarg>typename THandler</templarg>
     <base>CesiumJsonReader::ObjectJsonHandler</base>
+    <member kind="function">
+      <type></type>
+      <name>DictionaryJsonHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1DictionaryJsonHandler.html</anchorfile>
+      <anchor>aaba3f805bd7b7eeed6b97d56d655b941</anchor>
+      <arglist>(Ts &amp;&amp;... args) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1DictionaryJsonHandler.html</anchorfile>
+      <anchor>a774e29373b731eca29bc707f16d9ce57</anchor>
+      <arglist>(IJsonHandler *pParent, std::unordered_map&lt; std::string, T &gt; *pDictionary)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1DictionaryJsonHandler.html</anchorfile>
+      <anchor>a94fe1a4e092a49beb8e34fdc83e2cf96</anchor>
+      <arglist>(IJsonHandler *pParent, std::map&lt; std::string, T &gt; *pDictionary)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1DictionaryJsonHandler.html</anchorfile>
+      <anchor>a6988a8d2ad83f8a08a5cb465dc21ba7f</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::DoubleJsonHandler</name>
     <filename>classCesiumJsonReader_1_1DoubleJsonHandler.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1DoubleJsonHandler.html</anchorfile>
+      <anchor>af4418f1dac27000ef85078a543c8d2b0</anchor>
+      <arglist>(IJsonHandler *pParent, double *pDouble)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1DoubleJsonHandler.html</anchorfile>
+      <anchor>ac07413b43e0a0db1974c63698796a98c</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1DoubleJsonHandler.html</anchorfile>
+      <anchor>a5a865b6eef3007944a3b352f44bc37d1</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1DoubleJsonHandler.html</anchorfile>
+      <anchor>a8f9e825afd84bf02e87efc0e9e8061c2</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1DoubleJsonHandler.html</anchorfile>
+      <anchor>a4df165f7d47c712e72c18dc754cab029</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1DoubleJsonHandler.html</anchorfile>
+      <anchor>afb256ea8a588a873e9f034362c814bb9</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumUtility::DoublyLinkedListAdvanced</name>
@@ -4406,6 +5804,13 @@
       <anchor>a389fd93dd5cdeea233cd0e0a083ba478</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Enum.html</anchorfile>
+      <anchor>a2c0e506811dfb130c8d3604babca999f</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Enum</name>
@@ -4445,6 +5850,13 @@
       <name>values</name>
       <anchorfile>structCesiumGltf_1_1Enum.html</anchorfile>
       <anchor>a5a5ec14641357b5922c4c77f7775408a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Enum.html</anchorfile>
+      <anchor>a02bc8409fd331e7f8db665ff64894d12</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -4572,6 +5984,13 @@
       <anchor>a19d65178baf60707d4b6588cde9a8ff6</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1EnumValue.html</anchorfile>
+      <anchor>a02583ced3fe903926e638277bb2a6e7e</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::EnumValue</name>
@@ -4603,6 +6022,13 @@
       <name>value</name>
       <anchorfile>structCesiumGltf_1_1EnumValue.html</anchorfile>
       <anchor>aac7ca4a2620d51a1fb7300fd9524a346</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1EnumValue.html</anchorfile>
+      <anchor>a1564099ace5240c77857cc8546d087d3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -4871,6 +6297,27 @@
     <name>CesiumJsonReader::ExtensibleObjectJsonHandler</name>
     <filename>classCesiumJsonReader_1_1ExtensibleObjectJsonHandler.html</filename>
     <base>CesiumJsonReader::ObjectJsonHandler</base>
+    <member kind="function">
+      <type></type>
+      <name>ExtensibleObjectJsonHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1ExtensibleObjectJsonHandler.html</anchorfile>
+      <anchor>aa932eac9aff675b2b8d1950bfba6e09d</anchor>
+      <arglist>(const JsonReaderOptions &amp;context) noexcept</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ExtensibleObjectJsonHandler.html</anchorfile>
+      <anchor>aa6cdf0b2899e3aaf8d65b76b5d91afcf</anchor>
+      <arglist>(IJsonHandler *pParent, CesiumUtility::ExtensibleObject *pObject)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IJsonHandler *</type>
+      <name>readObjectKeyExtensibleObject</name>
+      <anchorfile>classCesiumJsonReader_1_1ExtensibleObjectJsonHandler.html</anchorfile>
+      <anchor>a21d5b61b98db164fa9baa770a3eeec67</anchor>
+      <arglist>(const std::string &amp;objectType, const std::string_view &amp;str, CesiumUtility::ExtensibleObject &amp;o)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Extension3dTilesBoundingVolumeS2</name>
@@ -4902,6 +6349,20 @@
       <name>maximumHeight</name>
       <anchorfile>structCesium3DTiles_1_1Extension3dTilesBoundingVolumeS2.html</anchorfile>
       <anchor>a8f8d92801ba797537b5410ce38c8743f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Extension3dTilesBoundingVolumeS2.html</anchorfile>
+      <anchor>ac8c668310169c24878ece9865775273d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesium3DTiles_1_1Extension3dTilesBoundingVolumeS2.html</anchorfile>
+      <anchor>a075d8e3c0d18a7b97eef60656a3db34d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -4967,6 +6428,20 @@
       <name>fallback</name>
       <anchorfile>structCesiumGltf_1_1ExtensionBufferExtMeshoptCompression.html</anchorfile>
       <anchor>ac42e394f6a424d077dd763c7c5a1e898</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferExtMeshoptCompression.html</anchorfile>
+      <anchor>a546d50b9fd51f1ecc3aa82a5f7c5c82a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferExtMeshoptCompression.html</anchorfile>
+      <anchor>a8d6e7c5174db2ea8b1e7cfb25da31d1f</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5078,6 +6553,20 @@
       <anchor>a231c47ad95274a726f3855cba21352a6</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression.html</anchorfile>
+      <anchor>a1afd826f92ebf6f4998bb253cfd04d28</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression.html</anchorfile>
+      <anchor>a9bc7d4214d492c57f4efbdd0838473aa</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionBufferViewExtMeshoptCompressionReader</name>
@@ -5143,6 +6632,20 @@
       <anchor>a39f0356e131072df1c00661b9918851b</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionCesiumPrimitiveOutline.html</anchorfile>
+      <anchor>a4d1b1f21e58e10e42e77397ecf1b0239</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionCesiumPrimitiveOutline.html</anchorfile>
+      <anchor>a15d43d8943fd58a1d087b9f1fe1acdb0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionCesiumPrimitiveOutlineReader</name>
@@ -5206,6 +6709,20 @@
       <name>center</name>
       <anchorfile>structCesiumGltf_1_1ExtensionCesiumRTC.html</anchorfile>
       <anchor>ae1c2ec50484a5636f9fa3bc722c6398b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionCesiumRTC.html</anchorfile>
+      <anchor>a70173a9484f66d9691a3a9b2d29422a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionCesiumRTC.html</anchorfile>
+      <anchor>a5fc63a537b5f4b4089bace029a0a3e42</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5294,6 +6811,20 @@
       <anchor>ab770983bec2ecfb3df1a46c6066f7a67</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionCesiumTileEdges.html</anchorfile>
+      <anchor>a566232d3eaa58aa055490a9b83f94f42</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionCesiumTileEdges.html</anchorfile>
+      <anchor>acec423710dc31af8350ee2b243ff6760</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionCesiumTileEdgesReader</name>
@@ -5359,6 +6890,20 @@
       <anchor>a5260cdfde01c2e128310b96658627ff9</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtInstanceFeatures.html</anchorfile>
+      <anchor>a26f5d87be702494fc414141cd4dbe416</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtInstanceFeatures.html</anchorfile>
+      <anchor>a4face678114219fae9b87a913e9d6696</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ExtensionExtInstanceFeaturesFeatureId</name>
@@ -5404,6 +6949,13 @@
       <name>propertyTable</name>
       <anchorfile>structCesiumGltf_1_1ExtensionExtInstanceFeaturesFeatureId.html</anchorfile>
       <anchor>aef7d92c7f52c8f529afdb8f0570c71cf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtInstanceFeaturesFeatureId.html</anchorfile>
+      <anchor>ab252164b72e163c6b69c89fc44d2ccfa</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5517,6 +7069,20 @@
       <anchor>a6e8ffe77cd6961dd29018aad970690b3</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtMeshFeatures.html</anchorfile>
+      <anchor>acdcd2a4b03179d2c890974b0e5f41193</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtMeshFeatures.html</anchorfile>
+      <anchor>a01170b1d435f72bd8be76fef6b3518ce</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionExtMeshFeaturesReader</name>
@@ -5582,6 +7148,20 @@
       <anchor>aceeb0aa1148062631c81dc497abe3a63</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtMeshGpuInstancing.html</anchorfile>
+      <anchor>a33350d57d18081d420ea28b18f92ce16</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtMeshGpuInstancing.html</anchorfile>
+      <anchor>a26ce893849675a3108d4dd832b53effb</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionExtMeshGpuInstancingReader</name>
@@ -5630,6 +7210,92 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>CesiumGltf::ExtensionExtStructuralMetadata</name>
+    <filename>structCesiumGltf_1_1ExtensionExtStructuralMetadata.html</filename>
+    <base>CesiumUtility::ExtensibleObject</base>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>getSizeBytes</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtStructuralMetadata.html</anchorfile>
+      <anchor>ade3a8dbe8927e768e1ded00c143195ca</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="variable">
+      <type>std::optional&lt; std::string &gt;</type>
+      <name>classProperty</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtStructuralMetadata.html</anchorfile>
+      <anchor>a27912500c90d5d1aa3a569a77202d103</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>std::unordered_map&lt; std::string, CesiumUtility::JsonValue &gt;</type>
+      <name>properties</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtStructuralMetadata.html</anchorfile>
+      <anchor>a675270f455a3df8d34a783f4d36f3162</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtStructuralMetadata.html</anchorfile>
+      <anchor>ac66c54850bb9845f97af2bdb9c925bc5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionExtStructuralMetadata.html</anchorfile>
+      <anchor>a65043fb3a83e5afbc00d03b95c24d596</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>CesiumGltfReader::ExtensionExtStructuralMetadataReader</name>
+    <filename>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>ExtensionExtStructuralMetadataReader</name>
+      <anchorfile>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</anchorfile>
+      <anchor>a29f3569fdb4c1a09b6b736136c910a12</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumJsonReader::JsonReaderOptions &amp;</type>
+      <name>getOptions</name>
+      <anchorfile>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</anchorfile>
+      <anchor>a726fbbc457a2df4c21fa4c002233e9f2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>const CesiumJsonReader::JsonReaderOptions &amp;</type>
+      <name>getOptions</name>
+      <anchorfile>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</anchorfile>
+      <anchor>ae88053f4fa299a76da941f692647ea11</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumJsonReader::ReadJsonResult&lt; CesiumGltf::ExtensionExtStructuralMetadata &gt;</type>
+      <name>readFromJson</name>
+      <anchorfile>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</anchorfile>
+      <anchor>ad65bb40e358be1df34982c1bb828b094</anchor>
+      <arglist>(const std::span&lt; const std::byte &gt; &amp;data) const</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumJsonReader::ReadJsonResult&lt; CesiumGltf::ExtensionExtStructuralMetadata &gt;</type>
+      <name>readFromJson</name>
+      <anchorfile>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</anchorfile>
+      <anchor>aa15bf1b4f4788a78c6058e4d2f904e1d</anchor>
+      <arglist>(const rapidjson::Value &amp;value) const</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumJsonReader::ReadJsonResult&lt; std::vector&lt; CesiumGltf::ExtensionExtStructuralMetadata &gt; &gt;</type>
+      <name>readArrayFromJson</name>
+      <anchorfile>classCesiumGltfReader_1_1ExtensionExtStructuralMetadataReader.html</anchorfile>
+      <anchor>a21fabfc728cb175395a40020ee439eed</anchor>
+      <arglist>(const rapidjson::Value &amp;value) const</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>CesiumGltf::ExtensionKhrDracoMeshCompression</name>
     <filename>structCesiumGltf_1_1ExtensionKhrDracoMeshCompression.html</filename>
     <base>CesiumUtility::ExtensibleObject</base>
@@ -5652,6 +7318,20 @@
       <name>attributes</name>
       <anchorfile>structCesiumGltf_1_1ExtensionKhrDracoMeshCompression.html</anchorfile>
       <anchor>addeed2caeb51c4537a806fb4ce06dc4b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrDracoMeshCompression.html</anchorfile>
+      <anchor>a93436da2842dd4a7c80575c2c449c119</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrDracoMeshCompression.html</anchorfile>
+      <anchor>a0db7b3bc9ee90fd7c6eb3d94c0c7d120</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5711,6 +7391,20 @@
       <anchorfile>structCesiumGltf_1_1ExtensionKhrMaterialsUnlit.html</anchorfile>
       <anchor>ad24d5f7bb9d3e277f1a02fec792dfc28</anchor>
       <arglist>() const</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrMaterialsUnlit.html</anchorfile>
+      <anchor>a8cfb63b9d629ec9c42360b52f91f40ab</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrMaterialsUnlit.html</anchorfile>
+      <anchor>a2ff9405078991d78d3fda967bd145a05</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -5775,6 +7469,20 @@
       <name>source</name>
       <anchorfile>structCesiumGltf_1_1ExtensionKhrTextureBasisu.html</anchorfile>
       <anchor>a99d6b72de24768de31487a64fbaf7e7c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrTextureBasisu.html</anchorfile>
+      <anchor>a522207ee0f9be7be88816d8aadb3b3c2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrTextureBasisu.html</anchorfile>
+      <anchor>ac329561592be813f09ff39eaeb520eb1</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5863,6 +7571,20 @@
       <anchor>aa083d98a88520d5ae11c786b301f4006</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrTextureTransform.html</anchorfile>
+      <anchor>a1c51ee569d99f45bb2403417d784a6ac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionKhrTextureTransform.html</anchorfile>
+      <anchor>a879ef5b9453c07a51c85168d08fab8cc</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionKhrTextureTransformReader</name>
@@ -5935,6 +7657,20 @@
       <anchor>a4f4cedc1117db5ac623cb0b7cca05d45</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionMeshPrimitiveExtStructuralMetadata.html</anchorfile>
+      <anchor>a976d15505a5d8230981d87552d38ff26</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionMeshPrimitiveExtStructuralMetadata.html</anchorfile>
+      <anchor>a810ed75108c94d5f58ecea42709e4ea6</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionMeshPrimitiveExtStructuralMetadataReader</name>
@@ -6000,6 +7736,20 @@
       <anchor>a0584b5c2d4f7102195034c71066ba5e1</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionMeshPrimitiveKhrMaterialsVariants.html</anchorfile>
+      <anchor>a8917a0db64ca58fb0f603c6b8674fe35</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionMeshPrimitiveKhrMaterialsVariants.html</anchorfile>
+      <anchor>a1203ade1b2abe878f147ac8ccce29ac6</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ExtensionMeshPrimitiveKhrMaterialsVariantsMappingsValue</name>
@@ -6031,6 +7781,13 @@
       <name>name</name>
       <anchorfile>structCesiumGltf_1_1ExtensionMeshPrimitiveKhrMaterialsVariantsMappingsValue.html</anchorfile>
       <anchor>ac96ae151da7ac8e5821749bb281b2880</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionMeshPrimitiveKhrMaterialsVariantsMappingsValue.html</anchorfile>
+      <anchor>a8602502bb52ceb0a899a2463e47c1c90</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -6172,6 +7929,20 @@
       <anchor>a0ccf385eabe02416f7d2c2dc548476cc</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelExtStructuralMetadata.html</anchorfile>
+      <anchor>a4e2ba5b816ee676a37c1d12663e2bdff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelExtStructuralMetadata.html</anchorfile>
+      <anchor>a791e065a09e0fd05ba62a6c0e1ffd38d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionModelExtStructuralMetadataReader</name>
@@ -6237,6 +8008,20 @@
       <anchor>aac485f34678a018a8b66ed2733624676</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelKhrMaterialsVariants.html</anchorfile>
+      <anchor>a1b12adadb9d6733402ec50d1ca1697f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelKhrMaterialsVariants.html</anchorfile>
+      <anchor>abda1c19c1ee982609b1aeb4d06c3819d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionModelKhrMaterialsVariantsReader</name>
@@ -6300,6 +8085,13 @@
       <name>name</name>
       <anchorfile>structCesiumGltf_1_1ExtensionModelKhrMaterialsVariantsValue.html</anchorfile>
       <anchor>a92431bcf0e181b0ad890c93f454fec1f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelKhrMaterialsVariantsValue.html</anchorfile>
+      <anchor>a35e4ad473f42e3828bff61580b1760a0</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -6374,6 +8166,20 @@
       <anchor>a4600c81ef90cba33345a6a2b38d841d2</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelMaxarMeshVariants.html</anchorfile>
+      <anchor>a202bc4fdbe17308342973170217aef67</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelMaxarMeshVariants.html</anchorfile>
+      <anchor>a1b315a837e074e6b27a726abca2bc604</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::ExtensionModelMaxarMeshVariantsReader</name>
@@ -6437,6 +8243,13 @@
       <name>name</name>
       <anchorfile>structCesiumGltf_1_1ExtensionModelMaxarMeshVariantsValue.html</anchorfile>
       <anchor>a25514e9565b13ccfc0e64c40ce78f748</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionModelMaxarMeshVariantsValue.html</anchorfile>
+      <anchor>a64ac638226cfc11c86d14b3e17088df1</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -6504,6 +8317,20 @@
       <anchor>a3ae4b5769e1e7e35d462b0af5f4bc562</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionNodeMaxarMeshVariants.html</anchorfile>
+      <anchor>a5c96ef3f312f827f8840743bc2e93534</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionNodeMaxarMeshVariants.html</anchorfile>
+      <anchor>ac6b876882b31addd2063527030bb94ee</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ExtensionNodeMaxarMeshVariantsMappingsValue</name>
@@ -6535,6 +8362,13 @@
       <name>name</name>
       <anchorfile>structCesiumGltf_1_1ExtensionNodeMaxarMeshVariantsMappingsValue.html</anchorfile>
       <anchor>a9db2b7d7866409eeb16ca0251e8da92f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionNodeMaxarMeshVariantsMappingsValue.html</anchorfile>
+      <anchor>a257400089a9547b4faf96338342a2cd5</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -6634,6 +8468,27 @@
     <name>CesiumJsonReader::ExtensionsJsonHandler</name>
     <filename>classCesiumJsonReader_1_1ExtensionsJsonHandler.html</filename>
     <base>CesiumJsonReader::ObjectJsonHandler</base>
+    <member kind="function">
+      <type></type>
+      <name>ExtensionsJsonHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1ExtensionsJsonHandler.html</anchorfile>
+      <anchor>a23209ff23ea6e1689f56f8b0d1af07ab</anchor>
+      <arglist>(const JsonReaderOptions &amp;context) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1ExtensionsJsonHandler.html</anchorfile>
+      <anchor>ac9e9ecb9a3de9f3c37e1be54d03bdc04</anchor>
+      <arglist>(IJsonHandler *pParent, CesiumUtility::ExtensibleObject *pObject, const std::string &amp;objectType)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1ExtensionsJsonHandler.html</anchorfile>
+      <anchor>a47fed876caf757e4a9fe775d23698db3</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ExtensionTextureWebp</name>
@@ -6651,6 +8506,20 @@
       <name>source</name>
       <anchorfile>structCesiumGltf_1_1ExtensionTextureWebp.html</anchorfile>
       <anchor>abc82036cc668a57ee080eaf77fe769f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionTextureWebp.html</anchorfile>
+      <anchor>a01de16bbaaf4c5f7f811fae7b15a4ee5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>ExtensionName</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionTextureWebp.html</anchorfile>
+      <anchor>a7ef0041011930107f2b17f5cb83e8591</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -6731,6 +8600,13 @@
       <anchor>a1971f411064fe523c4c272e170eb0194</anchor>
       <arglist>(const std::string &amp;extensionName, ExtensionState newState)</arglist>
     </member>
+    <member kind="function">
+      <type>ExtensionHandler&lt; std::any &gt;</type>
+      <name>createExtensionHandler</name>
+      <anchorfile>classCesiumJsonWriter_1_1ExtensionWriterContext.html</anchorfile>
+      <anchor>aab0afb3dc54efce2cb2b9db2429f934a</anchor>
+      <arglist>(const std::string_view &amp;extensionName, const std::any &amp;obj, const std::string &amp;extendedObjectType) const</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::FeatureId</name>
@@ -6785,10 +8661,38 @@
       <anchor>a07294fbbfd36db477f58061347301ddc</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1FeatureId.html</anchorfile>
+      <anchor>a2093f9acacfd9285bae0d065730036da</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::FeatureIdFromAccessor</name>
     <filename>structCesiumGltf_1_1FeatureIdFromAccessor.html</filename>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1FeatureIdFromAccessor.html</anchorfile>
+      <anchor>a02274f17ae26625d043976ee203bd964</anchor>
+      <arglist>(const AccessorView&lt; float &gt; &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1FeatureIdFromAccessor.html</anchorfile>
+      <anchor>a3ad8fe6a8220ecf61651859c12a487a3</anchor>
+      <arglist>(const AccessorView&lt; T &gt; &amp;value)</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>index</name>
+      <anchorfile>structCesiumGltf_1_1FeatureIdFromAccessor.html</anchorfile>
+      <anchor>aae9a70f2a53fec8d15693f9d750781a4</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::FeatureIdReader</name>
@@ -6852,6 +8756,13 @@
       <name>channels</name>
       <anchorfile>structCesiumGltf_1_1FeatureIdTexture.html</anchorfile>
       <anchor>a77fa86042c3ac71b86a3ead5e88ef429</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1FeatureIdTexture.html</anchorfile>
+      <anchor>af74123451f017359302bbfb626e6e29c</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -6944,6 +8855,34 @@
   <compound kind="struct">
     <name>CesiumGltf::ExtensionBufferViewExtMeshoptCompression::Filter</name>
     <filename>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Filter.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>NONE</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Filter.html</anchorfile>
+      <anchor>adc7268ffc5d81818d54002b06866420d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>OCTAHEDRAL</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Filter.html</anchorfile>
+      <anchor>adbaaf54cf263f4bccf1163c04b28653b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>QUATERNION</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Filter.html</anchorfile>
+      <anchor>afbe9fabf40f253c5ee37a3b80b80125b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>EXPONENTIAL</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Filter.html</anchorfile>
+      <anchor>a5da287df4b32d64313d730403af635fc</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTilesSelection::FogDensityAtHeight</name>
@@ -6962,10 +8901,6 @@
       <anchor>a54e25e69a7d488da396d388ec738881f</anchor>
       <arglist></arglist>
     </member>
-  </compound>
-  <compound kind="struct">
-    <name>fmt::formatter&lt; rapidjson::ParseErrorCode &gt;</name>
-    <filename>structfmt_1_1formatter_3_01rapidjson_1_1ParseErrorCode_01_4.html</filename>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::FoundMetadataProperty</name>
@@ -7015,6 +8950,13 @@
       <name>Future</name>
       <anchorfile>classCesiumAsync_1_1Future.html</anchorfile>
       <anchor>a8169f5817ea0eabd26380595a35304ef</anchor>
+      <arglist>(Future&lt; T &gt; &amp;&amp;rhs) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>Future&lt; T &gt; &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classCesiumAsync_1_1Future.html</anchorfile>
+      <anchor>a29a108b993803e7d96a0596e7c539cf0</anchor>
       <arglist>(Future&lt; T &gt; &amp;&amp;rhs) noexcept</arglist>
     </member>
     <member kind="function">
@@ -7681,6 +9623,27 @@
     <name>CesiumGltfReader::GltfSharedAssetSystem</name>
     <filename>classCesiumGltfReader_1_1GltfSharedAssetSystem.html</filename>
     <base>CesiumUtility::ReferenceCounted&lt; T, isThreadSafe &gt;</base>
+    <member kind="typedef">
+      <type>CesiumAsync:: SharedAssetDepot&lt; CesiumGltf::ImageAsset, NetworkImageAssetDescriptor &gt;</type>
+      <name>ImageDepot</name>
+      <anchorfile>classCesiumGltfReader_1_1GltfSharedAssetSystem.html</anchorfile>
+      <anchor>a27213b46ce3b7b2683c274a472dfc8a3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumAsync:: SharedAssetDepot&lt; CesiumGltf::Schema, NetworkSchemaAssetDescriptor &gt;</type>
+      <name>SchemaDepot</name>
+      <anchorfile>classCesiumGltfReader_1_1GltfSharedAssetSystem.html</anchorfile>
+      <anchor>a6f39836e08bc05c26dafccde48d68f9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static CesiumUtility::IntrusivePointer&lt; GltfSharedAssetSystem &gt;</type>
+      <name>getDefault</name>
+      <anchorfile>classCesiumGltfReader_1_1GltfSharedAssetSystem.html</anchorfile>
+      <anchor>aa0c6d7f8f850cbd352c80aa49942b2dc</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="variable">
       <type>CesiumUtility::IntrusivePointer&lt; ImageDepot &gt;</type>
       <name>pImage</name>
@@ -7756,6 +9719,62 @@
       <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
       <anchor>a4313e9cbc45570233c70f0574a181a59</anchor>
       <arglist>(CesiumGltf::Model &amp;gltf, CesiumGltf::Buffer &amp;destination, CesiumGltf::Buffer &amp;source)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedTextures</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>ad29de37108792e1ee3db1abc2f41aa32</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedTextureIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedSamplers</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>a19b275a194e8be5c2d2d05085e968d31</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedSamplerIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedImages</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>a9eedb45dbe4fbdb29ca7c565d51c3702</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedImageIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedAccessors</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>a4f126edd8e47007df9778d4cbdd25e0b</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedAccessorIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedBufferViews</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>a1dab520b023027b956da75dbbfec1496</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedBufferViewIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedBuffers</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>a64b996f4b45b2b0c76381f37b44fd2c6</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedBufferIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedMeshes</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>afa66b97a39c7fb97e88c5b8d7dc860c6</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedMeshIndices={})</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>removeUnusedMaterials</name>
+      <anchorfile>structCesiumGltfContent_1_1GltfUtilities.html</anchorfile>
+      <anchor>a9c099e6e365121c814db5872df986c1e</anchor>
+      <arglist>(CesiumGltf::Model &amp;gltf, const std::vector&lt; int32_t &gt; &amp;extraUsedMaterialIndices={})</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static void</type>
@@ -7872,6 +9891,13 @@
       <anchor>a7348ee4ab589ca2ee146e0868b53b2cc</anchor>
       <arglist>() const</arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1GroupMetadata.html</anchorfile>
+      <anchor>a0991ccd9f72c1f12c67efeaa6db69800</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::GroupMetadataReader</name>
@@ -7966,6 +9992,13 @@
   <compound kind="struct">
     <name>std::hash&lt; CesiumAsync::NetworkAssetDescriptor &gt;</name>
     <filename>structstd_1_1hash_3_01CesiumAsync_1_1NetworkAssetDescriptor_01_4.html</filename>
+    <member kind="function">
+      <type>std::size_t</type>
+      <name>operator()</name>
+      <anchorfile>structstd_1_1hash_3_01CesiumAsync_1_1NetworkAssetDescriptor_01_4.html</anchorfile>
+      <anchor>ae6d1f7b79f409e58cdc50247b0d6c6b1</anchor>
+      <arglist>(const CesiumAsync::NetworkAssetDescriptor &amp;key) const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>std::hash&lt; CesiumGeometry::QuadtreeTileID &gt;</name>
@@ -7981,14 +10014,35 @@
   <compound kind="struct">
     <name>std::hash&lt; CesiumGltfReader::NetworkImageAssetDescriptor &gt;</name>
     <filename>structstd_1_1hash_3_01CesiumGltfReader_1_1NetworkImageAssetDescriptor_01_4.html</filename>
+    <member kind="function">
+      <type>std::size_t</type>
+      <name>operator()</name>
+      <anchorfile>structstd_1_1hash_3_01CesiumGltfReader_1_1NetworkImageAssetDescriptor_01_4.html</anchorfile>
+      <anchor>afe091b61db99cf790c7bfe26fc88116e</anchor>
+      <arglist>(const CesiumGltfReader::NetworkImageAssetDescriptor &amp;key) const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>std::hash&lt; CesiumGltfReader::NetworkSchemaAssetDescriptor &gt;</name>
     <filename>structstd_1_1hash_3_01CesiumGltfReader_1_1NetworkSchemaAssetDescriptor_01_4.html</filename>
+    <member kind="function">
+      <type>std::size_t</type>
+      <name>operator()</name>
+      <anchorfile>structstd_1_1hash_3_01CesiumGltfReader_1_1NetworkSchemaAssetDescriptor_01_4.html</anchorfile>
+      <anchor>afb515e63dd66683ec4d9674721a81865</anchor>
+      <arglist>(const CesiumGltfReader::NetworkSchemaAssetDescriptor &amp;key) const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTilesContent::I3dmToGltfConverter</name>
     <filename>structCesium3DTilesContent_1_1I3dmToGltfConverter.html</filename>
+    <member kind="function" static="yes">
+      <type>static CesiumAsync::Future&lt; GltfConverterResult &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesium3DTilesContent_1_1I3dmToGltfConverter.html</anchorfile>
+      <anchor>ad77695b8b4154c6ebfd82d60d01b1ee1</anchor>
+      <arglist>(const std::span&lt; const std::byte &gt; &amp;instancesBinary, const CesiumGltfReader::GltfReaderOptions &amp;options, const AssetFetcher &amp;assetFetcher)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumAsync::IAssetAccessor</name>
@@ -8147,15 +10201,239 @@
   <compound kind="class">
     <name>CesiumJsonReader::IExtensionJsonHandler</name>
     <filename>classCesiumJsonReader_1_1IExtensionJsonHandler.html</filename>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1IExtensionJsonHandler.html</anchorfile>
+      <anchor>a7bfe6c593edc7b9f6fc8cc7d0abfe229</anchor>
+      <arglist>(IJsonHandler *pParentHandler, CesiumUtility::ExtensibleObject &amp;o, const std::string_view &amp;extensionName)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler &amp;</type>
+      <name>getHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1IExtensionJsonHandler.html</anchorfile>
+      <anchor>a78172b251a7e17ea16c36b788a4c6b62</anchor>
+      <arglist>()=0</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::IgnoreValueJsonHandler</name>
     <filename>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</filename>
     <base>CesiumJsonReader::IJsonHandler</base>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a524fedb394516ecb9b420b0e49a925a3</anchor>
+      <arglist>(IJsonHandler *pParent) noexcept</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a1e4c577192c455945f2100802d499799</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a5c091b606fdc0148a6d9c0417236547c</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>ada5e4910598458d30380e385d5df2db9</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a9d96f6dda1abc02c4d16332d6326da55</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a8490083f56d2e7efcda6c74b726d33b0</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>ae855f8651f4fa8d3e7738a0bdb245acb</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>ad2f609a17a63d7b0d76b786e2a4276e8</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a3d1a88da3d3b182177aef971b21584ae</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>aad38723a2fb0768e4d40e09e846382cf</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a46ee8224bc2d70f2698566f9bda361ae</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a5f4b1efadb9065e546ba190d11f6574b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>ad2aa1ef2ec11d6c8240d4a6a24a56849</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a1017ab9a78acd04dac903963f16eaa31</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a449473cdc3080d4e1f733f8d707143ed</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
+    <member kind="function">
+      <type>IJsonHandler *</type>
+      <name>parent</name>
+      <anchorfile>classCesiumJsonReader_1_1IgnoreValueJsonHandler.html</anchorfile>
+      <anchor>a57b328d029a1de9f2d4ae927942aaeb6</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::IJsonHandler</name>
     <filename>classCesiumJsonReader_1_1IJsonHandler.html</filename>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a3fc9a94422472b47a769d64d155a5991</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a58784ce489baa129f1883a9c6e537432</anchor>
+      <arglist>(bool b)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>afeac3c5cfb20802cf50bee81c2c5d138</anchor>
+      <arglist>(int32_t i)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a1889d882d354b86a53faf5ae4057f78b</anchor>
+      <arglist>(uint32_t i)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>af532d5b74735305f471c3e85051ecdef</anchor>
+      <arglist>(int64_t i)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a1c80b6fb6752bed66ebec94087ec52b1</anchor>
+      <arglist>(uint64_t i)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a51c4e890532e6b795cac6615cd04209d</anchor>
+      <arglist>(double d)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>add3ecbe6fa607ea43d14f2737c669fe5</anchor>
+      <arglist>(const std::string_view &amp;str)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a8a4e59df296408c8d0de57dc9bed88bb</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a192612321be7ffde9d81a84ac6303893</anchor>
+      <arglist>(const std::string_view &amp;str)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a40c2fe56e03277df2efd11414cd0f667</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a0773938f92951d38dab0beee46beff39</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a05e51e1322d6a72ffde139f593d68c49</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1IJsonHandler.html</anchorfile>
+      <anchor>a5a278b19a131a6379fb9d30fd9fbe6ec</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;())=0</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Image</name>
@@ -8423,6 +10701,13 @@
       <anchor>a6d32adc6c562402ac99850344f8ab4a7</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ImageSpec.html</anchorfile>
+      <anchor>a2bb67944cec4dcebbba51fa872cd2b8c</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type></type>
       <name>ImageSpec</name>
@@ -8430,12 +10715,6 @@
       <anchor>a1656d9f88e2d161ee4d7eeaedf63bc96</anchor>
       <arglist>()=default</arglist>
     </member>
-  </compound>
-  <compound kind="class">
-    <name>CesiumAsync::CesiumImpl::ImmediateScheduler</name>
-    <filename>classCesiumAsync_1_1CesiumImpl_1_1ImmediateScheduler.html</filename>
-    <templarg>typename TScheduler</templarg>
-    <class kind="class">CesiumAsync::CesiumImpl::ImmediateScheduler::SchedulerScope</class>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::ImplicitTiling</name>
@@ -8475,6 +10754,13 @@
       <name>subtrees</name>
       <anchorfile>structCesium3DTiles_1_1ImplicitTiling.html</anchorfile>
       <anchor>ae6c9dc51fa309eba3ef1d2672a5b58da</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1ImplicitTiling.html</anchorfile>
+      <anchor>ac590baf0b03e2ecdc29e5a9a654d05d3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -8678,20 +10964,178 @@
   <compound kind="struct">
     <name>CesiumGltf::IndexFromAccessor</name>
     <filename>structCesiumGltf_1_1IndexFromAccessor.html</filename>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1IndexFromAccessor.html</anchorfile>
+      <anchor>a76f90e0904b0cb334643fcbbebbefea6</anchor>
+      <arglist>(std::monostate)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1IndexFromAccessor.html</anchorfile>
+      <anchor>a3d0a4046d501c243113aaa41fa65d566</anchor>
+      <arglist>(const CesiumGltf::AccessorView&lt; T &gt; &amp;value)</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>index</name>
+      <anchorfile>structCesiumGltf_1_1IndexFromAccessor.html</anchorfile>
+      <anchor>a74ebac504fd44c8f58b2e1fa7219feba</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::IndicesForFaceFromAccessor</name>
     <filename>structCesiumGltf_1_1IndicesForFaceFromAccessor.html</filename>
+    <member kind="function">
+      <type>std::array&lt; int64_t, 3 &gt;</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1IndicesForFaceFromAccessor.html</anchorfile>
+      <anchor>aafcc6bef548575fe35546daf4ba448e6</anchor>
+      <arglist>(std::monostate)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::array&lt; int64_t, 3 &gt;</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1IndicesForFaceFromAccessor.html</anchorfile>
+      <anchor>a216e9baca8f7fd6a991f29bea2ad9e0a</anchor>
+      <arglist>(const AccessorView&lt; T &gt; &amp;value)</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>faceIndex</name>
+      <anchorfile>structCesiumGltf_1_1IndicesForFaceFromAccessor.html</anchorfile>
+      <anchor>a5234eeba249ff317ab9ec598cdd0c124</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>vertexCount</name>
+      <anchorfile>structCesiumGltf_1_1IndicesForFaceFromAccessor.html</anchorfile>
+      <anchor>acf9d39f409e42520f9fd6033265cae9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int32_t</type>
+      <name>primitiveMode</name>
+      <anchorfile>structCesiumGltf_1_1IndicesForFaceFromAccessor.html</anchorfile>
+      <anchor>af0f94a9c14c2fc169c25c0b049adb150</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>CesiumGltf::InstanceAttributeSemantics</name>
+    <filename>structCesiumGltf_1_1InstanceAttributeSemantics.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>TRANSLATION</name>
+      <anchorfile>structCesiumGltf_1_1InstanceAttributeSemantics.html</anchorfile>
+      <anchor>a39488f689dd3993058bc8f66eb978e93</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>ROTATION</name>
+      <anchorfile>structCesiumGltf_1_1InstanceAttributeSemantics.html</anchorfile>
+      <anchor>a08c90dac54c6fd03944a08f06e814ba0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>SCALE</name>
+      <anchorfile>structCesiumGltf_1_1InstanceAttributeSemantics.html</anchorfile>
+      <anchor>a81db6b2bf62f2befb88c27da5e93d17c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::array&lt; std::string, 8 &gt;</type>
+      <name>FEATURE_ID_n</name>
+      <anchorfile>structCesiumGltf_1_1InstanceAttributeSemantics.html</anchorfile>
+      <anchor>aacd84e0f12cb8503dc858e0b1d45c18a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::IntegerJsonHandler</name>
     <filename>classCesiumJsonReader_1_1IntegerJsonHandler.html</filename>
     <templarg>typename T</templarg>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>aa1dc60c44b5439bbbee7e5fadc24a77d</anchor>
+      <arglist>(IJsonHandler *pParent, T *pInteger)</arglist>
+    </member>
+    <member kind="function">
+      <type>T *</type>
+      <name>getObject</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>afa317c4839c422706d9707c35af4aca2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>ab321b88a4877d2f2b4885b2c8729948c</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>a5d9498254d411e82fa6ecc33eeee41bc</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>abdd41e60a85c72e2ef73715ec7b18700</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>a76a8c455b7c60814428d6c3355871489</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>a647afa1c3fcf0f6d646afe795886b8ea</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1IntegerJsonHandler.html</anchorfile>
+      <anchor>af8134db41605e4146f7c84c65557fd31</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context) override</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGeometry::InterpolatedVertex</name>
     <filename>structCesiumGeometry_1_1InterpolatedVertex.html</filename>
+    <member kind="function">
+      <type>constexpr bool</type>
+      <name>operator==</name>
+      <anchorfile>structCesiumGeometry_1_1InterpolatedVertex.html</anchorfile>
+      <anchor>ab568d2e4c317de4b8e57d0a72b976e82</anchor>
+      <arglist>(const InterpolatedVertex &amp;other) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr bool</type>
+      <name>operator!=</name>
+      <anchorfile>structCesiumGeometry_1_1InterpolatedVertex.html</anchorfile>
+      <anchor>a3096f913d3949bed8f6ee390245c8fed</anchor>
+      <arglist>(const InterpolatedVertex &amp;other) const noexcept</arglist>
+    </member>
     <member kind="variable">
       <type>int</type>
       <name>first</name>
@@ -8717,6 +11161,27 @@
   <compound kind="struct">
     <name>CesiumGltf::AnimationSampler::Interpolation</name>
     <filename>structCesiumGltf_1_1AnimationSampler_1_1Interpolation.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>LINEAR</name>
+      <anchorfile>structCesiumGltf_1_1AnimationSampler_1_1Interpolation.html</anchorfile>
+      <anchor>a55254cf21bdbd20dcf2511d41bbc528c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>STEP</name>
+      <anchorfile>structCesiumGltf_1_1AnimationSampler_1_1Interpolation.html</anchorfile>
+      <anchor>ad51f10aa46ff58ba89a3523538fa5474</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>CUBICSPLINE</name>
+      <anchorfile>structCesiumGltf_1_1AnimationSampler_1_1Interpolation.html</anchorfile>
+      <anchor>a0dc0e8a0a0ce205d13b23a47903658a9</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGeometry::IntersectionTests</name>
@@ -8902,6 +11367,13 @@
       <type>IntrusivePointer &amp;</type>
       <name>operator=</name>
       <anchorfile>classCesiumUtility_1_1IntrusivePointer.html</anchorfile>
+      <anchor>a664189509d487ced2cc7cec185a5e29c</anchor>
+      <arglist>(const IntrusivePointer&lt; U &gt; &amp;rhs) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>IntrusivePointer &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classCesiumUtility_1_1IntrusivePointer.html</anchorfile>
       <anchor>a37df608a9f762f7f132b0d363c1c4c5f</anchor>
       <arglist>(IntrusivePointer &amp;&amp;rhs) noexcept</arglist>
     </member>
@@ -8946,6 +11418,13 @@
       <anchorfile>classCesiumUtility_1_1IntrusivePointer.html</anchorfile>
       <anchor>a0001e742980a2edc2d32987c446dc839</anchor>
       <arglist>(const IntrusivePointer&lt; T &gt; &amp;rhs) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>classCesiumUtility_1_1IntrusivePointer.html</anchorfile>
+      <anchor>a1c7b9905ea3f93780f7cde6460103cc9</anchor>
+      <arglist>(const IntrusivePointer&lt; U &gt; &amp;rhs) const noexcept</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -9188,6 +11667,13 @@
     <name>CesiumGltf::IsMetadataNumeric&lt; T &gt;</name>
     <filename>structCesiumGltf_1_1IsMetadataNumeric_3_01T_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr bool</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1IsMetadataNumeric_3_01T_01_4.html</anchorfile>
+      <anchor>ad54b4a03663453454c58cdb1cd3deb54</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::IsMetadataNumericArray</name>
@@ -9198,11 +11684,25 @@
     <name>CesiumGltf::IsMetadataNumericArray&lt; PropertyArrayCopy&lt; T &gt; &gt;</name>
     <filename>structCesiumGltf_1_1IsMetadataNumericArray_3_01PropertyArrayCopy_3_01T_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr bool</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1IsMetadataNumericArray_3_01PropertyArrayCopy_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a586e63107eb96869f69339ef1f467dd5</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::IsMetadataNumericArray&lt; PropertyArrayView&lt; T &gt; &gt;</name>
     <filename>structCesiumGltf_1_1IsMetadataNumericArray_3_01PropertyArrayView_3_01T_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr bool</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1IsMetadataNumericArray_3_01PropertyArrayView_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>ae661bd0eddf9b3443b2e624b8e86fcb3</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::IsMetadataNumericArray&lt; T &gt;</name>
@@ -9326,10 +11826,178 @@
   <compound kind="class">
     <name>Cesium3DTilesContent::OctreeChildren::iterator</name>
     <filename>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</filename>
+    <member kind="typedef">
+      <type>std::forward_iterator_tag</type>
+      <name>iterator_category</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a517204076d1a8b5e32ba3149b7bbe334</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumGeometry::OctreeTileID</type>
+      <name>value_type</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a015ee827382f45c9e46c5840974bda83</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void</type>
+      <name>difference_type</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ab87f42b774bc39f41a5adc7e780958b0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumGeometry::OctreeTileID *</type>
+      <name>pointer</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a371a79ee624ecab3ac5da3702e9dc827</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumGeometry::OctreeTileID &amp;</type>
+      <name>reference</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a1a09820f4dcaac72852d929c3f04ba30</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>iterator</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a87023f3920c7a8f517a38bf92fcdd264</anchor>
+      <arglist>(const CesiumGeometry::OctreeTileID &amp;parentTileID, bool isEnd) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const CesiumGeometry::OctreeTileID &amp;</type>
+      <name>operator*</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a2264ec07041f8222f6ea1d3a3702874d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const CesiumGeometry::OctreeTileID *</type>
+      <name>operator-&gt;</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ace8d9dd8a9bf8e83fd646f38b303a3dc</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator &amp;</type>
+      <name>operator++</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a59c6006b55fa0db9d12440a2f93e0679</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator</type>
+      <name>operator++</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>aaf4534293b861d80f6c1718cc0707e4f</anchor>
+      <arglist>(int)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a365ebcae60cb776fc7c70d89c5a85aeb</anchor>
+      <arglist>(const iterator &amp;rhs) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator!=</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ac87a473a0ec7d8b25e5a582f43ec358d</anchor>
+      <arglist>(const iterator &amp;rhs) const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesContent::QuadtreeChildren::iterator</name>
     <filename>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</filename>
+    <member kind="typedef">
+      <type>std::forward_iterator_tag</type>
+      <name>iterator_category</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a74dbcd0de7410f29f51484f028acfc52</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumGeometry::QuadtreeTileID</type>
+      <name>value_type</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ac9bd4c267bfb96013d9da996e21c276b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void</type>
+      <name>difference_type</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a2b968d0b54e9ea3f4cedf74877a1c775</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumGeometry::QuadtreeTileID *</type>
+      <name>pointer</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ac5337f738c0f229878ff01769830dc66</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>CesiumGeometry::QuadtreeTileID &amp;</type>
+      <name>reference</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a17d11d01a06079da1bf17392c18bbb96</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>iterator</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>afa12da18634e0d29804e717ce1945b3a</anchor>
+      <arglist>(const CesiumGeometry::QuadtreeTileID &amp;parentTileID, bool isEnd) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const CesiumGeometry::QuadtreeTileID &amp;</type>
+      <name>operator*</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ad524070caf5cc6419778bae5220f950a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const CesiumGeometry::QuadtreeTileID *</type>
+      <name>operator-&gt;</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a6ed2517cda40fc7e770ea65f9a8e973f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator &amp;</type>
+      <name>operator++</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>aaba20f978cf8bf379b8c646cf6471afc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator</type>
+      <name>operator++</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a227edb6f0ca7873296a1e205665a160e</anchor>
+      <arglist>(int)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>ad8b3a9c86ae87cf6aa4660ead80b843f</anchor>
+      <arglist>(const iterator &amp;rhs) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator!=</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren_1_1iterator.html</anchorfile>
+      <anchor>a9c168fca1ca18eb365c9d5c0094b764c</anchor>
+      <arglist>(const iterator &amp;rhs) const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesSelection::ITileExcluder</name>
@@ -9364,6 +12032,118 @@
     <name>CesiumJsonReader::JsonHandler</name>
     <filename>classCesiumJsonReader_1_1JsonHandler.html</filename>
     <base>CesiumJsonReader::IJsonHandler</base>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a01fbb5306c806c1d574db4643c1f6d99</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ad5da111cc51cc6efbb08f58f22ec9754</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a1ea3a376d363caa01a3889a1c5b41ab6</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ac99f7c1d7bc76d647a32224057d83293</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a8b6de7d2abb3e507054697bbed8b6fca</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a1c3050c287390a78b3c0902d082e977f</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ad60f0905ad998e59163ed29124b82d2c</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a95cf23bf65519f9ace5e92698f430ecc</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a3096f970544c85f58bfe6c7cbda6dfc4</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ae1485094c6848a547613e149f4ed8745</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>aa910ec0cc0b423fc7da0ad9f19d108c8</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ab48b2c3aff8be25a75b6cf9cd9adf513</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a583ada52ddfef765e665cc87d2bd6a20</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>a8c5efe7c4a40586c751bc4788025627b</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ac3b50c71aec4504a9634bb50a4332f9f</anchor>
+      <arglist>(IJsonHandler *pParent)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IJsonHandler *</type>
+      <name>parent</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonHandler.html</anchorfile>
+      <anchor>ab3124f81a414ca226a65da0f0981cd13</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" protection="protected">
       <type>IJsonHandler *</type>
       <name>ignoreAndReturnToParent</name>
@@ -9383,17 +12163,241 @@
     <name>CesiumUtility::JsonHelpers</name>
     <filename>classCesiumUtility_1_1JsonHelpers.html</filename>
     <member kind="function" static="yes">
+      <type>static std::optional&lt; double &gt;</type>
+      <name>getScalarProperty</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a28da139d05ec260830a149ca2ed2303d</anchor>
+      <arglist>(const rapidjson::Value &amp;tileJson, const std::string &amp;key)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::optional&lt; glm::dmat4x4 &gt;</type>
+      <name>getTransformProperty</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a5adb5fe9ebe02c531aca4e93dda8684f</anchor>
+      <arglist>(const rapidjson::Value &amp;tileJson, const std::string &amp;key)</arglist>
+    </member>
+    <member kind="function" static="yes">
       <type>static std::optional&lt; std::vector&lt; double &gt; &gt;</type>
       <name>getDoubles</name>
       <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
       <anchor>aae60cd58d9fb1803c9e8a537181b6b37</anchor>
       <arglist>(const rapidjson::Value &amp;json, int32_t expectedSize, const std::string &amp;key)</arglist>
     </member>
+    <member kind="function" static="yes">
+      <type>static std::string</type>
+      <name>getStringOrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a10c537aa87dafda5a5a2652cb7f79795</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, const std::string &amp;defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::string</type>
+      <name>getStringOrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a618796570c119412d2ab6cab7bba7fbe</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static double</type>
+      <name>getDoubleOrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>afc2a279e4ab78186c742adcee6c18fef</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, double defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static double</type>
+      <name>getDoubleOrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a9c7e20c2d668057bf030ac612cf7dbf3</anchor>
+      <arglist>(const rapidjson::Value &amp;json, double defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static uint32_t</type>
+      <name>getUint32OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a84e07fffc790798c290d100b57563022</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, uint32_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static uint32_t</type>
+      <name>getUint32OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a4f167370451a58ec95c1bd3e48cef78e</anchor>
+      <arglist>(const rapidjson::Value &amp;json, uint32_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int32_t</type>
+      <name>getInt32OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a0adfaaee2c87ede6cd1bc40cb6ce2d6b</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, int32_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int32_t</type>
+      <name>getInt32OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a722371ef23d4ed21ff9aba62081c3213</anchor>
+      <arglist>(const rapidjson::Value &amp;json, int32_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static uint64_t</type>
+      <name>getUint64OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>ad7410fe059454ddb8fb331640cb7bd79</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, uint64_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static uint64_t</type>
+      <name>getUint64OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>af31da3918d291dae8e67611f8648409e</anchor>
+      <arglist>(const rapidjson::Value &amp;json, uint64_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>getInt64OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a8a25d1cf081887a80f81acba50a1c914</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, int64_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>getInt64OrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a999a8923fee43793b8e28ed852d486f2</anchor>
+      <arglist>(const rapidjson::Value &amp;json, int64_t defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>getBoolOrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a99371a7ebfedcdd79564295b62e79032</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key, bool defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>getBoolOrDefault</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a2cb528cd4be14b73afac690fb949840a</anchor>
+      <arglist>(const rapidjson::Value &amp;json, bool defaultValue)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::vector&lt; std::string &gt;</type>
+      <name>getStrings</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>ad549aec1fc730d0969ac8a10ba6bf265</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::vector&lt; int64_t &gt;</type>
+      <name>getInt64s</name>
+      <anchorfile>classCesiumUtility_1_1JsonHelpers.html</anchorfile>
+      <anchor>a8e3be2acb7878c84176f80c40e8eb2fd</anchor>
+      <arglist>(const rapidjson::Value &amp;json, const std::string &amp;key)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::JsonObjectJsonHandler</name>
     <filename>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>aba24a567583a78f2f284d103a65880c2</anchor>
+      <arglist>(IJsonHandler *pParent, CesiumUtility::JsonValue *pValue)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readNull</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a62f4fe03fc734b0f504d52c12ab24295</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readBool</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>aa106b0cf0c1676828d3ce2858aa29596</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt32</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>af2d959346d9a71dc39457a3598f60c7c</anchor>
+      <arglist>(int32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint32</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a954d6472f4e71cc75a8e227617ddc27b</anchor>
+      <arglist>(uint32_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readInt64</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>ad1720e8a6aab424235520079343ee8a3</anchor>
+      <arglist>(int64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readUint64</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a9e304b0ac8a55e2110d40ebd07601fdb</anchor>
+      <arglist>(uint64_t i) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readDouble</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>ae3120bf23ef53e1bce8db3cb1fbf75f8</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a3adf83d2696809af48050aa67f8d31ef</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a4a970a1b0d175950ef993899aabccb6e</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectKey</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a16df36d9468d5f6bb6d821a7baf552ec</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>ac7056105f3b5a3f0b43862a368361c16</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayStart</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>a98c7eb1d9c67317b63d42dfce09f40e3</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readArrayEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonObjectJsonHandler.html</anchorfile>
+      <anchor>adf44cd5bf8135b672446175b9afdb569</anchor>
+      <arglist>() override</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonReader::JsonReader</name>
@@ -9457,6 +12461,13 @@
       <anchorfile>classCesiumJsonReader_1_1JsonReaderOptions.html</anchorfile>
       <anchor>ad0997561c011cb063d8589bf58394359</anchor>
       <arglist>(const std::string &amp;extensionName, ExtensionState newState)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::unique_ptr&lt; IExtensionJsonHandler &gt;</type>
+      <name>createExtensionHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1JsonReaderOptions.html</anchorfile>
+      <anchor>a0b91dd8fb519c2b8814c0642ab42630c</anchor>
+      <arglist>(const std::string_view &amp;extensionName, const std::string &amp;extendedObjectType) const</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -9643,6 +12654,20 @@
       <anchorfile>classCesiumUtility_1_1JsonValue.html</anchorfile>
       <anchor>ae9bbe1fefcd8223dec9f678f2ab288d2</anchor>
       <arglist>(std::initializer_list&lt; std::pair&lt; const std::string, JsonValue &gt; &gt; v)</arglist>
+    </member>
+    <member kind="function">
+      <type>const JsonValue *</type>
+      <name>getValuePtrForKey</name>
+      <anchorfile>classCesiumUtility_1_1JsonValue.html</anchorfile>
+      <anchor>ac0f2b8923c0766c7da8681a2d68f6081</anchor>
+      <arglist>(const std::string &amp;key) const</arglist>
+    </member>
+    <member kind="function">
+      <type>JsonValue *</type>
+      <name>getValuePtrForKey</name>
+      <anchorfile>classCesiumUtility_1_1JsonValue.html</anchorfile>
+      <anchor>a4dee5c711481f907bb3dc3bea90901a1</anchor>
+      <arglist>(const std::string &amp;key)</arglist>
     </member>
     <member kind="function">
       <type>const T *</type>
@@ -9869,17 +12894,282 @@
       <arglist></arglist>
     </member>
   </compound>
-  <compound kind="struct">
-    <name>CesiumUtility::JsonValueMissingKey</name>
-    <filename>structCesiumUtility_1_1JsonValueMissingKey.html</filename>
-  </compound>
-  <compound kind="struct">
-    <name>CesiumUtility::JsonValueNotRealValue</name>
-    <filename>structCesiumUtility_1_1JsonValueNotRealValue.html</filename>
-  </compound>
   <compound kind="class">
     <name>CesiumJsonWriter::JsonWriter</name>
     <filename>classCesiumJsonWriter_1_1JsonWriter.html</filename>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Null</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>acc1e99eb7a57663a340f592da0328155</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Bool</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a79ab6c0e29580a3d37c727384db88983</anchor>
+      <arglist>(bool b)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Int</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a17a730c25f4a036b487eea62e07ee8f7</anchor>
+      <arglist>(int i)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Uint</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>aead10975cdb2d26bbdd999548a905450</anchor>
+      <arglist>(unsigned int i)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Uint64</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ab6cd0c78336670f402abfcc1cc43a35d</anchor>
+      <arglist>(std::uint64_t i)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Int64</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>afa61b9f6b361bce943991a42992b9ef3</anchor>
+      <arglist>(std::int64_t i)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Double</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a4ba3ac4a4d8883a567bf7a5be0e30bda</anchor>
+      <arglist>(double d)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>RawNumber</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a8b2c30c0fd8523690ec3abb3a2e69505</anchor>
+      <arglist>(const char *str, unsigned int length, bool copy)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>Key</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ab06f4b28fe0541ca9bad7a3181fb6cc9</anchor>
+      <arglist>(std::string_view string)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>String</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>acf9c8523b20f072b95f03d95bba5f2d6</anchor>
+      <arglist>(std::string_view string)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>StartObject</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a45f0f7e35ca6009c4d261f68167de4a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>EndObject</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a76aead99bfe3c7ad8e98495b77011715</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>StartArray</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>afc872d59a1eaab70ab9fc997e5cccba1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>EndArray</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ac4eda9269a1493fcae5251f2500b06ca</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a460fa8d75f225ac159e2eceebb57422a</anchor>
+      <arglist>(std::int32_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a1f8fae23f6b31ef5e283d8c1a1f2edae</anchor>
+      <arglist>(std::uint32_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>abb715661bb29a388f7b91ab794cb7d39</anchor>
+      <arglist>(std::int64_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ac5bd3d0948be08fa24202443dee78d5a</anchor>
+      <arglist>(std::uint64_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a68e37d66cafc0c2b9e8e61250cdfe1aa</anchor>
+      <arglist>(float value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>aa876a972ad291aeca0bd9212a8b29251</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a4696921fdf8f815db3bb8b351279dfdc</anchor>
+      <arglist>(std::nullptr_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>abea6f79cbbbb4515ff0814cae6d53b25</anchor>
+      <arglist>(std::string_view string)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ad3a25059e9e9d3d6d6b89e0824f5055f</anchor>
+      <arglist>(std::string_view keyName, std::int32_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ad18c66ecff6d15013ff8a494922628ab</anchor>
+      <arglist>(std::string_view keyName, std::uint32_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ab3c2ef30330a48c37224a89a1649c999</anchor>
+      <arglist>(std::string_view keyName, std::int64_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a3104c432566c77fccad1de6e52cc93cb</anchor>
+      <arglist>(std::string_view keyName, std::uint64_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a6a79275c703a2cde86a3a08aa392d421</anchor>
+      <arglist>(std::string_view keyName, std::string_view value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a59c90ca41ee8e77b6e47aa2a2061ab44</anchor>
+      <arglist>(std::string_view keyName, float value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a0bdf591f03992c9d47a08620ad1e01b2</anchor>
+      <arglist>(std::string_view keyName, double value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ac998cca7a67ed8c6c05ecb5eff7d2118</anchor>
+      <arglist>(std::string_view keyName, std::nullptr_t value)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyArray</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a6c3c860a7c97e17f2f000a4f7024e202</anchor>
+      <arglist>(std::string_view keyName, std::function&lt; void(void)&gt; insideArray)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>KeyObject</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a8aed938f5bc5c4f0a90403e42a706246</anchor>
+      <arglist>(std::string_view keyName, std::function&lt; void(void)&gt; insideObject)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>toString</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a9d8bddb3bf8fa9febeb454b2f00d2418</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string_view</type>
+      <name>toStringView</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>adbd572efea8d5f9d6bd93645b77af400</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::vector&lt; std::byte &gt;</type>
+      <name>toBytes</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>af9660e877cecbf94156e5e8d214140b0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>emplaceError</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a8883d9302009936a5da067ded9cde949</anchor>
+      <arglist>(ErrorStr &amp;&amp;error)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>emplaceWarning</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a341dabf6005bbf05b3503f11196e2ed5</anchor>
+      <arglist>(WarningStr &amp;&amp;warning)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; std::string &gt; &amp;</type>
+      <name>getErrors</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>a370b0ae8b729374837562ab18c896258</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; std::string &gt; &amp;</type>
+      <name>getWarnings</name>
+      <anchorfile>classCesiumJsonWriter_1_1JsonWriter.html</anchorfile>
+      <anchor>ae600b0c3f882d4a1cdc5fb9353f9b45d</anchor>
+      <arglist>() const</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::KhrTextureTransform</name>
@@ -9897,6 +13187,13 @@
       <anchorfile>classCesiumGltf_1_1KhrTextureTransform.html</anchorfile>
       <anchor>a13d816f6ec421ade6aee6453c6f168b7</anchor>
       <arglist>(const ExtensionKhrTextureTransform &amp;extension) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>KhrTextureTransformStatus</type>
+      <name>status</name>
+      <anchorfile>classCesiumGltf_1_1KhrTextureTransform.html</anchorfile>
+      <anchor>aa8072a05a77827a314e2f94fdc9a1809</anchor>
+      <arglist>() const noexcept</arglist>
     </member>
     <member kind="function">
       <type>glm::dvec2</type>
@@ -10196,6 +13493,13 @@
       <anchor>aed4e99377e8c280abc554fbe476e4329</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumQuantizedMeshTerrain_1_1LayerSpec.html</anchorfile>
+      <anchor>a28ef1bfbe2ba9eadd2eae03bb8a21442</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type></type>
       <name>LayerSpec</name>
@@ -10473,6 +13777,20 @@
   <compound kind="struct">
     <name>CesiumGltf::Sampler::MagFilter</name>
     <filename>structCesiumGltf_1_1Sampler_1_1MagFilter.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>NEAREST</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MagFilter.html</anchorfile>
+      <anchor>aa9d077286b1eb726dcc748662f04040e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINEAR</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MagFilter.html</anchorfile>
+      <anchor>a4c0540049adfd3ad31cdbd3192999bda</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AccessorTypes::MAT2</name>
@@ -10578,6 +13896,13 @@
       <anchor>a70b87aed6585c29455c59b0a942f3449</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Material.html</anchorfile>
+      <anchor>a1701640bd7c88105d82dea2ed0cd0fcd</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MaterialNormalTextureInfo</name>
@@ -10595,6 +13920,13 @@
       <name>scale</name>
       <anchorfile>structCesiumGltf_1_1MaterialNormalTextureInfo.html</anchorfile>
       <anchor>af28bcb9f2b701951f04f5d3a0f8116c4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1MaterialNormalTextureInfo.html</anchorfile>
+      <anchor>a5d202269b1d6a4cb72bb0e7f439b0b6a</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -10660,6 +13992,13 @@
       <name>strength</name>
       <anchorfile>structCesiumGltf_1_1MaterialOcclusionTextureInfo.html</anchorfile>
       <anchor>a328dc233e5b17acbaf50e95cfd51ad94</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1MaterialOcclusionTextureInfo.html</anchorfile>
+      <anchor>a670672d4eb9ec86907772cfddba83724</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -10753,6 +14092,13 @@
       <name>metallicRoughnessTexture</name>
       <anchorfile>structCesiumGltf_1_1MaterialPBRMetallicRoughness.html</anchorfile>
       <anchor>a32cb51517c9dda3906725aefc442df2d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1MaterialPBRMetallicRoughness.html</anchorfile>
+      <anchor>a15564d7dde7e6bca2060e9181c912606</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -11199,6 +14545,13 @@
       <anchor>a3a46c1343d3ee976ca8c4ba7664c2159</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Mesh.html</anchorfile>
+      <anchor>a0f3526dddae0ea3cf35542308f25213a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MeshPrimitive</name>
@@ -11245,6 +14598,13 @@
       <name>targets</name>
       <anchorfile>structCesiumGltf_1_1MeshPrimitive.html</anchorfile>
       <anchor>a8d9050d798d28909c67e15100d8a6811</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive.html</anchorfile>
+      <anchor>aed1512d62c5bd4cac9b7c1660bf6170c</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -11344,16 +14704,37 @@
     <name>CesiumGltf::MetadataArrayType</name>
     <filename>structCesiumGltf_1_1MetadataArrayType.html</filename>
     <templarg>typename T</templarg>
+    <member kind="typedef">
+      <type>void</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1MetadataArrayType.html</anchorfile>
+      <anchor>a6e8894f0659ec16fdd3406a4b841fb86</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MetadataArrayType&lt; CesiumGltf::PropertyArrayCopy&lt; T &gt; &gt;</name>
     <filename>structCesiumGltf_1_1MetadataArrayType_3_01CesiumGltf_1_1PropertyArrayCopy_3_01T_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="typedef">
+      <type>T</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1MetadataArrayType_3_01CesiumGltf_1_1PropertyArrayCopy_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>aa60fa41431eb948be358e7796bafb0bd</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MetadataArrayType&lt; CesiumGltf::PropertyArrayView&lt; T &gt; &gt;</name>
     <filename>structCesiumGltf_1_1MetadataArrayType_3_01CesiumGltf_1_1PropertyArrayView_3_01T_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="typedef">
+      <type>T</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1MetadataArrayType_3_01CesiumGltf_1_1PropertyArrayView_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a1a335e6d30fc70bc5a62af4242d47d2b</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MetadataConversions</name>
@@ -11361,6 +14742,13 @@
     <templarg>typename TTo</templarg>
     <templarg>typename TFrom</templarg>
     <templarg>typename Enable</templarg>
+    <member kind="function" static="yes">
+      <type>static std::optional&lt; TTo &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesiumGltf_1_1MetadataConversions.html</anchorfile>
+      <anchor>ae116094ab42a15ee240b27eed4d68764</anchor>
+      <arglist>(TFrom)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MetadataConversions&lt; bool, std::string &gt;</name>
@@ -11558,6 +14946,13 @@
     <name>CesiumGltf::MetadataConversions&lt; T, T &gt;</name>
     <filename>structCesiumGltf_1_1MetadataConversions_3_01T_00_01T_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="function" static="yes">
+      <type>static std::optional&lt; T &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesiumGltf_1_1MetadataConversions_3_01T_00_01T_01_4.html</anchorfile>
+      <anchor>a91fbf236a480689a115b7fb8c8715a9c</anchor>
+      <arglist>(T from)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MetadataConversions&lt; TTo, bool, std::enable_if_t&lt; CesiumGltf::IsMetadataInteger&lt; TTo &gt;::value &gt; &gt;</name>
@@ -11734,6 +15129,13 @@
       <anchor>aec3bfa46343db420ee3e8469f9a5e133</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1MetadataEntity.html</anchorfile>
+      <anchor>ab496471b1d557c5bd04a1ca7b2110ad3</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::MetadataEntityReader</name>
@@ -11795,18 +15197,144 @@
   <compound kind="struct">
     <name>CesiumGltf::ImageSpec::MimeType</name>
     <filename>structCesiumGltf_1_1ImageSpec_1_1MimeType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>image_jpeg</name>
+      <anchorfile>structCesiumGltf_1_1ImageSpec_1_1MimeType.html</anchorfile>
+      <anchor>a3232c4d1553bef425c628b5c901abb57</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>image_png</name>
+      <anchorfile>structCesiumGltf_1_1ImageSpec_1_1MimeType.html</anchorfile>
+      <anchor>a9c1fcd57a804f789504caa0b19a3cf0a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Sampler::MinFilter</name>
     <filename>structCesiumGltf_1_1Sampler_1_1MinFilter.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>NEAREST</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MinFilter.html</anchorfile>
+      <anchor>aae415f6151e25ded694a835f4caeec54</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINEAR</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MinFilter.html</anchorfile>
+      <anchor>ae55efd25106174721173f71dbde203f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>NEAREST_MIPMAP_NEAREST</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MinFilter.html</anchorfile>
+      <anchor>a35abd623e6726ca1ed89b6f63958143d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINEAR_MIPMAP_NEAREST</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MinFilter.html</anchorfile>
+      <anchor>a4fed2c5e80eb090851e54a0c5e519721</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>NEAREST_MIPMAP_LINEAR</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MinFilter.html</anchorfile>
+      <anchor>ad758d2c4a46e477c48d3c770e3796a83</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINEAR_MIPMAP_LINEAR</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1MinFilter.html</anchorfile>
+      <anchor>adcce2f51548aabbd57aba4ccc5887a50</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ExtensionBufferViewExtMeshoptCompression::Mode</name>
     <filename>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Mode.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>ATTRIBUTES</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Mode.html</anchorfile>
+      <anchor>ae54727ab12f579d6494649a69a5dfbac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>TRIANGLES</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Mode.html</anchorfile>
+      <anchor>a9ea6d75f2ad3f4281e7ecb15dbe82348</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INDICES</name>
+      <anchorfile>structCesiumGltf_1_1ExtensionBufferViewExtMeshoptCompression_1_1Mode.html</anchorfile>
+      <anchor>ab29afb1473a194269c5329ea9c068da0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::MeshPrimitive::Mode</name>
     <filename>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>POINTS</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>ac5b3d55f48e29d87a96dc3005df72a07</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINES</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>a412bc774bbcde8cb9cb491e194b8e4c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINE_LOOP</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>a2598e8ab2930f40a7e89acb61b9ac9dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>LINE_STRIP</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>a97869afb0c4fc5a898d32c47e82e8835</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>TRIANGLES</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>a34950080315ac83bc0b8c0cf21a1d5c8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>TRIANGLE_STRIP</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>ae7dceb1c9b13e8f2ebfb8ae824330a5b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>TRIANGLE_FAN</name>
+      <anchorfile>structCesiumGltf_1_1MeshPrimitive_1_1Mode.html</anchorfile>
+      <anchor>adc9bf41aa6cccef19f2e86958ae38f61</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Model</name>
@@ -12150,6 +15678,13 @@
       <anchor>ad226c051178dca5c6e8d484831176b38</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1ModelSpec.html</anchorfile>
+      <anchor>a24132139840b7efe440fbe64ea6d3039</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type></type>
       <name>ModelSpec</name>
@@ -12335,6 +15870,13 @@
       <anchor>a94a1e33af9db051674253634c4ba2ec0</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Node.html</anchorfile>
+      <anchor>aae5964f0122946940b9859d6d2f8965b</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::NodeReader</name>
@@ -12390,6 +15932,62 @@
     <name>CesiumJsonReader::ObjectJsonHandler</name>
     <filename>classCesiumJsonReader_1_1ObjectJsonHandler.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectStart</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>a2cb620c9b21ea9f14b5f9cf875c0c7c9</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readObjectEnd</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>a2b07caf371949b2cb63e9ddb0b6a9daa</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>StartSubObject</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>abaa7aa5c5951b6ebbf53d2b283844bf4</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>EndSubObject</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>a17f68441fe82947f7b70bc863d0bc727</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IJsonHandler *</type>
+      <name>property</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>a0d25afbf9a9b943fff57ed558f27fe63</anchor>
+      <arglist>(const char *currentKey, TAccessor &amp;accessor, TProperty &amp;value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>const char *</type>
+      <name>getCurrentKey</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>af439383716e87fc6af8b6218d069eac6</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>reportWarning</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>aeb71f3e989205dc8f3165335e5966caa</anchor>
+      <arglist>(const std::string &amp;warning, std::vector&lt; std::string &gt; &amp;&amp;context=std::vector&lt; std::string &gt;()) override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>setCurrentKey</name>
+      <anchorfile>classCesiumJsonReader_1_1ObjectJsonHandler.html</anchorfile>
+      <anchor>a6c582bc542bb23a5588583d7b12debfb</anchor>
+      <arglist>(const char *key) noexcept</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGeometry::OctreeAvailability</name>
@@ -12476,6 +16074,41 @@
     <name>Cesium3DTilesContent::OctreeChildren</name>
     <filename>classCesium3DTilesContent_1_1OctreeChildren.html</filename>
     <class kind="class">Cesium3DTilesContent::OctreeChildren::iterator</class>
+    <member kind="typedef">
+      <type>iterator</type>
+      <name>const_iterator</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren.html</anchorfile>
+      <anchor>a26c905170affa614ef458394d0935d44</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>OctreeChildren</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren.html</anchorfile>
+      <anchor>af9efd9e29da51641fc6ffc924a3cdc06</anchor>
+      <arglist>(const CesiumGeometry::OctreeTileID &amp;tileID) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator</type>
+      <name>begin</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren.html</anchorfile>
+      <anchor>af81c5ec0f013128c964933b6500c0cab</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator</type>
+      <name>end</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren.html</anchorfile>
+      <anchor>a4e7540083573ce26a0ca2bc57eec6c36</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr int64_t</type>
+      <name>size</name>
+      <anchorfile>classCesium3DTilesContent_1_1OctreeChildren.html</anchorfile>
+      <anchor>a2de883f24e5682c369e0db6ddc7a13bd</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGeometry::OctreeTileID</name>
@@ -12714,6 +16347,34 @@
   <compound kind="struct">
     <name>CesiumGltf::AnimationChannelTarget::Path</name>
     <filename>structCesiumGltf_1_1AnimationChannelTarget_1_1Path.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>translation</name>
+      <anchorfile>structCesiumGltf_1_1AnimationChannelTarget_1_1Path.html</anchorfile>
+      <anchor>a1382ff8622e0dda663130fc7a604dab1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>rotation</name>
+      <anchorfile>structCesiumGltf_1_1AnimationChannelTarget_1_1Path.html</anchorfile>
+      <anchor>a25197b1b95cbd134bb806b768cd9fae3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>scale</name>
+      <anchorfile>structCesiumGltf_1_1AnimationChannelTarget_1_1Path.html</anchorfile>
+      <anchor>abf9aa43e0c981bada36a9ff25127c78a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>weights</name>
+      <anchorfile>structCesiumGltf_1_1AnimationChannelTarget_1_1Path.html</anchorfile>
+      <anchor>a6632f9025c70b5c81935b40208612e6c</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltfContent::PixelRectangle</name>
@@ -12824,11 +16485,263 @@
   <compound kind="struct">
     <name>Cesium3DTilesContent::PntsToGltfConverter</name>
     <filename>structCesium3DTilesContent_1_1PntsToGltfConverter.html</filename>
+    <member kind="function" static="yes">
+      <type>static CesiumAsync::Future&lt; GltfConverterResult &gt;</type>
+      <name>convert</name>
+      <anchorfile>structCesium3DTilesContent_1_1PntsToGltfConverter.html</anchorfile>
+      <anchor>a49f3b25c77e99270e3ac8cad817929cc</anchor>
+      <arglist>(const std::span&lt; const std::byte &gt; &amp;pntsBinary, const CesiumGltfReader::GltfReaderOptions &amp;options, const AssetFetcher &amp;assetFetcher)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumJsonWriter::PrettyJsonWriter</name>
     <filename>classCesiumJsonWriter_1_1PrettyJsonWriter.html</filename>
     <base>CesiumJsonWriter::JsonWriter</base>
+    <member kind="function">
+      <type>bool</type>
+      <name>Null</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a1cf66df11ddebfdf04f3e950811f125a</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Bool</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a5a9f3afcae1ed75cd6a3020371f1b20a</anchor>
+      <arglist>(bool b) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Int</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ab34be71961d8f133df87ea2a1149477f</anchor>
+      <arglist>(int i) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Uint</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a7770c287da7b692467a21f51aedcb775</anchor>
+      <arglist>(unsigned int i) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Uint64</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>af081f55914adeaf2c3f5b4b6c043c1cc</anchor>
+      <arglist>(std::uint64_t i) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Int64</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ab3a458b7b536f79072eefdf1f4b05f2b</anchor>
+      <arglist>(std::int64_t i) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Double</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a8a8f13a14974414d7e5090ba21ad5e5e</anchor>
+      <arglist>(double d) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>RawNumber</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a4e8aab14f983599f120e726ceae0c915</anchor>
+      <arglist>(const char *str, unsigned int length, bool copy) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Key</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a94680eba46c583f581ec5456993e973f</anchor>
+      <arglist>(std::string_view string) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>String</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a24a4ce5b64701075867fbc1b7ae90041</anchor>
+      <arglist>(std::string_view string) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>StartObject</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a8148cfa7e4a6bced5be17e72e403d588</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>EndObject</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>add7ff3ef4c81b502f7f2cdc851885057</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>StartArray</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a16690405cebfd881208794f77a4724de</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>EndArray</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a7c721890ebcb1f041b45251cc9cdb65e</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a1334373b5ef26b63c4dbd0688d66c208</anchor>
+      <arglist>(std::int32_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a80a3996c03b447861a54717c4ae6f636</anchor>
+      <arglist>(std::uint32_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ae6d61d43dd8895d65c6e83c6e0131a4a</anchor>
+      <arglist>(std::int64_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ad48cb140ed09be0cca388885f709f943</anchor>
+      <arglist>(std::uint64_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a794c8967a409667dcc69575ac1c175fc</anchor>
+      <arglist>(float value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a2173b196d3969a614fdd2199b86bb3fd</anchor>
+      <arglist>(double value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>aff37092cbf62057b2cee1fca95972c0c</anchor>
+      <arglist>(std::nullptr_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Primitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a9e309abf85902dbdcdabea0196d78da6</anchor>
+      <arglist>(std::string_view string) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a897b1bfbdf35a87296a2aca1e1a29ac9</anchor>
+      <arglist>(std::string_view keyName, std::int32_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ac169f199959db646f79b3ce3aeb47d82</anchor>
+      <arglist>(std::string_view keyName, std::uint32_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>af82a28b7ff715f8f5ae7981a2336a1bc</anchor>
+      <arglist>(std::string_view keyName, std::int64_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a381eb5b19fd3347a7d392b8e45ea5bce</anchor>
+      <arglist>(std::string_view keyName, std::uint64_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ac8103c3e80513304083fbccb4555854b</anchor>
+      <arglist>(std::string_view keyName, std::string_view value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a458cb06c70571915d3766ec86147798d</anchor>
+      <arglist>(std::string_view keyName, float value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a63eeccfa8c1172213660d0f805f761ba</anchor>
+      <arglist>(std::string_view keyName, double value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyPrimitive</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a0453e757cc4103839f8931df04cfdcf5</anchor>
+      <arglist>(std::string_view keyName, std::nullptr_t value) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyArray</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>ad29898472cf0ca6fbadbc4d6135a4f81</anchor>
+      <arglist>(std::string_view keyName, std::function&lt; void(void)&gt; insideArray) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>KeyObject</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a3f7b34a1720b19088f0a9595aed14093</anchor>
+      <arglist>(std::string_view keyName, std::function&lt; void(void)&gt; insideObject) override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>toString</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a1dc02ad424d8ea98bc99d5d5862167e4</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string_view</type>
+      <name>toStringView</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a4ef65d37fa5f96349ec044f26eb6877c</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; std::byte &gt;</type>
+      <name>toBytes</name>
+      <anchorfile>classCesiumJsonWriter_1_1PrettyJsonWriter.html</anchorfile>
+      <anchor>a9c7c3a94ea0d7c7b8a776532cfe1460d</anchor>
+      <arglist>() override</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumIonClient::Profile</name>
@@ -12951,6 +16864,34 @@
   <compound kind="class">
     <name>CesiumAsync::Promise&lt; void &gt;</name>
     <filename>classCesiumAsync_1_1Promise_3_01void_01_4.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>resolve</name>
+      <anchorfile>classCesiumAsync_1_1Promise_3_01void_01_4.html</anchorfile>
+      <anchor>a0577d402a2f11d9e0b2e81b9194bbb3f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reject</name>
+      <anchorfile>classCesiumAsync_1_1Promise_3_01void_01_4.html</anchorfile>
+      <anchor>ab8ff932dfd3e9632dbf53e6ee65ed51f</anchor>
+      <arglist>(TException error) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reject</name>
+      <anchorfile>classCesiumAsync_1_1Promise_3_01void_01_4.html</anchorfile>
+      <anchor>a25779cc73aec02cbe1eabda4818af77a</anchor>
+      <arglist>(const std::exception_ptr &amp;error) const</arglist>
+    </member>
+    <member kind="function">
+      <type>Future&lt; void &gt;</type>
+      <name>getFuture</name>
+      <anchorfile>classCesiumAsync_1_1Promise_3_01void_01_4.html</anchorfile>
+      <anchor>a4f48b2d4685595dbc88b65dd19647bdc</anchor>
+      <arglist>() const</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Properties</name>
@@ -12975,6 +16916,13 @@
       <name>minimum</name>
       <anchorfile>structCesium3DTiles_1_1Properties.html</anchorfile>
       <anchor>a2dd118c5f46c0815eb349ce8fb21c0dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Properties.html</anchorfile>
+      <anchor>acf945842cd6e87e60477a4f31a65d64e</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -13042,6 +16990,97 @@
       <anchor>a22c19b4015607bd8e124afb2822bc4c1</anchor>
       <arglist>(const std::vector&lt; ElementType &gt; &amp;values) noexcept</arglist>
     </member>
+    <member kind="function">
+      <type></type>
+      <name>PropertyArrayCopy</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>ade04a01a7e18b1f75822b8b7ac5a78bc</anchor>
+      <arglist>(PropertyArrayCopy &amp;&amp;)=default</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a7b65e73b123da3d0174d20e686c751ca</anchor>
+      <arglist>(PropertyArrayCopy &amp;&amp;)=default</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>PropertyArrayCopy</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a7ca0e94cfdd58b7da2750b1e2b2146b8</anchor>
+      <arglist>(std::vector&lt; std::byte &gt; &amp;&amp;buffer) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>PropertyArrayCopy</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a8209aea9150a5b53b3148c1e75cb6e5f</anchor>
+      <arglist>(const PropertyArrayCopy &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a1f9527d7633d37012d544eacf5fb55e8</anchor>
+      <arglist>(const PropertyArrayCopy &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>const ElementType &amp;</type>
+      <name>operator[]</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a967fafcef3177a79d5e65301e58285aa</anchor>
+      <arglist>(int64_t index) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>size</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a8904188981da9441f5270d70411b1a06</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>begin</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a710d4c9e862a74b9f4864c957917f517</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>end</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a868a4914bda93244833da724fb875e9c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>begin</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a2354564ac1fc8c0ad22dff44f325b3ee</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>end</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>a2d34cbc6715f1b5e2c5121f6ddffd098</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const PropertyArrayView&lt; ElementType &gt; &amp;</type>
+      <name>view</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>abadf658cbe552868b7e42905f48b2dfe</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayView&lt; ElementType &gt;</type>
+      <name>toViewAndExternalBuffer</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayCopy.html</anchorfile>
+      <anchor>ae4d15a2e0aad3b64f992599f985a2ed5</anchor>
+      <arglist>(std::vector&lt; std::byte &gt; &amp;outBuffer) &amp;&amp;</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyArrayView</name>
@@ -13061,6 +17100,48 @@
       <anchor>ab9dd6def92aead4cd8ed7620b491e80c</anchor>
       <arglist>(const std::span&lt; const std::byte &gt; &amp;buffer) noexcept</arglist>
     </member>
+    <member kind="function">
+      <type>const ElementType &amp;</type>
+      <name>operator[]</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView.html</anchorfile>
+      <anchor>a92b0fc0986249ff0502d750c17b6fc22</anchor>
+      <arglist>(int64_t index) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>size</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView.html</anchorfile>
+      <anchor>ae869ce0aa789433a5289806133ee0397</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>begin</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView.html</anchorfile>
+      <anchor>adcf6f8939ba382770e54f3099ad17016</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>end</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView.html</anchorfile>
+      <anchor>a1f91682cfefe7bb406e7fb265d206ce7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>begin</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView.html</anchorfile>
+      <anchor>ad8c8a742a98729041c1d14f5fe5abd3a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>auto</type>
+      <name>end</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView.html</anchorfile>
+      <anchor>aa4028d0712c64dc7f3ca9314a82a789a</anchor>
+      <arglist>() const</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyArrayView&lt; bool &gt;</name>
@@ -13079,6 +17160,20 @@
       <anchor>a6174642e425a31c27783decc06f2408b</anchor>
       <arglist>(const std::span&lt; const std::byte &gt; &amp;buffer, int64_t bitOffset, int64_t size) noexcept</arglist>
     </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator[]</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView_3_01bool_01_4.html</anchorfile>
+      <anchor>aea35fd9d1631623b555d6286736ded4b</anchor>
+      <arglist>(int64_t index) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>size</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView_3_01bool_01_4.html</anchorfile>
+      <anchor>af74bad36b3fea23545bbe029f3207d7d</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyArrayView&lt; std::string_view &gt;</name>
@@ -13096,6 +17191,20 @@
       <anchorfile>classCesiumGltf_1_1PropertyArrayView_3_01std_1_1string__view_01_4.html</anchorfile>
       <anchor>a385127606352c6496b29863fe024612f</anchor>
       <arglist>(const std::span&lt; const std::byte &gt; &amp;values, const std::span&lt; const std::byte &gt; &amp;stringOffsets, PropertyComponentType stringOffsetType, int64_t size) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string_view</type>
+      <name>operator[]</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView_3_01std_1_1string__view_01_4.html</anchorfile>
+      <anchor>a08488e776486e2eba01c0df61d6b732a</anchor>
+      <arglist>(int64_t index) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>size</name>
+      <anchorfile>classCesiumGltf_1_1PropertyArrayView_3_01std_1_1string__view_01_4.html</anchorfile>
+      <anchor>ad27e617b67c400a16021bd12c420d286</anchor>
+      <arglist>() const noexcept</arglist>
     </member>
   </compound>
   <compound kind="struct">
@@ -13128,6 +17237,13 @@
       <name>properties</name>
       <anchorfile>structCesiumGltf_1_1PropertyAttribute.html</anchorfile>
       <anchor>af33750044fb006e3f2ed3c011fcb8c84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1PropertyAttribute.html</anchorfile>
+      <anchor>ac45150d8fd8070c87018330d442ade87</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -13175,6 +17291,13 @@
       <name>min</name>
       <anchorfile>structCesiumGltf_1_1PropertyAttributeProperty.html</anchorfile>
       <anchor>aa1a77e79f21239dcd795ba5bba34335d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1PropertyAttributeProperty.html</anchorfile>
+      <anchor>aed2e366f985d0405dc2ef116e8edc9be</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -13595,6 +17718,13 @@
       <anchor>ac12e2d2d6a64de76cd5362fd51805382</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyStatistics.html</anchorfile>
+      <anchor>a987bd1bebaa5f28904f883dbb4427aed</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::PropertyStatisticsReader</name>
@@ -13681,6 +17811,13 @@
       <anchor>a317fece040763b4c4ced67fa9a0424c9</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTable.html</anchorfile>
+      <anchor>a8f25edd2f183eaff7a3418a24a0d46a5</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::PropertyTable</name>
@@ -13719,6 +17856,13 @@
       <name>properties</name>
       <anchorfile>structCesiumGltf_1_1PropertyTable.html</anchorfile>
       <anchor>a14724643bb2f7ba8a6abcd70c35ddff8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTable.html</anchorfile>
+      <anchor>a52ad9fca0a86ac0f7dd30ecae787c871</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -13798,6 +17942,13 @@
       <anchor>a1fcd6f18331210b9754c27c6fab011df</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty.html</anchorfile>
+      <anchor>a0ede49c9606dff99639d55855c12f97e</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::PropertyTableProperty</name>
@@ -13873,6 +18024,13 @@
       <name>min</name>
       <anchorfile>structCesiumGltf_1_1PropertyTableProperty.html</anchorfile>
       <anchor>a8ade0eb8226d485c8acaed79a2ddef4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty.html</anchorfile>
+      <anchor>a02cadbbaa5c99754300f9bb3e7402731</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -14420,6 +18578,13 @@
       <anchor>a4859fdf3539cc92b03f1cf33ed39dedc</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTexture.html</anchorfile>
+      <anchor>a56f9162690552b7579a512c7ebc51323</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::PropertyTextureProperty</name>
@@ -14465,6 +18630,13 @@
       <name>min</name>
       <anchorfile>structCesiumGltf_1_1PropertyTextureProperty.html</anchorfile>
       <anchor>a2c75dc9ef2a3abb42eeedf2a96e49a48</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTextureProperty.html</anchorfile>
+      <anchor>a9db442da5904c889cd870e8e0610ff60</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -14948,6 +19120,13 @@
       <anchor>a71a32a889e531dee29026913ce8490b2</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyTableProperty &amp;)</arglist>
     </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01bool_01_4.html</anchorfile>
+      <anchor>a953eed9bbea6f14a997c6dd0e4899413</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyView&lt; ElementType, false &gt;</name>
@@ -15085,6 +19264,13 @@
       <anchorfile>classCesiumGltf_1_1PropertyView_3_01ElementType_00_01false_01_4.html</anchorfile>
       <anchor>abeb461ce97b247648f7a70ef96243975</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyAttributeProperty &amp;property)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01ElementType_00_01false_01_4.html</anchorfile>
+      <anchor>a62e58493efac7ad4dd2f138adba20b49</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -15224,6 +19410,13 @@
       <anchor>a4ee8e2214f57f2e0a6ea7070cdd4defe</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyAttributeProperty &amp;property)</arglist>
     </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01ElementType_00_01true_01_4.html</anchorfile>
+      <anchor>a58e0d3aab8ce2396636e284e0d6e0bb9</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyView&lt; PropertyArrayView&lt; bool &gt; &gt;</name>
@@ -15346,6 +19539,13 @@
       <anchorfile>classCesiumGltf_1_1PropertyView_3_01PropertyArrayView_3_01bool_01_4_01_4.html</anchorfile>
       <anchor>aa9496d2468564d60b9cc3460549f36ef</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyTableProperty &amp;)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01PropertyArrayView_3_01bool_01_4_01_4.html</anchorfile>
+      <anchor>a69a94cf7dddc3a450870ab952c8405a1</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -15478,6 +19678,13 @@
       <anchor>ad4b3b33eeefd7c69e7766ca489ad5216</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyTextureProperty &amp;property)</arglist>
     </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01PropertyArrayView_3_01ElementType_01_4_00_01false_01_4.html</anchorfile>
+      <anchor>afde186e0d713dc69dbbaeacc75f2337a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyView&lt; PropertyArrayView&lt; ElementType &gt;, true &gt;</name>
@@ -15609,6 +19816,13 @@
       <anchor>a4726f72ed4309054e5df3b5734c2bd31</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyTextureProperty &amp;property)</arglist>
     </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01PropertyArrayView_3_01ElementType_01_4_00_01true_01_4.html</anchorfile>
+      <anchor>a1333d9dd414c8ffb6a651381a939c887</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyView&lt; PropertyArrayView&lt; std::string_view &gt; &gt;</name>
@@ -15732,6 +19946,13 @@
       <anchor>a133b2163c6c75399e1c4b33de4af52a0</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyTableProperty &amp;)</arglist>
     </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01PropertyArrayView_3_01std_1_1string__view_01_4_01_4.html</anchorfile>
+      <anchor>a65869a86b902a3f29a1f2172517d455e</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltf::PropertyView&lt; std::string_view &gt;</name>
@@ -15854,6 +20075,13 @@
       <anchorfile>classCesiumGltf_1_1PropertyView_3_01std_1_1string__view_01_4.html</anchorfile>
       <anchor>a0f3d3540af1afe56ec2d04cf0f0dc617</anchor>
       <arglist>(const ClassProperty &amp;classProperty, const PropertyTableProperty &amp;)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>PropertyViewStatusType</type>
+      <name>_status</name>
+      <anchorfile>classCesiumGltf_1_1PropertyView_3_01std_1_1string__view_01_4.html</anchorfile>
+      <anchor>a5f1fb409d9cf3eddbdd23bc441ed3e5a</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -16043,6 +20271,41 @@
     <name>Cesium3DTilesContent::QuadtreeChildren</name>
     <filename>classCesium3DTilesContent_1_1QuadtreeChildren.html</filename>
     <class kind="class">Cesium3DTilesContent::QuadtreeChildren::iterator</class>
+    <member kind="typedef">
+      <type>iterator</type>
+      <name>const_iterator</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren.html</anchorfile>
+      <anchor>afc92cd8d079663303fbd42edf9389a7c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>QuadtreeChildren</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren.html</anchorfile>
+      <anchor>a68a8dc3adfbdb585b5207f1cdb5815c6</anchor>
+      <arglist>(const CesiumGeometry::QuadtreeTileID &amp;tileID) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator</type>
+      <name>begin</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren.html</anchorfile>
+      <anchor>ac5b76340a8efd9591932cbd8a655af30</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>iterator</type>
+      <name>end</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren.html</anchorfile>
+      <anchor>aff9ff0c906b390bd790536129b3039e3</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr int64_t</type>
+      <name>size</name>
+      <anchorfile>classCesium3DTilesContent_1_1QuadtreeChildren.html</anchorfile>
+      <anchor>a5db1b6658f1027648fe26e78a1ecb01f</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumRasterOverlays::QuadtreeRasterOverlayTileProvider</name>
@@ -16352,14 +20615,31 @@
       <anchor>a60ab69c01f381d14bb95e57e7805d9f3</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>CesiumUtility::ErrorList</type>
+      <name>errors</name>
+      <anchorfile>structCesiumQuantizedMeshTerrain_1_1QuantizedMeshLoadResult.html</anchorfile>
+      <anchor>a1aefec9876a9c4c3622703574d1b3e3e</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumQuantizedMeshTerrain::QuantizedMeshMetadataResult</name>
     <filename>structCesiumQuantizedMeshTerrain_1_1QuantizedMeshMetadataResult.html</filename>
-  </compound>
-  <compound kind="class">
-    <name>CesiumAsync::CesiumImpl::QueuedScheduler</name>
-    <filename>classCesiumAsync_1_1CesiumImpl_1_1QueuedScheduler.html</filename>
+    <member kind="variable">
+      <type>std::vector&lt; CesiumGeometry::QuadtreeTileRectangularRange &gt;</type>
+      <name>availability</name>
+      <anchorfile>structCesiumQuantizedMeshTerrain_1_1QuantizedMeshMetadataResult.html</anchorfile>
+      <anchor>a46f6da1942b429e37dd1d5c60a1b8935</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>CesiumUtility::ErrorList</type>
+      <name>errors</name>
+      <anchorfile>structCesiumQuantizedMeshTerrain_1_1QuantizedMeshMetadataResult.html</anchorfile>
+      <anchor>a766d2ed6b7df6a76aab66edad839e90b</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumIonClient::QuickAddAsset</name>
@@ -16443,12 +20723,40 @@
     <name>CesiumRasterOverlays::RasterizedPolygonsOverlay</name>
     <filename>classCesiumRasterOverlays_1_1RasterizedPolygonsOverlay.html</filename>
     <base>CesiumRasterOverlays::RasterOverlay</base>
+    <member kind="function">
+      <type></type>
+      <name>RasterizedPolygonsOverlay</name>
+      <anchorfile>classCesiumRasterOverlays_1_1RasterizedPolygonsOverlay.html</anchorfile>
+      <anchor>aaae794c566b93886232f5f45552db6a1</anchor>
+      <arglist>(const std::string &amp;name, const std::vector&lt; CesiumGeospatial::CartographicPolygon &gt; &amp;polygons, bool invertSelection, const CesiumGeospatial::Ellipsoid &amp;ellipsoid, const CesiumGeospatial::Projection &amp;projection, const RasterOverlayOptions &amp;overlayOptions={})</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual CesiumAsync::Future&lt; CreateTileProviderResult &gt;</type>
       <name>createTileProvider</name>
       <anchorfile>classCesiumRasterOverlays_1_1RasterizedPolygonsOverlay.html</anchorfile>
       <anchor>a22745c96b10d6799cc9ac728d64b18f8</anchor>
       <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::shared_ptr&lt; CesiumUtility::CreditSystem &gt; &amp;pCreditSystem, const std::shared_ptr&lt; IPrepareRasterOverlayRendererResources &gt; &amp;pPrepareRendererResources, const std::shared_ptr&lt; spdlog::logger &gt; &amp;pLogger, CesiumUtility::IntrusivePointer&lt; const RasterOverlay &gt; pOwner) const override</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; CesiumGeospatial::CartographicPolygon &gt; &amp;</type>
+      <name>getPolygons</name>
+      <anchorfile>classCesiumRasterOverlays_1_1RasterizedPolygonsOverlay.html</anchorfile>
+      <anchor>a205b5d3cfbe88ae6e71b0ba376cc21b4</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>getInvertSelection</name>
+      <anchorfile>classCesiumRasterOverlays_1_1RasterizedPolygonsOverlay.html</anchorfile>
+      <anchor>a249bfa2dbf3e77f56d6a1d3ef660acaf</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const CesiumGeospatial::Ellipsoid &amp;</type>
+      <name>getEllipsoid</name>
+      <anchorfile>classCesiumRasterOverlays_1_1RasterizedPolygonsOverlay.html</anchorfile>
+      <anchor>a9b5262c5d68d74a6e1bbaa4aec6f84ab</anchor>
+      <arglist>() const noexcept</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -16568,6 +20876,13 @@
       <arglist>(IPrepareRendererResources &amp;prepareRendererResources, Tile &amp;tile)</arglist>
     </member>
     <member kind="function">
+      <type>bool</type>
+      <name>isMoreDetailAvailable</name>
+      <anchorfile>classCesium3DTilesSelection_1_1RasterMappedTo3DTile.html</anchorfile>
+      <anchor>ab66c52b59a926acba2434aeb222ca2b2</anchor>
+      <arglist>() const noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>detachFromTile</name>
       <anchorfile>classCesium3DTilesSelection_1_1RasterMappedTo3DTile.html</anchorfile>
@@ -16593,6 +20908,13 @@
     <name>CesiumRasterOverlays::RasterOverlay</name>
     <filename>classCesiumRasterOverlays_1_1RasterOverlay.html</filename>
     <base>CesiumUtility::ReferenceCounted&lt; T, isThreadSafe &gt;</base>
+    <member kind="typedef">
+      <type>nonstd::expected&lt; CesiumUtility::IntrusivePointer&lt; RasterOverlayTileProvider &gt;, RasterOverlayLoadFailureDetails &gt;</type>
+      <name>CreateTileProviderResult</name>
+      <anchorfile>classCesiumRasterOverlays_1_1RasterOverlay.html</anchorfile>
+      <anchor>ad72c4a75298ae8a50032b3bd88601beb</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type></type>
       <name>RasterOverlay</name>
@@ -17262,6 +21584,13 @@
       <anchor>a9d7a7ba3186d931fc0031072671fa80e</anchor>
       <arglist>(const CesiumGeometry::Rectangle &amp;geometryRectangle, const CesiumGeometry::Rectangle &amp;overlayRectangle)</arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr std::string_view</type>
+      <name>DEFAULT_TEXTURE_COORDINATE_BASE_NAME</name>
+      <anchorfile>structCesiumRasterOverlays_1_1RasterOverlayUtilities.html</anchorfile>
+      <anchor>a39803c90ec7da0d0b2574725bede9450</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGeometry::Ray</name>
@@ -17523,7 +21852,6 @@
     <filename>classCesiumUtility_1_1ReferenceCounted.html</filename>
     <templarg>typename T</templarg>
     <templarg>bool isThreadSafe</templarg>
-    <base>CesiumUtility::ThreadIdHolder&lt; true &gt;</base>
     <member kind="function">
       <type>void</type>
       <name>addReference</name>
@@ -17549,11 +21877,53 @@
   <compound kind="struct">
     <name>Cesium3DTiles::Tile::Refine</name>
     <filename>structCesium3DTiles_1_1Tile_1_1Refine.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>ADD</name>
+      <anchorfile>structCesium3DTiles_1_1Tile_1_1Refine.html</anchorfile>
+      <anchor>aed2283b99f5a26f9944ed07f781d8162</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>REPLACE</name>
+      <anchorfile>structCesium3DTiles_1_1Tile_1_1Refine.html</anchorfile>
+      <anchor>ac8a25bde40728d331cd488e701b245bf</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumIonClient::Response</name>
     <filename>structCesiumIonClient_1_1Response.html</filename>
     <templarg>typename T</templarg>
+    <member kind="function">
+      <type></type>
+      <name>Response</name>
+      <anchorfile>structCesiumIonClient_1_1Response.html</anchorfile>
+      <anchor>ae9c97526f77c80b5abdf265d251a209c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Response</name>
+      <anchorfile>structCesiumIonClient_1_1Response.html</anchorfile>
+      <anchor>a6d637acc5f04d424e62e8374f42dda8c</anchor>
+      <arglist>(const std::shared_ptr&lt; CesiumAsync::IAssetRequest &gt; &amp;pRequest, T &amp;&amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Response</name>
+      <anchorfile>structCesiumIonClient_1_1Response.html</anchorfile>
+      <anchor>a425851c322ec6139ae7ad48dfea0d345</anchor>
+      <arglist>(T &amp;&amp;value, uint16_t httpStatusCode, const std::string &amp;errorCode, const std::string &amp;errorMessage)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Response</name>
+      <anchorfile>structCesiumIonClient_1_1Response.html</anchorfile>
+      <anchor>a9e27898b42670e9dfd59fd3338067180</anchor>
+      <arglist>(uint16_t httpStatusCode, const std::string &amp;errorCode, const std::string &amp;errorMessage)</arglist>
+    </member>
     <member kind="variable">
       <type>std::optional&lt; T &gt;</type>
       <name>value</name>
@@ -17601,6 +21971,27 @@
     <name>CesiumUtility::Result</name>
     <filename>structCesiumUtility_1_1Result.html</filename>
     <templarg>typename T</templarg>
+    <member kind="function">
+      <type></type>
+      <name>Result</name>
+      <anchorfile>structCesiumUtility_1_1Result.html</anchorfile>
+      <anchor>acae1ec189646a371b39d837690757ea4</anchor>
+      <arglist>(T value_) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Result</name>
+      <anchorfile>structCesiumUtility_1_1Result.html</anchorfile>
+      <anchor>a40fede80c4f1f12b3a61effd3147a1e6</anchor>
+      <arglist>(T value_, ErrorList errors_) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Result</name>
+      <anchorfile>structCesiumUtility_1_1Result.html</anchorfile>
+      <anchor>a17d5b1bbefd026b78beb3d653ce07109</anchor>
+      <arglist>(ErrorList errors_) noexcept</arglist>
+    </member>
     <member kind="variable">
       <type>std::optional&lt; T &gt;</type>
       <name>value</name>
@@ -17620,6 +22011,27 @@
     <name>CesiumUtility::Result&lt; CesiumUtility::IntrusivePointer&lt; T &gt; &gt;</name>
     <filename>structCesiumUtility_1_1Result_3_01CesiumUtility_1_1IntrusivePointer_3_01T_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
+    <member kind="function">
+      <type></type>
+      <name>Result</name>
+      <anchorfile>structCesiumUtility_1_1Result_3_01CesiumUtility_1_1IntrusivePointer_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a173b37f7cf54969ee8b05714b67ce5a7</anchor>
+      <arglist>(CesiumUtility::IntrusivePointer&lt; T &gt; pValue_) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Result</name>
+      <anchorfile>structCesiumUtility_1_1Result_3_01CesiumUtility_1_1IntrusivePointer_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>a8d5443e64e4cd088e1b4fce17bf25c91</anchor>
+      <arglist>(CesiumUtility::IntrusivePointer&lt; T &gt; pValue_, ErrorList errors_) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>Result</name>
+      <anchorfile>structCesiumUtility_1_1Result_3_01CesiumUtility_1_1IntrusivePointer_3_01T_01_4_01_4.html</anchorfile>
+      <anchor>acc541d5dd2676d6a4001083d191bef67</anchor>
+      <arglist>(ErrorList errors_) noexcept</arglist>
+    </member>
     <member kind="variable">
       <type>CesiumUtility::IntrusivePointer&lt; T &gt;</type>
       <name>pValue</name>
@@ -17638,6 +22050,13 @@
   <compound kind="class">
     <name>CesiumGeospatial::S2CellBoundingVolume</name>
     <filename>classCesiumGeospatial_1_1S2CellBoundingVolume.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>S2CellBoundingVolume</name>
+      <anchorfile>classCesiumGeospatial_1_1S2CellBoundingVolume.html</anchorfile>
+      <anchor>aa7b7f04b83e1730ea0f5eb5af7021ee9</anchor>
+      <arglist>(const S2CellID &amp;cellID, double minimumHeight, double maximumHeight, const CesiumGeospatial::Ellipsoid &amp;ellipsoid=CesiumGeospatial::Ellipsoid::WGS84)</arglist>
+    </member>
     <member kind="function">
       <type>const S2CellID &amp;</type>
       <name>getCellID</name>
@@ -17872,6 +22291,13 @@
       <anchor>a8d9210f9c3a440daffd469061c64b1e9</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Sampler.html</anchorfile>
+      <anchor>ad4fa47e4b712d2393aeac6adbebc08c0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::SamplerReader</name>
@@ -17949,6 +22375,13 @@
       <anchor>a373fc6ad0803d0e0b6210acc2b1fbacf</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Scene.html</anchorfile>
+      <anchor>adee07796891bc44abb8d653c56bc52f0</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::SceneReader</name>
@@ -17995,10 +22428,6 @@
       <anchor>a5f6e08cc6b3379badbf40d34acf1e939</anchor>
       <arglist>(const rapidjson::Value &amp;value) const</arglist>
     </member>
-  </compound>
-  <compound kind="class">
-    <name>CesiumAsync::CesiumImpl::ImmediateScheduler::SchedulerScope</name>
-    <filename>classCesiumAsync_1_1CesiumImpl_1_1ImmediateScheduler_1_1SchedulerScope.html</filename>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Schema</name>
@@ -18053,6 +22482,13 @@
       <anchor>a909e0dc59963d4e77db7d30177f9a8f7</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Schema.html</anchorfile>
+      <anchor>a41e4cadb9fc1e6a33cd7551a4c4c27c7</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Schema</name>
@@ -18105,6 +22541,13 @@
       <name>enums</name>
       <anchorfile>structCesiumGltf_1_1Schema.html</anchorfile>
       <anchor>a977a5958d938c64fabc68b852dc7b0a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Schema.html</anchorfile>
+      <anchor>a95e1db2df895ef5106fd2e2124c81f04</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -18430,6 +22873,13 @@
       <anchor>a7cdaf78bea2af3afcfab3bf3c5e487a4</anchor>
       <arglist>(const SharedAsset &amp;rhs)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>SharedAsset &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classCesiumUtility_1_1SharedAsset.html</anchorfile>
+      <anchor>a1b3ac872c0563ba379742167857d4e4b</anchor>
+      <arglist>(SharedAsset &amp;&amp;rhs)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumAsync::SharedAssetDepot</name>
@@ -18438,6 +22888,20 @@
     <templarg>typename TAssetKey</templarg>
     <base>CesiumUtility::ReferenceCounted&lt; T, isThreadSafe &gt;</base>
     <base>CesiumUtility::IDepotOwningAsset&lt; TAssetType &gt;</base>
+    <member kind="typedef">
+      <type>CesiumAsync::Future&lt; CesiumUtility::ResultPointer&lt; TAssetType &gt; &gt;( const AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; IAssetAccessor &gt; &amp;pAssetAccessor, const TAssetKey &amp;key)</type>
+      <name>FactorySignature</name>
+      <anchorfile>classCesiumAsync_1_1SharedAssetDepot.html</anchorfile>
+      <anchor>a8a5e4a9a4e6781d14879a5e4cfa2fe40</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>SharedAssetDepot</name>
+      <anchorfile>classCesiumAsync_1_1SharedAssetDepot.html</anchorfile>
+      <anchor>a919507c6c6f75d9cf9585848d83b79e2</anchor>
+      <arglist>(std::function&lt; FactorySignature &gt; factory)</arglist>
+    </member>
     <member kind="function">
       <type>SharedFuture&lt; CesiumUtility::ResultPointer&lt; TAssetType &gt; &gt;</type>
       <name>getOrCreate</name>
@@ -18485,6 +22949,27 @@
     <name>CesiumJsonReader::SharedAssetJsonHandler</name>
     <filename>classCesiumJsonReader_1_1SharedAssetJsonHandler.html</filename>
     <base>CesiumJsonReader::ExtensibleObjectJsonHandler</base>
+    <member kind="function">
+      <type></type>
+      <name>SharedAssetJsonHandler</name>
+      <anchorfile>classCesiumJsonReader_1_1SharedAssetJsonHandler.html</anchorfile>
+      <anchor>af2a29edc32db45004f2b97a7b2432617</anchor>
+      <arglist>(const CesiumJsonReader::JsonReaderOptions &amp;context) noexcept</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1SharedAssetJsonHandler.html</anchorfile>
+      <anchor>afc4f8346f0f124576c20a1bee6a50696</anchor>
+      <arglist>(IJsonHandler *pParent, CesiumUtility::ExtensibleObject *pObject)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IJsonHandler *</type>
+      <name>readObjectKeySharedAsset</name>
+      <anchorfile>classCesiumJsonReader_1_1SharedAssetJsonHandler.html</anchorfile>
+      <anchor>af80dcbd5c43eb3c1a24fc943ce29c76c</anchor>
+      <arglist>(const std::string &amp;objectType, const std::string_view &amp;str, CesiumUtility::ExtensibleObject &amp;o)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumAsync::SharedFuture</name>
@@ -18544,6 +23029,13 @@
       <name>wait</name>
       <anchorfile>classCesiumAsync_1_1SharedFuture.html</anchorfile>
       <anchor>a4955db02ccf67aa54865b9d50af7174c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>wait</name>
+      <anchorfile>classCesiumAsync_1_1SharedFuture.html</anchorfile>
+      <anchor>affc139ba3525c40cb8b0aae275737504</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -18618,6 +23110,13 @@
       <anchor>a2b73e650f244d2f34475ba5b1f773bbf</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Skin.html</anchorfile>
+      <anchor>adde3975c79af1e4738c3ace0ac495fc3</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumGltfReader::SkinReader</name>
@@ -18668,6 +23167,90 @@
   <compound kind="struct">
     <name>CesiumGltfContent::SkirtMeshMetadata</name>
     <filename>structCesiumGltfContent_1_1SkirtMeshMetadata.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>SkirtMeshMetadata</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>aad0897e6320b02b13b6e95fc568b240a</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::optional&lt; SkirtMeshMetadata &gt;</type>
+      <name>parseFromGltfExtras</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>a3b5bec557a78f66b4ef25c6a4ae823da</anchor>
+      <arglist>(const CesiumUtility::JsonValue::Object &amp;extras)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static CesiumUtility::JsonValue::Object</type>
+      <name>createGltfExtras</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>acc987a9b182996a8f80dba0ced58c101</anchor>
+      <arglist>(const SkirtMeshMetadata &amp;skirt)</arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>noSkirtIndicesBegin</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>abe9728fc2bab8f5596fd46bb357c97d4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>noSkirtIndicesCount</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>a3be7d7d62e7704ac2f81c354e60f96a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>noSkirtVerticesBegin</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>ac700d548b53515862d72dd00d538fa35</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>noSkirtVerticesCount</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>adfc298d617cd213eff8c2c14b3434fe5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>glm::dvec3</type>
+      <name>meshCenter</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>af71557b005ca76ec7c1523e7f4b851e7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>skirtWestHeight</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>a646572fe082c26644f31f805b5418723</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>skirtSouthHeight</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>a28180ec33f13c9fa6c8dd8734f2d261f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>skirtEastHeight</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>a927c9e24729feaf4d620dee1ffedc44e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>skirtNorthHeight</name>
+      <anchorfile>structCesiumGltfContent_1_1SkirtMeshMetadata.html</anchorfile>
+      <anchor>ae755b07c07fff5c13234f2e645c10add</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumAsync::SqliteCache</name>
@@ -18710,6 +23293,17 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>CesiumAsync::SqliteHelper</name>
+    <filename>structCesiumAsync_1_1SqliteHelper.html</filename>
+    <member kind="function" static="yes">
+      <type>static SqliteStatementPtr</type>
+      <name>prepareStatement</name>
+      <anchorfile>structCesiumAsync_1_1SqliteHelper.html</anchorfile>
+      <anchor>a374991eb6cd2b2e8615e7d9ea8bb875b</anchor>
+      <arglist>(const SqliteConnectionPtr &amp;pConnection, const std::string &amp;sql)</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>Cesium3DTiles::Statistics</name>
     <filename>structCesium3DTiles_1_1Statistics.html</filename>
     <base>CesiumUtility::ExtensibleObject</base>
@@ -18725,6 +23319,13 @@
       <name>classes</name>
       <anchorfile>structCesium3DTiles_1_1Statistics.html</anchorfile>
       <anchor>aacda90546960b4e42972191713bb40c3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Statistics.html</anchorfile>
+      <anchor>acdc25c43aec798c3b0c3647df308c134</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -18777,6 +23378,20 @@
   <compound kind="struct">
     <name>CesiumGltf::StatusFromAccessor</name>
     <filename>structCesiumGltf_1_1StatusFromAccessor.html</filename>
+    <member kind="function">
+      <type>AccessorViewStatus</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1StatusFromAccessor.html</anchorfile>
+      <anchor>a3127948676ed468e1ccbc22cb83979eb</anchor>
+      <arglist>(std::monostate)</arglist>
+    </member>
+    <member kind="function">
+      <type>AccessorViewStatus</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1StatusFromAccessor.html</anchorfile>
+      <anchor>ae4b5edea4859f4466996f32a4c7da871</anchor>
+      <arglist>(const AccessorView&lt; T &gt; &amp;value)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumUtility::StringHelpers</name>
@@ -18793,18 +23408,109 @@
     <name>CesiumJsonReader::StringJsonHandler</name>
     <filename>classCesiumJsonReader_1_1StringJsonHandler.html</filename>
     <base>CesiumJsonReader::JsonHandler</base>
+    <member kind="function">
+      <type>void</type>
+      <name>reset</name>
+      <anchorfile>classCesiumJsonReader_1_1StringJsonHandler.html</anchorfile>
+      <anchor>a4cf2f300be9461b0b846eed2cf7d4092</anchor>
+      <arglist>(IJsonHandler *pParent, std::string *pString)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string *</type>
+      <name>getObject</name>
+      <anchorfile>classCesiumJsonReader_1_1StringJsonHandler.html</anchorfile>
+      <anchor>a5349c2c8443f246da76b707244c3494d</anchor>
+      <arglist>() noexcept</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IJsonHandler *</type>
+      <name>readString</name>
+      <anchorfile>classCesiumJsonReader_1_1StringJsonHandler.html</anchorfile>
+      <anchor>a8a8157d4c138c98c5bb3441af5bad0f7</anchor>
+      <arglist>(const std::string_view &amp;str) override</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::PropertyTableProperty::StringOffsetType</name>
     <filename>structCesium3DTiles_1_1PropertyTableProperty_1_1StringOffsetType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>a568bcc78a4bd26a75834dda03d1239d0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>a98606e7b85c7759553bfcb6f35ab5d73</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>aee77f606ca3736a429ed5f28d0519dfc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesium3DTiles_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>a6a9e178b1c20527950d7b4bf8b04d51b</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::PropertyTableProperty::StringOffsetType</name>
     <filename>structCesiumGltf_1_1PropertyTableProperty_1_1StringOffsetType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>ac63aed39efc73664b027aa0013903a6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>a050ae6ded11028f0a09337ae2ba6924b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>a6f49e48eedc07003503382e5583dcb29</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesiumGltf_1_1PropertyTableProperty_1_1StringOffsetType.html</anchorfile>
+      <anchor>afcbe745649a1376e67b2447f40bcbd7d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::ImplicitTiling::SubdivisionScheme</name>
     <filename>structCesium3DTiles_1_1ImplicitTiling_1_1SubdivisionScheme.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>QUADTREE</name>
+      <anchorfile>structCesium3DTiles_1_1ImplicitTiling_1_1SubdivisionScheme.html</anchorfile>
+      <anchor>a7459c9e59a647bf2333214cb5e4173ec</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>OCTREE</name>
+      <anchorfile>structCesium3DTiles_1_1ImplicitTiling_1_1SubdivisionScheme.html</anchorfile>
+      <anchor>a9aebef1220de0f6c82f80ac0ee3b7e83</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Subtree</name>
@@ -18878,6 +23584,13 @@
       <name>subtreeMetadata</name>
       <anchorfile>structCesium3DTiles_1_1Subtree.html</anchorfile>
       <anchor>a007d9f6b53fbf01f10d61d4a9febb958</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Subtree.html</anchorfile>
+      <anchor>a8470a9c082d67a51833d660a12479a9e</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -19058,6 +23771,27 @@
   <compound kind="struct">
     <name>CesiumGeometry::SubtreeBufferView</name>
     <filename>structCesiumGeometry_1_1SubtreeBufferView.html</filename>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>byteOffset</name>
+      <anchorfile>structCesiumGeometry_1_1SubtreeBufferView.html</anchorfile>
+      <anchor>ab6c94ac86770b0eef855b31f82383992</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>byteLength</name>
+      <anchorfile>structCesiumGeometry_1_1SubtreeBufferView.html</anchorfile>
+      <anchor>a108b110f39c6a620c18516f8f7971e6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint8_t</type>
+      <name>buffer</name>
+      <anchorfile>structCesiumGeometry_1_1SubtreeBufferView.html</anchorfile>
+      <anchor>a99f2b514af781cc2b1ed68b2a40bac96</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTilesContent::SubtreeAvailability::SubtreeBufferViewAvailability</name>
@@ -19111,6 +23845,20 @@
       <anchorfile>classCesium3DTilesReader_1_1SubtreeFileReader.html</anchorfile>
       <anchor>a88d10f346dc3bff981c7bf1de5108a9c</anchor>
       <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::string &amp;url, const std::vector&lt; CesiumAsync::IAssetAccessor::THeader &gt; &amp;headers={}) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumAsync::Future&lt; CesiumJsonReader::ReadJsonResult&lt; Cesium3DTiles::Subtree &gt; &gt;</type>
+      <name>load</name>
+      <anchorfile>classCesium3DTilesReader_1_1SubtreeFileReader.html</anchorfile>
+      <anchor>a2a513abb8e2a4faa8a953a42ca5f18b7</anchor>
+      <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::shared_ptr&lt; CesiumAsync::IAssetRequest &gt; &amp;pRequest) const noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>CesiumAsync::Future&lt; CesiumJsonReader::ReadJsonResult&lt; Cesium3DTiles::Subtree &gt; &gt;</type>
+      <name>load</name>
+      <anchorfile>classCesium3DTilesReader_1_1SubtreeFileReader.html</anchorfile>
+      <anchor>ab4b891863e0c40910384069b34c83e5c</anchor>
+      <arglist>(const CesiumAsync::AsyncSystem &amp;asyncSystem, const std::shared_ptr&lt; CesiumAsync::IAssetAccessor &gt; &amp;pAssetAccessor, const std::string &amp;url, const std::vector&lt; CesiumAsync::IAssetAccessor::THeader &gt; &amp;requestHeaders, const std::span&lt; const std::byte &gt; &amp;data) const noexcept</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -19175,6 +23923,13 @@
       <name>uri</name>
       <anchorfile>structCesium3DTiles_1_1Subtrees.html</anchorfile>
       <anchor>a6d1482adb8506bd54d97de683c56ddeb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Subtrees.html</anchorfile>
+      <anchor>a2362952c56e6e2136c60696851c88869</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -19295,18 +24050,147 @@
   <compound kind="struct">
     <name>CesiumGltf::SupportedGpuCompressedPixelFormats</name>
     <filename>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</filename>
+    <member kind="variable">
+      <type>bool</type>
+      <name>ETC1_RGB</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>acd45cbaabf24bc230e8bcb6e6a7df06c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>ETC2_RGBA</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a9985b954000512e07a624ffacd0d1b0c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>BC1_RGB</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a65ee69a466ae58b93165d724b126cac5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>BC3_RGBA</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a4b15deee20188ef408de8b45b77c79ee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>BC4_R</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a6005ca0901bafce248ee3b345e8a534e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>BC5_RG</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a539a26d12a5480c5c5f603a780f6c1b3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>BC7_RGBA</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a6d676fac5a0c408fa125c17527151e82</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>PVRTC1_4_RGB</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a207fed043d4243435f76b07c32a218bf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>PVRTC1_4_RGBA</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>ad2498eb33d4d2411db66201ef4d3200a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>ASTC_4x4_RGBA</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a4df6e93f1de67002c533fb1fddf4a9c2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>PVRTC2_4_RGB</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a72b581b71aceee99fdc95ba7bc48d13a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>PVRTC2_4_RGBA</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a6e709a63321fb6c90d1b98526622c27d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>ETC2_EAC_R11</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a99902f59d7d50aff69dee5169d7f5e9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>bool</type>
+      <name>ETC2_EAC_RG11</name>
+      <anchorfile>structCesiumGltf_1_1SupportedGpuCompressedPixelFormats.html</anchorfile>
+      <anchor>a6edf6f598eca69db741ce9ed284b9ee8</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::BufferView::Target</name>
     <filename>structCesiumGltf_1_1BufferView_1_1Target.html</filename>
-  </compound>
-  <compound kind="class">
-    <name>CesiumAsync::CesiumImpl::TaskScheduler</name>
-    <filename>classCesiumAsync_1_1CesiumImpl_1_1TaskScheduler.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>ARRAY_BUFFER</name>
+      <anchorfile>structCesiumGltf_1_1BufferView_1_1Target.html</anchorfile>
+      <anchor>a6583a31f6100e4e051d447a00c01ac1a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>ELEMENT_ARRAY_BUFFER</name>
+      <anchorfile>structCesiumGltf_1_1BufferView_1_1Target.html</anchorfile>
+      <anchor>a27b3c689778787d037f0e1562ef286de</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TexCoordFromAccessor</name>
     <filename>structCesiumGltf_1_1TexCoordFromAccessor.html</filename>
+    <member kind="function">
+      <type>std::optional&lt; glm::dvec2 &gt;</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1TexCoordFromAccessor.html</anchorfile>
+      <anchor>a9d332a76e2c9936b45ae446562e6f2dc</anchor>
+      <arglist>(const AccessorView&lt; AccessorTypes::VEC2&lt; float &gt; &gt; &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::optional&lt; glm::dvec2 &gt;</type>
+      <name>operator()</name>
+      <anchorfile>structCesiumGltf_1_1TexCoordFromAccessor.html</anchorfile>
+      <anchor>a9c0ff7377ded4f919b34fbe5e5853246</anchor>
+      <arglist>(const AccessorView&lt; AccessorTypes::VEC2&lt; T &gt; &gt; &amp;value)</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>index</name>
+      <anchorfile>structCesiumGltf_1_1TexCoordFromAccessor.html</anchorfile>
+      <anchor>a3d473af10bf67d90e1d0d79e54023493</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Texture</name>
@@ -19333,6 +24217,13 @@
       <anchor>ac83fa50e963f39d8592cd1e68b90ba06</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1Texture.html</anchorfile>
+      <anchor>ab413f7c1bc73d3c22221cb34e524aa56</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TextureInfo</name>
@@ -19357,6 +24248,13 @@
       <name>texCoord</name>
       <anchorfile>structCesiumGltf_1_1TextureInfo.html</anchorfile>
       <anchor>a98eb603dc5b8dcea81f20f07fbaaeb3b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesiumGltf_1_1TextureInfo.html</anchorfile>
+      <anchor>acc651483dacef0697ed29d8d3d89bacd</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -19538,21 +24436,15 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>CesiumUtility::ThreadIdHolder</name>
-    <filename>classCesiumUtility_1_1ThreadIdHolder.html</filename>
-    <templarg>bool isThreadSafe</templarg>
-  </compound>
-  <compound kind="class">
-    <name>CesiumUtility::ThreadIdHolder&lt; false &gt;</name>
-    <filename>classCesiumUtility_1_1ThreadIdHolder_3_01false_01_4.html</filename>
-  </compound>
-  <compound kind="class">
-    <name>CesiumUtility::ThreadIdHolder&lt; true &gt;</name>
-    <filename>classCesiumUtility_1_1ThreadIdHolder_3_01true_01_4.html</filename>
-  </compound>
-  <compound kind="class">
     <name>CesiumAsync::ThreadPool</name>
     <filename>classCesiumAsync_1_1ThreadPool.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>ThreadPool</name>
+      <anchorfile>classCesiumAsync_1_1ThreadPool.html</anchorfile>
+      <anchor>a522ad4fcf35fc33a78a4a1e97f990db8</anchor>
+      <arglist>(int32_t numberOfThreads)</arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>Cesium3DTiles::Tile</name>
@@ -19634,6 +24526,13 @@
       <name>children</name>
       <anchorfile>structCesium3DTiles_1_1Tile.html</anchorfile>
       <anchor>ac1a290a93664fec69d013383c04a78db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Tile.html</anchorfile>
+      <anchor>afed171e9752aa0e7567270075d32c8ae</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -20320,6 +25219,20 @@
   <compound kind="struct">
     <name>Cesium3DTilesSelection::TileLoadResultAndRenderResources</name>
     <filename>structCesium3DTilesSelection_1_1TileLoadResultAndRenderResources.html</filename>
+    <member kind="variable">
+      <type>TileLoadResult</type>
+      <name>result</name>
+      <anchorfile>structCesium3DTilesSelection_1_1TileLoadResultAndRenderResources.html</anchorfile>
+      <anchor>a5ec68441bed5199cc6c9be1bf0528052</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>pRenderResources</name>
+      <anchorfile>structCesium3DTilesSelection_1_1TileLoadResultAndRenderResources.html</anchorfile>
+      <anchor>ab450e3411c4e57cfd94841164e7cd0d9</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>CesiumRasterOverlays::TileMapServiceRasterOverlay</name>
@@ -20488,6 +25401,20 @@
   <compound kind="struct">
     <name>CesiumRasterOverlays::TileProviderAndTile</name>
     <filename>structCesiumRasterOverlays_1_1TileProviderAndTile.html</filename>
+    <member kind="variable">
+      <type>CesiumUtility::IntrusivePointer&lt; RasterOverlayTileProvider &gt;</type>
+      <name>pTileProvider</name>
+      <anchorfile>structCesiumRasterOverlays_1_1TileProviderAndTile.html</anchorfile>
+      <anchor>aaa0a23f06bd1d1ae7f396a2335e9b99e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>CesiumUtility::IntrusivePointer&lt; RasterOverlayTile &gt;</type>
+      <name>pTile</name>
+      <anchorfile>structCesiumRasterOverlays_1_1TileProviderAndTile.html</anchorfile>
+      <anchor>a531020e50bc05e2409b72934aed8b6da</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesReader::TileReader</name>
@@ -20812,6 +25739,13 @@
       <anchor>a6f12612068bc1c81144e688b2601a163</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr const char *</type>
+      <name>TypeName</name>
+      <anchorfile>structCesium3DTiles_1_1Tileset.html</anchorfile>
+      <anchor>a95cecf2a1ce2165675eaadad4ef153e8</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesSelection::Tileset</name>
@@ -21004,6 +25938,13 @@
       <anchorfile>classCesium3DTilesSelection_1_1Tileset.html</anchorfile>
       <anchor>a3dfc253ba0fa0e456882f2aeb766f14d</anchor>
       <arglist>(const std::function&lt; void(Tile &amp;tile)&gt; &amp;callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>forEachLoadedTile</name>
+      <anchorfile>classCesium3DTilesSelection_1_1Tileset.html</anchorfile>
+      <anchor>a9006bff94c653a4a3b9535e6371d192a</anchor>
+      <arglist>(const std::function&lt; void(const Tile &amp;tile)&gt; &amp;callback) const</arglist>
     </member>
     <member kind="function">
       <type>int64_t</type>
@@ -21472,6 +26413,13 @@
     <name>Cesium3DTilesSelection::TilesetSharedAssetSystem</name>
     <filename>classCesium3DTilesSelection_1_1TilesetSharedAssetSystem.html</filename>
     <base>CesiumGltfReader::GltfSharedAssetSystem</base>
+    <member kind="function" static="yes">
+      <type>static CesiumUtility::IntrusivePointer&lt; TilesetSharedAssetSystem &gt;</type>
+      <name>getDefault</name>
+      <anchorfile>classCesium3DTilesSelection_1_1TilesetSharedAssetSystem.html</anchorfile>
+      <anchor>a7807eec563eeae249b79ec5b8bf3c6ee</anchor>
+      <arglist>()</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>Cesium3DTilesWriter::TilesetWriter</name>
@@ -21718,18 +26666,221 @@
   <compound kind="struct">
     <name>Cesium3DTiles::ClassProperty::Type</name>
     <filename>structCesium3DTiles_1_1ClassProperty_1_1Type.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>SCALAR</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>aee93cd4ed41461178aea0cbd1fd149f0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC2</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>af264ebcf68cc203b963fb677c4f0a872</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC3</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a0e1ce7057d359aad8ce28ff155e39b61</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC4</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a663abc440cb45bb9b2b9146134871e4d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT2</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a6ea3c57614c5acb863b68bd15d5d2e79</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT3</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a9a194a609470d8d2aadbc81f5039bba1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT4</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a6ae49e1dc1025d2f0f6c224470be063f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>STRING</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a802ea911c7f0f868bc59310dece7a45c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>BOOLEAN</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a6d5dd38e9ff31bfee5c68582bfc58783</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>ENUM</name>
+      <anchorfile>structCesium3DTiles_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a4cd8bf2798ab21d33648593d0867fad8</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AccessorSpec::Type</name>
     <filename>structCesiumGltf_1_1AccessorSpec_1_1Type.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>SCALAR</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>a06e5627f920ba26595d6237738ea76da</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC2</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>a73bc18dfd483632304f907ba2abdb74a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC3</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>a5bd3bad399a3c74696a7fb744d9e0701</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC4</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>a2039b5fc89e00a846b00fccf13bf35d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT2</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>ae855a621f01d5bba4d939300752034e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT3</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>a6d431ccfb8b8cafb068c9766dab1ca42</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT4</name>
+      <anchorfile>structCesiumGltf_1_1AccessorSpec_1_1Type.html</anchorfile>
+      <anchor>a3c4a6b9fb052a329abcac248e93df8c1</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Camera::Type</name>
     <filename>structCesiumGltf_1_1Camera_1_1Type.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>perspective</name>
+      <anchorfile>structCesiumGltf_1_1Camera_1_1Type.html</anchorfile>
+      <anchor>ac14a978d376e97c0777303b0d02fb6de</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>orthographic</name>
+      <anchorfile>structCesiumGltf_1_1Camera_1_1Type.html</anchorfile>
+      <anchor>a2b7f4ec63c57aaefaf5f99a3676035cc</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::ClassProperty::Type</name>
     <filename>structCesiumGltf_1_1ClassProperty_1_1Type.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>SCALAR</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>ade88157fcf7689b3e121b539b411279b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC2</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>ad088749b70bd4bcde1012dd6dec19cba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC3</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a63abd6ed2fb16e929d24d051019c1578</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>VEC4</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a6236c4e57b0e21309d44037d1943526c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT2</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>ab836b768105f3472b3937a76aa2c87ab</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT3</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>ab4c1d0b3f2a6844071a6e39a3c46e594</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>MAT4</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a5ebd3966decdfda1ac63f0dd62773a6b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>STRING</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>a0ae05755b1f348b8b23ce112f30a9141</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>BOOLEAN</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>aebbe8723e0a872e49c0eed2ca13d110b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>ENUM</name>
+      <anchorfile>structCesiumGltf_1_1ClassProperty_1_1Type.html</anchorfile>
+      <anchor>aadbee7ec8bc88d5a8d69c4081541d346</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType</name>
@@ -21742,6 +26893,13 @@
     <templarg>glm::length_t N</templarg>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier Q</templarg>
+    <member kind="typedef">
+      <type>glm::mat&lt; N, N, double, Q &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01glm_1_1mat_3_01N_00_01N_00_01T_00_01Q_01_4_01_4.html</anchorfile>
+      <anchor>a4f6b2d815937c551447fc355a14ccfe5</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; glm::vec&lt; N, T, Q &gt; &gt;</name>
@@ -21749,22 +26907,57 @@
     <templarg>glm::length_t N</templarg>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier Q</templarg>
+    <member kind="typedef">
+      <type>glm::vec&lt; N, double, Q &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01glm_1_1vec_3_01N_00_01T_00_01Q_01_4_01_4.html</anchorfile>
+      <anchor>a428dc372be3e70a762ba4860dee38e2a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; int16_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01int16__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01int16__t_01_4.html</anchorfile>
+      <anchor>ae885fef66718b4aea4807925d381170d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; int32_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01int32__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01int32__t_01_4.html</anchorfile>
+      <anchor>a868499959af803d380bb9f7612fabc6d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; int64_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01int64__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01int64__t_01_4.html</anchorfile>
+      <anchor>ac1202f56858aee4be65cb9e1d8847496</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; int8_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01int8__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01int8__t_01_4.html</anchorfile>
+      <anchor>a576af3e50a9f26e87831744793d07d28</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; glm::mat&lt; N, N, T, Q &gt; &gt; &gt;</name>
@@ -21772,6 +26965,13 @@
     <templarg>glm::length_t N</templarg>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier Q</templarg>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; glm::mat&lt; N, N, double, Q &gt; &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01glm_1_1mat_3_01N_00_01N_00_01T_00_01Q_01_4_01_4_01_4.html</anchorfile>
+      <anchor>a1ab604a6d36af4a1883a3547326bc270</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; glm::vec&lt; N, T, Q &gt; &gt; &gt;</name>
@@ -21779,54 +26979,145 @@
     <templarg>glm::length_t N</templarg>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier Q</templarg>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; glm::vec&lt; N, double, Q &gt; &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01glm_1_1vec_3_01N_00_01T_00_01Q_01_4_01_4_01_4.html</anchorfile>
+      <anchor>afea62c95d0ddde024ee7ff22b83690b3</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; int16_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int16__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int16__t_01_4_01_4.html</anchorfile>
+      <anchor>aa7e81247840fba8c73e1428e379cf50d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; int32_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int32__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int32__t_01_4_01_4.html</anchorfile>
+      <anchor>a978d442ee89edf90e5fb1a1679802931</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; int64_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int64__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int64__t_01_4_01_4.html</anchorfile>
+      <anchor>a39abc201789497c3a74128f2d8b79b1d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; int8_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int8__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01int8__t_01_4_01_4.html</anchorfile>
+      <anchor>a82e67ba82fefc544f18f3dfda72a4f42</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; uint16_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint16__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint16__t_01_4_01_4.html</anchorfile>
+      <anchor>a29eb87acc15761dfc566e6b7cc2d2643</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; uint32_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint32__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint32__t_01_4_01_4.html</anchorfile>
+      <anchor>a4a00fd8cc527d781d2926459f62d79d8</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; uint64_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint64__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint64__t_01_4_01_4.html</anchorfile>
+      <anchor>ac2367499abb3d81a4e7cfb1ee7f68957</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; PropertyArrayView&lt; uint8_t &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint8__t_01_4_01_4.html</filename>
+    <member kind="typedef">
+      <type>PropertyArrayView&lt; double &gt;</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01PropertyArrayView_3_01uint8__t_01_4_01_4.html</anchorfile>
+      <anchor>a88f2e6ae6080d98d57e5b5ef7e7a45dd</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; uint16_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01uint16__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01uint16__t_01_4.html</anchorfile>
+      <anchor>a60bf750cb20a871b5a84a91736e2987d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; uint32_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01uint32__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01uint32__t_01_4.html</anchorfile>
+      <anchor>a6026a99611d212405fed4a86105a383f</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; uint64_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01uint64__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01uint64__t_01_4.html</anchorfile>
+      <anchor>ab54b5bd6c4df6394f1f829d4f26b575a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToNormalizedType&lt; uint8_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToNormalizedType_3_01uint8__t_01_4.html</filename>
+    <member kind="typedef">
+      <type>double</type>
+      <name>type</name>
+      <anchorfile>structCesiumGltf_1_1TypeToNormalizedType_3_01uint8__t_01_4.html</anchorfile>
+      <anchor>a175edc6dfc1a15590bde0328d8b4f750</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType</name>
@@ -21836,86 +27127,338 @@
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; bool &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01bool_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01bool_01_4.html</anchorfile>
+      <anchor>a29b3db14f327e8fed501555e8b5cc7e4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01bool_01_4.html</anchorfile>
+      <anchor>a86cb33fa81e2979344517deeff771c19</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; double &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01double_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01double_01_4.html</anchorfile>
+      <anchor>a31d83d4691d0ac3e8c7c80e5dd1be393</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01double_01_4.html</anchorfile>
+      <anchor>a755b9e009da689a457cbf87cc60ead14</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; float &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01float_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01float_01_4.html</anchorfile>
+      <anchor>a22af05fea3e250ae315b25e198b2b588</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01float_01_4.html</anchorfile>
+      <anchor>a83cf1c54f2dbce9d38f5511fcba89727</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; glm::mat&lt; 2, 2, T, P &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_012_00_012_00_01T_00_01P_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier P</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_012_00_012_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>adfdbfeb3b7f210e87c0b1d56ac6671a6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_012_00_012_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a266bca4229df5f55ca9d861748be9858</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; glm::mat&lt; 3, 3, T, P &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_013_00_013_00_01T_00_01P_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier P</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_013_00_013_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a76e64df6767d67603ef1818519111729</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_013_00_013_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>ae0e79bfabfd7dae61c889de036adbb96</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; glm::mat&lt; 4, 4, T, P &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_014_00_014_00_01T_00_01P_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier P</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_014_00_014_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a33506d88b65bdf7c3e8f48430db2b854</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1mat_3_014_00_014_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>abdcf3a968902b39a7404c29245498051</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; glm::vec&lt; 2, T, P &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_012_00_01T_00_01P_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier P</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_012_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a6c343228758efc469f909715cc0fc2ed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_012_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>adc8c75731720165377b29f81d75c3d33</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; glm::vec&lt; 3, T, P &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_013_00_01T_00_01P_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier P</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_013_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a2ce43567254e80e140e6947c9c7d01ed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_013_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a7ce5cd3f9365d9d9f32a21ba9bd7b85c</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; glm::vec&lt; 4, T, P &gt; &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_014_00_01T_00_01P_01_4_01_4.html</filename>
     <templarg>typename T</templarg>
     <templarg>glm::qualifier P</templarg>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_014_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>ad15b2c137e4bafbc54561e4eaa8a8dfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01glm_1_1vec_3_014_00_01T_00_01P_01_4_01_4.html</anchorfile>
+      <anchor>a3c7f07b9f3bb6a701454d05ffedf8f65</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; int16_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01int16__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int16__t_01_4.html</anchorfile>
+      <anchor>a547b3df2abdaa0ebf54208ee9b39574e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int16__t_01_4.html</anchorfile>
+      <anchor>a266c2989b1f039e3b9f8671239746fd5</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; int32_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01int32__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int32__t_01_4.html</anchorfile>
+      <anchor>ad9e403a2f0cc013e60640c4b6d3674b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int32__t_01_4.html</anchorfile>
+      <anchor>a48e8e54f0b659f30e7b8d4f08a53c832</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; int64_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01int64__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int64__t_01_4.html</anchorfile>
+      <anchor>a177bca428a41785a4c80ad24b3d3fbc6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int64__t_01_4.html</anchorfile>
+      <anchor>ae6d4c89b5fe427b16b99782ef9f5d6c8</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; int8_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01int8__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int8__t_01_4.html</anchorfile>
+      <anchor>afa55d4163eb019f0b9bc72635c7ee9f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01int8__t_01_4.html</anchorfile>
+      <anchor>a4213bd6c9ad4fa683039122a52eaf0fb</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; std::string_view &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01std_1_1string__view_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01std_1_1string__view_01_4.html</anchorfile>
+      <anchor>a02268e4df84f721eb67e54f4a91198ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01std_1_1string__view_01_4.html</anchorfile>
+      <anchor>adc2c3bf88ab8fe82b47bcb021ad23d09</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; uint16_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01uint16__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint16__t_01_4.html</anchorfile>
+      <anchor>a9471656bf4bba4b0c0e981f189d90585</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint16__t_01_4.html</anchorfile>
+      <anchor>ae73c986a29e92afa62dbbfcce3afe8f7</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; uint32_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01uint32__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint32__t_01_4.html</anchorfile>
+      <anchor>acc19640fc48644bdbbf4ad7e447a1a2d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint32__t_01_4.html</anchorfile>
+      <anchor>af72b5e166dfacfacbd1882e17960134d</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; uint64_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01uint64__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint64__t_01_4.html</anchorfile>
+      <anchor>abdc2bc2800b34f39667ad8b4049549f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint64__t_01_4.html</anchorfile>
+      <anchor>a73ce8f46f7469ed3ab9c3035bd72821b</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::TypeToPropertyType&lt; uint8_t &gt;</name>
     <filename>structCesiumGltf_1_1TypeToPropertyType_3_01uint8__t_01_4.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyComponentType</type>
+      <name>component</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint8__t_01_4.html</anchorfile>
+      <anchor>a0aca261bab8612fccbc4654ed93fa9aa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr PropertyType</type>
+      <name>value</name>
+      <anchorfile>structCesiumGltf_1_1TypeToPropertyType_3_01uint8__t_01_4.html</anchorfile>
+      <anchor>a5da1b7802f7f838ee69bd616eac36954</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGeometry::UpsampledQuadtreeNode</name>
@@ -21931,6 +27474,41 @@
   <compound kind="class">
     <name>CesiumUtility::Uri</name>
     <filename>classCesiumUtility_1_1Uri.html</filename>
+    <member kind="typedef">
+      <type>std::string</type>
+      <name>SubstitutionCallbackSignature</name>
+      <anchorfile>classCesiumUtility_1_1Uri.html</anchorfile>
+      <anchor>a911e2286b19bc86869ecc681623bbf11</anchor>
+      <arglist>(const std::string &amp;placeholder)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::string</type>
+      <name>resolve</name>
+      <anchorfile>classCesiumUtility_1_1Uri.html</anchorfile>
+      <anchor>a08426cea0e2efad90b28e47792453a2c</anchor>
+      <arglist>(const std::string &amp;base, const std::string &amp;relative, bool useBaseQuery=false, bool assumeHttpsDefault=true)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::string</type>
+      <name>addQuery</name>
+      <anchorfile>classCesiumUtility_1_1Uri.html</anchorfile>
+      <anchor>a08a8e6559b0fb2fa7f05e99beb71dad9</anchor>
+      <arglist>(const std::string &amp;uri, const std::string &amp;key, const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::string</type>
+      <name>getQueryValue</name>
+      <anchorfile>classCesiumUtility_1_1Uri.html</anchorfile>
+      <anchor>a369c8bde4cc7f68e7e3a10dfda53878f</anchor>
+      <arglist>(const std::string &amp;uri, const std::string &amp;key)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::string</type>
+      <name>substituteTemplateParameters</name>
+      <anchorfile>classCesiumUtility_1_1Uri.html</anchorfile>
+      <anchor>a4cecfe22e6313d57bb9177543516e2cc</anchor>
+      <arglist>(const std::string &amp;templateUri, const std::function&lt; SubstitutionCallbackSignature &gt; &amp;substitutionCallback)</arglist>
+    </member>
     <member kind="function" static="yes">
       <type>static std::string</type>
       <name>escape</name>
@@ -22005,10 +27583,122 @@
   <compound kind="struct">
     <name>Cesium3DTiles::Enum::ValueType</name>
     <filename>structCesium3DTiles_1_1Enum_1_1ValueType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT8</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a151c42d2dfa6f1f79cdbed81cb2587db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a2102985e85b02e65f97f2ea6f4918058</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT16</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a88212efedd2843b9dd356d0e891994ed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a622e3996533e3fa9b6fdc1e9dde495a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT32</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a342f46112d2e9e487d6f224e431d302c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>ae7aca4bc096db8107ea42416cbcfce2c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT64</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>ac6153787c0c181a14b156b6dddc85e1b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesium3DTiles_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a4480b9bfcdebc74a4fd760e160b82b76</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Enum::ValueType</name>
     <filename>structCesiumGltf_1_1Enum_1_1ValueType.html</filename>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT8</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a00ef73d749483d723103ded22c61c118</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT8</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>ab17baa839763d0d2965e3016c5fc32df</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT16</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a7d51fcf9bb1580cff697b84acea06e1f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT16</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>affbce85a77a0885f7a0813e2a1ad22b9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT32</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a279f4167cebc1f1ca203fe2ca322d0bf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT32</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>ae38b5ed3806464cd100d6eee303011c2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>INT64</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>a04e896e1203fbe038aef8d7f37120099</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::string</type>
+      <name>UINT64</name>
+      <anchorfile>structCesiumGltf_1_1Enum_1_1ValueType.html</anchorfile>
+      <anchor>abeb6536c52068d575defbecb204ce5f9</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::AccessorTypes::VEC2</name>
@@ -22096,6 +27786,13 @@
       <name>WEIGHTS_n</name>
       <anchorfile>structCesiumGltf_1_1VertexAttributeSemantics.html</anchorfile>
       <anchor>acef95f67cf4ef3bca9d463ecb8a97c9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const std::array&lt; std::string, 8 &gt;</type>
+      <name>FEATURE_ID_n</name>
+      <anchorfile>structCesiumGltf_1_1VertexAttributeSemantics.html</anchorfile>
+      <anchor>a5fbea0f4065896e7b8788da27a026fff</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -22209,6 +27906,62 @@
       <name>mainThreadTileLoadQueueLength</name>
       <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
       <anchor>a19f7f1237160497b197e122c9e13d1ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>tilesVisited</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>a17bfe183271ae84700da14366fac1cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>culledTilesVisited</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>aa451fed417afa0b369194f0c015d880f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>tilesCulled</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>a73943f7181658e30f4a109ad0ea04bfd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>tilesOccluded</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>a992a3f450230dc7f894f0cb68efd6f07</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>tilesWaitingForOcclusionResults</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>ac4b73e714da15e5f3b754122b7f5c77f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>tilesKicked</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>ae2f621a3061628ee45127bef9af5a704</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>maxDepthVisited</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>a61ef07d65aa09f978d6a095a1a5ea8a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int32_t</type>
+      <name>frameNumber</name>
+      <anchorfile>classCesium3DTilesSelection_1_1ViewUpdateResult.html</anchorfile>
+      <anchor>ad0fa22d808d62e50da9333bbc355d30b</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -22524,10 +28277,52 @@
   <compound kind="struct">
     <name>CesiumGltf::Sampler::WrapS</name>
     <filename>structCesiumGltf_1_1Sampler_1_1WrapS.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>CLAMP_TO_EDGE</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1WrapS.html</anchorfile>
+      <anchor>ac5d880e40e8d6dd39ceac40aa4bd2567</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>MIRRORED_REPEAT</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1WrapS.html</anchorfile>
+      <anchor>a5de01d0d49cfc60a34d75d4393fab95d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>REPEAT</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1WrapS.html</anchorfile>
+      <anchor>a7d3100087c3031b72db5b2f55aca724f</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="struct">
     <name>CesiumGltf::Sampler::WrapT</name>
     <filename>structCesiumGltf_1_1Sampler_1_1WrapT.html</filename>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>CLAMP_TO_EDGE</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1WrapT.html</anchorfile>
+      <anchor>a1b4613cbab164dda359fad685b73e74b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>MIRRORED_REPEAT</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1WrapT.html</anchorfile>
+      <anchor>a06c08ab220e9cda7512441f8544812b8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int32_t</type>
+      <name>REPEAT</name>
+      <anchorfile>structCesiumGltf_1_1Sampler_1_1WrapT.html</anchorfile>
+      <anchor>ad333e38558e0d985e17f40236f966cd5</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="namespace">
     <name>Cesium3DTiles</name>
@@ -22631,6 +28426,7 @@
     <name>Cesium3DTilesSelection</name>
     <filename>namespaceCesium3DTilesSelection.html</filename>
     <class kind="struct">Cesium3DTilesSelection::CullingVolume</class>
+    <class kind="class">Cesium3DTilesSelection::DebugTileStateDatabase</class>
     <class kind="class">Cesium3DTilesSelection::EllipsoidTilesetLoader</class>
     <class kind="struct">Cesium3DTilesSelection::FogDensityAtHeight</class>
     <class kind="class">Cesium3DTilesSelection::IPrepareRendererResources</class>
@@ -22803,6 +28599,8 @@
     <class kind="class">CesiumAsync::CacheResponse</class>
     <class kind="class">CesiumAsync::CachingAssetAccessor</class>
     <class kind="struct">CesiumAsync::CaseInsensitiveCompare</class>
+    <class kind="struct">CesiumAsync::DeleteSqliteConnection</class>
+    <class kind="struct">CesiumAsync::DeleteSqliteStatement</class>
     <class kind="class">CesiumAsync::Future</class>
     <class kind="class">CesiumAsync::GunzipAssetAccessor</class>
     <class kind="class">CesiumAsync::IAssetAccessor</class>
@@ -22816,12 +28614,27 @@
     <class kind="class">CesiumAsync::SharedAssetDepot</class>
     <class kind="class">CesiumAsync::SharedFuture</class>
     <class kind="class">CesiumAsync::SqliteCache</class>
+    <class kind="struct">CesiumAsync::SqliteHelper</class>
     <class kind="class">CesiumAsync::ThreadPool</class>
     <member kind="typedef">
       <type>std::map&lt; std::string, std::string, CaseInsensitiveCompare &gt;</type>
       <name>HttpHeaders</name>
       <anchorfile>namespaceCesiumAsync.html</anchorfile>
       <anchor>a10e282337243a53a9a90ce490fe1fe36</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>std::unique_ptr&lt; CESIUM_SQLITE(sqlite3), DeleteSqliteConnection &gt;</type>
+      <name>SqliteConnectionPtr</name>
+      <anchorfile>namespaceCesiumAsync.html</anchorfile>
+      <anchor>a11ad6c192c7e1f2b1d07d2f100520f3a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>std::unique_ptr&lt; CESIUM_SQLITE(sqlite3_stmt), DeleteSqliteStatement &gt;</type>
+      <name>SqliteStatementPtr</name>
+      <anchorfile>namespaceCesiumAsync.html</anchorfile>
+      <anchor>aedc89f93d7da4714826348471dc2ee59</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -22852,6 +28665,13 @@
     <class kind="struct">CesiumGeometry::SubtreeBufferView</class>
     <class kind="struct">CesiumGeometry::Transforms</class>
     <class kind="struct">CesiumGeometry::UpsampledQuadtreeNode</class>
+    <member kind="typedef">
+      <type>std::variant&lt; ConstantAvailability, SubtreeBufferView &gt;</type>
+      <name>AvailabilityView</name>
+      <anchorfile>namespaceCesiumGeometry.html</anchorfile>
+      <anchor>a727136fd8482603b070477346f9e19b2</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="typedef">
       <type>std::variant&lt; int, InterpolatedVertex &gt;</type>
       <name>TriangleClipVertex</name>
@@ -22950,6 +28770,19 @@
       <anchorfile>namespaceCesiumGeospatial.html</anchorfile>
       <anchor>ac3715aa289c0dcb5cf3f65131b728429</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>LocalDirection</name>
+      <anchorfile>namespaceCesiumGeospatial.html</anchorfile>
+      <anchor>a06dd7a755ce52387f7c4f4e94cb155f8</anchor>
+      <arglist></arglist>
+      <enumvalue file="namespaceCesiumGeospatial.html" anchor="a06dd7a755ce52387f7c4f4e94cb155f8aa99dc62d017d04cf67266593f9c3761e">East</enumvalue>
+      <enumvalue file="namespaceCesiumGeospatial.html" anchor="a06dd7a755ce52387f7c4f4e94cb155f8a601560b94fbb188919dd1d36c8ab70a4">North</enumvalue>
+      <enumvalue file="namespaceCesiumGeospatial.html" anchor="a06dd7a755ce52387f7c4f4e94cb155f8abf495fc048d8d44b7f32536df5cf3930">West</enumvalue>
+      <enumvalue file="namespaceCesiumGeospatial.html" anchor="a06dd7a755ce52387f7c4f4e94cb155f8a263d7b2cf53802c9ed127b718c0bf9fd">South</enumvalue>
+      <enumvalue file="namespaceCesiumGeospatial.html" anchor="a06dd7a755ce52387f7c4f4e94cb155f8a258f49887ef8d14ac268c92b02503aaa">Up</enumvalue>
+      <enumvalue file="namespaceCesiumGeospatial.html" anchor="a06dd7a755ce52387f7c4f4e94cb155f8a08a38277b0309070706f6652eeae9a53">Down</enumvalue>
     </member>
     <member kind="function">
       <type>double</type>
@@ -23065,6 +28898,7 @@
     <class kind="struct">CesiumGltf::ExtensionExtInstanceFeaturesFeatureId</class>
     <class kind="struct">CesiumGltf::ExtensionExtMeshFeatures</class>
     <class kind="struct">CesiumGltf::ExtensionExtMeshGpuInstancing</class>
+    <class kind="struct">CesiumGltf::ExtensionExtStructuralMetadata</class>
     <class kind="struct">CesiumGltf::ExtensionKhrDracoMeshCompression</class>
     <class kind="struct">CesiumGltf::ExtensionKhrMaterialsUnlit</class>
     <class kind="struct">CesiumGltf::ExtensionKhrTextureBasisu</class>
@@ -23090,6 +28924,7 @@
     <class kind="struct">CesiumGltf::ImageSpec</class>
     <class kind="struct">CesiumGltf::IndexFromAccessor</class>
     <class kind="struct">CesiumGltf::IndicesForFaceFromAccessor</class>
+    <class kind="struct">CesiumGltf::InstanceAttributeSemantics</class>
     <class kind="struct">CesiumGltf::IsMetadataArray</class>
     <class kind="struct">CesiumGltf::IsMetadataArray&lt; PropertyArrayCopy&lt; T &gt; &gt;</class>
     <class kind="struct">CesiumGltf::IsMetadataArray&lt; PropertyArrayView&lt; T &gt; &gt;</class>
@@ -23326,6 +29161,20 @@
       <anchor>a971dcf32c4194c02e6823ca4734da068</anchor>
       <arglist></arglist>
     </member>
+    <member kind="typedef">
+      <type>std::conditional_t&lt; IsMetadataNumericArray&lt; T &gt;::value, PropertyArrayView&lt; typename MetadataArrayType&lt; T &gt;::type &gt;, T &gt;</type>
+      <name>PropertyValueCopyToView</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a5e8f7d23a4e1da81c29477ad77eb2eb8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>int32_t</type>
+      <name>PropertyViewStatusType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>af49ffa4cbf39a2012657c25e709a2ece</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="enumeration">
       <type></type>
       <name>AccessorViewStatus</name>
@@ -23425,6 +29274,42 @@
     </member>
     <member kind="enumeration">
       <type></type>
+      <name>PropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>ab203ff2f50e705295f485de120c68bb3</anchor>
+      <arglist></arglist>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a4bbb8f967da6d1a610596d7257179c2b">Invalid</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3af60357a8d17e45793298323f1b372a74">Scalar</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3afe98032d4f1c52a2f0b617f9205d5f80">Vec2</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a01b2dc1a2922d9be9e12ef0709600977">Vec3</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3af67402842935c0240e8109e7312def66">Vec4</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a1507215d4c67a873c29415d20d4e2a04">Mat2</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a2495a7d9c1fab19af6441abbfed823e1">Mat3</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a80f7408b0a5b5d78c26adae9f6f420f9">Mat4</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a27118326006d3829667a400ad23d5d98">String</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3a27226c864bac7454a8504f8edb15d95b">Boolean</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="ab203ff2f50e705295f485de120c68bb3acf20423ed48998082c20099488a0917c">Enum</enumvalue>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>PropertyComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a00808ebde48d3f56cef3021b4c179e4b</anchor>
+      <arglist></arglist>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba6adf97f83acf6453d4a6a4b1070f3754">None</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba7d839b2c12bfd40ac121b4cc9e81c539">Int8</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba3a33b05b1fe0bad48ad87ffbacdddd15">Uint8</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba39bc2ae44b184207f560ff8619823208">Int16</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba3167337450665ae9b3b34004d33cafe8">Uint16</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4bac06129f6e6e15c09328365e553f1dc31">Int32</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba2f3a46e0add3a07937412cbeb8f95727">Uint32</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4bafbde23b11d7e59af7828e81144c8b487">Int64</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4bac970503874fb72afdf908cb54a4c10ee">Uint64</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4ba166495adc0d0f53bee6baecc577f5204">Float32</enumvalue>
+      <enumvalue file="namespaceCesiumGltf.html" anchor="a00808ebde48d3f56cef3021b4c179e4bad2b556d8a8f5c8ac323f51a4b82e79a0">Float64</enumvalue>
+    </member>
+    <member kind="enumeration">
+      <type></type>
       <name>TextureViewStatus</name>
       <anchorfile>namespaceCesiumGltf.html</anchorfile>
       <anchor>a65c15cc24665a64e0456b9386bc3797c</anchor>
@@ -23480,6 +29365,20 @@
       <arglist>(const Model &amp;model, const MeshPrimitive &amp;primitive, int32_t textureCoordinateSetIndex)</arglist>
     </member>
     <member kind="function">
+      <type>QuaternionAccessorType</type>
+      <name>getQuaternionAccessorView</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>ae6ec7331585149e466bf8fcf9e84fa2e</anchor>
+      <arglist>(const Model &amp;model, const Accessor *accessor)</arglist>
+    </member>
+    <member kind="function">
+      <type>QuaternionAccessorType</type>
+      <name>getQuaternionAccessorView</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a9e5b2c143a8b2feff3d2b2aabcf799d9</anchor>
+      <arglist>(const Model &amp;model, int32_t accessorIndex)</arglist>
+    </member>
+    <member kind="function">
       <type>std::invoke_result_t&lt; TCallback, AccessorView&lt; AccessorTypes::SCALAR&lt; float &gt; &gt; &gt;</type>
       <name>createAccessorView</name>
       <anchorfile>namespaceCesiumGltf.html</anchorfile>
@@ -23492,6 +29391,300 @@
       <anchorfile>namespaceCesiumGltf.html</anchorfile>
       <anchor>a1047e9b5328eeaa7c4ecb59ccf75d42b</anchor>
       <arglist>(const Model &amp;model, int32_t accessorIndex, TCallback &amp;&amp;callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>aecb76854b9e53bb65c55bee29c6d4dc4</anchor>
+      <arglist>(const PropertyArrayView&lt; T &gt; &amp;lhs, const PropertyArrayView&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a3e4db64da7dbad163ba7ecc2da4395f8</anchor>
+      <arglist>(const PropertyArrayView&lt; T &gt; &amp;lhs, const PropertyArrayCopy&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>acfd36a64125c8a2a3147eb9737bead2f</anchor>
+      <arglist>(const PropertyArrayCopy&lt; T &gt; &amp;lhs, const PropertyArrayView&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator==</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a8b3c7295cb014c888399edf5224339b4</anchor>
+      <arglist>(const PropertyArrayCopy&lt; T &gt; &amp;lhs, const PropertyArrayCopy&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator!=</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>aedec8f7bdf14da7e658fe6225a00c8e2</anchor>
+      <arglist>(const PropertyArrayView&lt; T &gt; &amp;lhs, const PropertyArrayView&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator!=</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a2258b3d321a4543acd848b97d909d10e</anchor>
+      <arglist>(const PropertyArrayView&lt; T &gt; &amp;lhs, const PropertyArrayCopy&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator!=</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>ac09a4721ab3fd469ededca767ccf0a3d</anchor>
+      <arglist>(const PropertyArrayCopy&lt; T &gt; &amp;lhs, const PropertyArrayView&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator!=</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>af1e2e45747b066750aad6845f71274dc</anchor>
+      <arglist>(const PropertyArrayCopy&lt; T &gt; &amp;lhs, const PropertyArrayCopy&lt; T &gt; &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyType</type>
+      <name>getAccessorTypeAsPropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a57a0af1f01a4747b3f18eb96aaca852b</anchor>
+      <arglist>(const Accessor &amp;accessor)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyComponentType</type>
+      <name>getAccessorComponentTypeAsPropertyComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>ac5d7d6bc5eb7a12e3705d307b9300704</anchor>
+      <arglist>(const Accessor &amp;accessor)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>getOffsetTypeSize</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a8a689fd23893775ff55497a0116656c8</anchor>
+      <arglist>(PropertyComponentType offsetType) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>ElementType</type>
+      <name>assembleScalarValue</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>aa2a2d7f4479db680986f83b494b95440</anchor>
+      <arglist>(const std::span&lt; uint8_t &gt; bytes) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>ElementType</type>
+      <name>assembleVecNValue</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a44ae546654f5121dfc604cbc7e359ac5</anchor>
+      <arglist>(const std::span&lt; uint8_t &gt; bytes) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy&lt; T &gt;</type>
+      <name>assembleArrayValue</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>aaf5fa61b1a99fb44908354568d214557</anchor>
+      <arglist>(const std::span&lt; uint8_t &gt; bytes) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyValueViewToCopy&lt; ElementType &gt;</type>
+      <name>assembleValueFromChannels</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>af2a23846a3a04bfd57ebebf0cd1b8f4a</anchor>
+      <arglist>(const std::span&lt; uint8_t &gt; bytes) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>normalize</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a658d7f821d3a8b09567030104e6f1c55</anchor>
+      <arglist>(T value)</arglist>
+    </member>
+    <member kind="function">
+      <type>glm::vec&lt; N, double &gt;</type>
+      <name>normalize</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a89ada4509156fa08da1fb38b78aeca1c</anchor>
+      <arglist>(glm::vec&lt; N, T &gt; value)</arglist>
+    </member>
+    <member kind="function">
+      <type>glm::mat&lt; N, N, double &gt;</type>
+      <name>normalize</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a357d279cc4fc56e7e160405e0de54d2e</anchor>
+      <arglist>(glm::mat&lt; N, N, T &gt; value)</arglist>
+    </member>
+    <member kind="function">
+      <type>T</type>
+      <name>applyScale</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a13b4fce3d63029b9cbcab510f8014e35</anchor>
+      <arglist>(const T &amp;value, const T &amp;scale)</arglist>
+    </member>
+    <member kind="function">
+      <type>T</type>
+      <name>transformValue</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a54c8daa4a2a86c81873afd19b32037ec</anchor>
+      <arglist>(const T &amp;value, const std::optional&lt; T &gt; &amp;offset, const std::optional&lt; T &gt; &amp;scale)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy&lt; T &gt;</type>
+      <name>transformArray</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a8d4075c75c937b7ced12857100c0124d</anchor>
+      <arglist>(const PropertyArrayView&lt; T &gt; &amp;value, const std::optional&lt; PropertyArrayView&lt; T &gt; &gt; &amp;offset, const std::optional&lt; PropertyArrayView&lt; T &gt; &gt; &amp;scale)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy&lt; NormalizedType &gt;</type>
+      <name>transformNormalizedArray</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a4a7fa5bd37e1072659337894a94f387b</anchor>
+      <arglist>(const PropertyArrayView&lt; T &gt; &amp;value, const std::optional&lt; PropertyArrayView&lt; NormalizedType &gt; &gt; &amp;offset, const std::optional&lt; PropertyArrayView&lt; NormalizedType &gt; &gt; &amp;scale)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy&lt; glm::vec&lt; N, double &gt; &gt;</type>
+      <name>transformNormalizedVecNArray</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a342fd3972ff45e5be19fc3358ff8ff78</anchor>
+      <arglist>(const PropertyArrayView&lt; glm::vec&lt; N, T &gt; &gt; &amp;value, const std::optional&lt; PropertyArrayView&lt; glm::vec&lt; N, double &gt; &gt; &gt; &amp;offset, const std::optional&lt; PropertyArrayView&lt; glm::vec&lt; N, double &gt; &gt; &gt; &amp;scale)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyArrayCopy&lt; glm::mat&lt; N, N, double &gt; &gt;</type>
+      <name>transformNormalizedMatNArray</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a20df83b36f2dfc09e70aadd01331000b</anchor>
+      <arglist>(const PropertyArrayView&lt; glm::mat&lt; N, N, T &gt; &gt; &amp;value, const std::optional&lt; PropertyArrayView&lt; glm::mat&lt; N, N, double &gt; &gt; &gt; &amp;offset, const std::optional&lt; PropertyArrayView&lt; glm::mat&lt; N, N, double &gt; &gt; &gt; &amp;scale)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>convertPropertyTypeToString</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a6ff02323644057282ca87e5bd6e23b09</anchor>
+      <arglist>(PropertyType type)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyType</type>
+      <name>convertStringToPropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>aadbfded2b34e08fa09942279b39c23a5</anchor>
+      <arglist>(const std::string &amp;str)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>convertPropertyComponentTypeToString</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a791ef92691e870f94ad4adfc0fa29a1a</anchor>
+      <arglist>(PropertyComponentType componentType)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyComponentType</type>
+      <name>convertStringToPropertyComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a2d62d96c0efd619705c17891033a79fa</anchor>
+      <arglist>(const std::string &amp;str)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyComponentType</type>
+      <name>convertArrayOffsetTypeStringToPropertyComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a11ae0dceba9a480d027ff4c36a597a18</anchor>
+      <arglist>(const std::string &amp;str)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyComponentType</type>
+      <name>convertStringOffsetTypeStringToPropertyComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>afaed14b0453eeb63de612925a9e85d31</anchor>
+      <arglist>(const std::string &amp;str)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyComponentType</type>
+      <name>convertAccessorComponentTypeToPropertyComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>ab5956882cc4c8ddd9311a30293c2d20f</anchor>
+      <arglist>(int componentType)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>isPropertyTypeVecN</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a1394ce7a775265113da9aca6252f4153</anchor>
+      <arglist>(PropertyType type)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>isPropertyTypeMatN</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a4b75ce98c3978caa79605297690dfe1d</anchor>
+      <arglist>(PropertyType type)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>isPropertyComponentTypeInteger</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a245e07b9c059557ecae4de3e7f557178</anchor>
+      <arglist>(PropertyComponentType componentType)</arglist>
+    </member>
+    <member kind="function">
+      <type>glm::length_t</type>
+      <name>getDimensionsFromPropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>abba5aca9925dfbac52fb44c78ec5f2c9</anchor>
+      <arglist>(PropertyType type)</arglist>
+    </member>
+    <member kind="function">
+      <type>glm::length_t</type>
+      <name>getComponentCountFromPropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>aed8eebdc01b21d6b8d7886b965a1c220</anchor>
+      <arglist>(PropertyType type)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>getSizeOfComponentType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a0552d7e6bb1c8d0ec67316b302a8ce37</anchor>
+      <arglist>(PropertyComponentType componentType)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyViewStatusType</type>
+      <name>validatePropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a9feed8666c9b942c7c7a4a305be3aca1</anchor>
+      <arglist>(const ClassProperty &amp;classProperty)</arglist>
+    </member>
+    <member kind="function">
+      <type>PropertyViewStatusType</type>
+      <name>validateArrayPropertyType</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>afb00bcc12a008c71f75a776cb3d887bb</anchor>
+      <arglist>(const ClassProperty &amp;classProperty)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>getCount</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a9ea472029b4705631cbc0fe673b2cf4e</anchor>
+      <arglist>(std::optional&lt; std::vector&lt; std::byte &gt; &gt; &amp;buffer)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>applySamplerWrapS</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a00f07cf767c4685dc1e1c14f7ce01f07</anchor>
+      <arglist>(const double u, const int32_t wrapS)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>applySamplerWrapT</name>
+      <anchorfile>namespaceCesiumGltf.html</anchorfile>
+      <anchor>a4d6e8d5a415476bd88e420cee4eb4cb8</anchor>
+      <arglist>(const double v, const int32_t wrapT)</arglist>
     </member>
   </compound>
   <compound kind="namespace">
@@ -23532,6 +29725,7 @@
     <class kind="class">CesiumGltfReader::ExtensionExtInstanceFeaturesReader</class>
     <class kind="class">CesiumGltfReader::ExtensionExtMeshFeaturesReader</class>
     <class kind="class">CesiumGltfReader::ExtensionExtMeshGpuInstancingReader</class>
+    <class kind="class">CesiumGltfReader::ExtensionExtStructuralMetadataReader</class>
     <class kind="class">CesiumGltfReader::ExtensionKhrDracoMeshCompressionReader</class>
     <class kind="class">CesiumGltfReader::ExtensionKhrMaterialsUnlitReader</class>
     <class kind="class">CesiumGltfReader::ExtensionKhrTextureBasisuReader</class>
@@ -23693,6 +29887,27 @@
       <enumvalue file="namespaceCesiumJsonWriter.html" anchor="ac37c5bf19403f16b1fdeffae84ad8e8aa00d23a76e43b46dae9ec7aa9dcbebb32">Enabled</enumvalue>
       <enumvalue file="namespaceCesiumJsonWriter.html" anchor="ac37c5bf19403f16b1fdeffae84ad8e8aab9f5c797ebbf55adccdd8539a65a0241">Disabled</enumvalue>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>writeJsonValue</name>
+      <anchorfile>namespaceCesiumJsonWriter.html</anchorfile>
+      <anchor>a38b87718c2f241d26feea634eccd44b2</anchor>
+      <arglist>(const CesiumUtility::JsonValue &amp;value, JsonWriter &amp;writer)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>writeJsonExtensions</name>
+      <anchorfile>namespaceCesiumJsonWriter.html</anchorfile>
+      <anchor>acfc883fb9f3e9d758455cf909c4031dc</anchor>
+      <arglist>(const TExtended &amp;obj, JsonWriter &amp;jsonWriter, const ExtensionWriterContext &amp;context)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>hasRegisteredExtensions</name>
+      <anchorfile>namespaceCesiumJsonWriter.html</anchorfile>
+      <anchor>a29ae5ef4ae95f1fc9ee53aee6d32bd68</anchor>
+      <arglist>(const TExtended &amp;obj, JsonWriter &amp;jsonWriter, const ExtensionWriterContext &amp;context)</arglist>
+    </member>
   </compound>
   <compound kind="namespace">
     <name>CesiumQuantizedMeshTerrain</name>
@@ -23761,8 +29976,6 @@
     <class kind="class">CesiumUtility::IntrusivePointer</class>
     <class kind="class">CesiumUtility::JsonHelpers</class>
     <class kind="class">CesiumUtility::JsonValue</class>
-    <class kind="struct">CesiumUtility::JsonValueMissingKey</class>
-    <class kind="struct">CesiumUtility::JsonValueNotRealValue</class>
     <class kind="class">CesiumUtility::Math</class>
     <class kind="class">CesiumUtility::ReferenceCounted</class>
     <class kind="struct">CesiumUtility::Result</class>
@@ -23770,10 +29983,14 @@
     <class kind="class">CesiumUtility::ScopeGuard</class>
     <class kind="class">CesiumUtility::SharedAsset</class>
     <class kind="class">CesiumUtility::StringHelpers</class>
-    <class kind="class">CesiumUtility::ThreadIdHolder</class>
-    <class kind="class">CesiumUtility::ThreadIdHolder&lt; false &gt;</class>
-    <class kind="class">CesiumUtility::ThreadIdHolder&lt; true &gt;</class>
     <class kind="class">CesiumUtility::Uri</class>
+    <member kind="typedef">
+      <type>DoublyLinkedListAdvanced&lt; T, T, Pointers &gt;</type>
+      <name>DoublyLinkedList</name>
+      <anchorfile>namespaceCesiumUtility.html</anchorfile>
+      <anchor>ada2b86d4af311ed5bf8bfe9f65a7761e</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="typedef">
       <type>ReferenceCounted&lt; T, true &gt;</type>
       <name>ReferenceCountedThreadSafe</name>
@@ -23817,6 +30034,13 @@
       <arglist>(const std::span&lt; const std::byte &gt; &amp;data, std::vector&lt; std::byte &gt; &amp;out)</arglist>
     </member>
     <member kind="function">
+      <type>IntrusivePointer&lt; T &gt;</type>
+      <name>const_intrusive_cast</name>
+      <anchorfile>namespaceCesiumUtility.html</anchorfile>
+      <anchor>a0c54805d441cc146176b990deea6aae6</anchor>
+      <arglist>(const IntrusivePointer&lt; U &gt; &amp;p) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>std::string</type>
       <name>joinToString</name>
       <anchorfile>namespaceCesiumUtility.html</anchorfile>
@@ -23829,6 +30053,27 @@
       <anchorfile>namespaceCesiumUtility.html</anchorfile>
       <anchor>aa61a2a444d5c46999356e190f50e7e34</anchor>
       <arglist>(TCollection collection, const std::string &amp;separator)</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr std::optional&lt; T &gt;</type>
+      <name>losslessNarrow</name>
+      <anchorfile>namespaceCesiumUtility.html</anchorfile>
+      <anchor>a84f68c86674d511f2d6679776900acbb</anchor>
+      <arglist>(U u) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>constexpr T</type>
+      <name>losslessNarrowOrDefault</name>
+      <anchorfile>namespaceCesiumUtility.html</anchorfile>
+      <anchor>a12a6c1e96ffba2bf45b0c27597ef8022</anchor>
+      <arglist>(U u, T defaultValue) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>ScopeGuard</name>
+      <anchorfile>namespaceCesiumUtility.html</anchorfile>
+      <anchor>a4994166cb2d24ec688f2880ac508d38f</anchor>
+      <arglist>(ExitFunction) -&gt; ScopeGuard&lt; ExitFunction &gt;</arglist>
     </member>
     <member kind="function">
       <type>std::span&lt; To &gt;</type>
@@ -23850,19 +30095,19 @@
     <name>contributing</name>
     <title>Contribution Guide</title>
     <filename>contributing.html</filename>
-    <docanchor file="contributing.html" title="/mnt/c/Dev/cesium-native/CONTRIBUTING.md">md__2mnt_2c_2Dev_2cesium-native_2CONTRIBUTING</docanchor>
+    <docanchor file="contributing.html" title="/home/runner/work/cesium-native/cesium-native/CONTRIBUTING.md">md__2home_2runner_2work_2cesium-native_2cesium-native_2CONTRIBUTING</docanchor>
   </compound>
   <compound kind="page">
-    <name>md__2mnt_2c_2Dev_2cesium-native_2CHANGES</name>
+    <name>md__2home_2runner_2work_2cesium-native_2cesium-native_2CHANGES</name>
     <title>Change Log</title>
-    <filename>md__2mnt_2c_2Dev_2cesium-native_2CHANGES.html</filename>
+    <filename>md__2home_2runner_2work_2cesium-native_2cesium-native_2CHANGES.html</filename>
   </compound>
   <compound kind="page">
     <name>async-system</name>
     <title>AsyncSystem</title>
     <filename>async-system.html</filename>
     <docanchor file="async-system.html" title="topics/async-system.md">md_topics_2async-system</docanchor>
-    <docanchor file="async-system.html" title="Creating an AsyncSystem">creating-an-asyncsystem</docanchor>
+    <docanchor file="async-system.html" title="The AsyncSystem Class">asyncsystem-class</docanchor>
     <docanchor file="async-system.html" title="Future&lt;T&gt;">future</docanchor>
     <docanchor file="async-system.html" title="Continuation Functions">continuation-functions</docanchor>
     <docanchor file="async-system.html" title="Catch">catch</docanchor>
@@ -23873,6 +30118,8 @@
     <docanchor file="async-system.html" title="Promise&lt;T&gt;">promise</docanchor>
     <docanchor file="async-system.html" title="SharedFuture&lt;T&gt;">shared-future</docanchor>
     <docanchor file="async-system.html" title="Lambda Captures and Thread Safety">lambda-captures-and-thread-safety</docanchor>
+    <docanchor file="async-system.html" title="AsyncSystem and ITaskProcessor Implementation">async-system-implementation</docanchor>
+    <docanchor file="async-system.html" title="Creating an AsyncSystem">creating-an-asyncsystem</docanchor>
   </compound>
   <compound kind="page">
     <name>md_topics_2dependencies</name>
@@ -23896,12 +30143,42 @@
     <docanchor file="developer-resources.html" title="topics/developer.md">md_topics_2developer</docanchor>
   </compound>
   <compound kind="page">
+    <name>glossary</name>
+    <title>Glossary</title>
+    <filename>glossary.html</filename>
+    <docanchor file="glossary.html" title="topics/glossary.md">md_topics_2glossary</docanchor>
+    <docanchor file="glossary.html" title="Earth-Centered, Earth-Fixed Coordinates (ECEF)">glossary-ecef</docanchor>
+  </compound>
+  <compound kind="page">
     <name>multithreading</name>
     <title>Multithreading</title>
     <filename>multithreading.html</filename>
     <subpage>thread-safety-rules.html</subpage>
     <subpage>async-system.html</subpage>
     <docanchor file="multithreading.html" title="topics/multithreading.md">md_topics_2multithreading</docanchor>
+  </compound>
+  <compound kind="page">
+    <name>rendering-3d-tiles</name>
+    <title>Rendering 3D Tiles</title>
+    <filename>rendering-3d-tiles.html</filename>
+    <docanchor file="rendering-3d-tiles.html" title="topics/rendering-3d-tiles.md">md_topics_2rendering-3d-tiles</docanchor>
+    <docanchor file="rendering-3d-tiles.html" title="Sequence Walkthrough">sequence-walkthrough</docanchor>
+    <docanchor file="rendering-3d-tiles.html" title="Implementing 3D Tiles Rendering">implement-3d-tiles-rendering</docanchor>
+  </compound>
+  <compound kind="page">
+    <name>selection-algorithm-details</name>
+    <title>3D Tiles Selection Algorithm</title>
+    <filename>selection-algorithm-details.html</filename>
+    <docanchor file="selection-algorithm-details.html" title="topics/selection-algorithm-details.md">md_topics_2selection-algorithm-details</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="High-Level Overview">high-level-overview</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Culling">culling</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Screen-Space Error">screen-space-error</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Selecting Loaded Tiles">selecting-loaded-tiles</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Ancestor Meets SSE">ancestor-meets-sse</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Kicking">kicking</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Loading Descendant Limit">loading-descendant-limit</docanchor>
+    <docanchor file="selection-algorithm-details.html" title="Additional Topics Not Yet Covered">additional-topics</docanchor>
+    <docanchor file="selection-algorithm-details.html">forbid-holes</docanchor>
   </compound>
   <compound kind="page">
     <name>style-guide</name>
@@ -23919,6 +30196,6 @@
     <name>index</name>
     <title>Cesium Native</title>
     <filename>index.html</filename>
-    <docanchor file="index.html" title="Cesium Native">md__2mnt_2c_2Dev_2cesium-native_2README</docanchor>
+    <docanchor file="index.html" title="Cesium Native">md__2home_2runner_2work_2cesium-native_2cesium-native_2README</docanchor>
   </compound>
 </tagfile>

@@ -10,7 +10,8 @@ Detailed instructions for setting up a Cesium for Unreal development environment
   - Under **Workloads**, check `Desktop development with C++`
   - Under **Workloads**, check `Game development with C++`
   - Under **Individual components**, check `.NET Framework 4.8 SDK` (or newer)
-    <!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> Visual Studio options are derived from Unreal Engine's [recommended setup](https://dev.epicgames.com/documentation/en-us/unreal-engine/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine?application_version=5.3)
+    > [!note]
+    > Visual Studio options are derived from Unreal Engine's [recommended setup](https://dev.epicgames.com/documentation/en-us/unreal-engine/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine?application_version=5.3)
 - Install the .NET Core 3.1 Runtime, [link](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.32-windows-x64-installer?cid=getdotnetcore)
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Install the Unreal Engine (version 5.3 or newer) from https://www.unrealengine.com/en-US/download
@@ -33,7 +34,8 @@ The following illustrates the recommended directory layout for developers:
 - `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\cesium-native` - The directory for the base libraries project.
 
 You may use any directory for the project, but the directory for the actual _Cesium for Unreal_ plugin **MUST** be in a subdirectory `Plugins/cesium-unreal` of the project directory. This way, Unreal will automatically find the Plugin when running the project, and pick up any changes that have been made to the plugin.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> On Windows, it is important that the top-level project directory have a short pathname. Otherwise, you may run into mysterious errors caused by the Windows [maximum path length limitation](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd).
+> [!note]
+> On Windows, it is important that the top-level project directory have a short pathname. Otherwise, you may run into mysterious errors caused by the Windows [maximum path length limitation](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=cmd).
 
 This can be set up with the following sequence of commands, on the console, starting in the `C:\Dev` directory:
 ```
@@ -43,7 +45,8 @@ mkdir Plugins
 cd Plugins
 git clone --recursive https://github.com/CesiumGS/cesium-unreal.git
 ```
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
+> [!note]
+> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
 ```
 git submodule update --init --recursive
 ```
@@ -63,7 +66,8 @@ The version of CMake included with Visual Studio 2017 is too old to build cesium
 ## Visual Studio 2022 {#Visual-Studio-2022}
 
 Launch Visual Studio 2022 and "Open a local folder". Select `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> Be sure to select the `extern` directory, _not_ the `cesium-native` subdirectory.
+> [!note]
+> Be sure to select the `extern` directory, _not_ the `cesium-native` subdirectory.
 
 Find the "Solution Explorer - Folder View".
 
@@ -79,7 +83,8 @@ To build a "Release" build of cesium-native,
 - Add a new configuration by clicking the `+` and choose `x64-Release`.
 - Select the new "x64-Release" from the Solution Configuration dropdown.
 - Right-click on `CMakeLists.txt` again and choose "Install".
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> In Visual Studio, this defaults to the "RelWithDebInfo" configuration type. You can change this at any time
+> [!note]
+> In Visual Studio, this defaults to the "RelWithDebInfo" configuration type. You can change this at any time
 
 ## Visual Studio Code {#Visual-Studio-Code}
 
@@ -90,7 +95,8 @@ Open the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` folder in V
 - Start `cmake-gui`
 - In the "Where is the source code" text field, enter
   `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`
-  <!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> This must be the `extern` directory, and _not_ the `cesium-native` subdirectory!
+  > [!note]
+> This must be the `extern` directory, and _not_ the `cesium-native` subdirectory!
 - In the "Where to build the binaries" text field, enter
   `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\build`
 - Press "Configure" (and confirm the creation of the directory and the default generator for the project)
@@ -101,7 +107,8 @@ This will generate the project file called `cesium-unreal-extern.sln` in the dir
 ## CMake command-line {#CMake-command-line}
 
 First, configure the CMake project in the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` directory by following the instructions below.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
+> [!note]
+> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 To configure for Visual Studio 2022, open "x64 Native Tools Command Prompt for VS 2022" and execute the following command:
 ```
@@ -149,7 +156,8 @@ The project files for the samples project, _including_ the actual _Cesium for Un
 - Select "Generate Visual Studio project files"
 
 This will generate the `CesiumForUnrealSamples.sln` file that can be opened, compiled, and debugger with Visual Studio. Be sure to switch the "Solution Platform" to "Win64".
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> Unreal Engine does not allow a Blueprints-only project to have an embedded C++ plugin like Cesium for Unreal. Fortunately, it's easy to convert a Blueprints project to a C++ project just by adding a few files: Just copy the `Source` directory from this documentation folder into the root directory of your project. Your project should now work as a C++ project. However, you probably do not want to commit this change to your project's source code repository. A project that includes C++ code like this will require everyone opening the project to have an installed and working C++ compiler, including e.g. artists that do not typically have such an environment.
+> [!note]
+> Unreal Engine does not allow a Blueprints-only project to have an embedded C++ plugin like Cesium for Unreal. Fortunately, it's easy to convert a Blueprints project to a C++ project just by adding a few files: Just copy the `Source` directory from this documentation folder into the root directory of your project. Your project should now work as a C++ project. However, you probably do not want to commit this change to your project's source code repository. A project that includes C++ code like this will require everyone opening the project to have an installed and working C++ compiler, including e.g. artists that do not typically have such an environment.
 
 If you have both Visual Studio 2017 and Visual Studio 2019 installed, the Visual Studio project files generated above may build with VS2017 even if they're opened with VS2019. This will still be true even if you allow VS2019 to upgrade the project files to the VS2019 toolchain. That's because the project files simply invoke the Unreal Build Tool, which plays by its own rules. This is generally not a problem, except if you used Visual Studio 2019 to build cesium-native. In that case, you will get linker errors when you try to compile Cesium for Unreal.
 

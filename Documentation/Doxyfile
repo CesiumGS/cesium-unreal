@@ -283,7 +283,9 @@ TAB_SIZE               = 4
 # with the commands \{ and \} for these it is advised to use the version @{ and
 # @} or use a double escape (\\{ and \\})
 
-ALIASES                =
+ALIASES                = mermaid{1}="\htmlonly <div class=\"mermaid\"> \endhtmlonly \htmlinclude \"\1.mmd\" \htmlonly </div> \endhtmlonly" \
+                         mermaid-interactive{1}="\htmlonly <div class=\"mermaid interactive\"> \endhtmlonly \htmlinclude \"\1.mmd\" \htmlonly </div> \endhtmlonly" \
+                         svg-interactive{2}="\htmlonly <div class=\"svg interactive\" style=\"min-height: \2\"> \endhtmlonly \image html \"\1.svg\" \htmlonly </div> \endhtmlonly"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For
@@ -1077,7 +1079,7 @@ EXCLUDE_SYMBOLS        = CesiumMetadataConversions<*
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           =
+EXAMPLE_PATH           = ./Documentation/Diagrams
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
@@ -1367,7 +1369,7 @@ HTML_HEADER            =
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            =
+HTML_FOOTER            = ./Documentation/footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1407,7 +1409,9 @@ HTML_EXTRA_STYLESHEET  = ./node_modules/doxygen-awesome-css/doxygen-awesome.css
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = ./Documentation/Assets/mermaid.min.js \
+                         ./Documentation/Assets/mingcute.json.js \
+                         ./Documentation/Assets/panzoom.js
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.
