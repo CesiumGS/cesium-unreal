@@ -131,7 +131,7 @@ Most classes in Cesium for Unreal must work in Unreal Editor as well as Play Mod
 
 In other words,
 
-- Use`PostLoad` to initialize existing objects, and `OnConstruction` for newly-created ones.
+- Use `PostLoad` to initialize existing objects, and `OnConstruction` for newly-created ones.
 - Use `Serialize` for scenarios like [Deprecation and Backwards Compatibility](#deprecation-and-backwards-compatibility).
 - Use `BeginPlay` for exclusively runtime behavior.
 
