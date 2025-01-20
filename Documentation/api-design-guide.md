@@ -87,7 +87,7 @@ For example, check out the `MaximumScreenSpaceError` property on `ACesium3DTiles
   ```
 
 - The `EditAnywhere` specifier allows the property to appear and be modifiable by the user in the Details panel of the Editor.
-- The `BlueprintGetter` and `BlueprintSetter` define specific functions for getting and setting the value in Blueprints (see [UFunctions](#ufunctions)).
+- The `BlueprintGetter` and `BlueprintSetter` define specific functions for getting and setting the value in Blueprints (see [UFunctions](#functions)).
 - The `Category` indicates how the property should be organized in the Details panel. It appears under the "Level of Detail" category, which itself is nested in the "Cesium" category.
 - Finally, `meta` refers to additional metadata that augments how the property functions or appears. Here, `ClampMin` prevents the Details UI from setting it to smaller values. (It may still be set through C++ or Blueprints.)
 
