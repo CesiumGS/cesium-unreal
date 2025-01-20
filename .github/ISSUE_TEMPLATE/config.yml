@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+- name: Ask a question
+  url: https://community.cesium.com/c/cesium-for-unreal/10
+  about: Please use the community forum for general questions. The Cesium team and community actively monitor it and love to see what people are working on! We reserve GitHub for confirmed bug reports and feature requests. 
