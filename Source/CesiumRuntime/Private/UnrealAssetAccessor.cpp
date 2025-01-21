@@ -341,7 +341,8 @@ const CesiumAsync::HttpHeaders UnrealFileAssetRequestResponse::emptyHeaders{};
 
 std::string convertFileUriToFilename(const std::string& url) {
   CesiumUtility::Uri parsedUri(url);
-  return CesiumUtility::Uri::uriPathToNativePath(std::string(parsedUri.getPath()));
+  return CesiumUtility::Uri::uriPathToNativePath(
+      std::string(parsedUri.getPath()));
 }
 
 class FCesiumReadFileWorker : public FNonAbandonableTask {
