@@ -16,7 +16,8 @@ export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
 export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v20_clang-13.0.1-centos7/x86_64-unknown-linux-gnu
 export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Unix/LibCxx
 ```
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> `v20_clang-13.0.1-centos7` is correct for Unreal Engine v5.0.3. It may be different for other versions of Unreal Engine. See [https://docs.unrealengine.com/5.0/en-US/SharingAndReleasing/Linux/GettingStarted/](https://docs.unrealengine.com/5.0/en-US/linux-development-requirements-for-unreal-engine/) or the equivalent for your version of Unreal Engine.
+> [!note]
+> `v20_clang-13.0.1-centos7` is correct for Unreal Engine v5.0.3. It may be different for other versions of Unreal Engine. See [https://docs.unrealengine.com/5.0/en-US/SharingAndReleasing/Linux/GettingStarted/](https://docs.unrealengine.com/5.0/en-US/linux-development-requirements-for-unreal-engine/) or the equivalent for your version of Unreal Engine.
 
 # Cloning the git repos
 
@@ -33,7 +34,8 @@ First, let's clone the Cesium for Unreal repo by issuing the following command i
 ```
 git clone -b ue5-main --recursive https://github.com/CesiumGS/cesium-unreal.git
 ```
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
+> [!note]
+> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
 
     git submodule update --init --recursive
 
@@ -44,7 +46,8 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 ## CMake command-line
 
 Configure the CMake project in the `~/dev/cesium-unreal/extern` directory by following the instructions below.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
+> [!note]
+> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
 
@@ -56,7 +59,8 @@ To build a Release version, do the following:
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target install
 ```
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> To build faster by using multiple CPU cores, add `-j14` to the build/install command above, i.e. `cmake --build build --target install -j14`. "14" is the number of threads to use, and a higher or lower number may be more suitable for your system.
+> [!note]
+> To build faster by using multiple CPU cores, add `-j14` to the build/install command above, i.e. `cmake --build build --target install -j14`. "14" is the number of threads to use, and a higher or lower number may be more suitable for your system.
 
 ## KTX-Software workaround
 
@@ -85,7 +89,8 @@ And finally copy the built plugin into the Engine plugins directory:
 mkdir -p $UNREAL_ENGINE_DIR/Engine/Plugins/Marketplace
 cp -r $CESIUM_FOR_UNREAL_DIR/../packages/CesiumForUnreal $UNREAL_ENGINE_DIR/Engine/Plugins/Marketplace/
 ```
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> On Linux (unlike Windows), it is essential that the `CesiumForUnreal` plugin go in the `Plugins/Marketplace/` subdirectory, rather than directly in `Plugins/`. Otherwise, the relative paths to other plugin `.so` files that the Unreal Build Tool has built into the plugin will not resolve correctly.
+> [!note]
+> On Linux (unlike Windows), it is essential that the `CesiumForUnreal` plugin go in the `Plugins/Marketplace/` subdirectory, rather than directly in `Plugins/`. Otherwise, the relative paths to other plugin `.so` files that the Unreal Build Tool has built into the plugin will not resolve correctly.
 
 # Using the plugin with the Cesium for Unreal Samples project
 

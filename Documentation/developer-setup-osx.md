@@ -29,7 +29,8 @@ mkdir Plugins
 cd Plugins
 git clone --recursive https://github.com/CesiumGS/cesium-unreal.git
 ```
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
+> [!note]
+> The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
 ```
 git submodule update --init --recursive
 ```
@@ -41,7 +42,8 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 ## CMake command-line
 
 First, configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note --> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
+> [!note]
+> The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
 ```
@@ -60,7 +62,8 @@ cmake --build build --target install
 **Note**: It is recommended that the build steps for CMake command-line for macOS (above) be completed first. Unreal Engine Editor will not launch without the host side binaries compiled as well.
 
 Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one use for macOS as this will require compiling for a different architecture.
-<!--!\cond DOXYGEN_EXCLUDE !-->> Note:<!--! \endcond --><!--! \note -->  The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
+> [!note]
+>  The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Release version of cesium-native:
 ```
