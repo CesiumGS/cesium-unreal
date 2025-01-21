@@ -10,7 +10,9 @@
 #include "CesiumIonServerSelector.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
+THIRD_PARTY_INCLUDES_START
 #include "CesiumUtility/Uri.h"
+THIRD_PARTY_INCLUDES_END
 #include "Editor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Interfaces/IPluginManager.h"

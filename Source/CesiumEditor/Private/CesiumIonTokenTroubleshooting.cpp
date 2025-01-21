@@ -8,7 +8,9 @@
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServerDisplay.h"
 #include "CesiumRuntimeSettings.h"
+THIRD_PARTY_INCLUDES_START
 #include "CesiumUtility/Uri.h"
+THIRD_PARTY_INCLUDES_END
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
 #include "ScopedTransaction.h"
