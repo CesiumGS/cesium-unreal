@@ -7,7 +7,9 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
+THIRD_PARTY_INCLUDES_START
 #include "CesiumUtility/Uri.h"
+THIRD_PARTY_INCLUDES_END
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "HttpManager.h"
