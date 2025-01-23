@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
+- Removed duplicate "Enable Water Mask" checkbox on `Cesium3DTileset` resulting from EditCondition flag.
 
 ### v2.12.0 - 2025-01-02
 
