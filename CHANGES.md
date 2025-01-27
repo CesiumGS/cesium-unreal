@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Added `CesiumUrlTemplateRasterOverlay`, allowing a raster overlay to be added using tiles requested based on a specified URL template.
+- Added `RequestHeaders` property to `Cesium3DTileset`, allowing per-tileset headers to be specified.
 
 ##### Fixes :wrench:
 
