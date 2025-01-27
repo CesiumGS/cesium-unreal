@@ -8,7 +8,6 @@
 #include "VecMath.h"
 #include <glm/gtc/matrix_inverse.hpp>
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
 using namespace CesiumGeospatial;
