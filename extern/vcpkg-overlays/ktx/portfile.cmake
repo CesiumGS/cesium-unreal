@@ -2,7 +2,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO KhronosGroup/KTX-Software
     REF "v${VERSION}"
-    SHA512 5a89f8986464705ec36ac1becaddd0ff335e4c3c235468aaef0e963fcfeda4c0d669a086b91e61c16a3ae9e1fa5bf456dccf12cc65720e1a22e7cc0f30552541
+    SHA512 0077315fe2b4e676e97e3a158c2c6e1f6ba426e14ad23342592cd69be28cfce64c40614e0a84d58a9634877ab334e713b94d4c962132c98bfea308e91bc8a98a
     HEAD_REF master
     PATCHES
         0001-Use-vcpkg-zstd.patch
