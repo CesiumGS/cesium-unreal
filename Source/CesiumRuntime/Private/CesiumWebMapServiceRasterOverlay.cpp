@@ -21,10 +21,19 @@ UCesiumWebMapServiceRasterOverlay::CreateOverlay(
   wmsOptions.layers = TCHAR_TO_UTF8(*Layers);
   wmsOptions.tileWidth = TileWidth;
   wmsOptions.tileHeight = TileHeight;
+
+  std::vector<CesiumAsync::IAssetAccessor::THeader> headers;
+
+  for (auto& [Key, Value] : this->RequestHeaders) {
+    headers.push_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
+  }
+
   return std::make_unique<CesiumRasterOverlays::WebMapServiceRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       TCHAR_TO_UTF8(*this->BaseUrl),
-      std::vector<CesiumAsync::IAssetAccessor::THeader>(),
+      headers,
       wmsOptions,
       options);
 }
