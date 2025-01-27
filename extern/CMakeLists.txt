@@ -6,6 +6,9 @@ project(
     LANGUAGES CXX C
 )
 
+# XXX Not working yet
+set(CESIUM_UNREAL_NATIVE_DIRECTORY "" CACHE PATH "directory for Cesium Native source if not installed via package manager")
+
 if (DEFINED ENV{UNREAL_ENGINE_ROOT} AND NOT UNREAL_ENGINE_ROOT)
   set(UNREAL_ENGINE_ROOT "$ENV{UNREAL_ENGINE_ROOT}")
 endif()
@@ -57,6 +60,7 @@ set(PRIVATE_CESIUM_SQLITE ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
 set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-$<IF:$<CONFIG:Debug>,Debug,Release>)
+set(CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/include)
 
 # Always define NDEBUG, since Unreal does in debug anyway.
 # We don't want any mismatches, especially with class member ordering.
@@ -105,7 +109,7 @@ if (CESIUM_USE_UNREAL_TRACING)
   list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 endif()
 
-# vcpkg setup
+# vcpkg setup should go away with ezvcpkg
 set(ENV{VCPKG_OVERLAY_PORTS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays")
 set(ENV{VCPKG_OVERLAY_TRIPLETS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/triplets")
 
@@ -125,7 +129,30 @@ endif()
 set(CESIUM_EXCLUDE_INSTALL_HEADERS openssl)
 set(CESIUM_EXCLUDE_INSTALL_STATIC_LIBS openssl)
 
-add_subdirectory(cesium-native)
+if(CESIUM_UNREAL_NATIVE_DIRECTORY)
+# These packages are used in the public headers of Cesium libraries, so we need to distribute the headers and binaries
+# with the installation
+# Note that fmt is a public dependency of the vcpkg version of spdlog
+# STB and uriparser aren't technically part of the public interface, but they're used by the downstream Cesium for Unreal project
+set(PACKAGES_PUBLIC asyncplusplus expected-lite fmt glm rapidjson spdlog stb uriparser)
+# These packages are used in the code and produce binaries, but are not part of the public interface.  Therefore we need
+# to distribute the binaries for linking, but not the headers, as downstream consumers don't need them
+# OpenSSL and abseil are both dependencies of s2geometry
+set(PACKAGES_PRIVATE
+    abseil draco ktx modp-base64 meshoptimizer openssl s2geometry
+    libjpeg-turbo sqlite3 tinyxml2 libwebp zlib-ng picosha2
+    earcut-hpp cpp-httplib[core] libmorton zstd
+)
+# Packages only used for testing
+    set(PACKAGES_TEST catch2)
+
+    set(PACKAGES_ALL ${PACKAGES_PUBLIC})
+    list(APPEND PACKAGES_ALL ${PACKAGES_PRIVATE})
+    list(APPEND PACKAGES_ALL ${PACKAGES_TEST})
+    add_subdirectory("${CESIUM_UNREAL_NATIVE_DIRECTORY}" cesium-native)
+else()
+    find_package(cesium-native)
+endif()
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
 #install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
@@ -148,7 +175,25 @@ set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
 add_subdirectory(tidy-html5)
 
 # Don't build the cesium-native tests by default
-set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+#set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
 add_subdirectory(swl-variant)
 install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/swl-variant/include/" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+if(VCPKG_INSTALLED_DIR)
+    set(CESIUM_VCPKG_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
+    set(CESIUM_VCPKG_LIBDIR "${CESIUM_VCPKG_DIR}/$<IF:$<CONFIG:Debug>,debug/lib,lib>")
+
+    message(STATUS "CESIUM_VCPKG_LIBDIR: ${CESIUM_VCPKG_LIBDIR}")
+
+    install(DIRECTORY "${CESIUM_VCPKG_LIBDIR}/"
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            PATTERN libcrypto.* EXCLUDE
+            PATTERN libssl.* EXCLUDE
+            )
+
+    install(DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/"
+            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+            PATTERN openssl EXCLUDE
+            )
+endif()

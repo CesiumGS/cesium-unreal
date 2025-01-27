@@ -3,7 +3,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/shared/common.cmake")
 set(VCPKG_TARGET_ARCHITECTURE x64)
 set(VCPKG_CRT_LINKAGE dynamic)
 set(VCPKG_LIBRARY_LINKAGE static)
-set(VCPKG_ENV_PASSTHROUGH "UNREAL_ENGINE_ROOT")
+set(VCPKG_ENV_PASSTHROUGH UNREAL_ENGINE_ROOT CESIUM_TOOLSET_VERSION)
 set(VCPKG_POLICY_ONLY_RELEASE_CRT enabled)
 
 # Unreal Engine adds /Zp8 in 64-bit Windows builds to align structs to 8 bytes instead of the
@@ -16,7 +16,12 @@ set(VCPKG_POLICY_ONLY_RELEASE_CRT enabled)
 # between compilation units using different versions of that flag. We compile cesium-native
 # with this same option to avoid super-dodgy and hard to debug issues.
 # https://github.com/EpicGames/UnrealEngine/blob/5.3.2-release/Engine/Source/Programs/UnrealBuildTool/Platform/Windows/VCToolChain.cs
-set(VCPKG_CXX_FLAGS "/Zp8")
+
+# Always define NDEBUG, since Unreal does in debug anyway.
+# We don't want any mismatches, especially with class member ordering.
+# But still let debug builds force assertions.
+
+set(VCPKG_CXX_FLAGS "/Zp8 /DNDEBUG")
 set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")
 
 # Use an unreasonable amount of force to replace /MDd (MultiThreadedDebugDLL) with /MD (MultiThreadedDLL)
@@ -24,12 +29,14 @@ set(VCPKG_C_FLAGS "${VCPKG_CXX_FLAGS}")
 # Only CMAKE_MSVC_RUNTIME_LIBRARY would be required if all our third-party libraries used CMake 3.15+, but alas.
 set(VCPKG_CMAKE_CONFIGURE_OPTIONS "")
 list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreadedDLL")
-list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_CXX_FLAGS_DEBUG:STRING=/MD /Z7 /Ob0 /Od /RTC1")
-list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_C_FLAGS_DEBUG:STRING=/MD /Z7 /Ob0 /Od /RTC1")
+list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_CXX_FLAGS_DEBUG:STRING=/MD /Z7 /Ob0 /Od /RTC1 /DCESIUM_FORCE_ASSERTIONS")
+list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_C_FLAGS_DEBUG:STRING=/MD /Z7 /Ob0 /Od /RTC1 /DCESIUM_FORCE_ASSERTIONS")
 
 # When building official binaries on CI, use a very specific MSVC toolset version (which must be installed).
 # When building locally, use the default.
-if(DEFINED ENV{CI})
+if(DEFINED ENV{CESIUM_TOOLSET_VERSION})
+  set(VCPKG_PLATFORM_TOOLSET_VERSION "$ENV{CESIUM_TOOLSET_VERSION}")
+elseif(DEFINED ENV{CI})
   # Toolset version should be 14.38 on UE 5.5+, 14.34 on prior versions.
   set(VCPKG_PLATFORM_TOOLSET_VERSION "14.34")
 
