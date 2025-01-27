@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
+- Fixed crash in `UCesiumIonServer` if running in a packaged build where tilesets are only created at runtime.
 
 ### v2.12.0 - 2025-01-02
 
