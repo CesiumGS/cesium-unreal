@@ -378,6 +378,4 @@ void FSampleHeightMostDetailedSpec::Define() {
           pAsync->Activate();
         });
   });
-
-
 }
