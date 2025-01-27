@@ -15,9 +15,9 @@
 #include "FileHelpers.h"
 #endif
 
-const wchar_t* DISPLAY_NAME = TEXT("ion.cesium.com");
-const wchar_t* SERVER_URL = TEXT("https://ion.cesium.com");
-const wchar_t* API_URL = TEXT("https://api.cesium.com");
+const FString DISPLAY_NAME = TEXT("ion.cesium.com");
+const FString SERVER_URL = TEXT("https://ion.cesium.com");
+const FString API_URL = TEXT("https://api.cesium.com");
 const int64 OAUTH_APP_ID = 190;
 
 /*static*/ UCesiumIonServer* UCesiumIonServer::_pDefaultForNewObjects = nullptr;
