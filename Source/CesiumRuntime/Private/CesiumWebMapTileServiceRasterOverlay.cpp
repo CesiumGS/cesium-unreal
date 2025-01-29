@@ -106,7 +106,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
 
   std::vector<CesiumAsync::IAssetAccessor::THeader> headers;
 
-  for (auto& [Key, Value] : this->RequestHeaders) {
+  for (const auto& [Key, Value] : this->RequestHeaders) {
     headers.push_back(CesiumAsync::IAssetAccessor::THeader{
         TCHAR_TO_UTF8(*Key),
         TCHAR_TO_UTF8(*Value)});
