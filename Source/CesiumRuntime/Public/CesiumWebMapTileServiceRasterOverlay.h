@@ -267,6 +267,12 @@ public:
       meta = (ClampMin = 64, ClampMax = 2048))
   int32 TileHeight = 256;
 
+  /**
+   * HTTP headers to be attached to each request made for this raster overlay.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
+
   virtual void Serialize(FArchive& Ar) override;
 
 protected:

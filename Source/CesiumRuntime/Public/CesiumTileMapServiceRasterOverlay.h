@@ -52,6 +52,12 @@ public:
       meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
   int32 MaximumLevel = 10;
 
+  /**
+   * HTTP headers to be attached to each request made for this raster overlay.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
+
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
       const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
