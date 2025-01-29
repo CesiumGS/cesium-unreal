@@ -2,6 +2,17 @@
   "version": 3,
   "configurePresets": [
     {
+      "name": "x64-Windows",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/../Source/ThirdParty",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-unreal",
+        "VCPKG_HOST_TRIPLET": "x64-windows"
+      }
+    },
+    {
       "name": "x64-Debug-Windows",
       "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
@@ -21,9 +32,29 @@
       }
     },
     {
+      "name": "Windows-CI",
+      "generator": "Visual Studio 17 2022",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-unreal",
+        "VCPKG_HOST_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "Windows-CI-Versioned",
+      "inherits": "Windows-CI",
+      "toolset": {
+        "value": "version=$penv{CESIUM_TOOLSET_VERSION}",
+        "strategy": "set"
+      },
+      "environment": {
+        "CESIUM_TOOLSET_VERSION": "$penv{CESIUM_TOOLSET_VERSION}"
+      }
+    },
+    {
       "name": "debug-windows-versioned",
       "inherits": "x64-Debug-Windows",
-      "toolset": "v143,version=14.36.32532",
+      "toolset": "version=14.36",
       "environment": {
         "CESIUM_TOOLSET_VERSION": "14.36"
       }
