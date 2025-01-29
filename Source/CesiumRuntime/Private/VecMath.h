@@ -142,7 +142,7 @@ public:
 
   /**
    * @brief Create a `FMatrix` from the given `glm` matrix.
-   * 
+   *
    * If the ultimate goal is to create an `FTransform`, use
    * {@link createTransform} instead.
    *
@@ -153,7 +153,7 @@ public:
 
   /**
    * @brief Create a `FTransform` from the given `glm` matrix.
-   * 
+   *
    * @param m The `glm` matrix.
    * @return The `FTransform`.
    */
