@@ -2,10 +2,10 @@
 
 #include "VecMath.h"
 
-#include "CesiumUtility/Math.h"
 #include "Math/Quat.h"
 #include "Math/RotationMatrix.h"
 #include <CesiumGeometry/Transforms.h>
+#include <CesiumUtility/Math.h>
 #include <glm/gtc/quaternion.hpp>
 
 glm::dmat4 VecMath::createMatrix4D(const FMatrix& m) noexcept {
