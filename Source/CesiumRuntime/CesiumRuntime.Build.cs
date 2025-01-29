@@ -113,7 +113,7 @@ public class CesiumRuntime : ModuleRules
                 "LIBASYNC_STATIC",
                 "GLM_FORCE_XYZW_ONLY",
                 "GLM_FORCE_EXPLICIT_CTOR",
-                "GLM_FORCE_SIZE_T_LENGTH",
+                "GLM_ENABLE_EXPERIMENTAL",
                 "TIDY_STATIC",
                 "URI_STATIC_BUILD",
                 "SWL_VARIANT_NO_CONSTEXPR_EMPLACE",
