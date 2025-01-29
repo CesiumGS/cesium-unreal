@@ -385,7 +385,9 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   }
 }
 
-bool CompareMaps(
+namespace {
+
+bool MapsAreEqual(
     const TMap<FString, FString>& Lhs,
     const TMap<FString, FString>& Rhs) {
   if (Lhs.Num() != Rhs.Num()) {
@@ -402,9 +404,11 @@ bool CompareMaps(
   return true;
 }
 
+} // namespace
+
 void ACesium3DTileset::SetRequestHeaders(
     const TMap<FString, FString>& InRequestHeaders) {
-  if (!CompareMaps(InRequestHeaders, this->RequestHeaders)) {
+  if (!MapsAreEqual(InRequestHeaders, this->RequestHeaders)) {
     this->DestroyTileset();
     this->RequestHeaders = InRequestHeaders;
   }
