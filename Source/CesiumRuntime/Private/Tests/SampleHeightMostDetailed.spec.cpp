@@ -309,7 +309,7 @@ void FSampleHeightMostDetailedSpec::Define() {
     });
 
     LatentIt(
-        "",
+        "invalid tileset URL",
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
           // Two slightly different error messages will occur, depending on
@@ -353,6 +353,29 @@ void FSampleHeightMostDetailedSpec::Define() {
                         warnings[0].Contains(TEXT("failed to load")));
                     done.ExecuteIfBound();
                   }));
+        });
+
+    LatentIt(
+        "tileset parameter is nullptr",
+        EAsyncExecution::TaskGraphMainThread,
+        [this](const FDoneDelegate& done) {
+          UCesiumSampleHeightMostDetailedAsyncAction* pAsync =
+              UCesiumSampleHeightMostDetailedAsyncAction::
+                  SampleHeightMostDetailed(
+                      nullptr,
+                      {FVector(144.93406, -37.82457, 1.0)});
+
+          USampleHeightCallbackReceiver::Bind(
+              pAsync->OnHeightsSampled,
+              [this, done](
+                  const TArray<FCesiumSampleHeightResult>& result,
+                  const TArray<FString>& warnings) {
+                TestEqual("Number of results", result.Num(), 0);
+                TestEqual("Number of warnings", warnings.Num(), 1);
+                done.ExecuteIfBound();
+              });
+
+          pAsync->Activate();
         });
   });
 }
