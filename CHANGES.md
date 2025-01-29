@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
+- Worked around a limitation in Unreal's `FMatrix` -> `FTransform` conversion that caused models using a small scale factor (such as where vertex positions are expressed in millimeters) to fail to render because their scale was treated as 0.0.
 
 ### v2.12.0 - 2025-01-02
 
