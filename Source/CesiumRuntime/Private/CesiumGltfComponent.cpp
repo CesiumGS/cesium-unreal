@@ -2040,8 +2040,7 @@ static void loadInstancingData(
   for (int64_t i = 0; i < count; ++i) {
     glm::dmat4 unrealMat =
         yInvertMatrix * instanceTransforms[i] * yInvertMatrix;
-    auto unrealFMatrix = VecMath::createMatrix(unrealMat);
-    result.InstanceTransforms[i].SetFromMatrix(unrealFMatrix);
+    result.InstanceTransforms[i] = VecMath::createTransform(unrealMat);
   }
   if (pInstanceFeatures) {
     result.pInstanceFeatures =

@@ -5,6 +5,7 @@
 #include "CesiumUtility/Math.h"
 #include "Math/Quat.h"
 #include "Math/RotationMatrix.h"
+#include <CesiumGeometry/Transforms.h>
 #include <glm/gtc/quaternion.hpp>
 
 glm::dmat4 VecMath::createMatrix4D(const FMatrix& m) noexcept {
@@ -121,6 +122,22 @@ FMatrix VecMath::createMatrix(const glm::dmat4& m) noexcept {
       FVector(m[1].x, m[1].y, m[1].z),
       FVector(m[2].x, m[2].y, m[2].z),
       FVector(m[3].x, m[3].y, m[3].z));
+}
+
+FTransform VecMath::createTransform(const glm::dmat4& m) noexcept {
+  glm::dvec3 translation;
+  glm::dquat rotation;
+  glm::dvec3 scale;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      m,
+      &translation,
+      &rotation,
+      &scale);
+
+  return FTransform(
+      VecMath::createQuaternion(rotation),
+      VecMath::createVector(translation),
+      VecMath::createVector(scale));
 }
 
 FMatrix VecMath::createMatrix(const glm::dmat3& m) noexcept {

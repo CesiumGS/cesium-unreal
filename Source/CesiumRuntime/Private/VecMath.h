@@ -142,11 +142,22 @@ public:
 
   /**
    * @brief Create a `FMatrix` from the given `glm` matrix.
+   * 
+   * If the ultimate goal is to create an `FTransform`, use
+   * {@link createTransform} instead.
    *
    * @param m The `glm` matrix.
    * @return The `FMatrix`.
    */
   static FMatrix createMatrix(const glm::dmat4& m) noexcept;
+
+  /**
+   * @brief Create a `FTransform` from the given `glm` matrix.
+   * 
+   * @param m The `glm` matrix.
+   * @return The `FTransform`.
+   */
+  static FTransform createTransform(const glm::dmat4& m) noexcept;
 
   /**
    * @brief Create a `FMatrix` from the given `glm` columns

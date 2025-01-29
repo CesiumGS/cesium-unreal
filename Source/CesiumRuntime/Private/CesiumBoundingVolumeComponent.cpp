@@ -120,8 +120,8 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusion(
 }
 
 void UCesiumBoundingVolumeComponent::_updateTransform() {
-  const FTransform transform = FTransform(
-      VecMath::createMatrix(this->_cesiumToUnreal * this->_tileTransform));
+  const FTransform transform =
+      VecMath::createTransform(this->_cesiumToUnreal * this->_tileTransform);
 
   this->SetRelativeTransform_Direct(transform);
   this->SetComponentToWorld(transform);
