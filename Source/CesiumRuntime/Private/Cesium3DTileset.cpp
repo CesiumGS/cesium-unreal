@@ -5,7 +5,6 @@
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/EllipsoidTilesetLoader.h"
-#include "Cesium3DTilesSelection/IPrepareRendererResources.h"
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
@@ -26,15 +25,12 @@
 #include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumIonClient/Connection.h"
-#include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
-#include "CesiumTextureUtility.h"
 #include "CesiumTileExcluder.h"
 #include "CesiumViewExtension.h"
 #include "Components/SceneCaptureComponent2D.h"
-#include "CreateGltfOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/SceneCapture2D.h"
@@ -43,7 +39,6 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "ExtensionImageAssetUnreal.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
@@ -51,6 +46,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "PixelFormat.h"
 #include "StereoRendering.h"
+#include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
@@ -814,252 +810,6 @@ void ACesium3DTileset::NotifyHit(
   // std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
 
-class UnrealResourcePreparer
-    : public Cesium3DTilesSelection::IPrepareRendererResources {
-public:
-  UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
-
-  virtual CesiumAsync::Future<
-      Cesium3DTilesSelection::TileLoadResultAndRenderResources>
-  prepareInLoadThread(
-      const CesiumAsync::AsyncSystem& asyncSystem,
-      Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
-      const glm::dmat4& transform,
-      const std::any& rendererOptions) override {
-    CreateGltfOptions::CreateModelOptions options(std::move(tileLoadResult));
-    if (!options.pModel) {
-      return asyncSystem.createResolvedFuture(
-          Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-              std::move(options.tileLoadResult),
-              nullptr});
-    }
-
-    options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
-    options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
-
-    options.ignoreKhrMaterialsUnlit =
-        this->_pActor->GetIgnoreKhrMaterialsUnlit();
-
-    if (this->_pActor->_featuresMetadataDescription) {
-      options.pFeaturesMetadataDescription =
-          &(*this->_pActor->_featuresMetadataDescription);
-    } else if (this->_pActor->_metadataDescription_DEPRECATED) {
-      options.pEncodedMetadataDescription_DEPRECATED =
-          &(*this->_pActor->_metadataDescription_DEPRECATED);
-    }
-
-    const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
-
-    CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
-        pHalfFuture = UCesiumGltfComponent::CreateOffGameThread(
-            asyncSystem,
-            transform,
-            std::move(options),
-            ellipsoid);
-
-    return MoveTemp(pHalfFuture)
-        .thenImmediately(
-            [](UCesiumGltfComponent::CreateOffGameThreadResult&& result)
-                -> Cesium3DTilesSelection::TileLoadResultAndRenderResources {
-              return Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-                  std::move(result.TileLoadResult),
-                  result.HalfConstructed.Release()};
-            });
-  }
-
-  virtual void* prepareInMainThread(
-      Cesium3DTilesSelection::Tile& tile,
-      void* pLoadThreadResult) override {
-    Cesium3DTilesSelection::TileContent& content = tile.getContent();
-    if (content.isRenderContent()) {
-      TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
-          reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
-              pLoadThreadResult));
-      Cesium3DTilesSelection::TileRenderContent& renderContent =
-          *content.getRenderContent();
-      return UCesiumGltfComponent::CreateOnGameThread(
-          renderContent.getModel(),
-          this->_pActor,
-          std::move(pHalf),
-          _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
-          this->_pActor->GetMaterial(),
-          this->_pActor->GetTranslucentMaterial(),
-          this->_pActor->GetWaterMaterial(),
-          this->_pActor->GetCustomDepthParameters(),
-          tile,
-          this->_pActor->GetCreateNavCollision());
-    }
-    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
-    return nullptr;
-  }
-
-  virtual void free(
-      Cesium3DTilesSelection::Tile& tile,
-      void* pLoadThreadResult,
-      void* pMainThreadResult) noexcept override {
-    if (pLoadThreadResult) {
-      UCesiumGltfComponent::HalfConstructed* pHalf =
-          reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
-              pLoadThreadResult);
-      delete pHalf;
-    } else if (pMainThreadResult) {
-      UCesiumGltfComponent* pGltf =
-          reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
-      CesiumLifetime::destroyComponentRecursively(pGltf);
-    }
-  }
-
-  virtual void* prepareRasterInLoadThread(
-      CesiumGltf::ImageAsset& image,
-      const std::any& rendererOptions) override {
-    auto ppOptions =
-        std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
-    check(ppOptions != nullptr && *ppOptions != nullptr);
-    if (ppOptions == nullptr || *ppOptions == nullptr) {
-      return nullptr;
-    }
-
-    auto pOptions = *ppOptions;
-
-    if (pOptions->useMipmaps) {
-      std::optional<std::string> errorMessage =
-          CesiumGltfReader::ImageDecoder::generateMipMaps(image);
-      if (errorMessage) {
-        UE_LOG(
-            LogCesium,
-            Warning,
-            TEXT("%s"),
-            UTF8_TO_TCHAR(errorMessage->c_str()));
-      }
-    }
-
-    // TODO: sRGB should probably be configurable on the raster overlay.
-    bool sRGB = true;
-
-    const ExtensionImageAssetUnreal& extension =
-        ExtensionImageAssetUnreal::getOrCreate(
-            CesiumAsync::AsyncSystem(nullptr), // TODO
-            image,
-            sRGB,
-            pOptions->useMipmaps,
-            std::nullopt);
-
-    // Because raster overlay images are never shared (at least currently!), the
-    // future should already be resolved by the time we get here.
-    check(extension.getFuture().isReady());
-
-    auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        image,
-        TextureAddress::TA_Clamp,
-        TextureAddress::TA_Clamp,
-        pOptions->filter,
-        pOptions->useMipmaps,
-        pOptions->group,
-        sRGB,
-        std::nullopt);
-
-    return texture.Release();
-  }
-
-  virtual void* prepareRasterInMainThread(
-      CesiumRasterOverlays::RasterOverlayTile& rasterTile,
-      void* pLoadThreadResult) override {
-    TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
-        static_cast<CesiumTextureUtility::LoadedTextureResult*>(
-            pLoadThreadResult)};
-
-    if (!pLoadedTexture) {
-      return nullptr;
-    }
-
-    CesiumUtility::IntrusivePointer<
-        CesiumTextureUtility::ReferenceCountedUnrealTexture>
-        pTexture = CesiumTextureUtility::loadTextureGameThreadPart(
-            pLoadedTexture.Get());
-    if (!pTexture) {
-      return nullptr;
-    }
-
-    // Don't let this ReferenceCountedUnrealTexture be destroyed when the
-    // intrusive pointer goes out of scope.
-    pTexture->addReference();
-    return pTexture.get();
-  }
-
-  virtual void freeRaster(
-      const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
-      void* pLoadThreadResult,
-      void* pMainThreadResult) noexcept override {
-    if (pLoadThreadResult) {
-      CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
-          static_cast<CesiumTextureUtility::LoadedTextureResult*>(
-              pLoadThreadResult);
-      delete pLoadedTexture;
-    }
-
-    if (pMainThreadResult) {
-      CesiumTextureUtility::ReferenceCountedUnrealTexture* pTexture =
-          static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
-              pMainThreadResult);
-      pTexture->releaseReference();
-    }
-  }
-
-  virtual void attachRasterInMainThread(
-      const Cesium3DTilesSelection::Tile& tile,
-      int32_t overlayTextureCoordinateID,
-      const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
-      void* pMainThreadRendererResources,
-      const glm::dvec2& translation,
-      const glm::dvec2& scale) override {
-    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
-    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        content.getRenderContent();
-    if (pMainThreadRendererResources != nullptr && pRenderContent != nullptr) {
-      UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(
-              pRenderContent->getRenderResources());
-      if (pGltfContent) {
-        pGltfContent->AttachRasterTile(
-            tile,
-            rasterTile,
-            static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
-                pMainThreadRendererResources)
-                ->getUnrealTexture(),
-            translation,
-            scale,
-            overlayTextureCoordinateID);
-      }
-    }
-  }
-
-  virtual void detachRasterInMainThread(
-      const Cesium3DTilesSelection::Tile& tile,
-      int32_t overlayTextureCoordinateID,
-      const CesiumRasterOverlays::RasterOverlayTile& rasterTile,
-      void* pMainThreadRendererResources) noexcept override {
-    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
-    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        content.getRenderContent();
-    if (pRenderContent) {
-      UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(
-              pRenderContent->getRenderResources());
-      if (pMainThreadRendererResources != nullptr && pGltfContent != nullptr) {
-        pGltfContent->DetachRasterTile(
-            tile,
-            rasterTile,
-            static_cast<CesiumTextureUtility::ReferenceCountedUnrealTexture*>(
-                pMainThreadRendererResources)
-                ->getUnrealTexture());
-      }
-    }
-  }
-
-private:
-  ACesium3DTileset* _pActor;
-};
-
 void ACesium3DTileset::UpdateLoadStatus() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateLoadStatus)
 
@@ -1220,7 +970,7 @@ void ACesium3DTileset::LoadTileset() {
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
-      std::make_shared<UnrealResourcePreparer>(this),
+      std::make_shared<UnrealPrepareRendererResources>(this),
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),

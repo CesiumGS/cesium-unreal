@@ -1114,7 +1114,7 @@ public:
 
   /**
    * This method is not supposed to be called by clients. It is currently
-   * only required by the UnrealResourcePreparer.
+   * only required by the UnrealPrepareRendererResources.
    *
    * @internal
    * See {@link
@@ -1314,6 +1314,6 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
-  friend class UnrealResourcePreparer;
+  friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
 };
