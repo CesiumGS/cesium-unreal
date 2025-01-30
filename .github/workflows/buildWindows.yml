@@ -108,7 +108,7 @@ jobs:
           $env:VCPKG_ROOT="$env:VCPKG_INSTALLATION_ROOT"
           $env:CESIUM_TOOLSET_VERSION="${{ inputs.cmake-toolchain }}"
           if ($env:CESIUM_TOOLSET_VERSION) {
-            cmake -B build -S . -T "version=${{ inputs.cmake-toolchain}" -A "${{ inputs.cmake-platform }}" --preset Windows-CI-Versioned
+            cmake -B build -S . -T "version=${{ inputs.cmake-toolchain}}" -A "${{ inputs.cmake-platform }}" --preset Windows-CI-Versioned
           }
           else {
             cmake -B build -S . -A "${{ inputs.cmake-platform }}" -preset Windows-CI
