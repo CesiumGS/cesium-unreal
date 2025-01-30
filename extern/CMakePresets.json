@@ -43,10 +43,6 @@
     {
       "name": "Windows-CI-Versioned",
       "inherits": "Windows-CI",
-      "toolset": {
-        "value": "version=$penv{CESIUM_TOOLSET_VERSION}",
-        "strategy": "set"
-      },
       "environment": {
         "CESIUM_TOOLSET_VERSION": "$penv{CESIUM_TOOLSET_VERSION}"
       }
