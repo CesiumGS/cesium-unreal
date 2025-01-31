@@ -5,8 +5,8 @@
 ##### Additions :tada:
 
 - Added `CesiumUrlTemplateRasterOverlay`, allowing a raster overlay to be added using tiles requested based on a specified URL template.
-- Added `UpdateTimeZoneFromLongitude` method to `ACesiumSunSky` to naively update the `ACesiumSunSky`'s `TimeZone` property based on a given longitude.
-- The "Place Georeference Origin Here" button on `ACesiumGeoreference` will now update the time zone of any `ACesiumSunSky` instances using that georeference based on the new origin's longitude.
+- Added `EstimateTimeZoneForLongitude` method to `ACesiumSunSky` to set a reasonable `TimeZone` value at the given longitude.
+- The "Place Georeference Origin Here" button on `ACesiumGeoreference` will now adjust the time zone of the `ACesiumSunSky` instances that reference it, based on the new origin's longitude. This improves user experience when moving the origin to locations where it would be nighttime in the current time zone.
 - Added `RequestHeaders` property to `Cesium3DTileset`, allowing per-tileset headers to be specified.
 - Added `RequestHeaders` properties to `CesiumTileMapServiceRasterOverlay`, `CesiumUrlTemplateRasterOverlay`, `CesiumWebMapServiceRasterOverlay`,
   and `CesiumWebMapTileServiceRasterOverlay`, allowing per-raster-overlay HTTP headers to be specified.

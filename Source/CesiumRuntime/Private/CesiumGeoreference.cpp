@@ -431,8 +431,10 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
   const double NewLongitude = this->GetOriginLongitude();
 
-  // Find all CesiumSunSky instances using this georeference and update their
-  // time zones based on the new origin.
+  // The georeference origin may have moved to a location across the world
+  // where it is nighttime in the currently set time zone. To improve user
+  // experience, we update the timezones of all the CesiumSunSky instances using
+  // this georeference so that the view is not completely dark.
   for (TActorIterator<ACesiumSunSky> It(pWorld); It; ++It) {
     if (!IsValid(It->GlobeAnchor)) {
       continue;
@@ -441,7 +443,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
     ACesiumGeoreference* ResolvedGeoreference =
         It->GlobeAnchor->GetResolvedGeoreference();
     if (IsValid(ResolvedGeoreference) && ResolvedGeoreference == this) {
-      It->UpdateTimeZoneFromLongitude(NewLongitude);
+      It->EstimateTimeZoneForLongitude(NewLongitude);
     }
   }
 }
