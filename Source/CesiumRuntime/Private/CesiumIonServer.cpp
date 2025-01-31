@@ -15,6 +15,11 @@
 #include "FileHelpers.h"
 #endif
 
+const FString DISPLAY_NAME = TEXT("ion.cesium.com");
+const FString SERVER_URL = TEXT("https://ion.cesium.com");
+const FString API_URL = TEXT("https://api.cesium.com");
+const int64 OAUTH_APP_ID = 190;
+
 /*static*/ UCesiumIonServer* UCesiumIonServer::_pDefaultForNewObjects = nullptr;
 
 /*static*/ UCesiumIonServer* UCesiumIonServer::GetDefaultServer() {
@@ -35,16 +40,28 @@
         nullptr,
         GWarn));
 
-    Server->DisplayName = TEXT("ion.cesium.com");
-    Server->ServerUrl = TEXT("https://ion.cesium.com");
-    Server->ApiUrl = TEXT("https://api.cesium.com");
-    Server->OAuth2ApplicationID = 190;
+    Server->DisplayName = DISPLAY_NAME;
+    Server->ServerUrl = SERVER_URL;
+    Server->ApiUrl = API_URL;
+    Server->OAuth2ApplicationID = OAUTH_APP_ID;
 
     FAssetRegistryModule::AssetCreated(Server);
 
     Package->FullyLoad();
     Package->SetDirtyFlag(true);
     UEditorLoadingAndSavingUtils::SavePackages({Package}, true);
+  }
+#else
+  if (!IsValid(Server)) {
+    Server = NewObject<UCesiumIonServer>(
+        UCesiumIonServer::StaticClass(),
+        "CesiumIonSaaS",
+        RF_Public | RF_Standalone | RF_Transactional);
+
+    Server->DisplayName = DISPLAY_NAME;
+    Server->ServerUrl = SERVER_URL;
+    Server->ApiUrl = API_URL;
+    Server->OAuth2ApplicationID = OAUTH_APP_ID;
   }
 #endif
 
