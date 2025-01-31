@@ -8,26 +8,65 @@ The implementation of [ITaskProcessor](\ref CesiumAsync::ITaskProcessor) for Unr
 
 ## IAssetAccessor
 
-`UnrealAssetAccessor` implements [IAssetAccessor](\ref CesiumAsync::IAssetAccessor) using Unreal's `HttpModule`. While this is largely straightforward and it has served us well overall, it has also been a source of numerous quirks and performance problem.
+`UnrealAssetAccessor` implements [IAssetAccessor](\ref CesiumAsync::IAssetAccessor) using Unreal's `HttpModule`. While this is largely straightforward and it has served us well overall, it has also been a source of quirks and performance problems.
 
-#### File URLS
+##### File URLS
 
-While Unreal's HttpModule uses [libcurl](https://curl.se/libcurl/) under the hood, the developers have chosen to disable libcurl's support for `file:///` URLs. Because our users frequently want to access 3D Tiles tileset from the local file system, we have implemented custom support for file URLs in our asset accessor. It uses Unreal's `FFileHelper::LoadFileToArray` to read files, running in the `GIOThreadPool`.
+Unreal's HttpModule uses [libcurl](https://curl.se/libcurl/) under the hood, but the developers have chosen to disable libcurl's support for `file:///` URLs. Because our users frequently want to access 3D Tiles tileset from the local file system (in addition to the web), we have implemented custom support for file URLs in our asset accessor. It uses Unreal's `FFileHelper::LoadFileToArray` to read files, running in the `GIOThreadPool`.
 
-#### Configuration Parameters
+##### Configuration Parameters
 
-The Cesium for Unreal plugin includes `Config/Engine.ini` and `Config/Editor.ini` files to configure various aspects of Unreal's HTTP request system. See the comments in those files for an explanation of what we're changing and why. Without these tweaks, Unreal would spam the Output Log, complaining about Cesium making too many network requests, and the time to download 3D Tiles files would be much longer.
+The Cesium for Unreal plugin includes `Config/Engine.ini` and `Config/Editor.ini` files to configure various aspects of Unreal's HTTP request system. See the comments in those files for an explanation of what we're changing and why. Without these tweaks, Unreal would spam the Output Log, complaining about Cesium making too many network requests. The time to download 3D Tiles files would also be much longer.
 
 ## IPrepareRendererResources
 
 The implementation of the [IPrepareRendererResources](\ref Cesium3DTilesSelection::IPrepareRendererResources) interface in `UnrealPrepareRendererResources` is the heart of Cesium for Unreal. It is responsible for creating Unreal objects from 3D Tiles glTFs so that they can be rendered and interacted-with in Unreal Engine.
 
-The major `UObject` classes involved in 3D Tiles rendering, and their inheritance relationships, are shown in the class diagram below. The types built into Unreal Engine are shown in a different color.
+The major `UObject` classes involved in 3D Tiles rendering, and their inheritance relationships, are shown in the class diagram below. The types built into Unreal Engine are shown in a different color from the ones provided with Cesium for Unreal.
 
 @mermaid{classes-for-3d-tiles}
 
-These, along with `UStaticMesh`, `UMaterialInstanceDynamic` and `UTexture2D` instances, are created in the course of loading 3D Tiles. Unreal Engine usually requires that these `UObject`-derived classes be created in the game thread.
+* `ACesium3DTileset`: The Actor responsible for loading a 3D Tiles tileset. On each `Tick`, it calls Cesium Native's [updateView](\ref Cesium3DTilesSelection::Tileset::updateView).
+* `UCesiumGltfComponent`: Represents a single 3D Tiles tile. A `ACesium3DTileset` will have many `UCesiumGltfComponent` instances attached to it, one for each tile that is currently loaded.
+* `UCesiumGltfPrimitiveComponent`: Represents a single [MeshPrimitive](\ref CesiumGltf::MeshPrimitive) within a single 3D Tiles tile (glTF). A `UCesiumGltfComponent` will usually have one or more `UCesiumGltfPrimitiveComponent` instances attached to it.
+* `UCesiumGltfPointsComponent`: A more specific type of `UCesiumGltfPrimitiveComponent` that is used when the `MeshPrimitive` uses the [POINTS](\ref CesiumGltf::MeshPrimitive::Mode::POINTS) mode. That is, when it is a point cloud.
+* `UCesiumGltfInstancedComponent`: An alternate representation of a glTF `MeshPrimitive` that is used when multiple copies of the mesh are rendered under the direction of the [EXT_gpu_insta`ncing](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Vendor/EXT_mesh_gpu_instancing) extension.
+
+Instances of `UCesiumGltfComponent`, `UCesiumGltfInstancedComponent`, and `UCesiumGltfPointsComponent`, along with accompanying `UStaticMesh`, `UMaterialInstanceDynamic`, and `UTexture2D` instances, are created by `UnrealPrepareRendererResources` as 3D Tiles are loaded. These `UObject`-derived classes are created on the game thread. Game thread time is a limited resource in most Unreal Engine applications, though, so we strive to do as much of the loading work as possible in background threads.
+
+For that reason, Cesium for Unreal takes advantage of the separate [prepareInLoadThread](\ref Cesium3DTilesSelection::IPrepareRendererResources::prepareInLoadThread) and [prepareInMainThread](\ref Cesium3DTilesSelection::IPrepareRendererResources::prepareInMainThread) methods on `IPrepareRendererResources`.
 
 > [!note]
 > Recent versions of Unreal Engine reportedly do allow creating UObjects in background threads, probably with some significant caveats. In the future, we should consider whether the relaxation of this limitation allows us to improve our design or performance.
+
+In `prepareInLoadThread`, Cesium for Unreal receives a [Model](\ref CesiumGltf::Model) from Cesium Native and creates from it a `LoadedModelResult`. This struct holds a representation of the model that is as close to "fully renderable in Unreal Engine" as we can manage without creating any `UObjects`:
+
+* Normals and tangents are generated, if required.
+* Texture MipMaps are generated, if required.
+* Physics meshes are generated, if required.
+* Mesh vertex and index data for each `MeshPrimitive` are copied into an instance of Unreal's `FStaticMeshRenderData`.
+* An `FCesiumTextureResource` is created for each texture. This class is derived from Unreal's `FTextureResource` and is Unreal's low-level, render-thread representation of a texture.
+* Feature IDs and metadata that are made available to a material via the [UCesiumEncodedMetadataComponent](\ref UCesiumEncodedMetadataComponent) are turned into additional textures.
+
+Then, in `prepareInMainThread`, we receive the `LoadedModelResult` produced above, and create all of the `UObject` instances from it, avoiding as much as possible copying or transforming any data.
+
+### Multithreaded Texture Creation
+
+Textures are often the largest part of a 3D Tiles tileset, especially for real-world, photogrammetry-derived models. So, Cesium for Unreal takes great pains to:
+
+1. Avoid keeping multiple copies of a texture in CPU or GPU memory.
+2. Avoid copying texture data unnecessarily, even if it's only held temporarily.
+3. Create renderable textures on the GPU without using any more game thread or render thread time than is absolutely necessary.
+
+To that end, Cesium for Unreal's texture creation system uses some low-level, largely undocumented parts of the Unreal Engine API. This is made trickier by the fact that a single image may have multiple purposes within a glTF, or it may be shared across multiple glTF tiles in a 3D Tiles tileset.
+
+Textures are created near the start of `prepareInLoadThread` with calls to `ExtensionImageAssetUnreal::getOrCreate`. This method expects that multiple threads may call it simultaneously on a single [ImageAsset](\ref CesiumGltf::ImageAsset). This happens when the two threads are loading two different tiles that happen to share a single image. It uses a mutex to ensure that only the first thread adds an `ExtensionImageAssetUnreal` and then proceeds to load the image. Any other threads will instead get the existing `ExtensionImageAssetUnreal`, which includes a [SharedFuture](\ref CesiumAsync::SharedFuture) that will resolve when the first thread has finished loading the image.
+
+This system ensures that a) only one thread loads the image, and b) other threads can asynchronously wait for the image to be loaded, without blocking any threads while they're waiting.
+
+The thread that is doing the actual loading will create a new instance of `FCesiumTextureResource` for the `ImageAsset` by transferring its [pixelData](\ref CesiumGltf::ImageAsset::pixelData) buffer into the resource. For Unreal Render Hardware Interfaces (RHI) that support asynchronous texture upload (`GRHISupportsAsyncTextureCreation` is set), which is currently only DirectX 11 and 12, the GPU upload will happen immediately under the control of the worker thread by calling `RHIAsyncCreateTexture2D`. For RHIs that don't support async texture upload, a command will be queued to the render thread to do the texture upload by calling `RHICreateTexture`. In either case, the CPU-side pixel data, which is now owned by the `FCesiumTextureResource`, is freed once the GPU upload is complete.
+
+In Unreal Engine, an `FTextureResource` encapsulates both the GPU texture resource (represented as `FRHITexture`), but also details such as the sampling mode (nearest, linear, mipmaps), as well as whether or not to treat it as sRGB. This is unfortunate because we would like to have just one copy of each set of pixel data, even if that pixel data happens to be sampled differently when it's used in different contexts. Fortunately, we can create multiple `FTextureResource` instances that reference a single `FRHITexture` via reference counting.
+
+For simplicity, we always do this. The initial `FCesiumTextureResource` that is created can be viewed as a representation of the glTF [Image](\ref CesiumGltf::Image). Then, we create another `FCesiumTextureResource` (specifically, `FCesiumUseExistingTextureResource`) for each glTF [Texture](\ref CesiumGltf::Texture). The latter wraps the former, and brings the sampler settings that are appropriate for the context.
 
