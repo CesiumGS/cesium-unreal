@@ -64,9 +64,14 @@ Textures are created near the start of `prepareInLoadThread` with calls to `Exte
 
 This system ensures that a) only one thread loads the image, and b) other threads can asynchronously wait for the image to be loaded, without blocking any threads while they're waiting.
 
-The thread that is doing the actual loading will create a new instance of `FCesiumTextureResource` for the `ImageAsset` by transferring its [pixelData](\ref CesiumGltf::ImageAsset::pixelData) buffer into the resource. For Unreal Render Hardware Interfaces (RHI) that support asynchronous texture upload (`GRHISupportsAsyncTextureCreation` is set), which is currently only DirectX 11 and 12, the GPU upload will happen immediately under the control of the worker thread by calling `RHIAsyncCreateTexture2D`. For RHIs that don't support async texture upload, a command will be queued to the render thread to do the texture upload by calling `RHICreateTexture`. In either case, the CPU-side pixel data, which is now owned by the `FCesiumTextureResource`, is freed once the GPU upload is complete.
+The thread that is doing the actual loading will create a new instance of a class derived from `FCesiumTextureResource` for the `ImageAsset`.
+
+@mermaid{texture-resource-classes}
+
+For Unreal Render Hardware Interfaces (RHI) that support asynchronous texture upload (`GRHISupportsAsyncTextureCreation` is set), which is currently only Direct3D 11 and 12, the instance will be of type `FCesiumPreCreatedRHITextureResource`. The GPU upload will happen immediately under the control of the worker thread with a call to `RHIAsyncCreateTexture2D`.
+
+For RHIs that don't support async texture upload, the new instance will be of type `FCesiumCreateNewTextureResource` and a command will be queued to the render thread to do the texture upload with a call to `RHICreateTexture`. In either case, the CPU-side pixel data, which is now owned by the `FCesiumTextureResource`, is freed once the GPU upload is complete.
 
 In Unreal Engine, an `FTextureResource` encapsulates both the GPU texture resource (represented as `FRHITexture`), but also details such as the sampling mode (nearest, linear, mipmaps), as well as whether or not to treat it as sRGB. This is unfortunate because we would like to have just one copy of each set of pixel data, even if that pixel data happens to be sampled differently when it's used in different contexts. Fortunately, we can create multiple `FTextureResource` instances that reference a single `FRHITexture` via reference counting.
 
-For simplicity, we always do this. The initial `FCesiumTextureResource` that is created can be viewed as a representation of the glTF [Image](\ref CesiumGltf::Image). Then, we create another `FCesiumTextureResource` (specifically, `FCesiumUseExistingTextureResource`) for each glTF [Texture](\ref CesiumGltf::Texture). The latter wraps the former, and brings the sampler settings that are appropriate for the context.
-
+For simplicity, we always do this, even when there is no sharing. The initial `FCesiumTextureResource` that is created can be viewed as a representation of the glTF [Image](\ref CesiumGltf::Image). Then, we create an instance of `FCesiumUseExistingTextureResource` for each glTF [Texture](\ref CesiumGltf::Texture). The `FCesiumUseExistingTextureResource` wraps the `FCesiumCreateNewTextureResource` or `FCesiumPreCreatedRHITextureResource` instance created previously and brings the sampler settings that are appropriate for the context.
