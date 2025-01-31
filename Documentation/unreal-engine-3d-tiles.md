@@ -10,7 +10,7 @@ The implementation of [ITaskProcessor](\ref CesiumAsync::ITaskProcessor) for Unr
 
 `UnrealAssetAccessor` implements [IAssetAccessor](\ref CesiumAsync::IAssetAccessor) using Unreal's `HttpModule`. While this is largely straightforward and it has served us well overall, it has also been a source of quirks and performance problems.
 
-##### File URLS
+##### File URLs
 
 Unreal's HttpModule uses [libcurl](https://curl.se/libcurl/) under the hood, but the developers have chosen to disable libcurl's support for `file:///` URLs. Because our users frequently want to access 3D Tiles tileset from the local file system (in addition to the web), we have implemented custom support for file URLs in our asset accessor. It uses Unreal's `FFileHelper::LoadFileToArray` to read files, running in the `GIOThreadPool`.
 
@@ -30,7 +30,7 @@ The major `UObject` classes involved in 3D Tiles rendering, and their inheritanc
 * `UCesiumGltfComponent`: Represents a single 3D Tiles tile. A `ACesium3DTileset` will have many `UCesiumGltfComponent` instances attached to it, one for each tile that is currently loaded.
 * `UCesiumGltfPrimitiveComponent`: Represents a single [MeshPrimitive](\ref CesiumGltf::MeshPrimitive) within a single 3D Tiles tile (glTF). A `UCesiumGltfComponent` will usually have one or more `UCesiumGltfPrimitiveComponent` instances attached to it.
 * `UCesiumGltfPointsComponent`: A more specific type of `UCesiumGltfPrimitiveComponent` that is used when the `MeshPrimitive` uses the [POINTS](\ref CesiumGltf::MeshPrimitive::Mode::POINTS) mode. That is, when it is a point cloud.
-* `UCesiumGltfInstancedComponent`: An alternate representation of a glTF `MeshPrimitive` that is used when multiple copies of the mesh are rendered under the direction of the [EXT_gpu_insta`ncing](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Vendor/EXT_mesh_gpu_instancing) extension.
+* `UCesiumGltfInstancedComponent`: An alternate representation of a glTF `MeshPrimitive` that is used when multiple copies of the mesh are rendered under the direction of the [EXT_gpu_instancing](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Vendor/EXT_mesh_gpu_instancing) extension.
 
 Instances of `UCesiumGltfComponent`, `UCesiumGltfInstancedComponent`, and `UCesiumGltfPointsComponent`, along with accompanying `UStaticMesh`, `UMaterialInstanceDynamic`, and `UTexture2D` instances, are created by `UnrealPrepareRendererResources` as 3D Tiles are loaded. These `UObject`-derived classes are created on the game thread. Game thread time is a limited resource in most Unreal Engine applications, though, so we strive to do as much of the loading work as possible in background threads.
 
