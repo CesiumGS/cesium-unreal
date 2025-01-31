@@ -16,13 +16,25 @@ UCesiumSampleHeightMostDetailedAsyncAction::SampleHeightMostDetailed(
 }
 
 void UCesiumSampleHeightMostDetailedAsyncAction::Activate() {
-  this->RegisterWithGameInstance(this->_pTileset);
+  if (!IsValid(this->_pTileset)) {
+    TArray<FString> Warnings;
+    Warnings.Push(TEXT(
+        "Invalid Tileset parameter passed to UCesiumSampleHeightMostDetailedAsyncAction, returning no results"));
 
-  this->_pTileset->SampleHeightMostDetailed(
-      this->_longitudeLatitudeHeightArray,
-      FCesiumSampleHeightMostDetailedCallback::CreateUObject(
-          this,
-          &UCesiumSampleHeightMostDetailedAsyncAction::RaiseOnHeightsSampled));
+    this->RaiseOnHeightsSampled(
+        this->_pTileset,
+        TArray<FCesiumSampleHeightResult>(),
+        Warnings);
+  } else {
+    this->RegisterWithGameInstance(this->_pTileset);
+
+    this->_pTileset->SampleHeightMostDetailed(
+        this->_longitudeLatitudeHeightArray,
+        FCesiumSampleHeightMostDetailedCallback::CreateUObject(
+            this,
+            &UCesiumSampleHeightMostDetailedAsyncAction::
+                RaiseOnHeightsSampled));
+  }
 }
 
 void UCesiumSampleHeightMostDetailedAsyncAction::RaiseOnHeightsSampled(

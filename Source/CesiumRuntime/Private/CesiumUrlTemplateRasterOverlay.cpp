@@ -55,10 +55,18 @@ UCesiumUrlTemplateRasterOverlay::CreateOverlay(
         RootTilesY);
   }
 
+  std::vector<CesiumAsync::IAssetAccessor::THeader> headers;
+
+  for (const auto& [Key, Value] : this->RequestHeaders) {
+    headers.push_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
+  }
+
   return std::make_unique<CesiumRasterOverlays::UrlTemplateRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       TCHAR_TO_UTF8(*this->TemplateUrl),
-      std::vector<CesiumAsync::IAssetAccessor::THeader>(),
+      headers,
       urlTemplateOptions,
       options);
 }

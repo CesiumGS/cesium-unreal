@@ -5,11 +5,16 @@
 ##### Additions :tada:
 
 - Added `CesiumUrlTemplateRasterOverlay`, allowing a raster overlay to be added using tiles requested based on a specified URL template.
+- Added `RequestHeaders` property to `Cesium3DTileset`, allowing per-tileset headers to be specified.
+- Added `RequestHeaders` properties to `CesiumTileMapServiceRasterOverlay`, `CesiumUrlTemplateRasterOverlay`, `CesiumWebMapServiceRasterOverlay`,
+  and `CesiumWebMapTileServiceRasterOverlay`, allowing per-raster-overlay HTTP headers to be specified.
 
 ##### Fixes :wrench:
 
 - Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
-- Fixed crash in `UCesiumIonServer` if running in a packaged build where tilesets are only created at runtime.
+- Fixed a crash in `UCesiumIonServer` when running in a packaged build where tilesets are only created at runtime.
+- Worked around a limitation in Unreal's `FMatrix` -> `FTransform` conversion that prevented models with a small scale factor (e.g., where vertex positions are expressed in millimeters) from rendering because their scale was treated as 0.0.
+- Fixed a crash when calling `SampleHeightMostDetailed` blueprint function without a valid tileset.
 
 ### v2.12.0 - 2025-01-02
 
