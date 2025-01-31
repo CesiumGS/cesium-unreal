@@ -10,7 +10,7 @@
     "vcpkg-cmake",
     "vcpkg-cmake-config",
     "asyncplusplus",
-    "catch2",
+    "doctest",
     "expected-lite",
     "fmt",
     "glm",
