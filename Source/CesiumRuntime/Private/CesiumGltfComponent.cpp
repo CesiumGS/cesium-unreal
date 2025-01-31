@@ -91,7 +91,7 @@ static uint32_t nextMaterialId = 0;
 namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
-  LoadModelResult loadModelResult{};
+  LoadedModelResult loadModelResult{};
 };
 } // namespace
 
@@ -440,7 +440,7 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
 static void applyWaterMask(
     CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
-    LoadPrimitiveResult& primitiveResult) {
+    LoadedPrimitiveResult& primitiveResult) {
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
@@ -920,7 +920,7 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 static void loadPrimitiveFeaturesMetadata(
-    LoadPrimitiveResult& primitiveResult,
+    LoadedPrimitiveResult& primitiveResult,
     const CreatePrimitiveOptions& options,
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
@@ -973,7 +973,7 @@ static void loadPrimitiveFeaturesMetadata(
 
   const CreateGltfOptions::CreateModelOptions* pModelOptions =
       options.pMeshOptions->pNodeOptions->pModelOptions;
-  const LoadGltfResult::LoadModelResult* pModelResult =
+  const LoadGltfResult::LoadedModelResult* pModelResult =
       options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
 
   primitiveResult.Features =
@@ -1140,7 +1140,7 @@ constexpr glm::dmat4 yInvertMatrix = {
 
 template <class TIndexAccessor>
 static void loadPrimitive(
-    LoadPrimitiveResult& primitiveResult,
+    LoadedPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
@@ -1752,7 +1752,7 @@ static void loadPrimitive(
 }
 
 static void loadIndexedPrimitive(
-    LoadPrimitiveResult& primitiveResult,
+    LoadedPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
@@ -1815,7 +1815,7 @@ static void loadIndexedPrimitive(
 }
 
 static void loadPrimitive(
-    LoadPrimitiveResult& result,
+    LoadedPrimitiveResult& result,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
@@ -1872,7 +1872,7 @@ static void loadPrimitive(
 }
 
 static void loadMesh(
-    std::optional<LoadMeshResult>& result,
+    std::optional<LoadedMeshResult>& result,
     const glm::dmat4x4& transform,
     CreateMeshOptions& options,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
@@ -1882,7 +1882,7 @@ static void loadMesh(
   CesiumGltf::Model& model = *options.pNodeOptions->pModelOptions->pModel;
   CesiumGltf::Mesh& mesh = model.meshes[options.meshIndex];
 
-  result = LoadMeshResult();
+  result = LoadedMeshResult();
   result->primitiveResults.reserve(mesh.primitives.size());
   for (size_t i = 0; i < mesh.primitives.size(); i++) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, i};
@@ -1921,7 +1921,7 @@ inline constexpr bool is_int_quat_v = is_int_quat<T>::value;
 static void loadInstancingData(
     const CesiumGltf::Model& model,
     const CesiumGltf::Node& node,
-    LoadNodeResult& result,
+    LoadedNodeResult& result,
     const CesiumGltf::ExtensionExtMeshGpuInstancing* pGpuInstancing,
     const CesiumGltf::ExtensionExtInstanceFeatures* pInstanceFeatures) {
   auto getInstanceAccessor =
@@ -2050,7 +2050,7 @@ static void loadInstancingData(
 }
 
 static void loadNode(
-    std::vector<LoadNodeResult>& loadNodeResults,
+    std::vector<LoadedNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     CreateNodeOptions& options,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
@@ -2078,7 +2078,7 @@ static void loadNode(
   CesiumGltf::Model& model = *options.pModelOptions->pModel;
   const CesiumGltf::Node& node = *options.pNode;
 
-  LoadNodeResult& result = loadNodeResults.emplace_back();
+  LoadedNodeResult& result = loadNodeResults.emplace_back();
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -2201,8 +2201,9 @@ void applyGltfUpAxisTransform(
 
 } // namespace
 
-static void
-loadModelMetadata(LoadModelResult& result, const CreateModelOptions& options) {
+static void loadModelMetadata(
+    LoadedModelResult& result,
+    const CreateModelOptions& options) {
   CesiumGltf::Model& model = *options.pModel;
 
   CesiumGltf::ExtensionModelExtStructuralMetadata* pModelMetadata =
@@ -2365,7 +2366,7 @@ loadModelAnyThreadPart(
                     &options,
                     &pHalf->loadModelResult,
                     nullptr};
-                LoadNodeResult& dummyNodeResult =
+                LoadedNodeResult& dummyNodeResult =
                     pHalf->loadModelResult.nodeResults.emplace_back();
                 CreateMeshOptions meshOptions = {
                     &dummyNodeOptions,
@@ -2410,7 +2411,7 @@ bool applyTexture(
 
 static void SetGltfParameterValues(
     CesiumGltf::Model& model,
-    LoadPrimitiveResult& loadResult,
+    LoadedPrimitiveResult& loadResult,
     const CesiumGltf::Material& material,
     const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
@@ -2638,7 +2639,7 @@ static void SetGltfParameterValues(
 
 void SetWaterParameterValues(
     CesiumGltf::Model& model,
-    LoadPrimitiveResult& loadResult,
+    LoadedPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2668,7 +2669,7 @@ void SetWaterParameterValues(
 static void SetFeaturesMetadataParameterValues(
     const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
-    LoadPrimitiveResult& loadResult,
+    LoadedPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2749,7 +2750,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 static void SetMetadataParameterValues_DEPRECATED(
     const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
-    LoadPrimitiveResult& loadResult,
+    LoadedPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2953,7 +2954,7 @@ void addInstanceFeatureIds(
 static void loadPrimitiveGameThreadPart(
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
-    LoadPrimitiveResult& loadResult,
+    LoadedPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
@@ -3348,9 +3349,10 @@ UCesiumGltfComponent::CreateOffGameThread(
     encodeMetadataGameThreadPart(*Gltf->EncodedMetadata_DEPRECATED);
   }
 
-  for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
+  for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
-      for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
+      for (LoadedPrimitiveResult& primitive :
+           node.meshResult->primitiveResults) {
         loadPrimitiveGameThreadPart(
             model,
             Gltf,

@@ -37,13 +37,13 @@ namespace LoadGltfResult {
  *
  * This type is move-only due to the use of TUniquePtr.
  */
-struct LoadPrimitiveResult {
+struct LoadedPrimitiveResult {
 #pragma region Temporary render data
 
-  LoadPrimitiveResult(const LoadPrimitiveResult&) = delete;
+  LoadedPrimitiveResult(const LoadedPrimitiveResult&) = delete;
 
-  LoadPrimitiveResult() {}
-  LoadPrimitiveResult(LoadPrimitiveResult&& other) = default;
+  LoadedPrimitiveResult() {}
+  LoadedPrimitiveResult(LoadedPrimitiveResult&& other) = default;
 
   /**
    * The render data. This is populated so it can be set on the static mesh
@@ -158,26 +158,26 @@ struct LoadPrimitiveResult {
 /**
  * Represents the result of loading a glTF mesh on a game thread.
  */
-struct LoadMeshResult {
-  LoadMeshResult() {}
+struct LoadedMeshResult {
+  LoadedMeshResult() {}
 
-  LoadMeshResult(const LoadMeshResult&) = delete;
-  LoadMeshResult(LoadMeshResult&& other) = default;
-  LoadMeshResult& operator=(LoadMeshResult&& other) = default;
+  LoadedMeshResult(const LoadedMeshResult&) = delete;
+  LoadedMeshResult(LoadedMeshResult&& other) = default;
+  LoadedMeshResult& operator=(LoadedMeshResult&& other) = default;
 
-  std::vector<LoadPrimitiveResult> primitiveResults{};
+  std::vector<LoadedPrimitiveResult> primitiveResults{};
 };
 
 /**
  * Represents the result of loading a glTF node on a game thread.
  */
-struct LoadNodeResult {
-  LoadNodeResult() {}
+struct LoadedNodeResult {
+  LoadedNodeResult() {}
 
-  LoadNodeResult(const LoadNodeResult&) = delete;
-  LoadNodeResult(LoadNodeResult&& other) = default;
+  LoadedNodeResult(const LoadedNodeResult&) = delete;
+  LoadedNodeResult(LoadedNodeResult&& other) = default;
 
-  std::optional<LoadMeshResult> meshResult = std::nullopt;
+  std::optional<LoadedMeshResult> meshResult = std::nullopt;
   /**
    * Array of instance transforms, if any.
    */
@@ -195,8 +195,8 @@ struct LoadNodeResult {
  * Temporarily holds data that needs to be transferred to the corresponding
  * CesiumGltfComponent after it is created on the main thread.
  */
-struct LoadModelResult {
-  std::vector<LoadNodeResult> nodeResults{};
+struct LoadedModelResult {
+  std::vector<LoadedNodeResult> nodeResults{};
 
   // Parses the root EXT_structural_metadata extension.
   FCesiumModelMetadata Metadata{};
