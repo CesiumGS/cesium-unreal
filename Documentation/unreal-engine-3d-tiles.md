@@ -46,7 +46,7 @@ In `prepareInLoadThread`, Cesium for Unreal receives a [Model](\ref CesiumGltf::
 * Physics meshes are generated, if required.
 * Mesh vertex and index data for each `MeshPrimitive` are copied into an instance of Unreal's `FStaticMeshRenderData`.
 * An `FCesiumTextureResource` is created for each texture. This class is derived from Unreal's `FTextureResource` and is Unreal's low-level, render-thread representation of a texture.
-* Feature IDs and metadata that are made available to a material via the [UCesiumEncodedMetadataComponent](\ref UCesiumEncodedMetadataComponent) are turned into additional textures.
+* Feature IDs and metadata that are made available to a material via the [UCesiumFeaturesMetadataComponent](\ref UCesiumFeaturesMetadataComponent) are turned into additional textures.
 
 Then, in `prepareInMainThread`, we receive the `LoadedModelResult` produced above, and create all of the `UObject` instances from it, avoiding as much as possible copying or transforming any data.
 
