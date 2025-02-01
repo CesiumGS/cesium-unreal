@@ -1,18 +1,17 @@
-vcpkg_from_github(
+vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO KhronosGroup/KTX-Software
-    REF "v${VERSION}"
-    SHA512 5a89f8986464705ec36ac1becaddd0ff335e4c3c235468aaef0e963fcfeda4c0d669a086b91e61c16a3ae9e1fa5bf456dccf12cc65720e1a22e7cc0f30552541
-    HEAD_REF master
+    URL "https://github.com/KhronosGroup/KTX-Software.git"
+    REF 91ace88675ac59a97e55d0378a6602a9ae6b98bd
+    FETCH_REF "v${VERSION}"
+    HEAD_REF main
     PATCHES
         0001-Use-vcpkg-zstd.patch
         0002-Fix-versioning.patch
         0003-mkversion.patch
         0004-quirks.patch
         0005-no-vendored-libs.patch
+        0006-fix-ios-install.patch
         CESIUM-0001-do-not-define-_DEBUG.patch
-        CESIUM-0002-not-a-framework.patch
-        CESIUM-0003-ios-normal-header-path.patch
 )
 file(REMOVE "${SOURCE_PATH}/other_include/zstd_errors.h")
 
@@ -50,8 +49,6 @@ vcpkg_cmake_configure(
         -DKTX_FEATURE_STATIC_LIBRARY=${ENABLE_STATIC}
         ${FEATURE_OPTIONS}
         ${OPTIONS}
-        # Do not regenerate headers (needs more dependencies)
-        -DCMAKE_DISABLE_FIND_PACKAGE_Vulkan=1
     DISABLE_PARALLEL_CONFIGURE
 )
 

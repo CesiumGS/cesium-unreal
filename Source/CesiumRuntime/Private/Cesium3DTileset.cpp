@@ -381,6 +381,35 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   }
 }
 
+namespace {
+
+bool MapsAreEqual(
+    const TMap<FString, FString>& Lhs,
+    const TMap<FString, FString>& Rhs) {
+  if (Lhs.Num() != Rhs.Num()) {
+    return false;
+  }
+
+  for (const auto& [Key, Value] : Lhs) {
+    const FString* RhsVal = Rhs.Find(Key);
+    if (!RhsVal || *RhsVal != Value) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+} // namespace
+
+void ACesium3DTileset::SetRequestHeaders(
+    const TMap<FString, FString>& InRequestHeaders) {
+  if (!MapsAreEqual(InRequestHeaders, this->RequestHeaders)) {
+    this->DestroyTileset();
+    this->RequestHeaders = InRequestHeaders;
+  }
+}
+
 void ACesium3DTileset::SetUrl(const FString& InUrl) {
   if (InUrl != this->Url) {
     if (this->TilesetSource == ETilesetSource::FromUrl) {
@@ -1282,6 +1311,14 @@ void ACesium3DTileset::LoadTileset() {
       CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
 
   options.contentOptions.applyTextureTransform = false;
+
+  options.requestHeaders.reserve(this->RequestHeaders.Num());
+
+  for (const auto& [Key, Value] : this->RequestHeaders) {
+    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
+  }
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromEllipsoid:
@@ -2364,6 +2401,7 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Root) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CesiumIonServer) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RequestHeaders) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
