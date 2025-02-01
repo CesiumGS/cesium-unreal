@@ -117,10 +117,6 @@ ACesium3DTileset::ACesium3DTileset()
   this->Root = this->RootComponent;
 
   PlatformName = UGameplayStatics::GetPlatformName();
-
-#if WITH_EDITOR
-  bIsMac = PlatformName == TEXT("Mac");
-#endif
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
@@ -2471,6 +2467,15 @@ void ACesium3DTileset::PostEditImport() {
 
   // Recreate the tileset on Paste.
   this->DestroyTileset();
+}
+
+bool ACesium3DTileset::CanEditChange(const FProperty* InProperty) const {
+  if (InProperty->GetFName() ==
+      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask)) {
+    // Disable this option on Mac
+    return PlatformName != TEXT("Mac");
+  }
+  return true;
 }
 #endif
 

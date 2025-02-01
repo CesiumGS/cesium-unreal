@@ -860,8 +860,7 @@ private:
       EditAnywhere,
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
-      Category = "Cesium|Rendering",
-      meta = (EditCondition = "!bIsMac"))
+      Category = "Cesium|Rendering")
   bool EnableWaterMask = false;
 
   /**
@@ -954,11 +953,6 @@ private:
 protected:
   UPROPERTY()
   FString PlatformName;
-
-#if WITH_EDITORONLY_DATA
-  UPROPERTY()
-  bool bIsMac;
-#endif
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
@@ -1155,6 +1149,7 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
