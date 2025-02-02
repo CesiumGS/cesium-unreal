@@ -323,7 +323,7 @@ public:
  * boiler-plate material code to access the selected properties can be
  * auto-generated using the "Generate Material" button.
  */
-UCLASS(ClassGroup = Cesium, Meta = BlueprintSpawnableComponent)
+UCLASS(ClassGroup = Cesium, Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
     : public UActorComponent {
   GENERATED_BODY()
