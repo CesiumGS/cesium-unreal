@@ -43,7 +43,7 @@ class UCesiumSubLevelSwitcherComponent;
  * sub-level's "Load Radius" that sub-level will be activated. If multiple
  * sub-levels are in range, only the closest one will be activated.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
   GENERATED_BODY()
 

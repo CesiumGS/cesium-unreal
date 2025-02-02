@@ -11,7 +11,7 @@
  * A raster overlay that directly accesses a Web Map Service (WMS) server.
  * https://www.ogc.org/standards/wms
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumWebMapServiceRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()

@@ -12,7 +12,7 @@
  * you're using a Tile Map Service via Cesium ion, use the "Cesium ion Raster
  * Overlay" component instead.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumTileMapServiceRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()

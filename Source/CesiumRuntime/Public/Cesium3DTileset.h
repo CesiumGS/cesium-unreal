@@ -860,8 +860,7 @@ private:
       EditAnywhere,
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
-      Category = "Cesium|Rendering",
-      meta = (EditCondition = "!bIsMac"))
+      Category = "Cesium|Rendering")
   bool EnableWaterMask = false;
 
   /**
@@ -954,11 +953,6 @@ private:
 protected:
   UPROPERTY()
   FString PlatformName;
-
-#if WITH_EDITORONLY_DATA
-  UPROPERTY()
-  bool bIsMac;
-#endif
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
@@ -1114,7 +1108,7 @@ public:
 
   /**
    * This method is not supposed to be called by clients. It is currently
-   * only required by the UnrealResourcePreparer.
+   * only required by the UnrealPrepareRendererResources.
    *
    * @internal
    * See {@link
@@ -1155,6 +1149,7 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
@@ -1314,6 +1309,6 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
-  friend class UnrealResourcePreparer;
+  friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
 };

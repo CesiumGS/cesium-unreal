@@ -1,0 +1,21 @@
+---
+config:
+  class:
+    hideEmptyMembersBox: true
+---
+classDiagram
+direction TB
+    AActor <|-- ACesium3DTileset
+    USceneComponent <|-- UCesiumGltfComponent
+    USceneComponent <|-- UStaticMeshComponent
+    USceneComponent <|-- UInstancedStaticMeshComponent
+    ICesiumPrimitive <|-- UCesiumGltfInstancedComponent
+    UStaticMeshComponent <|-- UCesiumGltfPrimitiveComponent
+    ICesiumPrimitive <|-- UCesiumGltfPrimitiveComponent
+    UCesiumGltfPrimitiveComponent <|-- UCesiumGltfPointsComponent
+    UInstancedStaticMeshComponent <|-- UCesiumGltfInstancedComponent
+    class AActor:::unreal
+    class USceneComponent:::unreal
+    class UStaticMeshComponent:::unreal
+    class UInstancedStaticMeshComponent:::unreal
+    classDef unreal fill:#FFE9CE, color:#543410
