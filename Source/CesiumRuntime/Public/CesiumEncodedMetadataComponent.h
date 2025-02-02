@@ -267,6 +267,7 @@ struct CESIUMRUNTIME_API FMetadataDescription {
  * "Auto Fill" button. Once a selection of desired metadata is made, the
  * boiler-plate material code to access the selected properties can be
  * auto-generated using the "Generate Material" button.
+ * @deprecated Use UCesiumFeaturesMetadataComponent instead.
  */
 UCLASS(Deprecated)
 class CESIUMRUNTIME_API UDEPRECATED_CesiumEncodedMetadataComponent

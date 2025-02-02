@@ -27,7 +27,7 @@ enum class ECesiumUrlTemplateRasterOverlayProjection : uint8 {
 /**
  * A raster overlay that loads tiles from a templated URL.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumUrlTemplateRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
