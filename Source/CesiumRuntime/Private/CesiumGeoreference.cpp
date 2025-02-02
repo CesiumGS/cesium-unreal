@@ -7,10 +7,12 @@
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "CesiumOriginShiftComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelSwitcherComponent.h"
+#include "CesiumSunSky.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
@@ -426,6 +428,24 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       this->GetActorTransform().TransformPosition(FVector::ZeroVector));
+
+  const double NewLongitude = this->GetOriginLongitude();
+
+  // The georeference origin may have moved to a location across the world
+  // where it is nighttime in the currently set time zone. To improve user
+  // experience, we update the timezones of all the CesiumSunSky instances using
+  // this georeference so that the view is not completely dark.
+  for (TActorIterator<ACesiumSunSky> It(pWorld); It; ++It) {
+    if (!IsValid(It->GlobeAnchor)) {
+      continue;
+    }
+
+    ACesiumGeoreference* ResolvedGeoreference =
+        It->GlobeAnchor->GetResolvedGeoreference();
+    if (IsValid(ResolvedGeoreference) && ResolvedGeoreference == this) {
+      It->EstimateTimeZoneForLongitude(NewLongitude);
+    }
+  }
 }
 
 void ACesiumGeoreference::CreateSubLevelHere() {

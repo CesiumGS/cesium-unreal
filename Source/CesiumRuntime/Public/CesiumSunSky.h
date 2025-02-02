@@ -445,6 +445,22 @@ public:
   void UpdateAtmosphereRadius();
 
   /**
+   * Adjusts the time zone of this CesiumSunSky to an estimate based on the
+   * given longitude.
+   *
+   * The time zone is naively calculated from the longitude, where every
+   * 15 degrees equals 1 hour. This may not necessarily match the official
+   * time zone at a given location within that longitude.
+   *
+   * This method will call @ref UpdateSun automatically.
+   *
+   * @param InLongitude The longitude that the calculated time zone will be
+   * based on in degrees in the range [-180, 180].
+   */
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
+  void EstimateTimeZoneForLongitude(double InLongitude);
+
+  /**
    * Convert solar time to Hours:Minutes:Seconds. Copied the implementation
    * from the engine SunSkyBP class.
    */

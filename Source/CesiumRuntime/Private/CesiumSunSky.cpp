@@ -567,6 +567,11 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
   }
 }
 
+void ACesiumSunSky::EstimateTimeZoneForLongitude(double InLongitude) {
+  this->TimeZone = FMath::Clamp(InLongitude, -180.0, 180.0) / 15.0;
+  this->UpdateSun();
+}
+
 void ACesiumSunSky::GetHMSFromSolarTime(
     double InSolarTime,
     int32& Hour,
