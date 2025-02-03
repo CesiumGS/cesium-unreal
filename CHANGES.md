@@ -1,5 +1,9 @@
 # Change Log
 
+### v2.13.1 - 2025-02-03
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.0 to v0.44.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.13.0 - 2025-02-03
 
 ##### Additions :tada:
