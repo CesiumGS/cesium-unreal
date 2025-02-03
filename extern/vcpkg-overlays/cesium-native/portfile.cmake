@@ -12,8 +12,8 @@ endif()
 vcpkg_from_github(
         OUT_SOURCE_PATH SOURCE_PATH
         REPO CesiumGS/cesium-native
-        REF 69b45dae4f64342c5cdc2668b475d29defd79db8
-        SHA512 fdea23c5e41b7b01d14dd1a640e5cbe114252396c5f4c42fa1c11ab4d52d77092cf61a1afd45da3d3b431a4d34c2d790576e2c19d19abb3dd6db19447b9d0375
+        REF d5e261baf93ec28573508495b55020e222689320
+        SHA512 740352db674d1663421d239c369f2a6fb2f4444529be609afa7636be5f3ebb0534d3922e1319e0c3ab481ce9431171e1dc06650dd51b0fe9e06e3dbb852f4726
         HEAD_REF vcpkg-pkg
         )
 
