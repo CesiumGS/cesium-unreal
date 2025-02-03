@@ -1,10 +1,16 @@
 # Change Log
 
-### ? - ?
+### v2.13.1 - 2025-02-03
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.0 to v0.44.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.13.0 - 2025-02-03
 
 ##### Additions :tada:
 
 - Added `CesiumUrlTemplateRasterOverlay`, allowing a raster overlay to be added using tiles requested based on a specified URL template.
+- Added `EstimateTimeZoneForLongitude` method to `ACesiumSunSky` to set a reasonable `TimeZone` value at the given longitude.
+- The "Place Georeference Origin Here" button on `ACesiumGeoreference` will now adjust the time zone of the `ACesiumSunSky` instances that reference it, based on the new origin's longitude. This improves user experience when moving the origin to locations where it would be nighttime in the current time zone.
 - Added `RequestHeaders` property to `Cesium3DTileset`, allowing per-tileset headers to be specified.
 - Added `RequestHeaders` properties to `CesiumTileMapServiceRasterOverlay`, `CesiumUrlTemplateRasterOverlay`, `CesiumWebMapServiceRasterOverlay`,
   and `CesiumWebMapTileServiceRasterOverlay`, allowing per-raster-overlay HTTP headers to be specified.
@@ -12,7 +18,12 @@
 ##### Fixes :wrench:
 
 - Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
-- Fixed crash when calling `SampleHeightMostDetailed` blueprint function without a valid tileset.
+- Fixed a crash in `UCesiumIonServer` when running in a packaged build where tilesets are only created at runtime.
+- Worked around a limitation in Unreal's `FMatrix` -> `FTransform` conversion that prevented models with a small scale factor (e.g., where vertex positions are expressed in millimeters) from rendering because their scale was treated as 0.0.
+- Fixed a crash when calling `SampleHeightMostDetailed` blueprint function without a valid tileset.
+- Removed duplicate "Enable Water Mask" checkbox on `Cesium3DTileset` resulting from EditCondition flag.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.43.0 to v0.44.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.12.0 - 2025-01-02
 

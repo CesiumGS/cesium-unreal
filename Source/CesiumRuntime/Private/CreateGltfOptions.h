@@ -49,19 +49,20 @@ public:
 
 struct CreateNodeOptions {
   const CreateModelOptions* pModelOptions = nullptr;
-  const LoadGltfResult::LoadModelResult* pHalfConstructedModelResult = nullptr;
+  const LoadGltfResult::LoadedModelResult* pHalfConstructedModelResult =
+      nullptr;
   const CesiumGltf::Node* pNode = nullptr;
 };
 
 struct CreateMeshOptions {
   const CreateNodeOptions* pNodeOptions = nullptr;
-  const LoadGltfResult::LoadNodeResult* pHalfConstructedNodeResult = nullptr;
+  const LoadGltfResult::LoadedNodeResult* pHalfConstructedNodeResult = nullptr;
   int32_t meshIndex = -1;
 };
 
 struct CreatePrimitiveOptions {
   const CreateMeshOptions* pMeshOptions = nullptr;
-  const LoadGltfResult::LoadMeshResult* pHalfConstructedMeshResult = nullptr;
+  const LoadGltfResult::LoadedMeshResult* pHalfConstructedMeshResult = nullptr;
   int32_t primitiveIndex = -1;
 };
 } // namespace CreateGltfOptions

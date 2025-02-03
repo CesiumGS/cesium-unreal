@@ -107,8 +107,8 @@ bool UpdateTransformFromCesiumAux(
     const glm::dmat4& CesiumToUnrealTransform,
     CesiumComponent* cesiumComponent) {
   const CesiumPrimitiveData& primData = cesiumComponent->getPrimitiveData();
-  const FTransform transform = FTransform(VecMath::createMatrix(
-      CesiumToUnrealTransform * primData.HighPrecisionNodeTransform));
+  const FTransform transform = VecMath::createTransform(
+      CesiumToUnrealTransform * primData.HighPrecisionNodeTransform);
 
   if (cesiumComponent->Mobility == EComponentMobility::Movable) {
     // For movable objects, move the component in the normal way, but don't

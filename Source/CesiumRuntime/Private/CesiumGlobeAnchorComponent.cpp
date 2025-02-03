@@ -732,8 +732,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
     glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
         pGeoreference->GetCoordinateSystem());
 
-    this->_setCurrentRelativeTransform(
-        FTransform(VecMath::createMatrix(anchorToLocal)));
+    this->_setCurrentRelativeTransform(VecMath::createTransform(anchorToLocal));
   } else {
     this->_lastRelativeTransformIsValid = false;
   }

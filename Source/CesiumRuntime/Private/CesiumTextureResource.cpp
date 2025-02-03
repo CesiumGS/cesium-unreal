@@ -12,15 +12,11 @@ namespace {
 /**
  * A Cesium texture resource that uses an already-created `FRHITexture`. This is
  * used when `GRHISupportsAsyncTextureCreation` is true and so we were already
- * able to create the FRHITexture in a worker thread. It is also used when a
- * single glTF `Image` is referenced by multiple glTF `Texture` instances. We
- * only need one `FRHITexture` is this case, but we need multiple
- * `FTextureResource` instances to support the different sampler settings that
- * are likely used in the different textures.
+ * able to create the FRHITexture in a worker thread.
  */
-class FCesiumUseExistingTextureResource : public FCesiumTextureResource {
+class FCesiumPreCreatedRHITextureResource : public FCesiumTextureResource {
 public:
-  FCesiumUseExistingTextureResource(
+  FCesiumPreCreatedRHITextureResource(
       FTextureRHIRef existingTexture,
       TextureGroup textureGroup,
       uint32 width,
@@ -34,6 +30,19 @@ public:
       uint32 extData,
       bool isPrimary);
 
+protected:
+  virtual FTextureRHIRef InitializeTextureRHI() override;
+};
+
+/**
+ * A Cesium texture resource that wraps an existing one and uses the same RHI
+ * texture resource. This allows a single glTF `Image` to be referenced by
+ * multiple glTF `Texture` instances. We only need one `FRHITexture` in this
+ * case, but we need multiple `FTextureResource` instances to support the
+ * different sampler settings that are likely used in the different textures.
+ */
+class FCesiumUseExistingTextureResource : public FCesiumTextureResource {
+public:
   FCesiumUseExistingTextureResource(
       const TSharedPtr<FTextureResource>& pExistingTexture,
       TextureGroup textureGroup,
@@ -356,7 +365,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
     // textureReference->SetName(
     //     FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
     auto pResult =
-        FCesiumTextureResourceUniquePtr(new FCesiumUseExistingTextureResource(
+        FCesiumTextureResourceUniquePtr(new FCesiumPreCreatedRHITextureResource(
             textureReference,
             textureGroup,
             imageCesium.width,
@@ -568,7 +577,7 @@ FName FCesiumTextureResource::TextureGroupStatFNames[TEXTUREGROUP_MAX] = {
 
 #endif // #if STATS
 
-FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
+FCesiumPreCreatedRHITextureResource::FCesiumPreCreatedRHITextureResource(
     FTextureRHIRef existingTexture,
     TextureGroup textureGroup,
     uint32 width,
@@ -592,9 +601,12 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
           sRGB,
           useMipsIfAvailable,
           extData,
-          isPrimary),
-      _pExistingTexture(nullptr) {
+          isPrimary) {
   this->TextureRHI = std::move(existingTexture);
+}
+
+FTextureRHIRef FCesiumPreCreatedRHITextureResource::InitializeTextureRHI() {
+  return this->TextureRHI;
 }
 
 FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
@@ -625,11 +637,7 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
       _pExistingTexture(pExistingTexture) {}
 
 FTextureRHIRef FCesiumUseExistingTextureResource::InitializeTextureRHI() {
-  if (this->_pExistingTexture) {
-    return this->_pExistingTexture->TextureRHI;
-  } else {
-    return this->TextureRHI;
-  }
+  return this->_pExistingTexture->TextureRHI;
 }
 
 FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(

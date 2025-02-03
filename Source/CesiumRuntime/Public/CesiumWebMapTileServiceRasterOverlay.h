@@ -29,7 +29,7 @@ enum class ECesiumWebMapTileServiceRasterOverlayProjection : uint8 {
  * If you're using a Web Map Tile Service via Cesium ion, use the "Cesium ion
  * Raster Overlay" component instead.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumWebMapTileServiceRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
