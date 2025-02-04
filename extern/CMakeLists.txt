@@ -150,6 +150,8 @@ set(PACKAGES_PRIVATE
     list(APPEND PACKAGES_ALL ${PACKAGES_PRIVATE})
     list(APPEND PACKAGES_ALL ${PACKAGES_TEST})
     add_subdirectory("${CESIUM_UNREAL_NATIVE_DIRECTORY}" cesium-native)
+    # Don't build the cesium-native tests by default
+    set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 else()
     find_package(cesium-native)
 endif()
@@ -173,9 +175,6 @@ option(BUILD_SHARED_LIB OFF)
 option(SUPPORT_CONSOLE_APP OFF)
 set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
 add_subdirectory(tidy-html5)
-
-# Don't build the cesium-native tests by default
-#set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
 add_subdirectory(swl-variant)
 install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/swl-variant/include/" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
