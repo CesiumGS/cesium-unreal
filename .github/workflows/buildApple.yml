@@ -92,7 +92,7 @@ jobs:
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           mkdir -p extern/build-arm64
           cd extern/build-arm64
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCESIUM_UNREAL_NATIVE_DIRECTORY=cesium-native
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64 -DCESIUM_UNREAL_NATIVE_DIRECTORY=../cesium-native
           cmake --build . -j4 --target install
       - name: Build cesium-native for macOS x86_64
         run: |
