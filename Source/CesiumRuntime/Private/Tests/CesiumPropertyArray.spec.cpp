@@ -169,9 +169,9 @@ void FCesiumPropertyArraySpec::Define() {
         TestEqual("type", valueType.Type, ECesiumMetadataType::Enum);
 
         TestEqual(
-            "int64 value",
-            UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-            int64_t(values[i]));
+            "int value",
+            UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+            int32_t(values[i]));
       }
     });
   });
