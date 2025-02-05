@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGltf/PropertyEnumValue.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
@@ -37,6 +38,7 @@ private:
       double,
       bool,
       std::string_view,
+      CesiumGltf::PropertyEnumValue,
       glm::vec<2, int8_t>,
       glm::vec<2, uint8_t>,
       glm::vec<2, int16_t>,
@@ -168,7 +170,8 @@ private:
       ArrayView<glm::mat<4, 4, int64_t>>,
       ArrayView<glm::mat<4, 4, uint64_t>>,
       ArrayView<glm::mat<4, 4, float>>,
-      ArrayView<glm::mat<4, 4, double>>>;
+      ArrayView<glm::mat<4, 4, double>>,
+      ArrayView<CesiumGltf::PropertyEnumValue>>;
 #pragma endregion
 
 public:

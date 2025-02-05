@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataValue.h"
+#include "CesiumGltf/PropertyEnumValue.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "Misc/AutomationTest.h"
 
@@ -100,6 +101,18 @@ void FCesiumMetadataValueSpec::Define() {
           valueType.ComponentType,
           ECesiumMetadataComponentType::Uint8);
       TestTrue("IsArray", valueType.bIsArray);
+    });
+
+    It("constructs enum value with correct type", [this]() {
+      FCesiumMetadataValue value(CesiumGltf::PropertyEnumValue(0));
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
+      TestEqual("Type", valueType.Type, ECesiumMetadataType::Enum);
+      TestEqual(
+          "ComponentType",
+          valueType.ComponentType,
+          ECesiumMetadataComponentType::None);
+      TestFalse("IsArray", valueType.bIsArray);
     });
   });
 
@@ -257,6 +270,14 @@ void FCesiumMetadataValueSpec::Define() {
           -1234);
     });
 
+    It("gets from enum", [this]() {
+      FCesiumMetadataValue value(CesiumGltf::PropertyEnumValue{0xff});
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0xff);
+    });
+
     It("returns default value for out-of-range numbers", [this]() {
       FCesiumMetadataValue value(std::numeric_limits<int64_t>::min());
       TestEqual(
@@ -349,6 +370,17 @@ void FCesiumMetadataValueSpec::Define() {
               value,
               defaultValue),
           static_cast<int64_t>(-1234));
+    });
+
+    It("gets from enum", [this, defaultValue]() {
+      FCesiumMetadataValue value(
+          CesiumGltf::PropertyEnumValue(0x6fffffffffffffff));
+      TestEqual<int64>(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
+          static_cast<int64_t>(0x6fffffffffffffff));
     });
 
     It("returns default value for out-of-range numbers",
