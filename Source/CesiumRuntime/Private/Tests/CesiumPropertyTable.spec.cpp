@@ -1,11 +1,24 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTable.h"
+#include "CesiumGltf/Enum.h"
+#include "CesiumGltf/EnumValue.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
 #include <limits>
+
+namespace {
+
+CesiumGltf::EnumValue makeEnumValue(const std::string& name, int64_t value) {
+  CesiumGltf::EnumValue enumValue;
+  enumValue.name = name;
+  enumValue.value = value;
+  return enumValue;
+}
+
+} // namespace
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTableSpec,
@@ -769,6 +782,36 @@ void FCesiumPropertyTableSpec::Define() {
           CesiumGltf::ClassProperty::ComponentType::FLOAT32,
           vec2Values);
 
+      std::string enumPropertyName("enumProperty");
+      std::vector<int16_t> enumValues{0, 1, 2, 3};
+      std::vector<std::string> enumNames{"Foo", "Bar", "Baz", "Qux"};
+      CesiumGltf::PropertyTableProperty& enumTableProperty =
+          AddPropertyTablePropertyToModel(
+              model,
+              *pPropertyTable,
+              enumPropertyName,
+              CesiumGltf::ClassProperty::Type::ENUM,
+              std::nullopt,
+              enumValues);
+
+      CesiumGltf::Schema& schema =
+          *model
+               .getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>()
+               ->schema;
+      schema.classes[pPropertyTable->classProperty]
+          .properties[enumPropertyName]
+          .enumType = "TestEnum";
+
+      CesiumGltf::Enum& enumDef = schema.enums["TestEnum"];
+      enumDef.name = "Test";
+      enumDef.description = "An example enum";
+      enumDef.values = std::vector<CesiumGltf::EnumValue>{
+          makeEnumValue("Foo", 0),
+          makeEnumValue("Bar", 1),
+          makeEnumValue("Baz", 2),
+          makeEnumValue("Qux", 3)};
+      enumDef.valueType = CesiumGltf::Enum::ValueType::INT16;
+
       FCesiumPropertyTable propertyTable(model, *pPropertyTable);
 
       TestEqual(
@@ -787,7 +830,7 @@ void FCesiumPropertyTableSpec::Define() {
             GetMetadataValuesForFeatureAsStrings(
                 propertyTable,
                 static_cast<int64>(i));
-        TestEqual("number of values", values.Num(), 2);
+        TestEqual("number of values", values.Num(), 3);
 
         TestTrue(
             "contains scalar value",
@@ -795,6 +838,9 @@ void FCesiumPropertyTableSpec::Define() {
         TestTrue(
             "contains vec2 value",
             values.Contains(FString(vec2PropertyName.c_str())));
+        TestTrue(
+            "contains enum value",
+            values.Contains(FString(enumPropertyName.c_str())));
 
         const FString& scalarValue =
             *values.Find(FString(scalarPropertyName.c_str()));
@@ -808,6 +854,11 @@ void FCesiumPropertyTableSpec::Define() {
             " Y=" + std::to_string(vec2Values[i][1]));
         expected = FString(expectedString.c_str());
         TestEqual("vec2 value as string", vec2Value, expected);
+
+        const FString& enumValue =
+            *values.Find(FString(enumPropertyName.c_str()));
+        expected = FString(enumNames[i].c_str());
+        TestEqual("enum value as string", enumValue, expected);
       }
     });
 

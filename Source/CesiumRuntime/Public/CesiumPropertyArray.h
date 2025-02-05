@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGltf/PropertyArrayView.h"
+#include "CesiumGltf/PropertyEnumValue.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "UObject/ObjectMacros.h"
@@ -93,7 +94,8 @@ private:
       ArrayPropertyView<glm::mat<4, 4, int64_t>>,
       ArrayPropertyView<glm::mat<4, 4, uint64_t>>,
       ArrayPropertyView<glm::mat<4, 4, float>>,
-      ArrayPropertyView<glm::mat<4, 4, double>>>;
+      ArrayPropertyView<glm::mat<4, 4, double>>,
+      ArrayPropertyView<CesiumGltf::PropertyEnumValue>>;
 #pragma endregion
 
 public:

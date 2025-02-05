@@ -2,6 +2,7 @@
 
 #include "CesiumPropertyTableProperty.h"
 #include "CesiumGltf/MetadataConversions.h"
+#include "CesiumGltf/PropertyEnumValue.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "UnrealMetadataConversions.h"
 #include <utility>
@@ -756,6 +757,12 @@ TResult arrayPropertyTablePropertyCallback(
         false,
         TResult,
         Callback>(property, std::forward<Callback>(callback));
+  case ECesiumMetadataType::Enum:
+    return propertyTablePropertyCallback<
+        CesiumGltf::PropertyArrayView<CesiumGltf::PropertyEnumValue>,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
   default:
     return callback(CesiumGltf::PropertyTablePropertyView<uint8_t>());
   }
@@ -821,6 +828,12 @@ TResult propertyTablePropertyCallback(
   case ECesiumMetadataType::String:
     return propertyTablePropertyCallback<
         std::string_view,
+        false,
+        TResult,
+        Callback>(property, std::forward<Callback>(callback));
+  case ECesiumMetadataType::Enum:
+    return propertyTablePropertyCallback<
+        CesiumGltf::PropertyEnumValue,
         false,
         TResult,
         Callback>(property, std::forward<Callback>(callback));
@@ -1257,6 +1270,12 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
             CesiumGltf::IsMetadataMatN<ValueType>::value ||
             CesiumGltf::IsMetadataString<ValueType>::value) {
           return UnrealMetadataConversions::toString(value);
+        } else if constexpr (CesiumGltf::IsMetadataEnum<ValueType>::value) {
+          if (v.enumDefinition()) {
+            return UnrealMetadataConversions::toString(
+                value.name(*v.enumDefinition()));
+          }
+          return FString();
         } else {
           auto maybeString = CesiumGltf::
               MetadataConversions<std::string, decltype(value)>::convert(value);
