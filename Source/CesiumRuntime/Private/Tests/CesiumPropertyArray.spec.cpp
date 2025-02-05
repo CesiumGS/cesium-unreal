@@ -141,5 +141,38 @@ void FCesiumPropertyArraySpec::Define() {
             values[i]);
       }
     });
+
+    It("gets value for enum array", [this]() {
+      std::vector<std::byte> values{
+          std::byte(1),
+          std::byte(2),
+          std::byte(3),
+          std::byte(4)};
+      CesiumGltf::PropertyArrayCopy<CesiumGltf::PropertyEnumValue> arrayView(
+          std::vector(values),
+          CesiumGltf::PropertyComponentType::Uint8,
+          4);
+      FCesiumPropertyArray array(arrayView);
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64>(values.size()));
+
+      for (size_t i = 0; i < values.size(); i++) {
+        FCesiumMetadataValue value =
+            UCesiumPropertyArrayBlueprintLibrary::GetValue(
+                array,
+                static_cast<int64>(i));
+
+        FCesiumMetadataValueType valueType =
+            UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
+        TestEqual("type", valueType.Type, ECesiumMetadataType::Enum);
+
+        TestEqual(
+            "int64 value",
+            UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+            int64_t(values[i]));
+      }
+    });
   });
 }
