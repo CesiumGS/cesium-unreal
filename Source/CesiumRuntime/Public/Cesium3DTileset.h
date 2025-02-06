@@ -962,46 +962,6 @@ private:
       meta = (DisplayName = "Draw in Virtual Textures"))
   TArray<TObjectPtr<URuntimeVirtualTexture>> RuntimeVirtualTextures;
 
-  /** Bias to the LOD selected for rendering to runtime virtual textures. */
-  UPROPERTY(
-    EditAnywhere,
-    BlueprintGetter = GetVirtualTextureLodBias,
-    BlueprintSetter = SetVirtualTextureLodBias,
-    AdvancedDisplay,
-    Category = VirtualTexture,
-    meta = (DisplayName = "Virtual Texture LOD Bias", UIMin = "-7", UIMax = "8"))
-  uint8 VirtualTextureLodBias = 0;
-
-  /**
-   * Number of lower mips in the runtime virtual texture to skip for rendering
-   * this primitive. Larger values reduce the effective draw distance in the
-   * runtime virtual texture. This culling method doesn't take into account
-   * primitive size or virtual texture size.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetVirtualTextureCullMips,
-      BlueprintSetter = SetVirtualTextureCullMips,
-      AdvancedDisplay,
-      Category = "VirtualTexture",
-      meta =
-          (DisplayName = "Virtual Texture Skip Mips", UIMin = "0", UIMax = "7"))
-  uint8 VirtualTextureCullMips = 0;
-
-  /**
-   * Set the minimum pixel coverage before culling from the runtime virtual
-   * texture. Larger values reduce the effective draw distance in the runtime
-   * virtual texture.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetVirtualTextureMinCoverage,
-      BlueprintSetter = SetVirtualTextureMinCoverage,
-      AdvancedDisplay,
-      Category = VirtualTexture,
-      meta = (UIMin = "0", UIMax = "7"))
-  uint8 VirtualTextureMinCoverage = 0;
-
   /** Controls if this component draws in the main pass as well as in the
    * virtual texture. You must refresh the Tileset after changing this value! */
   UPROPERTY(

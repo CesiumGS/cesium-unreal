@@ -566,29 +566,6 @@ void ACesium3DTileset::SetRuntimeVirtualTextures(
   }
 }
 
-void ACesium3DTileset::SetVirtualTextureLodBias(uint8 InVirtualTextureLodBias) {
-  if (this->VirtualTextureLodBias != InVirtualTextureLodBias) {
-    this->VirtualTextureLodBias = InVirtualTextureLodBias;
-    this->DestroyTileset();
-  }
-}
-
-void ACesium3DTileset::SetVirtualTextureCullMips(
-    uint8 InVirtualTextureCullMips) {
-  if (this->VirtualTextureCullMips != InVirtualTextureCullMips) {
-    this->VirtualTextureCullMips = InVirtualTextureCullMips;
-    this->DestroyTileset();
-  }
-}
-
-void ACesium3DTileset::SetVirtualTextureMinCoverage(
-    uint8 InVirtualTextureMinCoverage) {
-  if (this->VirtualTextureMinCoverage != InVirtualTextureMinCoverage) {
-    this->VirtualTextureMinCoverage = InVirtualTextureMinCoverage;
-    this->DestroyTileset();
-  }
-}
-
 void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
