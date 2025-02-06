@@ -950,6 +950,68 @@ private:
       Category = "Cesium|Rendering")
   FCesiumPointCloudShading PointCloudShading;
 
+  	/**
+   * Array of runtime virtual textures into which we draw the mesh for this
+   * actor. The material also needs to be set up to output to a virtual texture.
+   */
+   UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRuntimeVirtualTextures,
+      BlueprintSetter = SetRuntimeVirtualTextures,
+      Category = "VirtualTexture",
+      meta = (DisplayName = "Draw in Virtual Textures"))
+  TArray<TObjectPtr<URuntimeVirtualTexture>> RuntimeVirtualTextures;
+
+  /** Bias to the LOD selected for rendering to runtime virtual textures. */
+  UPROPERTY(
+    EditAnywhere,
+    BlueprintGetter = GetVirtualTextureLodBias,
+    BlueprintSetter = SetVirtualTextureLodBias,
+    AdvancedDisplay,
+    Category = VirtualTexture,
+    meta = (DisplayName = "Virtual Texture LOD Bias", UIMin = "-7", UIMax = "8"))
+  uint8 VirtualTextureLodBias = 0;
+
+  /**
+   * Number of lower mips in the runtime virtual texture to skip for rendering
+   * this primitive. Larger values reduce the effective draw distance in the
+   * runtime virtual texture. This culling method doesn't take into account
+   * primitive size or virtual texture size.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetVirtualTextureCullMips,
+      BlueprintSetter = SetVirtualTextureCullMips,
+      AdvancedDisplay,
+      Category = "VirtualTexture",
+      meta =
+          (DisplayName = "Virtual Texture Skip Mips", UIMin = "0", UIMax = "7"))
+  uint8 VirtualTextureCullMips = 0;
+
+  /**
+   * Set the minimum pixel coverage before culling from the runtime virtual
+   * texture. Larger values reduce the effective draw distance in the runtime
+   * virtual texture.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetVirtualTextureMinCoverage,
+      BlueprintSetter = SetVirtualTextureMinCoverage,
+      AdvancedDisplay,
+      Category = VirtualTexture,
+      meta = (UIMin = "0", UIMax = "7"))
+  uint8 VirtualTextureMinCoverage = 0;
+
+  /** Controls if this component draws in the main pass as well as in the
+   * virtual texture. You must refresh the Tileset after changing this value! */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetVirtualTextureRenderPassType,
+      Category = VirtualTexture,
+      meta = (DisplayName = "Draw in Main Pass"))
+  ERuntimeVirtualTextureMainPassType VirtualTextureRenderPassType =
+      ERuntimeVirtualTextureMainPassType::Exclusive;
+
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -996,6 +1058,41 @@ public:
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  TArray<URuntimeVirtualTexture*> GetRuntimeVirtualTextures() const {
+    return RuntimeVirtualTextures;
+  }
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  uint8 GetVirtualTextureLodBias() const {
+    return VirtualTextureLodBias;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
+  void SetVirtualTextureLodBias(uint8 InVirtualTextureLodBias);
+
+  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
+  void SetRuntimeVirtualTextures(TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures);
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  uint8 GetVirtualTextureCullMips() const { return VirtualTextureCullMips; }
+
+  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
+  void SetVirtualTextureCullMips(uint8 InVirtualTextureCullMips);
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  uint8 GetVirtualTextureMinCoverage() const {
+    return VirtualTextureMinCoverage;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
+  void SetVirtualTextureMinCoverage(uint8 InVirtualTextureMinCoverage);
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  ERuntimeVirtualTextureMainPassType GetVirtualTextureRenderPassType() const {
+    return VirtualTextureRenderPassType;
+  }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetCesiumIonServer(UCesiumIonServer* Server);
