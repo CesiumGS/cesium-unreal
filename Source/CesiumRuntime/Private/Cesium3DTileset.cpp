@@ -566,6 +566,13 @@ void ACesium3DTileset::SetRuntimeVirtualTextures(
   }
 }
 
+void ACesium3DTileset::SetTranslucencySortPriority(int32 InTranslucencySortPriority) {
+  if (this->TranslucencySortPriority != InTranslucencySortPriority) {
+    this->TranslucencySortPriority = InTranslucencySortPriority;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;

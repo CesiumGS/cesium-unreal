@@ -972,6 +972,23 @@ private:
   ERuntimeVirtualTextureMainPassType VirtualTextureRenderPassType =
       ERuntimeVirtualTextureMainPassType::Exclusive;
 
+  /**
+   * Translucent objects with a lower sort priority draw behind objects with a higher priority.
+   * Translucent objects with the same priority are rendered from back-to-front based on their bounds origin.
+   * This setting is also used to sort objects being drawn into a runtime virtual texture.
+   *
+   * Ignored if the object is not translucent.  The default priority is zero.
+   * Warning: This should never be set to a non-default value unless you know what you are doing, as it will prevent the renderer from sorting correctly.
+   * It is especially problematic on dynamic gameplay effects.
+   */
+  UPROPERTY(
+    EditAnywhere,
+    BlueprintGetter = GetTranslucencySortPriority,
+    BlueprintSetter = SetTranslucencySortPriority,
+    AdvancedDisplay,
+    Category=Rendering)
+  int32 TranslucencySortPriority;
+
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -1024,35 +1041,19 @@ public:
     return RuntimeVirtualTextures;
   }
 
-  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
-  uint8 GetVirtualTextureLodBias() const {
-    return VirtualTextureLodBias;
-  }
-
-  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
-  void SetVirtualTextureLodBias(uint8 InVirtualTextureLodBias);
-
   UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
   void SetRuntimeVirtualTextures(TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures);
-
-  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
-  uint8 GetVirtualTextureCullMips() const { return VirtualTextureCullMips; }
-
-  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
-  void SetVirtualTextureCullMips(uint8 InVirtualTextureCullMips);
-
-  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
-  uint8 GetVirtualTextureMinCoverage() const {
-    return VirtualTextureMinCoverage;
-  }
-
-  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
-  void SetVirtualTextureMinCoverage(uint8 InVirtualTextureMinCoverage);
 
   UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
   ERuntimeVirtualTextureMainPassType GetVirtualTextureRenderPassType() const {
     return VirtualTextureRenderPassType;
   }
+
+  UFUNCTION(BlueprintGetter, Category = Rendering)
+  int32 GetTranslucencySortPriority() {return TranslucencySortPriority;}
+
+  UFUNCTION(BlueprintSetter, Category = Rendering)
+  void SetTranslucencySortPriority(int32 InTranslucencySortPriority);
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetCesiumIonServer(UCesiumIonServer* Server);
