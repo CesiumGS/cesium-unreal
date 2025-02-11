@@ -1,6 +1,6 @@
 # Change Log
 
-### v2.13.1 - 2025-02-11
+### v2.13.2 - 2025-02-11
 
 - Added support for drawing 3D Tilesets to Runtime Virtual textures
 - Added MLB_AngleMask for masking Material Layers based on a tangent vector
