@@ -2,6 +2,7 @@
 
 #pragma once
 #include "CesiumTile.h"
+#include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "CesiumTileExcluder.generated.h"
 

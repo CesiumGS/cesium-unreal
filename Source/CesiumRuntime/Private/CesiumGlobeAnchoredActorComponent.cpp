@@ -2,6 +2,7 @@
 
 #include "CesiumGlobeAnchoredActorComponent.h"
 #include "CesiumGlobeAnchorComponent.h"
+#include "GameFramework/Actor.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
