@@ -566,7 +566,8 @@ void ACesium3DTileset::SetRuntimeVirtualTextures(
   }
 }
 
-void ACesium3DTileset::SetTranslucencySortPriority(int32 InTranslucencySortPriority) {
+void ACesium3DTileset::SetTranslucencySortPriority(
+    int32 InTranslucencySortPriority) {
   if (this->TranslucencySortPriority != InTranslucencySortPriority) {
     this->TranslucencySortPriority = InTranslucencySortPriority;
     this->DestroyTileset();
@@ -2167,9 +2168,13 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Root) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CesiumIonServer) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RequestHeaders) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RuntimeVirtualTextures) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, VirtualTextureRenderPassType) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucencySortPriority) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RuntimeVirtualTextures) ||
+      PropName == GET_MEMBER_NAME_CHECKED(
+                      ACesium3DTileset,
+                      VirtualTextureRenderPassType) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucencySortPriority) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

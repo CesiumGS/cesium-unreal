@@ -950,11 +950,11 @@ private:
       Category = "Cesium|Rendering")
   FCesiumPointCloudShading PointCloudShading;
 
-  	/**
+  /**
    * Array of runtime virtual textures into which we draw the mesh for this
    * actor. The material also needs to be set up to output to a virtual texture.
    */
-   UPROPERTY(
+  UPROPERTY(
       EditAnywhere,
       BlueprintGetter = GetRuntimeVirtualTextures,
       BlueprintSetter = SetRuntimeVirtualTextures,
@@ -973,20 +973,22 @@ private:
       ERuntimeVirtualTextureMainPassType::Exclusive;
 
   /**
-   * Translucent objects with a lower sort priority draw behind objects with a higher priority.
-   * Translucent objects with the same priority are rendered from back-to-front based on their bounds origin.
-   * This setting is also used to sort objects being drawn into a runtime virtual texture.
+   * Translucent objects with a lower sort priority draw behind objects with a
+   * higher priority. Translucent objects with the same priority are rendered
+   * from back-to-front based on their bounds origin. This setting is also used
+   * to sort objects being drawn into a runtime virtual texture.
    *
    * Ignored if the object is not translucent.  The default priority is zero.
-   * Warning: This should never be set to a non-default value unless you know what you are doing, as it will prevent the renderer from sorting correctly.
+   * Warning: This should never be set to a non-default value unless you know
+   * what you are doing, as it will prevent the renderer from sorting correctly.
    * It is especially problematic on dynamic gameplay effects.
    */
   UPROPERTY(
-    EditAnywhere,
-    BlueprintGetter = GetTranslucencySortPriority,
-    BlueprintSetter = SetTranslucencySortPriority,
-    AdvancedDisplay,
-    Category=Rendering)
+      EditAnywhere,
+      BlueprintGetter = GetTranslucencySortPriority,
+      BlueprintSetter = SetTranslucencySortPriority,
+      AdvancedDisplay,
+      Category = Rendering)
   int32 TranslucencySortPriority;
 
 protected:
@@ -1042,7 +1044,8 @@ public:
   }
 
   UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
-  void SetRuntimeVirtualTextures(TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures);
+  void SetRuntimeVirtualTextures(
+      TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures);
 
   UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
   ERuntimeVirtualTextureMainPassType GetVirtualTextureRenderPassType() const {
@@ -1050,7 +1053,7 @@ public:
   }
 
   UFUNCTION(BlueprintGetter, Category = Rendering)
-  int32 GetTranslucencySortPriority() {return TranslucencySortPriority;}
+  int32 GetTranslucencySortPriority() { return TranslucencySortPriority; }
 
   UFUNCTION(BlueprintSetter, Category = Rendering)
   void SetTranslucencySortPriority(int32 InTranslucencySortPriority);
