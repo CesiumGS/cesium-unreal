@@ -77,8 +77,8 @@ jobs:
           export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/Unix/LibCxx"
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cd extern
-          cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCESIUM_UNREAL_NATIVE_DIRECTORY=cesium-native -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release --target install -j8
+          cmake --preset linux -DCMAKE_BUILD_TYPE=Release
+          cmake --build out/build/linux --config Release --target install -j8
           cd ..
           rm -rf extern
       - name: Make more swap space available
