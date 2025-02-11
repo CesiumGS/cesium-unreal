@@ -1,5 +1,11 @@
 # Change Log
 
+### v2.13.1 - 2025-02-11
+
+- Added support for drawing 3D Tilesets to Runtime Virtual textures
+- Added MLB_AngleMask for masking Material Layers based on a tangent vector
+- Added ML_CesiumRVTBaseColorOverlay for Overlaying the BaseColor of an RVT in your material
+
 ### v2.13.1 - 2025-02-03
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.0 to v0.44.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
