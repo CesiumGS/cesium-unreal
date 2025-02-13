@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumMetadataEnum.h"
 #include "CesiumPropertyTable.h"
 #include "CesiumPropertyTexture.h"
 
@@ -26,7 +27,7 @@ struct CESIUMRUNTIME_API FCesiumModelMetadata {
   GENERATED_USTRUCT_BODY()
 
 public:
-  FCesiumModelMetadata() {}
+  FCesiumModelMetadata() : _enumDefinitions() {}
 
   FCesiumModelMetadata(
       const CesiumGltf::Model& InModel,
@@ -35,6 +36,7 @@ public:
 private:
   TArray<FCesiumPropertyTable> _propertyTables;
   TArray<FCesiumPropertyTexture> _propertyTextures;
+  TSharedPtr<FCesiumMetadataEnumCollection> _enumDefinitions;
   // TODO: property attributes
 
   friend class UCesiumModelMetadataBlueprintLibrary;

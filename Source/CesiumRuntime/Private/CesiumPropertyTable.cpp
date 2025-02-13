@@ -7,7 +7,8 @@ static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 
 FCesiumPropertyTable::FCesiumPropertyTable(
     const CesiumGltf::Model& Model,
-    const CesiumGltf::PropertyTable& PropertyTable)
+    const CesiumGltf::PropertyTable& PropertyTable,
+    const TWeakPtr<FCesiumMetadataEnumCollection>& EnumCollection)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
       _name(PropertyTable.name.value_or("").c_str()),
       _className(PropertyTable.classProperty.c_str()),
@@ -23,11 +24,23 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
-  propertyTableView.forEachProperty([&properties = _properties](
+  propertyTableView.forEachProperty([&properties = _properties,
+                                     &EnumCollection](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
-    properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
+    TSharedPtr<FCesiumMetadataEnum> EnumDefinition;
+    if (EnumCollection.IsValid() && propertyValue.enumDefinition() != nullptr) {
+      const CesiumGltf::Enum* pEnumDefinition = propertyValue.enumDefinition();
+      if (pEnumDefinition->name) {
+        EnumDefinition = EnumCollection.Pin()->Get(
+            FString(UTF8_TO_TCHAR(pEnumDefinition->name->c_str())));
+      }
+    }
+
+    properties.Add(
+        key,
+        FCesiumPropertyTableProperty(propertyValue, EnumDefinition));
   });
 }
 

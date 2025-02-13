@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyTableProperty.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -53,7 +54,22 @@ public:
    */
   FCesiumPropertyTable(
       const CesiumGltf::Model& Model,
-      const CesiumGltf::PropertyTable& PropertyTable);
+      const CesiumGltf::PropertyTable& PropertyTable)
+      : FCesiumPropertyTable(
+            Model,
+            PropertyTable,
+            FCesiumMetadataEnumCollection::GetOrCreateFromModel(Model)) {}
+
+  /**
+   * Constructs a property table from a glTF Property Table.
+   *
+   * @param Model The model that stores EXT_structural_metadata.
+   * @param PropertyTable The target property table.
+   */
+  FCesiumPropertyTable(
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::PropertyTable& PropertyTable,
+      const TWeakPtr<FCesiumMetadataEnumCollection>& EnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.

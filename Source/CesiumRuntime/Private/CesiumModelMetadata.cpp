@@ -14,15 +14,25 @@ static FCesiumPropertyTexture EmptyPropertyTexture;
 FCesiumModelMetadata::FCesiumModelMetadata(
     const CesiumGltf::Model& InModel,
     const CesiumGltf::ExtensionModelExtStructuralMetadata& Metadata) {
+  if (Metadata.schema != nullptr) {
+    this->_enumDefinitions =
+        FCesiumMetadataEnumCollection::GetOrCreateFromSchema(*Metadata.schema);
+  }
+
   this->_propertyTables.Reserve(Metadata.propertyTables.size());
   for (const auto& propertyTable : Metadata.propertyTables) {
-    this->_propertyTables.Emplace(FCesiumPropertyTable(InModel, propertyTable));
+    this->_propertyTables.Emplace(FCesiumPropertyTable(
+        InModel,
+        propertyTable,
+        this->_enumDefinitions.ToWeakPtr()));
   }
 
   this->_propertyTextures.Reserve(Metadata.propertyTextures.size());
   for (const auto& propertyTexture : Metadata.propertyTextures) {
-    this->_propertyTextures.Emplace(
-        FCesiumPropertyTexture(InModel, propertyTexture));
+    this->_propertyTextures.Emplace(FCesiumPropertyTexture(
+        InModel,
+        propertyTexture,
+        this->_enumDefinitions.ToWeakPtr()));
   }
 }
 
