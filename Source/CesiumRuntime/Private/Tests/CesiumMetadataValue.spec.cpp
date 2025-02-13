@@ -1105,6 +1105,18 @@ void FCesiumMetadataValueSpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
           FString(expected.c_str()));
     });
+
+    It("gets from enum", [this]() {
+      TSharedPtr<FCesiumMetadataEnum> enumDef = MakeShared<FCesiumMetadataEnum>(
+          StaticEnum<ECesiumMetadataBlueprintType>());
+      FCesiumMetadataValue value(
+          int32(ECesiumMetadataBlueprintType::Byte),
+          enumDef);
+      TestEqual(
+          "enum",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("Byte"));
+    });
   });
 
   Describe("GetArray", [this]() {

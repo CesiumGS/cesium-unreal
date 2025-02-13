@@ -10,7 +10,8 @@ static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 
 FCesiumPropertyTexture::FCesiumPropertyTexture(
     const CesiumGltf::Model& Model,
-    const CesiumGltf::PropertyTexture& PropertyTexture)
+    const CesiumGltf::PropertyTexture& PropertyTexture,
+    const TWeakPtr<FCesiumMetadataEnumCollection>& EnumCollection)
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTextureClass),
       _name(PropertyTexture.name.value_or("").c_str()),
       _className(PropertyTexture.classProperty.c_str()) {
@@ -44,11 +45,23 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
 
       propertyTextureView.getPropertyView(
           propertyPair->first,
-          [&properties = this->_properties](
+          [&properties = this->_properties, &EnumCollection](
               const std::string& propertyId,
               auto propertyValue) mutable {
             FString key(UTF8_TO_TCHAR(propertyId.data()));
-            properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
+            TSharedPtr<FCesiumMetadataEnum> EnumDefinition;
+            if (EnumCollection.IsValid() &&
+                propertyValue.enumDefinition() != nullptr) {
+              const CesiumGltf::Enum* pEnumDefinition =
+                  propertyValue.enumDefinition();
+              if (pEnumDefinition->name) {
+                EnumDefinition = EnumCollection.Pin()->Get(
+                    FString(UTF8_TO_TCHAR(pEnumDefinition->name->c_str())));
+              }
+            }
+            properties.Add(
+                key,
+                FCesiumPropertyTextureProperty(propertyValue, EnumDefinition));
           },
           options);
     }

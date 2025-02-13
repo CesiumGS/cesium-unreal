@@ -13,7 +13,10 @@ FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
-    : _value(), _valueType(rhs._valueType), _storage(rhs._storage) {
+    : _value(),
+      _valueType(rhs._valueType),
+      _storage(rhs._storage),
+      _enumDefinition(rhs._enumDefinition) {
   swl::visit(
       [this](const auto& value) {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
@@ -269,7 +272,7 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FString& DefaultValue) {
   return swl::visit(
-      [&DefaultValue](auto value) -> FString {
+      [&DefaultValue, &Value](auto value) -> FString {
         using ValueType = decltype(value);
         if constexpr (
             CesiumGltf::IsMetadataVecN<ValueType>::value ||
@@ -279,6 +282,13 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
         } else {
           auto maybeString = CesiumGltf::
               MetadataConversions<std::string, decltype(value)>::convert(value);
+
+          if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
+            if (Value._enumDefinition.IsValid()) {
+              return Value._enumDefinition->GetName(value).Get(
+                  UnrealMetadataConversions::toString(*maybeString));
+            }
+          }
 
           return maybeString ? UnrealMetadataConversions::toString(*maybeString)
                              : DefaultValue;

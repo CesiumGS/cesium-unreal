@@ -110,10 +110,9 @@ public:
   FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>&& value)
       : _value(), _elementType(), _storage() {
     this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
-    ECesiumMetadataType type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    ECesiumMetadataType type = TypeToCesiumMetadataType<T>::value;
     ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<T>::component);
+        CesiumGltf::TypeToPropertyComponentType<T>::component);
     bool isArray = false;
 
     _elementType = {type, componentType, isArray};
@@ -126,10 +125,9 @@ public:
   template <typename T>
   FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
       : _value(value), _elementType() {
-    ECesiumMetadataType type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    ECesiumMetadataType type = TypeToCesiumMetadataType<T>::value;
     ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<T>::component);
+        CesiumGltf::TypeToPropertyComponentType<T>::component);
     bool isArray = false;
 
     _elementType = {type, componentType, isArray};

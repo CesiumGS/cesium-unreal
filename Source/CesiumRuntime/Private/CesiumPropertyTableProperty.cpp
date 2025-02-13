@@ -3,6 +3,7 @@
 #include "CesiumPropertyTableProperty.h"
 #include "CesiumGltf/MetadataConversions.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataEnum.h"
 #include "UnrealMetadataConversions.h"
 #include <utility>
 
@@ -1239,7 +1240,8 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, &DefaultValue](const auto& v) -> FString {
+      [FeatureID, &DefaultValue, &EnumDefinition = Property._enumDefinition](
+          const auto& v) -> FString {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return DefaultValue;
@@ -1260,6 +1262,13 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
         } else {
           auto maybeString = CesiumGltf::
               MetadataConversions<std::string, decltype(value)>::convert(value);
+
+          if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
+            if (EnumDefinition.IsValid()) {
+              return EnumDefinition->GetName(value).Get(
+                  UnrealMetadataConversions::toString(*maybeString));
+            }
+          }
 
           return maybeString ? UnrealMetadataConversions::toString(*maybeString)
                              : DefaultValue;

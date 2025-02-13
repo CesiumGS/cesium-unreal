@@ -106,8 +106,70 @@ enum class ECesiumMetadataType : uint8 {
   Mat3 = int(CesiumGltf::PropertyType::Mat3),
   Mat4 = int(CesiumGltf::PropertyType::Mat4),
   Boolean = int(CesiumGltf::PropertyType::Boolean),
-  Enum = int(CesiumGltf::PropertyType::Enum),
   String = int(CesiumGltf::PropertyType::String),
+};
+
+template <typename T> struct TypeToCesiumMetadataType;
+
+template <> struct TypeToCesiumMetadataType<uint8_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<int8_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<uint16_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<int16_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<uint32_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<int32_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<uint64_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<int64_t> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<float> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<double> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
+};
+template <> struct TypeToCesiumMetadataType<std::string_view> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::String;
+};
+template <> struct TypeToCesiumMetadataType<bool> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Boolean;
+};
+template <typename T, glm::qualifier P>
+struct TypeToCesiumMetadataType<glm::vec<2, T, P>> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Vec2;
+};
+template <typename T, glm::qualifier P>
+struct TypeToCesiumMetadataType<glm::vec<3, T, P>> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Vec3;
+};
+template <typename T, glm::qualifier P>
+struct TypeToCesiumMetadataType<glm::vec<4, T, P>> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Vec4;
+};
+template <typename T, glm::qualifier P>
+struct TypeToCesiumMetadataType<glm::mat<2, 2, T, P>> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Mat2;
+};
+template <typename T, glm::qualifier P>
+struct TypeToCesiumMetadataType<glm::mat<3, 3, T, P>> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Mat3;
+};
+template <typename T, glm::qualifier P>
+struct TypeToCesiumMetadataType<glm::mat<4, 4, T, P>> {
+  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Mat4;
 };
 
 /**
@@ -193,15 +255,14 @@ static FCesiumMetadataValueType TypeToMetadataValueType() {
 
   if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
     using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-    type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    type = TypeToCesiumMetadataType<ArrayType>::value;
     componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<ArrayType>::component);
+        CesiumGltf::TypeToPropertyComponentType<ArrayType>::component);
     isArray = true;
   } else {
-    type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    type = TypeToCesiumMetadataType<T>::value;
     componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<T>::component);
+        CesiumGltf::TypeToPropertyComponentType<T>::component);
     isArray = false;
   }
 
