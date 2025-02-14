@@ -15,37 +15,15 @@
 
 namespace Cesium {
 
-struct LoadTestContext {
-  FString testName;
-  std::vector<TestPass> testPasses;
-
-  SceneGenerationContext creationContext;
-  SceneGenerationContext playContext;
-
-  float cameraFieldOfView = 90.0f;
-
-  ReportCallback reportStep;
-
-  void reset() {
-    testName.Reset();
-    testPasses.clear();
-    creationContext = playContext = SceneGenerationContext();
-    reportStep = nullptr;
-  }
-};
+void LoadTestContext::reset() {
+  testName.Reset();
+  testPasses.clear();
+  creationContext = playContext = SceneGenerationContext();
+  reportStep = nullptr;
+}
 
 LoadTestContext gLoadTestContext;
 
-DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
-    TimeLoadingCommand,
-    FString,
-    loggingName,
-    SceneGenerationContext&,
-    creationContext,
-    SceneGenerationContext&,
-    playContext,
-    TestPass&,
-    pass);
 bool TimeLoadingCommand::Update() {
 
   if (!pass.testInProgress) {
@@ -120,10 +98,6 @@ bool TimeLoadingCommand::Update() {
   return false;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    LoadTestScreenshotCommand,
-    FString,
-    screenshotName);
 bool LoadTestScreenshotCommand::Update() {
   UE_LOG(
       LogCesium,
@@ -153,10 +127,6 @@ void defaultReportStep(const std::vector<TestPass>& testPasses) {
   UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    TestCleanupCommand,
-    LoadTestContext&,
-    context);
 bool TestCleanupCommand::Update() {
   // Tag the fastest pass
   if (context.testPasses.size() > 0) {
@@ -180,12 +150,6 @@ bool TestCleanupCommand::Update() {
   return true;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
-    InitForPlayWhenReady,
-    SceneGenerationContext&,
-    creationContext,
-    SceneGenerationContext&,
-    playContext);
 bool InitForPlayWhenReady::Update() {
   if (!GEditor || !GEditor->IsPlayingSessionInEditor())
     return false;
