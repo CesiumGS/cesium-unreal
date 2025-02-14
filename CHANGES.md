@@ -51,6 +51,10 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.43.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
+### v2.11.1 - 2025-02-14
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.42.1 in order to fix a critical bug when using Google Photorealistic 3D Tiles. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.11.0 - 2024-12-02
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.2. Future versions will require Unreal Engine v5.3+.

@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"Version": 71,
+	"Version": 72,
 	"VersionName": "2.13.3",
 	"FriendlyName": "Cesium for Unreal",
 	"Description": "Unlock the 3D geospatial ecosystem in Unreal Engine with real-world 3D content and a high accuracy full-scale WGS84 globe.",
