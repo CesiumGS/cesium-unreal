@@ -65,10 +65,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FLoadTilesetGooglePompidou::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{
-      "Cold Cache",
-      GoogleTilesTestSetup::setupClearCache,
-      nullptr});
+  testPasses.push_back(
+      TestPass{"Cold Cache", GoogleTilesTestSetup::setupClearCache, nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -93,8 +91,10 @@ bool FLoadTilesetGoogleChrysler::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetGoogleChryslerWarm::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Warm Cache", GoogleTilesTestSetup::setupRefreshTilesets, nullptr});
+  testPasses.push_back(TestPass{
+      "Warm Cache",
+      GoogleTilesTestSetup::setupRefreshTilesets,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -132,8 +132,10 @@ bool FLoadTilesetGoogleDeathValley::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetGoogleDeathValleyWarm::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Warm Cache", GoogleTilesTestSetup::setupRefreshTilesets, nullptr});
+  testPasses.push_back(TestPass{
+      "Warm Cache",
+      GoogleTilesTestSetup::setupRefreshTilesets,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),

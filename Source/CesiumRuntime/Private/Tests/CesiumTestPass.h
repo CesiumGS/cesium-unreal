@@ -12,8 +12,7 @@ namespace Cesium {
 
 struct TestPass {
   typedef std::variant<int, float> TestingParameter;
-  typedef std::function<
-      void(SceneGenerationContext&, TestingParameter)>
+  typedef std::function<void(SceneGenerationContext&, TestingParameter)>
       SetupPassCallback;
   typedef std::function<
       bool(SceneGenerationContext&, SceneGenerationContext&, TestingParameter)>
