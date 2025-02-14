@@ -1,5 +1,9 @@
 # Change Log
 
+### v2.5.1 - 2025-02-15
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.35.0 to v0.35.1 in order to fix a critical bug when using Google Photorealistic 3D Tiles. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.5.0 - 2024-05-01
 
 ##### Additions :tada:
