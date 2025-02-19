@@ -18,7 +18,8 @@
 #pragma region Features descriptions
 
 /**
- * @brief Description of a feature ID set from EXT_mesh_features.
+ * @brief Description of a feature ID set from either EXT_mesh_features or
+ * EXT_instance_features.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
@@ -80,7 +81,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
 
 /**
  * @brief Description of the feature ID sets available from the
- * EXT_mesh_features on a glTF's primitives.
+ * EXT_mesh_features and EXT_instance_features extensions in a glTF.
  *
  * This aggregates the feature ID sets of all visible glTF primitives in the
  * model. This describes the feature IDs that can be made accessible
@@ -297,19 +298,22 @@ struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
 public:
   /**
    * @brief Description of the feature ID sets available from the
-   * EXT_mesh_features on a glTF's primitives.
+   * EXT_mesh_features or EXT_instance_features extensions in a glTF.
    */
-  FCesiumPrimitiveFeaturesDescription Features;
+  UPROPERTY(EditAnywhere, Meta = (TitleProperty = "Name"))
+  FCesiumPrimitiveFeaturesDescription PrimitiveFeatures;
 
   /**
    * @brief Description of the metadata used by the EXT_structural_metadata on a
    * glTF's primitives.
    */
+  UPROPERTY(EditAnywhere, Meta = (TitleProperty = "Name"))
   FCesiumPrimitiveMetadataDescription PrimitiveMetadata;
 
   /**
    * @brief Description of metadata from a glTF's EXT_structural_metadata
    * extension.
    */
+  UPROPERTY(EditAnywhere, Meta = (TitleProperty = "Name"))
   FCesiumModelMetadataDescription ModelMetadata;
 };

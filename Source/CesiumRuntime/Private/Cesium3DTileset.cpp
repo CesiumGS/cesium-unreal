@@ -918,14 +918,8 @@ void ACesium3DTileset::LoadTileset() {
   this->_metadataDescription_DEPRECATED = std::nullopt;
 
   if (pFeaturesMetadataComponent) {
-    FCesiumFeaturesMetadataDescription& description =
-        this->_featuresMetadataDescription.emplace();
-    description.Features = {pFeaturesMetadataComponent->FeatureIdSets};
-    description.PrimitiveMetadata = {
-        pFeaturesMetadataComponent->PropertyTextureNames};
-    description.ModelMetadata = {
-        pFeaturesMetadataComponent->PropertyTables,
-        pFeaturesMetadataComponent->PropertyTextures};
+    this->_featuresMetadataDescription =
+        pFeaturesMetadataComponent->Description;
   } else if (pEncodedMetadataComponent) {
     UE_LOG(
         LogCesium,

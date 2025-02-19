@@ -60,18 +60,36 @@ public:
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
 #endif
 
-  // Using the FCesiumPrimitiveFeaturesDescription and
-  // FCesiumModelMetadataDescription structs makes the UI less readable, so the
-  // component uses arrays directly to help flatten the UI.
+  /**
+   * @brief Description of both feature IDs and metadata from a glTF via the
+   * EXT_mesh_features, EXT_instance_features, and EXT_structural_metadata
+   * extensions. Indicates what parts of the extension should be uploaded to the
+   * GPU for access in Unreal materials.
+   */
+
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (TitleProperty = "Name",
+           DisplayAfter = "TargetMaterialLayer",
+           ShowOnlyInnerProperties))
+  FCesiumFeaturesMetadataDescription Description;
+
+  // Previously the properties of FCesiumFeaturesMetadataDescription were
+  // deconstructed here in order to flatten the Details panel UI. However, the
+  // ShowOnlyInnerProperties attribute accomplishes the same thing. These
+  // properties are deprecated but migrated over in PostLoad().
 
   /**
    * Description of the feature ID sets in the visible glTF primitives across
    * the tileset.
    */
   UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Primitive Features",
-      Meta = (TitleProperty = "Name"))
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Use FeatureIdSets on the CesiumFeaturesMetadataDescription's Features instead."))
   TArray<FCesiumFeatureIdSetDescription> FeatureIdSets;
 
   /**
@@ -84,9 +102,10 @@ public:
    * corresponding sets of texture coordinates intended to sample them.
    */
   UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Primitive Metadata",
-      Meta = (TitleProperty = "Name"))
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Use PropertyTextureNames on the CesiumFeaturesMetadataDescription's PrimitiveMetadata instead."))
   TSet<FString> PropertyTextureNames;
 
   /**
@@ -94,9 +113,10 @@ public:
    * models across the tileset.
    */
   UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Model Metadata",
-      Meta = (TitleProperty = "Name"))
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Use PropertyTables on the CesiumFeaturesMetadataDescription's ModelMetadata instead."))
   TArray<FCesiumPropertyTableDescription> PropertyTables;
 
   /**
@@ -104,8 +124,13 @@ public:
    * the tileset.
    */
   UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Model Metadata",
-      Meta = (TitleProperty = "Name"))
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Use PropertyTextures on the CesiumFeaturesMetadataDescription's ModelMetadata instead."))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
+
+protected:
+  /** PostLoad override. */
+  virtual void PostLoad() override;
 };
