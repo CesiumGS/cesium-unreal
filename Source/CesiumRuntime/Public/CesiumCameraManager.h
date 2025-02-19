@@ -2,11 +2,22 @@
 
 #pragma once
 
+#include "Camera/CameraComponent.h"
 #include "CesiumCamera.h"
 #include "Containers/Map.h"
 #include "GameFramework/Actor.h"
-
 #include "CesiumCameraManager.generated.h"
+
+USTRUCT(BlueprintType)
+struct CESIUMRUNTIME_API FCesiumViewGroup {
+  GENERATED_USTRUCT_BODY()
+
+  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
+  TSoftObjectPtr<AActor> ViewActor;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
+  TArray<TSoftObjectPtr<AActor>> CamerasAndSceneCaptures;
+};
 
 /**
  * @brief Manages custom {@link FCesiumCamera}s for all
@@ -71,6 +82,9 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
 
   virtual void Tick(float DeltaTime) override;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
+  TArray<FCesiumViewGroup> ViewGroups;
 
 private:
   int32 _currentCameraId = 0;

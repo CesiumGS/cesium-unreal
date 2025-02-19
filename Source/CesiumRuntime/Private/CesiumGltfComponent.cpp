@@ -3623,6 +3623,39 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 }
 
+void UCesiumGltfComponent::SetViewGroupVisibility(
+    const AActor* ViewActor,
+    bool visibility) {
+  bool* pVisibility = this->_viewGroupVisibility.Find(ViewActor);
+  if (!pVisibility || *pVisibility != visibility) {
+    this->_viewGroupVisibility.FindOrAdd(ViewActor) = visibility;
+
+    for (const TObjectPtr<USceneComponent>& pComponent :
+         this->GetAttachChildren()) {
+      UCesiumGltfPrimitiveComponent* pPrimitive =
+          Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+      if (!pPrimitive)
+        continue;
+
+      if (!pPrimitive->SceneProxy)
+        continue;
+
+      ENQUEUE_RENDER_COMMAND(Cesium_UpdateViewGroupVisibility)
+      ([viewGroupVisibility = this->_viewGroupVisibility,
+        pProxy = pPrimitive->SceneProxy](FRHICommandListImmediate& RHICmdList) mutable {
+        UCesiumGltfPrimitiveComponent::updateVisibilityInRenderThread(
+            pProxy,
+            std::move(viewGroupVisibility));
+      });
+    }
+  }
+}
+
+bool UCesiumGltfComponent::GetViewGroupVisibility(const AActor* ViewActor) {
+  bool* pResult = this->_viewGroupVisibility.Find(ViewActor);
+  return pResult && *pResult;
+}
+
 template <typename TIndex>
 #if ENGINE_VERSION_5_4_OR_HIGHER
 static Chaos::FTriangleMeshImplicitObjectPtr

@@ -134,7 +134,12 @@ public:
 
   void UpdateFade(float fadePercentage, bool fadingIn);
 
+  void SetViewGroupVisibility(const AActor* ViewActor, bool visibility);
+  bool GetViewGroupVisibility(const AActor* ViewActor);
+
 private:
   UPROPERTY()
   UTexture2D* Transparent1x1 = nullptr;
+
+  TMap<const AActor*, bool> _viewGroupVisibility;
 };
