@@ -77,9 +77,8 @@ CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type) {
   }
 }
 
-
-ECesiumEncodedMetadataComponentType
-CesiumMetadataComponentTypeToEncodingType(ECesiumMetadataComponentType ComponentType) {
+ECesiumEncodedMetadataComponentType CesiumMetadataComponentTypeToEncodingType(
+    ECesiumMetadataComponentType ComponentType) {
   switch (ComponentType) {
   case ECesiumMetadataComponentType::Int8: // lossy or reinterpreted
   case ECesiumMetadataComponentType::Uint8:
