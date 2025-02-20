@@ -30,7 +30,7 @@
 
 namespace LoadGltfResult {
 /**
- * Represents the result of loading a glTF primitive on a game thread.
+ * Represents the result of loading a glTF primitive on a load thread.
  * Temporarily holds render data that will be used in the Unreal material, as
  * well as any data that needs to be transferred to the corresponding
  * CesiumGltfPrimitiveComponent after it is created on the main thread.
@@ -156,7 +156,7 @@ struct LoadedPrimitiveResult {
 };
 
 /**
- * Represents the result of loading a glTF mesh on a game thread.
+ * Represents the result of loading a glTF mesh on a load thread.
  */
 struct LoadedMeshResult {
   LoadedMeshResult() {}
@@ -169,7 +169,7 @@ struct LoadedMeshResult {
 };
 
 /**
- * Represents the result of loading a glTF node on a game thread.
+ * Represents the result of loading a glTF node on a load thread.
  */
 struct LoadedNodeResult {
   LoadedNodeResult() {}
@@ -191,20 +191,20 @@ struct LoadedNodeResult {
 };
 
 /**
- * Represents the result of loading a glTF model on a game thread.
+ * Represents the result of loading a glTF model on a load thread.
  * Temporarily holds data that needs to be transferred to the corresponding
  * CesiumGltfComponent after it is created on the main thread.
  */
 struct LoadedModelResult {
   std::vector<LoadedNodeResult> nodeResults{};
 
-  // Parses the root EXT_structural_metadata extension.
+  /** Parses the root EXT_structural_metadata extension.*/
   FCesiumModelMetadata Metadata{};
 
-  // Encodes the EXT_structural_metadata on a glTF model.
+  /** Encodes the EXT_structural_metadata on a glTF model.*/
   CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
-  // For backwards compatibility with CesiumEncodedMetadataComponent.
+  /** For backwards compatibility with CesiumEncodedMetadataComponent.*/
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
 };
