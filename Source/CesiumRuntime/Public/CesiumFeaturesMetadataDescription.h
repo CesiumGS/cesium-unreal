@@ -300,20 +300,20 @@ public:
    * @brief Description of the feature ID sets available from the
    * EXT_mesh_features or EXT_instance_features extensions in a glTF.
    */
-  UPROPERTY(EditAnywhere, Meta = (TitleProperty = "Name"))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   FCesiumPrimitiveFeaturesDescription PrimitiveFeatures;
 
   /**
    * @brief Description of the metadata used by the EXT_structural_metadata on a
    * glTF's primitives.
    */
-  UPROPERTY(EditAnywhere, Meta = (TitleProperty = "Name"))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   FCesiumPrimitiveMetadataDescription PrimitiveMetadata;
 
   /**
    * @brief Description of metadata from a glTF's EXT_structural_metadata
    * extension.
    */
-  UPROPERTY(EditAnywhere, Meta = (TitleProperty = "Name"))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   FCesiumModelMetadataDescription ModelMetadata;
 };
