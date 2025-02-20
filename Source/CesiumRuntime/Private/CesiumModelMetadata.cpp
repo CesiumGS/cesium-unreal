@@ -24,7 +24,7 @@ FCesiumModelMetadata::FCesiumModelMetadata(
     this->_propertyTables.Emplace(FCesiumPropertyTable(
         InModel,
         propertyTable,
-        this->_enumDefinitions.ToWeakPtr()));
+        this->_enumDefinitions));
   }
 
   this->_propertyTextures.Reserve(Metadata.propertyTextures.size());
@@ -32,7 +32,7 @@ FCesiumModelMetadata::FCesiumModelMetadata(
     this->_propertyTextures.Emplace(FCesiumPropertyTexture(
         InModel,
         propertyTexture,
-        this->_enumDefinitions.ToWeakPtr()));
+        this->_enumDefinitions));
   }
 }
 

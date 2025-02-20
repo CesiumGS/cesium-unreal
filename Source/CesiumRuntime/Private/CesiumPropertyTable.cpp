@@ -8,7 +8,7 @@ static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 FCesiumPropertyTable::FCesiumPropertyTable(
     const CesiumGltf::Model& Model,
     const CesiumGltf::PropertyTable& PropertyTable,
-    const TWeakPtr<FCesiumMetadataEnumCollection>& EnumCollection)
+    const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
       _name(PropertyTable.name.value_or("").c_str()),
       _className(PropertyTable.classProperty.c_str()),
@@ -24,18 +24,26 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
+
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* ExtensionPtr =
+      Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+  // If there was no schema, we would've gotten ErrorMissingSchema for the propertyTableView status.
+  check(ExtensionPtr != nullptr || ExtensionPtr->schema != nullptr);
+
   propertyTableView.forEachProperty([&properties = _properties,
+                                     &Schema = *ExtensionPtr->schema,
+                                     &propertyTableView,
                                      &EnumCollection](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
+    const CesiumGltf::ClassProperty& classProperty =
+        *propertyTableView.getClassProperty(propertyName);
+
     TSharedPtr<FCesiumMetadataEnum> EnumDefinition;
-    if (EnumCollection.IsValid() && propertyValue.enumDefinition() != nullptr) {
-      const CesiumGltf::Enum* pEnumDefinition = propertyValue.enumDefinition();
-      if (pEnumDefinition->name) {
-        EnumDefinition = EnumCollection.Pin()->Get(
-            FString(UTF8_TO_TCHAR(pEnumDefinition->name->c_str())));
-      }
+    if (EnumCollection.IsValid() && classProperty.enumType.has_value()) {
+      EnumDefinition = EnumCollection->Get(
+          FString(UTF8_TO_TCHAR(classProperty.enumType.value().c_str())));
     }
 
     properties.Add(

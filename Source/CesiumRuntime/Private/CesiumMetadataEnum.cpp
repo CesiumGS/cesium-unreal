@@ -3,6 +3,7 @@
 #include "CesiumMetadataEnum.h"
 
 #include "Misc/Optional.h"
+#include "Containers/UnrealString.h"
 #include <CesiumGltf/Enum.h>
 #include <CesiumGltf/EnumValue.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>

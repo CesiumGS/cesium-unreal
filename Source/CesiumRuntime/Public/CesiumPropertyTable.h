@@ -69,7 +69,7 @@ public:
   FCesiumPropertyTable(
       const CesiumGltf::Model& Model,
       const CesiumGltf::PropertyTable& PropertyTable,
-      const TWeakPtr<FCesiumMetadataEnumCollection>& EnumCollection);
+      const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.

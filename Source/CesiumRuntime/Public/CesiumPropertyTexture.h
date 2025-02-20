@@ -43,12 +43,15 @@ public:
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
       const CesiumGltf::PropertyTexture& PropertyTexture)
-      : FCesiumPropertyTexture(model, PropertyTexture, nullptr) {}
+      : FCesiumPropertyTexture(
+            model,
+            PropertyTexture,
+            FCesiumMetadataEnumCollection::GetOrCreateFromModel(model)) {}
 
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
       const CesiumGltf::PropertyTexture& PropertyTexture,
-      const TWeakPtr<FCesiumMetadataEnumCollection>& EnumCollection);
+      const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.
