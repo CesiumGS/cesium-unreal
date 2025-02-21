@@ -62,7 +62,9 @@ public:
   template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
       const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property)
-      : FCesiumPropertyTableProperty(Property, nullptr) {}
+      : FCesiumPropertyTableProperty(
+            Property,
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   /**
    * Construct a wrapper for the property table property view.
@@ -77,7 +79,7 @@ public:
         _property(Property),
         _valueType(),
         _normalized(Normalized),
-        _enumDefinition(EnumDefinition) {
+        _pEnumDefinition(EnumDefinition) {
     switch (Property.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
@@ -107,7 +109,7 @@ public:
       return;
     }
 
-    _valueType = TypeToMetadataValueType<T>();
+    _valueType = TypeToMetadataValueType<T>(EnumDefinition);
     _normalized = Normalized;
   }
 
@@ -118,7 +120,7 @@ private:
 
   FCesiumMetadataValueType _valueType;
   bool _normalized;
-  TSharedPtr<FCesiumMetadataEnum> _enumDefinition;
+  TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumPropertyTablePropertyBlueprintLibrary;
 };

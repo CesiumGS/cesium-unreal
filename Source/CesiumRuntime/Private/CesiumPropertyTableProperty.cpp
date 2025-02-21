@@ -727,6 +727,7 @@ TResult arrayPropertyTablePropertyCallback(
     Callback&& callback) {
   switch (valueType.Type) {
   case ECesiumMetadataType::Scalar:
+  case ECesiumMetadataType::Enum:
     return scalarArrayPropertyTablePropertyCallback<
         Normalized,
         TResult,
@@ -791,6 +792,11 @@ TResult propertyTablePropertyCallback(
                      property,
                      valueType,
                      std::forward<Callback>(callback));
+  case ECesiumMetadataType::Enum:
+    return scalarPropertyTablePropertyCallback<false, TResult, Callback>(
+        property,
+        valueType,
+        std::forward<Callback>(callback));
   case ECesiumMetadataType::Vec2:
   case ECesiumMetadataType::Vec3:
   case ECesiumMetadataType::Vec4:
@@ -1240,7 +1246,7 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID, &DefaultValue, &EnumDefinition = Property._enumDefinition](
+      [FeatureID, &DefaultValue, &EnumDefinition = Property._pEnumDefinition](
           const auto& v) -> FString {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
@@ -1260,15 +1266,17 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
             CesiumGltf::IsMetadataString<ValueType>::value) {
           return UnrealMetadataConversions::toString(value);
         } else {
-          auto maybeString = CesiumGltf::
-              MetadataConversions<std::string, decltype(value)>::convert(value);
-
           if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
             if (EnumDefinition.IsValid()) {
-              return EnumDefinition->GetName(value).Get(
-                  UnrealMetadataConversions::toString(*maybeString));
+              TOptional<FString> MaybeName = EnumDefinition->GetName(value);
+              if (MaybeName.IsSet()) {
+                return MaybeName.GetValue();
+              }
             }
           }
+
+          auto maybeString = CesiumGltf::
+              MetadataConversions<std::string, decltype(value)>::convert(value);
 
           return maybeString ? UnrealMetadataConversions::toString(*maybeString)
                              : DefaultValue;

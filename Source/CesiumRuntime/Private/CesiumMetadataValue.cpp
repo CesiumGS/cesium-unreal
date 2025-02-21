@@ -16,7 +16,7 @@ FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
     : _value(),
       _valueType(rhs._valueType),
       _storage(rhs._storage),
-      _enumDefinition(rhs._enumDefinition) {
+      _pEnumDefinition(rhs._pEnumDefinition) {
   swl::visit(
       [this](const auto& value) {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
@@ -280,15 +280,18 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
             CesiumGltf::IsMetadataString<ValueType>::value) {
           return UnrealMetadataConversions::toString(value);
         } else {
-          auto maybeString = CesiumGltf::
-              MetadataConversions<std::string, decltype(value)>::convert(value);
-
           if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
-            if (Value._enumDefinition.IsValid()) {
-              return Value._enumDefinition->GetName(value).Get(
-                  UnrealMetadataConversions::toString(*maybeString));
+            if (Value._pEnumDefinition.IsValid()) {
+              TOptional<FString> MaybeName =
+                  Value._pEnumDefinition->GetName(value);
+              if (MaybeName.IsSet()) {
+                return MaybeName.GetValue();
+              }
             }
           }
+
+          auto maybeString = CesiumGltf::
+              MetadataConversions<std::string, decltype(value)>::convert(value);
 
           return maybeString ? UnrealMetadataConversions::toString(*maybeString)
                              : DefaultValue;
@@ -300,9 +303,10 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
   return swl::visit(
-      [](auto value) -> FCesiumPropertyArray {
+      [&EnumDefinition =
+           Value._pEnumDefinition](auto value) -> FCesiumPropertyArray {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          return FCesiumPropertyArray(value);
+          return FCesiumPropertyArray(value, EnumDefinition);
         }
         return FCesiumPropertyArray();
       },

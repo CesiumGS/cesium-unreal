@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "CesiumGltf/Enum.h"
 #include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.generated.h"
 
 /**
@@ -107,6 +109,7 @@ enum class ECesiumMetadataType : uint8 {
   Mat4 = int(CesiumGltf::PropertyType::Mat4),
   Boolean = int(CesiumGltf::PropertyType::Boolean),
   String = int(CesiumGltf::PropertyType::String),
+  Enum = int(CesiumGltf::PropertyType::Enum)
 };
 
 template <typename T> struct TypeToCesiumMetadataType;
@@ -248,19 +251,29 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
 };
 
 template <typename T>
-static FCesiumMetadataValueType TypeToMetadataValueType() {
+static FCesiumMetadataValueType
+TypeToMetadataValueType(TSharedPtr<FCesiumMetadataEnum> pEnumDefinition) {
   ECesiumMetadataType type;
   ECesiumMetadataComponentType componentType;
   bool isArray;
 
   if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
     using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-    type = TypeToCesiumMetadataType<ArrayType>::value;
+    if (CesiumGltf::IsMetadataInteger<ArrayType>::value &&
+        pEnumDefinition != nullptr) {
+      type = ECesiumMetadataType::Enum;
+    } else {
+      type = TypeToCesiumMetadataType<ArrayType>::value;
+    }
     componentType = ECesiumMetadataComponentType(
         CesiumGltf::TypeToPropertyComponentType<ArrayType>::component);
     isArray = true;
   } else {
-    type = TypeToCesiumMetadataType<T>::value;
+    if (CesiumGltf::IsMetadataInteger<T>::value && pEnumDefinition.IsValid()) {
+      type = ECesiumMetadataType::Enum;
+    } else {
+      type = TypeToCesiumMetadataType<T>::value;
+    }
     componentType = ECesiumMetadataComponentType(
         CesiumGltf::TypeToPropertyComponentType<T>::component);
     isArray = false;

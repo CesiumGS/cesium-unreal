@@ -177,7 +177,10 @@ public:
    * Constructs an empty metadata value with unknown type.
    */
   FCesiumMetadataValue()
-      : _value(swl::monostate{}), _valueType(), _storage(), _enumDefinition() {}
+      : _value(swl::monostate{}),
+        _valueType(),
+        _storage(),
+        _pEnumDefinition() {}
 
   /**
    * Constructs a metadata value with the given input.
@@ -191,8 +194,8 @@ public:
       : _value(Value),
         _valueType(),
         _storage(),
-        _enumDefinition(EnumDefinition) {
-    _valueType = TypeToMetadataValueType<T>();
+        _pEnumDefinition(EnumDefinition) {
+    _valueType = TypeToMetadataValueType<T>(EnumDefinition);
   }
 
   /**
@@ -202,7 +205,9 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value)
-      : FCesiumMetadataValue(std::move(Value), nullptr) {}
+      : FCesiumMetadataValue(
+            std::move(Value),
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
@@ -221,7 +226,7 @@ public:
   explicit FCesiumMetadataValue(
       CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
       const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
-      : _value(), _valueType(), _storage(), _enumDefinition(EnumDefinition) {
+      : _value(), _valueType(), _storage(), _pEnumDefinition(EnumDefinition) {
     this->_value = std::move(Copy).toViewAndExternalBuffer(this->_storage);
 
     ECesiumMetadataType type = TypeToCesiumMetadataType<ArrayType>::value;
@@ -233,7 +238,9 @@ public:
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy)
-      : FCesiumMetadataValue(std::move(Copy), nullptr) {}
+      : FCesiumMetadataValue(
+            std::move(Copy),
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   /**
    * Constructs a metadata value with the given optional input.
@@ -244,7 +251,7 @@ public:
   explicit FCesiumMetadataValue(
       const std::optional<T>& MaybeValue,
       const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
-      : _value(), _valueType(), _storage(), _enumDefinition(EnumDefinition) {
+      : _value(), _valueType(), _storage(), _pEnumDefinition(EnumDefinition) {
     if (!MaybeValue) {
       return;
     }
@@ -257,7 +264,9 @@ public:
 
   template <typename T>
   explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue)
-      : FCesiumMetadataValue(MaybeValue, nullptr) {}
+      : FCesiumMetadataValue(
+            MaybeValue,
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   FCesiumMetadataValue(FCesiumMetadataValue&& rhs);
   FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs);
@@ -268,7 +277,7 @@ private:
   ValueType _value;
   FCesiumMetadataValueType _valueType;
   std::vector<std::byte> _storage;
-  TSharedPtr<FCesiumMetadataEnum> _enumDefinition;
+  TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
 };

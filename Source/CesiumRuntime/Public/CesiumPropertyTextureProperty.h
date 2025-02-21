@@ -51,7 +51,9 @@ public:
   template <typename T, bool Normalized>
   FCesiumPropertyTextureProperty(
       const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property)
-      : FCesiumPropertyTextureProperty(Property, nullptr) {}
+      : FCesiumPropertyTextureProperty(
+            Property,
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   template <typename T, bool Normalized>
   FCesiumPropertyTextureProperty(
@@ -100,7 +102,7 @@ public:
       return;
     }
 
-    _valueType = TypeToMetadataValueType<T>();
+    _valueType = TypeToMetadataValueType<T>(EnumDefinition);
     _normalized = Normalized;
   }
 

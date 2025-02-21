@@ -64,8 +64,8 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
             TSharedPtr<FCesiumMetadataEnum> EnumDefinition;
             if (EnumCollection.IsValid() &&
                 classProperty.enumType.has_value()) {
-              EnumDefinition = EnumCollection->Get(
-                  FString(UTF8_TO_TCHAR(classProperty.enumType.value().c_str())));
+              EnumDefinition = EnumCollection->Get(FString(
+                  UTF8_TO_TCHAR(classProperty.enumType.value().c_str())));
             }
 
             properties.Add(

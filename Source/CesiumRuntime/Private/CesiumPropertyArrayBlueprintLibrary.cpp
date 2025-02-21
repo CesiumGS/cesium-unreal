@@ -163,13 +163,26 @@ FString UCesiumPropertyArrayBlueprintLibrary::GetString(
     int64 index,
     const FString& defaultValue) {
   return swl::visit(
-      [index, defaultValue](const auto& v) -> FString {
+      [index, defaultValue, &EnumDefinition = array._pEnumDefinition](
+          const auto& v) -> FString {
         if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
-        auto maybeString = CesiumGltf::
-            MetadataConversions<std::string, decltype(value)>::convert(value);
+        using ValueType = decltype(value);
+
+        if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
+          if (EnumDefinition.IsValid()) {
+            TOptional<FString> MaybeName = EnumDefinition->GetName(value);
+            if (MaybeName.IsSet()) {
+              return MaybeName.GetValue();
+            }
+          }
+        }
+
+        auto maybeString =
+            CesiumGltf::MetadataConversions<std::string, ValueType>::convert(
+                value);
         if (!maybeString) {
           return defaultValue;
         }

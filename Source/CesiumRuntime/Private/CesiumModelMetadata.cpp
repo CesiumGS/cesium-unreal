@@ -21,10 +21,8 @@ FCesiumModelMetadata::FCesiumModelMetadata(
 
   this->_propertyTables.Reserve(Metadata.propertyTables.size());
   for (const auto& propertyTable : Metadata.propertyTables) {
-    this->_propertyTables.Emplace(FCesiumPropertyTable(
-        InModel,
-        propertyTable,
-        this->_enumDefinitions));
+    this->_propertyTables.Emplace(
+        FCesiumPropertyTable(InModel, propertyTable, this->_enumDefinitions));
   }
 
   this->_propertyTextures.Reserve(Metadata.propertyTextures.size());

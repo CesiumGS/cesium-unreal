@@ -22,8 +22,9 @@ GetBestFittingEncodedType(FCesiumMetadataPropertyDetails PropertyDetails) {
     }
 
     if (type != ECesiumMetadataType::Boolean &&
-        type != ECesiumMetadataType::Scalar) {
-      // Only boolean and scalar array properties are supported.
+        type != ECesiumMetadataType::Scalar &&
+        type != ECesiumMetadataType::Enum) {
+      // Only boolean, scalar, and enum array properties are supported.
       return ECesiumEncodedMetadataType::None;
     }
 
@@ -46,6 +47,7 @@ GetBestFittingEncodedType(FCesiumMetadataPropertyDetails PropertyDetails) {
   switch (type) {
   case ECesiumMetadataType::Boolean:
   case ECesiumMetadataType::Scalar:
+  case ECesiumMetadataType::Enum:
     return ECesiumEncodedMetadataType::Scalar;
   case ECesiumMetadataType::Vec2:
     return ECesiumEncodedMetadataType::Vec2;
@@ -83,6 +85,7 @@ ECesiumEncodedMetadataType
 
 CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type) {
   switch (Type) {
+  case ECesiumMetadataType::Enum:
   case ECesiumMetadataType::Scalar:
     return ECesiumEncodedMetadataType::Scalar;
   case ECesiumMetadataType::Vec2:
@@ -343,7 +346,8 @@ bool CesiumEncodedMetadataCoerce::canEncode(
   const ECesiumMetadataType type = description.PropertyDetails.Type;
 
   if (type == ECesiumMetadataType::Boolean ||
-      type == ECesiumMetadataType::String) {
+      type == ECesiumMetadataType::String ||
+      type == ECesiumMetadataType::Enum) {
     // Booleans and boolean arrays are supported.
     // Strings and string arrays are technically supported for all encoded
     // types. This will attempt to coerce a string by parsing it as the

@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
 #include "UObject/ObjectMacros.h"
 #include <swl/variant.hpp>
@@ -102,13 +103,14 @@ public:
    */
   FCesiumPropertyArray() : _value(), _elementType() {}
 
-  /**
-   * Constructs an array instance.
-   * @param value The property array view that will be stored in this struct
-   */
   template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>&& value)
-      : _value(), _elementType(), _storage() {
+  FCesiumPropertyArray(
+      CesiumGltf::PropertyArrayCopy<T>&& value,
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
+      : _value(),
+        _elementType(),
+        _storage(),
+        _pEnumDefinition(pEnumDefinition) {
     this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
     ECesiumMetadataType type = TypeToCesiumMetadataType<T>::value;
     ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
@@ -118,13 +120,33 @@ public:
     _elementType = {type, componentType, isArray};
   }
 
+  /**
+   * Constructs an array instance.
+   * @param value The property array view that will be stored in this struct
+   */
+  template <typename T>
+  FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>&& value)
+      : FCesiumPropertyArray(
+            MoveTemp(value),
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
+
   template <typename T>
   FCesiumPropertyArray(const CesiumGltf::PropertyArrayCopy<T>& value)
       : FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>(value)) {}
 
   template <typename T>
-  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
-      : _value(value), _elementType() {
+  FCesiumPropertyArray(
+      const CesiumGltf::PropertyArrayCopy<T>& value,
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
+      : FCesiumPropertyArray(
+            CesiumGltf::PropertyArrayCopy<T>(value),
+            pEnumDefinition) {}
+
+  template <typename T>
+  FCesiumPropertyArray(
+      const CesiumGltf::PropertyArrayView<T>& value,
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
+      : _value(value), _elementType(), _pEnumDefinition(pEnumDefinition) {
     ECesiumMetadataType type = TypeToCesiumMetadataType<T>::value;
     ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
         CesiumGltf::TypeToPropertyComponentType<T>::component);
@@ -132,6 +154,10 @@ public:
 
     _elementType = {type, componentType, isArray};
   }
+
+  template <typename T>
+  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
+      : FCesiumPropertyArray(value, TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   FCesiumPropertyArray(FCesiumPropertyArray&& rhs);
   FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs);
@@ -148,6 +174,7 @@ private:
   ArrayType _value;
   FCesiumMetadataValueType _elementType;
   std::vector<std::byte> _storage;
+  TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumPropertyArrayBlueprintLibrary;
 };

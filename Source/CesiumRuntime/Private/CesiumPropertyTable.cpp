@@ -24,10 +24,10 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
-
   const CesiumGltf::ExtensionModelExtStructuralMetadata* ExtensionPtr =
       Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
-  // If there was no schema, we would've gotten ErrorMissingSchema for the propertyTableView status.
+  // If there was no schema, we would've gotten ErrorMissingSchema for the
+  // propertyTableView status.
   check(ExtensionPtr != nullptr || ExtensionPtr->schema != nullptr);
 
   propertyTableView.forEachProperty([&properties = _properties,
