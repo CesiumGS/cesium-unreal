@@ -1,10 +1,16 @@
 # Change Log
 
-### v2.13.3 - 2025-02-11
+### ? - ?
+
+##### Additions :tada:
 
 - Added support for drawing 3D Tilesets to Runtime Virtual textures
 - Added MLB_AngleMask for masking Material Layers based on a tangent vector
 - Added ML_CesiumRVTBaseColorOverlay for Overlaying the BaseColor of an RVT in your material
+
+### v2.13.3 - 2025-02-12
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.2 to v0.44.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.13.2 - 2025-02-10
 
@@ -52,6 +58,10 @@ In addition to the above, this release updates [cesium-native](https://github.co
 - Fixed a bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.43.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.11.1 - 2025-02-14
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.42.1 in order to fix a critical bug when using Google Photorealistic 3D Tiles. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.11.0 - 2024-12-02
 
