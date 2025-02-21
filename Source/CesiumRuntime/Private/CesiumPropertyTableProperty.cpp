@@ -1291,7 +1291,8 @@ FCesiumPropertyArray UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID](const auto& v) -> FCesiumPropertyArray {
+      [FeatureID, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& v) -> FCesiumPropertyArray {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= v.size()) {
           return FCesiumPropertyArray();
@@ -1300,7 +1301,7 @@ FCesiumPropertyArray UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
         if (maybeValue) {
           auto value = *maybeValue;
           if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-            return FCesiumPropertyArray(std::move(value));
+            return FCesiumPropertyArray(std::move(value), pEnumDefinition);
           }
         }
         return FCesiumPropertyArray();
@@ -1314,10 +1315,11 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID](const auto& view) -> FCesiumMetadataValue {
+      [FeatureID, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
         // size() returns zero if the view is invalid.
         if (FeatureID >= 0 && FeatureID < view.size()) {
-          return FCesiumMetadataValue(view.get(FeatureID));
+          return FCesiumMetadataValue(view.get(FeatureID), pEnumDefinition);
         }
         return FCesiumMetadataValue();
       });
@@ -1330,7 +1332,8 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [FeatureID](const auto& view) -> FCesiumMetadataValue {
+      [FeatureID, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
         // Return an empty value if the property is empty.
         if (view.status() == CesiumGltf::PropertyTablePropertyViewStatus::
                                  EmptyPropertyWithDefault) {
@@ -1340,7 +1343,8 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(
         // size() returns zero if the view is invalid.
         if (FeatureID >= 0 && FeatureID < view.size()) {
           return FCesiumMetadataValue(
-              CesiumGltf::propertyValueViewToCopy(view.getRaw(FeatureID)));
+              CesiumGltf::propertyValueViewToCopy(view.getRaw(FeatureID)),
+              pEnumDefinition);
         }
 
         return FCesiumMetadataValue();

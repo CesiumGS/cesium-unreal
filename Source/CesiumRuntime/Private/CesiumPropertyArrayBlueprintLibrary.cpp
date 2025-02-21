@@ -36,7 +36,8 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index) {
   return swl::visit(
-      [index](const auto& v) -> FCesiumMetadataValue {
+      [index, &pEnumDefinition = array._pEnumDefinition](
+          const auto& v) -> FCesiumMetadataValue {
         if (index < 0 || index >= v.size()) {
           FFrame::KismetExecutionMessage(
               *FString::Printf(
@@ -48,7 +49,7 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
               FName("CesiumPropertyArrayOutOfBoundsWarning"));
           return FCesiumMetadataValue();
         }
-        return FCesiumMetadataValue(v[index]);
+        return FCesiumMetadataValue(v[index], pEnumDefinition);
       },
       array._value);
 }

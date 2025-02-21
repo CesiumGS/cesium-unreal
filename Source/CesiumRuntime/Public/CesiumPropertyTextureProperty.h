@@ -63,7 +63,7 @@ public:
         _property(Property),
         _valueType(),
         _normalized(Normalized),
-        _enumDefinition(EnumDefinition) {
+        _pEnumDefinition(EnumDefinition) {
     switch (Property.status()) {
     case CesiumGltf::PropertyTexturePropertyViewStatus::Valid:
       _status = ECesiumPropertyTexturePropertyStatus::Valid;
@@ -119,7 +119,7 @@ private:
 
   FCesiumMetadataValueType _valueType;
   bool _normalized;
-  TSharedPtr<FCesiumMetadataEnum> _enumDefinition;
+  TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumPropertyTexturePropertyBlueprintLibrary;
 };
