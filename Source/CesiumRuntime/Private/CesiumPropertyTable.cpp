@@ -24,14 +24,14 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
-  const CesiumGltf::ExtensionModelExtStructuralMetadata* ExtensionPtr =
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
       Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   // If there was no schema, we would've gotten ErrorMissingSchema for the
   // propertyTableView status.
-  check(ExtensionPtr != nullptr || ExtensionPtr->schema != nullptr);
+  check(pExtension != nullptr && pExtension->schema != nullptr);
 
   propertyTableView.forEachProperty([&properties = _properties,
-                                     &Schema = *ExtensionPtr->schema,
+                                     &Schema = *pExtension->schema,
                                      &propertyTableView,
                                      &EnumCollection](
                                         const std::string& propertyName,
@@ -40,7 +40,7 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     const CesiumGltf::ClassProperty& classProperty =
         *propertyTableView.getClassProperty(propertyName);
 
-    TSharedPtr<FCesiumMetadataEnum> EnumDefinition;
+    TSharedPtr<FCesiumMetadataEnum> EnumDefinition(nullptr);
     if (EnumCollection.IsValid() && classProperty.enumType.has_value()) {
       EnumDefinition = EnumCollection->Get(
           FString(UTF8_TO_TCHAR(classProperty.enumType.value().c_str())));

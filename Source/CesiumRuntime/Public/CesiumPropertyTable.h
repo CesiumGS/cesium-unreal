@@ -65,6 +65,7 @@ public:
    *
    * @param Model The model that stores EXT_structural_metadata.
    * @param PropertyTable The target property table.
+   * @param EnumCollection The enum collection to use, if any.
    */
   FCesiumPropertyTable(
       const CesiumGltf::Model& Model,

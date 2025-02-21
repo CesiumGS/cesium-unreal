@@ -89,6 +89,21 @@ void FCesiumMetadataValueSpec::Define() {
       TestFalse("IsArray", valueType.bIsArray);
     });
 
+    It("constructs enum value with correct type", [this]() {
+      FCesiumMetadataValue value(
+          0,
+          MakeShared<FCesiumMetadataEnum>(
+              StaticEnum<ECesiumMetadataBlueprintType>()));
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
+      TestEqual("Type", valueType.Type, ECesiumMetadataType::Enum);
+      TestEqual(
+          "ComponentType",
+          valueType.ComponentType,
+          ECesiumMetadataComponentType::Int32);
+      TestFalse("IsArray", valueType.bIsArray);
+    });
+
     It("constructs array value with correct type", [this]() {
       CesiumGltf::PropertyArrayCopy<uint8_t> arrayView;
       FCesiumMetadataValue value(arrayView);

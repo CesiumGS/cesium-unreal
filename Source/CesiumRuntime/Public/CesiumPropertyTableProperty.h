@@ -54,6 +54,7 @@ public:
         _property(),
         _valueType(),
         _normalized(false) {}
+
   /**
    * Construct a wrapper for the property table property view.
    *
@@ -70,6 +71,7 @@ public:
    * Construct a wrapper for the property table property view.
    *
    * @param Property The PropertyTablePropertyView to be stored in this struct.
+   * @param EnumDefinition The enum definition to use, if any.
    */
   template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(

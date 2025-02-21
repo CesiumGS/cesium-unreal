@@ -10,6 +10,11 @@
 #include <CesiumGltf/Model.h>
 #include <CesiumGltf/Schema.h>
 
+/**
+ * @brief Stores the @ref FCesiumMetadataEnumCollection constructed from a
+ * model's structural metadata schema to avoid constructing multiple enum
+ * collections for the same schema.
+ */
 struct ExtensionUnrealMetadataEnumCollection {
   static inline constexpr const char* TypeName =
       "ExtensionUnrealMetadataEnumCollection";
@@ -22,8 +27,7 @@ struct ExtensionUnrealMetadataEnumCollection {
       : EnumCollection(MakeShared<FCesiumMetadataEnumCollection>(Schema)) {}
 };
 
-FCesiumMetadataEnum::FCesiumMetadataEnum(const CesiumGltf::Enum& Enum)
-    : _name(UTF8_TO_TCHAR(Enum.name.value_or("").c_str())) {
+FCesiumMetadataEnum::FCesiumMetadataEnum(const CesiumGltf::Enum& Enum) {
   this->_valueNames.Reserve(Enum.values.size());
   for (const CesiumGltf::EnumValue& enumValue : Enum.values) {
     const FString Name(UTF8_TO_TCHAR(enumValue.name.c_str()));
@@ -32,10 +36,9 @@ FCesiumMetadataEnum::FCesiumMetadataEnum(const CesiumGltf::Enum& Enum)
 }
 
 FCesiumMetadataEnum::FCesiumMetadataEnum(const UEnum* UnrealEnum)
-    : _name(), _valueNames() {
+    : _valueNames() {
   if (UnrealEnum != nullptr) {
     const int32 NumEntries = UnrealEnum->NumEnums();
-    UnrealEnum->GetName(_name);
     _valueNames.Reserve(NumEntries);
 
     for (int32 i = 0; i < NumEntries; i++) {
@@ -48,11 +51,7 @@ FCesiumMetadataEnum::FCesiumMetadataEnum(const UEnum* UnrealEnum)
 
 TOptional<FString> FCesiumMetadataEnum::GetName(int64_t Value) const {
   const FString* FoundName = this->_valueNames.Find(Value);
-  if (FoundName == nullptr) {
-    return {};
-  }
-
-  return *FoundName;
+  return FoundName ? *FoundName : TOptional<FString>();
 }
 
 FCesiumMetadataEnumCollection::FCesiumMetadataEnumCollection(
@@ -70,7 +69,7 @@ FCesiumMetadataEnumCollection::Get(const FString& InName) const {
   const TSharedRef<FCesiumMetadataEnum>* MaybeDefinition =
       this->_enumDefinitions.Find(InName);
   if (MaybeDefinition == nullptr) {
-    return TSharedPtr<FCesiumMetadataEnum>();
+    return TSharedPtr<FCesiumMetadataEnum>(nullptr);
   }
 
   return MaybeDefinition->ToSharedPtr();
@@ -79,10 +78,10 @@ FCesiumMetadataEnumCollection::Get(const FString& InName) const {
 TSharedRef<FCesiumMetadataEnumCollection>
 FCesiumMetadataEnumCollection::GetOrCreateFromSchema(
     CesiumGltf::Schema& Schema) {
-  const ExtensionUnrealMetadataEnumCollection* ExtensionPtr =
+  const ExtensionUnrealMetadataEnumCollection* pExtension =
       Schema.getExtension<ExtensionUnrealMetadataEnumCollection>();
-  if (ExtensionPtr != nullptr) {
-    return ExtensionPtr->EnumCollection;
+  if (pExtension != nullptr) {
+    return pExtension->EnumCollection;
   }
 
   ExtensionUnrealMetadataEnumCollection& NewExtension =
@@ -93,12 +92,12 @@ FCesiumMetadataEnumCollection::GetOrCreateFromSchema(
 TSharedPtr<FCesiumMetadataEnumCollection>
 FCesiumMetadataEnumCollection::GetOrCreateFromModel(
     const CesiumGltf::Model& Model) {
-  const CesiumGltf::ExtensionModelExtStructuralMetadata* ExtensionPtr =
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
       Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
-  if (ExtensionPtr == nullptr || ExtensionPtr->schema == nullptr) {
-    return {};
+  if (pExtension == nullptr || pExtension->schema == nullptr) {
+    return TSharedPtr<FCesiumMetadataEnumCollection>(nullptr);
   }
 
   return FCesiumMetadataEnumCollection::GetOrCreateFromSchema(
-      *ExtensionPtr->schema);
+      *pExtension->schema);
 }

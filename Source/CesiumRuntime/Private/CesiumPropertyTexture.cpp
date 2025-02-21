@@ -25,11 +25,11 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     return;
   }
 
-  const CesiumGltf::ExtensionModelExtStructuralMetadata* ExtensionPtr =
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
       Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   // If there was no schema, we would've gotten ErrorMissingSchema for the
   // propertyTextureView status.
-  check(ExtensionPtr != nullptr || ExtensionPtr->schema != nullptr);
+  check(pExtension != nullptr && pExtension->schema != nullptr);
 
   const CesiumGltf::Class* pClass = propertyTextureView.getClass();
   for (const auto& classPropertyPair : pClass->properties) {
@@ -54,7 +54,7 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
           [&properties = this->_properties,
            &EnumCollection,
            &propertyTextureView,
-           &Schema = *ExtensionPtr->schema](
+           &Schema = *pExtension->schema](
               const std::string& propertyId,
               auto propertyValue) mutable {
             FString key(UTF8_TO_TCHAR(propertyId.data()));
