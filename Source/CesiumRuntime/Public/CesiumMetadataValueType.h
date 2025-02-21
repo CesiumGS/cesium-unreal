@@ -112,69 +112,6 @@ enum class ECesiumMetadataType : uint8 {
   Enum = int(CesiumGltf::PropertyType::Enum)
 };
 
-template <typename T> struct TypeToCesiumMetadataType;
-
-template <> struct TypeToCesiumMetadataType<uint8_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<int8_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<uint16_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<int16_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<uint32_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<int32_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<uint64_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<int64_t> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<float> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<double> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Scalar;
-};
-template <> struct TypeToCesiumMetadataType<std::string_view> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::String;
-};
-template <> struct TypeToCesiumMetadataType<bool> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Boolean;
-};
-template <typename T, glm::qualifier P>
-struct TypeToCesiumMetadataType<glm::vec<2, T, P>> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Vec2;
-};
-template <typename T, glm::qualifier P>
-struct TypeToCesiumMetadataType<glm::vec<3, T, P>> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Vec3;
-};
-template <typename T, glm::qualifier P>
-struct TypeToCesiumMetadataType<glm::vec<4, T, P>> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Vec4;
-};
-template <typename T, glm::qualifier P>
-struct TypeToCesiumMetadataType<glm::mat<2, 2, T, P>> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Mat2;
-};
-template <typename T, glm::qualifier P>
-struct TypeToCesiumMetadataType<glm::mat<3, 3, T, P>> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Mat3;
-};
-template <typename T, glm::qualifier P>
-struct TypeToCesiumMetadataType<glm::mat<4, 4, T, P>> {
-  static constexpr ECesiumMetadataType value = ECesiumMetadataType::Mat4;
-};
-
 /**
  * The component type of a metadata property in EXT_structural_metadata. Only
  * applicable if the property has a Scalar, VecN, or MatN type.
@@ -263,20 +200,21 @@ TypeToMetadataValueType(TSharedPtr<FCesiumMetadataEnum> pEnumDefinition) {
         pEnumDefinition != nullptr) {
       type = ECesiumMetadataType::Enum;
     } else {
-      type = TypeToCesiumMetadataType<ArrayType>::value;
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
     }
     componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyComponentType<ArrayType>::component);
+        CesiumGltf::TypeToPropertyType<ArrayType>::component);
     isArray = true;
   } else {
     if (CesiumGltf::IsMetadataInteger<T>::value && pEnumDefinition.IsValid()) {
       type = ECesiumMetadataType::Enum;
       componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyComponentType<T>::component);
+          CesiumGltf::TypeToPropertyType<T>::component);
     } else {
-      type = TypeToCesiumMetadataType<T>::value;
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
       componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyComponentType<T>::component);
+          CesiumGltf::TypeToPropertyType<T>::component);
     }
     isArray = false;
   }
@@ -285,7 +223,7 @@ TypeToMetadataValueType(TSharedPtr<FCesiumMetadataEnum> pEnumDefinition) {
 }
 
 /**
- * Gets the size in bytes of the represented metadata type. Returns 0 for enums
+ * Gets the size in bytes of the represented metadapta type. Returns 0 for enums
  * and strings.
  */
 static size_t GetMetadataTypeByteSize(

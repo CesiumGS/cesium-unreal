@@ -112,12 +112,7 @@ public:
         _storage(),
         _pEnumDefinition(pEnumDefinition) {
     this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
-    ECesiumMetadataType type = TypeToCesiumMetadataType<T>::value;
-    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyComponentType<T>::component);
-    bool isArray = false;
-
-    _elementType = {type, componentType, isArray};
+    _elementType = TypeToMetadataValueType<T>(pEnumDefinition);
   }
 
   /**
@@ -147,12 +142,7 @@ public:
       const CesiumGltf::PropertyArrayView<T>& value,
       TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
       : _value(value), _elementType(), _pEnumDefinition(pEnumDefinition) {
-    ECesiumMetadataType type = TypeToCesiumMetadataType<T>::value;
-    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyComponentType<T>::component);
-    bool isArray = false;
-
-    _elementType = {type, componentType, isArray};
+    _elementType = TypeToMetadataValueType<T>(pEnumDefinition);
   }
 
   template <typename T>

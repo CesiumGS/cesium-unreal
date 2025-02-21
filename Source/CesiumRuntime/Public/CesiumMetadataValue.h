@@ -217,23 +217,20 @@ public:
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
       const CesiumGltf::PropertyArrayCopy<ArrayType>& Copy,
-      const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
       : FCesiumMetadataValue(
             CesiumGltf::PropertyArrayCopy<ArrayType>(Copy),
-            EnumDefinition) {}
+            pEnumDefinition) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
       CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
-      const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
-      : _value(), _valueType(), _storage(), _pEnumDefinition(EnumDefinition) {
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
+      : _value(), _valueType(), _storage(), _pEnumDefinition(pEnumDefinition) {
     this->_value = std::move(Copy).toViewAndExternalBuffer(this->_storage);
-
-    ECesiumMetadataType type = TypeToCesiumMetadataType<ArrayType>::value;
-    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyComponentType<ArrayType>::component);
-    bool isArray = true;
-    this->_valueType = {type, componentType, isArray};
+    this->_valueType =
+        TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
+            pEnumDefinition);
   }
 
   template <typename ArrayType>
