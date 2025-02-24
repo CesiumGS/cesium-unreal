@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Math/Matrix.h"
+#include "Math/Transform.h"
 #include <glm/glm.hpp>
 
 #include <algorithm>
