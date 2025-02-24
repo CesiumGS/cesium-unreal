@@ -84,6 +84,7 @@ public:
       TextureGroup textureGroup,
       uint32 width,
       uint32 height,
+      uint32 depth,
       EPixelFormat format,
       TextureFilter filter,
       TextureAddress addressX,
@@ -95,6 +96,7 @@ public:
 
   uint32 GetSizeX() const override { return this->_width; }
   uint32 GetSizeY() const override { return this->_height; }
+  uint32 GetSizeZ() const override { return this->_depth; }
 
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
   virtual void ReleaseRHI() override;
@@ -109,6 +111,7 @@ protected:
   TextureGroup _textureGroup;
   uint32 _width;
   uint32 _height;
+  uint32 _depth;
   EPixelFormat _format;
   ESamplerFilter _filter;
   ESamplerAddressMode _addressX;

@@ -5,6 +5,9 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfPointsComponent.generated.h"
 
+/**
+ * A component that represents and renders a glTF points primitive.
+ */
 UCLASS()
 class UCesiumGltfPointsComponent : public UCesiumGltfPrimitiveComponent {
   GENERATED_BODY()
