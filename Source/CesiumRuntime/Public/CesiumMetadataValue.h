@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
+
+#include <CesiumGltf/PropertyTypeTraits.h>
 #include <glm/glm.hpp>
 #include <optional>
 #include <swl/variant.hpp>

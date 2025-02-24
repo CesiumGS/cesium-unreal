@@ -1010,7 +1010,7 @@ static void loadPrimitiveFeaturesMetadata(
   if (pFeaturesMetadataDescription) {
     primitiveResult.EncodedFeatures =
         CesiumEncodedFeaturesMetadata::encodePrimitiveFeaturesAnyThreadPart(
-            pFeaturesMetadataDescription->Features,
+            pFeaturesMetadataDescription->PrimitiveFeatures,
             primitiveResult.Features);
 
     primitiveResult.EncodedMetadata =
@@ -2903,7 +2903,7 @@ void addInstanceFeatureIds(
           *pInstanceFeatures);
 
   const TArray<FCesiumFeatureIdSetDescription>& featureIDSetDescriptions =
-      featuresDescription.Features.FeatureIdSets;
+      featuresDescription.PrimitiveFeatures.FeatureIdSets;
 
   int32_t featureIdTextureCounter = 0;
 
