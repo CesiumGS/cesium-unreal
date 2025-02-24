@@ -2,7 +2,6 @@
 
 ### ? - ?
 
-
 ##### Breaking Changes :mega:
 
 - `UCesiumFeaturesMetadataComponent` now directly stores `FCesiumFeatureMetadataDescription` instead of duplicating its inner properties.
