@@ -45,4 +45,7 @@ struct CalcBoundsOperation {
 
   FBoxSphereBounds
   operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) const;
+
+  FBoxSphereBounds
+  operator()(const CesiumGeometry::BoundingCylinderRegion& cylinder) const;
 };
