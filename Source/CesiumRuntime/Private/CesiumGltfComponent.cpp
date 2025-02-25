@@ -3372,7 +3372,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
 
-  Gltf->SetVisibility(false, true);
+  //Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
 }

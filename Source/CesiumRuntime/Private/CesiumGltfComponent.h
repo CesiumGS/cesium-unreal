@@ -141,5 +141,5 @@ private:
   UPROPERTY()
   UTexture2D* Transparent1x1 = nullptr;
 
-  TMap<const AActor*, bool> _viewGroupVisibility;
+  TMap<const AActor*, bool> _viewGroupVisibility{{nullptr, false}};
 };

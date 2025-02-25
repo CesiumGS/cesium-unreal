@@ -253,6 +253,7 @@ void UCesiumGltfPrimitiveComponent::updateVisibilityInRenderThread(
     FPrimitiveSceneProxy* pProxy,
     TMap<const AActor*, bool>&& visibility) {
   check(pProxy);
+  check(visibility.Contains(nullptr));
   static_cast<FCesiumGltfPrimitiveSceneProxy*>(pProxy)->updateVisibility(
       std::move(visibility));
 }

@@ -799,7 +799,7 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
 
     for (UCesiumGltfComponent* pGltf : gltfComponents) {
       if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
-        pGltf->SetVisibility(false, true);
+        //pGltf->SetVisibility(false, true);
         pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
       }
     }
@@ -1717,7 +1717,7 @@ void hideTiles(
           UCesiumGltfComponent* pGltf) {
         if (pGltf->IsVisible()) {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
-          pGltf->SetVisibility(false, true);
+          //pGltf->SetVisibility(false, true);
         } else {
           // TODO: why is this happening?
           UE_LOG(
@@ -1954,7 +1954,7 @@ void ACesium3DTileset::showTilesToRender(
 
         if (!pGltf->IsVisible()) {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
-          pGltf->SetVisibility(true, true);
+          //pGltf->SetVisibility(true, true);
         }
 
         pGltf->SetViewGroupVisibility(pViewActor, true);
