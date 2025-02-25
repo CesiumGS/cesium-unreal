@@ -653,6 +653,11 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     glm::dvec3 operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
       return (*this)(s2.computeBoundingRegion());
     }
+
+    glm::dvec3
+    operator()(const CesiumGeometry::BoundingCylinderRegion& cylinder) {
+      return (*this)(cylinder.toOrientedBoundingBox());
+    }
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
