@@ -253,20 +253,12 @@ static size_t GetMetadataTypeByteSize(
 }
 
 static FString MetadataTypeToString(ECesiumMetadataType type) {
-  const UEnum* EnumPtr =
-      FindObject<UEnum>(nullptr, TEXT("ECesiumMetadataType"), true);
-  if (!EnumPtr)
-    return FString();
-
-  return EnumPtr->GetNameByValue((int64)type).ToString();
+  const UEnum* pEnum = StaticEnum<ECesiumMetadataType>();
+  return pEnum ? pEnum->GetNameByValue((int64)type).ToString() : FString();
 }
 
 static FString
 MetadataComponentTypeToString(ECesiumMetadataComponentType type) {
-  const UEnum* EnumPtr =
-      FindObject<UEnum>(nullptr, TEXT("ECesiumMetadataComponentType"), true);
-  if (!EnumPtr)
-    return FString();
-
-  return EnumPtr->GetNameByValue((int64)type).ToString();
+  const UEnum* pEnum = StaticEnum<ECesiumMetadataComponentType>();
+  return pEnum ? pEnum->GetNameByValue((int64)type).ToString() : FString();
 }
