@@ -1143,13 +1143,13 @@ std::string getPrimitiveName(
     const CesiumGltf::MeshPrimitive& primitive) {
   std::string name = "glTF";
 
-  auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
+  const auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
   if (urlIt != model.extras.end()) {
     name = urlIt->second.getStringOrDefault("glTF");
     name = constrainLength(name, 256);
   }
 
-  auto meshIt = std::find_if(
+  const auto meshIt = std::find_if(
       model.meshes.begin(),
       model.meshes.end(),
       [&mesh](const CesiumGltf::Mesh& candidate) {
@@ -1160,7 +1160,7 @@ std::string getPrimitiveName(
     name += " mesh " + std::to_string(meshIndex);
   }
 
-  auto primitiveIt = std::find_if(
+ const auto primitiveIt = std::find_if(
       mesh.primitives.begin(),
       mesh.primitives.end(),
       [&primitive](const CesiumGltf::MeshPrimitive& candidate) {
@@ -1204,7 +1204,7 @@ static void loadPrimitive(
     return;
   }
 
-  std::string name = getPrimitiveName(model, mesh, primitive);
+  const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
 
   if (positionView.status() != CesiumGltf::AccessorViewStatus::Valid) {

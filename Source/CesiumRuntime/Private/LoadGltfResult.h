@@ -101,14 +101,14 @@ struct LoadedPrimitiveResult {
   int32_t meshIndex = -1;
   int32_t primitiveIndex = -1;
 
-  /** Parses EXT_mesh_features from a mesh primitive.*/
+  /** Parses EXT_mesh_features from a mesh primitive. */
   FCesiumPrimitiveFeatures Features{};
-  /** Parses EXT_structural_metadata from a mesh primitive.*/
+  /** Parses EXT_structural_metadata from a mesh primitive. */
   FCesiumPrimitiveMetadata Metadata{};
 
-  /** Encodes the EXT_mesh_features on a mesh primitive.*/
+  /** Encodes the EXT_mesh_features on a mesh primitive. */
   CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures{};
-  /** Encodes the EXT_structural_metadata on a mesh primitive.*/
+  /** Encodes the EXT_structural_metadata on a mesh primitive. */
   CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata{};
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -198,13 +198,13 @@ struct LoadedNodeResult {
 struct LoadedModelResult {
   std::vector<LoadedNodeResult> nodeResults{};
 
-  /** Parses the root EXT_structural_metadata extension.*/
+  /** Parses the root EXT_structural_metadata extension. */
   FCesiumModelMetadata Metadata{};
 
-  /** Encodes the EXT_structural_metadata on a glTF model.*/
+  /** Encodes the EXT_structural_metadata on a glTF model. */
   CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
-  /** For backwards compatibility with CesiumEncodedMetadataComponent.*/
+  /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
 };

@@ -38,7 +38,6 @@ struct CreateModelOptions {
    * tangents and this setting is true, then the model's tangents will be used.
    * Otherwise, tangents will be generated for the model as it loads.
    */
-
   bool alwaysIncludeTangents = false;
 
   /**
