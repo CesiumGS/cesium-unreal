@@ -3045,6 +3045,12 @@ static void loadPrimitiveGameThreadPart(
     if (loadResult.isUnlit) {
       pMesh->bCastDynamicShadow = false;
     }
+    pMesh->RuntimeVirtualTextures =
+        primData.pTilesetActor->GetRuntimeVirtualTextures();
+    pMesh->VirtualTextureRenderPassType =
+        primData.pTilesetActor->GetVirtualTextureRenderPassType();
+    pMesh->TranslucencySortPriority =
+        primData.pTilesetActor->GetTranslucencySortPriority();
 
     pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
     pMesh->SetStaticMesh(pStaticMesh);

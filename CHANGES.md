@@ -6,6 +6,12 @@
 
 - `UCesiumFeaturesMetadataComponent` now directly stores `FCesiumFeatureMetadataDescription` instead of duplicating its inner properties.
 
+##### Additions :tada:
+
+- Added support for drawing 3D Tilesets to Runtime Virtual Textures.
+- Added `MLB_AngleMask` for masking Material Layers based on a tangent vector.
+- Added `ML_CesiumRVTBaseColorOverlay` for Overlaying the BaseColor of an RVT in your material.
+
 ### v2.13.3 - 2025-02-12
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.2 to v0.44.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
