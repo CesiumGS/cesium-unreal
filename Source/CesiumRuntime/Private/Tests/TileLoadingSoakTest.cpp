@@ -228,6 +228,7 @@ bool FGoogleTilesStressTest::RunTest(const FString& Parameters) {
   UE_LOG(LogCesium, Display, TEXT("Setting up location..."));
   GoogleTilesTestSetup::setupForGoogleplex(context.creationContext);
   ACesium3DTileset* tileset = context.creationContext.tilesets.at(0);
+  tileset->UseLodTransitions = true;
   tileset->MaximumCachedBytes = 0;
   context.creationContext.trackForPlay();
 
