@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Components/PrimitiveComponent.h"
 #include "CoreMinimal.h"
 #include <Cesium3DTilesSelection/BoundingVolume.h>
 #include "CesiumTile.generated.h"
