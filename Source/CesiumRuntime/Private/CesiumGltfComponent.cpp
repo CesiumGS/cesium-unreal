@@ -1160,7 +1160,7 @@ std::string getPrimitiveName(
     name += " mesh " + std::to_string(meshIndex);
   }
 
- const auto primitiveIt = std::find_if(
+  const auto primitiveIt = std::find_if(
       mesh.primitives.begin(),
       mesh.primitives.end(),
       [&primitive](const CesiumGltf::MeshPrimitive& candidate) {
