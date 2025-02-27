@@ -1371,7 +1371,7 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
-  TArray<Cesium3DTilesSelection::ViewGroup> _viewGroups;
+  std::vector<Cesium3DTilesSelection::TilesetViewGroup> _viewGroups;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

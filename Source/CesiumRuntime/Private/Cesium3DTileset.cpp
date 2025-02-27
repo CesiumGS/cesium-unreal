@@ -799,7 +799,7 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
 
     for (UCesiumGltfComponent* pGltf : gltfComponents) {
       if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
-        //pGltf->SetVisibility(false, true);
+        // pGltf->SetVisibility(false, true);
         pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
       }
     }
@@ -1717,7 +1717,7 @@ void hideTiles(
           UCesiumGltfComponent* pGltf) {
         if (pGltf->IsVisible()) {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
-          //pGltf->SetVisibility(false, true);
+          // pGltf->SetVisibility(false, true);
         } else {
           // TODO: why is this happening?
           UE_LOG(
@@ -1954,7 +1954,7 @@ void ACesium3DTileset::showTilesToRender(
 
         if (!pGltf->IsVisible()) {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
-          //pGltf->SetVisibility(true, true);
+          // pGltf->SetVisibility(true, true);
         }
 
         pGltf->SetViewGroupVisibility(pViewActor, true);
@@ -2095,7 +2095,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   ACesiumCameraManager* pCameraManager =
       ACesiumCameraManager::GetDefaultCameraManager(this);
   if (pCameraManager) {
-    this->_viewGroups.SetNum(pCameraManager->ViewGroups.Num());
+    this->_viewGroups.resize(
+        pCameraManager->ViewGroups.Num(),
+        this->_pTileset->createViewGroup());
     for (int32 i = 0; i < pCameraManager->ViewGroups.Num(); ++i) {
       const FCesiumViewGroup& group = pCameraManager->ViewGroups[i];
 
