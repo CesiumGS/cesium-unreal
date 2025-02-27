@@ -50,20 +50,13 @@ public:
 
   template <typename T, bool Normalized>
   FCesiumPropertyTextureProperty(
-      const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property)
-      : FCesiumPropertyTextureProperty(
-            Property,
-            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
-
-  template <typename T, bool Normalized>
-  FCesiumPropertyTextureProperty(
       const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property,
-      const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
       : _status(ECesiumPropertyTexturePropertyStatus::ErrorInvalidProperty),
         _property(Property),
         _valueType(),
         _normalized(Normalized),
-        _pEnumDefinition(EnumDefinition) {
+        _pEnumDefinition(pEnumDefinition) {
     switch (Property.status()) {
     case CesiumGltf::PropertyTexturePropertyViewStatus::Valid:
       _status = ECesiumPropertyTexturePropertyStatus::Valid;
@@ -102,7 +95,7 @@ public:
       return;
     }
 
-    _valueType = TypeToMetadataValueType<T>(EnumDefinition);
+    _valueType = TypeToMetadataValueType<T>(pEnumDefinition);
     _normalized = Normalized;
   }
 

@@ -95,7 +95,7 @@ FCesiumMetadataEnumCollection::GetOrCreateFromModel(
   const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
       Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   if (pExtension == nullptr || pExtension->schema == nullptr) {
-    return TSharedPtr<FCesiumMetadataEnumCollection>(nullptr);
+    return nullptr;
   }
 
   return FCesiumMetadataEnumCollection::GetOrCreateFromSchema(

@@ -157,8 +157,9 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   ECesiumMetadataType Type;
 
   /**
-   * The component of the metadata property or value. Only applies when the type
-   * is a Scalar, VecN, or MatN type.
+   * The component type of the metadata property or value. Only applies when the
+   * type is an Enum, Scalar, VecN, or MatN type. For Enum types, the component
+   * type applies to the underlying scalars used to represent the enum values.
    */
   UPROPERTY(
       EditAnywhere,
@@ -166,7 +167,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::String"))
   ECesiumMetadataComponentType ComponentType;
 
   /**
@@ -223,7 +224,7 @@ TypeToMetadataValueType(TSharedPtr<FCesiumMetadataEnum> pEnumDefinition) {
 }
 
 /**
- * Gets the size in bytes of the represented metadapta type. Returns 0 for enums
+ * Gets the size in bytes of the represented metadata type. Returns 0 for enums
  * and strings.
  */
 static size_t GetMetadataTypeByteSize(

@@ -37,13 +37,14 @@ FCesiumPropertyTable::FCesiumPropertyTable(
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
-    const CesiumGltf::ClassProperty& classProperty =
-        *propertyTableView.getClassProperty(propertyName);
+    const CesiumGltf::ClassProperty* pClassProperty =
+        propertyTableView.getClassProperty(propertyName);
+    check(pClassProperty);
 
     TSharedPtr<FCesiumMetadataEnum> EnumDefinition(nullptr);
-    if (EnumCollection.IsValid() && classProperty.enumType.has_value()) {
+    if (EnumCollection.IsValid() && pClassProperty->enumType.has_value()) {
       EnumDefinition = EnumCollection->Get(
-          FString(UTF8_TO_TCHAR(classProperty.enumType.value().c_str())));
+          FString(UTF8_TO_TCHAR(pClassProperty->enumType.value().c_str())));
     }
 
     properties.Add(

@@ -13,15 +13,10 @@ struct Model;
 } // namespace CesiumGltf
 
 /**
- * A Blueprint-accessible wrapper for a glTF structural metadata enum
- * definition.
- */
-USTRUCT(BlueprintType)
-
-/**
  * @brief Stores information on the values of an enum and the corresponding
  * names of those values.
  */
+USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataEnum {
   GENERATED_USTRUCT_BODY()
 
@@ -87,13 +82,10 @@ public:
   FCesiumMetadataEnumCollection(const CesiumGltf::Schema& Schema);
 
   /**
-   * @brief Obtains the @ref FCesiumMetadataEnum corresponding to the given key.
-   * This key is the same as the key for the enum definition in the `enums`
-   * property of the @ref CesiumGltf::Schema that this collection was
-   * constructed from.
+   * @brief The input key should be one of the keys in the `enums` of the @ref
+   * CesiumGltf::Schema that this collection is based on.
    *
-   * If no enum is found with this key, `IsValid()` on the returned `TSharedPtr`
-   * will return false.
+   * If no enum definition corresponds to the key, this returns `nullptr`.
    */
   TSharedPtr<FCesiumMetadataEnum> Get(const FString& InKey) const;
 

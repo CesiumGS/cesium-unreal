@@ -1271,6 +1271,8 @@ FString UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
               TOptional<FString> MaybeName = EnumDefinition->GetName(value);
               if (MaybeName.IsSet()) {
                 return MaybeName.GetValue();
+              } else {
+                return DefaultValue;
               }
             }
           }

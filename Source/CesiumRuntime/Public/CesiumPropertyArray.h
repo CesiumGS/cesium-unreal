@@ -103,10 +103,15 @@ public:
    */
   FCesiumPropertyArray() : _value(), _elementType() {}
 
+  /**
+   * Constructs an array instance.
+   * @param value The property array view that will be stored in this struct
+   * @param pEnumDefinition The enum definition this property uses, if any.
+   */
   template <typename T>
   FCesiumPropertyArray(
       CesiumGltf::PropertyArrayCopy<T>&& value,
-      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
       : _value(),
         _elementType(),
         _storage(),
@@ -115,24 +120,10 @@ public:
     _elementType = TypeToMetadataValueType<T>(pEnumDefinition);
   }
 
-  /**
-   * Constructs an array instance.
-   * @param value The property array view that will be stored in this struct
-   */
-  template <typename T>
-  FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>&& value)
-      : FCesiumPropertyArray(
-            MoveTemp(value),
-            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
-
-  template <typename T>
-  FCesiumPropertyArray(const CesiumGltf::PropertyArrayCopy<T>& value)
-      : FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<T>(value)) {}
-
   template <typename T>
   FCesiumPropertyArray(
       const CesiumGltf::PropertyArrayCopy<T>& value,
-      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
       : FCesiumPropertyArray(
             CesiumGltf::PropertyArrayCopy<T>(value),
             pEnumDefinition) {}
@@ -140,14 +131,10 @@ public:
   template <typename T>
   FCesiumPropertyArray(
       const CesiumGltf::PropertyArrayView<T>& value,
-      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition)
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
       : _value(value), _elementType(), _pEnumDefinition(pEnumDefinition) {
     _elementType = TypeToMetadataValueType<T>(pEnumDefinition);
   }
-
-  template <typename T>
-  FCesiumPropertyArray(const CesiumGltf::PropertyArrayView<T>& value)
-      : FCesiumPropertyArray(value, TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   FCesiumPropertyArray(FCesiumPropertyArray&& rhs);
   FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs);
