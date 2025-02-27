@@ -223,12 +223,14 @@ public:
   explicit FCesiumMetadataValue(
       CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(std::move(Copy).toViewAndExternalBuffer(this->_storage)),
+      : _value(),
         _valueType(
             TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
                 pEnumDefinition)),
         _storage(),
-        _pEnumDefinition(pEnumDefinition) {}
+        _pEnumDefinition(pEnumDefinition) {
+    this->_value = std::move(Copy).toViewAndExternalBuffer(this->_storage);
+  }
 
   /**
    * Constructs a metadata value with the given optional input.
