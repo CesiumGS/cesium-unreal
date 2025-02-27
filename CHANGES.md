@@ -4,9 +4,10 @@
 
 ##### Additions :tada:
 
-- Added support for drawing 3D Tilesets to Runtime Virtual textures
-- Added MLB_AngleMask for masking Material Layers based on a tangent vector
-- Added ML_CesiumRVTBaseColorOverlay for Overlaying the BaseColor of an RVT in your material
+- Added support for drawing 3D Tilesets to Runtime Virtual textures.
+- Added MLB_AngleMask for masking Material Layers based on a tangent vector.
+- Added ML_CesiumRVTBaseColorOverlay for Overlaying the BaseColor of an RVT in your material.
+- Added support for enum structural metadata properties to `CesiumPropertyArray`, `CesiumPropertyTable`, `CesiumPropertyTableProperty`, `CesiumPropertyTexture`, `CesiumPropertyTextureProperty`, and `CesiumMetadataValue`.
 
 ### v2.13.3 - 2025-02-12
 
