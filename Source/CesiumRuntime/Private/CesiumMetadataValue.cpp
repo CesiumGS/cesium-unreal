@@ -286,6 +286,8 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
                   Value._pEnumDefinition->GetName(value);
               if (MaybeName.IsSet()) {
                 return MaybeName.GetValue();
+              } else {
+                return DefaultValue;
               }
             }
           }

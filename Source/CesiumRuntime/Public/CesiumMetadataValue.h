@@ -188,17 +188,17 @@ public:
    * Constructs a metadata value with the given input.
    *
    * @param Value The value to be stored in this struct.
+   * @param pEnumDefinition The enum definition for this metadata value, or
+   * nullptr if not an enum.
    */
   template <typename T>
   explicit FCesiumMetadataValue(
       const T& Value,
-      const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
       : _value(Value),
-        _valueType(),
+        _valueType(TypeToMetadataValueType<T>(pEnumDefinition)),
         _storage(),
-        _pEnumDefinition(EnumDefinition) {
-    _valueType = TypeToMetadataValueType<T>(EnumDefinition);
-  }
+        _pEnumDefinition(pEnumDefinition) {}
 
   /**
    * Constructs a metadata value with the given input.
@@ -236,6 +236,8 @@ public:
    * Constructs a metadata value with the given optional input.
    *
    * @param MaybeValue The optional value to be stored in this struct.
+   * @param pEnumDefinition The enum definition for this metadata value, or
+   * nullptr if not an enum.
    */
   template <typename T>
   explicit FCesiumMetadataValue(

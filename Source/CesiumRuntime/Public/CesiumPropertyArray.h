@@ -113,11 +113,10 @@ public:
       CesiumGltf::PropertyArrayCopy<T>&& value,
       TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
       : _value(),
-        _elementType(),
+        _elementType(TypeToMetadataValueType<T>(pEnumDefinition)),
         _storage(),
         _pEnumDefinition(pEnumDefinition) {
     this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
-    _elementType = TypeToMetadataValueType<T>(pEnumDefinition);
   }
 
   template <typename T>
@@ -132,9 +131,9 @@ public:
   FCesiumPropertyArray(
       const CesiumGltf::PropertyArrayView<T>& value,
       TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
-      : _value(value), _elementType(), _pEnumDefinition(pEnumDefinition) {
-    _elementType = TypeToMetadataValueType<T>(pEnumDefinition);
-  }
+      : _value(value),
+        _elementType(TypeToMetadataValueType<T>(pEnumDefinition)),
+        _pEnumDefinition(pEnumDefinition) {}
 
   FCesiumPropertyArray(FCesiumPropertyArray&& rhs);
   FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs);

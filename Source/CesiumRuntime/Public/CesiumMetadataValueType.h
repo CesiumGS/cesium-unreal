@@ -210,13 +210,11 @@ TypeToMetadataValueType(TSharedPtr<FCesiumMetadataEnum> pEnumDefinition) {
   } else {
     if (CesiumGltf::IsMetadataInteger<T>::value && pEnumDefinition.IsValid()) {
       type = ECesiumMetadataType::Enum;
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
     } else {
       type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
     }
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
     isArray = false;
   }
 

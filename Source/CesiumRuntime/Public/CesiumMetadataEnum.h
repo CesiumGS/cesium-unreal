@@ -82,10 +82,10 @@ public:
   FCesiumMetadataEnumCollection(const CesiumGltf::Schema& Schema);
 
   /**
-   * @brief The input key should be one of the keys in the `enums` of the @ref
-   * CesiumGltf::Schema that this collection is based on.
+   * @brief Obtains the @ref FCesiumMetadataEnum corresponding to the given key.
    *
-   * If no enum definition corresponds to the key, this returns `nullptr`.
+   * The input key should be one of the keys in the `enums` of the @ref
+   * CesiumGltf::Schema that this collection is based on.
    */
   TSharedPtr<FCesiumMetadataEnum> Get(const FString& InKey) const;
 
