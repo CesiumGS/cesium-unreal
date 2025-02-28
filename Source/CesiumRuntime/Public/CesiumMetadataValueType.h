@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "CesiumGltf/Enum.h"
 #include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.generated.h"
 
 /**
@@ -106,8 +108,8 @@ enum class ECesiumMetadataType : uint8 {
   Mat3 = int(CesiumGltf::PropertyType::Mat3),
   Mat4 = int(CesiumGltf::PropertyType::Mat4),
   Boolean = int(CesiumGltf::PropertyType::Boolean),
-  Enum = int(CesiumGltf::PropertyType::Enum),
   String = int(CesiumGltf::PropertyType::String),
+  Enum = int(CesiumGltf::PropertyType::Enum)
 };
 
 /**
@@ -155,8 +157,9 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   ECesiumMetadataType Type;
 
   /**
-   * The component of the metadata property or value. Only applies when the type
-   * is a Scalar, VecN, or MatN type.
+   * The component type of the metadata property or value. Only applies when the
+   * type is an Enum, Scalar, VecN, or MatN type. For Enum types, the component
+   * type applies to the underlying scalars used to represent the enum values.
    */
   UPROPERTY(
       EditAnywhere,
@@ -164,7 +167,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::String"))
   ECesiumMetadataComponentType ComponentType;
 
   /**
@@ -186,20 +189,30 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
 };
 
 template <typename T>
-static FCesiumMetadataValueType TypeToMetadataValueType() {
+static FCesiumMetadataValueType
+TypeToMetadataValueType(TSharedPtr<FCesiumMetadataEnum> pEnumDefinition) {
   ECesiumMetadataType type;
   ECesiumMetadataComponentType componentType;
   bool isArray;
 
   if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
     using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-    type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    if (CesiumGltf::IsMetadataInteger<ArrayType>::value &&
+        pEnumDefinition != nullptr) {
+      type = ECesiumMetadataType::Enum;
+    } else {
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    }
     componentType = ECesiumMetadataComponentType(
         CesiumGltf::TypeToPropertyType<ArrayType>::component);
     isArray = true;
   } else {
-    type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    if (CesiumGltf::IsMetadataInteger<T>::value && pEnumDefinition.IsValid()) {
+      type = ECesiumMetadataType::Enum;
+    } else {
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    }
     componentType = ECesiumMetadataComponentType(
         CesiumGltf::TypeToPropertyType<T>::component);
     isArray = false;

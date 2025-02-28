@@ -13,7 +13,10 @@ FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
-    : _value(), _valueType(rhs._valueType), _storage(rhs._storage) {
+    : _value(),
+      _valueType(rhs._valueType),
+      _storage(rhs._storage),
+      _pEnumDefinition(rhs._pEnumDefinition) {
   swl::visit(
       [this](const auto& value) {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
@@ -269,7 +272,7 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FString& DefaultValue) {
   return swl::visit(
-      [&DefaultValue](auto value) -> FString {
+      [&DefaultValue, &Value](auto value) -> FString {
         using ValueType = decltype(value);
         if constexpr (
             CesiumGltf::IsMetadataVecN<ValueType>::value ||
@@ -277,6 +280,18 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
             CesiumGltf::IsMetadataString<ValueType>::value) {
           return UnrealMetadataConversions::toString(value);
         } else {
+          if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
+            if (Value._pEnumDefinition.IsValid()) {
+              TOptional<FString> MaybeName =
+                  Value._pEnumDefinition->GetName(value);
+              if (MaybeName.IsSet()) {
+                return MaybeName.GetValue();
+              } else {
+                return DefaultValue;
+              }
+            }
+          }
+
           auto maybeString = CesiumGltf::
               MetadataConversions<std::string, decltype(value)>::convert(value);
 
@@ -290,9 +305,10 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
   return swl::visit(
-      [](auto value) -> FCesiumPropertyArray {
+      [&EnumDefinition =
+           Value._pEnumDefinition](auto value) -> FCesiumPropertyArray {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          return FCesiumPropertyArray(value);
+          return FCesiumPropertyArray(value, EnumDefinition);
         }
         return FCesiumPropertyArray();
       },
