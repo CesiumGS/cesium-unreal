@@ -11,6 +11,7 @@
 - Added support for drawing 3D Tilesets to Runtime Virtual Textures.
 - Added `MLB_AngleMask` for masking Material Layers based on a tangent vector.
 - Added `ML_CesiumRVTBaseColorOverlay` for Overlaying the BaseColor of an RVT in your material.
+- Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
 
 ### v2.13.3 - 2025-02-12
 

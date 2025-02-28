@@ -25,6 +25,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "LevelEditor.h"
 #include "PropertyEditorModule.h"
+#include "Selection.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 
@@ -657,8 +658,20 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-  ACesiumGeoreference* Georeference =
-      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
+  // Try to obtain the georeference from the selected actors, if possible.
+  // If not, just go with the default georeference.
+  ACesiumGeoreference* Georeference = nullptr;
+  for (FSelectionIterator It = GEditor->GetSelectedActorIterator(); It; ++It) {
+    ACesiumGeoreference* PossibleGeoreference = Cast<ACesiumGeoreference>(*It);
+    if (IsValid(PossibleGeoreference) &&
+        PossibleGeoreference->GetLevel() == pCurrentLevel) {
+      Georeference = PossibleGeoreference;
+    }
+  }
+
+  if (Georeference == nullptr) {
+    Georeference = ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
+  }
 
   // Spawn the new Actor with the same world transform as the
   // CesiumGeoreference. This way it will match the existing globe. The user may
