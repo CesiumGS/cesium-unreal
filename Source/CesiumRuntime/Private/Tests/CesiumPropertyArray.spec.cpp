@@ -142,4 +142,51 @@ void FCesiumPropertyArraySpec::Define() {
       }
     });
   });
+
+  Describe("UCesiumPropertyArrayBlueprintLibrary::GetString", [this]() {
+    It("handles an int array correctly", [this]() {
+      std::vector<int32> values{1, 2, 3, -1};
+      CesiumGltf::PropertyArrayCopy<int32> arrayView = std::vector(values);
+      FCesiumPropertyArray array(arrayView);
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64>(values.size()));
+
+      for (size_t i = 0; i < values.size(); i++) {
+        TestEqual(
+            "GetString",
+            UCesiumPropertyArrayBlueprintLibrary::GetString(array, i),
+            FString(UTF8_TO_TCHAR(std::to_string(values[i]).c_str())));
+      }
+    });
+
+    It("handles an enum array correctly", [this]() {
+      TSharedPtr<FCesiumMetadataEnum> enumDef = MakeShared<FCesiumMetadataEnum>(
+          StaticEnum<ECesiumMetadataBlueprintType>());
+      std::vector<int32> values{
+          static_cast<int32>(ECesiumMetadataBlueprintType::Boolean),
+          static_cast<int32>(ECesiumMetadataBlueprintType::Byte),
+          static_cast<int32>(ECesiumMetadataBlueprintType::Integer),
+          static_cast<int32>(ECesiumMetadataBlueprintType::Integer64)};
+      std::vector<std::string> valueNames{
+          "Boolean",
+          "Byte",
+          "Integer",
+          "Integer64"};
+      CesiumGltf::PropertyArrayCopy<int32> arrayView = std::vector(values);
+      FCesiumPropertyArray array(arrayView, enumDef);
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64>(values.size()));
+
+      for (size_t i = 0; i < values.size(); i++) {
+        TestEqual(
+            "GetString",
+            UCesiumPropertyArrayBlueprintLibrary::GetString(array, i),
+            FString(UTF8_TO_TCHAR(valueNames[i].c_str())));
+      }
+    });
+  });
 }

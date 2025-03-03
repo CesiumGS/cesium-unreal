@@ -7,7 +7,8 @@ static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 
 FCesiumPropertyTable::FCesiumPropertyTable(
     const CesiumGltf::Model& Model,
-    const CesiumGltf::PropertyTable& PropertyTable)
+    const CesiumGltf::PropertyTable& PropertyTable,
+    const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
       _name(PropertyTable.name.value_or("").c_str()),
       _className(PropertyTable.classProperty.c_str()),
@@ -23,11 +24,32 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
-  propertyTableView.forEachProperty([&properties = _properties](
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
+      Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+  // If there was no schema, we would've gotten ErrorMissingSchema for the
+  // propertyTableView status.
+  check(pExtension != nullptr && pExtension->schema != nullptr);
+
+  propertyTableView.forEachProperty([&properties = _properties,
+                                     &Schema = *pExtension->schema,
+                                     &propertyTableView,
+                                     &EnumCollection](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
-    properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
+    const CesiumGltf::ClassProperty* pClassProperty =
+        propertyTableView.getClassProperty(propertyName);
+    check(pClassProperty);
+
+    TSharedPtr<FCesiumMetadataEnum> EnumDefinition(nullptr);
+    if (EnumCollection.IsValid() && pClassProperty->enumType.has_value()) {
+      EnumDefinition = EnumCollection->Get(
+          FString(UTF8_TO_TCHAR(pClassProperty->enumType.value().c_str())));
+    }
+
+    properties.Add(
+        key,
+        FCesiumPropertyTableProperty(propertyValue, EnumDefinition));
   });
 }
 

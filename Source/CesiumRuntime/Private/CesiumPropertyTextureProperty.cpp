@@ -714,7 +714,8 @@ FCesiumPropertyArray UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [&UV](const auto& view) -> FCesiumPropertyArray {
+      [&UV, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumPropertyArray {
         if (view.status() !=
             CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return FCesiumPropertyArray();
@@ -723,7 +724,7 @@ FCesiumPropertyArray UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
         if (maybeValue) {
           auto value = *maybeValue;
           if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-            return FCesiumPropertyArray(value);
+            return FCesiumPropertyArray(value, pEnumDefinition);
           }
         }
         return FCesiumPropertyArray();
@@ -737,7 +738,8 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [&UV](const auto& view) -> FCesiumMetadataValue {
+      [&UV, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
         if (view.status() !=
                 CesiumGltf::PropertyTexturePropertyViewStatus::Valid &&
             view.status() != CesiumGltf::PropertyTexturePropertyViewStatus::
@@ -745,7 +747,7 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
           return FCesiumMetadataValue();
         }
 
-        return FCesiumMetadataValue(view.get(UV.X, UV.Y));
+        return FCesiumMetadataValue(view.get(UV.X, UV.Y), pEnumDefinition);
       });
 }
 
@@ -757,13 +759,14 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetRawValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [&UV](const auto& view) -> FCesiumMetadataValue {
+      [&UV, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
         if (view.status() !=
             CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return FCesiumMetadataValue();
         }
 
-        return FCesiumMetadataValue(view.getRaw(UV.X, UV.Y));
+        return FCesiumMetadataValue(view.getRaw(UV.X, UV.Y), pEnumDefinition);
       });
 }
 

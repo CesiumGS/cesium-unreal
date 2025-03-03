@@ -1,8 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumMetadataUtilityBlueprintLibrary.h"
+
+#include "UObject/ObjectMacros.h"
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
-#include "CesiumMetadataUtilityBlueprintLibrary.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
