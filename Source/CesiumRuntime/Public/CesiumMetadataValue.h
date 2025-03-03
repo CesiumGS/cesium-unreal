@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -176,7 +178,27 @@ public:
   /**
    * Constructs an empty metadata value with unknown type.
    */
-  FCesiumMetadataValue() : _value(swl::monostate{}), _valueType(), _storage() {}
+  FCesiumMetadataValue()
+      : _value(swl::monostate{}),
+        _valueType(),
+        _storage(),
+        _pEnumDefinition() {}
+
+  /**
+   * Constructs a metadata value with the given input.
+   *
+   * @param Value The value to be stored in this struct.
+   * @param pEnumDefinition The enum definition for this metadata value, or
+   * nullptr if not an enum.
+   */
+  template <typename T>
+  explicit FCesiumMetadataValue(
+      const T& Value,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
+      : _value(Value),
+        _valueType(TypeToMetadataValueType<T>(pEnumDefinition)),
+        _storage(),
+        _pEnumDefinition(pEnumDefinition) {}
 
   /**
    * Constructs a metadata value with the given input.
@@ -185,52 +207,43 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value)
-      : _value(Value), _valueType(), _storage() {
-    ECesiumMetadataType type;
-    ECesiumMetadataComponentType componentType;
-    bool isArray;
-    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-      type =
-          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<ArrayType>::component);
-      isArray = true;
-    } else {
-      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
-      isArray = false;
-    }
-    _valueType = {type, componentType, isArray};
-  }
+      : FCesiumMetadataValue(
+            std::move(Value),
+            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
-      const CesiumGltf::PropertyArrayCopy<ArrayType>& Copy)
-      : FCesiumMetadataValue(CesiumGltf::PropertyArrayCopy<ArrayType>(Copy)) {}
+      const CesiumGltf::PropertyArrayCopy<ArrayType>& Copy,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
+      : FCesiumMetadataValue(
+            CesiumGltf::PropertyArrayCopy<ArrayType>(Copy),
+            pEnumDefinition) {}
 
   template <typename ArrayType>
-  explicit FCesiumMetadataValue(CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy)
-      : _value(), _valueType(), _storage() {
+  explicit FCesiumMetadataValue(
+      CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
+      : _value(),
+        _valueType(
+            TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
+                pEnumDefinition)),
+        _storage(),
+        _pEnumDefinition(pEnumDefinition) {
     this->_value = std::move(Copy).toViewAndExternalBuffer(this->_storage);
-
-    ECesiumMetadataType type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-    ECesiumMetadataComponentType componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<ArrayType>::component);
-    bool isArray = true;
-    this->_valueType = {type, componentType, isArray};
   }
 
   /**
    * Constructs a metadata value with the given optional input.
    *
    * @param MaybeValue The optional value to be stored in this struct.
+   * @param pEnumDefinition The enum definition for this metadata value, or
+   * nullptr if not an enum.
    */
   template <typename T>
-  explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue)
-      : _value(), _valueType(), _storage() {
+  explicit FCesiumMetadataValue(
+      const std::optional<T>& MaybeValue,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
+      : _value(), _valueType(), _storage(), _pEnumDefinition(pEnumDefinition) {
     if (!MaybeValue) {
       return;
     }
@@ -250,6 +263,7 @@ private:
   ValueType _value;
   FCesiumMetadataValueType _valueType;
   std::vector<std::byte> _storage;
+  TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
 };

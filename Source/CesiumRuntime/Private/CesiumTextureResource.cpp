@@ -451,6 +451,7 @@ FCesiumTextureResource::FCesiumTextureResource(
     TextureGroup textureGroup,
     uint32 width,
     uint32 height,
+    uint32 depth,
     EPixelFormat format,
     TextureFilter filter,
     TextureAddress addressX,
@@ -462,6 +463,7 @@ FCesiumTextureResource::FCesiumTextureResource(
     : _textureGroup(textureGroup),
       _width(width),
       _height(height),
+      _depth(depth),
       _format(format),
       _filter(convertFilter(filter)),
       _addressX(convertAddressMode(addressX)),
@@ -516,20 +518,44 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
       textureFlags |= TexCreate_SRGB;
     }
 
-    const FIntPoint MipExtents =
-        CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
-    const FRHIResourceCreateInfo CreateInfo(this->_platformExtData);
-
+    const FRHIResourceCreateInfo createInfo(this->_platformExtData);
     uint32 alignment;
-    this->_textureSize = RHICalcTexture2DPlatformSize(
-        MipExtents.X,
-        MipExtents.Y,
-        this->_format,
-        this->GetCurrentMipCount(),
-        1,
-        textureFlags,
-        FRHIResourceCreateInfo(this->_platformExtData),
-        alignment);
+
+    if (this->_depth > 1) {
+      uint32 MipExtentX, MipExtentY, MipExtentZ;
+      CalcMipMapExtent3D(
+          this->_width,
+          this->_height,
+          this->_depth,
+          this->_format,
+          0,
+          MipExtentX,
+          MipExtentY,
+          MipExtentZ);
+
+      this->_textureSize = RHICalcTexture3DPlatformSize(
+          MipExtentX,
+          MipExtentY,
+          MipExtentZ,
+          this->_format,
+          this->GetCurrentMipCount(),
+          textureFlags,
+          createInfo,
+          alignment);
+    } else {
+      const FIntPoint MipExtents =
+          CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
+
+      this->_textureSize = RHICalcTexture2DPlatformSize(
+          MipExtents.X,
+          MipExtents.Y,
+          this->_format,
+          this->GetCurrentMipCount(),
+          1,
+          textureFlags,
+          createInfo,
+          alignment);
+    }
 
     INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
     INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
@@ -594,6 +620,7 @@ FCesiumPreCreatedRHITextureResource::FCesiumPreCreatedRHITextureResource(
           textureGroup,
           width,
           height,
+          1,
           format,
           filter,
           addressX,
@@ -626,6 +653,7 @@ FCesiumUseExistingTextureResource::FCesiumUseExistingTextureResource(
           textureGroup,
           width,
           height,
+          1,
           format,
           filter,
           addressX,
@@ -656,6 +684,7 @@ FCesiumCreateNewTextureResource::FCesiumCreateNewTextureResource(
           textureGroup,
           width,
           height,
+          1,
           format,
           filter,
           addressX,
