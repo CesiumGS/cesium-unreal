@@ -1254,6 +1254,7 @@ void ACesium3DTileset::DestroyTileset() {
   ++this->_tilesetsBeingDestroyed;
   this->_pTileset->getAsyncDestructionCompleteEvent().thenInMainThread(
       [this]() { --this->_tilesetsBeingDestroyed; });
+  this->_viewGroups.clear();
   this->_pTileset.Reset();
 
   switch (this->TilesetSource) {
