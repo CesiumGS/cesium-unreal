@@ -20,6 +20,10 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
+/**
+ * A component that represents and renders a glTF mesh primitive made
+ * from triangles.
+ */
 UCLASS()
 class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
                                       public ICesiumPrimitive {
@@ -52,6 +56,10 @@ private:
   CesiumPrimitiveData _cesiumData;
 };
 
+/**
+ * A component that represents and renders an instanced glTF mesh
+ * primitive made from triangles.
+ */
 UCLASS()
 class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
                                       public ICesiumPrimitive {

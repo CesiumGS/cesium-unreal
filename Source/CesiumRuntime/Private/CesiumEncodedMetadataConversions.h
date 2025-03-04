@@ -6,7 +6,9 @@
 #include <span>
 
 enum class ECesiumMetadataType : uint8;
+enum class ECesiumMetadataComponentType : uint8;
 enum class ECesiumEncodedMetadataType : uint8;
+enum class ECesiumEncodedMetadataComponentType : uint8;
 struct FCesiumPropertyTablePropertyDescription;
 struct FCesiumPropertyTableProperty;
 struct FCesiumMetadataPropertyDetails;
@@ -17,6 +19,13 @@ struct FCesiumMetadataEncodingDetails;
  */
 ECesiumEncodedMetadataType
 CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type);
+
+/**
+ * @brief Gets the best-fitting encoded type for the given metadata component
+ * type.
+ */
+ECesiumEncodedMetadataComponentType
+CesiumMetadataComponentTypeToEncodingType(ECesiumMetadataComponentType Type);
 
 /**
  * @brief Gets the best-fitting encoded types and conversion method for a given
