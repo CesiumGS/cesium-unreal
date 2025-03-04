@@ -3643,6 +3643,14 @@ void UCesiumGltfComponent::SetViewGroupVisibility(
   if (!pVisibility || *pVisibility != visibility) {
     this->_viewGroupVisibility.FindOrAdd(ViewActor) = visibility;
 
+    //bool anyAreVisible = false;
+
+    //for (const auto& kvp : this->_viewGroupVisibility) {
+    //  anyAreVisible |= kvp.Value;
+    //}
+
+    //this->_viewGroupVisibility.FindOrAdd(nullptr) = anyAreVisible;
+
     for (const TObjectPtr<USceneComponent>& pComponent :
          this->GetAttachChildren()) {
       UCesiumGltfPrimitiveComponent* pPrimitive =

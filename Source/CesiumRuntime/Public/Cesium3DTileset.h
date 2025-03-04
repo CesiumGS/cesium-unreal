@@ -1372,6 +1372,7 @@ private:
   int32 _tilesetsBeingDestroyed;
 
   std::vector<Cesium3DTilesSelection::TilesetViewGroup> _viewGroups;
+  TObjectPtr<AActor> _pLastMonitorViewActor = nullptr;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

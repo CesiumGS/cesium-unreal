@@ -2049,41 +2049,41 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         ellipsoid));
   }
 
-  const Cesium3DTilesSelection::ViewUpdateResult* pResult;
-  if (this->_captureMovieMode) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
-    pResult = &this->_pTileset->updateViewOffline(frustums);
-  } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
-    pResult = &this->_pTileset->updateView(frustums, DeltaTime);
-  }
-  updateLastViewUpdateResultState(*pResult);
+  // const Cesium3DTilesSelection::ViewUpdateResult* pResult;
+  // if (this->_captureMovieMode) {
+  //   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
+  //   pResult = &this->_pTileset->updateViewOffline(frustums);
+  // } else {
+  //   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
+  //   pResult = &this->_pTileset->updateView(frustums, DeltaTime);
+  // }
+  // updateLastViewUpdateResultState(*pResult);
 
-  removeCollisionForTiles(pResult->tilesFadingOut);
+  // removeCollisionForTiles(pResult->tilesFadingOut);
 
-  removeVisibleTilesFromList(
-      _tilesToHideNextFrame,
-      pResult->tilesToRenderThisFrame);
-  hideTiles(nullptr, _tilesToHideNextFrame);
+  // removeVisibleTilesFromList(
+  //     _tilesToHideNextFrame,
+  //     pResult->tilesToRenderThisFrame);
+  // hideTiles(nullptr, _tilesToHideNextFrame);
 
-  _tilesToHideNextFrame.clear();
-  for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
-    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        pTile->getContent().getRenderContent();
-    if (!this->UseLodTransitions ||
-        (pRenderContent &&
-         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
-      _tilesToHideNextFrame.push_back(pTile);
-    }
-  }
+  //_tilesToHideNextFrame.clear();
+  // for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
+  //  Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+  //      pTile->getContent().getRenderContent();
+  //  if (!this->UseLodTransitions ||
+  //      (pRenderContent &&
+  //       pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
+  //    _tilesToHideNextFrame.push_back(pTile);
+  //  }
+  //}
 
-  showTilesToRender(nullptr, pResult->tilesToRenderThisFrame);
+  // showTilesToRender(nullptr, pResult->tilesToRenderThisFrame);
 
-  if (this->UseLodTransitions) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
-    updateTileFades(pResult->tilesToRenderThisFrame, true);
-    updateTileFades(pResult->tilesFadingOut, false);
-  }
+  // if (this->UseLodTransitions) {
+  //   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
+  //   updateTileFades(pResult->tilesToRenderThisFrame, true);
+  //   updateTileFades(pResult->tilesFadingOut, false);
+  // }
 
   this->UpdateLoadStatus();
 
@@ -2167,6 +2167,27 @@ void ACesium3DTileset::Tick(float DeltaTime) {
           std::vector(
               result.tilesFadingOut.begin(),
               result.tilesFadingOut.end()));
+
+      if (group.Monitor) {
+        if (this->_pLastMonitorViewActor != group.ViewActor) {
+          // Reset all tiles to non-visible
+          std::vector<Cesium3DTilesSelection::Tile*> allTiles;
+          this->_pTileset->forEachLoadedTile(
+              [&allTiles](Cesium3DTilesSelection::Tile& tile) {
+                allTiles.emplace_back(&tile);
+              });
+          hideTiles(nullptr, allTiles);
+
+          this->_pLastMonitorViewActor = group.ViewActor.Get();
+        }
+
+        showTilesToRender(nullptr, result.tilesToRenderThisFrame);
+        hideTiles(
+            nullptr,
+            std::vector(
+                result.tilesFadingOut.begin(),
+                result.tilesFadingOut.end()));
+      }
     }
   }
 }
