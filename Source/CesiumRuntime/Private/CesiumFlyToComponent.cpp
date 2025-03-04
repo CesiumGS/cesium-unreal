@@ -162,6 +162,10 @@ void UCesiumFlyToComponent::FlyToLocationUnreal(
       CanInterruptByMoving);
 }
 
+bool UCesiumFlyToComponent::IsFlightInProgress() const {
+  return this->_flightInProgress;
+}
+
 void UCesiumFlyToComponent::InterruptFlight() {
   this->_flightInProgress = false;
 
