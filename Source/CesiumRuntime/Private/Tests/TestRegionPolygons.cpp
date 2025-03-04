@@ -1,3 +1,5 @@
+#if WITH_EDITOR
+
 #include "TestRegionPolygons.h"
 
 #include <algorithm>
@@ -190,3 +192,5 @@ FVector TestPolygon::GetRandomPoint() const {
 }
 
 } // namespace Cesium
+
+#endif
