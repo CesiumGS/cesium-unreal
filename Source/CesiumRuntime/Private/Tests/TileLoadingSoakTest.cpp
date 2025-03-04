@@ -66,14 +66,6 @@ void countTree(
     int& outContentLoading,
     int& outContentLoaded,
     int& outDone) {
-  /*std::string indentation(depth, '\t');
-  UE_LOG(
-      LogCesium,
-         Display,
-         TEXT("%s- tile load state %d"),
-         UTF8_TO_TCHAR(indentation.c_str()),
-         tile->getState());*/
-
   outCount++;
   std::span<Cesium3DTilesSelection::Tile> tiles = tile->getChildren();
   for (Cesium3DTilesSelection::Tile& child : tiles) {
@@ -123,10 +115,18 @@ void logDebug(ACesium3DTileset* tilesetActor) {
   FGenericPlatformMemoryStats stats = FPlatformMemory::GetStats();
 
   IPlatformFile& file = FPlatformFileManager::Get().GetPlatformFile();
+  const bool fileExisted = file.FileExists(*getLogFilePath());
   IFileHandle* handle = file.OpenWrite(*getLogFilePath(), true);
   assert(handle);
 
   std::stringstream outstream;
+
+  if (!fileExisted) {
+    // We're creating the file now, write the CSV header
+    outstream
+        << "ElapsedSeconds,NumTiles,NumUnloaded,NumUnloading,NumContentLoading,NumContentLoaded,NumDone,UsedVirtualMemory"
+        << std::endl;
+  }
 
   outstream << static_cast<uint64>(FPlatformTime::Seconds()) << "," << numTiles
             << "," << numUnloaded << "," << numUnloading << ","

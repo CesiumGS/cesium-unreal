@@ -1,3 +1,5 @@
+#if WITH_EDITOR
+
 #include "GoogleTilesTestSetup.h"
 
 #include "Cesium3DTileset.h"
@@ -107,3 +109,5 @@ GoogleTilesTestSetup::setupForGoogleplex(SceneGenerationContext& context) {
 }
 
 } // namespace Cesium
+
+#endif
