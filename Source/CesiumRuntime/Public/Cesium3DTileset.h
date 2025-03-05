@@ -83,7 +83,14 @@ enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from the georeference ellipsoid.
    */
-  FromEllipsoid UMETA(DisplayName = "From Ellipsoid")
+  FromEllipsoid UMETA(DisplayName = "From Ellipsoid"),
+
+  /**
+   * The tileset will be loaded from the Bentley iTwin Cesium Curated Content
+   * API using the provided ITwinCesiumContentID and ITwinAccessToken.
+   */
+  FromITwinCesiumCuratedContent UMETA(
+      DisplayName = "From iTwin Cesium Curated Content"),
 };
 
 UENUM(BlueprintType)
@@ -765,6 +772,36 @@ private:
   UCesiumIonServer* CesiumIonServer;
 
   /**
+   * The ID of the iTwin Cesium Curated Content asset to use.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iTwin Cesium
+   * Curated Content"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetITwinCesiumContentID,
+      BlueprintSetter = SetITwinCesiumContentID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent",
+           ClampMin = 0))
+  int64 ITwinCesiumContentID;
+
+  /**
+   * The access token to use to access the iTwin resource.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetITwinAccessToken,
+      BlueprintSetter = SetITwinAccessToken,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent"))
+  FString ITwinAccessToken;
+
+  /**
    * Headers to be attached to each request made for this tileset.
    */
   UPROPERTY(
@@ -1037,6 +1074,18 @@ public:
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  int64 GetITwinCesiumContentID() const { return ITwinCesiumContentID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetITwinCesiumContentID(int64 InContentID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetITwinAccessToken() const { return ITwinAccessToken; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetITwinAccessToken(const FString& InAccessToken);
 
   UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
   TArray<URuntimeVirtualTexture*> GetRuntimeVirtualTextures() const {

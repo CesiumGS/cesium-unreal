@@ -433,6 +433,24 @@ void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   }
 }
 
+void ACesium3DTileset::SetITwinCesiumContentID(int64 InContentID) {
+  if (InContentID >= 0 && InContentID != this->ITwinCesiumContentID) {
+    if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent) {
+      this->DestroyTileset();
+    }
+    this->ITwinCesiumContentID = InContentID;
+  }
+}
+
+void ACesium3DTileset::SetITwinAccessToken(const FString& InAccessToken) {
+  if (this->ITwinAccessToken != InAccessToken) {
+    if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent) {
+      this->DestroyTileset();
+    }
+    this->ITwinAccessToken = InAccessToken;
+  }
+}
+
 void ACesium3DTileset::SetCesiumIonServer(UCesiumIonServer* Server) {
   if (this->CesiumIonServer != Server) {
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
@@ -1107,29 +1125,46 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
-    FString token = this->IonAccessToken.IsEmpty()
-                        ? this->CesiumIonServer->DefaultIonAccessToken
-                        : this->IonAccessToken;
+    {
+      FString token = this->IonAccessToken.IsEmpty()
+                          ? this->CesiumIonServer->DefaultIonAccessToken
+                          : this->IonAccessToken;
 
 #if WITH_EDITOR
-    this->CesiumIonServer->ResolveApiUrl();
+      this->CesiumIonServer->ResolveApiUrl();
 #endif
 
-    std::string ionAssetEndpointUrl =
-        TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
+      std::string ionAssetEndpointUrl =
+          TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
 
-    if (!ionAssetEndpointUrl.empty()) {
-      // Make sure the URL ends with a slash
-      if (!ionAssetEndpointUrl.empty() && *ionAssetEndpointUrl.rbegin() != '/')
-        ionAssetEndpointUrl += '/';
+      if (!ionAssetEndpointUrl.empty()) {
+        // Make sure the URL ends with a slash
+        if (!ionAssetEndpointUrl.empty() &&
+            *ionAssetEndpointUrl.rbegin() != '/')
+          ionAssetEndpointUrl += '/';
 
-      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-          externals,
-          static_cast<uint32_t>(this->IonAssetID),
-          TCHAR_TO_UTF8(*token),
-          options,
-          ionAssetEndpointUrl);
+        this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+            externals,
+            static_cast<uint32_t>(this->IonAssetID),
+            TCHAR_TO_UTF8(*token),
+            options,
+            ionAssetEndpointUrl);
+      }
     }
+    break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d"),
+        this->ITwinCesiumContentID);
+
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+        externals,
+        Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory(
+            static_cast<uint32_t>(this->ITwinCesiumContentID),
+            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+        options);
     break;
   }
 
@@ -1180,6 +1215,13 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading tileset for asset ID %d done"),
         this->IonAssetID);
     break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d done"),
+        this->ITwinCesiumContentID);
+    break;
   }
 
   switch (ApplyDpiScaling) {
@@ -1220,6 +1262,13 @@ void ACesium3DTileset::DestroyTileset() {
         Verbose,
         TEXT("Destroying tileset for asset ID %d"),
         this->IonAssetID);
+    break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset for asset ID %d"),
+        this->ITwinCesiumContentID);
     break;
   }
 
@@ -1273,6 +1322,13 @@ void ACesium3DTileset::DestroyTileset() {
         Verbose,
         TEXT("Destroying tileset for asset ID %d done"),
         this->IonAssetID);
+    break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset for asset ID %d done"),
+        this->ITwinCesiumContentID);
     break;
   }
 }
@@ -2142,6 +2198,9 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinCesiumContentID) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinAccessToken) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==
