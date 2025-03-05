@@ -376,8 +376,12 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
     }
 
     const FCesiumModelMetadata& modelMetadata = pGltf->Metadata;
-    AutoFillPropertyTableDescriptions(this->PropertyTables, modelMetadata);
-    AutoFillPropertyTextureDescriptions(this->PropertyTextures, modelMetadata);
+    AutoFillPropertyTableDescriptions(
+        this->Description.ModelMetadata.PropertyTables,
+        modelMetadata);
+    AutoFillPropertyTextureDescriptions(
+        this->Description.ModelMetadata.PropertyTextures,
+        modelMetadata);
 
     TArray<USceneComponent*> childComponents;
     pGltf->GetChildrenComponents(false, childComponents);
@@ -400,7 +404,7 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
         pInstanceFeatures = pInstancedComponent->pInstanceFeatures.Get();
       }
       AutoFillFeatureIdSetDescriptions(
-          this->FeatureIdSets,
+          this->Description.PrimitiveFeatures.FeatureIdSets,
           primitiveFeatures,
           pInstanceFeatures,
           propertyTables);
@@ -410,7 +414,7 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
           UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
               modelMetadata);
       AutoFillPropertyTextureNames(
-          this->PropertyTextureNames,
+          this->Description.PrimitiveMetadata.PropertyTextureNames,
           primitiveMetadata,
           propertyTextures);
     }
