@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed the "Auto Fill" button on `UCesiumFeaturesMetadataComponent`, which broke with the previous release.
+
 ### v2.14.0 - 2025-03-03
 
 ##### Breaking Changes :mega:
