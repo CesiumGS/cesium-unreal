@@ -1,6 +1,6 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "CesiumEncodedFeaturesMetadata.h"
+#include "EncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataConversions.h"
 #include "CesiumFeatureIdSet.h"
 #include "CesiumFeaturesMetadataComponent.h"
@@ -25,7 +25,7 @@
 
 using namespace CesiumTextureUtility;
 
-namespace CesiumEncodedFeaturesMetadata {
+namespace EncodedFeaturesMetadata {
 
 FString getNameForFeatureIDSet(
     const FCesiumFeatureIdSet& featureIDSet,
@@ -1251,4 +1251,4 @@ void SetPropertyTextureParameterValues(
   }
 }
 
-} // namespace CesiumEncodedFeaturesMetadata
+} // namespace EncodedFeaturesMetadata
