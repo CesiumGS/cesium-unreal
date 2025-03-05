@@ -442,9 +442,19 @@ void ACesium3DTileset::SetITwinCesiumContentID(int64 InContentID) {
   }
 }
 
+void ACesium3DTileset::SetIModelID(const FString& InModelID) {
+  if (InModelID != this->IModelID) {
+    if (this->TilesetSource == ETilesetSource::FromIModelMeshExportService) {
+      this->DestroyTileset();
+    }
+    this->IModelID = InModelID;
+  }
+}
+
 void ACesium3DTileset::SetITwinAccessToken(const FString& InAccessToken) {
   if (this->ITwinAccessToken != InAccessToken) {
-    if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent) {
+    if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent ||
+        this->TilesetSource == ETilesetSource::FromIModelMeshExportService) {
       this->DestroyTileset();
     }
     this->ITwinAccessToken = InAccessToken;
@@ -1166,6 +1176,21 @@ void ACesium3DTileset::LoadTileset() {
             TCHAR_TO_UTF8(*this->ITwinAccessToken)),
         options);
     break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading mesh export for iModel ID %s"),
+        *this->IModelID);
+
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+        externals,
+        Cesium3DTilesSelection::IModelMeshExportContentLoaderFactory(
+            TCHAR_TO_UTF8(*this->IModelID),
+            std::nullopt,
+            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+        options);
+    break;
   }
 
 #ifdef CESIUM_DEBUG_TILE_STATES
@@ -1222,6 +1247,13 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading tileset for asset ID %d done"),
         this->ITwinCesiumContentID);
     break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading mesh export for iModel ID %s done"),
+        *this->IModelID);
+    break;
   }
 
   switch (ApplyDpiScaling) {
@@ -1269,6 +1301,13 @@ void ACesium3DTileset::DestroyTileset() {
         Verbose,
         TEXT("Destroying tileset for asset ID %d"),
         this->ITwinCesiumContentID);
+    break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Destroying tileset for iModel ID %s"),
+        *this->IModelID);
     break;
   }
 
@@ -1329,6 +1368,13 @@ void ACesium3DTileset::DestroyTileset() {
         Verbose,
         TEXT("Destroying tileset for asset ID %d done"),
         this->ITwinCesiumContentID);
+    break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Destroying tileset for iModel ID %s done"),
+        *this->IModelID);
     break;
   }
 }

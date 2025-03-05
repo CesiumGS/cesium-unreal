@@ -91,6 +91,13 @@ enum class ETilesetSource : uint8 {
    */
   FromITwinCesiumCuratedContent UMETA(
       DisplayName = "From iTwin Cesium Curated Content"),
+
+  /**
+   * The tileset will be loaded from the iModel Mesh Export Service using the
+   * provided IModelID and ITwinAccessToken.
+   */
+  FromIModelMeshExportService UMETA(
+      DisplayName = "From iModel Mesh Export Service"),
 };
 
 UENUM(BlueprintType)
@@ -789,6 +796,23 @@ private:
   int64 ITwinCesiumContentID;
 
   /**
+   * The ID of the iModel to use when interacting with the iModel Mesh Export
+   * Service.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iModel Mesh
+   * Export Service"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIModelID,
+      BlueprintSetter = SetIModelID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromIModelMeshExportService"))
+  FString IModelID;
+
+  /**
    * The access token to use to access the iTwin resource.
    */
   UPROPERTY(
@@ -798,7 +822,7 @@ private:
       Category = "Cesium",
       meta =
           (EditCondition =
-               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent"))
+               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent || TilesetSource==ETilesetSource::FromIModelMeshExportService"))
   FString ITwinAccessToken;
 
   /**
@@ -1080,6 +1104,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetITwinCesiumContentID(int64 InContentID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetIModelID() const { return IModelID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetIModelID(const FString& InModelID);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetITwinAccessToken() const { return ITwinAccessToken; }
