@@ -2,7 +2,7 @@
 
 #include "CesiumFeaturesMetadataComponent.h"
 #include "Cesium3DTileset.h"
-#include "CesiumEncodedMetadataConversions.h"
+#include "EncodedMetadataConversions.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumModelMetadata.h"
