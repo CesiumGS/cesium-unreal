@@ -16,6 +16,8 @@
  * Various settings and options for loading a glTF model from a 3D Tileset.
  */
 namespace CreateGltfOptions {
+struct CreateVoxelOptions;
+
 struct CreateModelOptions {
   /**
    * A pointer to the glTF model.
@@ -52,6 +54,11 @@ struct CreateModelOptions {
    */
   bool ignoreKhrMaterialsUnlit = false;
 
+  /**
+   * Options for loading voxel primitives in the tileset, if present.
+   */
+  const CreateVoxelOptions* pVoxelOptions = nullptr;
+
   Cesium3DTilesSelection::TileLoadResult tileLoadResult;
 
 public:
@@ -67,6 +74,7 @@ public:
         alwaysIncludeTangents(other.alwaysIncludeTangents),
         createPhysicsMeshes(other.createPhysicsMeshes),
         ignoreKhrMaterialsUnlit(other.ignoreKhrMaterialsUnlit),
+        pVoxelOptions(other.pVoxelOptions),
         tileLoadResult(std::move(other.tileLoadResult)) {
     pModel = std::get_if<CesiumGltf::Model>(&this->tileLoadResult.contentKind);
   }
@@ -94,4 +102,34 @@ struct CreatePrimitiveOptions {
   const LoadGltfResult::LoadedMeshResult* pHalfConstructedMeshResult = nullptr;
   int32_t primitiveIndex = -1;
 };
+
+/**
+ * Various settings and options for loading glTF voxels from a 3D Tileset.
+ *
+ * Currently these are used to validate voxels before construction, not so much
+ * for configuring their creation.
+ */
+struct CreateVoxelOptions {
+  /**
+   *  The 3DTILES_content_voxels extension found on the tileset's root content.
+   */
+  const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pTilesetExtension;
+
+  /**
+   * A pointer to the class used by the tileset to define the voxel metadata.
+   */
+  const Cesium3DTiles::Class* pVoxelClass;
+
+  /**
+   * The shape of the voxel grid.
+   */
+  EVoxelGridShape gridShape;
+
+  /**
+   * The total number of voxels in the voxel grid, including padding. Used to
+   * validate glTF voxel primitives for their amounts of attribute data.
+   */
+  size_t voxelCount;
+};
+
 } // namespace CreateGltfOptions

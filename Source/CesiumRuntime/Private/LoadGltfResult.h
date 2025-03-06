@@ -30,6 +30,13 @@
 
 namespace LoadGltfResult {
 /**
+ * Represents the result of loading a glTF voxel primitive on a load thread.
+ */
+struct LoadVoxelResult {
+  TMap<FString, ValidatedVoxelBuffer> attributeBuffers;
+};
+
+/**
  * Represents the result of loading a glTF primitive on a load thread.
  * Temporarily holds render data that will be used in the Unreal material, as
  * well as any data that needs to be transferred to the corresponding
@@ -153,6 +160,8 @@ struct LoadedPrimitiveResult {
   CesiumGltf::IndexAccessorType IndexAccessor;
 
 #pragma endregion
+
+  std::optional<LoadVoxelResult> voxelResult = std::nullopt;
 };
 
 /**
@@ -207,5 +216,13 @@ struct LoadedModelResult {
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
+
+  /**
+   * Points to the actual EXT_structural_metadata extension. Used for voxels
+   * because property attributes are not yet supported.
+   *
+   * TODO: Expand FCesiumModelMetadata so this is not necessary.
+   */
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pMetadata = nullptr;
 };
 } // namespace LoadGltfResult
