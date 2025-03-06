@@ -198,6 +198,11 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InterruptFlight();
 
+  /**
+   * @brief Returns whether a flight is currently in progress.
+   */
+  bool IsFlightInProgress() const;
+
 protected:
   virtual void TickComponent(
       float DeltaTime,
