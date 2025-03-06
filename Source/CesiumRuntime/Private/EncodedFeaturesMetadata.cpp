@@ -1,7 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "EncodedFeaturesMetadata.h"
-#include "EncodedMetadataConversions.h"
+
 #include "CesiumFeatureIdSet.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumLifetime.h"
@@ -13,6 +13,7 @@
 #include "CesiumPropertyTexture.h"
 #include "CesiumRuntime.h"
 #include "Containers/Map.h"
+#include "EncodedMetadataConversions.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"

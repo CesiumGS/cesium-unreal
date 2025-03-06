@@ -10,6 +10,7 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
+
 #include <CesiumGltf/KhrTextureTransform.h>
 #include <array>
 #include <variant>
