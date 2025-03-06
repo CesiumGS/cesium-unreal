@@ -98,6 +98,12 @@ enum class ETilesetSource : uint8 {
    */
   FromIModelMeshExportService UMETA(
       DisplayName = "From iModel Mesh Export Service"),
+
+  /**
+   * The tileset will be loaded from the iModel Mesh Export Service using the
+   * provided RealityDataID and ITwinAccessToken.
+   */
+  FromITwinRealityData UMETA(DisplayName = "From iTwin Reality Data")
 };
 
 UENUM(BlueprintType)
@@ -813,6 +819,38 @@ private:
   FString IModelID;
 
   /**
+   * The ID of the iTwin Reality Data to use when interacting with the Reality Data service.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iTwin Reality Data"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRealityDataID,
+      BlueprintSetter = SetRealityDataID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinRealityData"))
+  FString RealityDataID;
+
+  /**
+   * The ID of the iTwin to use when interacting with the Reality
+   * Data service.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iTwin Reality
+   * Data"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetITwinID,
+      BlueprintSetter = SetITwinID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinRealityData"))
+  FString ITwinID;
+
+  /**
    * The access token to use to access the iTwin resource.
    */
   UPROPERTY(
@@ -822,7 +860,7 @@ private:
       Category = "Cesium",
       meta =
           (EditCondition =
-               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent || TilesetSource==ETilesetSource::FromIModelMeshExportService"))
+               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent || TilesetSource==ETilesetSource::FromIModelMeshExportService || TilesetSource==ETilesetSource::FromITwinRealityData"))
   FString ITwinAccessToken;
 
   /**
@@ -1110,6 +1148,18 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIModelID(const FString& InModelID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetRealityDataID() const { return RealityDataID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetRealityDataID(const FString& InModelID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetITwinID() const { return ITwinID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetITwinID(const FString& InITwinID);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetITwinAccessToken() const { return ITwinAccessToken; }
