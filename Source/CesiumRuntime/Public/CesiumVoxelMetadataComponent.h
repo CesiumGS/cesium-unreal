@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CesiumFeaturesMetadataDescription.h"
-#include "CesiumMetadataComponent.h"
 #include "Templates/UniquePtr.h"
 
 #if WITH_EDITOR
@@ -89,9 +88,7 @@ public:
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
-#endif
 
-#if WITH_EDITOR
   /**
    * A preview of the generated custom shader.
    */

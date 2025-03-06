@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"

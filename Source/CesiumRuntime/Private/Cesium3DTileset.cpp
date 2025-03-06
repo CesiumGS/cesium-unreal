@@ -4,32 +4,25 @@
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
-#include "Cesium3DTilesSelection/EllipsoidTilesetLoader.h"
-#include "Cesium3DTilesSelection/Tile.h"
-#include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
-#include "Cesium3DTilesSelection/TilesetOptions.h"
-#include "Cesium3DTilesSelection/TilesetSharedAssetSystem.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
-#include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
-#include "CesiumGeospatial/GlobeTransforms.h"
-#include "CesiumGltf/ImageAsset.h"
-#include "CesiumGltf/Ktx2TranscodeTargets.h"
+#include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
-#include "CesiumIonClient/Connection.h"
+#include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTileExcluder.h"
 #include "CesiumViewExtension.h"
+#include "CesiumVoxelRendererComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
@@ -48,6 +41,19 @@
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+
+#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
+#include <Cesium3DTilesSelection/EllipsoidTilesetLoader.h>
+#include <Cesium3DTilesSelection/Tile.h>
+#include <Cesium3DTilesSelection/TilesetLoadFailureDetails.h>
+#include <Cesium3DTilesSelection/TilesetOptions.h>
+#include <Cesium3DTilesSelection/TilesetSharedAssetSystem.h>
+#include <CesiumAsync/SharedAssetDepot.h>
+#include <CesiumGeospatial/GlobeTransforms.h>
+#include <CesiumGltf/ImageAsset.h>
+#include <CesiumGltf/Ktx2TranscodeTargets.h>
+#include <CesiumIonClient/Connection.h>
+
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
@@ -363,6 +369,8 @@ void ACesium3DTileset::PostInitProperties() {
   }
 }
 
+#pragma region Getters / Setters
+
 void ACesium3DTileset::SetUseLodTransitions(bool InUseLodTransitions) {
   if (InUseLodTransitions != this->UseLodTransitions) {
     this->UseLodTransitions = InUseLodTransitions;
@@ -574,6 +582,8 @@ void ACesium3DTileset::SetTranslucencySortPriority(
   }
 }
 
+#pragma endregion
+
 void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
@@ -736,6 +746,10 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
   if (this->BoundingVolumePoolComponent) {
     this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
         CesiumToUnreal);
+  }
+
+  if (this->_pVoxelRendererComponent) {
+    this->_pVoxelRendererComponent->UpdateTransformFromCesium(CesiumToUnreal);
   }
 }
 
@@ -931,7 +945,6 @@ void ACesium3DTileset::LoadTileset() {
 
   // Check if this component exists for backwards compatibility.
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
   const UDEPRECATED_CesiumEncodedMetadataComponent* pEncodedMetadataComponent =
       this->FindComponentByClass<UDEPRECATED_CesiumEncodedMetadataComponent>();
 
@@ -951,8 +964,13 @@ void ACesium3DTileset::LoadTileset() {
         pEncodedMetadataComponent->FeatureTables,
         pEncodedMetadataComponent->FeatureTextures};
   }
-
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  const UCesiumVoxelMetadataComponent* pVoxelMetadataComponent =
+      this->FindComponentByClass<UCesiumVoxelMetadataComponent>();
+  if (pVoxelMetadataComponent) {
+    this->_voxelClassDescription = pVoxelMetadataComponent->Description;
+  }
 
   this->_cesiumViewExtension = cesiumViewExtension;
 
@@ -1150,6 +1168,14 @@ void ACesium3DTileset::LoadTileset() {
           TCHAR_TO_UTF8(*dbFile));
 #endif
 
+  this->_pTileset->getRootTileAvailableEvent().thenImmediately([thiz = this]() {
+    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pVoxelExtension =
+        thiz->_pTileset ? thiz->_pTileset->getVoxelContentExtension() : nullptr;
+    if (pVoxelExtension) {
+      thiz->initializeVoxelRenderer(*pVoxelExtension);
+    }
+  });
+
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
       pOverlay->AddToTileset();
@@ -1243,6 +1269,11 @@ void ACesium3DTileset::DestroyTileset() {
     }
   }
 
+  if (this->_pVoxelRendererComponent) {
+    CesiumLifetime::destroyComponentRecursively(this->_pVoxelRendererComponent);
+    this->_pVoxelRendererComponent = nullptr;
+  }
+
   if (!this->_pTileset) {
     return;
   }
@@ -1307,6 +1338,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
 
   return cameras;
 }
+
+#pragma region Camera Collections
 
 std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
   UWorld* pWorld = this->GetWorld();
@@ -1642,6 +1675,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 }
 #endif
 
+#pragma endregion
+
 bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
   return this->UpdateInEditor;
 }
@@ -1734,12 +1769,11 @@ void removeCollisionForTiles(
 }
 
 /**
- * @brief Applies the actor collision settings for a newly created glTF
- * component
+ * @brief Applies the specified collision profile to the glTF component
+ * and its children.
  *
- * TODO Add details here what that means
- * @param BodyInstance ...
- * @param Gltf ...
+ * @param BodyInstance The collision profile.
+ * @param Gltf The target glTF component.
  */
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
@@ -2048,30 +2082,36 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
   updateLastViewUpdateResultState(*pResult);
 
-  removeCollisionForTiles(pResult->tilesFadingOut);
-
   removeVisibleTilesFromList(
-      _tilesToHideNextFrame,
+      this->_tilesToHideNextFrame,
       pResult->tilesToRenderThisFrame);
-  hideTiles(_tilesToHideNextFrame);
 
-  _tilesToHideNextFrame.clear();
-  for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
-    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        pTile->getContent().getRenderContent();
-    if (!this->UseLodTransitions ||
-        (pRenderContent &&
-         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
-      _tilesToHideNextFrame.push_back(pTile);
+  if (this->_pVoxelRendererComponent) {
+    this->_pVoxelRendererComponent->UpdateTiles(
+        pResult->tilesToRenderThisFrame,
+        pResult->tileScreenSpaceErrorThisFrame);
+  } else {
+    removeCollisionForTiles(pResult->tilesFadingOut);
+    hideTiles(_tilesToHideNextFrame);
+
+    _tilesToHideNextFrame.clear();
+    for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
+      Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+          pTile->getContent().getRenderContent();
+      if (!this->UseLodTransitions ||
+          (pRenderContent &&
+           pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
+        _tilesToHideNextFrame.push_back(pTile);
+      }
     }
-  }
 
-  showTilesToRender(pResult->tilesToRenderThisFrame);
+    showTilesToRender(pResult->tilesToRenderThisFrame);
 
-  if (this->UseLodTransitions) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
-    updateTileFades(pResult->tilesToRenderThisFrame, true);
-    updateTileFades(pResult->tilesFadingOut, false);
+    if (this->UseLodTransitions) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
+      updateTileFades(pResult->tilesToRenderThisFrame, true);
+      updateTileFades(pResult->tilesFadingOut, false);
+    }
   }
 
   this->UpdateLoadStatus();
@@ -2289,3 +2329,51 @@ void ACesium3DTileset::RuntimeSettingsChanged(
   }
 }
 #endif
+
+void ACesium3DTileset::initializeVoxelRenderer(
+    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& VoxelExtension) {
+  const FCesiumVoxelClassDescription* pVoxelClassDescription =
+      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
+
+  // Validate that voxel metadata is present.
+  const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
+      this->_pTileset->getMetadata();
+  if (!pMetadata || !pMetadata->schema) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Tileset %s contains voxels, but is missing a metadata schema to describe its contents."),
+        *this->GetName())
+    return;
+  }
+
+  const Cesium3DTilesSelection::Tile* pRootTile =
+      this->_pTileset->getRootTile();
+  if (!pRootTile) {
+    // Not sure how this could happen, but just in case...
+    CESIUM_ASSERT(false);
+    return;
+  }
+
+  this->_pVoxelRendererComponent = UCesiumVoxelRendererComponent::Create(
+      this,
+      *pMetadata,
+      *pRootTile,
+      VoxelExtension,
+      pVoxelClassDescription);
+
+  if (this->_pVoxelRendererComponent) {
+    // The AttachToComponent method is ridiculously complex,
+    // so print a warning if attaching fails for some reason
+    bool attached = this->_pVoxelRendererComponent->AttachToComponent(
+        this->RootComponent,
+        FAttachmentTransformRules::KeepRelativeTransform);
+    if (!attached) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Voxel renderer could not be attached to root"));
+    }
+  }
+}

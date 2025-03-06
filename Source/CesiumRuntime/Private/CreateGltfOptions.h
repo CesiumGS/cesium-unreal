@@ -9,7 +9,9 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumGltf/Node.h"
 #include "LoadGltfResult.h"
+#include "VoxelGridShape.h"
 
+#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 #include <Cesium3DTilesSelection/TileLoadResult.h>
 
 /**
