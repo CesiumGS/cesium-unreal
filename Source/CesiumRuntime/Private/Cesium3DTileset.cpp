@@ -558,6 +558,22 @@ void ACesium3DTileset::SetPointCloudShading(
   }
 }
 
+void ACesium3DTileset::SetRuntimeVirtualTextures(
+    TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures) {
+  if (this->RuntimeVirtualTextures != InRuntimeVirtualTextures) {
+    this->RuntimeVirtualTextures = InRuntimeVirtualTextures;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetTranslucencySortPriority(
+    int32 InTranslucencySortPriority) {
+  if (this->TranslucencySortPriority != InTranslucencySortPriority) {
+    this->TranslucencySortPriority = InTranslucencySortPriority;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
@@ -636,6 +652,11 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
     glm::dvec3 operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
       return (*this)(s2.computeBoundingRegion());
+    }
+
+    glm::dvec3
+    operator()(const CesiumGeometry::BoundingCylinderRegion& cylinder) {
+      return (*this)(cylinder.toOrientedBoundingBox());
     }
   };
 
@@ -918,14 +939,8 @@ void ACesium3DTileset::LoadTileset() {
   this->_metadataDescription_DEPRECATED = std::nullopt;
 
   if (pFeaturesMetadataComponent) {
-    FCesiumFeaturesMetadataDescription& description =
-        this->_featuresMetadataDescription.emplace();
-    description.Features = {pFeaturesMetadataComponent->FeatureIdSets};
-    description.PrimitiveMetadata = {
-        pFeaturesMetadataComponent->PropertyTextureNames};
-    description.ModelMetadata = {
-        pFeaturesMetadataComponent->PropertyTables,
-        pFeaturesMetadataComponent->PropertyTextures};
+    this->_featuresMetadataDescription =
+        pFeaturesMetadataComponent->Description;
   } else if (pEncodedMetadataComponent) {
     UE_LOG(
         LogCesium,
@@ -2152,6 +2167,13 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Root) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CesiumIonServer) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RequestHeaders) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RuntimeVirtualTextures) ||
+      PropName == GET_MEMBER_NAME_CHECKED(
+                      ACesium3DTileset,
+                      VirtualTextureRenderPassType) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucencySortPriority) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

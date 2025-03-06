@@ -36,7 +36,8 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index) {
   return swl::visit(
-      [index](const auto& v) -> FCesiumMetadataValue {
+      [index, &pEnumDefinition = array._pEnumDefinition](
+          const auto& v) -> FCesiumMetadataValue {
         if (index < 0 || index >= v.size()) {
           FFrame::KismetExecutionMessage(
               *FString::Printf(
@@ -48,7 +49,7 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
               FName("CesiumPropertyArrayOutOfBoundsWarning"));
           return FCesiumMetadataValue();
         }
-        return FCesiumMetadataValue(v[index]);
+        return FCesiumMetadataValue(v[index], pEnumDefinition);
       },
       array._value);
 }
@@ -163,13 +164,26 @@ FString UCesiumPropertyArrayBlueprintLibrary::GetString(
     int64 index,
     const FString& defaultValue) {
   return swl::visit(
-      [index, defaultValue](const auto& v) -> FString {
+      [index, defaultValue, &EnumDefinition = array._pEnumDefinition](
+          const auto& v) -> FString {
         if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
-        auto maybeString = CesiumGltf::
-            MetadataConversions<std::string, decltype(value)>::convert(value);
+        using ValueType = decltype(value);
+
+        if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
+          if (EnumDefinition.IsValid()) {
+            TOptional<FString> MaybeName = EnumDefinition->GetName(value);
+            if (MaybeName.IsSet()) {
+              return MaybeName.GetValue();
+            }
+          }
+        }
+
+        auto maybeString =
+            CesiumGltf::MetadataConversions<std::string, ValueType>::convert(
+                value);
         if (!maybeString) {
           return defaultValue;
         }
