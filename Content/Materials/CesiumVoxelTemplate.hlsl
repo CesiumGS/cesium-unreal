@@ -855,10 +855,6 @@ struct VoxelDataTextures
       // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
       LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
     }
-    else if (ShapeConstant == CYLINDER)
-    {
-      
-    }
 
     float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
     // Account for padding

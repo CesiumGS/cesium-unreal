@@ -52,11 +52,6 @@ public:
 
   void BeginDestroy();
 
-  ACesium3DTileset* pTilesetActor = nullptr;
-  const CesiumGltf::Model* pModel = nullptr;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
-
   CesiumGeometry::OctreeTileID tileId;
-
   TMap<FString, ValidatedVoxelBuffer> attributeBuffers;
 };

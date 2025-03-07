@@ -31,7 +31,7 @@ UCesiumVoxelRendererComponent::UCesiumVoxelRendererComponent()
     ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh;
     FConstructorStatics()
         : DefaultMaterial(TEXT(
-              "/CesiumForUnreal/Materials/Instances/MI_CesiumVoxels.MI_CesiumVoxels")),
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumVoxel.MI_CesiumVoxel")),
           CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube")) {}
   };
   static FConstructorStatics ConstructorStatics;

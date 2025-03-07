@@ -34,7 +34,7 @@ namespace LoadGltfResult {
 /**
  * Represents the result of loading a glTF voxel primitive on a load thread.
  */
-struct LoadVoxelResult {
+struct LoadedVoxelResult {
   TMap<FString, ValidatedVoxelBuffer> attributeBuffers;
 };
 
@@ -163,7 +163,7 @@ struct LoadedPrimitiveResult {
 
 #pragma endregion
 
-  std::optional<LoadVoxelResult> voxelResult = std::nullopt;
+  std::optional<LoadedVoxelResult> voxelResult = std::nullopt;
 };
 
 /**

@@ -206,9 +206,7 @@ void FVoxelOctree::InitializeTexture(uint32 Width, uint32 MaximumTileCount) {
     pResource](FRHICommandListImmediate& RHICmdList) {
     pResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
-    pResource->InitResource(
-        FRHICommandListImmediate::Get()); // Init Resource now requires a
-                                          // command list.
+    pResource->InitResource(FRHICommandListImmediate::Get());
   });
 }
 
