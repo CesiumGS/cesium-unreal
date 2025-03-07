@@ -60,6 +60,11 @@
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/../Source/ThirdParty",
       "generator": "Ninja",
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "^[Ll]inux"
+      },
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-linux-unreal",
@@ -70,6 +75,11 @@
     {
       "name": "linux-debug",
       "inherits": "linux",
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "^[Ll]inux"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -77,6 +87,11 @@
     {
       "name": "linux-release",
       "inherits": "linux",
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "^[Ll]inux"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
