@@ -75,10 +75,11 @@ jobs:
         run: |
           export UNREAL_ENGINE_COMPILER_DIR="${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/Unix/LibCxx"
+          export VCPKG_ROOT="${VCPKG_INSTALLATION_ROOT}"
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cd extern
-          cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release --target install -j8
+          cmake --preset linux -DCMAKE_BUILD_TYPE=Release
+          cmake --build out/build/linux --config Release --target install -j8
           cd ..
           rm -rf extern
       - name: Make more swap space available
