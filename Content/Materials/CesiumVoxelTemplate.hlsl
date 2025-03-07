@@ -458,6 +458,9 @@ struct ShapeUtility
     }
     
     RayIntersections result = ListState.GetFirstIntersections(Intersections);
+    // Set start to 0.0 when ray is inside the shape.
+    result.Entry.t = max(result.Entry.t, 0.0);
+
     return result;
   }
   
