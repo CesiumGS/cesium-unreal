@@ -2192,7 +2192,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       }
     }
 
-    this->_pTileset->processViewGroupLoads();
+    this->_pTileset->loadTiles();
   }
 }
 
