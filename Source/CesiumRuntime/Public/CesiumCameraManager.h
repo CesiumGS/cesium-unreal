@@ -16,6 +16,9 @@ struct CESIUMRUNTIME_API FCesiumViewGroup {
   bool Monitor = false;
 
   UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
+  double LoadWeight = 1.0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
   TSoftObjectPtr<AActor> ViewActor;
 
   UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)

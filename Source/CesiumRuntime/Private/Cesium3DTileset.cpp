@@ -2155,8 +2155,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         }
       }
 
+      this->_viewGroups[i].setWeight(group.LoadWeight);
+
       const Cesium3DTilesSelection::ViewUpdateResult& result =
-          this->_pTileset->updateView(
+          this->_pTileset->updateViewGroup(
               this->_viewGroups[i],
               frustums,
               DeltaTime);
@@ -2189,6 +2191,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
                 result.tilesFadingOut.end()));
       }
     }
+
+    this->_pTileset->processViewGroupLoads();
   }
 }
 
