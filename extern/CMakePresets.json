@@ -95,6 +95,18 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "arm64-osx",
+      "installDir": "${sourceDir}/../Source/ThirdParty",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "arm64-os-unreal"
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "10.15",
+        "CMAKE_OSX_ARCHITECTURES=arm64CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_SYSTEM_NAME": "Darwin",
+        "CMAKE_SYSTEM_PROCESSOR": "arm64"
+      }
     }
   ]
 }
