@@ -101,8 +101,8 @@ jobs:
       - name: Capture AWS secrets for vcpkg cache
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ env.AWS_INTERNAL_SERVICES_VCPKG_ACCESS_KEY }}
-          aws-secret-access-key: ${{ env.AWS_INTERNAL_SERVICES_VCPKG_SECRET_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_SECRET_KEY }}
           aws-region: us-east-1
       - name: Build cesium-native
         run: |
