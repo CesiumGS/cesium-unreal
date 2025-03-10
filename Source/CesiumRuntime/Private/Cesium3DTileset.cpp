@@ -2090,9 +2090,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   ACesiumCameraManager* pCameraManager =
       ACesiumCameraManager::GetDefaultCameraManager(this);
   if (pCameraManager) {
-    this->_viewGroups.resize(
-        pCameraManager->ViewGroups.Num(),
-        this->_pTileset->createViewGroup());
+    this->_viewGroups.resize(pCameraManager->ViewGroups.Num());
     for (int32 i = 0; i < pCameraManager->ViewGroups.Num(); ++i) {
       const FCesiumViewGroup& group = pCameraManager->ViewGroups[i];
 
