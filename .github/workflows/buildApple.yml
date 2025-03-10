@@ -93,6 +93,7 @@ jobs:
       - name: Build cesium-native for macOS ARM64
         run: |
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
+          export VCPKG_ROOT="${VCPKG_INSTALLATION_ROOT}"
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cd extern
           cmake -B build-arm64 --preset=arm64-osx -DCMAKE_BUILD_TYPE=Release
