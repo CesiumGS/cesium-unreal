@@ -90,10 +90,14 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_SECRET_KEY }}
           aws-region: us-east-1
+      - name: Install vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: Print output from run-vcpkg (debugging)
+        run: >
+          echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}'"
       - name: Build cesium-native for macOS ARM64
         run: |
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
-          export VCPKG_ROOT="${VCPKG_INSTALLATION_ROOT}"
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cd extern
           cmake -B build-arm64 --preset=arm64-osx -DCMAKE_BUILD_TYPE=Release
