@@ -82,6 +82,7 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+          echo "CESIUM_VCPKG_DIR=${HOME}/vcpkg" >> $GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
       - name: Capture AWS secrets for vcpkg cache
@@ -93,7 +94,7 @@ jobs:
       - name: Install vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgDirectory: ~/vcpkg
+          vcpkgDirectory: ${{ env.CESIUM_VCPKG_DIR }}
           vcpkgGitCommitId: d5ec528843d29e3a52d745a64b469f810b2cedbf
       - name: Print output from run-vcpkg (debugging)
         run: >
