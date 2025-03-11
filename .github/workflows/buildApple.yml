@@ -151,6 +151,8 @@ jobs:
       - name: Print log
         if: ${{ failure() }}
         run: |
+          cat "/Users/runner/vcpkg/buildtrees/detect_compiler/config-arm64-osx-rel-out.log"
+          cat "/Users/runner/vcpkg/buildtrees/detect_compiler/config-arm64-osx-rel-err.log"
           cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UnrealEditor-Mac-Development.txt"
       - name: Publish plugin package artifact
         if: ${{ success() }}
