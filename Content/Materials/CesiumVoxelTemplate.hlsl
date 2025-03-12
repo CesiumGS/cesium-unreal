@@ -756,8 +756,8 @@ struct ShapeUtility
   }
 
   /**
-  * Tests if the input ray intersects the upper half of the quadric cone, i.e., the cone where its apex
-  * points downward.
+  * Tests if the input ray intersects the negative space outside of the cone. In other words,
+  * this captures the volume outside the cone, excluding the part of the ray that is inside the cone.
   */ 
   void IntersectFlippedCone(in Ray R, in float CosHalfAngle, out RayIntersections FirstIntersections, out RayIntersections SecondIntersections)
   {
@@ -817,10 +817,10 @@ struct ShapeUtility
   }
   
   /**
-  * Tests if the input ray intersects the upper half of the quadric cone, i.e., the cone where its apex
-  * points downward.
+  * Tests if the input ray intersects the volume inside the quadric cone. The cone's orientation is
+  * dependent on the sign of the input angle.
   */ 
-  RayIntersections IntersectUprightCone(in Ray R, in float CosHalfAngle)
+  RayIntersections IntersectCone(in Ray R, in float CosHalfAngle)
   {
     // Undo the scaling from ellipsoid to sphere
     float3 position = R.Origin * RadiiUV;
@@ -947,7 +947,7 @@ struct ShapeUtility
     if (LatitudeMinFlag == ANGLE_UNDER_HALF)
     {
       ListState.Length += 2;
-      RayIntersections BottomConeResult = IntersectUprightCone(R, MinBounds.y);
+      RayIntersections BottomConeResult = IntersectCone(R, MinBounds.y);
       setShapeIntersections(Intersections, ListState, 2, BottomConeResult);
     }
     else if (LatitudeMinFlag == ANGLE_HALF)
@@ -1022,7 +1022,7 @@ struct ShapeUtility
     }
     else if (LatitudeMaxFlag == ANGLE_OVER_HALF)
     {
-      RayIntersections TopConeResult = IntersectUprightCone(R, MaxBounds.y);
+      RayIntersections TopConeResult = IntersectCone(R, MaxBounds.y);
       [branch]
       switch (ListState.Length)
       {

@@ -113,12 +113,15 @@ void UCesiumVoxelOctreeTexture::Update(const std::vector<std::byte>& data) {
   ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
   ([pResource = this->_pResource, &data, region, sourcePitch](
        FRHICommandListImmediate& RHICmdList) {
-    RHIUpdateTexture2D(
-        pResource->TextureRHI,
-        0,
-        region,
-        sourcePitch,
-        reinterpret_cast<const uint8*>(data.data()));
+    // The data could be emptied if the tileset refreshes mid-update.
+    if (!data.empty()) {
+      RHIUpdateTexture2D(
+          pResource->TextureRHI,
+          0,
+          region,
+          sourcePitch,
+          reinterpret_cast<const uint8*>(data.data()));
+    }
   });
 }
 

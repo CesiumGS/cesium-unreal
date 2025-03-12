@@ -2026,6 +2026,7 @@ static void loadVoxels(
         ValidatedVoxelBuffer{pBuffer, pBufferView});
   }
 
+  primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.transform = transform * yInvertMatrix;
   primitiveResult.Metadata =
