@@ -91,6 +91,9 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_SECRET_KEY }}
           aws-region: us-east-1
+      - name: Install ninja
+        run: |
+          brew install ninja
       - name: Install vcpkg
         uses: lukka/run-vcpkg@v11
         with:
