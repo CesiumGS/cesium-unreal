@@ -819,9 +819,11 @@ private:
   FString IModelID;
 
   /**
-   * The ID of the iTwin Reality Data to use when interacting with the Reality Data service.
+   * The ID of the iTwin Reality Data to use when interacting with the Reality
+   * Data service.
    *
-   * This property is ignored if TilesetSource isn't set to "From iTwin Reality Data"
+   * This property is ignored if TilesetSource isn't set to "From iTwin Reality
+   * Data"
    */
   UPROPERTY(
       EditAnywhere,

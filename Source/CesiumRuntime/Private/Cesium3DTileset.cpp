@@ -1221,7 +1221,9 @@ void ACesium3DTileset::LoadTileset() {
         externals,
         Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory(
             TCHAR_TO_UTF8(*this->RealityDataID),
-            this->ITwinID.IsEmpty() ? std::nullopt : std::make_optional<std::string>(TCHAR_TO_UTF8(*this->ITwinID)),
+            this->ITwinID.IsEmpty() ? std::nullopt
+                                    : std::make_optional<std::string>(
+                                          TCHAR_TO_UTF8(*this->ITwinID)),
             TCHAR_TO_UTF8(*this->ITwinAccessToken)),
         options);
     break;
