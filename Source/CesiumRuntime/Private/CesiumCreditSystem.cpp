@@ -93,10 +93,15 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
   // loader object that retrieves the blueprint class in its constructor. We can
   // destroy the loader immediately once it's done since it will have already
   // set CesiumCreditSystemBP.
-  if (!CesiumCreditSystemBP) {
+  if (!IsValid(CesiumCreditSystemBP)) {
     UCesiumCreditSystemBPLoader* bpLoader =
         NewObject<UCesiumCreditSystemBPLoader>();
     CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP.LoadSynchronous();
+    // Prevent the GC from destroying the object when unloading a level, as it will be reused
+    // if one subsequently loads another level. This kind of static object should probably be
+    // replaced by a "subsystem"
+    // (https://dev.epicgames.com/documentation/en-us/unreal-engine/programming-subsystems-in-unreal-engine)
+    CesiumCreditSystemBP->AddToRoot();
     bpLoader->ConditionalBeginDestroy();
   }
 
