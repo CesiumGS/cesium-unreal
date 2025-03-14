@@ -1077,6 +1077,10 @@ void ACesium3DTileset::LoadTileset() {
 
   options.contentOptions.applyTextureTransform = false;
 
+  if (!this->UserCredit.IsEmpty()) {
+      options.credit = TCHAR_TO_UTF8(*this->UserCredit);
+  }
+
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
   for (const auto& [Key, Value] : this->RequestHeaders) {

@@ -314,6 +314,12 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool ShowCreditsOnScreen = false;
 
+  /**
+   * Optional user-defined credit text for the tileset.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FString UserCredit;
+
   /** @copydoc ACesium3DTileset::CameraManager */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   TSoftObjectPtr<ACesiumCameraManager> GetCameraManager() const;
