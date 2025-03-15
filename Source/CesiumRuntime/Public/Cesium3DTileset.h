@@ -320,6 +320,14 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString UserCredit;
 
+  /**
+   * If true, the user-defined credit text will have a high priority (i.e will
+   * be on the left, before the credit texts deduced from the currently viewed
+   * tiles).
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool bHighPriorityUserCredit = false;
+
   /** @copydoc ACesium3DTileset::CameraManager */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   TSoftObjectPtr<ACesiumCameraManager> GetCameraManager() const;
