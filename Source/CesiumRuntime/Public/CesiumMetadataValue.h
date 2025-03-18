@@ -266,6 +266,7 @@ private:
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
+  friend class FCesiumMetadataValueAccess;
 };
 
 UCLASS()
@@ -858,4 +859,40 @@ public:
       Category = "Cesium|Metadata|Value")
   static TMap<FString, FString>
   GetValuesAsStrings(const TMap<FString, FCesiumMetadataValue>& Values);
+};
+
+/// Grants access to metadata value types not currently supported in blueprint.
+/// Can be useful in C++ code.
+/// Should be moved to UCesiumMetadataValueBlueprintLibrary if those types
+/// become compatible with blueprints in the future.
+class CESIUMRUNTIME_API FCesiumMetadataValueAccess {
+
+public:
+  /**
+   * Attempts to retrieve the value as an unsigned 64-bit integer.
+   *
+   * If the value is an integer and between 0 and (2^64 - 1),
+   * it is returned as-is.
+   *
+   * If the value is a floating-point number in the aforementioned range, it
+   * is truncated (rounded toward zero) and returned;
+   *
+   * If the value is a boolean, 1 is returned for true and 0 for false.
+   *
+   * If the value is a string and the entire string can be parsed as an
+   * integer in the valid range, the parsed value is returned. If it can be
+   * parsed as a floating-point number, the parsed value is truncated (rounded
+   * toward zero). In either case, the string is parsed in a locale-independent
+   * way and does not support the use of commas or other delimiters to group
+   * digits together.
+   *
+   * In all other cases, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to an uint64.
+   * @return The value as an unsigned 64-bit integer.
+   */
+  static uint64 GetUnsignedInteger64(
+      const FCesiumMetadataValue& Value,
+      uint64 DefaultValue);
 };
