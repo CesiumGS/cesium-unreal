@@ -1172,6 +1172,35 @@ std::string getPrimitiveName(
   }
   return name;
 }
+
+/// Helper used to log only once per unsupported primitive mode.
+struct PrimModeLogHelper {
+  std::array<std::atomic_bool, (size_t)MeshPrimitive::Mode::TRIANGLE_FAN + 1>
+      alreadyLogged_;
+
+  PrimModeLogHelper()
+      : alreadyLogged_{
+            {{false}, {false}, {false}, {false}, {false}, {false}, {false}}} {}
+
+  inline void OnUnsupportedMode(int32_t primMode) {
+    bool bLog = false;
+    if (primMode < 0 || primMode >= (int32_t)alreadyLogged_.size()) {
+      ensureMsgf(false, TEXT("Unknown primitive mode %d!"), primMode);
+      bLog = true;
+    } else if (!alreadyLogged_[(size_t)primMode].exchange(true)) {
+      bLog = true;
+    }
+    if (bLog) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Primitive mode %d is not supported"),
+          primMode);
+    }
+  }
+};
+static PrimModeLogHelper UnsupportedPrimitiveLogger;
+
 } // namespace
 
 template <class TIndexAccessor>
@@ -1196,11 +1225,7 @@ static void loadPrimitive(
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
     // TODO: add support for other primitive types.
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Primitive mode %d is not supported"),
-        primitive.mode);
+    UnsupportedPrimitiveLogger.OnUnsupportedMode(primitive.mode);
     return;
   }
 
