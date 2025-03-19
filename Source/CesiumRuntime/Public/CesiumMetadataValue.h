@@ -861,10 +861,13 @@ public:
   GetValuesAsStrings(const TMap<FString, FCesiumMetadataValue>& Values);
 };
 
-/// Grants access to metadata value types not currently supported in blueprint.
-/// Can be useful in C++ code.
-/// Should be moved to UCesiumMetadataValueBlueprintLibrary if those types
-/// become compatible with blueprints in the future.
+/**
+ * Grants access to metadata value types that are not currently supported in
+ * Blueprints. This can be useful in C++ code.
+ *
+ * These should be moved to UCesiumMetadataValueBlueprintLibrary if those types
+ * become compatible with Blueprints in the future.
+ */
 class CESIUMRUNTIME_API FCesiumMetadataValueAccess {
 
 public:
