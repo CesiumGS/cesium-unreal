@@ -408,7 +408,7 @@ void FCesiumMetadataValueSpec::Define() {
 
       value = FCesiumMetadataValue(std::numeric_limits<int64_t>::max() - 1);
       TestEqual<uint64_t>(
-          "uint64_t",
+          "int64_t",
           FCesiumMetadataValueAccess::GetUnsignedInteger64(
               value,
               defaultValue),
