@@ -1,7 +1,70 @@
 #include "CesiumITwinAPIBlueprintLibrary.h"
 
+#include "CesiumITwinCesiumCuratedContentRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include <CesiumUtility/Result.h>
+
+void UCesiumITwinResource::Spawn() {
+  UWorld* pWorld = GetWorld();
+  check(pWorld);
+
+  ACesiumGeoreference* pParent =
+      ACesiumGeoreference::GetDefaultGeoreference(pWorld);
+
+  check(pParent);
+
+  if (_resource.resourceType == CesiumITwinClient::ResourceType::Imagery) {
+    // TODO: don't just attach imagery to the last tileset spawned!
+    TArray<AActor*> ChildActors;
+    pParent->GetAttachedActors(ChildActors);
+    for (auto It = ChildActors.rbegin(); It != ChildActors.rend(); ++It) {
+      ACesium3DTileset* pChildTileset = Cast<ACesium3DTileset>(*It);
+      if (IsValid(pChildTileset) &&
+          pChildTileset->GetTilesetSource() ==
+              ETilesetSource::FromITwinCesiumCuratedContent) {
+
+        UCesiumITwinCesiumCuratedContentRasterOverlay* pOverlay =
+            NewObject<UCesiumITwinCesiumCuratedContentRasterOverlay>(
+                pChildTileset,
+                FName(TEXT("Overlay0")),
+                RF_Transactional);
+        pOverlay->MaterialLayerKey = "Overlay0";
+        pOverlay->ITwinAccessToken = UTF8_TO_TCHAR(
+            this->_pConnection->getAccessToken().getToken().c_str());
+        pOverlay->AssetID = std::stoi(_resource.id);
+        pOverlay->SetActive(true);
+        pOverlay->OnComponentCreated();
+        pChildTileset->AddInstanceComponent(pOverlay);
+        break;
+      }
+    }
+    return;
+  }
+
+  ACesium3DTileset* pTileset = pWorld->SpawnActor<ACesium3DTileset>();
+  pTileset->AttachToActor(
+      pParent,
+      FAttachmentTransformRules::KeepRelativeTransform);
+
+  pTileset->SetITwinAccessToken(
+      UTF8_TO_TCHAR(this->_pConnection->getAccessToken().getToken().c_str()));
+
+  switch (_resource.source) {
+  case CesiumITwinClient::ResourceSource::CesiumCuratedContent:
+    pTileset->SetTilesetSource(ETilesetSource::FromITwinCesiumCuratedContent);
+    pTileset->SetITwinCesiumContentID(std::stoi(_resource.id));
+    break;
+  case CesiumITwinClient::ResourceSource::MeshExport:
+    pTileset->SetTilesetSource(ETilesetSource::FromIModelMeshExportService);
+    pTileset->SetIModelID(UTF8_TO_TCHAR(_resource.parentId->c_str()));
+    break;
+  case CesiumITwinClient::ResourceSource::RealityData:
+    pTileset->SetTilesetSource(ETilesetSource::FromITwinRealityData);
+    pTileset->SetITwinID(UTF8_TO_TCHAR(_resource.parentId->c_str()));
+    pTileset->SetRealityDataID(UTF8_TO_TCHAR(_resource.id.c_str()));
+    break;
+  }
+}
 
 UCesiumITwinAPIAuthorizeAsyncAction*
 UCesiumITwinAPIAuthorizeAsyncAction::Authorize(const FString& ClientID) {

@@ -111,44 +111,7 @@ public:
   }
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|iTwin")
-  void Spawn() {
-    if (_resource.resourceType == CesiumITwinClient::ResourceType::Imagery) {
-      // TODO
-      return;
-    }
-
-    UWorld* pWorld = GetWorld();
-    check(pWorld);
-
-    ACesiumGeoreference* pParent =
-        ACesiumGeoreference::GetDefaultGeoreference(pWorld);
-
-    check(pParent);
-
-    ACesium3DTileset* pTileset = pWorld->SpawnActor<ACesium3DTileset>();
-    pTileset->AttachToActor(
-        pParent,
-        FAttachmentTransformRules::KeepRelativeTransform);
-
-    pTileset->SetITwinAccessToken(
-        UTF8_TO_TCHAR(this->_pConnection->getAccessToken().getToken().c_str()));
-
-    switch (_resource.source) {
-    case CesiumITwinClient::ResourceSource::CesiumCuratedContent:
-      pTileset->SetTilesetSource(ETilesetSource::FromITwinCesiumCuratedContent);
-      pTileset->SetITwinCesiumContentID(std::stoi(_resource.id));
-      break;
-    case CesiumITwinClient::ResourceSource::MeshExport:
-      pTileset->SetTilesetSource(ETilesetSource::FromIModelMeshExportService);
-      pTileset->SetIModelID(UTF8_TO_TCHAR(_resource.id.c_str()));
-      break;
-    case CesiumITwinClient::ResourceSource::RealityData:
-      pTileset->SetTilesetSource(ETilesetSource::FromITwinRealityData);
-      pTileset->SetITwinID(UTF8_TO_TCHAR(_resource.parentId->c_str()));
-      pTileset->SetRealityDataID(UTF8_TO_TCHAR(_resource.parentId->c_str()));
-      break;
-    }
-  }
+  void Spawn();
 
   void SetResource(const CesiumITwinClient::ITwinResource& resource) {
     this->_resource = resource;
