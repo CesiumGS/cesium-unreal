@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed crash when tilesets with point clouds were used in combination with Hardware Ray Tracing.
+
 ### v2.14.1 - 2025-03-06
 
 ##### Fixes :wrench:
