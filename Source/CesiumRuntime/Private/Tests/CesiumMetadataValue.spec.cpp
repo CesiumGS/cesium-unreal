@@ -394,101 +394,6 @@ void FCesiumMetadataValueSpec::Define() {
        });
   });
 
-  Describe("GetUnsignedInteger64", [this]() {
-    const uint64_t defaultValue = static_cast<uint64_t>(0);
-
-    It("gets from in-range integers", [this, defaultValue]() {
-      FCesiumMetadataValue value(std::numeric_limits<uint64_t>::max() - 1);
-      TestEqual<uint64_t>(
-          "uint64_t",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          std::numeric_limits<uint64_t>::max() - 1);
-
-      value = FCesiumMetadataValue(std::numeric_limits<int64_t>::max() - 1);
-      TestEqual<uint64_t>(
-          "int64_t",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - 1));
-
-      value = FCesiumMetadataValue(static_cast<int16_t>(12345));
-      TestEqual<uint64_t>(
-          "smaller signed integer",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          static_cast<uint64_t>(12345));
-
-      value = FCesiumMetadataValue(static_cast<uint8_t>(255));
-      TestEqual<uint64_t>(
-          "smaller unsigned integer",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          static_cast<uint64_t>(255));
-    });
-
-    It("gets from boolean", [this, defaultValue]() {
-      FCesiumMetadataValue value(true);
-      TestEqual<uint64_t>(
-          "value",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          static_cast<uint64_t>(1));
-    });
-
-    It("gets from in-range floating point number", [this, defaultValue]() {
-      FCesiumMetadataValue value(1234.56f);
-      TestEqual<uint64_t>(
-          "float",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          static_cast<uint64_t>(1234));
-    });
-
-    It("gets from string", [this, defaultValue]() {
-      FCesiumMetadataValue value(std::string_view("1234"));
-      TestEqual<uint64_t>(
-          "value",
-          FCesiumMetadataValueAccess::GetUnsignedInteger64(
-              value,
-              defaultValue),
-          static_cast<uint64_t>(1234));
-    });
-
-    It("returns default value for out-of-range numbers",
-       [this, defaultValue]() {
-         FCesiumMetadataValue value(-5);
-         TestEqual<uint64_t>(
-             "negative integer",
-             FCesiumMetadataValueAccess::GetUnsignedInteger64(
-                 value,
-                 defaultValue),
-             defaultValue);
-
-         value = FCesiumMetadataValue(-59.62f);
-         TestEqual<uint64_t>(
-             "negative floating-point number",
-             FCesiumMetadataValueAccess::GetUnsignedInteger64(
-                 value,
-                 defaultValue),
-             defaultValue);
-
-         value = FCesiumMetadataValue(std::numeric_limits<float>::max());
-         TestEqual<uint64_t>(
-             "positive floating-point number",
-             FCesiumMetadataValueAccess::GetUnsignedInteger64(
-                 value,
-                 defaultValue),
-             defaultValue);
-       });
-  });
-
   Describe("GetFloat", [this]() {
     It("gets from in-range floating point number", [this]() {
       FCesiumMetadataValue value(1234.56f);
@@ -1360,5 +1265,86 @@ void FCesiumMetadataValueSpec::Define() {
       TestTrue("has array value", pString != nullptr);
       TestEqual("array value as string", *pString, FString());
     });
+  });
+
+  Describe("GetUnsignedInteger64", [this]() {
+    const uint64_t defaultValue = static_cast<uint64_t>(0);
+
+    It("gets from in-range integers", [this, defaultValue]() {
+      FCesiumMetadataValue value(std::numeric_limits<uint64_t>::max() - 1);
+      TestEqual<uint64_t>(
+          "uint64_t",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          std::numeric_limits<uint64_t>::max() - 1);
+
+      value = FCesiumMetadataValue(std::numeric_limits<int64_t>::max() - 1);
+      TestEqual<uint64_t>(
+          "int64_t",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - 1));
+
+      value = FCesiumMetadataValue(static_cast<int16_t>(12345));
+      TestEqual<uint64_t>(
+          "smaller signed integer",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(12345));
+
+      value = FCesiumMetadataValue(static_cast<uint8_t>(255));
+      TestEqual<uint64_t>(
+          "smaller unsigned integer",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(255));
+    });
+
+    It("gets from boolean", [this, defaultValue]() {
+      FCesiumMetadataValue value(true);
+      TestEqual<uint64_t>(
+          "value",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(1));
+    });
+
+    It("gets from in-range floating point number", [this, defaultValue]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual<uint64_t>(
+          "float",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(1234));
+    });
+
+    It("gets from string", [this, defaultValue]() {
+      FCesiumMetadataValue value(std::string_view("1234"));
+      TestEqual<uint64_t>(
+          "value",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(1234));
+    });
+
+    It("returns default value for out-of-range numbers",
+       [this, defaultValue]() {
+         FCesiumMetadataValue value(-5);
+         TestEqual<uint64_t>(
+             "negative integer",
+             CesiumMetadataValueAccess::GetUnsignedInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+
+         value = FCesiumMetadataValue(-59.62f);
+         TestEqual<uint64_t>(
+             "negative floating-point number",
+             CesiumMetadataValueAccess::GetUnsignedInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+
+         value = FCesiumMetadataValue(std::numeric_limits<float>::max());
+         TestEqual<uint64_t>(
+             "positive floating-point number",
+             CesiumMetadataValueAccess::GetUnsignedInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+       });
   });
 }

@@ -266,7 +266,7 @@ private:
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
-  friend class FCesiumMetadataValueAccess;
+  friend class CesiumMetadataValueAccess;
 };
 
 UCLASS()
