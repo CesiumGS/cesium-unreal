@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+###  ? - ?
+
+##### Fixes :wrench:
+
+- Worked around an apparent Metal problem that prevented polygon clipping from working correctly on macOS.
+
 ### v2.14.1 - 2025-03-06
 
 ##### Fixes :wrench:
