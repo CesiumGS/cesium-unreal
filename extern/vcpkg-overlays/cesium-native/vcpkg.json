@@ -14,7 +14,6 @@
     "expected-lite",
     "fmt",
     "glm",
-    "ms-gsl",
     "rapidjson",
     "spdlog",
     "stb",
@@ -35,7 +34,10 @@
     "zlib-ng",
     "picosha2",
     "earcut-hpp",
-    "cpp-httplib",
+    {
+      "name": "cpp-httplib",
+      "default-features": false
+    },
     "libmorton",
     "zstd"
   ]
