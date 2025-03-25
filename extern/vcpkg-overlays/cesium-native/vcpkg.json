@@ -20,10 +20,7 @@
     "stb",
     "ada-url",
     "draco",
-    {
-      "name": "ktx",
-      "default-features": false
-    },
+    "ktx",
     "modp-base64",
     "meshoptimizer",
     "openssl",

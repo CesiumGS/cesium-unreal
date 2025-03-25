@@ -27,7 +27,11 @@
   "dependencies": [
     "vcpkg-cmake",
     "vcpkg-cmake-config",
-    "cesium-native"
+    "cesium-native",
+    {
+      "name": "cpp-httplib",
+      "default-features": false
+    }
   ]
 }
 
