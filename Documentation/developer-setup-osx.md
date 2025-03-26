@@ -168,7 +168,7 @@ done
 
 **Note**: It is recommended that the build steps for CMake command-line for macOS (above) be completed first. Unreal Engine Editor will not launch without the host side binaries compiled as well.
 
-Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one use for macOS as this will require compiling for a different architecture.
+Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one used for macOS as this will require compiling for a different architecture.
 > [!note]
 >  The following steps must be done in the `extern` directory, and _not_ the `cesium-native` subdirectory!
 

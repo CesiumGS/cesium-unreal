@@ -236,7 +236,7 @@ bool FLoadTilesetMelbourneVaryMaxTileLoads::RunTest(const FString& Parameters) {
         getCacheDatabase();
     pCacheDatabase->clearAll();
 
-    int maxLoadsTarget = swl::get<int>(parameter);
+    int maxLoadsTarget = std::get<int>(parameter);
     context.setMaximumSimultaneousTileLoads(maxLoadsTarget);
 
     context.refreshTilesets();
