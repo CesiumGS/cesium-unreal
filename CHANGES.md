@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug where a glTF material with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
+- Fixed a crash that could occur when rapidly refreshing a tileset.
 
 ### v2.14.1 - 2025-03-06
 
