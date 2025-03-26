@@ -8,7 +8,7 @@
 
 ##### Fixes :wrench:
 
-- Fixed a bug where a glTF with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
+- Fixed a bug where a glTF material with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
 
 ### v2.14.1 - 2025-03-06
 
