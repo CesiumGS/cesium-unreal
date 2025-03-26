@@ -1,6 +1,16 @@
-# Change Log
+# Change Log {#changes}
 
-### ? - ?
+### v2.14.1 - 2025-03-06
+
+##### Additions :tada:
+
+- Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
+
+##### Fixes :wrench:
+
+- Fixed the "Auto Fill" and "Generate Material" buttons on `UCesiumFeaturesMetadataComponent`, which broke with the previous release.
+
+### v2.14.0 - 2025-03-03
 
 ##### Breaking Changes :mega:
 
@@ -11,7 +21,13 @@
 - Added support for drawing 3D Tilesets to Runtime Virtual Textures.
 - Added `MLB_AngleMask` for masking Material Layers based on a tangent vector.
 - Added `ML_CesiumRVTBaseColorOverlay` for Overlaying the BaseColor of an RVT in your material.
-- Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
+- Added support for enum structural metadata properties to `CesiumPropertyArray`, `CesiumPropertyTable`, `CesiumPropertyTableProperty`, `CesiumPropertyTexture`, `CesiumPropertyTextureProperty`, and `CesiumMetadataValue`.
+
+##### Fixes :wrench:
+
+- "External Tilesets" are now unloaded when they are no longer used. This will significantly reduce the growth of memory usage over time when using Google Photorealistic 3D Tiles and similar tilesets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.3 to v0.45.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.13.3 - 2025-02-12
 

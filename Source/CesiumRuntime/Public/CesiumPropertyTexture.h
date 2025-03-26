@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGltf/PropertyTextureView.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -41,7 +42,16 @@ public:
 
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture& PropertyTexture);
+      const CesiumGltf::PropertyTexture& PropertyTexture)
+      : FCesiumPropertyTexture(
+            model,
+            PropertyTexture,
+            FCesiumMetadataEnumCollection::GetOrCreateFromModel(model)) {}
+
+  FCesiumPropertyTexture(
+      const CesiumGltf::Model& model,
+      const CesiumGltf::PropertyTexture& PropertyTexture,
+      const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.

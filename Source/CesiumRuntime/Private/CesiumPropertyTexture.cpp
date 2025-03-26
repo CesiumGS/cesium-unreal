@@ -10,7 +10,8 @@ static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 
 FCesiumPropertyTexture::FCesiumPropertyTexture(
     const CesiumGltf::Model& Model,
-    const CesiumGltf::PropertyTexture& PropertyTexture)
+    const CesiumGltf::PropertyTexture& PropertyTexture,
+    const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection)
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTextureClass),
       _name(PropertyTexture.name.value_or("").c_str()),
       _className(PropertyTexture.classProperty.c_str()) {
@@ -23,6 +24,12 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     // Status was already set in initializer list.
     return;
   }
+
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
+      Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+  // If there was no schema, we would've gotten ErrorMissingSchema for the
+  // propertyTextureView status.
+  check(pExtension != nullptr && pExtension->schema != nullptr);
 
   const CesiumGltf::Class* pClass = propertyTextureView.getClass();
   for (const auto& classPropertyPair : pClass->properties) {
@@ -44,11 +51,25 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
 
       propertyTextureView.getPropertyView(
           propertyPair->first,
-          [&properties = this->_properties](
+          [&properties = this->_properties,
+           &pEnumCollection,
+           &propertyTextureView,
+           &classProperty = classPropertyPair.second,
+           &Schema = *pExtension->schema](
               const std::string& propertyId,
               auto propertyValue) mutable {
             FString key(UTF8_TO_TCHAR(propertyId.data()));
-            properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
+
+            TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr;
+            if (pEnumCollection.IsValid() &&
+                classProperty.enumType.has_value()) {
+              pEnumDefinition = pEnumCollection->Get(FString(
+                  UTF8_TO_TCHAR(classProperty.enumType.value().c_str())));
+            }
+
+            properties.Add(
+                key,
+                FCesiumPropertyTextureProperty(propertyValue, pEnumDefinition));
           },
           options);
     }

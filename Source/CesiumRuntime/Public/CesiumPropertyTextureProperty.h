@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValue.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -49,11 +50,13 @@ public:
 
   template <typename T, bool Normalized>
   FCesiumPropertyTextureProperty(
-      const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property)
+      const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
       : _status(ECesiumPropertyTexturePropertyStatus::ErrorInvalidProperty),
         _property(Property),
         _valueType(),
-        _normalized(Normalized) {
+        _normalized(Normalized),
+        _pEnumDefinition(pEnumDefinition) {
     switch (Property.status()) {
     case CesiumGltf::PropertyTexturePropertyViewStatus::Valid:
       _status = ECesiumPropertyTexturePropertyStatus::Valid;
@@ -92,7 +95,7 @@ public:
       return;
     }
 
-    _valueType = TypeToMetadataValueType<T>();
+    _valueType = TypeToMetadataValueType<T>(pEnumDefinition);
     _normalized = Normalized;
   }
 
@@ -109,6 +112,7 @@ private:
 
   FCesiumMetadataValueType _valueType;
   bool _normalized;
+  TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumPropertyTexturePropertyBlueprintLibrary;
 };
