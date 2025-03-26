@@ -23,11 +23,11 @@ To ensure your Pull Request is reviewed and accepted quickly, please refer to ou
 
 ## Author checklist
 
-- [ ] I submitted a [Contributor License Agreement](https://github.com/CesiumGS/community/tree/main/CLAs).
-- [ ] I did a full self-review of my code.
-- [ ] I updated `CHANGES.md` with a short summary of my change (for user-facing changes).
-- [ ] I added or updated unit tests to ensure consistent code coverage when necessary.
-- [ ] I updated the documentation when necessary.
+- [ ] I have submitted a [Contributor License Agreement](https://github.com/CesiumGS/community/tree/main/CLAs) (only needed once).
+- [ ] I have done a full self-review of my code.
+- [ ] I have updated `CHANGES.md` with a short summary of my change (for user-facing changes).
+- [ ] I have added or updated unit tests to ensure consistent code coverage as necessary.
+- [ ] I have updated the documentation as necessary.
 
 ## Remaining Tasks
 
