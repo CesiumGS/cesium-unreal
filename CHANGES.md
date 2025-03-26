@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
+
 ##### Fixes :wrench:
 
 - Fixed a bug where a glTF with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
