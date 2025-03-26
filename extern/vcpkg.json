@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "vsgcs",
+  "version": "0.9.0",
+  "default-features": [
+    "cesium-native-port"
+  ],
+  "features": {
+    "cesium-native-port": {
+      "description": "Use vckpg overlay for Cesium Native",
+      "dependencies": [
+        {
+          "name": "cesium-native"
+        }
+      ]
+    },
+    "cesium-native-local": {
+      "description": "Use local source for Cesium Native",
+      "dependencies": [
+        {
+          "name": "cesium-native",
+          "features": ["dependencies-only"]
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    "vcpkg-cmake",
+    "vcpkg-cmake-config",
+    "cesium-native",
+    {
+      "name": "cpp-httplib",
+      "default-features": false
+    }
+  ]
+}
+

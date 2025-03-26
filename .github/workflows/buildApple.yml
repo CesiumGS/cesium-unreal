@@ -21,6 +21,8 @@ on:
       xcode-version:
         required: true
         type: string
+env:
+  VCPKG_BINARY_SOURCES: 'clear;x-aws,s3://cesium-builds/vcpkg/cesium-unreal-cache/,readwrite'
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
@@ -66,10 +68,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Configure vcpkg caching
-        uses: ./.github/actions/vcpkg-cache
-        with:
-          id: ${{ inputs.upload-package-base-name }}
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-macos
         with:
@@ -84,24 +82,41 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+          echo "CESIUM_VCPKG_DIR=${HOME}/vcpkg" >> $GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.5.1
+      - name: Capture AWS secrets for vcpkg cache
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_SECRET_KEY }}
+          aws-region: us-east-1
+      - name: Install ninja
+        run: |
+          brew install ninja
+      - name: Install vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: ${{ env.CESIUM_VCPKG_DIR }}
+          vcpkgGitCommitId: d5ec528843d29e3a52d745a64b469f810b2cedbf
+      - name: Print output from run-vcpkg (debugging)
+        run: >
+          echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}'"
       - name: Build cesium-native for macOS ARM64
         run: |
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
-          mkdir -p extern/build-arm64
-          cd extern/build-arm64
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=arm64
-          cmake --build . -j4 --target install
+          cd extern
+          cmake -B build-arm64 --preset=arm64-osx -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-arm64 -j4 --target install
       - name: Build cesium-native for macOS x86_64
         run: |
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           mkdir -p extern/build-x64
-          cd extern/build-x64
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=x86_64
-          cmake --build . -j4 --target install
+          cd extern
+          cmake -B build-x64 --preset=x64-osx -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-x64 -j4 --target install
       - name: Create universal macOS libs for cesium-native
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release
@@ -125,7 +140,7 @@ jobs:
           cd extern
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
-          cmake -B build-ios -S . -GXcode -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
+          cmake -B build-ios --preset=arm64-ios -GXcode -DCMAKE_BUILD_TYPE=Release
           cmake --build build-ios -j4 --target install --config Release
       - name: Remove extern directory
         run: |
@@ -139,6 +154,8 @@ jobs:
       - name: Print log
         if: ${{ failure() }}
         run: |
+          cat "/Users/runner/vcpkg/buildtrees/detect_compiler/config-arm64-osx-rel-out.log"
+          cat "/Users/runner/vcpkg/buildtrees/detect_compiler/config-arm64-osx-rel-err.log"
           cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UnrealEditor-Mac-Development.txt"
       - name: Publish plugin package artifact
         if: ${{ success() }}

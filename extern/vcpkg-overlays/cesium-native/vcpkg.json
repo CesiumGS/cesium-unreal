@@ -1,0 +1,43 @@
+{
+  "name": "cesium-native",
+  "version-string": "0.41.0",
+  "features": {
+    "dependencies-only": {
+      "description": "install port's dependencies without the port"
+    }
+  },
+  "dependencies": [
+    "vcpkg-cmake",
+    "vcpkg-cmake-config",
+    "asyncplusplus",
+    "doctest",
+    "expected-lite",
+    "fmt",
+    "glm",
+    "ms-gsl",
+    "rapidjson",
+    "spdlog",
+    "stb",
+    "ada-url",
+    "draco",
+    "ktx",
+    "modp-base64",
+    "meshoptimizer",
+    "openssl",
+    "s2geometry",
+    "libjpeg-turbo",
+    "sqlite3",
+    "tinyxml2",
+    "libwebp",
+    "zlib-ng",
+    "picosha2",
+    "earcut-hpp",
+    {
+      "name": "cpp-httplib",
+      "default-features": false
+    },
+    "libmorton",
+    "zstd"
+  ]
+}
+
