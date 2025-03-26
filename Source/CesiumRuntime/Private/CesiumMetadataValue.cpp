@@ -334,7 +334,6 @@ TMap<FString, FString> UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(
   return strings;
 }
 
-
 uint64 CesiumMetadataValueAccess::GetUnsignedInteger64(
     const FCesiumMetadataValue& Value,
     uint64 DefaultValue) {
