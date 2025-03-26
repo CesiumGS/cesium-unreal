@@ -10,6 +10,7 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
+
 #include <CesiumGltf/KhrTextureTransform.h>
 #include <array>
 #include <variant>
@@ -43,7 +44,7 @@ enum EMaterialParameterAssociation : int;
  * a model-by-model basis. Not all models in a tileset may necessarily contain
  * the feature IDs / metadata specified in the description.
  */
-namespace CesiumEncodedFeaturesMetadata {
+namespace EncodedFeaturesMetadata {
 
 /**
  * Naming convention for feature ID texture parameters nodes:
@@ -553,4 +554,4 @@ void SetPropertyTextureParameterValues(
 
 #pragma endregion
 
-} // namespace CesiumEncodedFeaturesMetadata
+} // namespace EncodedFeaturesMetadata

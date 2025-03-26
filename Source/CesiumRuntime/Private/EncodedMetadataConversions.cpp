@@ -1,6 +1,6 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "CesiumEncodedMetadataConversions.h"
+#include "EncodedMetadataConversions.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
