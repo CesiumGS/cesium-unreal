@@ -134,7 +134,7 @@
       "inherits": "unreal-common",
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "arm64-ios-unreal",
-        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "unreal-ios-toolchain.cmake"
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/unreal-ios-toolchain.cmake"
       }
     }
   ]
