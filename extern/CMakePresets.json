@@ -122,6 +122,7 @@
     },
     {
       "name": "x64-osx",
+      "inherits": "osx-common",
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-osx-unreal",
         "CMAKE_OSX_ARCHITECTURES": "x86_64",
