@@ -114,9 +114,9 @@ jobs:
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           mkdir -p extern/build-x64
-          cd extern/build-x64
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_SYSTEM_PROCESSOR=x86_64 -DCESIUM_UNREAL_NATIVE_DIRECTORY=../cesium-native
-          cmake --build . -j4 --target install
+          cd extern
+          cmake -B build-x64 --preset=x64-osx -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-x64 -j4 --target install
       - name: Create universal macOS libs for cesium-native
         run: |
           mkdir -p ${GITHUB_WORKSPACE}/Source/ThirdParty/lib/Darwin-universal-Release
@@ -140,7 +140,7 @@ jobs:
           cd extern
           export UNREAL_ENGINE_ROOT=$HOME/${{ inputs.unreal-program-name }}
           export CESIUM_VCPKG_RELEASE_ONLY=TRUE
-          cmake -B build-ios -S . -GXcode -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DCESIUM_UNREAL_NATIVE_DIRECTORY=cesium-native -DCMAKE_BUILD_TYPE=Release
+          cmake -B build-ios --preset=arm64-ios -GXcode -DCMAKE_BUILD_TYPE=Release
           cmake --build build-ios -j4 --target install --config Release
       - name: Remove extern directory
         run: |
