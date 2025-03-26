@@ -13,9 +13,7 @@ To ensure your Pull Request is reviewed and accepted quickly, please refer to ou
 
 < !-- Provide context for the reviewer to understand the pull request. Include what changes were made and why. -->
 
-<!-- Mention any lingering questions -->
-
-<!-- Include screenshots if appropriate -->
+<!-- Include screenshots if appropriate. -->
 
 ## Issue number or link
 
