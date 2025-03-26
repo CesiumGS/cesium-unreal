@@ -1,4 +1,4 @@
-# 3D Tiles in Unreal Engine
+# 3D Tiles in Unreal Engine {#three-d-tiles-in-unreal}
 
 The [Rendering 3D Tiles](\ref rendering-3d-tiles) page in the Cesium Native documentation explains in the abstract how Cesium Native can be used to integrate 3D Tiles rendering into an application. This page explains how Cesium for Unreal integrates 3D Tiles rendering into Unreal Engine specifically.
 
