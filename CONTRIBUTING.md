@@ -1,4 +1,4 @@
-# Contribution Guide {#contributing-unreal}
+# Contributing {#contributing-unreal}
 
 Thanks for contributing to Cesium for Unreal!
 
@@ -8,7 +8,7 @@ Thanks for contributing to Cesium for Unreal!
 
 Here are the guidelines that we use for all contributions to this project:
 
-- [Submitting an issue](#submitting-an-issue),
+- [Submitting an issue](#submitting-an-issue)
 - [Getting started contributing](#getting-started-contributing)
 - [Opening a pull request](#opening-a-pull-request)
 
@@ -81,4 +81,4 @@ Our code is our lifeblood so maintaining Cesium's high code quality is important
 
 ## Code of Conduct
 
-To ensure an inclusive community, contributors and users in the Cesium community should follow the [code of conduct](./CODE_OF_CONDUCT.md).
+To ensure an inclusive community, contributors and users in the Cesium community should follow the <!--! \subpage code-of-conduct \cond DOXYGEN_EXCLUDE --> [code of conduct](./CODE_OF_CONDUCT.md)<!--! \endcond -->.

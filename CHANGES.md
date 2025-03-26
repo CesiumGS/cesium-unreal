@@ -1,4 +1,15 @@
-# Change Log
+# Change Log {#changes}
+
+### ? - ?
+
+##### Additions :tada:
+
+- Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
+
+##### Fixes :wrench:
+
+- Fixed a bug where a glTF material with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
+- Fixed a crash that could occur when rapidly refreshing a tileset.
 
 ### v2.14.1 - 2025-03-06
 
