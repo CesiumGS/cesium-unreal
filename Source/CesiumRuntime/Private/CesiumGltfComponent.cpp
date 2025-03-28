@@ -1729,7 +1729,7 @@ static void loadPrimitive(
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
 
-#if ENGINE_VERSION_5_5_OR_HIGHER && RHI_RAYTRACING
+#if ENGINE_VERSION_5_5_OR_HIGHER
   // UE 5.5 requires that we do this in order to avoid a crash when ray tracing
   // is enabled.
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
