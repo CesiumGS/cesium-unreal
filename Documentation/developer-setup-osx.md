@@ -235,3 +235,20 @@ In Xcode, on the Product -> Scheme menu, choose `devEditor`. If you want to buil
 Build by choosing Product -> Build. Watch the progress in the "Report Navigator" which is the rightmost icon above the tree on the left.
 
 You can launch the Unreal Engine Editor and the Samples project with Product -> Run.
+
+## Getting call stacks from iOS crashes
+
+To get a call stack from a crash on an iOS device...
+
+- Run the app, let it crash.
+- In Xcode, go to Window -> Devices and Simulators, and select your device.
+- Click Open Recent Logs.
+- Find the .ips file corresponding to your crash.
+- Copy this file to a separate directory.
+- Convert it to a .crash file using https://github.com/tomieq/AppleCrashScripts and convertFromJSON.swift. The input path must be a relative path, not an absolute one. So run it in the directory where you copied the ips file above.
+  - `swift ~/github/AppleCrashScripts/convertFromJSON.swift -i dev-IOS-DebugGame-2025-02-06-204209.ips -o dev-IOS-DebugGame-2025-02-06-204209.crash`
+- Run symbolicatecrash, which comes with Xcode but is buried here /Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/
+  - `export PATH=$PATH:/Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/`
+  - `export DEVELOPER_DIR=$(xcode-select --print-path)`
+  - `symbolicatecrash ./dev-IOS-DebugGame-2025-02-06-204209.crash`
+- Enjoy your symbolicated stack traces!
