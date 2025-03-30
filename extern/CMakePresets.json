@@ -1,0 +1,142 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "unreal-common",
+      "installDir": "${sourceDir}/../Source/ThirdParty",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "x64-Windows",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/../Source/ThirdParty",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-unreal",
+        "VCPKG_HOST_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "x64-Debug-Windows",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/../Source/ThirdParty",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-unreal",
+        "VCPKG_HOST_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "x64-Release-Windows",
+      "inherits": "x64-Debug-Windows",
+      "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "Windows-CI",
+      "generator": "Visual Studio 17 2022",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-unreal",
+        "VCPKG_HOST_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "Windows-CI-Versioned",
+      "inherits": "Windows-CI",
+      "environment": {
+        "CESIUM_TOOLSET_VERSION": "$penv{CESIUM_TOOLSET_VERSION}"
+      }
+    },
+    {
+      "name": "debug-windows-versioned",
+      "inherits": "x64-Debug-Windows",
+      "toolset": "version=14.36",
+      "environment": {
+        "CESIUM_TOOLSET_VERSION": "14.36"
+      }
+    },
+    {
+      "name": "linux",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/../Source/ThirdParty",
+      "generator": "Ninja",
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "^[Ll]inux"
+      },
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-linux-unreal",
+        "VCPKG_HOST_TRIPLET": "x64-linux",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/unreal-linux-toolchain.cmake"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "inherits": "linux",
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "^[Ll]inux"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "linux-release",
+      "inherits": "linux",
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "^[Ll]inux"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "osx-common",
+      "inherits": "unreal-common",
+      "cacheVariables": {
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "10.15",
+        "CMAKE_SYSTEM_NAME": "Darwin"
+      }
+    },
+    {
+      "name": "arm64-osx",
+      "inherits": "osx-common",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "arm64-osx-unreal",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_SYSTEM_PROCESSOR": "arm64"
+      }
+    },
+    {
+      "name": "x64-osx",
+      "inherits": "osx-common",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-osx-unreal",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_SYSTEM_PROCESSOR": "x86_64"
+      }
+    },
+    {
+      "name": "arm64-ios",
+      "inherits": "unreal-common",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "arm64-ios-unreal",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/unreal-ios-toolchain.cmake"
+      }
+    }
+  ]
+}
+
