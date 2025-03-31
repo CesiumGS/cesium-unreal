@@ -37,7 +37,7 @@ git submodule update --init --recursive
 
 # Setting up Xcode
 
-Unreal Engine 5.3 requires a version of Xcode _no later_ than Xcode 15.x. This means that Xcode 16, which is the earliest version supported on macOS 15.2 Sequoia, cannot be used to build a UE 5.3 project without some tricks. You will see an error like this when you attempt to generate project files:
+Unreal Engine 5.3 requires a version of Xcode _no later_ than Xcode 15.x. This means that Xcode 16, which is the earliest version supported on macOS 15.3 Sequoia, cannot be used to build a UE 5.3 project without some tricks. You will see an error like this when you attempt to generate project files:
 
 > Exception while generating include data for UnrealEditor: Platform Mac is not a valid platform to build. Check that the SDK is installed properly.
 
@@ -92,10 +92,25 @@ We can "fix" this by suppressing this warning. Open `/Users/Shared/Epic Games/UE
 
 ## Modify Xcode for Sequoia
 
-It's possible to run Xcode 15.4 on macOS 15.2 Sequoia, as described here:
-https://stackoverflow.com/questions/78996419/xcode-15-is-not-running-in-macos-sequoia
+It's possible to run Xcode 15.4 on macOS 15.3 Sequoia, and probably later versions:
 
-More detailed instructions coming soon.
+* Download Xcode 15.4 from https://developer.apple.com/download/all/.
+* Extract the download to your home directory:
+
+```
+cd
+xip -x ./Downloads/Xcode_15.4.xip
+mv Xcode.app Xcode_15.4.app
+```
+
+* Launch this version of Xcode:
+
+```
+./Xcode_15.4.app/Contents/MacOS/Xcode
+```
+
+* Xcode should launch and ask you to select or create a project. Choose `Xcode` on the menu at the top and then `Settings`. Click the `Locations` tab.
+* Under `Command Line Tools` choose `Xcode_15 15.4`.
 
 # Building cesium-native
 
@@ -220,3 +235,20 @@ In Xcode, on the Product -> Scheme menu, choose `devEditor`. If you want to buil
 Build by choosing Product -> Build. Watch the progress in the "Report Navigator" which is the rightmost icon above the tree on the left.
 
 You can launch the Unreal Engine Editor and the Samples project with Product -> Run.
+
+## Getting call stacks from iOS crashes
+
+To get a call stack from a crash on an iOS device...
+
+- Run the app, let it crash.
+- In Xcode, go to Window -> Devices and Simulators, and select your device.
+- Click Open Recent Logs.
+- Find the .ips file corresponding to your crash.
+- Copy this file to a separate directory.
+- Convert it to a .crash file using https://github.com/tomieq/AppleCrashScripts and convertFromJSON.swift. The input path must be a relative path, not an absolute one. So run it in the directory where you copied the ips file above.
+  - `swift ~/github/AppleCrashScripts/convertFromJSON.swift -i dev-IOS-DebugGame-2025-02-06-204209.ips -o dev-IOS-DebugGame-2025-02-06-204209.crash`
+- Run symbolicatecrash, which comes with Xcode but is buried here /Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/
+  - `export PATH=$PATH:/Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/`
+  - `export DEVELOPER_DIR=$(xcode-select --print-path)`
+  - `symbolicatecrash ./dev-IOS-DebugGame-2025-02-06-204209.crash`
+- Enjoy your symbolicated stack traces!

@@ -11,6 +11,8 @@
 
 - Fixed a bug where a glTF material with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
 - Fixed a crash that could occur when rapidly refreshing a tileset.
+- Fixed crash when tilesets with point clouds were used in combination with Hardware Ray Tracing.
+- Worked around an apparent Metal problem that prevented polygon clipping from working correctly on macOS.
 - Fixed normals being incorrectly written to Runtime Virtual Texture output in tangent space instead of in world space.
 
 ### v2.14.1 - 2025-03-06
