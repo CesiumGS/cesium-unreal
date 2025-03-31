@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
+- `WorldHeight` Runtime Virtual Texture output is now set to the Z component of the world position.
 
 ##### Fixes :wrench:
 
@@ -12,6 +13,7 @@
 - Fixed a crash that could occur when rapidly refreshing a tileset.
 - Fixed crash when tilesets with point clouds were used in combination with Hardware Ray Tracing.
 - Worked around an apparent Metal problem that prevented polygon clipping from working correctly on macOS.
+- Fixed normals being incorrectly written to Runtime Virtual Texture output in tangent space instead of in world space.
 
 ### v2.14.1 - 2025-03-06
 
