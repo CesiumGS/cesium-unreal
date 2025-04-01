@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CesiumCommon.h"
-#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -13,6 +12,7 @@
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "Containers/Map.h"
 #include "Containers/UnrealString.h"
+#include "EncodedFeaturesMetadata.h"
 #include "Math/TransformNonVectorized.h"
 #include "StaticMeshResources.h"
 #include "Templates/SharedPointer.h"
@@ -107,9 +107,9 @@ struct LoadedPrimitiveResult {
   FCesiumPrimitiveMetadata Metadata{};
 
   /** Encodes the EXT_mesh_features on a mesh primitive. */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures{};
+  EncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures{};
   /** Encodes the EXT_structural_metadata on a mesh primitive. */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata{};
+  EncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata{};
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // For backwards compatibility with CesiumEncodedMetadataComponent.
@@ -202,7 +202,7 @@ struct LoadedModelResult {
   FCesiumModelMetadata Metadata{};
 
   /** Encodes the EXT_structural_metadata on a glTF model. */
-  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
+  EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>

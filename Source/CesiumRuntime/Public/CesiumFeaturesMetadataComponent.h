@@ -66,7 +66,6 @@ public:
    * extensions. Indicates what parts of the extension should be uploaded to the
    * GPU for access in Unreal materials.
    */
-
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
