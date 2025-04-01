@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.15.0 - 2025-04-01
 
 ##### Additions :tada:
 
@@ -14,6 +14,8 @@
 - Fixed crash when tilesets with point clouds were used in combination with Hardware Ray Tracing.
 - Worked around an apparent Metal problem that prevented polygon clipping from working correctly on macOS.
 - Fixed normals being incorrectly written to Runtime Virtual Texture output in tangent space instead of in world space.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.45.0 to v0.46.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.14.1 - 2025-03-06
 
