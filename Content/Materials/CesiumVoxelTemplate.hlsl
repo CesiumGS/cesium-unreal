@@ -415,6 +415,11 @@ struct ShapeUtility
       MinBounds = float3(-1, -1, -1);
       MaxBounds = float3(1, 1, 1);
     }
+    else if (ShapeConstant == CYLINDER)
+    {
+      MinBounds = InMinBounds; // radius, angle, height
+      MaxBounds = InMaxBounds; // radius, angle, height
+    }
     else if (ShapeConstant == ELLIPSOID)
     {
       MinBounds = InMinBounds; // longitude, sine(latitude), height
@@ -484,6 +489,90 @@ struct ShapeUtility
     result.Exit.t = exitT;
     
     setShapeIntersections(Intersections, ListState, 0, result);
+  }
+
+  /**
+  * Tests whether the input ray intersects the volume defined by two xy-planes at the specified z values.
+  */
+  RayIntersections IntersectHeightBounds(in Ray R, in float2 HeightBounds, in bool IsConvex)
+  {
+    float zPosition = R.Origin.z;
+    float zDirection = R.Direction.z;
+
+    float tmin = (HeightBounds.x - zPosition) / zDirection;
+    float tmax = (HeightBounds.y - zPosition) / zDirection;
+
+    // Normals point outside the volume
+    float signFlip = IsConvex ? 1.0 : -1.0;
+    Intersection min = Utils.NewIntersection(tmin, float3(0.0, 0.0, -1.0 * signFlip));
+    Intersection max = Utils.NewIntersection(tmax, float3(0.0, 0.0, 1.0 * signFlip));
+
+    bool isTopEntry = zDirection < 0.0;
+    if (isTopEntry)
+    {
+      return Utils.NewRayIntersections(max, min);
+    }
+    else
+    {
+      return Utils.NewRayIntersections(min, max);
+    }
+  }
+  
+  /**
+  * Tests whether the input ray intersects an infinite cylinder with the given radius.
+  */
+  RayIntersections IntersectInfiniteCylinder(in Ray R, in float Radius, in bool IsConvex)
+  {
+    float3 o = R.Origin;
+    float3 d = R.Direction;
+
+    float a = dot(d.xy, d.xy);
+    float b = dot(o.xy, d.xy);
+    float c = dot(o.xy, o.xy) - Radius * Radius;
+    float determinant = b * b - a * c;
+
+    if (determinant < 0.0)
+    {
+      Intersection miss = Utils.NewIntersection(NO_HIT, normalize(R.Direction));
+      return Utils.NewRayIntersections(miss, miss);
+    }
+
+    determinant = sqrt(determinant);
+    float t1 = (-b - determinant) / a;
+    float t2 = (-b + determinant) / a;
+    float signFlip = IsConvex ? 1.0 : -1.0;
+    Intersection intersect1 = Utils.NewIntersection(t1, float3(normalize(o.xy + t1 * d.xy) * signFlip, 0.0));
+    Intersection intersect2 = Utils.NewIntersection(t2, float3(normalize(o.xy + t2 * d.xy) * signFlip, 0.0));
+
+    return Utils.NewRayIntersections(intersect1, intersect2);
+  }
+
+  /**
+   * Tests whether the given ray intersects a right cylindrical solid of the given radius and height bounds.
+   * The shape is assumed to be convex.
+   */
+  RayIntersections IntersectBoundedCylinder(in Ray R, in float Radius, in float2 MinMaxHeight)
+  {
+    RayIntersections infiniteCylinderIntersection = IntersectInfiniteCylinder(R, Radius, true);
+    RayIntersections heightIntersection = IntersectHeightBounds(R, MinMaxHeight, true);
+    return Utils.ResolveIntersections(infiniteCylinderIntersection, heightIntersection);
+  }
+  
+  /**
+   * Tests whether the input ray (Unit Space) intersects the cylinder. Outputs the intersections in Unit Space.
+   */
+  void IntersectCylinder(in Ray R, out float4 Intersections[INTERSECTIONS_LENGTH])
+  {
+    ListState.Length = 2;
+    
+    RayIntersections OuterResult = IntersectBoundedCylinder(R, MaxBounds.x, float2(MinBounds.z, MaxBounds.z));
+    setShapeIntersections(Intersections, ListState, 0, OuterResult);
+
+    // In CesiumJS there's a check for the inner cylinder, because clipping planes / exaggeration
+    // can adjust the min radius. But it currently is not supported in Cesium for Unreal, so we
+    // exclude the math here for simplicity.
+
+    // The same comment applies to the angle bounds of the cylinder.
   }
 
   /**
@@ -1138,6 +1227,9 @@ struct ShapeUtility
       case BOX:
         IntersectBox(R, Intersections);
         break;
+      case CYLINDER:
+        IntersectCylinder(R, Intersections);
+        break;
       case ELLIPSOID:
         IntersectEllipsoid(R, Intersections);
         break;
@@ -1222,6 +1314,35 @@ struct ShapeUtility
     // space [-1, 1], so the identity is scaled.
     JacobianT = float3x3(0.5f, 0, 0, 0, 0.5f, 0, 0, 0, 0.5f);
     return PositionUV;
+  }
+
+  /**
+   * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
+   * cylinder geometry. Also outputs the Jacobian transpose for future use.
+   */
+  float3 ConvertUVToShapeUVSpaceCylinder(in float3 PositionUV, out float3x3 JacobianT)
+  {
+    // First convert UV to "Unit Space derivative".
+    float3 unitPosition = UVToUnit(PositionUV);
+
+    float radius = length(unitPosition.xy); // [0, 1]
+    float3 radial = normalize(float3(unitPosition.xy, 0.0));
+
+    // Shape space height is defined within [0, 1]
+    float height = PositionUV.z; // [0, 1]
+    float3 z = float3(0.0, 0.0, 1.0);
+
+    float angle = atan2(unitPosition.y, unitPosition.x);
+    float3 east = normalize(float3(-unitPosition.y, unitPosition.x, 0.0));
+
+    JacobianT = float3x3(radial, z, east / length(unitPosition.xy));
+
+    // Then convert Unit Space to Shape UV Space.
+    angle = (angle + CZM_PI) / CZM_TWO_PI;
+    
+    // This currently does nothing for height / radius because the bounds of the cylinder are always the same.
+    // Once clipping / exaggeration are added, this must change. (See CesiumJS)
+    return float3(radius, angle, height);
   }
 
   /**
@@ -1343,6 +1464,8 @@ struct ShapeUtility
     {
       case BOX:
         return ConvertUVToShapeUVSpaceBox(UVPosition, JacobianT);
+      case CYLINDER:
+        return ConvertUVToShapeUVSpaceCylinder(UVPosition, JacobianT);
       case ELLIPSOID:
         return ConvertUVToShapeUVSpaceEllipsoid(UVPosition, JacobianT);
       default:
@@ -1701,20 +1824,28 @@ struct VoxelDataTextures
     // Compute int coordinates of the voxel within the tile.
     float3 LocalUV = Sample.LocalUV;
     uint3 DataDimensions = GridDimensions + PaddingBefore + PaddingAfter;
-
-    if (ShapeConstant == BOX)
-    {
-      // Since glTFs are y-up (and 3D Tiles is z-up), the data must be accessed to reflect the transforms
-      // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
-      LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
-    }
-
+    
     float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
     // Account for padding
     VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
     
-    int3 Coords = TileCoords + VoxelCoords;
+    if (ShapeConstant == BOX)
+    {
+      // Since glTFs are y-up (and 3D Tiles is z-up), the data must be accessed to reflect the transforms
+      // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
+      VoxelCoords = float3(VoxelCoords.x, DataDimensions.y - VoxelCoords.z, VoxelCoords.y);
+    }
+    else if (ShapeConstant == CYLINDER)
+    {
+      // For cylinders, the start of the angular bounds has to be adjusted for full cylinders
+      // (i.e., the root tile only).
+      // TODO: This assumes that the root tile is a whole cylinder, but the root tile may be
+      // a partial cylinder.
+      float Angle = (Sample.Coords.w == 0) ? (VoxelCoords.y + DataDimensions.z / 2.0) % DataDimensions.z : VoxelCoords.y;
+      VoxelCoords = float3(VoxelCoords.x, VoxelCoords.z, Angle);
+    }
     
+    int3 Coords = TileCoords + VoxelCoords;
     CustomShaderProperties Properties = (CustomShaderProperties) 0;
  %s
 
@@ -1786,6 +1917,7 @@ DataTextures.TileCount = TileCount;
 
 switch (ShapeConstant) {
   case BOX:
+  case CYLINDER:
     DataTextures.GridDimensions = round(GridDimensions.xzy);
     DataTextures.PaddingBefore = round(PaddingBefore.xzy);
     DataTextures.PaddingAfter = round(PaddingAfter.xzy);

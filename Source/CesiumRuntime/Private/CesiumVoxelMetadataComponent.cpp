@@ -131,6 +131,7 @@ void AutoFillVoxelClassDescription(
     FCesiumVoxelClassDescription& Description,
     const std::string& VoxelClassID,
     const Cesium3DTiles::Class& VoxelClass) {
+  Description.ID = VoxelClassID.c_str();
 
   for (const auto& propertyIt : VoxelClass.properties) {
     auto pExistingProperty = Description.Properties.FindByPredicate(

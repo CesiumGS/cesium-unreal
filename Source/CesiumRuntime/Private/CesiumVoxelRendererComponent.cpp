@@ -70,6 +70,9 @@ EVoxelGridShape getVoxelGridShape(
   if (std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume)) {
     return EVoxelGridShape::Box;
   }
+  if (std::get_if<CesiumGeometry::BoundingCylinderRegion>(&boundingVolume)) {
+    return EVoxelGridShape::Cylinder;
+  }
   if (std::get_if<CesiumGeospatial::BoundingRegion>(&boundingVolume)) {
     return EVoxelGridShape::Ellipsoid;
   }
@@ -89,6 +92,60 @@ void setVoxelBoxProperties(
       glm::dvec4(box.getCenter(), 1));
 
   // The transform and scale of the box are handled in the component's
+  // transform, so there is no need to duplicate it here. Instead, this
+  // transform is configured to scale the engine-provided Cube ([-50, 50]) to
+  // unit space ([-1, 1]).
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(0.02, 0, 0, 0));
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 1"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(0, 0.02, 0, 0));
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(0, 0, 0.02, 0));
+}
+
+void setVoxelCylinderProperties(
+    UCesiumVoxelRendererComponent* pVoxelComponent,
+    UMaterialInstanceDynamic* pVoxelMaterial,
+    const CesiumGeometry::BoundingCylinderRegion& cylinder) {
+  // Approximate the cylinder region as a box.
+  const CesiumGeometry::OrientedBoundingBox& box =
+      cylinder.toOrientedBoundingBox();
+
+  glm::dmat3 halfAxes = box.getHalfAxes();
+  pVoxelComponent->HighPrecisionTransform = glm::dmat4(
+      glm::dvec4(halfAxes[0], 0) * 0.02,
+      glm::dvec4(halfAxes[1], 0) * 0.02,
+      glm::dvec4(halfAxes[2], 0) * 0.02,
+      glm::dvec4(box.getCenter(), 1));
+
+  // For now, only the height bounds and maximum radius are used.
+  // The angle will be relevant when clipping.
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Min Bounds"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector(0, -CesiumUtility::Math::OnePi, -1));
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Max Bounds"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector(1, CesiumUtility::Math::OnePi, 1));
+
+  // The transform and scale of the cylinder are handled in the component's
   // transform, so there is no need to duplicate it here. Instead, this
   // transform is configured to scale the engine-provided Cube ([-50, 50]) to
   // unit space ([-1, 1]).
@@ -529,6 +586,11 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume);
     assert(pBox != nullptr);
     setVoxelBoxProperties(pVoxelComponent, pVoxelMaterial, *pBox);
+  } else if (shape == EVoxelGridShape::Cylinder) {
+    const CesiumGeometry::BoundingCylinderRegion* pCylinder =
+        std::get_if<CesiumGeometry::BoundingCylinderRegion>(&boundingVolume);
+    assert(pCylinder != nullptr);
+    setVoxelCylinderProperties(pVoxelComponent, pVoxelMaterial, *pCylinder);
   } else if (shape == EVoxelGridShape::Ellipsoid) {
     const CesiumGeospatial::BoundingRegion* pRegion =
         std::get_if<CesiumGeospatial::BoundingRegion>(&boundingVolume);
