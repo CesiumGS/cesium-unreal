@@ -41,9 +41,9 @@ TArray<FCesiumVectorPrimitive> UCesiumVectorNodeBlueprintLibrary::GetPrimitives(
   return primitives;
 }
 
-TArray<FCesiumVectorPrimitive>
-UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfType(
-    const FCesiumVectorNode& InVectorNode,
+namespace {
+TArray<FCesiumVectorPrimitive> GetPrimitivesOfTypeInternal(
+    const CesiumVectorData::VectorNode& node,
     ECesiumVectorPrimitiveType InType) {
   struct CheckTypeVisitor {
     ECesiumVectorPrimitiveType IntendedType;
@@ -59,14 +59,81 @@ UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfType(
   };
 
   TArray<FCesiumVectorPrimitive> primitives;
-  for (const CesiumVectorData::VectorPrimitive& primitive :
-       InVectorNode._node.primitives) {
+  for (const CesiumVectorData::VectorPrimitive& primitive : node.primitives) {
     if (std::visit(CheckTypeVisitor{InType}, primitive)) {
       primitives.Emplace(primitive);
     }
   }
 
   return primitives;
+}
+
+TArray<FCesiumVectorPrimitive> GetPrimitivesOfTypeRecursivelyInternal(
+    const CesiumVectorData::VectorNode& node,
+    ECesiumVectorPrimitiveType InType) {
+  TArray<FCesiumVectorPrimitive> primitives =
+      GetPrimitivesOfTypeInternal(node, InType);
+  for (const CesiumVectorData::VectorNode& child : node.children) {
+    TArray<FCesiumVectorPrimitive> childPrimitives =
+        GetPrimitivesOfTypeRecursivelyInternal(child, InType);
+    for (FCesiumVectorPrimitive& childPrimitive : childPrimitives) {
+      primitives.Emplace(MoveTemp(childPrimitive));
+    }
+  }
+  return primitives;
+}
+} // namespace
+
+TArray<FCesiumVectorPrimitive>
+UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfType(
+    const FCesiumVectorNode& InVectorNode,
+    ECesiumVectorPrimitiveType InType) {
+  return GetPrimitivesOfTypeInternal(InVectorNode._node, InType);
+}
+
+TArray<FCesiumVectorPrimitive>
+UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfTypeRecursively(
+    const FCesiumVectorNode& InVectorNode,
+    ECesiumVectorPrimitiveType InType) {
+  return GetPrimitivesOfTypeRecursivelyInternal(InVectorNode._node, InType);
+}
+
+namespace {
+template <typename T>
+bool FindNodeById(
+    const CesiumVectorData::VectorNode& node,
+    const T& InNodeId,
+    FCesiumVectorNode& OutNode) {
+  for (const CesiumVectorData::VectorNode& child : node.children) {
+    const T* nodeId = std::get_if<T>(&child.id);
+    if (nodeId && *nodeId == InNodeId) {
+      OutNode = child;
+      return true;
+    }
+
+    // Check children.
+    if (FindNodeById(child, InNodeId, OutNode)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+} // namespace
+
+bool UCesiumVectorNodeBlueprintLibrary::FindNodeByStringId(
+    const FCesiumVectorNode& InVectorNode,
+    const FString& InNodeId,
+    FCesiumVectorNode& OutNode) {
+  const std::string& id = TCHAR_TO_UTF8(*InNodeId);
+  return FindNodeById<std::string>(InVectorNode._node, id, OutNode);
+}
+
+bool UCesiumVectorNodeBlueprintLibrary::FindNodeByIntId(
+    const FCesiumVectorNode& InVectorNode,
+    int64 InNodeId,
+    FCesiumVectorNode& OutNode) {
+  return FindNodeById<int64_t>(InVectorNode._node, InNodeId, OutNode);
 }
 
 ECesiumVectorPrimitiveType
@@ -99,8 +166,8 @@ FVector UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsPoint(
   }
 
   return FVector(
-      pCartographic->longitude,
-      pCartographic->latitude,
+      CesiumUtility::Math::radiansToDegrees(pCartographic->longitude),
+      CesiumUtility::Math::radiansToDegrees(pCartographic->latitude),
       pCartographic->height);
 }
 
@@ -116,7 +183,10 @@ TArray<FVector> UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsLine(
   TArray<FVector> line;
   line.Reserve(pCartographicLine->size());
   for (const CesiumGeospatial::Cartographic& point : *pCartographicLine) {
-    line.Emplace(point.longitude, point.latitude, point.height);
+    line.Emplace(
+        CesiumUtility::Math::radiansToDegrees(point.longitude),
+        CesiumUtility::Math::radiansToDegrees(point.latitude),
+        point.height);
   }
 
   return line;
@@ -134,4 +204,37 @@ UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsPolygon(
   }
 
   return FCesiumCompositeCartographicPolygon(*pPolygon);
+}
+
+FCesiumPolygonLinearRing::FCesiumPolygonLinearRing(TArray<FVector>&& InPoints)
+    : Points(MoveTemp(InPoints)) {}
+
+bool UCesiumCompositeCartographicPolygonBlueprintLibrary::PolygonContainsPoint(
+    const FCesiumCompositeCartographicPolygon& InPolygon,
+    const FVector& InPoint) {
+  return InPolygon._polygon.contains(CesiumGeospatial::Cartographic(
+      CesiumUtility::Math::degreesToRadians(InPoint.X),
+      CesiumUtility::Math::degreesToRadians(InPoint.Y),
+      InPoint.Z));
+}
+
+TArray<FCesiumPolygonLinearRing>
+UCesiumCompositeCartographicPolygonBlueprintLibrary::GetPolygonRings(
+    const FCesiumCompositeCartographicPolygon& InPolygon) {
+  const std::vector<CesiumGeospatial::CartographicPolygon>& polygons =
+      InPolygon._polygon.getLinearRings();
+  TArray<FCesiumPolygonLinearRing> linearRings;
+  linearRings.Reserve(polygons.size());
+  for (const CesiumGeospatial::CartographicPolygon& polygon : polygons) {
+    TArray<FVector> points;
+    points.Reserve(polygon.getVertices().size());
+    for (const glm::dvec2& point : polygon.getVertices()) {
+      points.Emplace(FVector(
+          CesiumUtility::Math::radiansToDegrees(point.x),
+          CesiumUtility::Math::radiansToDegrees(point.y),
+          0));
+    }
+    linearRings.Emplace(MoveTemp(points));
+  }
+  return linearRings;
 }

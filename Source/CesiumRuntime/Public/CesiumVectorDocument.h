@@ -9,12 +9,22 @@
 
 #include "CesiumVectorDocument.generated.h"
 
+/**
+ * @brief A vector document containing a tree of `FCesiumVectorNode` values.
+ */
 USTRUCT(BlueprintType)
 struct FCesiumVectorDocument {
   GENERATED_BODY()
 
+  /**
+   * @brief Creates an empty `FCesiumVectorDocument`.
+   */
   FCesiumVectorDocument() : _document(CesiumVectorData::VectorNode{}) {}
 
+  /**
+   * @brief Creates a `FCesiumVectorDocument` wrapping the provided
+   * `CesiumVectorData::VectorDocument`.
+   */
   FCesiumVectorDocument(CesiumVectorData::VectorDocument&& document)
       : _document(std::move(document)) {}
 
@@ -24,23 +34,37 @@ private:
   friend class UCesiumVectorDocumentBlueprintLibrary;
 };
 
+/**
+ * @brief A Blueprint Function Library providing functions for interacting with
+ * a `FCesiumVectorDocument`.
+ */
 UCLASS()
 class UCesiumVectorDocumentBlueprintLibrary : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief Attempts to load a `FCesiumVectorDocument` from a string containing
+   * GeoJSON data.
+   *
+   * If loading fails, this function will return false and `OutVectorDocument`
+   * will be empty.
+   */
   UFUNCTION(
       BlueprintCallable,
-      Category = "Cesium|Vector",
+      Category = "Cesium|Vector|Document",
       meta = (DisplayName = "Load GeoJSON Document From String"))
   static UPARAM(DisplayName = "Success") bool LoadGeoJsonFromString(
       const FString& InString,
       FCesiumVectorDocument& OutVectorDocument);
 
+  /**
+   * @brief Obtains the root node of the provided vector document.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Vector",
+      Category = "Cesium|Vector|Document",
       meta = (DisplayName = "Get Root Node"))
   static FCesiumVectorNode
   GetRootNode(const FCesiumVectorDocument& InVectorDocument);
