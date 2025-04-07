@@ -30,6 +30,17 @@ FString UCesiumVectorNodeBlueprintLibrary::GetIdAsString(
   return std::visit(GetIdVisitor{}, InVectorNode._node.id);
 }
 
+TArray<FCesiumVectorNode> UCesiumVectorNodeBlueprintLibrary::GetChildren(
+    const FCesiumVectorNode& InVectorNode) {
+  TArray<FCesiumVectorNode> children;
+  children.Reserve(InVectorNode._node.children.size());
+  for (const CesiumVectorData::VectorNode& child :
+       InVectorNode._node.children) {
+    children.Emplace(child);
+  }
+  return children;
+}
+
 TArray<FCesiumVectorPrimitive> UCesiumVectorNodeBlueprintLibrary::GetPrimitives(
     const FCesiumVectorNode& InVectorNode) {
   TArray<FCesiumVectorPrimitive> primitives;

@@ -101,6 +101,12 @@ public:
   static FString GetIdAsString(const FCesiumVectorNode& InVectorNode);
 
   /**
+   * @brief Returns any child nodes of this vector node.
+   */
+  static TArray<FCesiumVectorNode>
+  GetChildren(const FCesiumVectorNode& InVectorNode);
+
+  /**
    * @brief Returns an array of primitives contained in this node.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Node")
