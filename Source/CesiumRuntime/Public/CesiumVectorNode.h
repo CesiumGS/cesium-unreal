@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumVectorData/VectorNode.h"
+#include "JsonObjectWrapper.h"
 
 #include "CesiumVectorNode.generated.h"
 
@@ -103,13 +104,21 @@ public:
   /**
    * @brief Returns any child nodes of this vector node.
    */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Node")
   static TArray<FCesiumVectorNode>
   GetChildren(const FCesiumVectorNode& InVectorNode);
 
   /**
+   * @brief Obtains the properties attached to this node, if any.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Node")
+  static FJsonObjectWrapper
+  GetProperties(const FCesiumVectorNode& InVectorNode);
+
+  /**
    * @brief Returns an array of primitives contained in this node.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Node")
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Node")
   static TArray<FCesiumVectorPrimitive>
   GetPrimitives(const FCesiumVectorNode& InVectorNode);
 

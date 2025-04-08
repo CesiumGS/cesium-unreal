@@ -2,6 +2,7 @@
 
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/CompositeCartographicPolygon.h"
+#include "Dom/JsonObject.h"
 
 #include <utility>
 #include <variant>
@@ -39,6 +40,66 @@ TArray<FCesiumVectorNode> UCesiumVectorNodeBlueprintLibrary::GetChildren(
     children.Emplace(child);
   }
   return children;
+}
+
+namespace {
+TSharedPtr<FJsonValue>
+jsonValueToUnrealJsonValue(const CesiumUtility::JsonValue& value) {
+  struct JsonValueVisitor {
+    TSharedPtr<FJsonValue> operator()(const CesiumUtility::JsonValue::Null&) {
+      return MakeShared<FJsonValueNull>();
+    }
+    TSharedPtr<FJsonValue>
+    operator()(const CesiumUtility::JsonValue::Bool& value) {
+      return MakeShared<FJsonValueBoolean>(value);
+    }
+    TSharedPtr<FJsonValue> operator()(const std::string& value) {
+      return MakeShared<FJsonValueString>(UTF8_TO_TCHAR(value.c_str()));
+    }
+    TSharedPtr<FJsonValue> operator()(const double& value) {
+      return MakeShared<FJsonValueNumber>(value);
+    }
+    TSharedPtr<FJsonValue> operator()(const std::uint64_t& value) {
+      return MakeShared<FJsonValueNumberString>(FString::FromInt(value));
+    }
+    TSharedPtr<FJsonValue> operator()(const std::int64_t& value) {
+      return MakeShared<FJsonValueNumberString>(FString::FromInt(value));
+    }
+    TSharedPtr<FJsonValue>
+    operator()(const CesiumUtility::JsonValue::Array& value) {
+      TArray<TSharedPtr<FJsonValue>> values;
+      values.Reserve(value.size());
+      for (const CesiumUtility::JsonValue& v : value) {
+        values.Emplace(jsonValueToUnrealJsonValue(v));
+      }
+      return MakeShared<FJsonValueArray>(MoveTemp(values));
+    }
+    TSharedPtr<FJsonValue>
+    operator()(const CesiumUtility::JsonValue::Object& value) {
+      FJsonObject obj;
+      for (const auto& [k, v] : value) {
+        obj.SetField(UTF8_TO_TCHAR(k.c_str()), jsonValueToUnrealJsonValue(v));
+      }
+      return MakeShared<FJsonValueObject>(MoveTemp(obj));
+    };
+  };
+
+  return std::visit(JsonValueVisitor{}, value.value);
+}
+} // namespace
+
+FJsonObjectWrapper UCesiumVectorNodeBlueprintLibrary::GetProperties(
+    const FCesiumVectorNode& InVectorNode) {
+  TSharedPtr<FJsonObject> object = MakeShared<FJsonObject>();
+  if (InVectorNode._node.properties) {
+    for (const auto& [k, v] : *InVectorNode._node.properties) {
+      object->SetField(UTF8_TO_TCHAR(k.c_str()), jsonValueToUnrealJsonValue(v));
+    }
+  }
+
+  FJsonObjectWrapper wrapper;
+  wrapper.JsonObject = object;
+  return wrapper;
 }
 
 TArray<FCesiumVectorPrimitive> UCesiumVectorNodeBlueprintLibrary::GetPrimitives(
