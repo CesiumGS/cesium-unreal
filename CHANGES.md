@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Fixed the "Auto Fill" and "Generate Material" buttons on `UCesiumFeaturesMetadataComponent`, which broke with the previous release.
+- Only log once per unsupported primitive mode.
 
 ### v2.14.0 - 2025-03-03
 
