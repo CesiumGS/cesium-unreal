@@ -76,9 +76,9 @@ jsonValueToUnrealJsonValue(const CesiumUtility::JsonValue& value) {
     }
     TSharedPtr<FJsonValue>
     operator()(const CesiumUtility::JsonValue::Object& value) {
-      FJsonObject obj;
+      TSharedPtr<FJsonObject> obj = MakeShared<FJsonObject>();
       for (const auto& [k, v] : value) {
-        obj.SetField(UTF8_TO_TCHAR(k.c_str()), jsonValueToUnrealJsonValue(v));
+        obj->SetField(UTF8_TO_TCHAR(k.c_str()), jsonValueToUnrealJsonValue(v));
       }
       return MakeShared<FJsonValueObject>(MoveTemp(obj));
     };
