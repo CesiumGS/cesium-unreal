@@ -39,3 +39,46 @@ FCesiumVectorNode UCesiumVectorDocumentBlueprintLibrary::GetRootNode(
     const FCesiumVectorDocument& InVectorDocument) {
   return FCesiumVectorNode(InVectorDocument._document.getRootNode());
 }
+
+UCesiumLoadVectorDocumentFromIonAsyncAction*
+UCesiumLoadVectorDocumentFromIonAsyncAction::LoadFromIon(
+    int64 AssetId,
+    const FString& IonAccessToken,
+    const FString& IonAssetEndpointUrl) {
+  UCesiumLoadVectorDocumentFromIonAsyncAction* pAction =
+      NewObject<UCesiumLoadVectorDocumentFromIonAsyncAction>();
+  pAction->AssetId = AssetId;
+  pAction->IonAccessToken = IonAccessToken;
+  pAction->IonAssetEndpointUrl = IonAssetEndpointUrl;
+  return pAction;
+}
+
+void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
+  CesiumVectorData::VectorDocument::fromCesiumIonAsset(
+      getAsyncSystem(),
+      getAssetAccessor(),
+      this->AssetId,
+      TCHAR_TO_UTF8(*this->IonAccessToken),
+      TCHAR_TO_UTF8(*this->IonAssetEndpointUrl))
+      .thenInMainThread(
+          [Callback = this->OnLoadResult](
+              CesiumUtility::Result<CesiumVectorData::VectorDocument>&&
+                  result) {
+            if (result.errors.hasErrors()) {
+              result.errors.logError(
+                  spdlog::default_logger(),
+                  "Errors loading GeoJSON:");
+              result.errors.logWarning(
+                  spdlog::default_logger(),
+                  "Warnings loading GeoJSON:");
+            }
+
+            if (result.value) {
+              Callback.Broadcast(
+                  true,
+                  FCesiumVectorDocument(MoveTemp(*result.value)));
+            } else {
+              Callback.Broadcast(false, {});
+            }
+          });
+}

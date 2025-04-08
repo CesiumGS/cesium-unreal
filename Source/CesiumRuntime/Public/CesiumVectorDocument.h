@@ -4,6 +4,9 @@
 
 #include "CesiumVectorData/VectorDocument.h"
 #include "CesiumVectorNode.h"
+#include "Kismet/BlueprintAsyncActionBase.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/ObjectMacros.h"
 
 #include <optional>
 
@@ -19,7 +22,7 @@ struct FCesiumVectorDocument {
   /**
    * @brief Creates an empty `FCesiumVectorDocument`.
    */
-  FCesiumVectorDocument() : _document(CesiumVectorData::VectorNode{}) {}
+  FCesiumVectorDocument() : _document(CesiumVectorData::VectorNode{}, {}) {}
 
   /**
    * @brief Creates a `FCesiumVectorDocument` wrapping the provided
@@ -68,4 +71,43 @@ public:
       meta = (DisplayName = "Get Root Node"))
   static FCesiumVectorNode
   GetRootNode(const FCesiumVectorDocument& InVectorDocument);
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+    FCesiumVectorDocumentIonLoadDelegate,
+    bool,
+    Success,
+    FCesiumVectorDocument,
+    Document);
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumLoadVectorDocumentFromIonAsyncAction
+    : public UBlueprintAsyncActionBase {
+  GENERATED_BODY()
+public:
+  /**
+   * @brief Attempts to load a vector document from a Cesium ion asset.
+   *
+   * If successful, `Success` will be true and `Document` will contain the
+   * loaded document.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Document",
+      meta =
+          (BlueprintInternalUseOnly = true,
+           DisplayName = "Load Vector Document from Cesium ion"))
+  static UCesiumLoadVectorDocumentFromIonAsyncAction* LoadFromIon(
+      int64 AssetId,
+      const FString& IonAccessToken,
+      const FString& IonAssetEndpointUrl = "https://api.cesium.com/");
+
+  UPROPERTY(BlueprintAssignable)
+  FCesiumVectorDocumentIonLoadDelegate OnLoadResult;
+
+  virtual void Activate() override;
+
+  int64 AssetId;
+  FString IonAccessToken;
+  FString IonAssetEndpointUrl;
 };
