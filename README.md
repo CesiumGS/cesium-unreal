@@ -1,7 +1,5 @@
 [![Cesium for Unreal Logo](Content/Cesium-for-Unreal-Logo-WhiteBGH.jpg)](https://cesium.com/unreal-marketplace?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal)
 
-_This branch targets Unreal Engine 5. There is also a branch targeting [Unreal Engine 4](../../tree/ue4-main)_
-
 Cesium for Unreal brings the 3D geospatial ecosystem to Unreal Engine. By combining a high-accuracy full-scale WGS84 globe, open APIs and open standards for spatial indexing such as 3D Tiles, and cloud-based real-world content from [Cesium ion](https://cesium.com/cesium-ion) with Unreal Engine, this project enables a new era of 3D geospatial software.
 
 [Cesium for Unreal Homepage](https://cesium.com/cesium-for-unreal?utm_source=github&utm_medium=github&utm_campaign=unreal)
@@ -51,8 +49,26 @@ You can also find all releases on the [Releases](https://github.com/CesiumGS/ces
 2. Extract the release ZIP to Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.3 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.3\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
 3. If you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory, and the plugin is ready to use.
 
-You can also [use pre-release packages](Documentation/using-prerelease-packages.md).
+You can also [use pre-release packages](Documentation/Pages/using-prerelease-packages.md).
 
 ### 💻 Developing with Unreal Engine
 
 See the [Developer Setup Guide](Documentation/developer-setup.md) to learn how to set up a development environment for Cesium for Unreal, allowing you to compile it, customize it, and contribute to its development.
+
+### 📜 Older versions of Unreal Engine
+
+Cesium for Unreal's standard policy is to support the three most recent versions of Unreal Engine. Older versions of the plugin may be used with older versions of Unreal Engine, but we recommend staying up-to-date if at all possible.
+
+The code for the last version of the plugin that supported Unreal Engine 4 can be found in the [ue4-main](https://github.com/CesiumGS/cesium-unreal/tree/ue4-main) branch.
+
+### Documentation
+
+<!--! \cond DOXYGEN_EXCLUDE !--> 
+Please see the [User and contributor documentation](https://cesium.com/learn/cesium-unreal/ref-doc/).
+<!--! \endcond -->
+
+<!--!
+* \subpage changes
+* \subpage user-guide
+* \subpage contributor-guide
+-->
