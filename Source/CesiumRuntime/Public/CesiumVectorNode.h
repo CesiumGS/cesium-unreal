@@ -219,7 +219,7 @@ public:
   /**
    * @brief The Longitude-Latitude-Height points of this polygon.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium|Vector|Polygon")
   TArray<FVector> Points;
 };
 
