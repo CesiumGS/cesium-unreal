@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
