@@ -12,17 +12,39 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumViewGroup {
   GENERATED_USTRUCT_BODY()
 
-  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
-  bool Monitor = false;
+  /**
+   * A human-readable description of this view group.
+   */ 
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  FString ViewDescription = "Unknown";
 
+  /**
+   * The index of the viewing FEditorViewportClient in
+   * GEditor->GetAllViewportClients(), or -1 if this view is not an editor
+   * viewport client.
+   */
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  int32 EditorViewportIndex = -1;
+
+  /**
+   * The viewing Actor, which is expected to have either a
+   * USceneCaptureComponent2D or a UCameraComponent attached to it.
+   */
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  TSoftObjectPtr<AActor> ViewActor = nullptr;
+
+  /**
+   * The unique ID of the FSceneViewStateInterface, as returned by its
+   * GetViewKey method.
+   */
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  int64 ViewStateKey = -1;
+
+  /**
+   * The weight of this view group, used to prioritize tile loading.
+   */
   UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
   double LoadWeight = 1.0;
-
-  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
-  TSoftObjectPtr<AActor> ViewActor;
-
-  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
-  TArray<TSoftObjectPtr<AActor>> CamerasAndSceneCaptures;
 };
 
 /**

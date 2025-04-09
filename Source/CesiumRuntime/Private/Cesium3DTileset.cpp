@@ -1707,12 +1707,12 @@ void removeVisibleTilesFromList(
  * @param tiles The tiles to hide
  */
 void hideTiles(
-    const AActor* pViewActor,
+    uint32 viewStateKey,
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
   forEachRenderableTile(
       tiles,
-      [pViewActor](
+      [viewStateKey](
           Cesium3DTilesSelection::Tile* /*pTile*/,
           UCesiumGltfComponent* pGltf) {
         if (pGltf->IsVisible()) {
@@ -1726,7 +1726,7 @@ void hideTiles(
               TEXT("Tile to no longer render does not have a visible Gltf"));
         }
 
-        pGltf->SetViewGroupVisibility(pViewActor, false);
+        pGltf->SetViewGroupVisibility(viewStateKey, false);
       });
 }
 
@@ -1921,12 +1921,12 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 }
 
 void ACesium3DTileset::showTilesToRender(
-    const AActor* pViewActor,
+    uint32 viewStateKey,
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
   forEachRenderableTile(
       tiles,
-      [pViewActor,
+      [viewStateKey,
        &RootComponent = this->RootComponent,
        &BodyInstance = this->BodyInstance](
           Cesium3DTilesSelection::Tile* pTile,
@@ -1957,7 +1957,7 @@ void ACesium3DTileset::showTilesToRender(
           // pGltf->SetVisibility(true, true);
         }
 
-        pGltf->SetViewGroupVisibility(pViewActor, true);
+        pGltf->SetViewGroupVisibility(viewStateKey, true);
 
         {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
@@ -2047,48 +2047,51 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
-  for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(CreateViewStateFromViewParameters(
-        camera,
-        unrealWorldToCesiumTileset,
-        ellipsoid));
-  }
-
-  // const Cesium3DTilesSelection::ViewUpdateResult* pResult;
-  // if (this->_captureMovieMode) {
-  //   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
-  //   pResult = &this->_pTileset->updateViewOffline(frustums);
-  // } else {
-  //   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
-  //   pResult = &this->_pTileset->updateView(frustums, DeltaTime);
-  // }
-  // updateLastViewUpdateResultState(*pResult);
-
-  // removeCollisionForTiles(pResult->tilesFadingOut);
-
-  // removeVisibleTilesFromList(
-  //     _tilesToHideNextFrame,
-  //     pResult->tilesToRenderThisFrame);
-  // hideTiles(nullptr, _tilesToHideNextFrame);
-
-  //_tilesToHideNextFrame.clear();
-  // for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
-  //  Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-  //      pTile->getContent().getRenderContent();
-  //  if (!this->UseLodTransitions ||
-  //      (pRenderContent &&
-  //       pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
-  //    _tilesToHideNextFrame.push_back(pTile);
-  //  }
+  //for (const FCesiumCamera& camera : cameras) {
+  //  frustums.push_back(CreateViewStateFromViewParameters(
+  //      camera,
+  //      unrealWorldToCesiumTileset,
+  //      ellipsoid));
   //}
 
-  // showTilesToRender(nullptr, pResult->tilesToRenderThisFrame);
+  const Cesium3DTilesSelection::ViewUpdateResult* pResult;
+  if (this->_captureMovieMode) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
+    pResult = &this->_pTileset->updateViewOffline(frustums);
+  } else {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
+    pResult = &this->_pTileset->updateViewGroup(
+        this->_pTileset->getDefaultViewGroup(),
+        frustums,
+        DeltaTime);
+  }
+  updateLastViewUpdateResultState(*pResult);
 
-  // if (this->UseLodTransitions) {
-  //   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
-  //   updateTileFades(pResult->tilesToRenderThisFrame, true);
-  //   updateTileFades(pResult->tilesFadingOut, false);
-  // }
+  removeCollisionForTiles(pResult->tilesFadingOut);
+
+  removeVisibleTilesFromList(
+      _tilesToHideNextFrame,
+      pResult->tilesToRenderThisFrame);
+  hideTiles(0, _tilesToHideNextFrame);
+
+  _tilesToHideNextFrame.clear();
+  for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
+    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        pTile->getContent().getRenderContent();
+    if (!this->UseLodTransitions ||
+        (pRenderContent &&
+         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
+      _tilesToHideNextFrame.push_back(pTile);
+    }
+  }
+
+  showTilesToRender(0, pResult->tilesToRenderThisFrame);
+
+  if (this->UseLodTransitions) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
+    updateTileFades(pResult->tilesToRenderThisFrame, true);
+    updateTileFades(pResult->tilesFadingOut, false);
+  }
 
   this->UpdateLoadStatus();
 
@@ -2099,100 +2102,79 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     for (int32 i = 0; i < pCameraManager->ViewGroups.Num(); ++i) {
       const FCesiumViewGroup& group = pCameraManager->ViewGroups[i];
 
-      std::vector<Cesium3DTilesSelection::ViewState> frustums;
-      for (const TSoftObjectPtr<AActor>& actor :
-           group.CamerasAndSceneCaptures) {
-        AActor* pActor = actor.Get();
-        if (!pActor)
+#if WITH_EDITOR
+      if (group.EditorViewportIndex >= 0) {
+        TArray<FEditorViewportClient*> viewportClients =
+            GEditor->GetAllViewportClients();
+        FEditorViewportClient* pEditorViewportClient =
+            viewportClients[group.EditorViewportIndex];
+
+        if (!pEditorViewportClient->IsVisible() ||
+            !pEditorViewportClient->IsRealtime() ||
+            !pEditorViewportClient->IsPerspective()) {
           continue;
-
-        USceneCaptureComponent2D* pSceneCaptureComponent =
-            pActor->GetComponentByClass<USceneCaptureComponent2D>();
-        if (pSceneCaptureComponent) {
-          UTextureRenderTarget2D* pRenderTarget =
-              pSceneCaptureComponent->TextureTarget;
-          if (pRenderTarget && pSceneCaptureComponent->ProjectionType ==
-                                   ECameraProjectionMode::Type::Perspective) {
-
-            FVector2D renderTargetSize(
-                pRenderTarget->SizeX,
-                pRenderTarget->SizeY);
-            if (renderTargetSize.X >= 1.0 && renderTargetSize.Y >= 1.0) {
-              FVector captureLocation =
-                  pSceneCaptureComponent->GetComponentLocation();
-              FRotator captureRotation =
-                  pSceneCaptureComponent->GetComponentRotation();
-              double captureFov = pSceneCaptureComponent->FOVAngle;
-
-              frustums.emplace_back(CreateViewStateFromViewParameters(
-                  FCesiumCamera{
-                      renderTargetSize,
-                      captureLocation,
-                      captureRotation,
-                      captureFov},
-                  unrealWorldToCesiumTileset,
-                  ellipsoid));
-            }
-          }
         }
 
-        UCameraComponent* pCameraComponent =
-            pActor->GetComponentByClass<UCameraComponent>();
-        if (pCameraComponent) {
-          APlayerController* pPlayerController =
-              GetWorld()->GetFirstPlayerController();
-          if (pPlayerController) {
-            int32 sizeX, sizeY;
-            pPlayerController->GetViewportSize(sizeX, sizeY);
-            FVector2D renderTargetSize(sizeX, sizeY);
-
-            frustums.emplace_back(CreateViewStateFromViewParameters(
-                FCesiumCamera{
-                    renderTargetSize,
-                    pCameraComponent->GetComponentLocation(),
-                    pCameraComponent->GetComponentRotation(),
-                    pCameraComponent->FieldOfView},
-                unrealWorldToCesiumTileset,
-                ellipsoid));
-          }
-        }
-      }
-
-      this->_viewGroups[i].setWeight(group.LoadWeight);
-
-      const Cesium3DTilesSelection::ViewUpdateResult& result =
-          this->_pTileset->updateViewGroup(
-              this->_viewGroups[i],
-              frustums,
-              DeltaTime);
-
-      showTilesToRender(group.ViewActor.Get(), result.tilesToRenderThisFrame);
-      hideTiles(
-          group.ViewActor.Get(),
-          std::vector(
-              result.tilesFadingOut.begin(),
-              result.tilesFadingOut.end()));
-
-      if (group.Monitor) {
-        if (this->_pLastMonitorViewActor != group.ViewActor) {
-          // Reset all tiles to non-visible
-          std::vector<Cesium3DTilesSelection::Tile*> allTiles;
-          this->_pTileset->forEachLoadedTile(
-              [&allTiles](Cesium3DTilesSelection::Tile& tile) {
-                allTiles.emplace_back(&tile);
-              });
-          hideTiles(nullptr, allTiles);
-
-          this->_pLastMonitorViewActor = group.ViewActor.Get();
+        FRotator rotation;
+        if (pEditorViewportClient->bUsingOrbitCamera) {
+          rotation = (pEditorViewportClient->GetLookAtLocation() -
+                      pEditorViewportClient->GetViewLocation())
+                         .Rotation();
+        } else {
+          rotation = pEditorViewportClient->GetViewRotation();
         }
 
-        showTilesToRender(nullptr, result.tilesToRenderThisFrame);
+        const FVector& location = pEditorViewportClient->GetViewLocation();
+        double fov = pEditorViewportClient->ViewFOV;
+        FIntPoint offset;
+        FIntPoint size;
+        pEditorViewportClient->GetViewportDimensions(offset, size);
+
+        if (size.X < 1 || size.Y < 1) {
+          continue;
+        }
+
+        if (this->_scaleUsingDPI) {
+          float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
+          size.X = static_cast<float>(size.X) / dpiScalingFactor;
+          size.Y = static_cast<float>(size.Y) / dpiScalingFactor;
+        }
+
+        std::vector<Cesium3DTilesSelection::ViewState> frustums;
+
+        if (pEditorViewportClient->IsAspectRatioConstrained()) {
+          frustums.emplace_back(CreateViewStateFromViewParameters(
+              FCesiumCamera(
+                  FVector2D(size),
+                  location,
+                  rotation,
+                  fov,
+                  pEditorViewportClient->AspectRatio),
+              unrealWorldToCesiumTileset,
+              ellipsoid));
+        } else {
+          frustums.emplace_back(CreateViewStateFromViewParameters(
+              FCesiumCamera(FVector2D(size), location, rotation, fov),
+              unrealWorldToCesiumTileset,
+              ellipsoid));
+        }
+
+        this->_viewGroups[i].setWeight(group.LoadWeight);
+
+        const Cesium3DTilesSelection::ViewUpdateResult& result =
+            this->_pTileset->updateViewGroup(
+                this->_viewGroups[i],
+                frustums,
+                DeltaTime);
+
+        showTilesToRender(group.ViewStateKey, result.tilesToRenderThisFrame);
         hideTiles(
-            nullptr,
+            group.ViewStateKey,
             std::vector(
                 result.tilesFadingOut.begin(),
                 result.tilesFadingOut.end()));
       }
+#endif
     }
 
     this->_pTileset->loadTiles();

@@ -2314,7 +2314,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3386,7 +3386,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
 
-  //Gltf->SetVisibility(false, true);
+  // Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
 }
@@ -3644,19 +3644,19 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
 }
 
 void UCesiumGltfComponent::SetViewGroupVisibility(
-    const AActor* ViewActor,
+    uint32 viewStateKey,
     bool visibility) {
-  bool* pVisibility = this->_viewGroupVisibility.Find(ViewActor);
+  bool* pVisibility = this->_viewGroupVisibility.Find(viewStateKey);
   if (!pVisibility || *pVisibility != visibility) {
-    this->_viewGroupVisibility.FindOrAdd(ViewActor) = visibility;
+    this->_viewGroupVisibility.FindOrAdd(viewStateKey) = visibility;
 
-    //bool anyAreVisible = false;
+    // bool anyAreVisible = false;
 
-    //for (const auto& kvp : this->_viewGroupVisibility) {
-    //  anyAreVisible |= kvp.Value;
-    //}
+    // for (const auto& kvp : this->_viewGroupVisibility) {
+    //   anyAreVisible |= kvp.Value;
+    // }
 
-    //this->_viewGroupVisibility.FindOrAdd(nullptr) = anyAreVisible;
+    // this->_viewGroupVisibility.FindOrAdd(nullptr) = anyAreVisible;
 
     for (const TObjectPtr<USceneComponent>& pComponent :
          this->GetAttachChildren()) {
@@ -3670,7 +3670,8 @@ void UCesiumGltfComponent::SetViewGroupVisibility(
 
       ENQUEUE_RENDER_COMMAND(Cesium_UpdateViewGroupVisibility)
       ([viewGroupVisibility = this->_viewGroupVisibility,
-        pProxy = pPrimitive->SceneProxy](FRHICommandListImmediate& RHICmdList) mutable {
+        pProxy = pPrimitive->SceneProxy](
+           FRHICommandListImmediate& RHICmdList) mutable {
         UCesiumGltfPrimitiveComponent::updateVisibilityInRenderThread(
             pProxy,
             std::move(viewGroupVisibility));
@@ -3679,8 +3680,8 @@ void UCesiumGltfComponent::SetViewGroupVisibility(
   }
 }
 
-bool UCesiumGltfComponent::GetViewGroupVisibility(const AActor* ViewActor) {
-  bool* pResult = this->_viewGroupVisibility.Find(ViewActor);
+bool UCesiumGltfComponent::GetViewGroupVisibility(uint32 viewStateKey) {
+  bool* pResult = this->_viewGroupVisibility.Find(viewStateKey);
   return pResult && *pResult;
 }
 

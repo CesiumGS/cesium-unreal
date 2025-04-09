@@ -50,7 +50,7 @@ public:
 
   static void updateVisibilityInRenderThread(
       FPrimitiveSceneProxy* pProxy,
-      TMap<const AActor*, bool>&& visibility);
+      TMap<uint32, bool>&& visibility);
 
 private:
   CesiumPrimitiveData _cesiumData;

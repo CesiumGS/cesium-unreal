@@ -100,7 +100,7 @@ public:
   FCesiumGltfPrimitiveSceneProxy(
       UStaticMeshComponent* Component,
       bool bForceLODsShareStaticLighting,
-      TMap<const AActor*, bool>&& viewGroupVisibility)
+      TMap<uint32, bool>&& viewGroupVisibility)
       : FStaticMeshSceneProxy(Component, bForceLODsShareStaticLighting),
         _viewsVisibility(std::move(viewGroupVisibility)) {}
 
@@ -109,7 +109,8 @@ public:
     FPrimitiveViewRelevance relevance =
         FStaticMeshSceneProxy::GetViewRelevance(View);
 
-    const bool* pVisibility = this->_viewsVisibility.Find(View->ViewActor);
+    const bool* pVisibility =
+        this->_viewsVisibility.Find(View->State->GetViewKey());
     if (pVisibility) {
       // We have visibility information for the view group corresponding to this
       // ViewActor. It may be the default view group if ViewActor==nullptr.
@@ -121,7 +122,7 @@ public:
       // We don't have visibility information for a view group corresponding to
       // this ViewActor, so use the visibility information for the default view
       // group.
-      pVisibility = this->_viewsVisibility.Find(nullptr);
+      pVisibility = this->_viewsVisibility.Find(0);
       check(pVisibility);
       if (pVisibility && !*pVisibility) {
         relevance.bDrawRelevance = false;
@@ -132,14 +133,14 @@ public:
     return relevance;
   }
 
-  void updateVisibility(TMap<const AActor*, bool>&& newVisibility) {
+  void updateVisibility(TMap<uint32, bool>&& newVisibility) {
     this->_viewsVisibility = std::move(newVisibility);
   }
 
 private:
-  // An entry per ViewActor assigned to a view group, plus an entry for nullptr
+  // An entry per view assigned to a view group, plus an entry for nullptr
   // which is the visibility of this primitive in the default view group.
-  TMap<const AActor*, bool> _viewsVisibility;
+  TMap<uint32, bool> _viewsVisibility;
 };
 
 } // namespace
@@ -155,18 +156,17 @@ FPrimitiveSceneProxy* UCesiumGltfPrimitiveComponent::CreateStaticMeshSceneProxy(
   UCesiumGltfComponent* pGltf =
       Cast<UCesiumGltfComponent>(this->GetAttachParent());
 
-  TMap<const AActor*, bool> viewGroupVisibility{
-      {nullptr, pGltf ? pGltf->GetViewGroupVisibility(nullptr) : false}};
+  TMap<uint32, bool> viewGroupVisibility{
+      {0, pGltf ? pGltf->GetViewGroupVisibility(0) : false}};
   if (pCameraManager) {
     for (const FCesiumViewGroup& group : pCameraManager->ViewGroups) {
-      if (group.ViewActor != nullptr)
+      if (group.ViewStateKey > 0)
         viewGroupVisibility.Add(
-            group.ViewActor.Get(),
-            pGltf ? pGltf->GetViewGroupVisibility(group.ViewActor.Get())
-                  : false);
+            group.ViewStateKey,
+            pGltf ? pGltf->GetViewGroupVisibility(group.ViewStateKey) : false);
     }
   } else {
-    viewGroupVisibility = {{nullptr, false}};
+    viewGroupVisibility = {{0, false}};
   }
 
   auto* Proxy = ::new FCesiumGltfPrimitiveSceneProxy(
@@ -251,9 +251,9 @@ UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
 
 void UCesiumGltfPrimitiveComponent::updateVisibilityInRenderThread(
     FPrimitiveSceneProxy* pProxy,
-    TMap<const AActor*, bool>&& visibility) {
+    TMap<uint32, bool>&& visibility) {
   check(pProxy);
-  check(visibility.Contains(nullptr));
+  check(visibility.Contains(0));
   static_cast<FCesiumGltfPrimitiveSceneProxy*>(pProxy)->updateVisibility(
       std::move(visibility));
 }

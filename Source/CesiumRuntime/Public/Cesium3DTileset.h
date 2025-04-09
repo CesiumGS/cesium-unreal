@@ -1290,7 +1290,7 @@ private:
    * @param tiles The tiles
    */
   void showTilesToRender(
-      const AActor* pViewActor,
+      uint32 viewStateKey,
       const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
 
   /**
