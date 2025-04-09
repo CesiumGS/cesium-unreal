@@ -39,8 +39,7 @@ void GoogleTilesTestSetup::setupForLocation(
   context.tilesets.push_back(tileset);
 }
 
-void
-GoogleTilesTestSetup::setupForPompidou(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForPompidou(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(2.352200, 48.860600, 200),
@@ -62,8 +61,7 @@ void GoogleTilesTestSetup::setupForChrysler(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-void
-GoogleTilesTestSetup::setupForGuggenheim(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForGuggenheim(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-2.937, 43.2685, 150),
@@ -74,8 +72,8 @@ GoogleTilesTestSetup::setupForGuggenheim(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-void
-GoogleTilesTestSetup::setupForDeathValley(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForDeathValley(
+    SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-116.812278, 36.42, 300),
@@ -97,8 +95,7 @@ void GoogleTilesTestSetup::setupForTokyo(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-void
-GoogleTilesTestSetup::setupForGoogleplex(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForGoogleplex(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-122.083969, 37.424492, 142.859116),
