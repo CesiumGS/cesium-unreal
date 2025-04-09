@@ -10,13 +10,13 @@
 
 namespace Cesium {
 
-inline void GoogleTilesTestSetup::setupRefreshTilesets(
+void GoogleTilesTestSetup::setupRefreshTilesets(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
   context.refreshTilesets();
 }
 
-inline void GoogleTilesTestSetup::setupClearCache(
+void GoogleTilesTestSetup::setupClearCache(
     SceneGenerationContext& context,
     TestPass::TestingParameter parameter) {
   std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
@@ -24,7 +24,7 @@ inline void GoogleTilesTestSetup::setupClearCache(
   pCacheDatabase->clearAll();
 }
 
-inline void GoogleTilesTestSetup::setupForLocation(
+void GoogleTilesTestSetup::setupForLocation(
     SceneGenerationContext& context,
     const FVector& location,
     const FRotator& rotation,
@@ -39,8 +39,7 @@ inline void GoogleTilesTestSetup::setupForLocation(
   context.tilesets.push_back(tileset);
 }
 
-inline void
-GoogleTilesTestSetup::setupForPompidou(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForPompidou(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(2.352200, 48.860600, 200),
@@ -51,8 +50,7 @@ GoogleTilesTestSetup::setupForPompidou(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-inline void
-GoogleTilesTestSetup::setupForChrysler(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForChrysler(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-73.9752624659, 40.74697185903, 307.38),
@@ -63,8 +61,7 @@ GoogleTilesTestSetup::setupForChrysler(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-inline void
-GoogleTilesTestSetup::setupForGuggenheim(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForGuggenheim(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-2.937, 43.2685, 150),
@@ -75,8 +72,8 @@ GoogleTilesTestSetup::setupForGuggenheim(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-inline void
-GoogleTilesTestSetup::setupForDeathValley(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForDeathValley(
+    SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-116.812278, 36.42, 300),
@@ -87,8 +84,7 @@ GoogleTilesTestSetup::setupForDeathValley(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-inline void
-GoogleTilesTestSetup::setupForTokyo(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForTokyo(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(139.7563178458, 35.652798383944, 525.62),
@@ -99,8 +95,7 @@ GoogleTilesTestSetup::setupForTokyo(SceneGenerationContext& context) {
   context.sunSky->UpdateSun();
 }
 
-inline void
-GoogleTilesTestSetup::setupForGoogleplex(SceneGenerationContext& context) {
+void GoogleTilesTestSetup::setupForGoogleplex(SceneGenerationContext& context) {
   setupForLocation(
       context,
       FVector(-122.083969, 37.424492, 142.859116),
