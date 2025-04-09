@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
+
 ### v2.15.0 - 2025-04-01
 
 ##### Additions :tada:
