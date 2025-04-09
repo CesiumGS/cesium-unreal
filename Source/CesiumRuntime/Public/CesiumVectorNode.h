@@ -4,6 +4,7 @@
 
 #include "CesiumVectorData/VectorNode.h"
 #include "JsonObjectWrapper.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 
 #include "CesiumVectorNode.generated.h"
 
