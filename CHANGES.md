@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
+
 ##### Fixes :wrench:
 
 - Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
@@ -22,12 +26,6 @@
 - Fixed normals being incorrectly written to Runtime Virtual Texture output in tangent space instead of in world space.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.45.0 to v0.46.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
-
-### ? - ?
-
-##### Additions :tada:
-
-- Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
 
 ### v2.14.1 - 2025-03-06
 
