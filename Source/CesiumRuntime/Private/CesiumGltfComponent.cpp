@@ -1757,7 +1757,11 @@ static void loadPrimitive(
 #if ENGINE_VERSION_5_5_OR_HIGHER
   // UE 5.5 requires that we do this in order to avoid a crash when ray tracing
   // is enabled.
-  RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    // UE 5.5 requires that we do this in order to avoid a crash when ray
+    // tracing is enabled.
+    RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+  }
 #endif
 
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
@@ -3078,6 +3082,11 @@ static void loadPrimitiveGameThreadPart(
         primData.pTilesetActor->GetTranslucencySortPriority();
 
     pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
+    // Not only does the concept of ray tracing a point cloud not make much
+    // sense, but if Unreal will crash trying to generate ray tracing
+    // information for a static mesh without triangles.
+    pStaticMesh->bSupportRayTracing =
+        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
@@ -3106,19 +3115,17 @@ static void loadPrimitiveGameThreadPart(
 
 #if PLATFORM_MAC
   // TODO: figure out why water material crashes mac
-  UMaterialInterface* pBaseMaterial =
-      (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3)
-          ? pGltf->BaseMaterialWithTranslucency
-          : pGltf->BaseMaterial;
+  UMaterialInterface* pBaseMaterial = is_in_blend_mode(loadResult)
+                                          ? pGltf->BaseMaterialWithTranslucency
+                                          : pGltf->BaseMaterial;
 #else
   UMaterialInterface* pBaseMaterial;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
     pBaseMaterial = pGltf->BaseMaterialWithWater;
   } else {
-    pBaseMaterial =
-        (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3)
-            ? pGltf->BaseMaterialWithTranslucency
-            : pGltf->BaseMaterial;
+    pBaseMaterial = is_in_blend_mode(loadResult)
+                        ? pGltf->BaseMaterialWithTranslucency
+                        : pGltf->BaseMaterial;
   }
 #endif
 
