@@ -1289,8 +1289,9 @@ private:
    *
    * @param tiles The tiles
    */
-  void
-  showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
+  void showTilesToRender(
+      uint32 viewStateKey,
+      const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -1369,6 +1370,9 @@ private:
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  std::vector<Cesium3DTilesSelection::TilesetViewGroup> _viewGroups;
+  TObjectPtr<AActor> _pLastMonitorViewActor = nullptr;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

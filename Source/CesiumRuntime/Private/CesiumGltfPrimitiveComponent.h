@@ -38,11 +38,19 @@ public:
 
   FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 
+  FPrimitiveSceneProxy* CreateStaticMeshSceneProxy(
+      Nanite::FMaterialAudit& NaniteMaterials,
+      bool bCreateNanite) override;
+
   void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
+
+  static void updateVisibilityInRenderThread(
+      FPrimitiveSceneProxy* pProxy,
+      TMap<uint32, bool>&& visibility);
 
 private:
   CesiumPrimitiveData _cesiumData;
