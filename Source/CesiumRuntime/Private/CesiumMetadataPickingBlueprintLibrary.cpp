@@ -4,6 +4,8 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataValue.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveFeatures.h"
 
 #include <optional>
 
@@ -322,7 +324,7 @@ UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
     return InvalidPropertyTableProperty;
   }
   return FindPropertyTableProperty(
-      pGltfComponent->Features,
+      pGltfComponent->getPrimitiveData().Features,
       pModel->Metadata,
       PropertyName,
       FeatureIDSetIndex);
@@ -339,11 +341,9 @@ UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
   if (FeatureIDSetIndex < 0 || FeatureIDSetIndex >= featureIDSets.Num()) {
     return InvalidPropertyTableProperty;
   }
-  const FCesiumFeatureIdSet& featureIDSet =
-      featureIDSets[FeatureIDSetIndex];
+  const FCesiumFeatureIdSet& featureIDSet = featureIDSets[FeatureIDSetIndex];
   const int64 propertyTableIndex =
-      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
-          featureIDSet);
+      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
   const TArray<FCesiumPropertyTable>& propertyTables =
       UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(Metadata);
   if (propertyTableIndex < 0 || propertyTableIndex >= propertyTables.Num()) {

@@ -9,6 +9,8 @@
 #include "CesiumMetadataPickingBlueprintLibrary.generated.h"
 
 struct FHitResult;
+struct FCesiumPrimitiveFeatures;
+struct FCesiumModelMetadata;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataPickingBlueprintLibrary
