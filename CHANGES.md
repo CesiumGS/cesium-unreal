@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
+- The "unsupported primitive mode" warning is now only logged once to avoid console spam.
 
 ### v2.15.0 - 2025-04-01
 
