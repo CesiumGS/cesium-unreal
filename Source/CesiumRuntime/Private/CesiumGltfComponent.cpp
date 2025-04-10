@@ -1175,7 +1175,9 @@ std::string getPrimitiveName(
 
 /// Helper used to log only once per unsupported primitive mode.
 struct PrimitiveModeLogger {
-  std::array<std::atomic_bool, (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
+  std::array<
+      std::atomic_bool,
+      (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
       alreadyLogged;
 
   PrimitiveModeLogger()
