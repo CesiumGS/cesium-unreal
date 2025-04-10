@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
+- The "unsupported primitive mode" warning is now only logged once to avoid console spam.
 
 ### v2.15.0 - 2025-04-01
 
@@ -32,7 +33,6 @@ In addition to the above, this release updates [cesium-native](https://github.co
 ##### Fixes :wrench:
 
 - Fixed the "Auto Fill" and "Generate Material" buttons on `UCesiumFeaturesMetadataComponent`, which broke with the previous release.
-- Only log once per unsupported primitive mode.
 
 ### v2.14.0 - 2025-03-03
 
