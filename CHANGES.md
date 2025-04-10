@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
+
 ##### Fixes :wrench:
 
 - Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
