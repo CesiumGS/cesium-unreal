@@ -75,8 +75,6 @@ public:
 #endif
 
 private:
-  static UObject* CesiumCreditSystemBP;
-
   /**
    * A tag that is assigned to Credit Systems when they are created
    * as the "default" Credit System for a certain world.
