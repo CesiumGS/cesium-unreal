@@ -1,4 +1,4 @@
-# Cesium for Unreal Style Guide
+# Style Guide {#style-guide}
 
 Cesium strives to maintain a high standard for code quality across all of its codebases. The effort to write readable, organized, and consistent code makes it much easier for contributors to work with the code, whether new or experienced.
 
