@@ -25,6 +25,8 @@ on:
       android-ndk-version:
         required: true
         type: string
+env:
+  VCPKG_BINARY_SOURCES: 'clear;x-aws,s3://cesium-builds/vcpkg/cesium-unreal-cache/,readwrite'
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
@@ -63,6 +65,12 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Capture AWS secrets for vcpkg cache
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_INTERNAL_SERVICES_VCPKG_SECRET_KEY }}
+          aws-region: us-east-1
       - name: Build cesium-native
         run: |
           # CMake gets confused by the Windows backslashes
@@ -70,6 +78,7 @@ jobs:
           $env:ANDROID_NDK_HOME=$env:ANDROID_NDK_ROOT
           $env:UNREAL_ENGINE_ROOT="D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}"
           $env:CESIUM_VCPKG_RELEASE_ONLY="TRUE"
+          $env:VCPKG_ROOT="$env:VCPKG_INSTALLATION_ROOT"
           cd extern
           cmake -B build-android --preset=arm64-android -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android --config Release --target install -j8
