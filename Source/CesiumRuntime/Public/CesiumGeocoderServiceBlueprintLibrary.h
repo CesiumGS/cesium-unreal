@@ -79,14 +79,14 @@ public:
   /**
    * @brief An HTML string containing the necessary attribution information.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium|Geocoder")
   FString Html;
 
   /**
    * @brief If true, the credit should be visible in the main credit container.
    * Otherwise, it can appear in a popover.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium|Geocoder")
   bool bShowOnScreen;
 };
 
@@ -108,7 +108,7 @@ public:
    * return the center of the bounding box. If the geocoder service returned a
    * coordinate for this result, this will return the coordinate.
    */
-  UFUNCTION(BlueprintPure)
+  UFUNCTION(BlueprintPure, Category = "Cesium|Geocoder")
   FVector GetCartographic() const;
 
   /**
@@ -119,13 +119,13 @@ public:
    * return the bounding box. If the geocoder service returned a coordinate for
    * this result, this will return a zero-width rectangle at that coordinate.
    */
-  UFUNCTION(BlueprintPure)
+  UFUNCTION(BlueprintPure, Category = "Cesium|Geocoder")
   FBox GetGlobeRectangle() const;
 
   /**
    * @brief The user-friendly display name of this feature.
    */
-  UFUNCTION(BlueprintPure)
+  UFUNCTION(BlueprintPure, Category = "Cesium|Geocoder")
   FString GetDisplayName() const;
 
   void SetFeature(CesiumIonClient::GeocoderFeature&& feature);
@@ -146,13 +146,13 @@ public:
   /**
    * @brief Any necessary attributions for this geocoder result.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium|Geocoder")
   TArray<FCesiumGeocoderServiceAttribution> Attributions;
 
   /**
    * @brief The features obtained from this geocoder service, if any.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium|Geocoder")
   TArray<UCesiumGeocoderServiceFeature*> Features;
 };
 
@@ -184,7 +184,7 @@ public:
    */
   UFUNCTION(
       BlueprintCallable,
-      Category = "Cesium",
+      Category = "Cesium|Geocoder",
       meta =
           (BlueprintInternalUseOnly = true,
            DisplayName = "Query Cesium ion Geocoder"))
