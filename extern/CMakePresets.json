@@ -136,6 +136,15 @@
         "VCPKG_TARGET_TRIPLET": "arm64-ios-unreal",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/unreal-ios-toolchain.cmake"
       }
+    },
+    {
+      "name": "arm64-android",
+      "inherits": "unreal-common",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "arm64-android-unreal",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/unreal-android-toolchain.cmake"
+      }
     }
   ]
 }

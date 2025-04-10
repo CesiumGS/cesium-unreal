@@ -109,51 +109,35 @@ if (CESIUM_USE_UNREAL_TRACING)
   list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 endif()
 
-# vcpkg setup should go away with ezvcpkg
-set(ENV{VCPKG_OVERLAY_PORTS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays")
-set(ENV{VCPKG_OVERLAY_TRIPLETS} "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/triplets")
-
-include(${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/cmake/detect-vcpkg-triplet.cmake)
-
-if (NOT VCPKG_TRIPLET)
-    if (DEFINED ENV{VCPKG_TRIPLET})
-        set(VCPKG_TRIPLET "$ENV{VCPKG_TRIPLET}")
-    elseif(DETECTED_VCPKG_TRIPLET_ERROR)
-        message(FATAL_ERROR "${DETECTED_VCPKG_TRIPLET_ERROR}")
-    else()
-        set(VCPKG_TRIPLET "${DETECTED_VCPKG_TRIPLET}-unreal")
-    endif()
-endif()
-
 # Our OpenSSL is part of Unreal Engine, so need to install it.
 set(CESIUM_EXCLUDE_INSTALL_HEADERS openssl)
 set(CESIUM_EXCLUDE_INSTALL_STATIC_LIBS openssl)
 
 if(CESIUM_UNREAL_NATIVE_DIRECTORY)
-# These packages are used in the public headers of Cesium libraries, so we need to distribute the headers and binaries
-# with the installation
-# Note that fmt is a public dependency of the vcpkg version of spdlog
-# STB and uriparser aren't technically part of the public interface, but they're used by the downstream Cesium for Unreal project
-set(PACKAGES_PUBLIC asyncplusplus expected-lite fmt glm rapidjson spdlog stb uriparser)
-# These packages are used in the code and produce binaries, but are not part of the public interface.  Therefore we need
-# to distribute the binaries for linking, but not the headers, as downstream consumers don't need them
-# OpenSSL and abseil are both dependencies of s2geometry
-set(PACKAGES_PRIVATE
+  # These packages are used in the public headers of Cesium libraries, so we need to distribute the headers and binaries
+  # with the installation
+  # Note that fmt is a public dependency of the vcpkg version of spdlog
+  # STB and uriparser aren't technically part of the public interface, but they're used by the downstream Cesium for Unreal project
+  set(PACKAGES_PUBLIC asyncplusplus expected-lite fmt glm rapidjson spdlog stb uriparser)
+  # These packages are used in the code and produce binaries, but are not part of the public interface.  Therefore we need
+  # to distribute the binaries for linking, but not the headers, as downstream consumers don't need them
+  # OpenSSL and abseil are both dependencies of s2geometry
+  set(PACKAGES_PRIVATE
     abseil draco ktx modp-base64 meshoptimizer openssl s2geometry
     libjpeg-turbo sqlite3 tinyxml2 libwebp zlib-ng picosha2
     earcut-hpp cpp-httplib[core] libmorton zstd
-)
-# Packages only used for testing
-    set(PACKAGES_TEST catch2)
+  )
+  # Packages only used for testing
+  set(PACKAGES_TEST catch2)
 
-    set(PACKAGES_ALL ${PACKAGES_PUBLIC})
-    list(APPEND PACKAGES_ALL ${PACKAGES_PRIVATE})
-    list(APPEND PACKAGES_ALL ${PACKAGES_TEST})
-    add_subdirectory("${CESIUM_UNREAL_NATIVE_DIRECTORY}" cesium-native)
-    # Don't build the cesium-native tests by default
-    set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+  set(PACKAGES_ALL ${PACKAGES_PUBLIC})
+  list(APPEND PACKAGES_ALL ${PACKAGES_PRIVATE})
+  list(APPEND PACKAGES_ALL ${PACKAGES_TEST})
+  add_subdirectory("${CESIUM_UNREAL_NATIVE_DIRECTORY}" cesium-native)
+  # Don't build the cesium-native tests by default
+  set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 else()
-    find_package(cesium-native)
+  find_package(cesium-native)
 endif()
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
