@@ -14,7 +14,7 @@ template <typename T> class Future;
  * Defines a Cesium ion Server. This may be the public (SaaS) Cesium ion server
  * at ion.cesium.com, or it may be a self-hosted instance.
  */
-UCLASS()
+UCLASS(BlueprintType)
 class CESIUMRUNTIME_API UCesiumIonServer : public UDataAsset {
   GENERATED_BODY()
 
@@ -28,6 +28,7 @@ public:
    * a valid instance. At runtime, this method returns nullptr if the object
    * does not exist.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|ion")
   static UCesiumIonServer* GetDefaultServer();
 
   /**
@@ -59,7 +60,8 @@ public:
   UPROPERTY(
       EditAnywhere,
       AssetRegistrySearchable,
-      Category = "Cesium",
+      BlueprintReadOnly,
+      Category = "Cesium|ion",
       meta = (DisplayName = "Display Name"))
   FString DisplayName = "ion.cesium.com";
 
@@ -70,7 +72,8 @@ public:
   UPROPERTY(
       EditAnywhere,
       AssetRegistrySearchable,
-      Category = "Cesium",
+      BlueprintReadOnly,
+      Category = "Cesium|ion",
       meta = (DisplayName = "Server URL"))
   FString ServerUrl = "https://ion.cesium.com";
 
@@ -82,7 +85,8 @@ public:
   UPROPERTY(
       EditAnywhere,
       AssetRegistrySearchable,
-      Category = "Cesium",
+      BlueprintReadOnly,
+      Category = "Cesium|ion",
       meta = (DisplayName = "API URL"))
   FString ApiUrl = "https://api.cesium.com";
 
@@ -94,7 +98,8 @@ public:
   UPROPERTY(
       EditAnywhere,
       AssetRegistrySearchable,
-      Category = "Cesium",
+      BlueprintReadOnly,
+      Category = "Cesium|ion",
       meta = (DisplayName = "OAuth Application ID"))
   int64 OAuth2ApplicationID = 190;
 
@@ -106,7 +111,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium",
+      BlueprintReadOnly,
+      Category = "Cesium|ion",
       meta = (DisplayName = "Default Cesium ion Access Token ID"))
   FString DefaultIonAccessTokenId;
 
@@ -117,7 +123,8 @@ public:
   UPROPERTY(
       EditAnywhere,
       AssetRegistrySearchable,
-      Category = "Cesium",
+      BlueprintReadOnly,
+      Category = "Cesium|ion",
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
 
