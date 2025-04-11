@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "CesiumVectorData/VectorDocument.h"
 #include "CesiumVectorData/VectorNode.h"
 #include "JsonObjectWrapper.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Templates/SharedPointer.h"
 
 #include "CesiumVectorNode.generated.h"
 
@@ -21,16 +23,20 @@ struct FCesiumVectorNode {
   /**
    * @brief Creates a new `FCesiumVectorNode` containing an empty vector node.
    */
-  FCesiumVectorNode() : _node() {}
+  FCesiumVectorNode() : _document(nullptr), _node(nullptr) {}
 
   /**
    * @brief Creates a new `FCesiumVectorNode` wrapping the provided
    * `CesiumVectorData::VectorNode`.
    */
-  FCesiumVectorNode(const CesiumVectorData::VectorNode& node) : _node(node) {}
+  FCesiumVectorNode(
+      const TSharedPtr<CesiumVectorData::VectorDocument>& doc,
+      const CesiumVectorData::VectorNode* node)
+      : _document(doc), _node(node) {}
 
 private:
-  CesiumVectorData::VectorNode _node;
+  TSharedPtr<CesiumVectorData::VectorDocument> _document;
+  const CesiumVectorData::VectorNode* _node;
 
   friend class UCesiumVectorNodeBlueprintLibrary;
 };
@@ -63,18 +69,20 @@ struct FCesiumVectorPrimitive {
   GENERATED_BODY()
 
   /** @brief Creates a new `FCesiumVectorPrimitive` with an empty primitive. */
-  FCesiumVectorPrimitive()
-      : _primitive(std::vector<CesiumGeospatial::Cartographic>()) {}
+  FCesiumVectorPrimitive() : _document(nullptr), _primitive(nullptr) {}
 
   /**
    * @brief Creates a new `FCesiumVectorPrimitive` wrapping the provided
    * `CesiumVectorData::VectorPrimitive`.
    */
-  FCesiumVectorPrimitive(const CesiumVectorData::VectorPrimitive& primitive)
-      : _primitive(primitive) {}
+  FCesiumVectorPrimitive(
+      const TSharedPtr<CesiumVectorData::VectorDocument>& document,
+      const CesiumVectorData::VectorPrimitive* primitive)
+      : _document(document), _primitive(primitive) {}
 
 private:
-  CesiumVectorData::VectorPrimitive _primitive;
+  TSharedPtr<CesiumVectorData::VectorDocument> _document;
+  const CesiumVectorData::VectorPrimitive* _primitive;
 
   friend class UCesiumVectorPrimitiveBlueprintLibrary;
 };

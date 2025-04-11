@@ -6,6 +6,7 @@
 #include "CesiumVectorNode.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Templates/SharedPointer.h"
 #include "UObject/ObjectMacros.h"
 
 #include <optional>
@@ -22,17 +23,19 @@ struct FCesiumVectorDocument {
   /**
    * @brief Creates an empty `FCesiumVectorDocument`.
    */
-  FCesiumVectorDocument() : _document(CesiumVectorData::VectorNode{}, {}) {}
+  FCesiumVectorDocument() : _document(nullptr) {}
 
   /**
    * @brief Creates a `FCesiumVectorDocument` wrapping the provided
    * `CesiumVectorData::VectorDocument`.
    */
   FCesiumVectorDocument(CesiumVectorData::VectorDocument&& document)
-      : _document(std::move(document)) {}
+      : _document(
+            MakeShared<CesiumVectorData::VectorDocument>(std::move(document))) {
+  }
 
 private:
-  CesiumVectorData::VectorDocument _document;
+  TSharedPtr<CesiumVectorData::VectorDocument> _document;
 
   friend class UCesiumVectorDocumentBlueprintLibrary;
 };

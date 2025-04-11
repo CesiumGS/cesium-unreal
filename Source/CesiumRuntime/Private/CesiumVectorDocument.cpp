@@ -37,7 +37,12 @@ bool UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
 
 FCesiumVectorNode UCesiumVectorDocumentBlueprintLibrary::GetRootNode(
     const FCesiumVectorDocument& InVectorDocument) {
-  return FCesiumVectorNode(InVectorDocument._document.getRootNode());
+  if (!InVectorDocument._document.IsValid()) {
+    return FCesiumVectorNode();
+  }
+  return FCesiumVectorNode(
+      InVectorDocument._document,
+      &InVectorDocument._document->getRootNode());
 }
 
 UCesiumLoadVectorDocumentFromIonAsyncAction*
