@@ -2047,12 +2047,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
-  //for (const FCesiumCamera& camera : cameras) {
-  //  frustums.push_back(CreateViewStateFromViewParameters(
-  //      camera,
-  //      unrealWorldToCesiumTileset,
-  //      ellipsoid));
-  //}
+  // for (const FCesiumCamera& camera : cameras) {
+  //   frustums.push_back(CreateViewStateFromViewParameters(
+  //       camera,
+  //       unrealWorldToCesiumTileset,
+  //       ellipsoid));
+  // }
 
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
   if (this->_captureMovieMode) {
@@ -2110,18 +2110,42 @@ void ACesium3DTileset::Tick(float DeltaTime) {
             viewportClients[group.EditorViewportIndex];
 
         if (!pEditorViewportClient->IsVisible() ||
-            !pEditorViewportClient->IsRealtime() ||
-            !pEditorViewportClient->IsPerspective()) {
+            !pEditorViewportClient->IsRealtime()) {
           continue;
         }
 
         FRotator rotation;
-        if (pEditorViewportClient->bUsingOrbitCamera) {
-          rotation = (pEditorViewportClient->GetLookAtLocation() -
-                      pEditorViewportClient->GetViewLocation())
-                         .Rotation();
-        } else {
-          rotation = pEditorViewportClient->GetViewRotation();
+
+        switch (pEditorViewportClient->GetViewportType()) {
+        case LVT_OrthoXY:
+          rotation = FRotator(-90.0f, -90.0f, 0.0f);
+          break;
+        case LVT_OrthoNegativeXY:
+          rotation = FRotator(90.0f, 90.0f, 0.0f);
+          break;
+        case LVT_OrthoXZ:
+          rotation = FRotator(0.0f, -90.0f, 0.0f);
+          break;
+        case LVT_OrthoNegativeXZ:
+          rotation = FRotator(0.0f, 90.0f, 0.0f);
+          break;
+        case LVT_OrthoYZ:
+          rotation = FRotator(0.0f, 0.0f, 0.0f);
+          break;
+        case LVT_OrthoNegativeYZ:
+          rotation = FRotator(0.0f, 180.0f, 0.0f);
+          break;
+        case LVT_OrthoFreelook:
+        case LVT_Perspective:
+        case LVT_MAX:
+        case LVT_None:
+          if (pEditorViewportClient->bUsingOrbitCamera) {
+            rotation = (pEditorViewportClient->GetLookAtLocation() -
+                        pEditorViewportClient->GetViewLocation())
+                           .Rotation();
+          } else {
+            rotation = pEditorViewportClient->GetViewRotation();
+          }
         }
 
         const FVector& location = pEditorViewportClient->GetViewLocation();
@@ -2142,21 +2166,53 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
         std::vector<Cesium3DTilesSelection::ViewState> frustums;
 
-        if (pEditorViewportClient->IsAspectRatioConstrained()) {
-          frustums.emplace_back(CreateViewStateFromViewParameters(
-              FCesiumCamera(
-                  FVector2D(size),
-                  location,
-                  rotation,
-                  fov,
-                  pEditorViewportClient->AspectRatio),
-              unrealWorldToCesiumTileset,
-              ellipsoid));
+        if (pEditorViewportClient->IsPerspective()) {
+          if (pEditorViewportClient->IsAspectRatioConstrained()) {
+            frustums.emplace_back(CreateViewStateFromViewParameters(
+                FCesiumCamera(
+                    FVector2D(size),
+                    location,
+                    rotation,
+                    fov,
+                    pEditorViewportClient->AspectRatio),
+                unrealWorldToCesiumTileset,
+                ellipsoid));
+          } else {
+            frustums.emplace_back(CreateViewStateFromViewParameters(
+                FCesiumCamera(FVector2D(size), location, rotation, fov),
+                unrealWorldToCesiumTileset,
+                ellipsoid));
+          }
         } else {
-          frustums.emplace_back(CreateViewStateFromViewParameters(
-              FCesiumCamera(FVector2D(size), location, rotation, fov),
-              unrealWorldToCesiumTileset,
-              ellipsoid));
+          Cesium3DTilesSelection::ViewState fakePerspective =
+              CreateViewStateFromViewParameters(
+                  FCesiumCamera(FVector2D(size), location, rotation, fov),
+                  unrealWorldToCesiumTileset,
+                  ellipsoid);
+
+          double orthographicUnitsPerPixel =
+              pEditorViewportClient->GetOrthoUnitsPerPixel(
+                  pEditorViewportClient->Viewport);
+          double orthographicWidth = orthographicUnitsPerPixel * (double)size.X;
+
+          double right = orthographicWidth / 100.0; // centimeters to meters
+          double left = -right;
+          double top = pEditorViewportClient->IsAspectRatioConstrained()
+                           ? right / pEditorViewportClient->AspectRatio
+                           : right / (double(size.X) / double(size.Y));
+          double bottom = -top;
+
+          Cesium3DTilesSelection::ViewState orthographic(
+              fakePerspective.getPosition(),
+              fakePerspective.getDirection(),
+              fakePerspective.getUp(),
+              fakePerspective.getViewportSize(),
+              left,
+              right,
+              bottom,
+              top,
+              ellipsoid->GetNativeEllipsoid());
+          frustums.emplace_back(orthographic);
         }
 
         this->_viewGroups[i].setWeight(group.LoadWeight);
