@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include <Subsystems/EngineSubsystem.h>
+
 #include "CesiumCreditSystemBPLoader.generated.h"
 
 UCLASS()
-class UCesiumCreditSystemBPLoader : public UObject {
+class UCesiumCreditSystemBPLoader : public UEngineSubsystem {
   GENERATED_BODY()
 
 public:
