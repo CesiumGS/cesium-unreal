@@ -2,11 +2,50 @@
 
 #pragma once
 
+#include "Camera/CameraComponent.h"
 #include "CesiumCamera.h"
 #include "Containers/Map.h"
 #include "GameFramework/Actor.h"
-
 #include "CesiumCameraManager.generated.h"
+
+USTRUCT(BlueprintType)
+struct CESIUMRUNTIME_API FCesiumViewGroup {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * A human-readable description of this view group.
+   */ 
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  FString ViewDescription = "Unknown";
+
+  /**
+   * The index of the viewing FEditorViewportClient in
+   * GEditor->GetAllViewportClients(), or -1 if this view is not an editor
+   * viewport client.
+   */
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  int32 EditorViewportIndex = -1;
+
+  /**
+   * The viewing Actor, which is expected to have either a
+   * USceneCaptureComponent2D or a UCameraComponent attached to it.
+   */
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  TSoftObjectPtr<AActor> ViewActor = nullptr;
+
+  /**
+   * The unique ID of the FSceneViewStateInterface, as returned by its
+   * GetViewKey method.
+   */
+  UPROPERTY(Category = "Cesium", VisibleAnywhere, BlueprintReadOnly)
+  int64 ViewStateKey = -1;
+
+  /**
+   * The weight of this view group, used to prioritize tile loading.
+   */
+  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
+  double LoadWeight = 1.0;
+};
 
 /**
  * @brief Manages custom {@link FCesiumCamera}s for all
@@ -71,6 +110,9 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
 
   virtual void Tick(float DeltaTime) override;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere, BlueprintReadWrite)
+  TArray<FCesiumViewGroup> ViewGroups;
 
 private:
   int32 _currentCameraId = 0;

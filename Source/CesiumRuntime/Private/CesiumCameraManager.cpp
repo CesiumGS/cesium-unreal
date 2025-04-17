@@ -81,11 +81,38 @@ ACesiumCameraManager::ACesiumCameraManager() : AActor() {
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
 #endif
+  PrimaryActorTick.bCanEverTick = true;
 }
 
 bool ACesiumCameraManager::ShouldTickIfViewportsOnly() const { return true; }
 
-void ACesiumCameraManager::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
+void ACesiumCameraManager::Tick(float DeltaTime) {
+  Super::Tick(DeltaTime);
+
+  const TArray<FEditorViewportClient*>& viewportClients =
+      GEditor->GetAllViewportClients();
+
+  this->ViewGroups.SetNum(viewportClients.Num());
+
+  for (int32 i = 0; i < viewportClients.Num(); ++i) {
+    FEditorViewportClient* pClient = viewportClients[i];
+    FCesiumViewGroup& group = this->ViewGroups[i];
+
+    group.ViewDescription = FString("Editor Viewport #");
+    group.ViewDescription.AppendInt(i);
+    group.EditorViewportIndex = i;
+    group.ViewActor = nullptr;
+
+    if (pClient->ViewState.GetReference() != nullptr) {
+      group.ViewStateKey = pClient->ViewState.GetReference()->GetViewKey();
+    } else {
+      group.ViewStateKey = -1;
+    }
+
+    if (group.LoadWeight <= 0.0)
+      group.LoadWeight = 1.0;
+  }
+}
 
 int32 ACesiumCameraManager::AddCamera(UPARAM(ref) const FCesiumCamera& camera) {
   int32 cameraId = this->_currentCameraId++;

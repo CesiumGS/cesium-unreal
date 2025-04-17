@@ -333,13 +333,14 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     return;
   }
 
+  const CesiumUtility::CreditsSnapshot& credits = _pCreditSystem->getSnapshot();
+
   const std::vector<CesiumUtility::Credit>& creditsToShowThisFrame =
-      _pCreditSystem->getCreditsToShowThisFrame();
+      credits.currentCredits;
 
   // if the credit list has changed, we want to reformat the credits
-  CreditsUpdated =
-      creditsToShowThisFrame.size() != _lastCreditsCount ||
-      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
+  CreditsUpdated = creditsToShowThisFrame.size() != _lastCreditsCount ||
+                   credits.removedCredits.size() > 0;
 
   if (CreditsUpdated) {
     FString OnScreenCredits;
@@ -385,7 +386,6 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
     CreditsWidget->SetCredits(Credits, OnScreenCredits);
   }
-  _pCreditSystem->startNextFrame();
 }
 
 namespace {

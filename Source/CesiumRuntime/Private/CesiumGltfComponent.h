@@ -134,7 +134,12 @@ public:
 
   void UpdateFade(float fadePercentage, bool fadingIn);
 
+  void SetViewGroupVisibility(uint32 viewStateKey, bool visibility);
+  bool GetViewGroupVisibility(uint32 viewStateKey);
+
 private:
   UPROPERTY()
   UTexture2D* Transparent1x1 = nullptr;
+
+  TMap<uint32, bool> _viewGroupVisibility{{0, false}};
 };

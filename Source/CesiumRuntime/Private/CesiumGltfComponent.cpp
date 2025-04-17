@@ -2341,7 +2341,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3413,7 +3413,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
 
-  Gltf->SetVisibility(false, true);
+  // Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
 }
@@ -3668,6 +3668,48 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
             fadeLayerIndex),
         fadingIn ? 0.0f : 1.0f);
   }
+}
+
+void UCesiumGltfComponent::SetViewGroupVisibility(
+    uint32 viewStateKey,
+    bool visibility) {
+  bool* pVisibility = this->_viewGroupVisibility.Find(viewStateKey);
+  if (!pVisibility || *pVisibility != visibility) {
+    this->_viewGroupVisibility.FindOrAdd(viewStateKey) = visibility;
+
+    // bool anyAreVisible = false;
+
+    // for (const auto& kvp : this->_viewGroupVisibility) {
+    //   anyAreVisible |= kvp.Value;
+    // }
+
+    // this->_viewGroupVisibility.FindOrAdd(nullptr) = anyAreVisible;
+
+    for (const TObjectPtr<USceneComponent>& pComponent :
+         this->GetAttachChildren()) {
+      UCesiumGltfPrimitiveComponent* pPrimitive =
+          Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+      if (!pPrimitive)
+        continue;
+
+      if (!pPrimitive->SceneProxy)
+        continue;
+
+      ENQUEUE_RENDER_COMMAND(Cesium_UpdateViewGroupVisibility)
+      ([viewGroupVisibility = this->_viewGroupVisibility,
+        pProxy = pPrimitive->SceneProxy](
+           FRHICommandListImmediate& RHICmdList) mutable {
+        UCesiumGltfPrimitiveComponent::updateVisibilityInRenderThread(
+            pProxy,
+            std::move(viewGroupVisibility));
+      });
+    }
+  }
+}
+
+bool UCesiumGltfComponent::GetViewGroupVisibility(uint32 viewStateKey) {
+  bool* pResult = this->_viewGroupVisibility.Find(viewStateKey);
+  return pResult && *pResult;
 }
 
 template <typename TIndex>
