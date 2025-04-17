@@ -1291,7 +1291,9 @@ private:
    */
   void showTilesToRender(
       uint32 viewStateKey,
-      const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
+      const std::vector<
+          CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>&
+          tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -1367,7 +1369,8 @@ private:
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
   // tilesToHideThisFrame may be hidden immediately.
-  std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
+  std::vector<CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>
+      _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
 
