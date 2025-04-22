@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumUtility/IntrusivePointer.h"
 #include "CesiumVectorData/VectorDocument.h"
 #include "CesiumVectorNode.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
@@ -29,13 +30,13 @@ struct FCesiumVectorDocument {
    * @brief Creates a `FCesiumVectorDocument` wrapping the provided
    * `CesiumVectorData::VectorDocument`.
    */
-  FCesiumVectorDocument(CesiumVectorData::VectorDocument&& document)
-      : _document(
-            MakeShared<CesiumVectorData::VectorDocument>(std::move(document))) {
-  }
+  FCesiumVectorDocument(
+      CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument>&&
+          document)
+      : _document(std::move(document)) {}
 
 private:
-  TSharedPtr<CesiumVectorData::VectorDocument> _document;
+  CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument> _document;
 
   friend class UCesiumVectorDocumentBlueprintLibrary;
 };

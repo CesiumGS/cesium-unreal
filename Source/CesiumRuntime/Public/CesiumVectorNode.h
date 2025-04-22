@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumUtility/IntrusivePointer.h"
 #include "CesiumVectorData/VectorDocument.h"
 #include "CesiumVectorData/VectorNode.h"
 #include "JsonObjectWrapper.h"
@@ -30,12 +31,13 @@ struct FCesiumVectorNode {
    * `CesiumVectorData::VectorNode`.
    */
   FCesiumVectorNode(
-      const TSharedPtr<CesiumVectorData::VectorDocument>& doc,
+      const CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument>&
+          doc,
       const CesiumVectorData::VectorNode* node)
       : _document(doc), _node(node) {}
 
 private:
-  TSharedPtr<CesiumVectorData::VectorDocument> _document;
+  CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument> _document;
   const CesiumVectorData::VectorNode* _node;
 
   friend class UCesiumVectorNodeBlueprintLibrary;
@@ -76,12 +78,13 @@ struct FCesiumVectorPrimitive {
    * `CesiumVectorData::VectorPrimitive`.
    */
   FCesiumVectorPrimitive(
-      const TSharedPtr<CesiumVectorData::VectorDocument>& document,
+      const CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument>&
+          document,
       const CesiumVectorData::VectorPrimitive* primitive)
       : _document(document), _primitive(primitive) {}
 
 private:
-  TSharedPtr<CesiumVectorData::VectorDocument> _document;
+  CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument> _document;
   const CesiumVectorData::VectorPrimitive* _primitive;
 
   friend class UCesiumVectorPrimitiveBlueprintLibrary;

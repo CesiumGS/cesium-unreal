@@ -10,7 +10,7 @@
 
 int64 UCesiumVectorNodeBlueprintLibrary::GetIdAsInteger(
     const FCesiumVectorNode& InVectorNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return -1;
   }
   const int64_t* pId = std::get_if<int64_t>(&InVectorNode._node->id);
@@ -23,7 +23,7 @@ int64 UCesiumVectorNodeBlueprintLibrary::GetIdAsInteger(
 
 FString UCesiumVectorNodeBlueprintLibrary::GetIdAsString(
     const FCesiumVectorNode& InVectorNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   struct GetIdVisitor {
@@ -39,7 +39,7 @@ FString UCesiumVectorNodeBlueprintLibrary::GetIdAsString(
 
 TArray<FCesiumVectorNode> UCesiumVectorNodeBlueprintLibrary::GetChildren(
     const FCesiumVectorNode& InVectorNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   TArray<FCesiumVectorNode> children;
@@ -99,7 +99,7 @@ jsonValueToUnrealJsonValue(const CesiumUtility::JsonValue& value) {
 
 FJsonObjectWrapper UCesiumVectorNodeBlueprintLibrary::GetProperties(
     const FCesiumVectorNode& InVectorNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   TSharedPtr<FJsonObject> object = MakeShared<FJsonObject>();
@@ -116,7 +116,7 @@ FJsonObjectWrapper UCesiumVectorNodeBlueprintLibrary::GetProperties(
 
 TArray<FCesiumVectorPrimitive> UCesiumVectorNodeBlueprintLibrary::GetPrimitives(
     const FCesiumVectorNode& InVectorNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   TArray<FCesiumVectorPrimitive> primitives;
@@ -130,7 +130,7 @@ TArray<FCesiumVectorPrimitive> UCesiumVectorNodeBlueprintLibrary::GetPrimitives(
 
 namespace {
 TArray<FCesiumVectorPrimitive> GetPrimitivesOfTypeInternal(
-    TSharedPtr<CesiumVectorData::VectorDocument> document,
+    CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument> pDocument,
     const CesiumVectorData::VectorNode& node,
     ECesiumVectorPrimitiveType InType) {
   struct CheckTypeVisitor {
@@ -149,7 +149,7 @@ TArray<FCesiumVectorPrimitive> GetPrimitivesOfTypeInternal(
   TArray<FCesiumVectorPrimitive> primitives;
   for (const CesiumVectorData::VectorPrimitive& primitive : node.primitives) {
     if (std::visit(CheckTypeVisitor{InType}, primitive)) {
-      primitives.Emplace(document, &primitive);
+      primitives.Emplace(pDocument, &primitive);
     }
   }
 
@@ -157,14 +157,14 @@ TArray<FCesiumVectorPrimitive> GetPrimitivesOfTypeInternal(
 }
 
 TArray<FCesiumVectorPrimitive> GetPrimitivesOfTypeRecursivelyInternal(
-    TSharedPtr<CesiumVectorData::VectorDocument> document,
+    CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument> pDocument,
     const CesiumVectorData::VectorNode& node,
     ECesiumVectorPrimitiveType InType) {
   TArray<FCesiumVectorPrimitive> primitives =
-      GetPrimitivesOfTypeInternal(document, node, InType);
+      GetPrimitivesOfTypeInternal(pDocument, node, InType);
   for (const CesiumVectorData::VectorNode& child : node.children) {
     TArray<FCesiumVectorPrimitive> childPrimitives =
-        GetPrimitivesOfTypeRecursivelyInternal(document, child, InType);
+        GetPrimitivesOfTypeRecursivelyInternal(pDocument, child, InType);
     for (FCesiumVectorPrimitive& childPrimitive : childPrimitives) {
       primitives.Emplace(MoveTemp(childPrimitive));
     }
@@ -177,7 +177,7 @@ TArray<FCesiumVectorPrimitive>
 UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfType(
     const FCesiumVectorNode& InVectorNode,
     ECesiumVectorPrimitiveType InType) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   return GetPrimitivesOfTypeInternal(
@@ -190,7 +190,7 @@ TArray<FCesiumVectorPrimitive>
 UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfTypeRecursively(
     const FCesiumVectorNode& InVectorNode,
     ECesiumVectorPrimitiveType InType) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   return GetPrimitivesOfTypeRecursivelyInternal(
@@ -225,7 +225,7 @@ bool UCesiumVectorNodeBlueprintLibrary::FindNodeByStringId(
     const FCesiumVectorNode& InVectorNode,
     const FString& InNodeId,
     FCesiumVectorNode& OutNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   const std::string& id = TCHAR_TO_UTF8(*InNodeId);
@@ -243,7 +243,7 @@ bool UCesiumVectorNodeBlueprintLibrary::FindNodeByIntId(
     const FCesiumVectorNode& InVectorNode,
     int64 InNodeId,
     FCesiumVectorNode& OutNode) {
-  if (!InVectorNode._document.IsValid() || InVectorNode._node == nullptr) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr) {
     return {};
   }
   const CesiumVectorData::VectorNode* pNode =
@@ -259,7 +259,7 @@ bool UCesiumVectorNodeBlueprintLibrary::FindNodeByIntId(
 ECesiumVectorPrimitiveType
 UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveType(
     const FCesiumVectorPrimitive& InPrimitive) {
-  if (!InPrimitive._document.IsValid() || InPrimitive._primitive == nullptr) {
+  if (!InPrimitive._document || InPrimitive._primitive == nullptr) {
     return {};
   }
 
@@ -283,7 +283,7 @@ UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveType(
 
 FVector UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsPoint(
     const FCesiumVectorPrimitive& InPrimitive) {
-  if (!InPrimitive._document.IsValid() || InPrimitive._primitive == nullptr) {
+  if (!InPrimitive._document || InPrimitive._primitive == nullptr) {
     return {};
   }
 
@@ -301,7 +301,7 @@ FVector UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsPoint(
 
 TArray<FVector> UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsLine(
     const FCesiumVectorPrimitive& InPrimitive) {
-  if (!InPrimitive._document.IsValid() || InPrimitive._primitive == nullptr) {
+  if (!InPrimitive._document || InPrimitive._primitive == nullptr) {
     return {};
   }
 
@@ -327,7 +327,7 @@ TArray<FVector> UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsLine(
 FCesiumCompositeCartographicPolygon
 UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveAsPolygon(
     const FCesiumVectorPrimitive& InPrimitive) {
-  if (!InPrimitive._document.IsValid() || InPrimitive._primitive == nullptr) {
+  if (!InPrimitive._document || InPrimitive._primitive == nullptr) {
     return {};
   }
 
