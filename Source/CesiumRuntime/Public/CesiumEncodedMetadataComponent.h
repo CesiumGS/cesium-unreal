@@ -55,7 +55,7 @@ enum class ECesiumFeatureTableAccessType_DEPRECATED : uint8 {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use EncodedFeaturesMetadata instead.")
+    "FPropertyDescription has been deprecated. Use FCesiumPropertyTablePropertyDescription instead.")
     FPropertyDescription;
 
 /**
@@ -103,7 +103,7 @@ struct CESIUMRUNTIME_API FPropertyDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use EncodedFeaturesMetadata instead.")
+    "FFeatureTableDescription has been deprecated. Use FCesiumPropertyTableDescription instead.")
     FFeatureTableDescription;
 
 /**
@@ -150,7 +150,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related properties have been deprecated. Use EncodedFeaturesMetadata instead.")
+    "FFeatureTexturePropertyDescription has been deprecated. Use FCesiumPropertyTexturePropertyDescription instead.")
     FFeatureTexturePropertyDescription;
 
 /**
@@ -199,7 +199,7 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use EncodedFeaturesMetadata instead.")
+    "FFeatureTextureDescription has been deprecated. Use FCesiumPropertyTextureDescription instead.")
     FFeatureTextureDescription;
 
 /**
@@ -225,12 +225,7 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use EncodedFeaturesMetadata instead.")
-    FMetadataDescription;
-
-struct UE_DEPRECATED(
-    5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use EncodedFeaturesMetadata instead.")
+    "FMetadataDescription has been deprecated. Use FCesiumModelMetadataDescription instead.")
     FMetadataDescription;
 
 /**
