@@ -7,13 +7,15 @@
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
 #include "CesiumRasterOverlays/VectorDocumentRasterOverlay.h"
+#include "CesiumVectorData/VectorRasterizerStyle.h"
 
 #include "CesiumRuntime.h"
 
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
-  if (!this->VectorDocument.IsValid()) {
+  if (this->Source == ECesiumVectorDocumentRasterOverlaySource::FromDocument &&
+      !this->VectorDocument.IsValid()) {
     // Don't create an overlay with an invalid document.
     return nullptr;
   }
@@ -28,14 +30,37 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     projection = CesiumGeospatial::WebMercatorProjection(ellipsoid);
   }
 
-  return std::make_unique<CesiumRasterOverlays::VectorDocumentRasterOverlay>(
-      TCHAR_TO_UTF8(*this->MaterialLayerKey),
-      this->VectorDocument.GetDocument(),
+  CesiumVectorData::VectorRasterizerStyle style{
       CesiumVectorData::Color{
           std::byte{this->Color.R},
           std::byte{this->Color.G},
           std::byte{this->Color.B},
           std::byte{this->Color.A}},
+      this->LineWidth,
+      (CesiumVectorData::VectorLineWidthMode)this->LineWidthMode};
+
+  if (this->Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon) {
+    if (!IsValid(this->CesiumIonServer)) {
+      this->CesiumIonServer = UCesiumIonServer::GetServerForNewObjects();
+    }
+
+    return std::make_unique<CesiumRasterOverlays::VectorDocumentRasterOverlay>(
+        TCHAR_TO_UTF8(*this->MaterialLayerKey),
+        CesiumRasterOverlays::IonVectorDocumentRasterOverlaySource{
+            this->IonAssetID,
+            TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken),
+            TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)},
+        style,
+        projection,
+        ellipsoid,
+        options);
+  }
+
+  return std::make_unique<CesiumRasterOverlays::VectorDocumentRasterOverlay>(
+      TCHAR_TO_UTF8(*this->MaterialLayerKey),
+      this->VectorDocument.GetDocument(),
+      style,
       projection,
+      ellipsoid,
       options);
 }
