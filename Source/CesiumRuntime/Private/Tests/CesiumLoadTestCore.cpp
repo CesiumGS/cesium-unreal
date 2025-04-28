@@ -7,6 +7,7 @@
 #include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumRuntime.h"
 
+#include "CesiumTestHelpers.h"
 #include "Editor.h"
 #include "Settings/LevelEditorPlaySettings.h"
 #include "Tests/AutomationCommon.h"
@@ -166,6 +167,8 @@ bool RunLoadTest(
     int viewportHeight,
     ReportCallback optionalReportStep) {
 
+  CesiumTestHelpers::pushAllowTickInEditor();
+
   LoadTestContext& context = gLoadTestContext;
 
   context.reset();
@@ -240,6 +243,8 @@ bool RunLoadTest(
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
 
   ADD_LATENT_AUTOMATION_COMMAND(TestCleanupCommand(context));
+
+  CesiumTestHelpers::popAllowTickInEditor();
 
   return true;
 }
