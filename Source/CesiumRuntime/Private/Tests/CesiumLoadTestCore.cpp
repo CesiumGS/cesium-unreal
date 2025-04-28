@@ -28,6 +28,7 @@ LoadTestContext gLoadTestContext;
 bool TimeLoadingCommand::Update() {
 
   if (!pass.testInProgress) {
+    CesiumTestHelpers::pushAllowTickInEditor();
 
     // Set up the world for this pass
     playContext.syncWorldCamera();
@@ -64,6 +65,9 @@ bool TimeLoadingCommand::Update() {
         pass.elapsedTime);
     // Command is done
     pass.testInProgress = false;
+
+    CesiumTestHelpers::popAllowTickInEditor();
+
     return true;
   }
 
@@ -89,6 +93,8 @@ bool TimeLoadingCommand::Update() {
           pass.elapsedTime);
 
       pass.testInProgress = false;
+
+      CesiumTestHelpers::popAllowTickInEditor();
 
       // Command is done
       return true;
@@ -167,8 +173,6 @@ bool RunLoadTest(
     int viewportHeight,
     ReportCallback optionalReportStep) {
 
-  CesiumTestHelpers::pushAllowTickInEditor();
-
   LoadTestContext& context = gLoadTestContext;
 
   context.reset();
@@ -243,8 +247,6 @@ bool RunLoadTest(
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
 
   ADD_LATENT_AUTOMATION_COMMAND(TestCleanupCommand(context));
-
-  CesiumTestHelpers::popAllowTickInEditor();
 
   return true;
 }
