@@ -71,9 +71,10 @@ bool SceneGenerationContext::areTilesetsDoneLoading() {
     UE_LOG(
         LogCesium,
         Display,
-        TEXT("Tileset %s Percent Loaded %f"),
+        TEXT("Tileset %s Percent Loaded %f Suspended %d"),
         *tileset->GetName(),
-        progress);
+        progress,
+        (int)tileset->SuspendUpdate);
     if (progress < 100.0f) {
       // We aren't done
       return false;
