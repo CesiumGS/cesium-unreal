@@ -53,6 +53,7 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
         style,
         projection,
         ellipsoid,
+        (uint32_t)this->MipLevels,
         options);
   }
 
@@ -62,5 +63,6 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
       style,
       projection,
       ellipsoid,
+      (uint32_t)this->MipLevels,
       options);
 }

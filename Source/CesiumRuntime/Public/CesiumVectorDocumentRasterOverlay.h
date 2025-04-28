@@ -81,10 +81,17 @@ public:
                "Source == ECesiumVectorDocumentRasterOverlaySource::FromDocument"))
   FCesiumVectorDocument VectorDocument;
 
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (ClampMin = "0", ClampMax = "8"))
+  int32 MipLevels = 0;
+
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FColor Color = FColor(0, 0, 0, 255);
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium", meta=(ClampMin = "0"))
   double LineWidth = 1.0;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
