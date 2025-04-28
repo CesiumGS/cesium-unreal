@@ -146,6 +146,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
       GEngine->GetEngineSubsystem<UCesiumCreditSystemBPLoader>();
     UClass* CesiumCreditSystemBP =
         Cast<UClass>(bpLoader->CesiumCreditSystemBP.LoadSynchronous());
+    pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
         CesiumCreditSystemBP,
         spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
