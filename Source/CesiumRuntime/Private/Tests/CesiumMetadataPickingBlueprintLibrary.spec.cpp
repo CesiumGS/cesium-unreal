@@ -1366,4 +1366,117 @@ void FCesiumMetadataPickingSpec::Define() {
     });
   });
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  Describe("FindPropertyTableProperty", [this]() {
+    BeforeEach([this]() {
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
+      pPrimitive = &mesh.primitives.emplace_back();
+
+      pMeshFeatures =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
+      pModelMetadata =
+          &model
+               .addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+
+      CesiumGltf::FeatureId& featureIdSet =
+          pMeshFeatures->featureIds.emplace_back();
+      featureIdSet.propertyTable = 0;
+
+      std::string className = "testClass";
+      pModelMetadata->schema.emplace();
+      pModelMetadata->schema->classes[className];
+
+      pPropertyTable = &pModelMetadata->propertyTables.emplace_back();
+      pPropertyTable->classProperty = className;
+
+      pModelComponent = NewObject<UCesiumGltfComponent>();
+      pPrimitiveComponent =
+          NewObject<UCesiumGltfPrimitiveComponent>(pModelComponent);
+      pPrimitiveComponent->AttachToComponent(
+          pModelComponent,
+          FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+      pPrimitiveComponent->getPrimitiveData().pMeshPrimitive = pPrimitive;
+    });
+
+    It("returns invalid instance for nonexistent property", [this]() {
+      FCesiumPropertyTableProperty property =
+          UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+              pPrimitiveComponent,
+              FString("nonexistent property"));
+      TestEqual(
+          "PropertyTablePropertyStatus",
+          UCesiumPropertyTablePropertyBlueprintLibrary::
+              GetPropertyTablePropertyStatus(property),
+          ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
+      TestEqual<int64>(
+          "Size",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
+              property),
+          static_cast<int64_t>(0));
+    });
+
+    It("finds existing properties", [this]() {
+      std::string scalarPropertyName("scalarProperty");
+      std::vector<int32_t> scalarValues{1, 2, 3, 4};
+      pPropertyTable->count = static_cast<int64_t>(scalarValues.size());
+      AddPropertyTablePropertyToModel(
+          model,
+          *pPropertyTable,
+          scalarPropertyName,
+          CesiumGltf::ClassProperty::Type::SCALAR,
+          CesiumGltf::ClassProperty::ComponentType::INT32,
+          scalarValues);
+
+      std::string vec2PropertyName("vec2Property");
+      std::vector<glm::vec2> vec2Values{
+          glm::vec2(1.0f, 2.5f),
+          glm::vec2(-0.7f, 4.9f),
+          glm::vec2(8.0f, 2.0f),
+          glm::vec2(11.0f, 0.0f),
+      };
+      AddPropertyTablePropertyToModel(
+          model,
+          *pPropertyTable,
+          vec2PropertyName,
+          CesiumGltf::ClassProperty::Type::VEC2,
+          CesiumGltf::ClassProperty::ComponentType::FLOAT32,
+          vec2Values);
+
+      pModelComponent->Metadata = FCesiumModelMetadata(model, *pModelMetadata);
+      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
+      primData.Features =
+          FCesiumPrimitiveFeatures(model, *pPrimitive, *pMeshFeatures);
+
+      FCesiumPropertyTableProperty scalarProperty =
+          UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+              pPrimitiveComponent,
+              FString(scalarPropertyName.c_str()));
+      TestEqual(
+          "PropertyTablePropertyStatus",
+          UCesiumPropertyTablePropertyBlueprintLibrary::
+              GetPropertyTablePropertyStatus(scalarProperty),
+          ECesiumPropertyTablePropertyStatus::Valid);
+      TestEqual<int64>(
+          "Size",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
+              scalarProperty),
+          static_cast<int64>(scalarValues.size()));
+
+      FCesiumPropertyTableProperty vec2Property =
+          UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+              pPrimitiveComponent,
+              FString(vec2PropertyName.c_str()));
+      TestEqual(
+          "PropertyTablePropertyStatus",
+          UCesiumPropertyTablePropertyBlueprintLibrary::
+              GetPropertyTablePropertyStatus(vec2Property),
+          ECesiumPropertyTablePropertyStatus::Valid);
+      TestEqual<int64>(
+          "Size",
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
+              vec2Property),
+          static_cast<int64>(vec2Values.size()));
+    });
+  });
 }
