@@ -98,8 +98,6 @@ UCLASS(BlueprintType)
 class UCesiumGeocoderServiceFeature : public UObject {
   GENERATED_BODY()
 public:
-  UCesiumGeocoderServiceFeature();
-
   /**
    * @brief Returns a position in Longitude, Latitude, and Height representing
    * this feature.

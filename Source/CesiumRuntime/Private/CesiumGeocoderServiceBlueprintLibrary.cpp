@@ -6,8 +6,6 @@ FCesiumGeocoderServiceAttribution::FCesiumGeocoderServiceAttribution(
     : Html(UTF8_TO_TCHAR(attribution.html.c_str())),
       bShowOnScreen(attribution.showOnScreen) {}
 
-UCesiumGeocoderServiceFeature::UCesiumGeocoderServiceFeature() : _feature() {}
-
 FVector UCesiumGeocoderServiceFeature::GetCartographic() const {
   if (!this->_feature) {
     return FVector::Zero();
