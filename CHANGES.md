@@ -11,6 +11,7 @@
 - Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
 - The "unsupported primitive mode" warning is now only logged once to avoid console spam.
 - Request cache will now use `FPaths::ProjectUserDir` instead of `FPaths::EngineUserDir` on non-Android and non-iOS platforms, fixing a permissions issue in Development builds.
+- Fixed a build issue with KTX-Software's overlay port on Windows when there is no bash.exe in the system PATH and Git-for-windows is installed in a non-default directory.
 
 ### v2.15.0 - 2025-04-01
 
