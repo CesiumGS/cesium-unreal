@@ -165,6 +165,35 @@ bool InitForPlayWhenReady::Update() {
   return true;
 }
 
+bool SetPlayerViewportSize::Update() {
+  for (auto playerControllerIt =
+           playContext.world->GetPlayerControllerIterator();
+       playerControllerIt;
+       playerControllerIt++) {
+    const TWeakObjectPtr<APlayerController> pPlayerController =
+        *playerControllerIt;
+    if (pPlayerController == nullptr) {
+      continue;
+    }
+
+    const APlayerCameraManager* pPlayerCameraManager =
+        pPlayerController->PlayerCameraManager;
+
+    if (!pPlayerCameraManager) {
+      continue;
+    }
+
+    ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+    if (LocPlayer && LocPlayer->ViewportClient &&
+        LocPlayer->ViewportClient->Viewport) {
+      LocPlayer->ViewportClient->Viewport->SetInitialSize(
+          FIntPoint(viewportWidth, viewportHeight));
+    }
+  }
+
+  return true;
+}
+
 bool RunLoadTest(
     const FString& testName,
     std::function<void(SceneGenerationContext&)> locationSetup,
@@ -213,11 +242,21 @@ bool RunLoadTest(
   Params.EditorPlaySettings->NewWindowWidth = viewportWidth;
   Params.EditorPlaySettings->NewWindowHeight = viewportHeight;
   Params.EditorPlaySettings->EnableGameSound = false;
+  Params.EditorPlaySettings->SetClientWindowSize(
+      FIntPoint(viewportWidth, viewportHeight));
   GEditor->RequestPlaySession(Params);
 
   // Wait until PIE is ready
   ADD_LATENT_AUTOMATION_COMMAND(
       InitForPlayWhenReady(context.creationContext, context.playContext));
+
+  // Make sure the player viewport is the correct size. This will not be the
+  // case otherwise in headless UE 5.5.
+  ADD_LATENT_AUTOMATION_COMMAND(SetPlayerViewportSize(
+      context.creationContext,
+      context.playContext,
+      viewportWidth,
+      viewportHeight));
 
   // Wait to show distinct gap in profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
