@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Cesium3DTileset.h"
-#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
 #include "CesiumRasterOverlays.h"
+#include "EncodedFeaturesMetadata.h"
 #include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
@@ -39,12 +39,12 @@ public:
   /**
    * The encoded representation of the primitive's EXT_mesh_features extension.
    */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
+  EncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
   /**
    * The encoded representation of the primitive's EXT_structural_metadata
    * extension.
    */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata;
+  EncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**

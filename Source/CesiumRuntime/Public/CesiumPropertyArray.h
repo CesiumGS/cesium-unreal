@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyArrayView.h"
-#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
 #include "UObject/ObjectMacros.h"
+
+#include <CesiumGltf/PropertyArrayView.h>
+#include <CesiumGltf/PropertyTypeTraits.h>
 #include <swl/variant.hpp>
 #include "CesiumPropertyArray.generated.h"
 
