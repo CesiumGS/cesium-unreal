@@ -67,15 +67,8 @@ bool SceneGenerationContext::areTilesetsDoneLoading() {
   for (it = tilesets.begin(); it != tilesets.end(); ++it) {
     ACesium3DTileset* tileset = *it;
 
-    float progress = tileset->GetLoadProgress();
-    UE_LOG(
-        LogCesium,
-        Display,
-        TEXT("Tileset %s Percent Loaded %f Suspended %d"),
-        *tileset->GetName(),
-        progress,
-        (int)tileset->SuspendUpdate);
-    if (progress < 100.0f) {
+    int progress = (int)tileset->GetLoadProgress();
+    if (progress != 100) {
       // We aren't done
       return false;
     }
