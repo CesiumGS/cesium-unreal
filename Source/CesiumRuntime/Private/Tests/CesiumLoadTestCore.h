@@ -64,6 +64,17 @@ DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
     SceneGenerationContext&,
     playContext);
 
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
+    SetPlayerViewportSize,
+    SceneGenerationContext&,
+    creationContext,
+    SceneGenerationContext&,
+    playContext,
+    int,
+    viewportWidth,
+    int,
+    viewportHeight);
+
 }; // namespace Cesium
 
 #endif
