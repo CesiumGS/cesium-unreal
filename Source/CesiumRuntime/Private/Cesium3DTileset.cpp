@@ -2062,11 +2062,22 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
   if (this->_captureMovieMode) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
-    pResult = &this->_pTileset->updateViewOffline(frustums);
+    pResult = &this->_pTileset->updateViewGroupOffline(
+        this->_pTileset->getDefaultViewGroup(),
+        frustums);
   } else {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
-    pResult = &this->_pTileset->updateView(frustums, DeltaTime);
+    pResult = &this->_pTileset->updateViewGroup(
+        this->_pTileset->getDefaultViewGroup(),
+        frustums,
+        DeltaTime);
   }
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTiles)
+    this->_pTileset->loadTiles();
+  }
+
   updateLastViewUpdateResultState(*pResult);
 
   removeCollisionForTiles(pResult->tilesFadingOut);
