@@ -143,7 +143,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     spawnParameters.OverrideLevel = world->PersistentLevel;
     UCesiumCreditSystemBPLoader* bpLoader =
-      GEngine->GetEngineSubsystem<UCesiumCreditSystemBPLoader>();
+        GEngine->GetEngineSubsystem<UCesiumCreditSystemBPLoader>();
     UClass* CesiumCreditSystemBP =
         Cast<UClass>(bpLoader->CesiumCreditSystemBP.LoadSynchronous());
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
