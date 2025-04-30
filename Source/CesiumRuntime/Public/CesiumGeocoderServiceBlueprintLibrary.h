@@ -103,8 +103,15 @@ public:
       const CesiumIonClient::GeocoderFeature& feature);
 
   /**
-   * @brief Returns a position in Longitude, Latitude, and Height representing
-   * this feature.
+   * @brief The position of the feature expressed as longitude in degrees (X),
+   * latitude in degrees (Y), and height in meters above the ellipsoid (Z).
+   *
+   * Do not confuse the ellipsoid height with a geoid height or height above
+   * mean sea level, which can be tens of meters higher or lower depending on
+   * where in the world the object is located.
+   *
+   * The height may be 0.0, indicating that the geocoder did not provide a
+   * height for the feature.
    *
    * If the geocoder service returned a bounding box for this result, this will
    * return the center of the bounding box. If the geocoder service returned a
@@ -114,11 +121,13 @@ public:
       BlueprintReadOnly,
       Category = "Cesium|Geocoder",
       meta = (AllowPrivateAccess))
-  FVector Cartographic;
+  FVector LongitudeLatitudeHeight;
 
   /**
-   * @brief Returns an FBox representing this feature. `FBox::Min` will hold the
-   * southwest corner while `FBox::Max` will hold the northwest corner.
+   * @brief The globe rectangle that bounds the feature. The box's `Min.X` is
+   * the Westernmost longitude in degrees, `Min.Y` is the Southernmost latitude
+   * in degrees, `Max.X` is the Easternmost longitude in degrees, and `Max.Y` is
+   * the Northernmost latitude in degrees.
    *
    * If the geocoder service returned a bounding box for this result, this will
    * return the bounding box. If the geocoder service returned a coordinate for

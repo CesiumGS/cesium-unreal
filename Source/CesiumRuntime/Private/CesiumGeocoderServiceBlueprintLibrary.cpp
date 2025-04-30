@@ -25,7 +25,7 @@ FCesiumGeocoderServiceFeature::FCesiumGeocoderServiceFeature(
           northEast.height));
 
   const CesiumGeospatial::Cartographic cartographic = feature.getCartographic();
-  this->Cartographic = FVector(
+  this->LongitudeLatitudeHeight = FVector(
       CesiumUtility::Math::radiansToDegrees(cartographic.longitude),
       CesiumUtility::Math::radiansToDegrees(cartographic.latitude),
       cartographic.height);
