@@ -1,5 +1,5 @@
 #include "CesiumITwinAPIBlueprintLibrary.h"
-
+#include "Async/Async.h"
 #include "CesiumITwinCesiumCuratedContentRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include <CesiumUtility/Result.h>
