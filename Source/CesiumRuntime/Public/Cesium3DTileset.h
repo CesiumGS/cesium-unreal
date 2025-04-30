@@ -83,7 +83,27 @@ enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from the georeference ellipsoid.
    */
-  FromEllipsoid UMETA(DisplayName = "From Ellipsoid")
+  FromEllipsoid UMETA(DisplayName = "From Ellipsoid"),
+
+  /**
+   * The tileset will be loaded from the Bentley iTwin Cesium Curated Content
+   * API using the provided ITwinCesiumContentID and ITwinAccessToken.
+   */
+  FromITwinCesiumCuratedContent UMETA(
+      DisplayName = "From iTwin Cesium Curated Content"),
+
+  /**
+   * The tileset will be loaded from the iModel Mesh Export Service using the
+   * provided IModelID and ITwinAccessToken.
+   */
+  FromIModelMeshExportService UMETA(
+      DisplayName = "From iModel Mesh Export Service"),
+
+  /**
+   * The tileset will be loaded from the iModel Mesh Export Service using the
+   * provided RealityDataID and ITwinAccessToken.
+   */
+  FromITwinRealityData UMETA(DisplayName = "From iTwin Reality Data")
 };
 
 UENUM(BlueprintType)
@@ -765,6 +785,87 @@ private:
   UCesiumIonServer* CesiumIonServer;
 
   /**
+   * The ID of the iTwin Cesium Curated Content asset to use.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iTwin Cesium
+   * Curated Content"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetITwinCesiumContentID,
+      BlueprintSetter = SetITwinCesiumContentID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent",
+           ClampMin = 0))
+  int64 ITwinCesiumContentID;
+
+  /**
+   * The ID of the iModel to use when interacting with the iModel Mesh Export
+   * Service.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iModel Mesh
+   * Export Service"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIModelID,
+      BlueprintSetter = SetIModelID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromIModelMeshExportService"))
+  FString IModelID;
+
+  /**
+   * The ID of the iTwin Reality Data to use when interacting with the Reality
+   * Data service.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iTwin Reality
+   * Data"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRealityDataID,
+      BlueprintSetter = SetRealityDataID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinRealityData"))
+  FString RealityDataID;
+
+  /**
+   * The ID of the iTwin to use when interacting with the Reality
+   * Data service.
+   *
+   * This property is ignored if TilesetSource isn't set to "From iTwin Reality
+   * Data"
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetITwinID,
+      BlueprintSetter = SetITwinID,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinRealityData"))
+  FString ITwinID;
+
+  /**
+   * The access token to use to access the iTwin resource.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetITwinAccessToken,
+      BlueprintSetter = SetITwinAccessToken,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent || TilesetSource==ETilesetSource::FromIModelMeshExportService || TilesetSource==ETilesetSource::FromITwinRealityData"))
+  FString ITwinAccessToken;
+
+  /**
    * Headers to be attached to each request made for this tileset.
    */
   UPROPERTY(
@@ -1037,6 +1138,36 @@ public:
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  int64 GetITwinCesiumContentID() const { return ITwinCesiumContentID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetITwinCesiumContentID(int64 InContentID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetIModelID() const { return IModelID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetIModelID(const FString& InModelID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetRealityDataID() const { return RealityDataID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetRealityDataID(const FString& InModelID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetITwinID() const { return ITwinID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetITwinID(const FString& InITwinID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetITwinAccessToken() const { return ITwinAccessToken; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetITwinAccessToken(const FString& InAccessToken);
 
   UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
   TArray<URuntimeVirtualTexture*> GetRuntimeVirtualTextures() const {

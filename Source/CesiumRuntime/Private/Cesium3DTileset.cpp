@@ -433,6 +433,53 @@ void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   }
 }
 
+void ACesium3DTileset::SetITwinCesiumContentID(int64 InContentID) {
+  if (InContentID >= 0 && InContentID != this->ITwinCesiumContentID) {
+    if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent) {
+      this->DestroyTileset();
+    }
+    this->ITwinCesiumContentID = InContentID;
+  }
+}
+
+void ACesium3DTileset::SetIModelID(const FString& InModelID) {
+  if (InModelID != this->IModelID) {
+    if (this->TilesetSource == ETilesetSource::FromIModelMeshExportService) {
+      this->DestroyTileset();
+    }
+    this->IModelID = InModelID;
+  }
+}
+
+void ACesium3DTileset::SetRealityDataID(const FString& InRealityDataID) {
+  if (InRealityDataID != this->RealityDataID) {
+    if (this->TilesetSource == ETilesetSource::FromITwinRealityData) {
+      this->DestroyTileset();
+    }
+    this->RealityDataID = InRealityDataID;
+  }
+}
+
+void ACesium3DTileset::SetITwinID(const FString& InITwinID) {
+  if (InITwinID != this->ITwinID) {
+    if (this->TilesetSource == ETilesetSource::FromITwinRealityData) {
+      this->DestroyTileset();
+    }
+    this->ITwinID = InITwinID;
+  }
+}
+
+void ACesium3DTileset::SetITwinAccessToken(const FString& InAccessToken) {
+  if (this->ITwinAccessToken != InAccessToken) {
+    if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent ||
+        this->TilesetSource == ETilesetSource::FromIModelMeshExportService ||
+        this->TilesetSource == ETilesetSource::FromITwinRealityData) {
+      this->DestroyTileset();
+    }
+    this->ITwinAccessToken = InAccessToken;
+  }
+}
+
 void ACesium3DTileset::SetCesiumIonServer(UCesiumIonServer* Server) {
   if (this->CesiumIonServer != Server) {
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
@@ -1107,29 +1154,78 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
-    FString token = this->IonAccessToken.IsEmpty()
-                        ? this->CesiumIonServer->DefaultIonAccessToken
-                        : this->IonAccessToken;
+    {
+      FString token = this->IonAccessToken.IsEmpty()
+                          ? this->CesiumIonServer->DefaultIonAccessToken
+                          : this->IonAccessToken;
 
 #if WITH_EDITOR
-    this->CesiumIonServer->ResolveApiUrl();
+      this->CesiumIonServer->ResolveApiUrl();
 #endif
 
-    std::string ionAssetEndpointUrl =
-        TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
+      std::string ionAssetEndpointUrl =
+          TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl);
 
-    if (!ionAssetEndpointUrl.empty()) {
-      // Make sure the URL ends with a slash
-      if (!ionAssetEndpointUrl.empty() && *ionAssetEndpointUrl.rbegin() != '/')
-        ionAssetEndpointUrl += '/';
+      if (!ionAssetEndpointUrl.empty()) {
+        // Make sure the URL ends with a slash
+        if (!ionAssetEndpointUrl.empty() &&
+            *ionAssetEndpointUrl.rbegin() != '/')
+          ionAssetEndpointUrl += '/';
 
-      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-          externals,
-          static_cast<uint32_t>(this->IonAssetID),
-          TCHAR_TO_UTF8(*token),
-          options,
-          ionAssetEndpointUrl);
+        this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+            externals,
+            static_cast<uint32_t>(this->IonAssetID),
+            TCHAR_TO_UTF8(*token),
+            options,
+            ionAssetEndpointUrl);
+      }
     }
+    break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d"),
+        this->ITwinCesiumContentID);
+
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+        externals,
+        Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory(
+            static_cast<uint32_t>(this->ITwinCesiumContentID),
+            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+        options);
+    break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading mesh export for iModel ID %s"),
+        *this->IModelID);
+
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+        externals,
+        Cesium3DTilesSelection::IModelMeshExportContentLoaderFactory(
+            TCHAR_TO_UTF8(*this->IModelID),
+            std::nullopt,
+            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+        options);
+    break;
+  case ETilesetSource::FromITwinRealityData:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading reality data ID %s"),
+        *this->RealityDataID);
+
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+        externals,
+        Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory(
+            TCHAR_TO_UTF8(*this->RealityDataID),
+            this->ITwinID.IsEmpty() ? std::nullopt
+                                    : std::make_optional<std::string>(
+                                          TCHAR_TO_UTF8(*this->ITwinID)),
+            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+        options);
     break;
   }
 
@@ -1180,6 +1276,27 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading tileset for asset ID %d done"),
         this->IonAssetID);
     break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d done"),
+        this->ITwinCesiumContentID);
+    break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading mesh export for iModel ID %s done"),
+        *this->IModelID);
+    break;
+  case ETilesetSource::FromITwinRealityData:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading reality data ID %s done"),
+        *this->RealityDataID);
+    break;
   }
 
   switch (ApplyDpiScaling) {
@@ -1220,6 +1337,27 @@ void ACesium3DTileset::DestroyTileset() {
         Verbose,
         TEXT("Destroying tileset for asset ID %d"),
         this->IonAssetID);
+    break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset for asset ID %d"),
+        this->ITwinCesiumContentID);
+    break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Destroying tileset for iModel ID %s"),
+        *this->IModelID);
+    break;
+  case ETilesetSource::FromITwinRealityData:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Destroying tileset for reality data ID %s done"),
+        *this->RealityDataID);
     break;
   }
 
@@ -1278,6 +1416,27 @@ void ACesium3DTileset::DestroyTileset() {
         Verbose,
         TEXT("Destroying tileset for asset ID %d done"),
         this->IonAssetID);
+    break;
+  case ETilesetSource::FromITwinCesiumCuratedContent:
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset for asset ID %d done"),
+        this->ITwinCesiumContentID);
+    break;
+  case ETilesetSource::FromIModelMeshExportService:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Destroying tileset for iModel ID %s done"),
+        *this->IModelID);
+    break;
+  case ETilesetSource::FromITwinRealityData:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Destroying tileset for reality data ID %s done"),
+        *this->RealityDataID);
     break;
   }
 }
@@ -2147,6 +2306,12 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinCesiumContentID) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IModelID) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RealityDataID) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinID) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinAccessToken) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==
