@@ -72,7 +72,7 @@ USTRUCT(BlueprintType)
 struct FCesiumGeocoderServiceAttribution {
   GENERATED_BODY()
 public:
-  FCesiumGeocoderServiceAttribution() {}
+  FCesiumGeocoderServiceAttribution() = default;
   FCesiumGeocoderServiceAttribution(
       const CesiumIonClient::GeocoderAttribution& attribution);
 
@@ -94,10 +94,14 @@ public:
  * @brief A single feature (a location or region) obtained from a geocoder
  * service.
  */
-UCLASS(BlueprintType)
-class UCesiumGeocoderServiceFeature : public UObject {
+USTRUCT(BlueprintType)
+struct FCesiumGeocoderServiceFeature {
   GENERATED_BODY()
 public:
+  FCesiumGeocoderServiceFeature() = default;
+  FCesiumGeocoderServiceFeature(
+      const CesiumIonClient::GeocoderFeature& feature);
+
   /**
    * @brief Returns a position in Longitude, Latitude, and Height representing
    * this feature.
@@ -106,8 +110,11 @@ public:
    * return the center of the bounding box. If the geocoder service returned a
    * coordinate for this result, this will return the coordinate.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|Geocoder")
-  FVector GetCartographic() const;
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium|Geocoder",
+      meta = (AllowPrivateAccess))
+  FVector Cartographic;
 
   /**
    * @brief Returns an FBox representing this feature. `FBox::Min` will hold the
@@ -117,19 +124,20 @@ public:
    * return the bounding box. If the geocoder service returned a coordinate for
    * this result, this will return a zero-width rectangle at that coordinate.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|Geocoder")
-  FBox GetGlobeRectangle() const;
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium|Geocoder",
+      meta = (AllowPrivateAccess))
+  FBox GlobeRectangle;
 
   /**
    * @brief The user-friendly display name of this feature.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|Geocoder")
-  FString GetDisplayName() const;
-
-  void SetFeature(CesiumIonClient::GeocoderFeature&& feature);
-
-private:
-  std::optional<CesiumIonClient::GeocoderFeature> _feature;
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium|Geocoder",
+      meta = (AllowPrivateAccess))
+  FString DisplayName;
 };
 
 /**
@@ -139,7 +147,7 @@ UCLASS(BlueprintType)
 class UCesiumGeocoderServiceResult : public UObject {
   GENERATED_BODY()
 public:
-  UCesiumGeocoderServiceResult() {}
+  UCesiumGeocoderServiceResult() = default;
 
   /**
    * @brief Any necessary attributions for this geocoder result.
@@ -151,7 +159,7 @@ public:
    * @brief The features obtained from this geocoder service, if any.
    */
   UPROPERTY(BlueprintReadOnly, Category = "Cesium|Geocoder")
-  TArray<UCesiumGeocoderServiceFeature*> Features;
+  TArray<FCesiumGeocoderServiceFeature> Features;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(

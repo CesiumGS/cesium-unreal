@@ -1,4 +1,5 @@
 #include "CesiumGeocoderServiceBlueprintLibrary.h"
+#include "CesiumIonServer.h"
 #include "CesiumRuntime.h"
 
 FCesiumGeocoderServiceAttribution::FCesiumGeocoderServiceAttribution(
@@ -6,29 +7,14 @@ FCesiumGeocoderServiceAttribution::FCesiumGeocoderServiceAttribution(
     : Html(UTF8_TO_TCHAR(attribution.html.c_str())),
       bShowOnScreen(attribution.showOnScreen) {}
 
-FVector UCesiumGeocoderServiceFeature::GetCartographic() const {
-  if (!this->_feature) {
-    return FVector::Zero();
-  }
+FCesiumGeocoderServiceFeature::FCesiumGeocoderServiceFeature(
+    const CesiumIonClient::GeocoderFeature& feature) {
+  this->DisplayName = UTF8_TO_TCHAR(feature.displayName.c_str());
 
-  const CesiumGeospatial::Cartographic cartographic =
-      this->_feature->getCartographic();
-  return FVector(
-      CesiumUtility::Math::radiansToDegrees(cartographic.longitude),
-      CesiumUtility::Math::radiansToDegrees(cartographic.latitude),
-      cartographic.height);
-}
-
-FBox UCesiumGeocoderServiceFeature::GetGlobeRectangle() const {
-  if (!this->_feature) {
-    return FBox();
-  }
-
-  const CesiumGeospatial::GlobeRectangle rect =
-      this->_feature->getGlobeRectangle();
+  const CesiumGeospatial::GlobeRectangle rect = feature.getGlobeRectangle();
   const CesiumGeospatial::Cartographic southWest = rect.getSouthwest();
   const CesiumGeospatial::Cartographic northEast = rect.getNortheast();
-  return FBox(
+  this->GlobeRectangle = FBox(
       FVector(
           CesiumUtility::Math::radiansToDegrees(southWest.longitude),
           CesiumUtility::Math::radiansToDegrees(southWest.latitude),
@@ -37,19 +23,12 @@ FBox UCesiumGeocoderServiceFeature::GetGlobeRectangle() const {
           CesiumUtility::Math::radiansToDegrees(northEast.longitude),
           CesiumUtility::Math::radiansToDegrees(northEast.latitude),
           northEast.height));
-}
 
-FString UCesiumGeocoderServiceFeature::GetDisplayName() const {
-  if (!this->_feature) {
-    return FString();
-  }
-
-  return UTF8_TO_TCHAR(this->_feature->displayName.c_str());
-}
-
-void UCesiumGeocoderServiceFeature::SetFeature(
-    CesiumIonClient::GeocoderFeature&& feature) {
-  this->_feature = std::move(feature);
+  const CesiumGeospatial::Cartographic cartographic = feature.getCartographic();
+  this->Cartographic = FVector(
+      CesiumUtility::Math::radiansToDegrees(cartographic.longitude),
+      CesiumUtility::Math::radiansToDegrees(cartographic.latitude),
+      cartographic.height);
 }
 
 UCesiumGeocoderServiceIonGeocoderAsyncAction*
@@ -59,10 +38,16 @@ UCesiumGeocoderServiceIonGeocoderAsyncAction::Geocode(
     ECesiumIonGeocoderProviderType ProviderType,
     ECesiumIonGeocoderRequestType RequestType,
     const FString& Query) {
+  UCesiumIonServer* pServer = UCesiumIonServer::GetDefaultServer();
+
   UCesiumGeocoderServiceIonGeocoderAsyncAction* pAction =
       NewObject<UCesiumGeocoderServiceIonGeocoderAsyncAction>();
-  pAction->_ionAccessToken = IonAccessToken;
-  pAction->_cesiumIonServer = CesiumIonServer;
+  pAction->_cesiumIonServer =
+      IsValid(CesiumIonServer) ? CesiumIonServer : pServer;
+  pAction->_ionAccessToken =
+      IonAccessToken.IsEmpty()
+          ? pAction->_cesiumIonServer->DefaultIonAccessToken
+          : IonAccessToken;
   pAction->_providerType = ProviderType;
   pAction->_requestType = RequestType;
   pAction->_query = Query;
@@ -70,6 +55,13 @@ UCesiumGeocoderServiceIonGeocoderAsyncAction::Geocode(
 }
 
 void UCesiumGeocoderServiceIonGeocoderAsyncAction::Activate() {
+  if (!IsValid(this->_cesiumIonServer)) {
+    this->OnGeocodeRequestComplete.Broadcast(
+        false,
+        nullptr,
+        TEXT("Could not find valid Cesium ion server object to use."));
+    return;
+  }
   CesiumIonClient::Connection::appData(
       getAsyncSystem(),
       getAssetAccessor(),
@@ -126,10 +118,7 @@ void UCesiumGeocoderServiceIonGeocoderAsyncAction::Activate() {
               pResult->Features.Reserve(response.value->features.size());
               for (CesiumIonClient::GeocoderFeature& feature :
                    response.value->features) {
-                UCesiumGeocoderServiceFeature* pFeature =
-                    NewObject<UCesiumGeocoderServiceFeature>();
-                pFeature->SetFeature(std::move(feature));
-                pResult->Features.Emplace(pFeature);
+                pResult->Features.Emplace(feature);
               }
 
               this->OnGeocodeRequestComplete.Broadcast(
