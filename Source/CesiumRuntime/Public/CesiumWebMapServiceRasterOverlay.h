@@ -81,6 +81,7 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   TMap<FString, FString> RequestHeaders;
 
+  virtual bool IsReadyForFinishDestroy() override;
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
       const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;

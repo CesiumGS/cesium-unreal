@@ -64,6 +64,7 @@ public:
   // UActorComponent overrides
   virtual void PostLoad() override;
 
+  virtual bool IsReadyForFinishDestroy() override;
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
       const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;

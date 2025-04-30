@@ -45,3 +45,8 @@ UCesiumBingMapsRasterOverlay::CreateOverlay(
       "",
       options);
 }
+
+bool UCesiumBingMapsRasterOverlay::IsReadyForFinishDestroy() {
+  this->SetUrl(TEXT("https://dev.virtualearth.net"));
+  return Super::IsReadyForFinishDestroy();
+}

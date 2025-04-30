@@ -194,3 +194,8 @@ CesiumAsync::Future<void> UCesiumIonServer::ResolveApiUrl() {
       });
 }
 #endif
+
+bool UCesiumIonRasterOverlay::IsReadyForFinishDestroy() {
+  this->SetUrl(this->CesiumIonServer->ApiUrl);
+  return Super::IsReadyForFinishDestroy();
+}

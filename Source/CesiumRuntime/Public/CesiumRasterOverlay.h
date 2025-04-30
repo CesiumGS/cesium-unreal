@@ -166,6 +166,7 @@ public:
   virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
   virtual bool IsReadyForFinishDestroy() override;
 
+  static FString ExtractCleanBaseUrl(const FString& InUrl);
 protected:
   /**
    * The maximum number of pixels of error when rendering this overlay.
@@ -257,4 +258,5 @@ protected:
 private:
   CesiumRasterOverlays::RasterOverlay* _pOverlay;
   int32 _overlaysBeingDestroyed;
+  FString _url;
 };

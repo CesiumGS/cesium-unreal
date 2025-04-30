@@ -33,3 +33,8 @@ UCesiumTileMapServiceRasterOverlay::CreateOverlay(
       tmsOptions,
       options);
 }
+
+bool UCesiumTileMapServiceRasterOverlay::IsReadyForFinishDestroy() {
+  this->SetUrl(this->Url);
+  return Super::IsReadyForFinishDestroy();
+}

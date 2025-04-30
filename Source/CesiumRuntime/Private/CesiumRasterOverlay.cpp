@@ -7,6 +7,7 @@
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumRasterOverlays/RasterOverlayLoadFailureDetails.h"
 #include "CesiumRuntime.h"
+#include "UnrealAssetAccessor.h"
 
 FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
 
@@ -56,8 +57,9 @@ void UCesiumRasterOverlay::AddToTileset() {
   options.showCreditsOnScreen = this->ShowCreditsOnScreen;
   options.rendererOptions = &this->rendererOptions;
   options.loadErrorCallback =
-      [this](const CesiumRasterOverlays::RasterOverlayLoadFailureDetails&
-                 details) {
+      [this](
+          const CesiumRasterOverlays::RasterOverlayLoadFailureDetails&
+              details) {
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::CesiumIon) ==
             uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::CesiumIon));
@@ -195,6 +197,40 @@ void UCesiumRasterOverlay::OnComponentDestroyed(bool bDestroyingHierarchy) {
 
 bool UCesiumRasterOverlay::IsReadyForFinishDestroy() {
   bool ready = Super::IsReadyForFinishDestroy();
+
+  // If the request has not ended yet, actively cancel the request
+  {
+    FScopeLock lock(&UnrealAssetAccessor::_pendingRequestsLock);
+    const FString originBaseUrl = ExtractCleanBaseUrl(_url);
+    for (const TSharedRef<IHttpRequest, ESPMode::ThreadSafe>& pRequest :
+         UnrealAssetAccessor::_pendingRequests) {
+      EHttpRequestStatus::Type status = pRequest->GetStatus();
+      if (status == EHttpRequestStatus::NotStarted ||
+          status == EHttpRequestStatus::Processing) {
+        const FString& requestUrl = pRequest->GetURL();
+        const FString requestBaseUrl = ExtractCleanBaseUrl(requestUrl);
+
+        UE_LOG(
+            LogTemp,
+            Log,
+            TEXT("WMTS URL = %s, Request URL = %s"),
+            *_url,
+            *requestUrl);
+        if (_url == TEXT("https://dev.virtualearth.net") ||
+            _url == TEXT("https://api.cesium.com")) {
+          // bing map
+          if (requestUrl.Contains(TEXT("tiles.virtualearth.net/tiles"))) {
+            pRequest->CancelRequest();
+          }
+        } else if (originBaseUrl == requestBaseUrl) {
+          // other map(china Tianditu map\mapbox sate1lite map\arcgis online
+          // world map\and other map(with kvp or restful))
+          pRequest->CancelRequest();
+        }
+      }
+    }
+  }
+
   ready &= this->_overlaysBeingDestroyed == 0;
 
   if (!ready) {
