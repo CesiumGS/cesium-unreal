@@ -22,7 +22,7 @@ struct FMetadataDescription;
 struct FCesiumPrimitiveFeaturesDescription;
 
 /**
- * DEPRECATED. Use CesiumEncodedFeaturesMetadata instead.
+ * DEPRECATED. Use EncodedFeaturesMetadata instead.
  */
 namespace CesiumEncodedMetadataUtility {
 struct EncodedMetadataProperty {
