@@ -30,14 +30,22 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     projection = CesiumGeospatial::WebMercatorProjection(ellipsoid);
   }
 
-  CesiumVectorData::VectorRasterizerStyle style{
-      CesiumVectorData::Color{
-          std::byte{this->Color.R},
-          std::byte{this->Color.G},
-          std::byte{this->Color.B},
-          std::byte{this->Color.A}},
-      this->LineWidth,
-      (CesiumVectorData::VectorLineWidthMode)this->LineWidthMode};
+  const CesiumVectorData::Color color{
+      std::byte{this->Color.R},
+      std::byte{this->Color.G},
+      std::byte{this->Color.B},
+      std::byte{this->Color.A}};
+  CesiumVectorData::VectorStyle style{
+      CesiumVectorData::LineStyle{
+          color,
+          CesiumVectorData::ColorMode::Normal,
+          this->LineWidth,
+          (CesiumVectorData::LineWidthMode)this->LineWidthMode},
+      CesiumVectorData::PolygonStyle{
+          color,
+          CesiumVectorData::ColorMode::Normal,
+          true,
+          false}};
 
   if (this->Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon) {
     if (!IsValid(this->CesiumIonServer)) {

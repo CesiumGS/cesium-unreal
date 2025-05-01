@@ -29,7 +29,7 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
             TArray<FString>());
       })
       .thenInMainThread([this](CesiumUtility::Result<
-                               CesiumITwinClient::Connection>&& connection) {
+                               CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>>&& connection) {
         if (!IsValid(this)) {
           UE_LOG(
               LogCesium,
@@ -39,7 +39,7 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
           return;
         }
 
-        if (!connection.value) {
+        if (!connection.pValue) {
           TArray<FString> Errors;
           for (const std::string& error : connection.errors.errors) {
             Errors.Emplace(UTF8_TO_TCHAR(error.c_str()));
@@ -55,12 +55,9 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
               nullptr,
               Errors);
         } else {
-          TSharedPtr<CesiumITwinClient::Connection> pInternalConnection =
-              MakeShared<CesiumITwinClient::Connection>(
-                  MoveTemp(*connection.value));
           UCesiumITwinConnection* pConnection =
               NewObject<UCesiumITwinConnection>();
-          pConnection->SetConnection(pInternalConnection);
+          pConnection->SetConnection(connection.pValue);
           this->OnAuthorizationEvent.Broadcast(
               ECesiumITwinDelegateType::Success,
               FString(),

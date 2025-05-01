@@ -55,17 +55,21 @@ class UCesiumITwinConnection : public UObject {
 public:
   UCesiumITwinConnection() : UObject(), pConnection(nullptr) {}
 
-  UCesiumITwinConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection)
+  UCesiumITwinConnection(
+      CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>&
+          pConnection)
       : UObject(), pConnection(MoveTemp(pConnection)) {}
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   bool IsValid() { return this->pConnection != nullptr; }
 
-  void SetConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection) {
+  void
+  SetConnection(CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>&
+                    pConnection) {
     this->pConnection = pConnection;
   }
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
 };
 
 UENUM(BlueprintType)
@@ -133,7 +137,7 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
 };
 
 UENUM(BlueprintType)

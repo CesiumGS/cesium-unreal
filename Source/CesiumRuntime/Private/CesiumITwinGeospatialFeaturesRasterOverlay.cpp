@@ -2,10 +2,13 @@
 
 #include "CesiumITwinGeospatialFeaturesRasterOverlay.h"
 
+#include "CesiumClientCommon/OAuth2PKCE.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeometry/QuadtreeTilingScheme.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
+#include "CesiumITwinClient/AuthenticationToken.h"
+#include "CesiumITwinClient/Connection.h"
 #include "CesiumITwinClient/ITwinGeospatialFeaturesRasterOverlay.h"
 #include "CesiumVectorData/VectorRasterizerStyle.h"
 
@@ -14,7 +17,8 @@
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumITwinGeospatialFeaturesRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
-  if (this->ITwinID.IsEmpty() || this->ITwinToken.IsEmpty() || this->CollectionID.IsEmpty()) {
+  if (this->ITwinID.IsEmpty() || this->ITwinToken.IsEmpty() ||
+      this->CollectionID.IsEmpty()) {
     // Don't create an overlay with an invalid document.
     return nullptr;
   }
@@ -29,18 +33,48 @@ UCesiumITwinGeospatialFeaturesRasterOverlay::CreateOverlay(
     projection = CesiumGeospatial::WebMercatorProjection(ellipsoid);
   }
 
-  CesiumVectorData::VectorRasterizerStyle style{
-      CesiumVectorData::Color{
-          std::byte{this->Color.R},
-          std::byte{this->Color.G},
-          std::byte{this->Color.B},
-          std::byte{this->Color.A}},
-      this->LineWidth,
-      (CesiumVectorData::VectorLineWidthMode)this->LineWidthMode};
+  const CesiumVectorData::Color color{
+      std::byte{this->Color.R},
+      std::byte{this->Color.G},
+      std::byte{this->Color.B},
+      std::byte{this->Color.A}};
+  CesiumVectorData::VectorStyle style{
+      CesiumVectorData::LineStyle{
+          color,
+          CesiumVectorData::ColorMode::Normal,
+          this->LineWidth,
+          (CesiumVectorData::LineWidthMode)this->LineWidthMode},
+      CesiumVectorData::PolygonStyle{
+          color,
+          CesiumVectorData::ColorMode::Normal,
+          true,
+          false}};
 
-  return std::make_unique<CesiumITwinClient::>(
+  CesiumUtility::Result<CesiumITwinClient::AuthenticationToken> tokenResult =
+      CesiumITwinClient::AuthenticationToken::parse(
+          TCHAR_TO_UTF8(*this->ITwinToken));
+
+  if (!tokenResult.value) {
+    tokenResult.errors.logError(
+        spdlog::default_logger(),
+        "Invalid ITwinToken: ");
+    return nullptr;
+  }
+
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
+  pConnection.emplace(
+      getAsyncSystem(),
+      getAssetAccessor(),
+      *tokenResult.value,
+      std::nullopt,
+      CesiumClientCommon::OAuth2ClientOptions{});
+
+  return std::make_unique<
+      CesiumITwinClient::ITwinGeospatialFeaturesRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
-      this->VectorDocument.GetDocument(),
+      TCHAR_TO_UTF8(*this->ITwinID),
+      TCHAR_TO_UTF8(*this->CollectionID),
+      pConnection,
       style,
       projection,
       ellipsoid,
