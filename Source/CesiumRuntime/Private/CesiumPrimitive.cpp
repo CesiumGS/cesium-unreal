@@ -5,10 +5,8 @@
 void CesiumPrimitiveData::destroy() {
   this->Features = FCesiumPrimitiveFeatures();
   this->Metadata = FCesiumPrimitiveMetadata();
-  this->EncodedFeatures =
-      CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures();
-  this->EncodedMetadata =
-      CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata();
+  this->EncodedFeatures = EncodedFeaturesMetadata::EncodedPrimitiveFeatures();
+  this->EncodedMetadata = EncodedFeaturesMetadata::EncodedPrimitiveMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   this->Metadata_DEPRECATED = FCesiumMetadataPrimitive();

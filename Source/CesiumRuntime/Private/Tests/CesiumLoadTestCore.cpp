@@ -7,6 +7,7 @@
 #include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumRuntime.h"
 
+#include "CesiumTestHelpers.h"
 #include "Editor.h"
 #include "Settings/LevelEditorPlaySettings.h"
 #include "Tests/AutomationCommon.h"
@@ -15,40 +16,19 @@
 
 namespace Cesium {
 
-struct LoadTestContext {
-  FString testName;
-  std::vector<TestPass> testPasses;
-
-  SceneGenerationContext creationContext;
-  SceneGenerationContext playContext;
-
-  float cameraFieldOfView = 90.0f;
-
-  ReportCallback reportStep;
-
-  void reset() {
-    testName.Reset();
-    testPasses.clear();
-    creationContext = playContext = SceneGenerationContext();
-    reportStep = nullptr;
-  }
-};
+void LoadTestContext::reset() {
+  testName.Reset();
+  testPasses.clear();
+  creationContext = playContext = SceneGenerationContext();
+  reportStep = nullptr;
+}
 
 LoadTestContext gLoadTestContext;
 
-DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
-    TimeLoadingCommand,
-    FString,
-    loggingName,
-    SceneGenerationContext&,
-    creationContext,
-    SceneGenerationContext&,
-    playContext,
-    TestPass&,
-    pass);
 bool TimeLoadingCommand::Update() {
 
   if (!pass.testInProgress) {
+    CesiumTestHelpers::pushAllowTickInEditor();
 
     // Set up the world for this pass
     playContext.syncWorldCamera();
@@ -85,6 +65,9 @@ bool TimeLoadingCommand::Update() {
         pass.elapsedTime);
     // Command is done
     pass.testInProgress = false;
+
+    CesiumTestHelpers::popAllowTickInEditor();
+
     return true;
   }
 
@@ -111,6 +94,8 @@ bool TimeLoadingCommand::Update() {
 
       pass.testInProgress = false;
 
+      CesiumTestHelpers::popAllowTickInEditor();
+
       // Command is done
       return true;
     }
@@ -120,10 +105,6 @@ bool TimeLoadingCommand::Update() {
   return false;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    LoadTestScreenshotCommand,
-    FString,
-    screenshotName);
 bool LoadTestScreenshotCommand::Update() {
   UE_LOG(
       LogCesium,
@@ -153,10 +134,6 @@ void defaultReportStep(const std::vector<TestPass>& testPasses) {
   UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    TestCleanupCommand,
-    LoadTestContext&,
-    context);
 bool TestCleanupCommand::Update() {
   // Tag the fastest pass
   if (context.testPasses.size() > 0) {
@@ -180,17 +157,40 @@ bool TestCleanupCommand::Update() {
   return true;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
-    InitForPlayWhenReady,
-    SceneGenerationContext&,
-    creationContext,
-    SceneGenerationContext&,
-    playContext);
 bool InitForPlayWhenReady::Update() {
   if (!GEditor || !GEditor->IsPlayingSessionInEditor())
     return false;
   UE_LOG(LogCesium, Display, TEXT("Play in Editor ready..."));
   playContext.initForPlay(creationContext);
+  return true;
+}
+
+bool SetPlayerViewportSize::Update() {
+  for (auto playerControllerIt =
+           playContext.world->GetPlayerControllerIterator();
+       playerControllerIt;
+       playerControllerIt++) {
+    const TWeakObjectPtr<APlayerController> pPlayerController =
+        *playerControllerIt;
+    if (pPlayerController == nullptr) {
+      continue;
+    }
+
+    const APlayerCameraManager* pPlayerCameraManager =
+        pPlayerController->PlayerCameraManager;
+
+    if (!pPlayerCameraManager) {
+      continue;
+    }
+
+    ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+    if (LocPlayer && LocPlayer->ViewportClient &&
+        LocPlayer->ViewportClient->Viewport) {
+      LocPlayer->ViewportClient->Viewport->SetInitialSize(
+          FIntPoint(viewportWidth, viewportHeight));
+    }
+  }
+
   return true;
 }
 
@@ -242,11 +242,21 @@ bool RunLoadTest(
   Params.EditorPlaySettings->NewWindowWidth = viewportWidth;
   Params.EditorPlaySettings->NewWindowHeight = viewportHeight;
   Params.EditorPlaySettings->EnableGameSound = false;
+  Params.EditorPlaySettings->SetClientWindowSize(
+      FIntPoint(viewportWidth, viewportHeight));
   GEditor->RequestPlaySession(Params);
 
   // Wait until PIE is ready
   ADD_LATENT_AUTOMATION_COMMAND(
       InitForPlayWhenReady(context.creationContext, context.playContext));
+
+  // Make sure the player viewport is the correct size. This will not be the
+  // case otherwise in headless UE 5.5.
+  ADD_LATENT_AUTOMATION_COMMAND(SetPlayerViewportSize(
+      context.creationContext,
+      context.playContext,
+      viewportWidth,
+      viewportHeight));
 
   // Wait to show distinct gap in profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
