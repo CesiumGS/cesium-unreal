@@ -1228,7 +1228,10 @@ void ACesium3DTileset::LoadTileset() {
             this->ITwinID.IsEmpty() ? std::nullopt
                                     : std::make_optional<std::string>(
                                           TCHAR_TO_UTF8(*this->ITwinID)),
-            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+            TCHAR_TO_UTF8(*this->ITwinAccessToken),
+            [asyncSystem](const std::string&) {
+              return asyncSystem.createResolvedFuture<CesiumUtility::Result<std::string>>(CesiumUtility::Result<std::string>(std::string{}));
+            }),
         options);
     break;
   }
