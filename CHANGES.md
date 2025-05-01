@@ -4,6 +4,7 @@
 
 ##### Additions :tada:
 
+- Added a Cesium -> Geocoder -> Geocode Blueprint function, making it easy to query the Cesium ion geocoder.
 - Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
 
 ##### Fixes :wrench:

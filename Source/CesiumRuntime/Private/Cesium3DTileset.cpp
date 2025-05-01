@@ -9,6 +9,10 @@
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesSelection/TilesetSharedAssetSystem.h"
+#include "Cesium3DTilesSelection/CesiumIonTilesetContentLoaderFactory.h"
+#include "Cesium3DTilesSelection/IModelMeshExportContentLoaderFactory.h"
+#include "Cesium3DTilesSelection/ITwinCesiumCuratedContentLoaderFactory.h"
+#include "Cesium3DTilesSelection/ITwinRealityDataContentLoaderFactory.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
@@ -1224,7 +1228,10 @@ void ACesium3DTileset::LoadTileset() {
             this->ITwinID.IsEmpty() ? std::nullopt
                                     : std::make_optional<std::string>(
                                           TCHAR_TO_UTF8(*this->ITwinID)),
-            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+            TCHAR_TO_UTF8(*this->ITwinAccessToken),
+            [asyncSystem](const std::string&) {
+              return asyncSystem.createResolvedFuture<CesiumUtility::Result<std::string>>(CesiumUtility::Result<std::string>(std::string{}));
+            }),
         options);
     break;
   }

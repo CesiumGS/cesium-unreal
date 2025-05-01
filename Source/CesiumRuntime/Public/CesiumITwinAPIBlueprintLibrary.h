@@ -68,64 +68,6 @@ public:
   TSharedPtr<CesiumITwinClient::Connection> pConnection;
 };
 
-UCLASS(BlueprintType)
-class UCesiumITwinResource : public UObject {
-  GENERATED_BODY()
-public:
-  UCesiumITwinResource() : UObject() {}
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
-  FString GetID() { return UTF8_TO_TCHAR(_resource.id.c_str()); }
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
-  FString GetDisplayName() {
-    return UTF8_TO_TCHAR(_resource.displayName.c_str());
-  }
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
-  FString GetSource() {
-    switch (_resource.source) {
-    case CesiumITwinClient::ResourceSource::CesiumCuratedContent:
-      return FString(TEXT("Cesium Curated Content"));
-    case CesiumITwinClient::ResourceSource::MeshExport:
-      return FString(TEXT("Mesh Export"));
-    case CesiumITwinClient::ResourceSource::RealityData:
-      return FString(TEXT("Reality Data"));
-    }
-
-    return FString(TEXT("Unknown"));
-  }
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
-  FString GetType() {
-    switch (_resource.resourceType) {
-    case CesiumITwinClient::ResourceType::Tileset:
-      return FString(TEXT("Tileset"));
-    case CesiumITwinClient::ResourceType::Imagery:
-      return FString(TEXT("Imagery"));
-    case CesiumITwinClient::ResourceType::Terrain:
-      return FString(TEXT("Terrain"));
-    }
-
-    return FString(TEXT("Unknown"));
-  }
-
-  UFUNCTION(BlueprintCallable, Category = "Cesium|iTwin")
-  void Spawn();
-
-  void SetResource(const CesiumITwinClient::ITwinResource& resource) {
-    this->_resource = resource;
-  }
-
-  void SetConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection) {
-    this->_pConnection = pConnection;
-  }
-
-private:
-  CesiumITwinClient::ITwinResource _resource;
-  TSharedPtr<CesiumITwinClient::Connection> _pConnection;
-};
-
 UENUM(BlueprintType)
 enum class ECesiumITwinDelegateType : uint8 {
   Invalid = 0,
@@ -196,39 +138,3 @@ public:
 
 UENUM(BlueprintType)
 enum class EGetResourcesCallbackType : uint8 { Status, Success, Failure };
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(
-    FCesiumITwinGetResourcesDelegate,
-    EGetResourcesCallbackType,
-    Type,
-    const TArray<UCesiumITwinResource*>&,
-    Resources,
-    int32,
-    FinishedRequests,
-    int32,
-    TotalRequests,
-    const TArray<FString>&,
-    Errors);
-
-UCLASS()
-class CESIUMRUNTIME_API UCesiumITwinAPIGetResourcesAsyncAction
-    : public UBlueprintAsyncActionBase {
-  GENERATED_BODY()
-public:
-  UFUNCTION(
-      BlueprintCallable,
-      Category = "Cesium|iTwin",
-      meta =
-          (BlueprintInternalUseOnly = true,
-           WorldContext = "WorldContextObject"))
-  static UCesiumITwinAPIGetResourcesAsyncAction* GetResources(
-      const UObject* WorldContextObject,
-      UCesiumITwinConnection* pConnection);
-
-  UPROPERTY(BlueprintAssignable)
-  FCesiumITwinGetResourcesDelegate OnResourcesEvent;
-
-  virtual void Activate() override;
-
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
-};
