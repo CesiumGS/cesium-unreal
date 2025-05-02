@@ -1,6 +1,6 @@
 #include "CesiumVectorStyle.h"
 
-CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const  {
+CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
   return CesiumVectorData::VectorStyle{
       CesiumVectorData::LineStyle{
           CesiumVectorData::Color{
@@ -22,7 +22,8 @@ CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const  {
           this->PolygonStyle.Outline}};
 }
 
-FCesiumVectorStyle FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
+FCesiumVectorStyle
+FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
   return FCesiumVectorStyle{
       FCesiumVectorLineStyle{
           FColor(

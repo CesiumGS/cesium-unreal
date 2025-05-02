@@ -43,11 +43,13 @@ enum class ECesiumVectorDocumentRasterOverlaySource : uint8 {
   FromCesiumIon = 1
 };
 
-DECLARE_DYNAMIC_DELEGATE_RetVal_OneParam(
-    FCesiumVectorStyle,
+DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(
+    bool,
     FCesiumVectorDocumentRasterOverlayStyleCallback,
     FCesiumVectorNode,
-    InNode);
+    InNode,
+    FCesiumVectorStyle&,
+    OutStyle);
 
 UCLASS(
     ClassGroup = Cesium,
@@ -116,10 +118,7 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FCesiumVectorStyle DefaultStyle;
 
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FCesiumVectorDocumentRasterOverlayStyleCallback StyleCallback;
 
 protected:

@@ -32,7 +32,7 @@ unrealToNativeVectorStyle(const FCesiumVectorStyle& style) {
               style.PolygonStyle.Color.A},
           (CesiumVectorData::ColorMode)style.PolygonStyle.ColorMode,
           style.PolygonStyle.Fill,
-          style.PolygonStyle.Stroke}};
+          style.PolygonStyle.Outline}};
 }
 } // namespace
 
@@ -63,8 +63,14 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     callbackOpt = [Callback = this->StyleCallback](
                       const CesiumUtility::IntrusivePointer<
                           CesiumVectorData::VectorDocument>& doc,
-                      const CesiumVectorData::VectorNode* pNode) {
-      return Callback.Execute(FCesiumVectorNode(doc, pNode)).toNative();
+                      const CesiumVectorData::VectorNode* pNode)
+        -> std::optional<CesiumVectorData::VectorStyle> {
+      FCesiumVectorStyle style;
+      if (Callback.Execute(FCesiumVectorNode(doc, pNode), style)) {
+        return style.toNative();
+      }
+
+      return std::nullopt;
     };
   }
 
