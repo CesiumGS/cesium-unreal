@@ -11,6 +11,31 @@
 
 #include "CesiumRuntime.h"
 
+namespace {
+CesiumVectorData::VectorStyle
+unrealToNativeVectorStyle(const FCesiumVectorStyle& style) {
+  return CesiumVectorData::VectorStyle{
+      CesiumVectorData::LineStyle{
+          CesiumVectorData::Color{
+              style.LineStyle.Color.R,
+              style.LineStyle.Color.G,
+              style.LineStyle.Color.B,
+              style.LineStyle.Color.A},
+          (CesiumVectorData::ColorMode)style.LineStyle.ColorMode,
+          style.LineStyle.Width,
+          (CesiumVectorData::LineWidthMode)style.LineStyle.WidthMode},
+      CesiumVectorData::PolygonStyle{
+          CesiumVectorData::Color{
+              style.PolygonStyle.Color.R,
+              style.PolygonStyle.Color.G,
+              style.PolygonStyle.Color.B,
+              style.PolygonStyle.Color.A},
+          (CesiumVectorData::ColorMode)style.PolygonStyle.ColorMode,
+          style.PolygonStyle.Fill,
+          style.PolygonStyle.Stroke}};
+}
+} // namespace
+
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
@@ -20,24 +45,37 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     return nullptr;
   }
 
-  const CesiumGeospatial::Ellipsoid& ellipsoid = options.ellipsoid;
-
   CesiumGeospatial::Projection projection;
   if (this->Projection ==
       ECesiumVectorDocumentRasterOverlayProjection::Geographic) {
-    projection = CesiumGeospatial::GeographicProjection(ellipsoid);
+    projection = CesiumGeospatial::GeographicProjection(options.ellipsoid);
   } else {
-    projection = CesiumGeospatial::WebMercatorProjection(ellipsoid);
+    projection = CesiumGeospatial::WebMercatorProjection(options.ellipsoid);
   }
 
-  CesiumVectorData::VectorRasterizerStyle style{
-      CesiumVectorData::Color{
-          std::byte{this->Color.R},
-          std::byte{this->Color.G},
-          std::byte{this->Color.B},
-          std::byte{this->Color.A}},
-      this->LineWidth,
-      (CesiumVectorData::VectorLineWidthMode)this->LineWidthMode};
+  CesiumVectorData::VectorStyle style =
+      unrealToNativeVectorStyle(this->DefaultStyle);
+
+  std::optional<CesiumRasterOverlays::VectorDocumentRasterOverlayStyleCallback>
+      callbackOpt = std::nullopt;
+
+  if (this->StyleCallback.IsBound()) {
+    callbackOpt = [Callback = this->StyleCallback](
+                      const CesiumUtility::IntrusivePointer<
+                          CesiumVectorData::VectorDocument>& doc,
+                      const CesiumVectorData::VectorNode* pNode) {
+      return Callback.Execute(FCesiumVectorNode(doc, pNode)).toNative();
+    };
+  }
+
+  CesiumRasterOverlays::VectorDocumentRasterOverlayOptions vectorOptions{
+      unrealToNativeVectorStyle(this->DefaultStyle),
+      callbackOpt,
+      std::move(projection),
+      options.ellipsoid,
+      this->MipLevels};
+
+  const CesiumGeospatial::Ellipsoid& ellipsoid = options.ellipsoid;
 
   if (this->Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon) {
     if (!IsValid(this->CesiumIonServer)) {
@@ -50,19 +88,13 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
             this->IonAssetID,
             TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken),
             TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)},
-        style,
-        projection,
-        ellipsoid,
-        (uint32_t)this->MipLevels,
+        vectorOptions,
         options);
   }
 
   return std::make_unique<CesiumRasterOverlays::VectorDocumentRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->VectorDocument.GetDocument(),
-      style,
-      projection,
-      ellipsoid,
-      (uint32_t)this->MipLevels,
+      vectorOptions,
       options);
 }
