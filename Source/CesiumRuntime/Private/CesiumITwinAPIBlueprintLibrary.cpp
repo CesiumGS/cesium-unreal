@@ -29,7 +29,9 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
             TArray<FString>());
       })
       .thenInMainThread([this](CesiumUtility::Result<
-                               CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>>&& connection) {
+                               CesiumUtility::IntrusivePointer<
+                                   CesiumITwinClient::Connection>>&&
+                                   connection) {
         if (!IsValid(this)) {
           UE_LOG(
               LogCesium,
