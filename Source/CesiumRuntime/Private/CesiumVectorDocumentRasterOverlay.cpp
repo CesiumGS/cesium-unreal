@@ -11,31 +11,6 @@
 
 #include "CesiumRuntime.h"
 
-namespace {
-CesiumVectorData::VectorStyle
-unrealToNativeVectorStyle(const FCesiumVectorStyle& style) {
-  return CesiumVectorData::VectorStyle{
-      CesiumVectorData::LineStyle{
-          CesiumVectorData::Color{
-              style.LineStyle.Color.R,
-              style.LineStyle.Color.G,
-              style.LineStyle.Color.B,
-              style.LineStyle.Color.A},
-          (CesiumVectorData::ColorMode)style.LineStyle.ColorMode,
-          style.LineStyle.Width,
-          (CesiumVectorData::LineWidthMode)style.LineStyle.WidthMode},
-      CesiumVectorData::PolygonStyle{
-          CesiumVectorData::Color{
-              style.PolygonStyle.Color.R,
-              style.PolygonStyle.Color.G,
-              style.PolygonStyle.Color.B,
-              style.PolygonStyle.Color.A},
-          (CesiumVectorData::ColorMode)style.PolygonStyle.ColorMode,
-          style.PolygonStyle.Fill,
-          style.PolygonStyle.Outline}};
-}
-} // namespace
-
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumVectorDocumentRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
@@ -52,9 +27,6 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
   } else {
     projection = CesiumGeospatial::WebMercatorProjection(options.ellipsoid);
   }
-
-  CesiumVectorData::VectorStyle style =
-      unrealToNativeVectorStyle(this->DefaultStyle);
 
   std::optional<CesiumRasterOverlays::VectorDocumentRasterOverlayStyleCallback>
       callbackOpt = std::nullopt;
@@ -75,13 +47,11 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
   }
 
   CesiumRasterOverlays::VectorDocumentRasterOverlayOptions vectorOptions{
-      unrealToNativeVectorStyle(this->DefaultStyle),
+      this->DefaultStyle.toNative(),
       callbackOpt,
       std::move(projection),
       options.ellipsoid,
       this->MipLevels};
-
-  const CesiumGeospatial::Ellipsoid& ellipsoid = options.ellipsoid;
 
   if (this->Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon) {
     if (!IsValid(this->CesiumIonServer)) {
