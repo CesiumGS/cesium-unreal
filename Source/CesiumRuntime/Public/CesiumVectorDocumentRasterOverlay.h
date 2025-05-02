@@ -5,10 +5,15 @@
 #include "CesiumIonServer.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumVectorDocument.h"
+#include "CesiumVectorStyle.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "Delegates/Delegate.h"
 #include "CesiumVectorDocumentRasterOverlay.generated.h"
 
+/**
+ * The projection used by a CesiumVectorDocumentRasterOverlay.
+ */
 UENUM(BlueprintType)
 enum class ECesiumVectorDocumentRasterOverlayProjection : uint8 {
   /**
@@ -22,19 +27,35 @@ enum class ECesiumVectorDocumentRasterOverlayProjection : uint8 {
   Geographic
 };
 
+/**
+ * Configures where the CesiumVectorDocumentRasterOverlay should load its vector
+ * data from.
+ */
 UENUM(BlueprintType)
 enum class ECesiumVectorDocumentRasterOverlaySource : uint8 {
+  /**
+   * The raster overlay will display the provided VectorDocument.
+   */
   FromDocument = 0,
+  /**
+   * The raster overlay will load the VectorDocument from Cesium ion.
+   */
   FromCesiumIon = 1
 };
 
-UENUM(BlueprintType)
-enum class ECesiumVectorDocumentRasterOverlayLineWidthMode : uint8 {
-  Pixels = 0,
-  Meters = 1
-};
+DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(
+    bool,
+    FCesiumVectorDocumentRasterOverlayStyleCallback,
+    FCesiumVectorNode,
+    InNode,
+    FCesiumVectorStyle&,
+    OutStyle);
 
-UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
+UCLASS(
+    ClassGroup = Cesium,
+    BlueprintType,
+    Blueprintable,
+    meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumVectorDocumentRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
@@ -56,7 +77,13 @@ public:
   /**
    * The ID of the Cesium ion asset to use.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium", meta=(EditCondition="Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon"))
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon"))
   int64 IonAssetID;
 
   /**
@@ -89,14 +116,10 @@ public:
   int32 MipLevels = 0;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FColor Color = FColor(0, 0, 0, 255);
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium", meta=(ClampMin = "0"))
-  double LineWidth = 1.0;
+  FCesiumVectorStyle DefaultStyle;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  ECesiumVectorDocumentRasterOverlayLineWidthMode LineWidthMode =
-      ECesiumVectorDocumentRasterOverlayLineWidthMode::Pixels;
+  FCesiumVectorDocumentRasterOverlayStyleCallback StyleCallback;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(

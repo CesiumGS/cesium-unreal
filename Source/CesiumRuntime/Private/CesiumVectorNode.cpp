@@ -256,6 +256,29 @@ bool UCesiumVectorNodeBlueprintLibrary::FindNodeByIntId(
   return false;
 }
 
+bool UCesiumVectorNodeBlueprintLibrary::GetStyle(
+    const FCesiumVectorNode& InVectorNode,
+    FCesiumVectorStyle& OutStyle) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr ||
+      !InVectorNode._node->style) {
+    return false;
+  }
+
+  OutStyle = FCesiumVectorStyle::fromNative(*InVectorNode._node->style);
+  return true;
+}
+
+FCesiumVectorStyle UCesiumVectorNodeBlueprintLibrary::GetStyleOrDefault(
+    const FCesiumVectorNode& InVectorNode,
+    const FCesiumVectorStyle& InDefaultStyle) {
+  if (!InVectorNode._document || InVectorNode._node == nullptr ||
+      !InVectorNode._node->style) {
+    return InDefaultStyle;
+  }
+
+  return FCesiumVectorStyle::fromNative(*InVectorNode._node->style);
+}
+
 ECesiumVectorPrimitiveType
 UCesiumVectorPrimitiveBlueprintLibrary::GetPrimitiveType(
     const FCesiumVectorPrimitive& InPrimitive) {

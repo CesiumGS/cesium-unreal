@@ -5,6 +5,7 @@
 #include "CesiumUtility/IntrusivePointer.h"
 #include "CesiumVectorData/VectorDocument.h"
 #include "CesiumVectorData/VectorNode.h"
+#include "CesiumVectorStyle.h"
 #include "JsonObjectWrapper.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SharedPointer.h"
@@ -179,6 +180,26 @@ public:
       const FCesiumVectorNode& InVectorNode,
       int64 InNodeId,
       FCesiumVectorNode& OutNode);
+
+  /**
+   * @brief Returns true if this node has a style, or false if no style is
+   * attached. If this node has a style, OutStyle will be set to that style.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Node",
+      meta = (DisplayName = "Get Node Style"))
+  static UPARAM(DisplayName = "Has Style") bool GetStyle(
+      const FCesiumVectorNode& InVectorNode,
+      FCesiumVectorStyle& OutStyle);
+
+  /**
+   * @brief Returns the style on this node, or the default style if this node
+   * has no style attached.
+   */
+  static FCesiumVectorStyle GetStyleOrDefault(
+      const FCesiumVectorNode& InVectorNode,
+      const FCesiumVectorStyle& InDefaultStyle);
 };
 
 /**
