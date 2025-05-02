@@ -5,6 +5,7 @@
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
 #include "CesiumUtility/CreditSystem.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "ScreenCreditsWidget.h"

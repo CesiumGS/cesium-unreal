@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ???
+
+##### Fixes :wrench:
+
+- Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
+
 ### v2.16.0 - 2025-05-01
 
 ##### Additions :tada:
