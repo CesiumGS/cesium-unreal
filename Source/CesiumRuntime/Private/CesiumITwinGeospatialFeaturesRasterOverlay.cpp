@@ -23,32 +23,38 @@ UCesiumITwinGeospatialFeaturesRasterOverlay::CreateOverlay(
     return nullptr;
   }
 
-  const CesiumGeospatial::Ellipsoid& ellipsoid = options.ellipsoid;
-
   CesiumGeospatial::Projection projection;
   if (this->Projection ==
       ECesiumVectorDocumentRasterOverlayProjection::Geographic) {
-    projection = CesiumGeospatial::GeographicProjection(ellipsoid);
+    projection = CesiumGeospatial::GeographicProjection(options.ellipsoid);
   } else {
-    projection = CesiumGeospatial::WebMercatorProjection(ellipsoid);
+    projection = CesiumGeospatial::WebMercatorProjection(options.ellipsoid);
   }
 
-  const CesiumVectorData::Color color{
-      std::byte{this->Color.R},
-      std::byte{this->Color.G},
-      std::byte{this->Color.B},
-      std::byte{this->Color.A}};
-  CesiumVectorData::VectorStyle style{
-      CesiumVectorData::LineStyle{
-          color,
-          CesiumVectorData::ColorMode::Normal,
-          this->LineWidth,
-          (CesiumVectorData::LineWidthMode)this->LineWidthMode},
-      CesiumVectorData::PolygonStyle{
-          color,
-          CesiumVectorData::ColorMode::Normal,
-          true,
-          false}};
+  std::optional<CesiumRasterOverlays::VectorDocumentRasterOverlayStyleCallback>
+      callbackOpt = std::nullopt;
+
+  if (this->StyleCallback.IsBound()) {
+    callbackOpt = [Callback = this->StyleCallback](
+                      const CesiumUtility::IntrusivePointer<
+                          CesiumVectorData::VectorDocument>& doc,
+                      const CesiumVectorData::VectorNode* pNode)
+        -> std::optional<CesiumVectorData::VectorStyle> {
+      FCesiumVectorStyle style;
+      if (Callback.Execute(FCesiumVectorNode(doc, pNode), style)) {
+        return style.toNative();
+      }
+
+      return std::nullopt;
+    };
+  }
+
+  CesiumRasterOverlays::VectorDocumentRasterOverlayOptions vectorOptions{
+      this->DefaultStyle.toNative(),
+      callbackOpt,
+      std::move(projection),
+      options.ellipsoid,
+      this->MipLevels};
 
   CesiumUtility::Result<CesiumITwinClient::AuthenticationToken> tokenResult =
       CesiumITwinClient::AuthenticationToken::parse(
@@ -75,9 +81,6 @@ UCesiumITwinGeospatialFeaturesRasterOverlay::CreateOverlay(
       TCHAR_TO_UTF8(*this->ITwinID),
       TCHAR_TO_UTF8(*this->CollectionID),
       pConnection,
-      style,
-      projection,
-      ellipsoid,
-      (uint32_t)this->MipLevels,
+      vectorOptions,
       options);
 }

@@ -50,18 +50,10 @@ public:
   int32 MipLevels = 0;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FColor Color = FColor(0, 0, 0, 255);
-
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium",
-      meta = (ClampMin = "0"))
-  double LineWidth = 1.0;
+  FCesiumVectorStyle DefaultStyle;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  ECesiumVectorDocumentRasterOverlayLineWidthMode LineWidthMode =
-      ECesiumVectorDocumentRasterOverlayLineWidthMode::Pixels;
+  FCesiumVectorDocumentRasterOverlayStyleCallback StyleCallback;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
