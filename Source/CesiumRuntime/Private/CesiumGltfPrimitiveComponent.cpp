@@ -193,3 +193,52 @@ void UCesiumGltfPrimitiveComponent::OnCreatePhysicsState() {
 
   Super::OnCreatePhysicsState();
 }
+
+void UCesiumGltfInstancedComponent::OnCreatePhysicsState() {
+  // Rather than try to re-implement UInstancedStaticMeshComponent's version of
+  // this method, we detect a possible problem with the scale, nullify the
+  // scale, and then set it afterward.
+  bool hasBadScale = false;
+  for (int i = 0; !hasBadScale && i < this->PerInstanceSMData.Num(); ++i) {
+    FTransform transform = FTransform(this->PerInstanceSMData[i].Transform) *
+                           this->GetComponentTransform();
+    if (transform.GetScale3D().IsNearlyZero()) {
+      hasBadScale = true;
+    }
+  }
+
+  TArray<FMatrix> originalMatrices;
+  FVector componentScale;
+
+  if (hasBadScale) {
+    // Set the instance scale such that when it is multiplied with the component
+    // scale, the overall scale is 1.0.
+    componentScale = this->GetComponentTransform().GetScale3D();
+    FVector inverseComponentScale = FVector(1.0) / componentScale;
+
+    originalMatrices.SetNum(this->PerInstanceSMData.Num());
+    for (int i = 0; i < this->PerInstanceSMData.Num(); ++i) {
+      originalMatrices[i] = this->PerInstanceSMData[i].Transform;
+      FTransform transform = FTransform(this->PerInstanceSMData[i].Transform);
+      transform.SetScale3D(inverseComponentScale);
+      this->PerInstanceSMData[i].Transform = transform.ToMatrixWithScale();
+    }
+  }
+
+  Super::OnCreatePhysicsState();
+
+  if (hasBadScale) {
+    // Set the correct scale.
+    check(this->PerInstanceSMData.Num() == this->InstanceBodies.Num());
+    for (int i = 0; i < this->InstanceBodies.Num(); ++i) {
+      this->PerInstanceSMData[i].Transform = originalMatrices[i];
+      this->InstanceBodies[i]->SetBodyTransform(
+          FTransform(this->PerInstanceSMData[i].Transform) *
+              this->GetComponentTransform(),
+          ETeleportType::TeleportPhysics,
+          false);
+      this->InstanceBodies[i]->UpdateBodyScale(
+          originalMatrices[i].ExtractScaling(0.0) * componentScale);
+    }
+  }
+}

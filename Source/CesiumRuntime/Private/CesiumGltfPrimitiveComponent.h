@@ -73,6 +73,8 @@ public:
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
 
+  virtual void OnCreatePhysicsState() override;
+
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
 private:

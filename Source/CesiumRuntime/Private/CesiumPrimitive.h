@@ -116,7 +116,7 @@ public:
    * exponent of coordinate values, not the mantissa, in order to reduce the
    * chances of losing precision.
    */
-  static constexpr double positionScaleFactor = 1024.0;
+  static constexpr double positionScaleFactor = 4294967296.0;
 
   void destroy();
 };
