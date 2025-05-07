@@ -167,3 +167,29 @@ const CesiumPrimitiveData&
 UCesiumGltfInstancedComponent::getPrimitiveData() const {
   return _cesiumData;
 }
+
+void UCesiumGltfPrimitiveComponent::OnCreatePhysicsState() {
+  // If we call Super::OnCreatePhysicsState before we initialize the body
+  // instance, the UPrimitiveComponent will make inappropriate assumptions about
+  // the model scale. Also, FBodyInstance::InitBody will make similar incorrect
+  // assumptions. However, if we manually initialize with a scale of 1.0 and
+  // then change to the actual scale, this skips all of UE's erroneous
+  // "validation" code, and even small scales will work correctly. See:
+  // https://github.com/CesiumGS/cesium-unreal/issues/1659
+  FTransform BodyTransform = GetComponentTransform();
+  if (!BodyInstance.IsValidBodyInstance() &&
+      BodyTransform.GetScale3D().IsNearlyZero()) {
+    FTransform BodyTransformWithoutScale = BodyTransform;
+    BodyTransformWithoutScale.SetScale3D(FVector(1.0));
+
+    UBodySetup* BodySetup = GetBodySetup();
+    BodyInstance.InitBody(
+        BodySetup,
+        BodyTransformWithoutScale,
+        this,
+        GetWorld()->GetPhysicsScene());
+    BodyInstance.UpdateBodyScale(BodyTransform.GetScale3D());
+  }
+
+  Super::OnCreatePhysicsState();
+}
