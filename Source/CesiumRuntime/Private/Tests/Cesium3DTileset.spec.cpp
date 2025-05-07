@@ -115,9 +115,10 @@ static void setupForPhysicsWithSmallScale(SceneGenerationContext& context) {
   check(georeference != nullptr);
   georeference->SetOriginPlacement(EOriginPlacement::TrueOrigin);
 
-  FString pluginContent = IPluginManager::Get()
-                              .FindPlugin(TEXT("CesiumForUnreal"))
-                              ->GetContentDir();
+  FString pluginContent =
+      FPaths::ConvertRelativePathToFull(IPluginManager::Get()
+                                            .FindPlugin(TEXT("CesiumForUnreal"))
+                                            ->GetContentDir());
   FString tilesetPath = FPaths::Combine(
       pluginContent,
       TEXT("Tests"),
