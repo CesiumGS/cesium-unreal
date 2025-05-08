@@ -442,6 +442,14 @@ void ACesium3DTileset::SetCesiumIonServer(UCesiumIonServer* Server) {
   }
 }
 
+void ACesium3DTileset::SetAllowMeshBuffersCPUAccess(
+    bool InMeshBuffersCPUAccess) {
+  if (bAllowMeshBuffersCPUAccess != InMeshBuffersCPUAccess) {
+    this->bAllowMeshBuffersCPUAccess = InMeshBuffersCPUAccess;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetMaximumScreenSpaceError(
     double InMaximumScreenSpaceError) {
   if (MaximumScreenSpaceError != InMaximumScreenSpaceError) {
@@ -2322,3 +2330,7 @@ void ACesium3DTileset::RuntimeSettingsChanged(
   }
 }
 #endif
+
+void ACesium3DTileset::SetMeshBuildCallbacks(const TWeakPtr<CesiumMeshBuildCallbacks>& Callbacks) {
+    this->_meshBuildCallbacks = Callbacks;
+}

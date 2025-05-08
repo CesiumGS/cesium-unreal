@@ -37,6 +37,7 @@ class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
+class CesiumMeshBuildCallbacks;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -339,6 +340,19 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InvalidateResolvedCameraManager();
+
+  /**
+   * Whether to configure the Unreal mesh buffers to allow access from CPU. If
+   * this is false, the buffers can be freed from CPU memory at any time after
+   * they have been moved to GPU memory: set to true if you need to access these
+   * buffers for your game logic.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAllowMeshBuffersCPUAccess,
+      BlueprintSetter = SetAllowMeshBuffersCPUAccess,
+      Category = "Cesium")
+  bool bAllowMeshBuffersCPUAccess = false;
 
   /**
    * The maximum number of pixels of error when rendering this tileset.
@@ -1067,6 +1081,14 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetMaximumScreenSpaceError(double InMaximumScreenSpaceError);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetAllowMeshBuffersCPUAccess() const {
+    return bAllowMeshBuffersCPUAccess;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetAllowMeshBuffersCPUAccess(bool bMeshBuffersCPUAccess);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   bool GetEnableOcclusionCulling() const;
 
@@ -1257,6 +1279,21 @@ public:
    */
   void UpdateTransformFromCesium();
 
+  /**
+   * Get the attached mesh construction callback, if any.
+   */
+  const TWeakPtr<CesiumMeshBuildCallbacks>& GetMeshBuildCallbacks() const {
+    return this->_meshBuildCallbacks;
+  }
+
+  /**
+   * Set the mesh construction callback.
+   * Can be used to be notified when a mesh component is created from a Cesium
+   * primitive.
+   */
+  void
+  SetMeshBuildCallbacks(const TWeakPtr<CesiumMeshBuildCallbacks>& Callbacks);
+
 private:
   /**
    * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
@@ -1370,6 +1407,9 @@ private:
       _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  // Optional implementation of the extension callbacks
+  TWeakPtr<CesiumMeshBuildCallbacks> _meshBuildCallbacks;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
