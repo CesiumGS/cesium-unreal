@@ -159,6 +159,33 @@ UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
   return _cesiumData;
 }
 
+UStaticMeshComponent& UCesiumGltfPrimitiveComponent::GetMeshComponent() {
+  return *this;
+}
+
+const FCesiumModelMetadata&
+UCesiumGltfPrimitiveComponent::GetModelMetadata() const {
+  // Not GetAttachParent(): not yet attached (eg. when calling
+  // CesiumMeshBuildCallbacks::CreateMaterial)
+  return Cast<ICesiumLoadedTileBase>(GetOuter())->GetModelMetadata();
+}
+
+const Cesium3DTilesSelection::TileID&
+UCesiumGltfPrimitiveComponent::GetTileID() const {
+  return Cast<ICesiumLoadedTileBase>(GetOuter())->GetTileID();
+}
+
+std::optional<uint32_t>
+UCesiumGltfPrimitiveComponent::FindTexCoordIndexForGltfAttribute(
+    int32_t accessorIndex) const {
+  auto uvIndexIt =
+      getPrimitiveData().GltfToUnrealTexCoordMap.find(accessorIndex);
+  if (uvIndexIt != getPrimitiveData().GltfToUnrealTexCoordMap.end())
+    return uvIndexIt->second;
+  else
+    return std::nullopt;
+}
+
 CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
   return _cesiumData;
 }
@@ -166,4 +193,29 @@ CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
 const CesiumPrimitiveData&
 UCesiumGltfInstancedComponent::getPrimitiveData() const {
   return _cesiumData;
+}
+
+UStaticMeshComponent& UCesiumGltfInstancedComponent::GetMeshComponent() {
+  return *this;
+}
+
+const FCesiumModelMetadata&
+UCesiumGltfInstancedComponent::GetModelMetadata() const {
+  return Cast<ICesiumLoadedTileBase>(GetOuter())->GetModelMetadata();
+}
+
+const Cesium3DTilesSelection::TileID&
+UCesiumGltfInstancedComponent::GetTileID() const {
+  return Cast<ICesiumLoadedTileBase>(GetOuter())->GetTileID();
+}
+
+std::optional<uint32_t>
+UCesiumGltfInstancedComponent::FindTexCoordIndexForGltfAttribute(
+    int32_t accessorIndex) const {
+  auto uvIndexIt =
+      getPrimitiveData().GltfToUnrealTexCoordMap.find(accessorIndex);
+  if (uvIndexIt != getPrimitiveData().GltfToUnrealTexCoordMap.end())
+    return uvIndexIt->second;
+  else
+    return std::nullopt;
 }

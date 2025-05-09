@@ -10,6 +10,7 @@
 #include <Cesium3DTilesSelection/TileLoadResult.h>
 #include <CesiumAsync/AsyncSystem.h>
 #include <CesiumGeospatial/Ellipsoid.h>
+#include <CesiumMeshBuildCallbacks.h>
 #include <glm/mat4x4.hpp>
 
 UnrealPrepareRendererResources::UnrealPrepareRendererResources(
@@ -32,6 +33,8 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
   options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
+  options.allowMeshBuffersCPUAccess =
+      this->_pActor->GetAllowMeshBuffersCPUAccess();
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
@@ -42,6 +45,9 @@ UnrealPrepareRendererResources::prepareInLoadThread(
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);
   }
+
+  // propagate mesh construction callback, if any
+  options.MeshBuildCallbacks = this->_pActor->GetMeshBuildCallbacks();
 
   const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
@@ -100,6 +106,10 @@ void UnrealPrepareRendererResources::free(
   } else if (pMainThreadResult) {
     UCesiumGltfComponent* pGltf =
         reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
+    if (this->_pActor->GetMeshBuildCallbacks().IsValid()) {
+      this->_pActor->GetMeshBuildCallbacks().Pin()->BeforeTileDestruction(
+          tile.getTileID());
+    }
     CesiumLifetime::destroyComponentRecursively(pGltf);
   }
 }

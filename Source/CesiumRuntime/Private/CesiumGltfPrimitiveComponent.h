@@ -41,8 +41,16 @@ public:
   void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
+  // from ICesiumLoadedTileBase
+  const FCesiumModelMetadata& GetModelMetadata() const override;
+  Cesium3DTilesSelection::TileID const& GetTileID() const override;
+  // from ICesiumPrimitive
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
+  // from ICesiumLoadedTilePrimitive
+  UStaticMeshComponent& GetMeshComponent() override;
+  std::optional<uint32_t>
+  FindTexCoordIndexForGltfAttribute(int32_t accessorIndex) const override;
 
 private:
   CesiumPrimitiveData _cesiumData;
@@ -68,8 +76,16 @@ public:
   void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
+  // from ICesiumLoadedTileBase
+  const FCesiumModelMetadata& GetModelMetadata() const override;
+  Cesium3DTilesSelection::TileID const& GetTileID() const override;
+  // from ICesiumPrimitive
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
+  // from ICesiumLoadedTilePrimitive
+  UStaticMeshComponent& GetMeshComponent() override;
+  std::optional<uint32_t>
+  FindTexCoordIndexForGltfAttribute(int32_t accessorIndex) const override;
 
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
