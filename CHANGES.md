@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
+- Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
 
 ### v2.16.0 - 2025-05-01
 
