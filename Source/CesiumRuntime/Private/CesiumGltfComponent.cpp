@@ -102,6 +102,180 @@ template <class T> struct IsAccessorView<T> : std::false_type {};
 template <class T>
 struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
 
+static uint32_t addTextureCoordinatesToMap(
+    const CesiumGltf::MeshPrimitive& primitive,
+    const std::string& attributeName,
+    std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
+  auto uvAccessorIt = primitive.attributes.find(attributeName);
+  if (uvAccessorIt == primitive.attributes.end()) {
+    // Texture not used, texture coordinates don't matter.
+    return 0;
+  }
+
+  int32_t uvAccessorID = uvAccessorIt->second;
+  auto mapIt = gltfToUnrealTexCoordMap.find(uvAccessorID);
+  if (mapIt == gltfToUnrealTexCoordMap.end()) {
+    size_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+    gltfToUnrealTexCoordMap[uvAccessorID] = textureCoordinateIndex;
+  }
+
+  return gltfToUnrealTexCoordMap[uvAccessorID];
+}
+
+template <class T>
+static uint32_t addTextureCoordinatesToMap(
+    const CesiumGltf::MeshPrimitive& primitive,
+    std::optional<T> maybeTexture,
+    std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
+  return maybeTexture
+             ? addTextureCoordinatesToMap(
+                   primitive,
+                   "TEXCOORD_" + std::to_string(maybeTexture->texCoord),
+                   gltfToUnrealTexCoordMap)
+             : 0;
+}
+
+static void accumulateTextureCoordinates(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const CesiumGltf::Material& material,
+    const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness,
+    const EncodedFeaturesMetadata::EncodedPrimitiveFeatures&
+        encodedPrimitiveFeatures,
+    const EncodedFeaturesMetadata::EncodedPrimitiveMetadata&
+        encodedPrimitiveMetadata,
+    const EncodedFeaturesMetadata::EncodedModelMetadata& encodedModelMetadata,
+    LoadedPrimitiveResult& primitiveResult) {
+  std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
+      primitiveResult.GltfToUnrealTexCoordMap;
+
+  // First accumulate coordinates used by features / metadata.
+  {
+    for (const int64 propertyTextureIndex :
+         encodedPrimitiveMetadata.propertyTextureIndices) {
+      // Property textures can be made accessible in Unreal materials without
+      // requiring a texture coordinate set on the primitive. If it is not
+      // present in primitive metadata, then do not set the parameter.
+      const EncodedFeaturesMetadata::EncodedPropertyTexture&
+          encodedPropertyTexture =
+              encodedModelMetadata.propertyTextures[propertyTextureIndex];
+
+      for (const EncodedFeaturesMetadata::EncodedPropertyTextureProperty&
+               encodedProperty : encodedPropertyTexture.properties) {
+
+        FString fullPropertyName =
+            EncodedFeaturesMetadata::getMaterialNameForPropertyTextureProperty(
+                encodedPropertyTexture.name,
+                encodedProperty.name);
+
+        uint32 index = addTextureCoordinatesToMap(
+            primitive,
+            "TEXCOORD_" +
+                std::to_string(encodedProperty.textureCoordinateSetIndex),
+            gltfToUnrealTexCoordMap);
+
+        primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+            fullPropertyName +
+                EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
+            index);
+      }
+    }
+
+    for (const EncodedFeaturesMetadata::EncodedFeatureIdSet&
+             encodedFeatureIDSet : encodedPrimitiveFeatures.featureIdSets) {
+      FString SafeName =
+          EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIDSet.name);
+      if (encodedFeatureIDSet.attribute) {
+
+        int32_t attribute = *encodedFeatureIDSet.attribute;
+        std::string attributeName = "_FEATURE_ID_" + std::to_string(attribute);
+        if (primitive.attributes.find(attributeName) ==
+            primitive.attributes.end()) {
+          continue;
+        }
+
+        // This was already validated when creating the EncodedFeatureIdSet.
+        int32_t accessor = primitive.attributes.at(attributeName);
+
+        uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+        gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
+        primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+            SafeName,
+            textureCoordinateIndex);
+
+      } else if (encodedFeatureIDSet.texture) {
+        const EncodedFeaturesMetadata::EncodedFeatureIdTexture&
+            encodedFeatureIDTexture = *encodedFeatureIDSet.texture;
+        primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+            SafeName + EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
+            addTextureCoordinatesToMap(
+                primitive,
+                "TEXCOORD_" +
+                    std::to_string(
+                        encodedFeatureIDTexture.textureCoordinateSetIndex),
+                gltfToUnrealTexCoordMap));
+      } else {
+        // Similar to feature ID attributes, we encode the unsigned integer
+        // vertex ids as floats in the u-channel of a texture coordinate slot.
+        // If it ever becomes possible to access the vertex ID through an Unreal
+        // material node, this can be removed.
+        uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
+        gltfToUnrealTexCoordMap[-1] = textureCoordinateIndex;
+        primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+            SafeName,
+            textureCoordinateIndex);
+      }
+    }
+  }
+
+  // Then, handle material textures.
+  {
+    primitiveResult
+        .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
+        addTextureCoordinatesToMap(
+            primitive,
+            pbrMetallicRoughness.baseColorTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult.textureCoordinateParameters
+        ["metallicRoughnessTextureCoordinateIndex"] =
+        addTextureCoordinatesToMap(
+            primitive,
+            pbrMetallicRoughness.metallicRoughnessTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult
+        .textureCoordinateParameters["normalTextureCoordinateIndex"] =
+        addTextureCoordinatesToMap(
+            primitive,
+            material.normalTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult
+        .textureCoordinateParameters["occlusionTextureCoordinateIndex"] =
+        addTextureCoordinatesToMap(
+            primitive,
+            material.occlusionTexture,
+            gltfToUnrealTexCoordMap);
+    primitiveResult
+        .textureCoordinateParameters["emissiveTextureCoordinateIndex"] =
+        addTextureCoordinatesToMap(
+            primitive,
+            material.emissiveTexture,
+            gltfToUnrealTexCoordMap);
+  }
+
+  // Finally, handle raster overlays.
+  {
+    for (size_t i = 0;
+         i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
+         ++i) {
+      primitiveResult.overlayTextureCoordinateIDToUVIndex[i] =
+          addTextureCoordinatesToMap(
+              primitive,
+              "_CESIUMOVERLAY_" + std::to_string(i),
+              gltfToUnrealTexCoordMap);
+    }
+  }
+}
+
 template <class T>
 static uint32_t updateTextureCoordinates(
     const CesiumGltf::Model& model,
@@ -322,7 +496,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 #endif
 BuildChaosTriangleMeshes(
-    const TArray<FStaticMeshBuildVertex>& vertexData,
+    const FPositionVertexBuffer& vertexBuffer,
     const TArray<uint32>& indices);
 
 static const CesiumGltf::Material defaultMaterial;
@@ -331,7 +505,7 @@ static const CesiumGltf::MaterialPBRMetallicRoughness
 
 struct ColorVisitor {
   bool duplicateVertices;
-  TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
+  FColorVertexBuffer& colorBuffer;
   const TArray<uint32>& indices;
 
   bool operator()(CesiumGltf::AccessorView<nullptr_t>&& invalidView) {
@@ -343,25 +517,26 @@ struct ColorVisitor {
       return false;
     }
 
+    FColor* pColor =
+        reinterpret_cast<FColor*>(this->colorBuffer.GetVertexData());
     bool success = true;
+
     if (duplicateVertices) {
-      for (int i = 0; success && i < this->indices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
+      for (int i = 0; success && i < this->indices.Num(); i++, pColor++) {
         uint32 vertexIndex = this->indices[i];
         if (vertexIndex >= colorView.size()) {
           success = false;
         } else {
-          success =
-              ColorVisitor::convertColor(colorView[vertexIndex], vertex.Color);
+          success = ColorVisitor::convertColor(colorView[vertexIndex], *pColor);
         }
       }
     } else {
-      for (int i = 0; success && i < this->StaticMeshBuildVertices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
+      for (uint32 i = 0; success && i < this->colorBuffer.GetNumVertices();
+           i++, pColor++) {
         if (i >= colorView.size()) {
           success = false;
         } else {
-          success = ColorVisitor::convertColor(colorView[i], vertex.Color);
+          success = ColorVisitor::convertColor(colorView[i], *pColor);
         }
       }
     }
@@ -1424,63 +1599,71 @@ static void loadPrimitive(
   duplicateVertices = duplicateVertices &&
                       primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
 
+  uint32 numVertices =
+      duplicateVertices ? indices.Num() : static_cast<int>(positionView.size());
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-  StaticMeshBuildVertices.SetNum(
-      duplicateVertices ? indices.Num()
-                        : static_cast<int>(positionView.size()));
+  StaticMeshBuildVertices.SetNum(numVertices);
+
+  LODResources.VertexBuffers.PositionVertexBuffer.Init(numVertices, false);
+  FPositionVertex* pVertex = reinterpret_cast<FPositionVertex*>(
+      LODResources.VertexBuffers.PositionVertexBuffer.GetVertexData());
 
   {
     if (duplicateVertices) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
-      for (int i = 0; i < indices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+      for (uint32 i = 0; i < numVertices; ++i, pVertex++) {
         uint32 vertexIndex = indices[i];
         const TMeshVector3& pos = positionView[vertexIndex];
-        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
-        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
-        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
-        vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-        vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
+
+        pVertex->Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        pVertex->Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        pVertex->Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
+            (FVector(pVertex->Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector3& pos = positionView[i];
-        vertex.Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
-        vertex.Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
-        vertex.Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
-        vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-        vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
+        pVertex->Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
+        pVertex->Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
+        pVertex->Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
+            (FVector(pVertex->Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     }
   }
 
-  bool hasVertexColors = false;
+  // FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+  // vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
+  // vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
 
   auto colorAccessorIt = primitive.attributes.find("COLOR_0");
   if (colorAccessorIt != primitive.attributes.end()) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
-    int colorAccessorID = colorAccessorIt->second;
-    hasVertexColors = createAccessorView(
+    LODResources.VertexBuffers.ColorVertexBuffer.Init(numVertices, false);
+    LODResources.bHasColorVertexData = createAccessorView(
         model,
-        colorAccessorID,
-        ColorVisitor{duplicateVertices, StaticMeshBuildVertices, indices});
+        colorAccessorIt->second,
+        ColorVisitor{
+            duplicateVertices,
+            LODResources.VertexBuffers.ColorVertexBuffer,
+            indices});
   }
 
-  LODResources.bHasColorVertexData = hasVertexColors;
-
   // We need to copy the texture coordinates associated with each texture (if
-  // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
-
+  // any) into the appropriate UVs slot in FStaticMeshBuildVertex.
   std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
       primitiveResult.GltfToUnrealTexCoordMap;
+
+  // accumulateTextureCoordinates(
+  //     model,
+  //     primitive,
+  //     material,
+  //     pbrMetallicRoughness,
+  //     primitiveResult);
 
   // This must be done before material textures are loaded, in case any of the
   // material textures are also used for features + metadata.
@@ -1677,16 +1860,6 @@ static void loadPrimitive(
     LODResources.VertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(
         true);
 
-    LODResources.VertexBuffers.PositionVertexBuffer.Init(
-        StaticMeshBuildVertices,
-        false);
-
-    FColorVertexBuffer& ColorVertexBuffer =
-        LODResources.VertexBuffers.ColorVertexBuffer;
-    if (hasVertexColors) {
-      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
-    }
-
     uint32 numberOfTextureCoordinates =
         gltfToUnrealTexCoordMap.size() == 0
             ? 1
@@ -1774,15 +1947,15 @@ static void loadPrimitive(
 
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
-    if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
+    if (numVertices != 0 && indices.Num() != 0) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
       primitiveResult.pCollisionMesh =
-          StaticMeshBuildVertices.Num() < TNumericLimits<uint16>::Max()
+          numVertices < TNumericLimits<uint16>::Max()
               ? BuildChaosTriangleMeshes<uint16>(
-                    StaticMeshBuildVertices,
+                    LODResources.VertexBuffers.PositionVertexBuffer,
                     indices)
               : BuildChaosTriangleMeshes<int32>(
-                    StaticMeshBuildVertices,
+                    LODResources.VertexBuffers.PositionVertexBuffer,
                     indices);
     }
   }
@@ -3676,29 +3849,32 @@ static Chaos::FTriangleMeshImplicitObjectPtr
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 #endif
 BuildChaosTriangleMeshes(
-    const TArray<FStaticMeshBuildVertex>& vertexData,
+    const FPositionVertexBuffer& vertexBuffer,
     const TArray<uint32>& indices) {
-  int32 vertexCount = vertexData.Num();
+  uint32 vertexCount = vertexBuffer.GetNumVertices();
+
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
-  for (int32 i = 0; i < vertexCount; ++i) {
-    vertices.X(i) = vertexData[i].Position;
+
+  for (uint32 i = 0; i < vertexCount; ++i) {
+    vertices.X(i) = vertexBuffer.VertexPosition(i);
   }
 
   int32 triangleCount = indices.Num() / 3;
   TArray<Chaos::TVector<TIndex, 3>> triangles;
-  triangles.Reserve(triangleCount);
   TArray<int32> faceRemap;
+
+  triangles.Reserve(triangleCount);
   faceRemap.Reserve(triangleCount);
 
   for (int32 i = 0; i < triangleCount; ++i) {
     const int32 index0 = 3 * i;
-    int32 vIndex0 = indices[index0 + 1];
-    int32 vIndex1 = indices[index0];
-    int32 vIndex2 = indices[index0 + 2];
+    int32 vIndex0 = int32(indices[index0 + 1]);
+    int32 vIndex1 = int32(indices[index0]);
+    int32 vIndex2 = int32(indices[index0 + 2]);
 
     triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
-    faceRemap.Add(i);
+    faceRemap.Add(int32(i));
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
