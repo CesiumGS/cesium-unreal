@@ -37,9 +37,7 @@ FVoxelResources::FVoxelResources(
   this->_loadedNodeIds.reserve(maximumTileCount);
 }
 
-FVoxelResources::~FVoxelResources() {
-  // TODO cleanup?
-}
+FVoxelResources::~FVoxelResources() {}
 
 FVector FVoxelResources::GetTileCount() const {
   auto tileCount = this->_dataTextures.GetTileCountAlongAxes();

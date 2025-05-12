@@ -1826,7 +1826,7 @@ namespace {
 bool dimensionsAreConsideredEqual(
     EVoxelGridShape gridShape,
     const std::vector<int64_t>& gltfDimensions,
-    const std::vector<int64_t> tilesetDimensions) {
+    const std::vector<int64_t>& tilesetDimensions) {
   switch (gridShape) {
   case EVoxelGridShape::Box:
   case EVoxelGridShape::Cylinder:
@@ -1956,7 +1956,7 @@ static void loadVoxels(
   // tileset.
   for (int32_t index : pPrimitiveMetadata->propertyAttributes) {
     if (index < 0 ||
-        index >
+        index >=
             static_cast<int32>(pPrimitiveMetadata->propertyAttributes.size())) {
       continue;
     }
@@ -3648,7 +3648,7 @@ UCesiumGltfComponent::CreateOffGameThread(
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures);
-        } 
+        }
       }
     }
   }
