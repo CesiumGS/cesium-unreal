@@ -80,12 +80,6 @@ using namespace LoadGltfResult;
 // with it
 #define DEBUG_GLTF_ASSET_NAMES 0
 
-namespace {
-using TMeshVector2 = FVector2f;
-using TMeshVector3 = FVector3f;
-using TMeshVector4 = FVector4f;
-} // namespace
-
 static uint32_t nextMaterialId = 0;
 
 namespace {
@@ -323,7 +317,7 @@ uint32_t updateTextureCoordinates(
   size_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
   gltfToUnrealTexCoordMap[uvAccessorID] = textureCoordinateIndex;
 
-  CesiumGltf::AccessorView<TMeshVector2> uvAccessor(model, uvAccessorID);
+  CesiumGltf::AccessorView<FVector2f> uvAccessor(model, uvAccessorID);
   if (uvAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
     return 0;
   }
@@ -335,7 +329,7 @@ uint32_t updateTextureCoordinates(
       if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
         vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
       } else {
-        vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
+        vertex.UVs[textureCoordinateIndex] = FVector2f(0.0f, 0.0f);
       }
     }
   } else {
@@ -344,7 +338,7 @@ uint32_t updateTextureCoordinates(
       if (i >= 0 && i < uvAccessor.size()) {
         vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
       } else {
-        vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
+        vertex.UVs[textureCoordinateIndex] = FVector2f(0.0f, 0.0f);
       }
     }
   }
@@ -372,7 +366,7 @@ static void mikkGetPosition(
     const int VertIdx) {
   TArray<FStaticMeshBuildVertex>& vertices =
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
-  const TMeshVector3& position = vertices[FaceIdx * 3 + VertIdx].Position;
+  const FVector3f& position = vertices[FaceIdx * 3 + VertIdx].Position;
   Position[0] = position.X;
   Position[1] = -position.Y;
   Position[2] = position.Z;
@@ -385,7 +379,7 @@ static void mikkGetNormal(
     const int VertIdx) {
   TArray<FStaticMeshBuildVertex>& vertices =
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
-  const TMeshVector3& normal = vertices[FaceIdx * 3 + VertIdx].TangentZ;
+  const FVector3f& normal = vertices[FaceIdx * 3 + VertIdx].TangentZ;
   Normal[0] = normal.X;
   Normal[1] = -normal.Y;
   Normal[2] = normal.Z;
@@ -398,7 +392,7 @@ static void mikkGetTexCoord(
     const int VertIdx) {
   TArray<FStaticMeshBuildVertex>& vertices =
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
-  const TMeshVector2& uv = vertices[FaceIdx * 3 + VertIdx].UVs[0];
+  const FVector2f& uv = vertices[FaceIdx * 3 + VertIdx].UVs[0];
   UV[0] = uv.X;
   UV[1] = uv.Y;
 }
@@ -416,9 +410,9 @@ static void mikkSetTSpaceBasic(
   FVector3f TangentZ = vertex.TangentZ;
   TangentZ.Y = -TangentZ.Y;
 
-  FVector3f TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
+  FVector3f TangentX = FVector3f(Tangent[0], Tangent[1], Tangent[2]);
   FVector3f TangentY =
-      BitangentSign * TMeshVector3::CrossProduct(TangentZ, TangentX);
+      BitangentSign * FVector3f::CrossProduct(TangentZ, TangentX);
 
   TangentX.Y = -TangentX.Y;
   TangentY.Y = -TangentY.Y;
@@ -453,7 +447,7 @@ static void setUnlitNormals(
 
   for (int i = 0; i < vertices.Num(); i++) {
     FStaticMeshBuildVertex& v = vertices[i];
-    v.TangentX = v.TangentY = TMeshVector3(0.0f);
+    v.TangentX = v.TangentY = FVector3f(0.0f);
 
     glm::dvec3 positionFixed = glm::dvec3(
         vertexToEllipsoidFixed *
@@ -475,16 +469,16 @@ static void computeFlatNormals(TArray<FStaticMeshBuildVertex>& vertices) {
     // computing the normal direction. Then invert the Y coordinate of the
     // normal, too.
 
-    TMeshVector3 v01 = v1.Position - v0.Position;
+    FVector3f v01 = v1.Position - v0.Position;
     v01.Y = -v01.Y;
-    TMeshVector3 v02 = v2.Position - v0.Position;
+    FVector3f v02 = v2.Position - v0.Position;
     v02.Y = -v02.Y;
-    TMeshVector3 normal = TMeshVector3::CrossProduct(v01, v02);
+    FVector3f normal = FVector3f::CrossProduct(v01, v02);
 
     normal.Y = -normal.Y;
 
-    v0.TangentX = v1.TangentX = v2.TangentX = TMeshVector3(0.0f);
-    v0.TangentY = v1.TangentY = v2.TangentY = TMeshVector3(0.0f);
+    v0.TangentX = v1.TangentX = v2.TangentX = FVector3f(0.0f);
+    v0.TangentY = v1.TangentY = v2.TangentY = FVector3f(0.0f);
     v0.TangentZ = v1.TangentZ = v2.TangentZ = normal.GetSafeNormal();
   }
 }
@@ -909,9 +903,9 @@ static void updateTextureCoordinatesForFeaturesMetadata(
                 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
                     featureIDAttribute,
                     vertexIndex));
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(featureId, 0.0f);
           } else {
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(0.0f, 0.0f);
           }
         }
       } else {
@@ -922,9 +916,9 @@ static void updateTextureCoordinatesForFeaturesMetadata(
                 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
                     featureIDAttribute,
                     i));
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(featureId, 0.0f);
           } else {
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(0.0f, 0.0f);
           }
         }
       }
@@ -958,13 +952,13 @@ static void updateTextureCoordinatesForFeaturesMetadata(
           FStaticMeshBuildVertex& vertex = vertices[i];
           uint32 vertexIndex = indices[i];
           vertex.UVs[textureCoordinateIndex] =
-              TMeshVector2(static_cast<float>(vertexIndex), 0.0f);
+              FVector2f(static_cast<float>(vertexIndex), 0.0f);
         }
       } else {
         for (int64_t i = 0; i < vertices.Num(); ++i) {
           FStaticMeshBuildVertex& vertex = vertices[i];
           vertex.UVs[textureCoordinateIndex] =
-              TMeshVector2(static_cast<float>(i), 0.0f);
+              FVector2f(static_cast<float>(i), 0.0f);
         }
       }
     }
@@ -1069,9 +1063,9 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
                 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
                     featureIdAttribute,
                     vertexIndex));
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(featureId, 0.0f);
           } else {
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(0.0f, 0.0f);
           }
         }
       } else {
@@ -1082,9 +1076,9 @@ static void updateTextureCoordinatesForMetadata_DEPRECATED(
                 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
                     featureIdAttribute,
                     i));
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(featureId, 0.0f);
           } else {
-            vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = FVector2f(0.0f, 0.0f);
           }
         }
       }
@@ -1385,7 +1379,7 @@ static void loadPrimitive(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
-    const CesiumGltf::AccessorView<TMeshVector3>& positionView,
+    const CesiumGltf::AccessorView<FVector3f>& positionView,
     const TIndexAccessor& indicesView,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
@@ -1429,12 +1423,12 @@ static void loadPrimitive(
   }
 
   auto normalAccessorIt = primitive.attributes.find("NORMAL");
-  CesiumGltf::AccessorView<TMeshVector3> normalAccessor;
+  CesiumGltf::AccessorView<FVector3f> normalAccessor;
   bool hasNormals = false;
   if (normalAccessorIt != primitive.attributes.end()) {
     int normalAccessorID = normalAccessorIt->second;
     normalAccessor =
-        CesiumGltf::AccessorView<TMeshVector3>(model, normalAccessorID);
+        CesiumGltf::AccessorView<FVector3f>(model, normalAccessorID);
     hasNormals =
         normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid;
     if (!hasNormals) {
@@ -1492,11 +1486,11 @@ static void loadPrimitive(
 
   bool hasTangents = false;
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
-  CesiumGltf::AccessorView<TMeshVector4> tangentAccessor;
+  CesiumGltf::AccessorView<FVector4f> tangentAccessor;
   if (tangentAccessorIt != primitive.attributes.end()) {
     int tangentAccessorID = tangentAccessorIt->second;
     tangentAccessor =
-        CesiumGltf::AccessorView<TMeshVector4>(model, tangentAccessorID);
+        CesiumGltf::AccessorView<FVector4f>(model, tangentAccessorID);
     hasTangents =
         tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid;
     if (!hasTangents) {
@@ -1613,7 +1607,7 @@ static void loadPrimitive(
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (uint32 i = 0; i < numVertices; ++i, pVertex++) {
         uint32 vertexIndex = indices[i];
-        const TMeshVector3& pos = positionView[vertexIndex];
+        const FVector3f& pos = positionView[vertexIndex];
 
         pVertex->Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
         pVertex->Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
@@ -1625,7 +1619,7 @@ static void loadPrimitive(
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-        const TMeshVector3& pos = positionView[i];
+        const FVector3f& pos = positionView[i];
         pVertex->Position.X = pos.X * CesiumPrimitiveData::positionScaleFactor;
         pVertex->Position.Y = -pos.Y * CesiumPrimitiveData::positionScaleFactor;
         pVertex->Position.Z = pos.Z * CesiumPrimitiveData::positionScaleFactor;
@@ -1637,8 +1631,8 @@ static void loadPrimitive(
   }
 
   // FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-  // vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-  // vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
+  // vertex.UVs[0] = FVector2f(0.0f, 0.0f);
+  // vertex.UVs[2] = FVector2f(0.0f, 0.0f);
 
   auto colorAccessorIt = primitive.attributes.find("COLOR_0");
   if (colorAccessorIt != primitive.attributes.end()) {
@@ -1783,9 +1777,9 @@ static void loadPrimitive(
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
-        vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
-        vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-        const TMeshVector3& normal = normalAccessor[vertexIndex];
+        vertex.TangentX = FVector3f(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector3f(0.0f, 0.0f, 0.0f);
+        const FVector3f& normal = normalAccessor[vertexIndex];
         vertex.TangentZ.X = normal.X;
         vertex.TangentZ.Y = -normal.Y;
         vertex.TangentZ.Z = normal.Z;
@@ -1794,9 +1788,9 @@ static void loadPrimitive(
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
-        vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-        const TMeshVector3& normal = normalAccessor[i];
+        vertex.TangentX = FVector3f(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector3f(0.0f, 0.0f, 0.0f);
+        const FVector3f& normal = normalAccessor[i];
         vertex.TangentZ.X = normal.X;
         vertex.TangentZ.Y = -normal.Y;
         vertex.TangentZ.Z = normal.Z;
@@ -1820,25 +1814,25 @@ static void loadPrimitive(
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
-        const TMeshVector4& tangent = tangentAccessor[vertexIndex];
+        const FVector4f& tangent = tangentAccessor[vertexIndex];
         vertex.TangentX.X = tangent.X;
         vertex.TangentX.Y = -tangent.Y;
         vertex.TangentX.Z = tangent.Z;
         vertex.TangentY =
-            TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
+            FVector3f::CrossProduct(vertex.TangentZ, vertex.TangentX) *
             tangent.W;
       }
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        const TMeshVector4& tangent = tangentAccessor[i];
+        const FVector4f& tangent = tangentAccessor[i];
         vertex.TangentX = tangent;
         vertex.TangentX.X = tangent.X;
         vertex.TangentX.Y = -tangent.Y;
         vertex.TangentX.Z = tangent.Z;
         vertex.TangentY =
-            TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
+            FVector3f::CrossProduct(vertex.TangentZ, vertex.TangentX) *
             tangent.W;
       }
     }
@@ -1966,7 +1960,7 @@ static void loadIndexedPrimitive(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
-    const CesiumGltf::AccessorView<TMeshVector3>& positionView,
+    const CesiumGltf::AccessorView<FVector3f>& positionView,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   const CesiumGltf::Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
@@ -2051,9 +2045,7 @@ static void loadPrimitive(
     return;
   }
 
-  CesiumGltf::AccessorView<TMeshVector3> positionView(
-      model,
-      *pPositionAccessor);
+  CesiumGltf::AccessorView<FVector3f> positionView(model, *pPositionAccessor);
 
   if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
     std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
