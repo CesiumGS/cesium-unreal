@@ -1165,9 +1165,7 @@ public:
   void SetITwinID(const FString& InITwinID);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  UCesiumITwinConnection* GetITwinAccessToken() const {
-    return ITwinConnection;
-  }
+  UCesiumITwinConnection* GetITwinConnection() const { return ITwinConnection; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetITwinConnection(UCesiumITwinConnection* InAccessToken);

@@ -1197,9 +1197,7 @@ void ACesium3DTileset::LoadTileset() {
         externals,
         Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory(
             static_cast<uint32_t>(this->ITwinCesiumContentID),
-            this->ITwinConnection->GetConnection()
-                ->getAccessToken()
-                .getToken()),
+            this->ITwinConnection->GetConnection()->getAuthToken().getToken()),
         options);
     break;
   case ETilesetSource::FromIModelMeshExportService:
@@ -1214,9 +1212,7 @@ void ACesium3DTileset::LoadTileset() {
         Cesium3DTilesSelection::IModelMeshExportContentLoaderFactory(
             TCHAR_TO_UTF8(*this->IModelID),
             std::nullopt,
-            this->ITwinConnection->GetConnection()
-                ->getAccessToken()
-                .getToken()),
+            this->ITwinConnection->GetConnection()->getAuthToken().getToken()),
         options);
     break;
   case ETilesetSource::FromITwinRealityData:
@@ -1233,7 +1229,7 @@ void ACesium3DTileset::LoadTileset() {
             this->ITwinID.IsEmpty() ? std::nullopt
                                     : std::make_optional<std::string>(
                                           TCHAR_TO_UTF8(*this->ITwinID)),
-            this->ITwinConnection->GetConnection()->getAccessToken().getToken(),
+            this->ITwinConnection->GetConnection()->getAuthToken().getToken(),
             [asyncSystem, pConnection = this->ITwinConnection->GetConnection()](
                 const std::string&) {
               if (!pConnection->getRefreshToken()) {
@@ -1251,14 +1247,14 @@ void ACesium3DTileset::LoadTileset() {
                       return CesiumUtility::Result<std::string>(result.errors);
                     }
 
-                    if (!pConnection->getAccessToken().isValid()) {
+                    if (!pConnection->getAuthToken().isValid()) {
                       return CesiumUtility::Result<
                           std::string>(CesiumUtility::ErrorList::error(
                           "Tried to refresh access token for reality data, but was not able to obtain valid token."));
                     }
 
                     return CesiumUtility::Result<std::string>(
-                        pConnection->getAccessToken().getToken());
+                        pConnection->getAuthToken().getToken());
                   });
             }),
         options);

@@ -48,7 +48,7 @@ ACesiumCartographicPolygon::CreateCartographicPolygon(
   int32 splinePointsCount = this->Polygon->GetNumberOfSplinePoints();
 
   if (splinePointsCount < 3) {
-    return CartographicPolygon({});
+    return CartographicPolygon(std::vector<glm::dvec2>{});
   }
 
   std::vector<glm::dvec2> polygon(splinePointsCount);

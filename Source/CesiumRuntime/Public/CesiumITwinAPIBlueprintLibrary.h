@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Cesium3DTileset.h"
 #include "CesiumGeoreference.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -29,16 +28,15 @@ public:
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetAccessToken() {
-    return UTF8_TO_TCHAR(
-        this->pConnection->getAccessToken().getToken().c_str());
+    return UTF8_TO_TCHAR(this->pConnection->getAuthToken().getToken().c_str());
   }
 
   TSharedPtr<CesiumITwinClient::Connection>& GetConnection() {
     return this->pConnection;
   }
 
-  void SetConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection) {
-    this->pConnection = pConnection;
+  void SetConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection_) {
+    this->pConnection = pConnection_;
   }
 
   TSharedPtr<CesiumITwinClient::Connection> pConnection;
@@ -154,30 +152,61 @@ enum class ECesiumITwinStatus : uint8 {
   Trial = 3
 };
 
+/**
+ * @brief Information on a single iTwin.
+ *
+ * See
+ * https://developer.bentley.com/apis/itwins/operations/get-my-itwins/#itwin-summary
+ * for more information.
+ */
 UCLASS(BlueprintType)
 class UCesiumITwin : public UObject {
   GENERATED_BODY()
 public:
   UCesiumITwin() : UObject(), _iTwin() {}
 
+  /** @brief The iTwin Id. */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetID() { return UTF8_TO_TCHAR(_iTwin.id.c_str()); }
 
+  /**
+   * @brief The `Class` of your iTwin.
+   *
+   * See
+   * https://developer.bentley.com/apis/itwins/overview/#itwin-classes-and-subclasses
+   * for more information.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetClass() { return UTF8_TO_TCHAR(_iTwin.iTwinClass.c_str()); }
 
+  /**
+   * @brief The `subClass` of your iTwin.
+   *
+   * See
+   * https://developer.bentley.com/apis/itwins/overview/#itwin-classes-and-subclasses
+   * for more information.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetSubClass() { return UTF8_TO_TCHAR(_iTwin.subClass.c_str()); }
 
+  /** @brief An open ended property to better define your iTwin's Type. */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetType() { return UTF8_TO_TCHAR(_iTwin.type.c_str()); }
 
+  /**
+   * @brief A unique number or code for the iTwin.
+   *
+   * This is the value that uniquely identifies the iTwin within your
+   * organization.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetNumber() { return UTF8_TO_TCHAR(_iTwin.number.c_str()); }
 
+  /** @brief A display name for the iTwin. */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetDisplayName() { return UTF8_TO_TCHAR(_iTwin.displayName.c_str()); }
 
+  /** @brief The status of the iTwin. */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   ECesiumITwinStatus GetStatus() { return (ECesiumITwinStatus)_iTwin.status; }
 
@@ -189,7 +218,7 @@ private:
   CesiumITwinClient::ITwin _iTwin;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
     FCesiumITwinListITwinsDelegate,
     TArray<UCesiumITwin*>,
     ITwins,
@@ -208,7 +237,7 @@ public:
       Category = "Cesium|iTwin",
       meta = (BlueprintInternalUseOnly = true))
   static UCesiumITwinAPIGetITwinsAsyncAction*
-  GetITwins(UCesiumITwinConnection* pConnection);
+  GetITwins(UCesiumITwinConnection* pConnection, int Page);
 
   UPROPERTY(BlueprintAssignable)
   FCesiumITwinListITwinsDelegate OnITwinsResult;
@@ -216,4 +245,120 @@ public:
   virtual void Activate() override;
 
   TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  int page;
+};
+
+UENUM(BlueprintType)
+enum class ECesiumIModelState : uint8 {
+  Unknown = 0,
+  Initialized = 1,
+  NotInitialized = 2
+};
+
+/**
+ * @brief An iModel.
+ *
+ * See
+ * https://developer.bentley.com/apis/imodels-v2/operations/get-imodel-details/#imodel
+ * for more information.
+ */
+UCLASS(BlueprintType)
+class UCesiumIModel : public UObject {
+  GENERATED_BODY()
+public:
+  UCesiumIModel() : UObject(), _iModel() {}
+
+  /** @brief The iTwin Id. */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  FString GetID() { return UTF8_TO_TCHAR(_iModel.id.c_str()); }
+
+  /** @brief A display name for the iTwin. */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  FString GetDisplayName() {
+    return UTF8_TO_TCHAR(_iModel.displayName.c_str());
+  }
+
+  /**
+   * @brief The `Class` of your iTwin.
+   *
+   * See
+   * https://developer.bentley.com/apis/itwins/overview/#itwin-classes-and-subclasses
+   * for more information.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  FString GetName() { return UTF8_TO_TCHAR(_iModel.name.c_str()); }
+
+  /**
+   * @brief The `subClass` of your iTwin.
+   *
+   * See
+   * https://developer.bentley.com/apis/itwins/overview/#itwin-classes-and-subclasses
+   * for more information.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  FString GetDescription() {
+    return UTF8_TO_TCHAR(_iModel.description.c_str());
+  }
+
+  /** @brief The status of the iTwin. */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  ECesiumIModelState GetState() { return (ECesiumIModelState)_iModel.state; }
+
+  /** @brief The status of the iTwin. */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  FBox GetExtent() {
+    const CesiumGeospatial::Cartographic& southWest =
+        _iModel.extent.getSouthwest();
+    const CesiumGeospatial::Cartographic& northEast =
+        _iModel.extent.getNortheast();
+    return FBox(
+        FVector(
+            CesiumUtility::Math::radiansToDegrees(southWest.longitude),
+            CesiumUtility::Math::radiansToDegrees(southWest.latitude),
+            southWest.height),
+        FVector(
+            CesiumUtility::Math::radiansToDegrees(northEast.longitude),
+            CesiumUtility::Math::radiansToDegrees(northEast.latitude),
+            northEast.height));
+  }
+
+  void SetIModel(CesiumITwinClient::IModel&& iModel) {
+    this->_iModel = std::move(iModel);
+  }
+
+private:
+  CesiumITwinClient::IModel _iModel;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+    FCesiumITwinListIModelsDelegate,
+    TArray<UCesiumIModel*>,
+    IModels,
+    bool,
+    HasAnotherPage,
+    const TArray<FString>&,
+    Errors);
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumITwinAPIGetIModelsAsyncAction
+    : public UBlueprintAsyncActionBase {
+  GENERATED_BODY()
+public:
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|iTwin",
+      meta = (BlueprintInternalUseOnly = true))
+  static UCesiumITwinAPIGetIModelsAsyncAction* GetIModels(
+      UCesiumITwinConnection* pConnection,
+      const FString& ITwinId,
+      int Page);
+
+  UPROPERTY(BlueprintAssignable)
+  FCesiumITwinListIModelsDelegate OnIModelsResult;
+
+  virtual void Activate() override;
+
+  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  int page;
+  FString iTwinId;
 };
