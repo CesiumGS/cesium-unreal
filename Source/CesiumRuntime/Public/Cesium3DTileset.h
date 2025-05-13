@@ -25,11 +25,12 @@
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include <vector>
-#include "Cesium3DTileset.generated.h"
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
+
+#include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
@@ -37,6 +38,7 @@ class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
+class ICesium3DTilesetLifecycleEventReceiver;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -339,6 +341,19 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InvalidateResolvedCameraManager();
+
+  /**
+   * Whether to configure the Unreal mesh buffers to allow access from CPU. If
+   * this is false, the buffers can be freed from CPU memory at any time after
+   * they have been moved to GPU memory: set to true if you need to access these
+   * buffers for your game logic.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAllowMeshBuffersCPUAccess,
+      BlueprintSetter = SetAllowMeshBuffersCPUAccess,
+      Category = "Cesium")
+  bool bAllowMeshBuffersCPUAccess = false;
 
   /**
    * The maximum number of pixels of error when rendering this tileset.
@@ -1067,6 +1082,14 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetMaximumScreenSpaceError(double InMaximumScreenSpaceError);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetAllowMeshBuffersCPUAccess() const {
+    return bAllowMeshBuffersCPUAccess;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetAllowMeshBuffersCPUAccess(bool bMeshBuffersCPUAccess);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   bool GetEnableOcclusionCulling() const;
 
@@ -1257,6 +1280,18 @@ public:
    */
   void UpdateTransformFromCesium();
 
+  /** Gets the optional receiver of events related to tile components' lifecycle
+   */
+  ICesium3DTilesetLifecycleEventReceiver* GetLifecycleEventReceiver() {
+    return this->_lifecycleEventReceiver;
+  }
+
+  /** Sets a receiver of events related to tile components' lifecycle,
+   * like tile primitive and material creation, tile finishing its loading cycle
+   * or about to unload, etc. */
+  void SetLifecycleEventReceiver(
+      ICesium3DTilesetLifecycleEventReceiver* InEventReceiver);
+
 private:
   /**
    * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
@@ -1370,6 +1405,8 @@ private:
       _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  ICesium3DTilesetLifecycleEventReceiver* _lifecycleEventReceiver;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

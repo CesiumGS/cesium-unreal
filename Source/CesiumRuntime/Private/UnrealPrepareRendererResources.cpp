@@ -1,5 +1,8 @@
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
 #include "UnrealPrepareRendererResources.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
@@ -32,6 +35,8 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
   options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
+  options.allowMeshBuffersCPUAccess =
+      this->_pActor->GetAllowMeshBuffersCPUAccess();
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
@@ -100,6 +105,9 @@ void UnrealPrepareRendererResources::free(
   } else if (pMainThreadResult) {
     UCesiumGltfComponent* pGltf =
         reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
+    if (auto* Receiver = this->_pActor->GetLifecycleEventReceiver()) {
+      Receiver->BeforeTileDestruction(*pGltf);
+    }
     CesiumLifetime::destroyComponentRecursively(pGltf);
   }
 }

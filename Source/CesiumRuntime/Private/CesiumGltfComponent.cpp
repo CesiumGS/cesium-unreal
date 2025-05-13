@@ -1,7 +1,9 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfComponent.h"
+
 #include "Async/Async.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
@@ -1668,6 +1670,12 @@ static void loadPrimitive(
     computeTangentSpace(StaticMeshBuildVertices);
   }
 
+  // Note: there is already a representation of the geometry kept in CPU memory,
+  // which is the CesiumGltf::Model, so we should avoid keeping a second copy...
+  // (TODO: remove option)
+  bool bNeedsCPUAccess = options.pMeshOptions->pNodeOptions->pModelOptions
+                             ->allowMeshBuffersCPUAccess;
+
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
 
@@ -1676,15 +1684,14 @@ static void loadPrimitive(
     // precision when using 16-bit floats.
     LODResources.VertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(
         true);
-
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
-        false);
+        bNeedsCPUAccess);
 
     FColorVertexBuffer& ColorVertexBuffer =
         LODResources.VertexBuffers.ColorVertexBuffer;
     if (hasVertexColors) {
-      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
+      ColorVertexBuffer.Init(StaticMeshBuildVertices, bNeedsCPUAccess);
     }
 
     uint32 numberOfTextureCoordinates =
@@ -1697,7 +1704,7 @@ static void loadPrimitive(
     vertexBuffer.Init(
         StaticMeshBuildVertices.Num(),
         numberOfTextureCoordinates,
-        false);
+        bNeedsCPUAccess);
 
     // Manually copy the vertices into the buffer. We do this because UE 5.3
     // and 5.4 have a bug where the overload of `FStaticMeshVertexBuffer::Init`
@@ -1744,6 +1751,9 @@ static void loadPrimitive(
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
+    if (bNeedsCPUAccess) {
+      LODResources.IndexBuffer.TrySetAllowCPUAccess(true);
+    }
     LODResources.IndexBuffer.SetIndices(
         indices,
         StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()
@@ -2446,13 +2456,15 @@ bool applyTexture(
 #pragma region Material Parameter setters
 
 static void SetGltfParameterValues(
+    ICesiumPrimitive& TilePrim,
     CesiumGltf::Model& model,
     LoadedPrimitiveResult& loadResult,
     const CesiumGltf::Material& material,
     const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
-    int32 index) {
+    int32 index,
+    ICesium3DTilesetLifecycleEventReceiver* lifecycleEventReceiver) {
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
@@ -2670,6 +2682,17 @@ static void SetGltfParameterValues(
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("emissiveFactor", association, index),
         FVector(1.0f, 1.0f, 1.0f));
+  }
+
+  // Extra material customizations
+  if (lifecycleEventReceiver) {
+    lifecycleEventReceiver->CustomizeGltfMaterial(
+        TilePrim,
+        material,
+        pbr,
+        pMaterial,
+        association,
+        index);
   }
 }
 
@@ -3130,25 +3153,51 @@ static void loadPrimitiveGameThreadPart(
   }
 #endif
 
-  UMaterialInstanceDynamic* pMaterial;
+  // Move this right now: CreateMaterial may need them!
+  // "Safe" even though loadResult is still used later, because the methods used
+  // during material setup (SetGltfParameterValues, etc.) below do not use these
+  // members.
+  primData.Features = std::move(loadResult.Features);
+  primData.Metadata = std::move(loadResult.Metadata);
+
+  UMaterialInstanceDynamic* pMaterial = nullptr;
+  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+      pTilesetActor->GetLifecycleEventReceiver();
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-
-    pMaterial = UMaterialInstanceDynamic::Create(
-        pBaseMaterial,
-        nullptr,
-        ImportedSlotName);
+    ensure(pBaseMaterial);
+    if (pLifecycleEventReceiver) {
+      // Possibility to override the material for this primitive
+      pMaterial = pLifecycleEventReceiver->CreateMaterial(
+          *pCesiumPrimitive,
+          pBaseMaterial,
+          nullptr,
+          ImportedSlotName);
+      if (pMaterial) {
+        // pMaterial created above may not have used the suggested pBaseMaterial
+        // passed as input
+        pBaseMaterial = pMaterial->Parent.Get();
+      }
+    }
+    if (!pMaterial) {
+      pMaterial = UMaterialInstanceDynamic::Create(
+          pBaseMaterial,
+          nullptr,
+          ImportedSlotName);
+    }
 
     pMaterial->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     SetGltfParameterValues(
+        *pCesiumPrimitive,
         model,
         loadResult,
         material,
         pbr,
         pMaterial,
         EMaterialParameterAssociation::GlobalParameter,
-        INDEX_NONE);
+        INDEX_NONE,
+        pLifecycleEventReceiver);
     SetWaterParameterValues(
         model,
         loadResult,
@@ -3189,13 +3238,15 @@ static void loadPrimitiveGameThreadPart(
 
     if (pCesiumData) {
       SetGltfParameterValues(
+          *pCesiumPrimitive,
           model,
           loadResult,
           material,
           pbr,
           pMaterial,
           EMaterialParameterAssociation::LayerParameter,
-          0);
+          0,
+          pLifecycleEventReceiver);
 
       // Initialize fade uniform to fully visible, in case LOD transitions
       // are off.
@@ -3249,9 +3300,6 @@ static void loadPrimitiveGameThreadPart(
       }
     }
   }
-
-  primData.Features = std::move(loadResult.Features);
-  primData.Metadata = std::move(loadResult.Metadata);
 
   primData.EncodedFeatures = std::move(loadResult.EncodedFeatures);
   primData.EncodedMetadata = std::move(loadResult.EncodedMetadata);
@@ -3328,6 +3376,11 @@ static void loadPrimitiveGameThreadPart(
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
     pMesh->RegisterComponent();
   }
+
+  // Call the observer callback (if any) once all is done
+  if (pLifecycleEventReceiver) {
+    pLifecycleEventReceiver->OnTileMeshPrimitiveConstructed(*pCesiumPrimitive);
+  }
 }
 
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
@@ -3352,7 +3405,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::Tile& tile,
+    Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
@@ -3366,6 +3419,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   // }
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  Gltf->pTile = &tile;
   Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
@@ -3411,10 +3465,19 @@ UCesiumGltfComponent::CreateOffGameThread(
       }
     }
   }
+  pTilesetActor->GetLifecycleEventReceiver()->OnTileConstructed(*Gltf);
 
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
+}
+
+void UCesiumGltfComponent::OnVisibilityChanged() {
+  USceneComponent::OnVisibilityChanged();
+  auto* pLifecycleEventReceiver =
+      Cast<ACesium3DTileset>(GetOuter())->GetLifecycleEventReceiver();
+  if (pLifecycleEventReceiver)
+    pLifecycleEventReceiver->OnVisibilityChanged(*this, GetVisibleFlag());
 }
 
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
@@ -3445,6 +3508,20 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
+}
+
+const FCesiumModelMetadata& UCesiumGltfComponent::GetModelMetadata() const {
+  return Metadata;
+}
+
+const Cesium3DTilesSelection::TileID& UCesiumGltfComponent::GetTileID() const {
+  return pTile->getTileID();
+}
+
+void UCesiumGltfComponent::SetRenderReady(bool bToggle) {
+  if (pTile) {
+    pTile->setRenderEngineReadiness(bToggle);
+  }
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(

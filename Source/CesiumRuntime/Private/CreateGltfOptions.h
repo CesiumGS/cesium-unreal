@@ -52,6 +52,11 @@ struct CreateModelOptions {
    */
   bool ignoreKhrMaterialsUnlit = false;
 
+  /** Whether to configure the Unreal mesh buffers to allow access from CPU. If
+   * this is false, the buffers can be freed from CPU memory at any time after
+   * they have been moved to GPU memory. */
+  bool allowMeshBuffersCPUAccess = false;
+
   Cesium3DTilesSelection::TileLoadResult tileLoadResult;
 
 public:
@@ -67,6 +72,7 @@ public:
         alwaysIncludeTangents(other.alwaysIncludeTangents),
         createPhysicsMeshes(other.createPhysicsMeshes),
         ignoreKhrMaterialsUnlit(other.ignoreKhrMaterialsUnlit),
+        allowMeshBuffersCPUAccess(other.allowMeshBuffersCPUAccess),
         tileLoadResult(std::move(other.tileLoadResult)) {
     pModel = std::get_if<CesiumGltf::Model>(&this->tileLoadResult.contentKind);
   }

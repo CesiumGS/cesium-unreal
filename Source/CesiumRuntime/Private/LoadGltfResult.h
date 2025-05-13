@@ -151,7 +151,6 @@ struct LoadedPrimitiveResult {
    * for computing the UV at a hit location on a primitive.
    */
   CesiumGltf::IndexAccessorType IndexAccessor;
-
 #pragma endregion
 };
 
