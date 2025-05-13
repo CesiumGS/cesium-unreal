@@ -23,7 +23,7 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
       std::vector<std::string>{"itwin-platform", "offline_access"},
       [&Callback = this->OnAuthorizationEvent](const std::string& url) {
         Callback.Broadcast(
-            ECesiumITwinDelegateType::OpenUrl,
+            ECesiumITwinAuthorizationDelegateType::OpenUrl,
             UTF8_TO_TCHAR(url.c_str()),
             nullptr,
             TArray<FString>());
@@ -52,7 +52,7 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
           }
 
           this->OnAuthorizationEvent.Broadcast(
-              ECesiumITwinDelegateType::Failure,
+              ECesiumITwinAuthorizationDelegateType::Failure,
               FString(),
               nullptr,
               Errors);
@@ -61,7 +61,7 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
               NewObject<UCesiumITwinConnection>();
           pConnection->SetConnection(connection.pValue);
           this->OnAuthorizationEvent.Broadcast(
-              ECesiumITwinDelegateType::Success,
+              ECesiumITwinAuthorizationDelegateType::Success,
               FString(),
               pConnection,
               TArray<FString>());

@@ -473,14 +473,15 @@ void ACesium3DTileset::SetITwinID(const FString& InITwinID) {
   }
 }
 
-void ACesium3DTileset::SetITwinAccessToken(const FString& InAccessToken) {
-  if (this->ITwinAccessToken != InAccessToken) {
+void ACesium3DTileset::SetITwinConnection(
+    UCesiumITwinConnection* InConnection) {
+  if (this->ITwinConnection != InConnection) {
     if (this->TilesetSource == ETilesetSource::FromITwinCesiumCuratedContent ||
         this->TilesetSource == ETilesetSource::FromIModelMeshExportService ||
         this->TilesetSource == ETilesetSource::FromITwinRealityData) {
       this->DestroyTileset();
     }
-    this->ITwinAccessToken = InAccessToken;
+    this->ITwinConnection = InConnection;
   }
 }
 
@@ -1196,7 +1197,9 @@ void ACesium3DTileset::LoadTileset() {
         externals,
         Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory(
             static_cast<uint32_t>(this->ITwinCesiumContentID),
-            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+            this->ITwinConnection->GetConnection()
+                ->getAccessToken()
+                .getToken()),
         options);
     break;
   case ETilesetSource::FromIModelMeshExportService:
@@ -1211,7 +1214,9 @@ void ACesium3DTileset::LoadTileset() {
         Cesium3DTilesSelection::IModelMeshExportContentLoaderFactory(
             TCHAR_TO_UTF8(*this->IModelID),
             std::nullopt,
-            TCHAR_TO_UTF8(*this->ITwinAccessToken)),
+            this->ITwinConnection->GetConnection()
+                ->getAccessToken()
+                .getToken()),
         options);
     break;
   case ETilesetSource::FromITwinRealityData:
@@ -1228,11 +1233,33 @@ void ACesium3DTileset::LoadTileset() {
             this->ITwinID.IsEmpty() ? std::nullopt
                                     : std::make_optional<std::string>(
                                           TCHAR_TO_UTF8(*this->ITwinID)),
-            TCHAR_TO_UTF8(*this->ITwinAccessToken),
-            [asyncSystem](const std::string&) {
-              return asyncSystem
-                  .createResolvedFuture<CesiumUtility::Result<std::string>>(
-                      CesiumUtility::Result<std::string>(std::string{}));
+            this->ITwinConnection->GetConnection()->getAccessToken().getToken(),
+            [asyncSystem, pConnection = this->ITwinConnection->GetConnection()](
+                const std::string&) {
+              if (!pConnection->getRefreshToken()) {
+                return asyncSystem.createResolvedFuture<
+                    CesiumUtility::
+                        Result<std::string>>(CesiumUtility::ErrorList::error(
+                    "Access token for reality data is expired, no refresh token available."));
+              }
+
+              return pConnection->me().thenImmediately(
+                  [pConnection](
+                      CesiumUtility::Result<CesiumITwinClient::UserProfile>&&
+                          result) -> CesiumUtility::Result<std::string> {
+                    if (!result.value) {
+                      return CesiumUtility::Result<std::string>(result.errors);
+                    }
+
+                    if (!pConnection->getAccessToken().isValid()) {
+                      return CesiumUtility::Result<
+                          std::string>(CesiumUtility::ErrorList::error(
+                          "Tried to refresh access token for reality data, but was not able to obtain valid token."));
+                    }
+
+                    return CesiumUtility::Result<std::string>(
+                        pConnection->getAccessToken().getToken());
+                  });
             }),
         options);
     break;
@@ -2348,7 +2375,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IModelID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, RealityDataID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinID) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinAccessToken) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ITwinConnection) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==

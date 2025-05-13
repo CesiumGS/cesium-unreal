@@ -10,6 +10,7 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGeoreference.h"
+#include "CesiumITwinAPIBlueprintLibrary.h"
 #include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
 #include "CesiumSampleHeightResult.h"
@@ -857,13 +858,13 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintGetter = GetITwinAccessToken,
-      BlueprintSetter = SetITwinAccessToken,
+      BlueprintGetter = GetITwinConnection,
+      BlueprintSetter = SetITwinConnection,
       Category = "Cesium",
       meta =
           (EditCondition =
                "TilesetSource==ETilesetSource::FromITwinCesiumCuratedContent || TilesetSource==ETilesetSource::FromIModelMeshExportService || TilesetSource==ETilesetSource::FromITwinRealityData"))
-  FString ITwinAccessToken;
+  UCesiumITwinConnection* ITwinConnection;
 
   /**
    * Headers to be attached to each request made for this tileset.
@@ -1164,10 +1165,12 @@ public:
   void SetITwinID(const FString& InITwinID);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  FString GetITwinAccessToken() const { return ITwinAccessToken; }
+  UCesiumITwinConnection* GetITwinAccessToken() const {
+    return ITwinConnection;
+  }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetITwinAccessToken(const FString& InAccessToken);
+  void SetITwinConnection(UCesiumITwinConnection* InAccessToken);
 
   UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
   TArray<URuntimeVirtualTexture*> GetRuntimeVirtualTextures() const {
