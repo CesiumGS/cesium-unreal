@@ -1,5 +1,8 @@
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
 #include "UnrealPrepareRendererResources.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
@@ -10,7 +13,6 @@
 #include <Cesium3DTilesSelection/TileLoadResult.h>
 #include <CesiumAsync/AsyncSystem.h>
 #include <CesiumGeospatial/Ellipsoid.h>
-#include <CesiumMeshBuildCallbacks.h>
 #include <glm/mat4x4.hpp>
 
 UnrealPrepareRendererResources::UnrealPrepareRendererResources(
@@ -45,9 +47,6 @@ UnrealPrepareRendererResources::prepareInLoadThread(
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);
   }
-
-  // propagate mesh construction callback, if any
-  options.MeshBuildCallbacks = this->_pActor->GetMeshBuildCallbacks();
 
   const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
@@ -106,9 +105,8 @@ void UnrealPrepareRendererResources::free(
   } else if (pMainThreadResult) {
     UCesiumGltfComponent* pGltf =
         reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
-    if (this->_pActor->GetMeshBuildCallbacks().IsValid()) {
-      this->_pActor->GetMeshBuildCallbacks().Pin()->BeforeTileDestruction(
-          tile.getTileID());
+    if (auto* Receiver = this->_pActor->GetLifecycleEventReceiver()) {
+      Receiver->BeforeTileDestruction(*pGltf);
     }
     CesiumLifetime::destroyComponentRecursively(pGltf);
   }

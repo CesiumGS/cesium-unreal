@@ -146,10 +146,10 @@ public:
   const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const override {
     return getPrimitiveData().pMeshPrimitive;
   }
-  FCesiumPrimitiveFeatures const& GetPrimitiveFeatures() const override {
+  const FCesiumPrimitiveFeatures& GetPrimitiveFeatures() const override {
     return getPrimitiveData().Features;
   }
-  FCesiumPrimitiveMetadata const& GetPrimitiveMetadata() const override {
+  const FCesiumPrimitiveMetadata& GetPrimitiveMetadata() const override {
     return getPrimitiveData().Metadata;
   }
 

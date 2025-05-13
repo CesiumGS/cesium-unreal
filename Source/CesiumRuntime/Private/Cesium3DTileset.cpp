@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
@@ -48,12 +49,14 @@
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include "HAL/PlatformFileManager.h"
+
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
 
@@ -2331,6 +2334,7 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 }
 #endif
 
-void ACesium3DTileset::SetMeshBuildCallbacks(const TWeakPtr<CesiumMeshBuildCallbacks>& Callbacks) {
-    this->_meshBuildCallbacks = Callbacks;
+void ACesium3DTileset::SetLifecycleEventReceiver(
+    ICesium3DTilesetLifecycleEventReceiver* InEventReceiver) {
+  this->_lifecycleEventReceiver = InEventReceiver;
 }

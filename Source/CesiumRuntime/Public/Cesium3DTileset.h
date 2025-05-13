@@ -25,11 +25,12 @@
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include <vector>
-#include "Cesium3DTileset.generated.h"
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
+
+#include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
@@ -37,7 +38,7 @@ class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
-class CesiumMeshBuildCallbacks;
+class ICesium3DTilesetLifecycleEventReceiver;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -1279,20 +1280,17 @@ public:
    */
   void UpdateTransformFromCesium();
 
-  /**
-   * Get the attached mesh construction callback, if any.
+  /** Gets the optional receiver of events related to tile components' lifecycle
    */
-  const TWeakPtr<CesiumMeshBuildCallbacks>& GetMeshBuildCallbacks() const {
-    return this->_meshBuildCallbacks;
+  ICesium3DTilesetLifecycleEventReceiver* GetLifecycleEventReceiver() {
+    return this->_lifecycleEventReceiver;
   }
 
-  /**
-   * Set the mesh construction callback.
-   * Can be used to be notified when a mesh component is created from a Cesium
-   * primitive.
-   */
-  void
-  SetMeshBuildCallbacks(const TWeakPtr<CesiumMeshBuildCallbacks>& Callbacks);
+  /** Sets a receiver of events related to tile components' lifecycle,
+   * like tile primitive and material creation, tile finishing its loading cycle
+   * or about to unload, etc. */
+  void SetLifecycleEventReceiver(
+      ICesium3DTilesetLifecycleEventReceiver* InEventReceiver);
 
 private:
   /**
@@ -1408,8 +1406,7 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
-  // Optional implementation of the extension callbacks
-  TWeakPtr<CesiumMeshBuildCallbacks> _meshBuildCallbacks;
+  ICesium3DTilesetLifecycleEventReceiver* _lifecycleEventReceiver;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
