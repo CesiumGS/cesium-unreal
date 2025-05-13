@@ -61,6 +61,16 @@ public:
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   bool IsValid() { return this->pConnection != nullptr; }
 
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
+  FString GetAccessToken() {
+    return UTF8_TO_TCHAR(
+        this->pConnection->getAccessToken().getToken().c_str());
+  }
+
+  TSharedPtr<CesiumITwinClient::Connection>& GetConnection() {
+    return this->pConnection;
+  }
+
   void SetConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection) {
     this->pConnection = pConnection;
   }
