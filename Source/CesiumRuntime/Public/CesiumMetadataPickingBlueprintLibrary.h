@@ -9,6 +9,8 @@
 #include "CesiumMetadataPickingBlueprintLibrary.generated.h"
 
 struct FHitResult;
+struct FCesiumPrimitiveFeatures;
+struct FCesiumModelMetadata;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataPickingBlueprintLibrary
@@ -178,4 +180,32 @@ public:
       int64 FaceIndex,
       int64 FeatureIDSetIndex = 0);
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
+   * Retrieves a property table property from the component by name.
+   * If the specified feature ID set does not exist or if the property table
+   * does not contain a property with that name, the returned property will be
+   * invalid.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Picking")
+  static const FCesiumPropertyTableProperty& FindPropertyTableProperty(
+      const UPrimitiveComponent* Component,
+      const FString& PropertyName,
+      int64 FeatureIDSetIndex = 0);
+
+  /**
+   * Retrieves a property table property by name, from the primitive features
+   * and the model metadata.
+   * If the specified feature ID set does not exist or if the property table
+   * does not contain a property with that name, the returned property will be
+   * invalid.
+   */
+  static const FCesiumPropertyTableProperty& FindPropertyTableProperty(
+      const FCesiumPrimitiveFeatures& Features,
+      const FCesiumModelMetadata& Metadata,
+      const FString& PropertyName,
+      int64 FeatureIDSetIndex);
 };
