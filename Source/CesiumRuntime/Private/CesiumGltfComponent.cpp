@@ -782,8 +782,8 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       // becomes possible to access the vertex ID through an Unreal material
       // node, this can be removed.
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      // Same remark as for feature ID attributes above: we can only store one
-      // UV layer here.
+      // Same remark as for feature ID attributes above: only assign a texture
+      // coordinate index the first time.
       auto insertedAccessor =
           gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
       if (!insertedAccessor.second) {
