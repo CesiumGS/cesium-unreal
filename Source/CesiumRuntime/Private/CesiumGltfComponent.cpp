@@ -708,9 +708,8 @@ static void updateTextureCoordinatesForFeaturesMetadata(
 
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
 
-      // If the same attribute is referenced several times, only fill one UV
-      // layer with the latter (any UV layer duplicated here would be lost at
-      // the end when we transfer them to Unreal buffers).
+      // If the same attribute is referenced several times, this prevents
+      // it from replacing the existing texture coordinate index.
       auto insertedAccessor =
           gltfToUnrealTexCoordMap.try_emplace(accessor, textureCoordinateIndex);
       if (!insertedAccessor.second) {
