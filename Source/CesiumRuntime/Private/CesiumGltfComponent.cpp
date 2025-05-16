@@ -51,6 +51,7 @@
 #include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/PropertyType.h>
 #include <CesiumGltf/TextureInfo.h>
+#include <CesiumGltf/VertexAttributeSemantics.h>
 #include <CesiumGltfContent/GltfUtilities.h>
 #include <CesiumRasterOverlays/RasterOverlay.h>
 #include <CesiumRasterOverlays/RasterOverlayTile.h>
@@ -97,7 +98,7 @@ template <class T>
 struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
 
 namespace {
-uint32_t addTextureCoordinatesToMap(
+uint32_t addAttributeAccessorToMap(
     const CesiumGltf::MeshPrimitive& primitive,
     const std::string& attributeName,
     std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
@@ -108,12 +109,11 @@ uint32_t addTextureCoordinatesToMap(
   }
 
   int32_t uvAccessorID = uvAccessorIt->second;
-  auto mapIt = gltfToUnrealTexCoordMap.find(uvAccessorID);
-  if (mapIt == gltfToUnrealTexCoordMap.end()) {
-    size_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-    gltfToUnrealTexCoordMap[uvAccessorID] = textureCoordinateIndex;
-  }
+  size_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
 
+  // Use try_emplace to avoid overwriting an existing texture coordinate index
+  // for the accessor.
+  gltfToUnrealTexCoordMap.try_emplace(uvAccessorID, textureCoordinateIndex);
   return gltfToUnrealTexCoordMap[uvAccessorID];
 }
 
@@ -126,7 +126,7 @@ uint32_t addTextureCoordinatesToMap(
     return 0;
   }
 
-  return addTextureCoordinatesToMap(
+  return addAttributeAccessorToMap(
       primitive,
       "TEXCOORD_" + std::to_string(maybeTexture->texCoord),
       gltfToUnrealTexCoordMap);
@@ -142,6 +142,7 @@ void accumulateFeaturesMetadataAccessors(
   std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
       primitiveResult.GltfToUnrealTexCoordMap;
 
+  // Add texture coordinates used for property textures.
   for (const int64 propertyTextureIndex :
        primitiveResult.EncodedMetadata.propertyTextureIndices) {
     // Property textures can be made accessible in Unreal materials without
@@ -159,7 +160,7 @@ void accumulateFeaturesMetadataAccessors(
               encodedPropertyTexture.name,
               encodedProperty.name);
 
-      uint32 index = addTextureCoordinatesToMap(
+      uint32 index = addAttributeAccessorToMap(
           primitive,
           "TEXCOORD_" +
               std::to_string(encodedProperty.textureCoordinateSetIndex),
@@ -172,41 +173,38 @@ void accumulateFeaturesMetadataAccessors(
     }
   }
 
+  // Add accessors used for feature IDs.
   for (const EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIDSet :
        primitiveResult.EncodedFeatures.featureIdSets) {
     FString SafeName =
         EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIDSet.name);
     if (encodedFeatureIDSet.attribute) {
-
-      int32_t attribute = *encodedFeatureIDSet.attribute;
-      std::string attributeName = "_FEATURE_ID_" + std::to_string(attribute);
-      if (primitive.attributes.find(attributeName) ==
-          primitive.attributes.end()) {
-        continue;
-      }
-
-      // This was already validated when creating the EncodedFeatureIdSet.
+      std::string attributeName =
+          "_FEATURE_ID_" + std::to_string(*encodedFeatureIDSet.attribute);
       int32_t accessor = primitive.attributes.at(attributeName);
+      if (accessor < 0)
+        continue;
+
       primitiveResult.AccessorToFeatureIdIndexMap.emplace(
           accessor,
           encodedFeatureIDSet.index);
-
-      uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
       primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
           SafeName,
-          textureCoordinateIndex);
-
+          addAttributeAccessorToMap(
+              primitive,
+              attributeName,
+              gltfToUnrealTexCoordMap));
     } else if (encodedFeatureIDSet.texture) {
-      const EncodedFeaturesMetadata::EncodedFeatureIdTexture&
-          encodedFeatureIDTexture = *encodedFeatureIDSet.texture;
+      std::string attributeName =
+          "TEXCOORD_" +
+          std::to_string(
+              encodedFeatureIDSet.texture->textureCoordinateSetIndex);
+
       primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
           SafeName + EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
-          addTextureCoordinatesToMap(
+          addAttributeAccessorToMap(
               primitive,
-              "TEXCOORD_" +
-                  std::to_string(
-                      encodedFeatureIDTexture.textureCoordinateSetIndex),
+              attributeName,
               gltfToUnrealTexCoordMap));
     } else {
       // Similar to feature ID attributes, we encode the unsigned integer
@@ -214,10 +212,13 @@ void accumulateFeaturesMetadataAccessors(
       // If it ever becomes possible to access the vertex ID through an
       // Unreal material node, this can be removed.
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[-1] = textureCoordinateIndex;
+
+      // Use try_emplace to ensure a texture coordinate index is only assigned
+      // the first time.
+      gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
       primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
           SafeName,
-          textureCoordinateIndex);
+          gltfToUnrealTexCoordMap[-1]);
     }
   }
 }
@@ -244,7 +245,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
     primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
         encodedFeatureIdTexture.baseName + "UV",
-        addTextureCoordinatesToMap(
+        addAttributeAccessorToMap(
             primitive,
             "TEXCOORD_" +
                 std::to_string(
@@ -266,7 +267,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
                  encodedProperty : pEncodedFeatureTexture->properties) {
           primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
               encodedProperty.baseName + "UV",
-              addTextureCoordinatesToMap(
+              addAttributeAccessorToMap(
                   primitive,
                   "TEXCOORD_" +
                       std::to_string(
@@ -293,22 +294,19 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
 
       int32_t attribute = featureIdAttribute.getAttributeIndex();
       std::string attributeName = "_FEATURE_ID_" + std::to_string(attribute);
-      if (primitive.attributes.find(attributeName) ==
-          primitive.attributes.end()) {
-        continue;
-      }
-
-      // This was already validated when creating the EncodedFeatureIdSet.
       int32_t accessor = primitive.attributes.at(attributeName);
+      if (accessor < 0)
+        continue;
+
       primitiveResult.AccessorToFeatureIdIndexMap.emplace(
           accessor,
           encodedFeatureIdAttribute.index);
-
-      uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
       primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
           encodedFeatureIdAttribute.name,
-          textureCoordinateIndex);
+          addAttributeAccessorToMap(
+              primitive,
+              attributeName,
+              gltfToUnrealTexCoordMap));
     }
   }
 }
@@ -357,7 +355,7 @@ void accumulateMaterialAndOverlayTextureCoordinates(
        i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
        ++i) {
     primitiveResult.overlayTextureCoordinateIDToUVIndex[i] =
-        addTextureCoordinatesToMap(
+        addAttributeAccessorToMap(
             primitive,
             "_CESIUMOVERLAY_" + std::to_string(i),
             gltfToUnrealTexCoordMap);
@@ -410,6 +408,7 @@ void copyFeatureIds(
   }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void copyFeatureIds_DEPRECATED(
     const FCesiumMetadataPrimitive& metadataPrimitive,
     int32_t attributeIndex,
@@ -451,6 +450,7 @@ void copyFeatureIds_DEPRECATED(
     }
   }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 inline FVector2f getUVOrDefault(
     const CesiumGltf::AccessorView<FVector2f>& uvAccessor,
@@ -488,31 +488,34 @@ void copyTextureCoordinates(
   }
 }
 
-void writeUnrealTexCoords(
+void populateUnrealTexCoords(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
     FStaticMeshVertexBuffer& vertices,
     const TArray<uint32>& indices,
     bool duplicateVertices,
+    const CreateModelOptions& modelOptions,
     LoadedPrimitiveResult& result) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinates)
+
   std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap =
       result.GltfToUnrealTexCoordMap;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (result.EncodedMetadata_DEPRECATED) {
+  if (modelOptions.pFeaturesMetadataDescription) {
     for (const auto featureIdMapIt : result.AccessorToFeatureIdIndexMap) {
-      copyFeatureIds_DEPRECATED(
-          result.Metadata_DEPRECATED,
+      copyFeatureIds(
+          result.Features,
           featureIdMapIt.second,
           gltfToUnrealTexCoordMap[featureIdMapIt.first],
           vertices,
           indices,
           duplicateVertices);
     }
-  } else {
+  } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
     for (const auto featureIdMapIt : result.AccessorToFeatureIdIndexMap) {
-      copyFeatureIds(
-          result.Features,
+      copyFeatureIds_DEPRECATED(
+          result.Metadata_DEPRECATED,
           featureIdMapIt.second,
           gltfToUnrealTexCoordMap[featureIdMapIt.first],
           vertices,
@@ -558,14 +561,14 @@ void writeUnrealTexCoords(
 } // namespace
 
 static int mikkGetNumFaces(const SMikkTSpaceContext* Context) {
-  FStaticMeshVertexBuffers& vertices =
+  const FStaticMeshVertexBuffers& vertices =
       *reinterpret_cast<FStaticMeshVertexBuffers*>(Context->m_pUserData);
   return int32(vertices.PositionVertexBuffer.GetNumVertices() / 3);
 }
 
 static int
 mikkGetNumVertsOfFace(const SMikkTSpaceContext* Context, const int FaceIdx) {
-  FStaticMeshVertexBuffers& vertices =
+  const FStaticMeshVertexBuffers& vertices =
       *reinterpret_cast<FStaticMeshVertexBuffers*>(Context->m_pUserData);
   return FaceIdx < int32(vertices.PositionVertexBuffer.GetNumVertices() / 3)
              ? 3
@@ -580,7 +583,7 @@ static void mikkGetPosition(
   FStaticMeshVertexBuffers& vertices =
       *reinterpret_cast<FStaticMeshVertexBuffers*>(Context->m_pUserData);
 
-  FPositionVertexBuffer& positionBuffer = vertices.PositionVertexBuffer;
+  const FPositionVertexBuffer& positionBuffer = vertices.PositionVertexBuffer;
   uint32 vertexIndex = uint32(FaceIdx * 3 + VertIdx);
 
   const FVector3f& position = positionBuffer.VertexPosition(vertexIndex);
@@ -634,7 +637,7 @@ static void mikkSetTSpaceBasic(
   FStaticMeshVertexBuffer& vertexBuffer = vertices.StaticMeshVertexBuffer;
   uint32 vertexIndex = uint32(FaceIdx * 3 + VertIdx);
 
-  FVector3f TangentZ(vertexBuffer.VertexTangentZ(vertexIndex));
+  FVector3f TangentZ = vertexBuffer.VertexTangentZ(vertexIndex);
   TangentZ.Y = -TangentZ.Y;
 
   FVector3f TangentX = FVector3f(Tangent[0], Tangent[1], Tangent[2]);
@@ -670,10 +673,10 @@ static void setUnlitNormals(
     const glm::dmat4& vertexToEllipsoidFixed) {
   glm::dmat4 ellipsoidFixedToVertex =
       glm::affineInverse(vertexToEllipsoidFixed);
-  FPositionVertexBuffer& positionBuffer = vertices.PositionVertexBuffer;
+  const FPositionVertexBuffer& positionBuffer = vertices.PositionVertexBuffer;
   FStaticMeshVertexBuffer& normalBuffer = vertices.StaticMeshVertexBuffer;
-  int32 numVertices = positionBuffer.GetNumVertices();
 
+  int32 numVertices = positionBuffer.GetNumVertices();
   for (int i = 0; i < numVertices; i++) {
     glm::dvec3 positionFixed = glm::dvec3(
         vertexToEllipsoidFixed *
@@ -692,10 +695,10 @@ static void setUnlitNormals(
 }
 
 static void computeFlatNormals(FStaticMeshVertexBuffers& vertices) {
-  FPositionVertexBuffer& positionBuffer = vertices.PositionVertexBuffer;
+  const FPositionVertexBuffer& positionBuffer = vertices.PositionVertexBuffer;
   FStaticMeshVertexBuffer& normalBuffer = vertices.StaticMeshVertexBuffer;
-  int32 numVertices = positionBuffer.GetNumVertices();
 
+  int32 numVertices = positionBuffer.GetNumVertices();
   for (int i = 0; i < numVertices; i += 3) {
     const FVector3f& p0 = positionBuffer.VertexPosition(i);
     const FVector3f& p1 = positionBuffer.VertexPosition(i + 1);
@@ -751,27 +754,29 @@ struct ColorVisitor {
   template <typename TColorView> bool operator()(TColorView&& colorView) {
     if (colorView.status() != CesiumGltf::AccessorViewStatus::Valid) {
       return false;
-    }
-    FColor* pColor =
-        reinterpret_cast<FColor*>(this->colorBuffer.GetVertexData());
+    };
     bool success = true;
 
     if (duplicateVertices) {
-      for (int i = 0; success && i < this->indices.Num(); i++, pColor++) {
+      for (int i = 0; success && i < this->indices.Num(); ++i) {
         uint32 vertexIndex = this->indices[i];
         if (vertexIndex >= colorView.size()) {
           success = false;
         } else {
-          success = ColorVisitor::convertColor(colorView[vertexIndex], *pColor);
+          success = ColorVisitor::convertColor(
+              colorView[vertexIndex],
+              this->colorBuffer.VertexColor(i));
         }
       }
     } else {
       for (uint32 i = 0; success && i < this->colorBuffer.GetNumVertices();
-           i++, pColor++) {
+           ++i) {
         if (i >= colorView.size()) {
           success = false;
         } else {
-          success = ColorVisitor::convertColor(colorView[i], *pColor);
+          success = ColorVisitor::convertColor(
+              colorView[i],
+              this->colorBuffer.VertexColor(i));
         }
       }
     }
@@ -1342,7 +1347,8 @@ static void loadPrimitive(
     }
   }
 
-  auto normalAccessorIt = primitive.attributes.find("NORMAL");
+  auto normalAccessorIt =
+      primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::NORMAL);
   CesiumGltf::AccessorView<FVector3f> normalAccessor;
   bool hasNormals = false;
   if (normalAccessorIt != primitive.attributes.end()) {
@@ -1405,7 +1411,8 @@ static void loadPrimitive(
       options.pMeshOptions->pNodeOptions->pModelOptions->alwaysIncludeTangents;
 
   bool hasTangents = false;
-  auto tangentAccessorIt = primitive.attributes.find("TANGENT");
+  auto tangentAccessorIt =
+      primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::TANGENT);
   CesiumGltf::AccessorView<FVector4f> tangentAccessor;
   if (tangentAccessorIt != primitive.attributes.end()) {
     int tangentAccessorID = tangentAccessorIt->second;
@@ -1569,21 +1576,21 @@ static void loadPrimitive(
   // material textures are also used for features + metadata.
   loadPrimitiveFeaturesMetadata(primitiveResult, options, model, primitive);
 
+  const CreateModelOptions& modelOptions =
+      *options.pMeshOptions->pNodeOptions->pModelOptions;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::AccumulateTextureCoordinates)
-    const CreateNodeOptions* pNodeOptions = options.pMeshOptions->pNodeOptions;
     const LoadGltfResult::LoadedModelResult* pModelResult =
-        pNodeOptions->pHalfConstructedModelResult;
+        options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
 
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (pNodeOptions->pModelOptions->pFeaturesMetadataDescription) {
+    if (modelOptions.pFeaturesMetadataDescription) {
       accumulateFeaturesMetadataAccessors(
           model,
           primitive,
           *pModelResult,
           primitiveResult);
-    } else if (pNodeOptions->pModelOptions
-                   ->pEncodedMetadataDescription_DEPRECATED) {
+    } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
       accumulateFeaturesMetadataAccessors_DEPRECATED(
           model,
           primitive,
@@ -1634,16 +1641,14 @@ static void loadPrimitive(
         loadTexture(model, material.emissiveTexture, true);
   }
 
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinates)
-    writeUnrealTexCoords(
-        model,
-        primitive,
-        vertexBuffer,
-        indices,
-        duplicateVertices,
-        primitiveResult);
-  }
+  populateUnrealTexCoords(
+      model,
+      primitive,
+      vertexBuffer,
+      indices,
+      duplicateVertices,
+      modelOptions,
+      primitiveResult);
 
   double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
   glm::dmat4 scaleMatrix = glm::dmat4(
@@ -1699,8 +1704,8 @@ static void loadPrimitive(
       for (int i = 0; i < indices.Num(); ++i) {
         uint32 vertexIndex = indices[i];
         const FVector4f& tangent = tangentAccessor[vertexIndex];
-        FVector3f tangentZ(vertexBuffer.VertexTangentZ(i));
-        FVector3f tangentX(tangent.X, -tangent.Y, tangent.Z);
+        FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
+        FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
         FVector3f tangentY =
             FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
         vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
@@ -1709,8 +1714,8 @@ static void loadPrimitive(
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
       for (uint32 i = 0; i < numVertices; ++i) {
         const FVector4f& tangent = tangentAccessor[i];
-        FVector3f tangentZ(vertexBuffer.VertexTangentZ(i));
-        FVector3f tangentX(tangent.X, -tangent.Y, tangent.Z);
+        FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
+        FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
         FVector3f tangentY =
             FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
         vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
@@ -1866,7 +1871,8 @@ static void loadPrimitive(
       model.meshes[options.pMeshOptions->meshIndex]
           .primitives[options.primitiveIndex];
 
-  auto positionAccessorIt = primitive.attributes.find("POSITION");
+  auto positionAccessorIt =
+      primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::POSITION);
   if (positionAccessorIt == primitive.attributes.end()) {
     // This primitive doesn't have a POSITION semantic, ignore it.
     return;
@@ -2013,9 +2019,9 @@ static void loadInstancingData(
   // stored in the Unreal system, must be transformed to glTF, have the
   // instance transform applied, and then be transformed back to Unreal. It's
   // tempting to do this by trying some manipulation of the individual glTF
-  // instance operations, but that general approach has always ended in tears
-  // for me. Better to formally multiply out the matrices and be assured that
-  // the operation is correct.
+  // instance operations, but that general approach has always ended in
+  // tears. Better to formally multiply out the matrices and be assured that the
+  // operation is correct.
   std::vector<glm::dmat4> instanceTransforms(count, glm::dmat4(1.0));
 
   // Note: the glm functions translate() and scale() post-multiply the matrix
@@ -3684,7 +3690,7 @@ BuildChaosTriangleMeshes(
   vertices.AddParticles(vertexCount);
 
   for (uint32 i = 0; i < vertexCount; ++i) {
-    vertices.X(i) = positionBuffer.VertexPosition(i);
+    vertices.X(int32(i)) = positionBuffer.VertexPosition(i);
   }
 
   int32 triangleCount = indices.Num() / 3;
@@ -3701,7 +3707,7 @@ BuildChaosTriangleMeshes(
     int32 vIndex2 = int32(indices[index0 + 2]);
 
     triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
-    faceRemap.Add(int32(i));
+    faceRemap.Add(i);
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
