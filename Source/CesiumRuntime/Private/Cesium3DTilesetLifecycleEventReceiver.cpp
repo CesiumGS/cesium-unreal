@@ -8,19 +8,17 @@ UMaterialInstanceDynamic*
 ICesium3DTilesetLifecycleEventReceiver::CreateMaterial(
     ICesiumLoadedTilePrimitive& TilePrim,
     UMaterialInterface* pBaseMaterial,
-    UObject* InOuter,
     const FName& Name) {
   // Default implementation: just create a new instance
   return UMaterialInstanceDynamic::Create(
       pBaseMaterial,
-      InOuter,
+      nullptr,
       Name);
 }
 
-void ICesium3DTilesetLifecycleEventReceiver::CustomizeGltfMaterial(
+void ICesium3DTilesetLifecycleEventReceiver::CustomizeMaterial(
     ICesiumLoadedTilePrimitive& TilePrim,
-    const CesiumGltf::Material& /*glTFmaterial*/,
-    const CesiumGltf::MaterialPBRMetallicRoughness& /*pbr*/,
-    UMaterialInstanceDynamic* /*pMaterial*/,
-    EMaterialParameterAssociation /*association*/,
-    int32 /*index*/) {}
+    UMaterialInstanceDynamic&,
+    const UCesiumMaterialUserData*,
+    const CesiumGltf::Material&,
+    const CesiumGltf::MaterialPBRMetallicRoughness&) {}

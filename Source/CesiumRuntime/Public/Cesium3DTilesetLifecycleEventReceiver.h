@@ -14,6 +14,7 @@ enum EMaterialParameterAssociation : int;
 
 class ICesiumLoadedTile;
 class ICesiumLoadedTilePrimitive;
+class UCesiumMaterialUserData;
 namespace CesiumGltf {
 struct Material;
 struct MaterialPBRMetallicRoughness;
@@ -47,30 +48,25 @@ public:
   virtual UMaterialInstanceDynamic* CreateMaterial(
       ICesiumLoadedTilePrimitive& TilePrim,
       UMaterialInterface* pDefaultBaseMaterial,
-      UObject* Outer,
       const FName& Name) = 0;
 
   /**
    * Customize the Unreal material instance, depending on the glTF material
    * definition.
    * @param TilePrim Loaded tile primitive to which the material applies
+   * @param Material Unreal material created for the primitive
+   * @param pCesiumData List of material layer names
    * @param glTFmaterial Parameters of the glTF material for the primitive
-   * @param glTFmaterial Parameters for this primitive's material defining the
+   * @param glTFmaterialPBR Parameters for this primitive's material defining the
    * metallic-roughness material model from Physically-Based Rendering (PBR)
    * methodology
-   * @param pMaterial Unreal material created for the primitive
-   * @param association Type of association (layer, blend, global) being
-   * configured
-   * @param index Index of the layer or blend being configured (see
-   * association). Not relevant for global association.
    */
-  virtual void CustomizeGltfMaterial(
+  virtual void CustomizeMaterial(
       ICesiumLoadedTilePrimitive& TilePrim,
+      UMaterialInstanceDynamic& Material,
+      const UCesiumMaterialUserData* pCesiumData,
       const CesiumGltf::Material& glTFmaterial,
-      const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
-      UMaterialInstanceDynamic* pMaterial,
-      EMaterialParameterAssociation association,
-      int32 index);
+      const CesiumGltf::MaterialPBRMetallicRoughness& glTFmaterialPBR);
 
   /**
    * Called at the end of the static mesh component construction.

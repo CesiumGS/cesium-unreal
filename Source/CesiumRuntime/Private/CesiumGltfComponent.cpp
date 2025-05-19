@@ -2463,8 +2463,7 @@ static void SetGltfParameterValues(
     const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
-    int32 index,
-    ICesium3DTilesetLifecycleEventReceiver* lifecycleEventReceiver) {
+    int32 index) {
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
@@ -2682,17 +2681,6 @@ static void SetGltfParameterValues(
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("emissiveFactor", association, index),
         FVector(1.0f, 1.0f, 1.0f));
-  }
-
-  // Extra material customizations
-  if (lifecycleEventReceiver) {
-    lifecycleEventReceiver->CustomizeGltfMaterial(
-        TilePrim,
-        material,
-        pbr,
-        pMaterial,
-        association,
-        index);
   }
 }
 
@@ -3171,7 +3159,6 @@ static void loadPrimitiveGameThreadPart(
       pMaterial = pLifecycleEventReceiver->CreateMaterial(
           *pCesiumPrimitive,
           pBaseMaterial,
-          nullptr,
           ImportedSlotName);
       if (pMaterial) {
         // pMaterial created above may not have used the suggested pBaseMaterial
@@ -3196,8 +3183,7 @@ static void loadPrimitiveGameThreadPart(
         pbr,
         pMaterial,
         EMaterialParameterAssociation::GlobalParameter,
-        INDEX_NONE,
-        pLifecycleEventReceiver);
+        INDEX_NONE);
     SetWaterParameterValues(
         model,
         loadResult,
@@ -3245,8 +3231,7 @@ static void loadPrimitiveGameThreadPart(
           pbr,
           pMaterial,
           EMaterialParameterAssociation::LayerParameter,
-          0,
-          pLifecycleEventReceiver);
+          0);
 
       // Initialize fade uniform to fully visible, in case LOD transitions
       // are off.
@@ -3298,6 +3283,16 @@ static void loadPrimitiveGameThreadPart(
             EMaterialParameterAssociation::LayerParameter,
             metadataIndex);
       }
+    }
+
+    // Extra material customizations
+    if (pLifecycleEventReceiver) {
+      pLifecycleEventReceiver->CustomizeMaterial(
+          *pCesiumPrimitive,
+          *pMaterial,
+          pCesiumData,
+          material,
+          pbr);
     }
   }
 
