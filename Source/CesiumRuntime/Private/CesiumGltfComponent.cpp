@@ -1173,6 +1173,37 @@ std::string getPrimitiveName(
   }
   return name;
 }
+
+/// Helper used to log only once per unsupported primitive mode.
+struct PrimitiveModeLogger {
+  std::array<
+      std::atomic_bool,
+      (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
+      alreadyLogged;
+
+  PrimitiveModeLogger()
+      : alreadyLogged{
+            {{false}, {false}, {false}, {false}, {false}, {false}, {false}}} {}
+
+  inline void OnUnsupportedMode(int32_t primMode) {
+    bool bPrintLog = false;
+    if (primMode < 0 || primMode >= (int32_t)alreadyLogged.size()) {
+      ensureMsgf(false, TEXT("Unknown primitive mode %d!"), primMode);
+      bPrintLog = true;
+    } else if (!alreadyLogged[(size_t)primMode].exchange(true)) {
+      bPrintLog = true;
+    }
+    if (bPrintLog) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Primitive mode %d is not supported"),
+          primMode);
+    }
+  }
+};
+static PrimitiveModeLogger UnsupportedPrimitiveLogger;
+
 } // namespace
 
 template <class TIndexAccessor>
@@ -1197,11 +1228,7 @@ static void loadPrimitive(
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
     // TODO: add support for other primitive types.
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Primitive mode %d is not supported"),
-        primitive.mode);
+    UnsupportedPrimitiveLogger.OnUnsupportedMode(primitive.mode);
     return;
   }
 
@@ -1733,7 +1760,11 @@ static void loadPrimitive(
 #if ENGINE_VERSION_5_5_OR_HIGHER
   // UE 5.5 requires that we do this in order to avoid a crash when ray tracing
   // is enabled.
-  RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    // UE 5.5 requires that we do this in order to avoid a crash when ray
+    // tracing is enabled.
+    RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+  }
 #endif
 
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
@@ -3279,6 +3310,11 @@ static void loadPrimitiveGameThreadPart(
         primData.pTilesetActor->GetTranslucencySortPriority();
 
     pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
+    // Not only does the concept of ray tracing a point cloud not make much
+    // sense, but if Unreal will crash trying to generate ray tracing
+    // information for a static mesh without triangles.
+    pStaticMesh->bSupportRayTracing =
+        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
@@ -3307,19 +3343,17 @@ static void loadPrimitiveGameThreadPart(
 
 #if PLATFORM_MAC
   // TODO: figure out why water material crashes mac
-  UMaterialInterface* pBaseMaterial =
-      (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3)
-          ? pGltf->BaseMaterialWithTranslucency
-          : pGltf->BaseMaterial;
+  UMaterialInterface* pBaseMaterial = is_in_blend_mode(loadResult)
+                                          ? pGltf->BaseMaterialWithTranslucency
+                                          : pGltf->BaseMaterial;
 #else
   UMaterialInterface* pBaseMaterial;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
     pBaseMaterial = pGltf->BaseMaterialWithWater;
   } else {
-    pBaseMaterial =
-        (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3)
-            ? pGltf->BaseMaterialWithTranslucency
-            : pGltf->BaseMaterial;
+    pBaseMaterial = is_in_blend_mode(loadResult)
+                        ? pGltf->BaseMaterialWithTranslucency
+                        : pGltf->BaseMaterial;
   }
 #endif
 

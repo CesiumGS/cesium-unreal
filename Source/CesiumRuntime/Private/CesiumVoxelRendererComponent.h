@@ -12,13 +12,13 @@
 #include "Templates/UniquePtr.h"
 #include "VoxelGridShape.h"
 
+#include <Cesium3DTilesSelection/Tile.h>
 #include <glm/glm.hpp>
 #include <optional>
 
 #include "CesiumVoxelRendererComponent.generated.h"
 
 namespace Cesium3DTilesSelection {
-class Tile;
 class TilesetMetadata;
 } // namespace Cesium3DTilesSelection
 
@@ -82,7 +82,7 @@ public:
    * rendering.
    */
   void UpdateTiles(
-      const std::vector<Cesium3DTilesSelection::Tile*>& VisibleTiles,
+      const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);

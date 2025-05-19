@@ -9,6 +9,7 @@
 #include "VoxelOctree.h"
 
 #include <Cesium3DTiles/Class.h>
+#include <Cesium3DTilesSelection/Tile.h>
 #include <CesiumGeometry/OctreeTileID.h>
 #include <CesiumGltf/Model.h>
 
@@ -79,7 +80,7 @@ public:
    * Updates the resources given the currently visible tiles.
    */
   void Update(
-      const std::vector<Cesium3DTilesSelection::Tile*>& VisibleTiles,
+      const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
 private:

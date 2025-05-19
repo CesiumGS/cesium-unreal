@@ -80,7 +80,7 @@ std::string getCacheDatabaseName() {
     IFileManager::Get().MakeDirectory(*BaseDirectory, true);
   }
 #else
-  FString BaseDirectory = FPaths::EngineUserDir();
+  FString BaseDirectory = FPaths::ProjectUserDir();
 #endif
 
   FString CesiumDBFile =
