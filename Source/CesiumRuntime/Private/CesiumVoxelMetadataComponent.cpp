@@ -613,8 +613,6 @@ static void GenerateNodesForMetadataPropertyTransforms(
     OffsetInput.Input.Expression = Parameter;
   }
 
-  FString swizzle = GetSwizzleForEncodedType(Type);
-
   if (PropertyDetails.bHasNoDataValue) {
     NodeY += Incr;
     FString ParameterName = PropertyName + MaterialPropertyNoDataSuffix;

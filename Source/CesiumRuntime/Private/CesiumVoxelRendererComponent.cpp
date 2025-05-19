@@ -695,7 +695,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         LogCesium,
         Warning,
         TEXT(
-            "Tileset %s has invalid value for padding.after in its voxel extension."),
+            "Tileset %s has a root bounding volume that is not supported for voxels."),
         *pTilesetActor->GetName())
     return nullptr;
   }
@@ -805,7 +805,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
 }
 
 void UCesiumVoxelRendererComponent::UpdateTiles(
-    const std::vector<Cesium3DTilesSelection::Tile*>& VisibleTiles,
+    const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
     const std::vector<double>& VisibleTileScreenSpaceErrors) {
   this->_pResources->Update(VisibleTiles, VisibleTileScreenSpaceErrors);
 }

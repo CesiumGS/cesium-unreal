@@ -1,4 +1,4 @@
-# API Design Guide
+# API Design Guide {#api-design}
 
 Cesium for Unreal unlocks geospatial capabilities in Unreal Engine while also enabling developers to take advantage of in-engine features. As a result, people who use the plugin can often come with existing Unreal knowledge.
 
