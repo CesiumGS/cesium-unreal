@@ -38,7 +38,7 @@ struct FCesiumGeoJsonDocument {
 private:
   CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
 
-  friend class UCesiumVectorDocumentBlueprintLibrary;
+  friend class UCesiumGeoJsonDocumentBlueprintLibrary;
 };
 
 /**
@@ -46,7 +46,7 @@ private:
  * a `FCesiumVectorDocument`.
  */
 UCLASS()
-class UCesiumVectorDocumentBlueprintLibrary : public UBlueprintFunctionLibrary {
+class UCesiumGeoJsonDocumentBlueprintLibrary : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
@@ -74,7 +74,7 @@ public:
       Category = "Cesium|Vector|Document",
       meta = (DisplayName = "Get Root Node"))
   static FCesiumGeoJsonObject
-  GetRootNode(const FCesiumGeoJsonDocument& InVectorDocument);
+  GetRootObject(const FCesiumGeoJsonDocument& InVectorDocument);
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(

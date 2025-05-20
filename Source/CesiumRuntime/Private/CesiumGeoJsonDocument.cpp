@@ -5,7 +5,7 @@
 
 #include <span>
 
-bool UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
+bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
     const FString& InString,
     FCesiumGeoJsonDocument& OutVectorDocument) {
   const std::string str = TCHAR_TO_UTF8(*InString);
@@ -37,7 +37,7 @@ bool UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
   return false;
 }
 
-FCesiumGeoJsonObject UCesiumVectorDocumentBlueprintLibrary::GetRootNode(
+FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
     const FCesiumGeoJsonDocument& InVectorDocument) {
   if (!InVectorDocument._document) {
     return FCesiumGeoJsonObject();
