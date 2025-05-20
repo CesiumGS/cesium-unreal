@@ -1,7 +1,7 @@
 // Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
-#include "CesiumVectorDocument.h"
-#include "CesiumVectorNode.h"
+#include "CesiumGeoJsonDocument.h"
+#include "CesiumGeoJsonObject.h"
 #include "Misc/AutomationTest.h"
 
 BEGIN_DEFINE_SPEC(
@@ -14,7 +14,7 @@ END_DEFINE_SPEC(FCesiumVectorDocumentSpec)
 void FCesiumVectorDocumentSpec::Define() {
   Describe("UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString", [this]() {
     It("loads a valid GeoJSON document", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       const bool bSuccess =
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
               R"==({ "type": "Point", "coordinates": [1, 2, 3] })==",
@@ -24,7 +24,7 @@ void FCesiumVectorDocumentSpec::Define() {
     It("fails to load an invalid GeoJSON document", [this]() {
       AddExpectedError(
           "Errors while loading GeoJSON from string:\n- Failed to parse GeoJSON: Missing a name for object member.");
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       bool bSuccess =
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
               R"==({ type: "Point", coordinates: [1, 2, 3] })==",
@@ -47,7 +47,7 @@ void FCesiumVectorDocumentSpec::Define() {
 
   Describe("UCesiumVectorNodeBlueprintLibrary::GetIdAsInteger", [this]() {
     It("correctly interprets an integer ID", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -60,7 +60,7 @@ void FCesiumVectorDocumentSpec::Define() {
           10);
     });
     It("returns -1 when the ID is missing", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -76,7 +76,7 @@ void FCesiumVectorDocumentSpec::Define() {
 
   Describe("UCesiumVectorNodeBlueprintLibrary::GetIdAsString", [this]() {
     It("correctly interprets a string ID", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -89,7 +89,7 @@ void FCesiumVectorDocumentSpec::Define() {
           "test");
     });
     It("stringifies an integer ID", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -102,7 +102,7 @@ void FCesiumVectorDocumentSpec::Define() {
           "10");
     });
     It("returns an empty string when the ID is missing", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -118,7 +118,7 @@ void FCesiumVectorDocumentSpec::Define() {
 
   Describe("UCesiumVectorNodeBlueprintLibrary::GetChildren", [this]() {
     It("returns an array of children", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -130,7 +130,7 @@ void FCesiumVectorDocumentSpec::Define() {
                   ]
                  })==",
               Document));
-      TArray<FCesiumVectorNode> Children =
+      TArray<FCesiumGeoJsonObject> Children =
           UCesiumVectorNodeBlueprintLibrary::GetChildren(
               UCesiumVectorDocumentBlueprintLibrary::GetRootNode(Document));
       TestEqual("Children.Num()", Children.Num(), 2);
@@ -147,7 +147,7 @@ void FCesiumVectorDocumentSpec::Define() {
 
   Describe("UCesiumVectorNodeBlueprintLibrary::GetPrimitives", [this]() {
     It("returns an array of primitives", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -180,7 +180,7 @@ void FCesiumVectorDocumentSpec::Define() {
       "UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfTypeRecursively",
       [this]() {
         It("returns all primitives of a given type in the document", [this]() {
-          FCesiumVectorDocument Document;
+          FCesiumGeoJsonDocument Document;
           TestTrue(
               "LoadGeoJsonFromString Success",
               UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -202,7 +202,7 @@ void FCesiumVectorDocumentSpec::Define() {
           TArray<FCesiumVectorPrimitive> Primitives =
               UCesiumVectorNodeBlueprintLibrary::GetPrimitivesOfTypeRecursively(
                   UCesiumVectorDocumentBlueprintLibrary::GetRootNode(Document),
-                  ECesiumVectorPrimitiveType::Point);
+                  ECesiumGeoJsonGeometryType::Point);
           TestEqual("Primitives.Num()", Primitives.Num(), 3);
           TestEqual(
               "Primitives[0] as point",
@@ -224,7 +224,7 @@ void FCesiumVectorDocumentSpec::Define() {
 
   Describe("UCesiumVectorNodeBlueprintLibrary::FindNodeByStringId", [this]() {
     It("obtains a node with the given ID", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -248,7 +248,7 @@ void FCesiumVectorDocumentSpec::Define() {
                   ]
                  })==",
               Document));
-      FCesiumVectorNode Node;
+      FCesiumGeoJsonObject Node;
       TestTrue(
           "FindNodeByStringId Success",
           UCesiumVectorNodeBlueprintLibrary::FindNodeByStringId(
@@ -273,7 +273,7 @@ void FCesiumVectorDocumentSpec::Define() {
 
   Describe("UCesiumVectorNodeBlueprintLibrary::FindNodeByIntId", [this]() {
     It("obtains a node with the given ID", [this]() {
-      FCesiumVectorDocument Document;
+      FCesiumGeoJsonDocument Document;
       TestTrue(
           "LoadGeoJsonFromString Success",
           UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
@@ -297,7 +297,7 @@ void FCesiumVectorDocumentSpec::Define() {
                   ]
                  })==",
               Document));
-      FCesiumVectorNode Node;
+      FCesiumGeoJsonObject Node;
       TestTrue(
           "FindNodeByStringId Success",
           UCesiumVectorNodeBlueprintLibrary::FindNodeByIntId(

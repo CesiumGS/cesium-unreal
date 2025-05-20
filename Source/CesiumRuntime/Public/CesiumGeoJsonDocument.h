@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "CesiumGeoJsonObject.h"
 #include "CesiumUtility/IntrusivePointer.h"
-#include "CesiumVectorData/VectorDocument.h"
-#include "CesiumVectorNode.h"
+#include "CesiumVectorData/GeoJsonDocument.h"
 #include "Kismet/BlueprintAsyncActionBase.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SharedPointer.h"
@@ -12,31 +12,31 @@
 
 #include <optional>
 
-#include "CesiumVectorDocument.generated.h"
+#include "CesiumGeoJsonDocument.generated.h"
 
 /**
- * @brief A vector document containing a tree of `FCesiumVectorNode` values.
+ * @brief A vector document containing a tree of `FCesiumGeoJsonObject` values.
  */
 USTRUCT(BlueprintType)
-struct FCesiumVectorDocument {
+struct FCesiumGeoJsonDocument {
   GENERATED_BODY()
 
   /**
-   * @brief Creates an empty `FCesiumVectorDocument`.
+   * @brief Creates an empty `FCesiumGeoJsonDocument`.
    */
-  FCesiumVectorDocument() : _document(nullptr) {}
+  FCesiumGeoJsonDocument() : _document(nullptr) {}
 
   /**
-   * @brief Creates a `FCesiumVectorDocument` wrapping the provided
-   * `CesiumVectorData::VectorDocument`.
+   * @brief Creates a `FCesiumGeoJsonDocument` wrapping the provided
+   * `CesiumVectorData::GeoJsonDocument`.
    */
-  FCesiumVectorDocument(
-      CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument>&&
+  FCesiumGeoJsonDocument(
+      CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&&
           document)
       : _document(std::move(document)) {}
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument> _document;
+  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
 
   friend class UCesiumVectorDocumentBlueprintLibrary;
 };
@@ -63,7 +63,7 @@ public:
       meta = (DisplayName = "Load GeoJSON Document From String"))
   static UPARAM(DisplayName = "Success") bool LoadGeoJsonFromString(
       const FString& InString,
-      FCesiumVectorDocument& OutVectorDocument);
+      FCesiumGeoJsonDocument& OutVectorDocument);
 
   /**
    * @brief Obtains the root node of the provided vector document.
@@ -73,15 +73,15 @@ public:
       BlueprintPure,
       Category = "Cesium|Vector|Document",
       meta = (DisplayName = "Get Root Node"))
-  static FCesiumVectorNode
-  GetRootNode(const FCesiumVectorDocument& InVectorDocument);
+  static FCesiumGeoJsonObject
+  GetRootNode(const FCesiumGeoJsonDocument& InVectorDocument);
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FCesiumVectorDocumentIonLoadDelegate,
     bool,
     Success,
-    FCesiumVectorDocument,
+    FCesiumGeoJsonDocument,
     Document);
 
 UCLASS()
