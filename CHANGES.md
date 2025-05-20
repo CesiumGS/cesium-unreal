@@ -8,6 +8,7 @@
 - Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
 - Fixed a bug in UCesiumFeaturesMetadataComponent where multiple references to same feature ID set would cause improper encoding of its feature IDs.
 - Removed an unnecessary copy operation that happened while constructing tile meshes.
+- Fixed a bug where indices would not be copied correctly for `TRIANGLE_FAN` primitives.
 
 ### v2.16.0 - 2025-05-01
 
