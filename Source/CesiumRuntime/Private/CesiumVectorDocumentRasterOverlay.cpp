@@ -34,11 +34,11 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
   if (this->StyleCallback.IsBound()) {
     callbackOpt = [Callback = this->StyleCallback](
                       const CesiumUtility::IntrusivePointer<
-                          CesiumVectorData::VectorDocument>& doc,
-                      const CesiumVectorData::VectorNode* pNode)
+                          CesiumVectorData::GeoJsonDocument>& doc,
+                      const CesiumVectorData::GeoJsonObject* pNode)
         -> std::optional<CesiumVectorData::VectorStyle> {
       FCesiumVectorStyle style;
-      if (Callback.Execute(FCesiumVectorNode(doc, pNode), style)) {
+      if (Callback.Execute(FCesiumGeoJsonObject(doc, pNode), style)) {
         return style.toNative();
       }
 

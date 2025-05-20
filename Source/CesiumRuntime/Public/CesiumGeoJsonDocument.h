@@ -44,7 +44,7 @@ struct FCesiumGeoJsonDocument {
   /**
    * @brief Returns the `CesiumVectorData::VectorDocument` this wraps.
    */
-  const CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument>&
+  const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
   GetDocument() const {
     return this->_document;
   }
