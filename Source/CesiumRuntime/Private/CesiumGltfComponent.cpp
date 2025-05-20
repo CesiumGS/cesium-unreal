@@ -1297,20 +1297,14 @@ static PrimitiveModeLogger UnsupportedPrimitiveLogger;
 template <class TIndexAccessor>
 TArray<uint32>
 getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
   TArray<uint32> indices;
 
-  if (primitiveMode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
-      primitiveMode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
-    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
-    for (int32 i = 0; i < indicesView.size(); ++i) {
-      indices[i] = indicesView[i];
-    }
-  } else if (primitiveMode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
+  switch (primitiveMode) {
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
     // The TRIANGLE_STRIP primitive mode cannot be enabled without creating a
     // custom render proxy, so the geometry must be emulated through separate
     // triangles.
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTriangleStripIndices)
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
@@ -1324,11 +1318,11 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
         indices[3 * i + 2] = indicesView[i + 2];
       }
     }
-  } else if (primitiveMode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN) {
+    break;
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
     // The TRIANGLE_FAN primitive mode cannot be enabled without creating a
     // custom render proxy, so the geometry must be emulated through separate
     // triangles.
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTriangleFanIndices)
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 2, j = 0; i < indicesView.size(); ++i, j += 3) {
@@ -1336,6 +1330,15 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
       indices[j + 1] = indicesView[i - 1];
       indices[j + 2] = indicesView[i];
     }
+    break;
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+  case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  default:
+    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+    for (int32 i = 0; i < indicesView.size(); ++i) {
+      indices[i] = indicesView[i];
+    }
+    break;
   }
 
   return indices;
