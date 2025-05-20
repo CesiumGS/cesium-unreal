@@ -4,6 +4,8 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataValue.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveFeatures.h"
 
 #include <optional>
 
@@ -302,4 +304,52 @@ UCesiumMetadataPickingBlueprintLibrary::GetPropertyTextureValuesFromHit(
   return UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
       propertyTextures[PropertyTextureIndex],
       Hit);
+}
+
+static FCesiumPropertyTableProperty InvalidPropertyTableProperty;
+
+const FCesiumPropertyTableProperty&
+UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+    const UPrimitiveComponent* Component,
+    const FString& PropertyName,
+    int64 FeatureIDSetIndex) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(Component);
+  if (!IsValid(pGltfComponent)) {
+    return InvalidPropertyTableProperty;
+  }
+  const UCesiumGltfComponent* pModel =
+      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
+  if (!IsValid(pModel)) {
+    return InvalidPropertyTableProperty;
+  }
+  return FindPropertyTableProperty(
+      pGltfComponent->getPrimitiveData().Features,
+      pModel->Metadata,
+      PropertyName,
+      FeatureIDSetIndex);
+}
+
+const FCesiumPropertyTableProperty&
+UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+    const FCesiumPrimitiveFeatures& Features,
+    const FCesiumModelMetadata& Metadata,
+    const FString& PropertyName,
+    int64 FeatureIDSetIndex) {
+  const TArray<FCesiumFeatureIdSet>& featureIDSets =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(Features);
+  if (FeatureIDSetIndex < 0 || FeatureIDSetIndex >= featureIDSets.Num()) {
+    return InvalidPropertyTableProperty;
+  }
+  const FCesiumFeatureIdSet& featureIDSet = featureIDSets[FeatureIDSetIndex];
+  const int64 propertyTableIndex =
+      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
+  const TArray<FCesiumPropertyTable>& propertyTables =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(Metadata);
+  if (propertyTableIndex < 0 || propertyTableIndex >= propertyTables.Num()) {
+    return InvalidPropertyTableProperty;
+  }
+  return UCesiumPropertyTableBlueprintLibrary::FindProperty(
+      propertyTables[propertyTableIndex],
+      PropertyName);
 }

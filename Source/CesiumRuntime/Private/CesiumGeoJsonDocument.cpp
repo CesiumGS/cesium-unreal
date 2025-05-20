@@ -1,20 +1,20 @@
-#include "CesiumVectorDocument.h"
+#include "CesiumGeoJsonDocument.h"
 #include "CesiumRuntime.h"
 
 #include "CesiumUtility/Result.h"
 
 #include <span>
 
-bool UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
+bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
     const FString& InString,
-    FCesiumVectorDocument& OutVectorDocument) {
+    FCesiumGeoJsonDocument& OutVectorDocument) {
   const std::string str = TCHAR_TO_UTF8(*InString);
   std::span<const std::byte> bytes(
       reinterpret_cast<const std::byte*>(str.data()),
       str.size());
   CesiumUtility::Result<
-      CesiumUtility::IntrusivePointer<CesiumVectorData::VectorDocument>>
-      documentResult = CesiumVectorData::VectorDocument::fromGeoJson(bytes);
+      CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>>
+      documentResult = CesiumVectorData::GeoJsonDocument::fromGeoJson(bytes);
 
   if (!documentResult.errors.errors.empty()) {
     documentResult.errors.logError(
@@ -29,22 +29,23 @@ bool UCesiumVectorDocumentBlueprintLibrary::LoadGeoJsonFromString(
   }
 
   if (documentResult.pValue) {
-    OutVectorDocument = FCesiumVectorDocument(std::move(documentResult.pValue));
+    OutVectorDocument =
+        FCesiumGeoJsonDocument(std::move(documentResult.pValue));
     return true;
   }
 
   return false;
 }
 
-FCesiumVectorNode UCesiumVectorDocumentBlueprintLibrary::GetRootNode(
-    const FCesiumVectorDocument& InVectorDocument) {
+FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
+    const FCesiumGeoJsonDocument& InVectorDocument) {
   if (!InVectorDocument._document) {
-    return FCesiumVectorNode();
+    return FCesiumGeoJsonObject();
   }
 
-  return FCesiumVectorNode(
+  return FCesiumGeoJsonObject(
       InVectorDocument._document,
-      &InVectorDocument._document->getRootNode());
+      &InVectorDocument._document->getRootObject());
 }
 
 UCesiumLoadVectorDocumentFromIonAsyncAction*
@@ -61,7 +62,7 @@ UCesiumLoadVectorDocumentFromIonAsyncAction::LoadFromIon(
 }
 
 void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
-  CesiumVectorData::VectorDocument::fromCesiumIonAsset(
+  CesiumVectorData::GeoJsonDocument::fromCesiumIonAsset(
       getAsyncSystem(),
       getAssetAccessor(),
       this->AssetId,
@@ -70,7 +71,7 @@ void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
       .thenInMainThread(
           [Callback = this->OnLoadResult](
               CesiumUtility::Result<CesiumUtility::IntrusivePointer<
-                  CesiumVectorData::VectorDocument>>&& result) {
+                  CesiumVectorData::GeoJsonDocument>>&& result) {
             if (result.errors.hasErrors()) {
               result.errors.logError(
                   spdlog::default_logger(),
@@ -83,7 +84,7 @@ void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
             if (result.pValue) {
               Callback.Broadcast(
                   true,
-                  FCesiumVectorDocument(MoveTemp(result.pValue)));
+                  FCesiumGeoJsonDocument(MoveTemp(result.pValue)));
             } else {
               Callback.Broadcast(false, {});
             }
