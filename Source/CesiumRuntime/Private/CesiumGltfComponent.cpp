@@ -1486,13 +1486,26 @@ static void loadPrimitive(
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
-
     for (int32 i = 0; i < indicesView.size(); ++i) {
       indices[i] = indicesView[i];
     }
+  } else if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN) {
+    // The TRIANGLE_FAN primitive mode cannot be enabled without creating a
+    // custom render proxy, so the geometry must be emulated through separate
+    // triangles.
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTriangleFanIndices)
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
+    for (int64_t i = 2; i < indicesView.size(); ++i) {
+      indices[3 * i] = indicesView[0];
+      indices[3 * i + 1] = indicesView[i - 1];
+      indices[3 * i + 2] = indicesView[i];
+    }
   } else {
-    // assume TRIANGLE_STRIP because all others are rejected earlier.
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
+    // The TRIANGLE_STRIP primitive mode cannot be enabled without creating a
+    // custom render proxy, so the geometry must be emulated through separate
+    // triangles.
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTriangleStripIndices)
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
@@ -1871,6 +1884,7 @@ static void loadPrimitive(
 
   auto positionAccessorIt =
       primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::POSITION);
+
   if (positionAccessorIt == primitive.attributes.end()) {
     // This primitive doesn't have a POSITION semantic, ignore it.
     return;
@@ -3686,7 +3700,6 @@ BuildChaosTriangleMeshes(
 
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
-
   for (uint32 i = 0; i < vertexCount; ++i) {
     vertices.X(int32(i)) = positionBuffer.VertexPosition(i);
   }
