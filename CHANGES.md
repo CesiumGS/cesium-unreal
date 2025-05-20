@@ -4,7 +4,25 @@
 
 ##### Fixes :wrench:
 
+- Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
+- Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
+- Fixed a bug in UCesiumFeaturesMetadataComponent where multiple references to same feature ID set would cause improper encoding of its feature IDs.
+
+### v2.16.0 - 2025-05-01
+
+##### Additions :tada:
+
+- Added a Cesium -> Geocoder -> Geocode Blueprint function, making it easy to query the Cesium ion geocoder.
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
+
+##### Fixes :wrench:
+
 - Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
+- The "unsupported primitive mode" warning is now only logged once to avoid console spam.
+- Request cache will now use `FPaths::ProjectUserDir` instead of `FPaths::EngineUserDir` on non-Android and non-iOS platforms, fixing a permissions issue in Development builds.
+- Fixed a build issue with KTX-Software's overlay port on Windows when there is no bash.exe in the system PATH and Git-for-windows is installed in a non-default directory.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.46.0 to v0.47.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.15.0 - 2025-04-01
 

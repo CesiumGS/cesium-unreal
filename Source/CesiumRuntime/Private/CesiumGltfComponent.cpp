@@ -3,7 +3,6 @@
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
 #include "CesiumCommon.h"
-#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
 #include "CesiumGltfPointsComponent.h"
@@ -18,6 +17,7 @@
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "CreateGltfOptions.h"
+#include "EncodedFeaturesMetadata.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "HttpModule.h"
@@ -639,12 +639,11 @@ static void updateTextureCoordinatesForFeaturesMetadata(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const FCesiumPrimitiveFeatures& primitiveFeatures,
-    const CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures&
+    const EncodedFeaturesMetadata::EncodedPrimitiveFeatures&
         encodedPrimitiveFeatures,
-    const CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata&
+    const EncodedFeaturesMetadata::EncodedPrimitiveMetadata&
         encodedPrimitiveMetadata,
-    const CesiumEncodedFeaturesMetadata::EncodedModelMetadata&
-        encodedModelMetadata,
+    const EncodedFeaturesMetadata::EncodedModelMetadata& encodedModelMetadata,
     TMap<FString, uint32_t>& featuresMetadataTexcoordParameters,
     std::unordered_map<int32_t, uint32_t>& gltfToUnrealTexCoordMap) {
 
@@ -656,21 +655,21 @@ static void updateTextureCoordinatesForFeaturesMetadata(
     // Property textures can be made accessible in Unreal materials without
     // requiring a texture coordinate set on the primitive. If it is not present
     // in primitive metadata, then do not set the parameter.
-    const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
+    const EncodedFeaturesMetadata::EncodedPropertyTexture&
         encodedPropertyTexture =
             encodedModelMetadata.propertyTextures[propertyTextureIndex];
 
-    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTextureProperty&
+    for (const EncodedFeaturesMetadata::EncodedPropertyTextureProperty&
              encodedProperty : encodedPropertyTexture.properties) {
 
-      FString fullPropertyName = CesiumEncodedFeaturesMetadata::
-          getMaterialNameForPropertyTextureProperty(
+      FString fullPropertyName =
+          EncodedFeaturesMetadata::getMaterialNameForPropertyTextureProperty(
               encodedPropertyTexture.name,
               encodedProperty.name);
 
       featuresMetadataTexcoordParameters.Emplace(
           fullPropertyName +
-              CesiumEncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
+              EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           updateTextureCoordinates(
               model,
               primitive,
@@ -692,10 +691,10 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
           primitiveFeatures);
 
-  for (const CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet&
-           encodedFeatureIDSet : encodedPrimitiveFeatures.featureIdSets) {
-    FString SafeName = CesiumEncodedFeaturesMetadata::createHlslSafeName(
-        encodedFeatureIDSet.name);
+  for (const EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIDSet :
+       encodedPrimitiveFeatures.featureIdSets) {
+    FString SafeName =
+        EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIDSet.name);
     if (encodedFeatureIDSet.attribute) {
       int32_t attribute = *encodedFeatureIDSet.attribute;
       std::string attributeName = "_FEATURE_ID_" + std::to_string(attribute);
@@ -708,7 +707,15 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       int32_t accessor = primitive.attributes.at(attributeName);
 
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
+
+      // If the same attribute is referenced several times, this prevents
+      // it from replacing the existing texture coordinate index.
+      auto insertedAccessor =
+          gltfToUnrealTexCoordMap.try_emplace(accessor, textureCoordinateIndex);
+      if (!insertedAccessor.second) {
+        continue;
+      }
+
       featuresMetadataTexcoordParameters.Emplace(
           SafeName,
           textureCoordinateIndex);
@@ -755,10 +762,10 @@ static void updateTextureCoordinatesForFeaturesMetadata(
         }
       }
     } else if (encodedFeatureIDSet.texture) {
-      const CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture&
+      const EncodedFeaturesMetadata::EncodedFeatureIdTexture&
           encodedFeatureIDTexture = *encodedFeatureIDSet.texture;
       featuresMetadataTexcoordParameters.Emplace(
-          SafeName + CesiumEncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
+          SafeName + EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           updateTextureCoordinates(
               model,
               primitive,
@@ -775,7 +782,13 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       // becomes possible to access the vertex ID through an Unreal material
       // node, this can be removed.
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[-1] = textureCoordinateIndex;
+      // Same remark as for feature ID attributes above: only assign a texture
+      // coordinate index the first time.
+      auto insertedAccessor =
+          gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
+      if (!insertedAccessor.second) {
+        continue;
+      }
       featuresMetadataTexcoordParameters.Emplace(
           SafeName,
           textureCoordinateIndex);
@@ -1009,12 +1022,12 @@ static void loadPrimitiveFeaturesMetadata(
 
   if (pFeaturesMetadataDescription) {
     primitiveResult.EncodedFeatures =
-        CesiumEncodedFeaturesMetadata::encodePrimitiveFeaturesAnyThreadPart(
+        EncodedFeaturesMetadata::encodePrimitiveFeaturesAnyThreadPart(
             pFeaturesMetadataDescription->PrimitiveFeatures,
             primitiveResult.Features);
 
     primitiveResult.EncodedMetadata =
-        CesiumEncodedFeaturesMetadata::encodePrimitiveMetadataAnyThreadPart(
+        EncodedFeaturesMetadata::encodePrimitiveMetadataAnyThreadPart(
             pFeaturesMetadataDescription->PrimitiveMetadata,
             primitiveResult.Metadata,
             pModelResult->Metadata);
@@ -1172,6 +1185,37 @@ std::string getPrimitiveName(
   }
   return name;
 }
+
+/// Helper used to log only once per unsupported primitive mode.
+struct PrimitiveModeLogger {
+  std::array<
+      std::atomic_bool,
+      (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
+      alreadyLogged;
+
+  PrimitiveModeLogger()
+      : alreadyLogged{
+            {{false}, {false}, {false}, {false}, {false}, {false}, {false}}} {}
+
+  inline void OnUnsupportedMode(int32_t primMode) {
+    bool bPrintLog = false;
+    if (primMode < 0 || primMode >= (int32_t)alreadyLogged.size()) {
+      ensureMsgf(false, TEXT("Unknown primitive mode %d!"), primMode);
+      bPrintLog = true;
+    } else if (!alreadyLogged[(size_t)primMode].exchange(true)) {
+      bPrintLog = true;
+    }
+    if (bPrintLog) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Primitive mode %d is not supported"),
+          primMode);
+    }
+  }
+};
+static PrimitiveModeLogger UnsupportedPrimitiveLogger;
+
 } // namespace
 
 template <class TIndexAccessor>
@@ -1196,11 +1240,7 @@ static void loadPrimitive(
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
     // TODO: add support for other primitive types.
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Primitive mode %d is not supported"),
-        primitive.mode);
+    UnsupportedPrimitiveLogger.OnUnsupportedMode(primitive.mode);
     return;
   }
 
@@ -2291,7 +2331,7 @@ static void loadModelMetadata(
       options.pEncodedMetadataDescription_DEPRECATED;
   if (pFeaturesMetadataDescription) {
     result.EncodedMetadata =
-        CesiumEncodedFeaturesMetadata::encodeModelMetadataAnyThreadPart(
+        EncodedFeaturesMetadata::encodeModelMetadataAnyThreadPart(
             pFeaturesMetadataDescription->ModelMetadata,
             result.Metadata);
   } else if (pMetadataDescription_DEPRECATED) {
@@ -2696,23 +2736,23 @@ static void SetFeaturesMetadataParameterValues(
   }
 
   if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
-    for (CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet&
-             encodedFeatureIdSet : loadResult.EncodedFeatures.featureIdSets) {
-      FString SafeName = CesiumEncodedFeaturesMetadata::createHlslSafeName(
-          encodedFeatureIdSet.name);
+    for (EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet :
+         loadResult.EncodedFeatures.featureIdSets) {
+      FString SafeName =
+          EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIdSet.name);
       if (encodedFeatureIdSet.nullFeatureId) {
         pMaterial->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
                 FName(
                     SafeName +
-                    CesiumEncodedFeaturesMetadata::MaterialNullFeatureIdSuffix),
+                    EncodedFeaturesMetadata::MaterialNullFeatureIdSuffix),
                 association,
                 index),
             static_cast<float>(*encodedFeatureIdSet.nullFeatureId));
       }
 
       if (encodedFeatureIdSet.texture) {
-        CesiumEncodedFeaturesMetadata::SetFeatureIdTextureParameterValues(
+        EncodedFeaturesMetadata::SetFeatureIdTextureParameterValues(
             pMaterial,
             association,
             index,
@@ -2721,18 +2761,18 @@ static void SetFeaturesMetadataParameterValues(
       }
     }
 
-    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
+    for (const EncodedFeaturesMetadata::EncodedPropertyTexture&
              propertyTexture : gltfComponent.EncodedMetadata.propertyTextures) {
-      CesiumEncodedFeaturesMetadata::SetPropertyTextureParameterValues(
+      EncodedFeaturesMetadata::SetPropertyTextureParameterValues(
           pMaterial,
           association,
           index,
           propertyTexture);
     }
 
-    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
-             propertyTable : gltfComponent.EncodedMetadata.propertyTables) {
-      CesiumEncodedFeaturesMetadata::SetPropertyTableParameterValues(
+    for (const EncodedFeaturesMetadata::EncodedPropertyTable& propertyTable :
+         gltfComponent.EncodedMetadata.propertyTables) {
+      EncodedFeaturesMetadata::SetPropertyTableParameterValues(
           pMaterial,
           association,
           index,
@@ -2921,7 +2961,7 @@ void addInstanceFeatureIds(
   TArray<int32> activeFeatureIdSets;
 
   for (int32 i = 0; i < allFeatureIdSets.Num(); ++i) {
-    FString name = CesiumEncodedFeaturesMetadata::getNameForFeatureIDSet(
+    FString name = EncodedFeaturesMetadata::getNameForFeatureIDSet(
         allFeatureIdSets[i],
         featureIdTextureCounter);
 
@@ -3587,7 +3627,7 @@ void UCesiumGltfComponent::BeginDestroy() {
   // UObject might not actually get deleted by the garbage collector until
   // much later.
   this->Metadata = FCesiumModelMetadata();
-  this->EncodedMetadata = CesiumEncodedFeaturesMetadata::EncodedModelMetadata();
+  this->EncodedMetadata = EncodedFeaturesMetadata::EncodedModelMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   this->EncodedMetadata_DEPRECATED.reset();
