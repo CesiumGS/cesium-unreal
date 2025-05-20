@@ -168,8 +168,7 @@ struct FCesiumGeoJsonPolygon {
       : _document(document), _rings(rings) {}
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>
-      _document;
+  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
   const std::vector<std::vector<CesiumGeospatial::Cartographic>>* _rings;
 
   friend class UCesiumGeoJsonPolygonBlueprintFunctionLibrary;

@@ -60,7 +60,8 @@ private:
  * a `FCesiumVectorDocument`.
  */
 UCLASS()
-class UCesiumGeoJsonDocumentBlueprintLibrary : public UBlueprintFunctionLibrary {
+class UCesiumGeoJsonDocumentBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
