@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGlobeAnchorComponent.h"
+#include "Cesium3DTileset.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGeoreference.h"
@@ -562,10 +563,18 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   this->ResolveGeoreference();
+
+  if (this->HeightReference.IsValid()) {
+    this->HeightReference.Get()->AddObjectAtRelativeHeight(this);
+  }
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
   Super::OnUnregister();
+
+  if (this->HeightReference.IsValid()) {
+    this->HeightReference.Get()->RemoveObjectAtRelativeHeight(this);
+  }
 
   // Unsubscribe from the ResolvedGeoreference.
   if (IsValid(this->ResolvedGeoreference)) {
@@ -736,6 +745,10 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   } else {
     this->_lastRelativeTransformIsValid = false;
   }
+
+  if (this->HeightReference.IsValid()) {
+    this->HeightReference.Get()->UpdateObjectAtRelativeHeight(this);
+  }
 }
 
 void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
@@ -790,3 +803,5 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
 }
+
+void UCesiumGlobeAnchorComponent::OnSurfaceHeightChanged(double NewHeight) {}

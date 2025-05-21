@@ -37,6 +37,7 @@ class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
+class ICesiumObjectAtRelativeHeight;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -137,6 +138,16 @@ public:
   void SampleHeightMostDetailed(
       const TArray<FVector>& LongitudeLatitudeHeightArray,
       FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
+
+  void AddObjectAtRelativeHeight(
+      ICesiumObjectAtRelativeHeight* Object,
+      double Longitude,
+      double Latitude);
+  void UpdateObjectAtRelativeHeight(
+      ICesiumObjectAtRelativeHeight* Object,
+      double NewLongitude,
+      double NewLatitude);
+  void RemoveObjectAtRelativeHeight(ICesiumObjectAtRelativeHeight* Object);
 
 private:
   /**

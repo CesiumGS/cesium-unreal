@@ -66,6 +66,11 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
   CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
       UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
+  CesiumCategory.AddProperty(
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, HeightReference));
+  CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
+      UCesiumGlobeAnchorComponent,
+      HeightAboveReference));
 
   this->UpdateDerivedProperties();
 

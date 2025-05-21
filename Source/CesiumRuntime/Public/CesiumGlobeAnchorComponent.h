@@ -5,9 +5,11 @@
 #include "CesiumGeospatial/GlobeAnchor.h"
 #include "Components/ActorComponent.h"
 #include "Delegates/IDelegateInstance.h"
+#include "ICesiumObjectAtRelativeHeight.h"
 #include "CesiumGlobeAnchorComponent.generated.h"
 
 class ACesiumGeoreference;
+class ACesium3DTileset;
 
 /**
  * This component can be added to a movable actor to anchor it to the globe
@@ -18,7 +20,9 @@ class ACesiumGeoreference;
  * Height relative to the ellipsoid.
  */
 UCLASS(ClassGroup = Cesium, Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumGlobeAnchorComponent : public UActorComponent {
+class CESIUMRUNTIME_API UCesiumGlobeAnchorComponent
+    : public UActorComponent,
+      public ICesiumObjectAtRelativeHeight {
   GENERATED_BODY()
 
 #pragma region Properties
@@ -127,6 +131,20 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   FMatrix ActorToEarthCenteredEarthFixedMatrix;
+
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  TSoftObjectPtr<ACesium3DTileset> HeightReference;
+
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  double HeightAboveReference;
 
 #pragma endregion
 
@@ -598,4 +616,7 @@ private:
 
   friend class FCesiumGlobeAnchorCustomization;
 #pragma endregion
+
+  // Inherited via ICesiumObjectAtRelativeHeight
+  void OnSurfaceHeightChanged(double NewHeight) override;
 };

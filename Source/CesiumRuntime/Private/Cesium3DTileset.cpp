@@ -48,6 +48,7 @@
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+#include <Cesium3DTilesSelection/ITileSelectionEventReceiver.h>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
@@ -212,6 +213,19 @@ void ACesium3DTileset::SampleHeightMostDetailed(
         OnHeightsSampled.ExecuteIfBound(this, sampleHeightResults, warnings);
       });
 }
+
+void ACesium3DTileset::AddObjectAtRelativeHeight(
+    ICesiumObjectAtRelativeHeight* Object,
+    double Longitude,
+    double Latitude) {}
+
+void ACesium3DTileset::UpdateObjectAtRelativeHeight(
+    ICesiumObjectAtRelativeHeight* Object,
+    double NewLongitude,
+    double NewLatitude) {}
+
+void ACesium3DTileset::RemoveObjectAtRelativeHeight(
+    ICesiumObjectAtRelativeHeight* Object) {}
 
 void ACesium3DTileset::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
@@ -1132,6 +1146,118 @@ void ACesium3DTileset::LoadTileset() {
     }
     break;
   }
+
+  class TestEventReceiver
+      : public Cesium3DTilesSelection::ITileSelectionEventReceiver {
+  public:
+    virtual void tileVisible(
+        const Cesium3DTilesSelection::Tile& tile,
+        const Cesium3DTilesSelection::TileSelectionState& previousState,
+        const Cesium3DTilesSelection::TileSelectionState& currentState)
+        override {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Tile Visible (%s -> %s): %s"),
+          lookup(previousState.getResult()),
+          lookup(currentState.getResult()),
+          UTF8_TO_TCHAR(
+              Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                  tile.getTileID())
+                  .c_str()));
+    }
+
+    virtual void tileCulled(
+        const Cesium3DTilesSelection::Tile& tile,
+        const Cesium3DTilesSelection::TileSelectionState& previousState,
+        const Cesium3DTilesSelection::TileSelectionState& currentState)
+        override {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Tile Culled (%s -> %s): %s"),
+          lookup(previousState.getResult()),
+          lookup(currentState.getResult()),
+          UTF8_TO_TCHAR(
+              Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                  tile.getTileID())
+                  .c_str()));
+    }
+
+    virtual void tileRefined(
+        const Cesium3DTilesSelection::Tile& tile,
+        const Cesium3DTilesSelection::TileSelectionState& previousState,
+        const Cesium3DTilesSelection::TileSelectionState& currentState,
+        const std::span<Cesium3DTilesSelection::Tile*>& newRenderedTiles)
+        override {
+      FString newRenderedTileIds;
+      for (size_t i = 0; i < newRenderedTiles.size(); ++i) {
+        newRenderedTileIds += TEXT("\n - ");
+        newRenderedTileIds += UTF8_TO_TCHAR(
+            Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                newRenderedTiles[i]->getTileID())
+                .c_str());
+      }
+
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Tile Refined (%s -> %s): %s refined to:%s"),
+          lookup(previousState.getResult()),
+          lookup(currentState.getResult()),
+          UTF8_TO_TCHAR(
+              Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                  tile.getTileID())
+                  .c_str()),
+          *newRenderedTileIds);
+    }
+
+    virtual void tileCoarsened(
+        const Cesium3DTilesSelection::Tile& tile,
+        const Cesium3DTilesSelection::TileSelectionState& previousState,
+        const Cesium3DTilesSelection::TileSelectionState& currentState,
+        const Cesium3DTilesSelection::Tile& newRenderedTile) override {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Tile Coarsened (%s -> %s): %s coarsened to %s"),
+          lookup(previousState.getResult()),
+          lookup(currentState.getResult()),
+          UTF8_TO_TCHAR(
+              Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                  tile.getTileID())
+                  .c_str()),
+          UTF8_TO_TCHAR(
+              Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                  newRenderedTile.getTileID())
+                  .c_str()));
+    }
+
+  private:
+    const TCHAR*
+    lookup(Cesium3DTilesSelection::TileSelectionState::Result state) {
+      switch (state) {
+      case Cesium3DTilesSelection::TileSelectionState::Result::None:
+        return TEXT("None");
+      case Cesium3DTilesSelection::TileSelectionState::Result::Culled:
+        return TEXT("Culled");
+      case Cesium3DTilesSelection::TileSelectionState::Result::Rendered:
+        return TEXT("Rendered");
+      case Cesium3DTilesSelection::TileSelectionState::Result::Refined:
+        return TEXT("Refined");
+      case Cesium3DTilesSelection::TileSelectionState::Result::
+          RenderedAndKicked:
+        return TEXT("RenderedAndKicked");
+      case Cesium3DTilesSelection::TileSelectionState::Result::RefinedAndKicked:
+        return TEXT("RefinedAndKicked");
+      default:
+        return TEXT("Unknown");
+      }
+    }
+  };
+
+  this->_pTileset->getDefaultViewGroup().setEventReceiver(
+      std::make_shared<TestEventReceiver>());
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   FString dbDirectory = FPaths::Combine(
