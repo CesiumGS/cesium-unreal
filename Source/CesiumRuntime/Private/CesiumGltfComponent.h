@@ -134,7 +134,14 @@ public:
 
   void UpdateFade(float fadePercentage, bool fadingIn);
 
+  const Cesium3DTilesSelection::Tile* GetTile() const { return this->_pTile; }
+  void AddObjectOnTile(ICesiumObjectAtRelativeHeight* Object);
+  void RemoveObjectOnTile(ICesiumObjectAtRelativeHeight* Object);
+
 private:
   UPROPERTY()
   UTexture2D* Transparent1x1 = nullptr;
+
+  const Cesium3DTilesSelection::Tile* _pTile = nullptr;
+  TArray<ICesiumObjectAtRelativeHeight*> _objectsOnTile;
 };

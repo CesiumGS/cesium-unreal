@@ -2354,7 +2354,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3382,7 +3382,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
   Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-
+  Gltf->_pTile = &tile;
   Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
   Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
   Gltf->EncodedMetadata_DEPRECATED =
@@ -3736,4 +3736,15 @@ BuildChaosTriangleMeshes(
       nullptr,
       false);
 #endif
+}
+
+void UCesiumGltfComponent::AddObjectOnTile(
+    ICesiumObjectAtRelativeHeight* Object) {
+  check(!this->_objectsOnTile.Contains(Object));
+  this->_objectsOnTile.Add(Object);
+}
+
+void UCesiumGltfComponent::RemoveObjectOnTile(
+    ICesiumObjectAtRelativeHeight* Object) {
+  this->_objectsOnTile.Remove(Object);
 }

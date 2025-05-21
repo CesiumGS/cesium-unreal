@@ -139,14 +139,10 @@ public:
       const TArray<FVector>& LongitudeLatitudeHeightArray,
       FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
 
-  void AddObjectAtRelativeHeight(
+  std::optional<double> AddOrUpdateObjectAtRelativeHeight(
       ICesiumObjectAtRelativeHeight* Object,
       double Longitude,
       double Latitude);
-  void UpdateObjectAtRelativeHeight(
-      ICesiumObjectAtRelativeHeight* Object,
-      double NewLongitude,
-      double NewLatitude);
   void RemoveObjectAtRelativeHeight(ICesiumObjectAtRelativeHeight* Object);
 
 private:
@@ -1381,6 +1377,35 @@ private:
       _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  struct ObjectAtRelativeHeight {
+    const Cesium3DTilesSelection::Tile* pCurrentTile = nullptr;
+    double longitude = 0.0;
+    double latitude = 0.0;
+    FVector verticalLineHigh{FVector::ZeroVector};
+    FVector verticalLineLow{FVector::ZeroVector};
+  };
+
+  TMap<ICesiumObjectAtRelativeHeight*, ObjectAtRelativeHeight>
+      _objectsAtRelativeHeight;
+
+  std::optional<double> SampleCurrentHeight(
+      ICesiumObjectAtRelativeHeight* Object,
+      ObjectAtRelativeHeight& Details,
+      double Longitude,
+      double Latitude);
+
+public: // TODO
+  void
+  UpdateObjectsForNewRenderedTile(const Cesium3DTilesSelection::Tile& tile);
+
+  // - Given an ICesiumObjectAtRelativeHeight*, determine if we already know
+  // about it, and, if so, what Tile (if any) it's in.
+  // - Given a Tile that is refining or coarsening, find all the
+  // ICesiumObjectAtRelativeHeight* it contains so that we can adjust them
+  // for a new tile.
+  // - Given a Tile that has just become visible, determine if any
+  // ICesiumObjectAtRelativeHeight* are on it.
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

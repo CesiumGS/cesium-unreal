@@ -563,10 +563,6 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   this->ResolveGeoreference();
-
-  if (this->HeightReference.IsValid()) {
-    this->HeightReference.Get()->AddObjectAtRelativeHeight(this);
-  }
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
@@ -731,8 +727,34 @@ UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
 
 void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
     const CesiumGeospatial::GlobeAnchor& nativeAnchor) {
+  glm::dmat4 anchorToFixed = nativeAnchor.getAnchorToFixedTransform();
+
+  // Adjust the height if necessary.
+  if (this->HeightReference.IsValid()) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid =
+        this->GetEllipsoid()->GetNativeEllipsoid();
+    std::optional<CesiumGeospatial::Cartographic> maybeNewLLH =
+        ellipsoid.cartesianToCartographic(glm::dvec3(anchorToFixed[3]));
+    if (maybeNewLLH) {
+      std::optional<double> maybeHeight =
+          this->HeightReference.Get()->AddOrUpdateObjectAtRelativeHeight(
+              this,
+              CesiumUtility::Math::radiansToDegrees(maybeNewLLH->longitude),
+              CesiumUtility::Math::radiansToDegrees(maybeNewLLH->latitude));
+      if (maybeHeight) {
+        glm::dvec3 updatedPosition =
+            ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic(
+                maybeNewLLH->longitude,
+                maybeNewLLH->latitude,
+                *maybeHeight));
+
+        anchorToFixed[3] = glm::dvec4(updatedPosition, 1.0);
+      }
+    }
+  }
+
   this->ActorToEarthCenteredEarthFixedMatrix =
-      VecMath::createMatrix(nativeAnchor.getAnchorToFixedTransform());
+      VecMath::createMatrix(anchorToFixed);
   this->_actorToECEFIsValid = true;
 
   // Update the Unreal relative transform
@@ -744,10 +766,6 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
     this->_setCurrentRelativeTransform(VecMath::createTransform(anchorToLocal));
   } else {
     this->_lastRelativeTransformIsValid = false;
-  }
-
-  if (this->HeightReference.IsValid()) {
-    this->HeightReference.Get()->UpdateObjectAtRelativeHeight(this);
   }
 }
 
@@ -804,4 +822,9 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
   }
 }
 
-void UCesiumGlobeAnchorComponent::OnSurfaceHeightChanged(double NewHeight) {}
+void UCesiumGlobeAnchorComponent::OnSurfaceHeightChanged(double NewHeight) {
+  UE_LOG(LogCesium, Error, TEXT("Moving to height %f"), NewHeight);
+  FVector Position = this->GetLongitudeLatitudeHeight();
+  Position.Z = NewHeight;
+  this->MoveToLongitudeLatitudeHeight(Position);
+}

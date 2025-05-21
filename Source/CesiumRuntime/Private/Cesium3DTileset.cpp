@@ -40,6 +40,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "ICesiumObjectAtRelativeHeight.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
@@ -214,18 +215,222 @@ void ACesium3DTileset::SampleHeightMostDetailed(
       });
 }
 
-void ACesium3DTileset::AddObjectAtRelativeHeight(
+namespace {
+
+void AddToTile(
+    ICesiumObjectAtRelativeHeight* Object,
+    const Cesium3DTilesSelection::Tile* pTile) {
+  if (!pTile)
+    return;
+
+  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done)
+    return;
+
+  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+      pTile->getContent().getRenderContent();
+  UCesiumGltfComponent* pGltf =
+      static_cast<UCesiumGltfComponent*>(pRenderContent->getRenderResources());
+  pGltf->AddObjectOnTile(Object);
+}
+
+void RemoveFromTile(
+    ICesiumObjectAtRelativeHeight* Object,
+    const Cesium3DTilesSelection::Tile* pTile) {
+  if (!pTile)
+    return;
+
+  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done)
+    return;
+
+  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+      pTile->getContent().getRenderContent();
+  UCesiumGltfComponent* pGltf =
+      static_cast<UCesiumGltfComponent*>(pRenderContent->getRenderResources());
+  pGltf->RemoveObjectOnTile(Object);
+}
+
+} // namespace
+
+std::optional<double> ACesium3DTileset::SampleCurrentHeight(
+    ICesiumObjectAtRelativeHeight* Object,
+    ACesium3DTileset::ObjectAtRelativeHeight& Details,
+    double Longitude,
+    double Latitude) {
+  Details.longitude = Longitude;
+  Details.latitude = Latitude;
+
+  ACesiumGeoreference* Georeference = this->ResolveGeoreference();
+  if (!Georeference) {
+    RemoveFromTile(Object, Details.pCurrentTile);
+    Details.pCurrentTile = nullptr;
+    return std::nullopt;
+  }
+
+  Details.verticalLineHigh =
+      Georeference->TransformLongitudeLatitudeHeightPositionToUnreal(FVector(
+          Longitude,
+          Latitude,
+          Georeference->GetEllipsoid()->GetMaximumRadius() * 0.01));
+  Details.verticalLineLow =
+      Georeference->TransformLongitudeLatitudeHeightPositionToUnreal(FVector(
+          Longitude,
+          Latitude,
+          -Georeference->GetEllipsoid()->GetMaximumRadius() * 0.01));
+
+  FHitResult Hit{};
+  FCollisionQueryParams Params{};
+  if (this->ActorLineTraceSingle(
+          Hit,
+          Details.verticalLineHigh,
+          Details.verticalLineLow,
+          ECollisionChannel::ECC_Visibility,
+          Params) &&
+      Hit.Component.IsValid()) {
+    UCesiumGltfComponent* Gltf =
+        Cast<UCesiumGltfComponent>(Hit.Component->GetAttachParent());
+    if (Gltf && Gltf->GetTile()) {
+      double HitHeight =
+          Georeference
+              ->TransformUnrealPositionToLongitudeLatitudeHeight(Hit.Location)
+              .Z;
+
+      RemoveFromTile(Object, Details.pCurrentTile);
+      Details.pCurrentTile = Gltf->GetTile();
+      AddToTile(Object, Details.pCurrentTile);
+
+      return std::make_optional(HitHeight);
+    }
+  }
+
+  RemoveFromTile(Object, Details.pCurrentTile);
+  Details.pCurrentTile = nullptr;
+  return std::nullopt;
+}
+
+namespace {
+struct Visitor {
+  ICesiumObjectAtRelativeHeight* pObject;
+  double longitude;
+  double latitude;
+  const FVector& Start;
+  const FVector& End;
+
+  bool operator()(const CesiumGeometry::BoundingSphere& bounds) {
+    // TODO
+    return false;
+  }
+  bool operator()(const CesiumGeometry::OrientedBoundingBox& bounds) {
+    // TODO
+    return false;
+  }
+  bool operator()(const CesiumGeospatial::S2CellBoundingVolume& bounds) {
+    // TODO
+    return false;
+  }
+  bool operator()(const CesiumGeospatial::BoundingRegion& bounds) {
+    return bounds.getRectangle().contains(
+        CesiumGeospatial::Cartographic::fromDegrees(longitude, latitude, 0.0));
+  }
+  bool operator()(
+      const CesiumGeospatial::BoundingRegionWithLooseFittingHeights& bounds) {
+    (*this)(bounds.getBoundingRegion());
+  }
+  bool operator()(const CesiumGeometry::BoundingCylinderRegion& bounds) {
+    // TODO
+    return false;
+  }
+};
+} // namespace
+
+void ACesium3DTileset::UpdateObjectsForNewRenderedTile(
+    const Cesium3DTilesSelection::Tile& tile) {
+  // check(tile.getState() == Cesium3DTilesSelection::TileLoadState::Done);
+  if (tile.getState() != Cesium3DTilesSelection::TileLoadState::Done)
+    return;
+
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
+
+  for (TPair<ICesiumObjectAtRelativeHeight*, ObjectAtRelativeHeight>& pair :
+       this->_objectsAtRelativeHeight) {
+    if (!std::visit(
+            Visitor{
+                pair.Key,
+                pair.Value.longitude,
+                pair.Value.latitude,
+                pair.Value.verticalLineHigh,
+                pair.Value.verticalLineLow},
+            boundingVolume)) {
+      // The tile's bounding volume indicates this object can't be in it.
+      continue;
+    }
+
+    // Check for actual intersection.
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        tile.getContent().getRenderContent();
+    if (!pRenderContent)
+      continue;
+
+    UCesiumGltfComponent* pGltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
+
+    bool hit = false;
+
+    for (const TObjectPtr<USceneComponent>& pChild :
+         pGltf->GetAttachChildren()) {
+      UPrimitiveComponent* pPrimitive = Cast<UPrimitiveComponent>(pChild);
+      FHitResult Hit{};
+      FCollisionQueryParams Params{};
+      if (pPrimitive->LineTraceComponent(
+              Hit,
+              pair.Value.verticalLineHigh,
+              pair.Value.verticalLineLow,
+              Params)) {
+        hit = true;
+        // break;
+      }
+      pPrimitive->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
+
+    if (hit) {
+      // If there's a hit, do a trace against the entire Tileset. It's possible
+      // the object lies in this tile, but it also lies in another tile that is
+      // above it.
+      std::optional<double> maybeHeight = this->SampleCurrentHeight(
+          pair.Key,
+          pair.Value,
+          pair.Value.longitude,
+          pair.Value.latitude);
+
+      // We've already established this object lies in a component, so if it
+      // doesn't lie somewhere in the tileset, something has gone wrong.
+      check(maybeHeight);
+
+      if (maybeHeight) {
+        pair.Key->OnSurfaceHeightChanged(*maybeHeight);
+      }
+    }
+  }
+}
+
+std::optional<double> ACesium3DTileset::AddOrUpdateObjectAtRelativeHeight(
     ICesiumObjectAtRelativeHeight* Object,
     double Longitude,
-    double Latitude) {}
-
-void ACesium3DTileset::UpdateObjectAtRelativeHeight(
-    ICesiumObjectAtRelativeHeight* Object,
-    double NewLongitude,
-    double NewLatitude) {}
+    double Latitude) {
+  ObjectAtRelativeHeight& Details =
+      this->_objectsAtRelativeHeight.FindOrAdd(Object);
+  return this->SampleCurrentHeight(Object, Details, Longitude, Latitude);
+}
 
 void ACesium3DTileset::RemoveObjectAtRelativeHeight(
-    ICesiumObjectAtRelativeHeight* Object) {}
+    ICesiumObjectAtRelativeHeight* Object) {
+  ObjectAtRelativeHeight* pDetails =
+      this->_objectsAtRelativeHeight.Find(Object);
+  if (pDetails) {
+    RemoveFromTile(Object, pDetails->pCurrentTile);
+    this->_objectsAtRelativeHeight.Remove(Object);
+  }
+}
 
 void ACesium3DTileset::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
@@ -1150,6 +1355,8 @@ void ACesium3DTileset::LoadTileset() {
   class TestEventReceiver
       : public Cesium3DTilesSelection::ITileSelectionEventReceiver {
   public:
+    TestEventReceiver(ACesium3DTileset* pTileset) : _pTileset(pTileset) {}
+
     virtual void tileVisible(
         const Cesium3DTilesSelection::Tile& tile,
         const Cesium3DTilesSelection::TileSelectionState& previousState,
@@ -1165,6 +1372,11 @@ void ACesium3DTileset::LoadTileset() {
               Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
                   tile.getTileID())
                   .c_str()));
+
+      if (currentState.getResult() ==
+          Cesium3DTilesSelection::TileSelectionState::Result::Rendered) {
+        this->_pTileset->UpdateObjectsForNewRenderedTile(tile);
+      }
     }
 
     virtual void tileCulled(
@@ -1210,6 +1422,10 @@ void ACesium3DTileset::LoadTileset() {
                   tile.getTileID())
                   .c_str()),
           *newRenderedTileIds);
+
+      for (size_t i = 0; i < newRenderedTiles.size(); ++i) {
+        this->_pTileset->UpdateObjectsForNewRenderedTile(*newRenderedTiles[i]);
+      }
     }
 
     virtual void tileCoarsened(
@@ -1231,6 +1447,8 @@ void ACesium3DTileset::LoadTileset() {
               Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
                   newRenderedTile.getTileID())
                   .c_str()));
+
+      this->_pTileset->UpdateObjectsForNewRenderedTile(newRenderedTile);
     }
 
   private:
@@ -1254,10 +1472,12 @@ void ACesium3DTileset::LoadTileset() {
         return TEXT("Unknown");
       }
     }
+
+    ACesium3DTileset* _pTileset;
   };
 
   this->_pTileset->getDefaultViewGroup().setEventReceiver(
-      std::make_shared<TestEventReceiver>());
+      std::make_shared<TestEventReceiver>(this));
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   FString dbDirectory = FPaths::Combine(
