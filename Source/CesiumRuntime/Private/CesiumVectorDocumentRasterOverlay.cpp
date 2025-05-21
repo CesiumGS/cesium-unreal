@@ -7,7 +7,7 @@
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
 #include "CesiumRasterOverlays/VectorDocumentRasterOverlay.h"
-#include "CesiumVectorData/VectorRasterizerStyle.h"
+#include "CesiumVectorData/VectorStyle.h"
 
 #include "CesiumRuntime.h"
 
