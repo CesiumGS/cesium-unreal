@@ -469,7 +469,6 @@ void copyTextureCoordinates(
   }
 
   if (duplicateVertices) {
-
     for (int i = 0; i < indices.Num(); ++i) {
       vertices.SetVertexUV(
           i,
