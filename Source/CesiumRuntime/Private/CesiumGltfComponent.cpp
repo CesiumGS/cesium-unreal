@@ -98,6 +98,24 @@ template <class T>
 struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
 
 namespace {
+template <typename Func>
+void forEachVertex(
+    uint32 numVertices,
+    const TArray<uint32>& indices,
+    bool useIndices,
+    Func&& f) {
+  if (useIndices) {
+    for (uint32 i = 0; i < numVertices; ++i) {
+      uint32 vertexIndex = indices[i];
+      f(indices[i], i);
+    }
+  } else {
+    for (uint32 i = 0; i < numVertices; ++i) {
+      f(i, i);
+    }
+  }
+}
+
 uint32_t addAttributeAccessorToMap(
     const CesiumGltf::MeshPrimitive& primitive,
     const std::string& attributeName,
@@ -381,28 +399,22 @@ void copyFeatureIds(
 
   // We encode unsigned integer feature ids as floats in the u-channel of
   // a texture coordinate slot.
-  if (duplicateVertices) {
-    for (int64_t i = 0; i < indices.Num(); ++i) {
-      uint32 vertexIndex = indices[i];
-      float featureId = UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
-          featureIdAttribute,
-          vertexIndex);
-      vertices.SetVertexUV(
-          i,
-          textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
-    }
-  } else {
-    for (int64_t i = 0; i < vertices.GetNumVertices(); ++i) {
-      float featureId = UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
-          featureIdAttribute,
-          i);
-      vertices.SetVertexUV(
-          i,
-          textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
-    }
-  }
+  forEachVertex(
+      vertices.GetNumVertices(),
+      indices,
+      duplicateVertices,
+      [&featureIdAttribute,
+       &vertices,
+       textureCoordinateIndex](uint32 inputIndex, uint32 outputIndex) {
+        float featureId =
+            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                featureIdAttribute,
+                inputIndex);
+        vertices.SetVertexUV(
+            outputIndex,
+            textureCoordinateIndex,
+            FVector2f(glm::max(featureId, 0.0f), 0.0f));
+      });
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -422,39 +434,24 @@ void copyFeatureIds_DEPRECATED(
   const FCesiumFeatureIdAttribute& featureIdAttribute =
       featureIdAttributes[attributeIndex];
 
-  // We encode unsigned integer feature ids as floats in the u-channel of
-  // a texture coordinate slot.
-  if (duplicateVertices) {
-    for (int64_t i = 0; i < indices.Num(); ++i) {
-      uint32 vertexIndex = indices[i];
-      float featureId = UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
-          featureIdAttribute,
-          vertexIndex);
-      vertices.SetVertexUV(
-          i,
-          textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
-    }
-  } else {
-    for (int64_t i = 0; i < vertices.GetNumVertices(); ++i) {
-      float featureId = UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
-          featureIdAttribute,
-          i);
-      vertices.SetVertexUV(
-          i,
-          textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
-    }
-  }
+  forEachVertex(
+      vertices.GetNumVertices(),
+      indices,
+      duplicateVertices,
+      [&featureIdAttribute,
+       &vertices,
+       textureCoordinateIndex](uint32 inputIndex, uint32 outputIndex) {
+        float featureId =
+            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+                featureIdAttribute,
+                inputIndex);
+        vertices.SetVertexUV(
+            outputIndex,
+            textureCoordinateIndex,
+            FVector2f(glm::max(featureId, 0.0f), 0.0f));
+      });
 }
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-inline FVector2f getUVOrDefault(
-    const CesiumGltf::AccessorView<FVector2f>& uvAccessor,
-    int32 index) {
-  return index >= 0 && index < uvAccessor.size() ? uvAccessor[index]
-                                                 : FVector2f(0.0f, 0.0f);
-}
 
 void copyTextureCoordinates(
     const CesiumGltf::Model& model,
@@ -468,22 +465,18 @@ void copyTextureCoordinates(
     return;
   }
 
-  if (duplicateVertices) {
-
-    for (int i = 0; i < indices.Num(); ++i) {
-      vertices.SetVertexUV(
-          i,
-          textureCoordinateIndex,
-          getUVOrDefault(uvAccessor, indices[i]));
-    }
-  } else {
-    for (uint32 i = 0; i < vertices.GetNumVertices(); ++i) {
-      vertices.SetVertexUV(
-          i,
-          textureCoordinateIndex,
-          getUVOrDefault(uvAccessor, i));
-    }
-  }
+  forEachVertex(
+      vertices.GetNumVertices(),
+      indices,
+      duplicateVertices,
+      [&uvAccessor,
+       &vertices,
+       textureCoordinateIndex](uint32 inputIndex, uint32 outputIndex) {
+        FVector2f uv = inputIndex >= 0 && int64(inputIndex) < uvAccessor.size()
+                           ? uvAccessor[inputIndex]
+                           : FVector2f(0.0f, 0.0f);
+        vertices.SetVertexUV(outputIndex, textureCoordinateIndex, uv);
+      });
 }
 
 void populateUnrealTexCoords(
@@ -538,22 +531,17 @@ void populateUnrealTexCoords(
 
   if (gltfToUnrealTexCoordMap.contains(-1)) {
     uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap[-1];
-    if (duplicateVertices) {
-      for (int32 i = 0; i < indices.Num(); ++i) {
-        uint32 vertexIndex = indices[i];
-        vertices.SetVertexUV(
-            uint32(i),
-            textureCoordinateIndex,
-            FVector2f(float(vertexIndex), 0.0f));
-      }
-    } else {
-      for (uint32 i = 0; i < vertices.GetNumVertices(); ++i) {
-        vertices.SetVertexUV(
-            i,
-            textureCoordinateIndex,
-            FVector2f(float(i), 0.0f));
-      }
-    }
+    forEachVertex(
+        vertices.GetNumVertices(),
+        indices,
+        duplicateVertices,
+        [&vertices,
+         textureCoordinateIndex](uint32 inputIndex, uint32 outputIndex) {
+          vertices.SetVertexUV(
+              outputIndex,
+              textureCoordinateIndex,
+              FVector2f(float(inputIndex), 0.0f));
+        });
   }
 }
 } // namespace
@@ -1556,32 +1544,23 @@ static void loadPrimitive(
   positionBuffer.Init(numVertices, false);
 
   {
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        uint32 vertexIndex = indices[i];
-        const FVector3f& value = positionView[vertexIndex];
-        FVector3f& position = positionBuffer.VertexPosition(i);
-        position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
-        position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
-        position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector3f& value = positionView[i];
-        FVector3f& position = positionBuffer.VertexPosition(i);
-        position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
-        position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
-        position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
-      }
-    }
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
+    forEachVertex(
+        numVertices,
+        indices,
+        duplicateVertices,
+        [&positionView,
+         &positionBuffer,
+         &Bounds = RenderData->Bounds](uint32 inputIndex, uint32 outputIndex) {
+          const FVector3f& value = positionView[inputIndex];
+          FVector3f& position = positionBuffer.VertexPosition(outputIndex);
+          position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
+          position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
+          position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
+          Bounds.SphereRadius = FMath::Max(
+              (FVector(position) - Bounds.Origin).Size(),
+              Bounds.SphereRadius);
+        });
   }
 
   auto colorAccessorIt = primitive.attributes.find(
@@ -1688,30 +1667,20 @@ static void loadPrimitive(
   // TangentZ: Normal
 
   if (hasNormals) {
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormalsForDuplicatedVertices)
-      for (int i = 0; i < indices.Num(); ++i) {
-        uint32 vertexIndex = indices[i];
-        const FVector3f& normal = normalAccessor[vertexIndex];
-
-        vertexBuffer.SetVertexTangents(
-            i,
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(normal.X, -normal.Y, normal.Z));
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector3f& normal = normalAccessor[i];
-
-        vertexBuffer.SetVertexTangents(
-            i,
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(normal.X, -normal.Y, normal.Z));
-      }
-    }
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
+    forEachVertex(
+        numVertices,
+        indices,
+        duplicateVertices,
+        [&normalAccessor,
+         &vertexBuffer](uint32 inputIndex, uint32 outputIndex) {
+          const FVector3f& normal = normalAccessor[inputIndex];
+          vertexBuffer.SetVertexTangents(
+              outputIndex,
+              FVector3f(0.0f, 0.0f, 0.0f),
+              FVector3f(0.0f, 0.0f, 0.0f),
+              FVector3f(normal.X, -normal.Y, normal.Z));
+        });
   } else {
     if (primitiveResult.isUnlit) {
       setUnlitNormals(
@@ -1725,28 +1694,21 @@ static void loadPrimitive(
   }
 
   if (hasTangents) {
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangentsForDuplicatedVertices)
-      for (int i = 0; i < indices.Num(); ++i) {
-        uint32 vertexIndex = indices[i];
-        const FVector4f& tangent = tangentAccessor[vertexIndex];
-        FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
-        FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
-        FVector3f tangentY =
-            FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
-        vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector4f& tangent = tangentAccessor[i];
-        FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
-        FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
-        FVector3f tangentY =
-            FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
-        vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
-      }
-    }
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
+    forEachVertex(
+        numVertices,
+        indices,
+        duplicateVertices,
+        [&tangentAccessor,
+         &vertexBuffer](uint32 inputIndex, uint32 outputIndex) {
+          const FVector4f& tangent = tangentAccessor[inputIndex];
+          FVector3f tangentZ = vertexBuffer.VertexTangentZ(inputIndex);
+          FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
+          FVector3f tangentY =
+              FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
+          vertexBuffer
+              .SetVertexTangents(outputIndex, tangentX, tangentY, tangentZ);
+        });
   }
 
   if (needsTangents && !hasTangents) {
