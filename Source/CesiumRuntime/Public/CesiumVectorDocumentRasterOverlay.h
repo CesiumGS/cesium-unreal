@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "CesiumGeoJsonDocument.h"
 #include "CesiumIonServer.h"
 #include "CesiumRasterOverlay.h"
-#include "CesiumVectorDocument.h"
 #include "CesiumVectorStyle.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
@@ -46,8 +46,8 @@ enum class ECesiumVectorDocumentRasterOverlaySource : uint8 {
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(
     bool,
     FCesiumVectorDocumentRasterOverlayStyleCallback,
-    FCesiumVectorNode,
-    InNode,
+    FCesiumGeoJsonObject,
+    InObject,
     FCesiumVectorStyle&,
     OutStyle);
 
@@ -106,7 +106,7 @@ public:
       meta =
           (EditCondition =
                "Source == ECesiumVectorDocumentRasterOverlaySource::FromDocument"))
-  FCesiumVectorDocument VectorDocument;
+  FCesiumGeoJsonDocument VectorDocument;
 
   UPROPERTY(
       EditAnywhere,

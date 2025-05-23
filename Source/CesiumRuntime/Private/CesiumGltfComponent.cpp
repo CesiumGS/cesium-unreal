@@ -707,7 +707,15 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       int32_t accessor = primitive.attributes.at(attributeName);
 
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[accessor] = textureCoordinateIndex;
+
+      // If the same attribute is referenced several times, this prevents
+      // it from replacing the existing texture coordinate index.
+      auto insertedAccessor =
+          gltfToUnrealTexCoordMap.try_emplace(accessor, textureCoordinateIndex);
+      if (!insertedAccessor.second) {
+        continue;
+      }
+
       featuresMetadataTexcoordParameters.Emplace(
           SafeName,
           textureCoordinateIndex);
@@ -774,7 +782,13 @@ static void updateTextureCoordinatesForFeaturesMetadata(
       // becomes possible to access the vertex ID through an Unreal material
       // node, this can be removed.
       uint32_t textureCoordinateIndex = gltfToUnrealTexCoordMap.size();
-      gltfToUnrealTexCoordMap[-1] = textureCoordinateIndex;
+      // Same remark as for feature ID attributes above: only assign a texture
+      // coordinate index the first time.
+      auto insertedAccessor =
+          gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
+      if (!insertedAccessor.second) {
+        continue;
+      }
       featuresMetadataTexcoordParameters.Emplace(
           SafeName,
           textureCoordinateIndex);
