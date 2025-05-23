@@ -1293,6 +1293,55 @@ struct PrimitiveModeLogger {
 };
 static PrimitiveModeLogger UnsupportedPrimitiveLogger;
 
+template <class TIndexAccessor>
+TArray<uint32>
+getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
+  TArray<uint32> indices;
+
+  switch (primitiveMode) {
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+    // The TRIANGLE_STRIP primitive mode cannot be enabled without creating a
+    // custom render proxy, so the geometry must be emulated through separate
+    // triangles.
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
+    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
+      if (i % 2) {
+        indices[3 * i] = indicesView[i];
+        indices[3 * i + 1] = indicesView[i + 2];
+        indices[3 * i + 2] = indicesView[i + 1];
+      } else {
+        indices[3 * i] = indicesView[i];
+        indices[3 * i + 1] = indicesView[i + 1];
+        indices[3 * i + 2] = indicesView[i + 2];
+      }
+    }
+    break;
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+    // The TRIANGLE_FAN primitive mode cannot be enabled without creating a
+    // custom render proxy, so the geometry must be emulated through separate
+    // triangles.
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
+    for (int32 i = 2, j = 0; i < indicesView.size(); ++i, j += 3) {
+      indices[j] = indicesView[0];
+      indices[j + 1] = indicesView[i - 1];
+      indices[j + 2] = indicesView[i];
+    }
+    break;
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+  case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  default:
+    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+    for (int32 i = 0; i < indicesView.size(); ++i) {
+      indices[i] = indicesView[i];
+    }
+    break;
+  }
+
+  return indices;
+}
 } // namespace
 
 template <class TIndexAccessor>
@@ -1313,9 +1362,13 @@ static void loadPrimitive(
   CesiumGltf::MeshPrimitive& primitive =
       mesh.primitives[options.primitiveIndex];
 
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP &&
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  switch (primitive.mode) {
+  case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+    break;
+  default:
     // TODO: add support for other primitive types.
     UnsupportedPrimitiveLogger.OnUnsupportedMode(primitive.mode);
     return;
@@ -1480,32 +1533,7 @@ static void loadPrimitive(
     RenderData->Bounds.SphereRadius = 0.0f;
   }
 
-  TArray<uint32> indices;
-  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
-      primitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
-    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
-
-    for (int32 i = 0; i < indicesView.size(); ++i) {
-      indices[i] = indicesView[i];
-    }
-  } else {
-    // assume TRIANGLE_STRIP because all others are rejected earlier.
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
-    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
-      if (i % 2) {
-        indices[3 * i] = indicesView[i];
-        indices[3 * i + 1] = indicesView[i + 2];
-        indices[3 * i + 2] = indicesView[i + 1];
-      } else {
-        indices[3 * i] = indicesView[i];
-        indices[3 * i + 1] = indicesView[i + 1];
-        indices[3 * i + 2] = indicesView[i + 2];
-      }
-    }
-  }
+  TArray<uint32> indices = getIndices(indicesView, primitive.mode);
 
   // If we don't have normals, the gltf spec prescribes that the client
   // implementation must generate flat normals, which requires duplicating
@@ -1520,7 +1548,7 @@ static void loadPrimitive(
                       primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
 
   uint32 numVertices =
-      duplicateVertices ? indices.Num() : static_cast<int>(positionView.size());
+      duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
 
   FPositionVertexBuffer& positionBuffer =
       LODResources.VertexBuffers.PositionVertexBuffer;
@@ -3685,7 +3713,6 @@ BuildChaosTriangleMeshes(
 
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
-
   for (uint32 i = 0; i < vertexCount; ++i) {
     vertices.X(int32(i)) = positionBuffer.VertexPosition(i);
   }
