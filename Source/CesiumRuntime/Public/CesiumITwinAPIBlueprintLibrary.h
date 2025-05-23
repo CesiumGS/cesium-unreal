@@ -20,7 +20,9 @@ class UCesiumITwinConnection : public UObject {
 public:
   UCesiumITwinConnection() : UObject(), pConnection(nullptr) {}
 
-  UCesiumITwinConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection)
+  UCesiumITwinConnection(
+      CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>&
+          pConnection)
       : UObject(), pConnection(MoveTemp(pConnection)) {}
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
@@ -31,15 +33,18 @@ public:
     return UTF8_TO_TCHAR(this->pConnection->getAuthToken().getToken().c_str());
   }
 
-  TSharedPtr<CesiumITwinClient::Connection>& GetConnection() {
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>&
+  GetConnection() {
     return this->pConnection;
   }
 
-  void SetConnection(TSharedPtr<CesiumITwinClient::Connection> pConnection_) {
+  void
+  SetConnection(CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection>&
+                    pConnection_) {
     this->pConnection = pConnection_;
   }
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
 };
 
 UENUM(BlueprintType)
@@ -141,7 +146,7 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
 };
 
 UENUM(BlueprintType)
@@ -244,7 +249,7 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
   int page;
 };
 
@@ -348,7 +353,7 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
   int page;
   FString iTwinId;
 };
@@ -459,7 +464,7 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
   int page;
   FString iModelId;
 };
@@ -610,7 +615,7 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
   int page;
   FString iTwinId;
 };
@@ -756,5 +761,5 @@ public:
 
   virtual void Activate() override;
 
-  TSharedPtr<CesiumITwinClient::Connection> pConnection;
+  CesiumUtility::IntrusivePointer<CesiumITwinClient::Connection> pConnection;
 };
