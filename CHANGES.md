@@ -6,7 +6,8 @@
 
 - Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
 - Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
-- Fixed a bug in UCesiumFeaturesMetadataComponent where multiple references to same feature ID set would cause improper encoding of its feature IDs.
+- Fixed a bug in `UCesiumFeaturesMetadataComponent` where multiple references to same feature ID set would cause improper encoding of its feature IDs.
+- Fixed a crash that would occur when duplicating an `ACesiumGeoreference`.
 
 ### v2.16.0 - 2025-05-01
 

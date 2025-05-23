@@ -18,6 +18,7 @@ void UCesium3DTilesetRoot::HandleGeoreferenceUpdated() {
       Verbose,
       TEXT("Called HandleGeoreferenceUpdated for tileset root %s"),
       *this->GetName());
+
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
@@ -62,10 +63,12 @@ void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
 
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
+  ACesiumGeoreference* pGeoreference = pTileset->ResolveGeoreference();
 
-  this->_tilesetToUnrealRelativeWorld = VecMath::createMatrix4D(
-      pTileset->ResolveGeoreference()
-          ->ComputeEarthCenteredEarthFixedToUnrealTransformation());
+  if (pGeoreference) {
+    this->_tilesetToUnrealRelativeWorld = VecMath::createMatrix4D(
+        pGeoreference->ComputeEarthCenteredEarthFixedToUnrealTransformation());
 
-  pTileset->UpdateTransformFromCesium();
+    pTileset->UpdateTransformFromCesium();
+  }
 }
