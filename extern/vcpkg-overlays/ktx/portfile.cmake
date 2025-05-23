@@ -1,9 +1,9 @@
-vcpkg_from_git(
+vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    URL "https://github.com/KhronosGroup/KTX-Software.git"
-    REF 91ace88675ac59a97e55d0378a6602a9ae6b98bd
-    FETCH_REF "v${VERSION}"
-    HEAD_REF main
+    REPO KhronosGroup/KTX-Software
+    REF "v${VERSION}"
+    SHA512 0077315fe2b4e676e97e3a158c2c6e1f6ba426e14ad23342592cd69be28cfce64c40614e0a84d58a9634877ab334e713b94d4c962132c98bfea308e91bc8a98a
+    HEAD_REF master
     PATCHES
         0001-Use-vcpkg-zstd.patch
         0002-Fix-versioning.patch
@@ -14,6 +14,8 @@ vcpkg_from_git(
         CESIUM-0001-do-not-define-_DEBUG.patch
 )
 file(REMOVE "${SOURCE_PATH}/other_include/zstd_errors.h")
+file(REMOVE_RECURSE "${SOURCE_PATH}/external/basisu/zstd")
+file(REMOVE_RECURSE "${SOURCE_PATH}/lib/basisu/zstd")
 
 vcpkg_list(SET OPTIONS)
 if(VCPKG_TARGET_IS_WINDOWS)
