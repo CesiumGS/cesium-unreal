@@ -225,7 +225,7 @@ private:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
     FCesiumITwinListITwinsDelegate,
-    TArray<UCesiumITwin*>,
+    const TArray<UCesiumITwin*>&,
     ITwins,
     bool,
     HasAnotherPage,
@@ -327,7 +327,7 @@ private:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
     FCesiumITwinListIModelsDelegate,
-    TArray<UCesiumIModel*>,
+    const TArray<UCesiumIModel*>&,
     IModels,
     bool,
     HasAnotherPage,
@@ -438,7 +438,7 @@ private:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
     FCesiumITwinListIModelMeshExportsDelegate,
-    TArray<UCesiumIModelMeshExport*>,
+    const TArray<UCesiumIModelMeshExport*>&,
     MeshExports,
     bool,
     HasAnotherPage,
@@ -589,7 +589,7 @@ private:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
     FCesiumITwinListRealityDataDelegate,
-    TArray<UCesiumITwinRealityData*>,
+    const TArray<UCesiumITwinRealityData*>&,
     RealityData,
     bool,
     HasAnotherPage,
@@ -738,7 +738,7 @@ private:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FCesiumITwinListCesiumCuratedContentDelegate,
-    TArray<UCesiumCuratedContentAsset*>,
+    const TArray<UCesiumCuratedContentAsset*>&,
     Assets,
     const TArray<FString>&,
     Errors);

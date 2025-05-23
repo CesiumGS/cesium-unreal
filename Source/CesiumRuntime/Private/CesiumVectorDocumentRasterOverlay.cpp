@@ -63,7 +63,7 @@ UCesiumVectorDocumentRasterOverlay::CreateOverlay(
         CesiumRasterOverlays::IonVectorDocumentRasterOverlaySource{
             this->IonAssetID,
             TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken),
-            TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)},
+            std::string(TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)) + "/"},
         vectorOptions,
         options);
   }
