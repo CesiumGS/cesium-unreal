@@ -1562,7 +1562,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
-  return Cesium3DTilesSelection::ViewState::create(
+  return Cesium3DTilesSelection::ViewState(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
