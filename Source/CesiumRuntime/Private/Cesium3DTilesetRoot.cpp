@@ -18,7 +18,6 @@ void UCesium3DTilesetRoot::HandleGeoreferenceUpdated() {
       Verbose,
       TEXT("Called HandleGeoreferenceUpdated for tileset root %s"),
       *this->GetName());
-
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
