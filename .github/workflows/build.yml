@@ -70,7 +70,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_5.3.zip"
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-android"
-      android-ndk-version: "r26d"
+      android-ndk-version: "r25b"
   Linux53:
     uses: ./.github/workflows/buildLinux.yml
     secrets: inherit
@@ -188,7 +188,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_5.4.zip"
       unreal-program-name: "UE_5.4"
       upload-package-base-name: "CesiumForUnreal-54-android"
-      android-ndk-version: "r26d"
+      android-ndk-version: "r25b"
   Linux54:
     uses: ./.github/workflows/buildLinux.yml
     secrets: inherit
@@ -306,7 +306,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/UE_5.5.zip"
       unreal-program-name: "UE_5.5"
       upload-package-base-name: "CesiumForUnreal-55-android"
-      android-ndk-version: "r26d"
+      android-ndk-version: "r25b"
   Linux55:
     uses: ./.github/workflows/buildLinux.yml
     secrets: inherit
