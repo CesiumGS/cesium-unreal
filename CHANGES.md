@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added support for `TRIANGLE_FAN` primitives in tile meshes.
+
 ##### Fixes :wrench:
 
 - Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
