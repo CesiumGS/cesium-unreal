@@ -2371,7 +2371,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-              -> UCesiumGltfComponent::CreateOffGameThreadResult {
+          -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3164,7 +3164,7 @@ static void loadPrimitiveGameThreadPart(
   UMaterialInstanceDynamic* pMaterial;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-
+       
     UMaterialInstanceDynamic* pBaseAsMaterialInstanceDynamic =
         Cast<UMaterialInstanceDynamic>(pBaseMaterial);
     UMaterialInstance* pParentMaterialInstance =
