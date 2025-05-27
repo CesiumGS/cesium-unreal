@@ -3164,7 +3164,7 @@ static void loadPrimitiveGameThreadPart(
   UMaterialInstanceDynamic* pMaterial;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-       
+
     UMaterialInstanceDynamic* pBaseAsMaterialInstanceDynamic =
         Cast<UMaterialInstanceDynamic>(pBaseMaterial);
     UMaterialInstance* pParentMaterialInstance =
