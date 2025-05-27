@@ -232,17 +232,20 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(this);
   }
 
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        pRoot,
-        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-    this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
-        this,
-        &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
+  if (this->ResolvedGeoreference) {
+    UCesium3DTilesetRoot* pRoot =
+        Cast<UCesium3DTilesetRoot>(this->RootComponent);
+    if (pRoot) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          pRoot,
+          &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+      this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
+          this,
+          &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
 
-    // Update existing tile positions, if any.
-    pRoot->HandleGeoreferenceUpdated();
+      // Update existing tile positions, if any.
+      pRoot->HandleGeoreferenceUpdated();
+    }
   }
 
   return this->ResolvedGeoreference;
