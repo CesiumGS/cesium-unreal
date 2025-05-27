@@ -2354,7 +2354,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3287,7 +3287,37 @@ static void loadPrimitiveGameThreadPart(
     if (pBaseAsMaterialInstanceDynamic) {
       // Ensure any parameters on the original UMaterialInstanceDynamic are
       // transferred to the copy.
-      pMaterial->CopyInterpParameters(pBaseAsMaterialInstanceDynamic);
+      for (auto& it : pBaseAsMaterialInstanceDynamic->ScalarParameterValues) {
+        pMaterial->SetScalarParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it : pBaseAsMaterialInstanceDynamic->VectorParameterValues) {
+        pMaterial->SetVectorParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it :
+           pBaseAsMaterialInstanceDynamic->DoubleVectorParameterValues) {
+        pMaterial->SetVectorParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it : pBaseAsMaterialInstanceDynamic->TextureParameterValues) {
+        pMaterial->SetTextureParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it : pBaseAsMaterialInstanceDynamic->FontParameterValues) {
+        pMaterial->SetFontParameterValue(
+            it.ParameterInfo,
+            it.FontValue,
+            it.FontPage);
+      }
     }
   }
 
