@@ -1,0 +1,46 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
+#pragma once
+
+#include "Cesium3DTilesSelection/Tile.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveFeatures.h"
+#include "CesiumPrimitiveMetadata.h"
+
+#include "UObject/ObjectMacros.h"
+
+#include "CesiumLoadedTile.generated.h"
+
+class UStaticMeshComponent;
+
+UINTERFACE()
+class UCesiumLoadedTile : public UInterface {
+  GENERATED_BODY()
+};
+class ICesiumLoadedTile {
+  GENERATED_BODY()
+public:
+  /** Get the tile identifier: this is informational only, as there is no
+   * guarantee of unicity */
+  virtual const Cesium3DTilesSelection::TileID& GetTileID() const = 0;
+  virtual const FCesiumModelMetadata& GetModelMetadata() const = 0;
+  virtual void SetRenderReady(bool bToggle) = 0;
+};
+
+UINTERFACE()
+class UCesiumLoadedTilePrimitive : public UInterface {
+  GENERATED_BODY()
+};
+// Not merged with ICesiumPrimitive because this is Public whereas
+// ICesiumPrimitive is Private
+class ICesiumLoadedTilePrimitive {
+  GENERATED_BODY()
+public:
+  virtual ICesiumLoadedTile& GetLoadedTile() = 0;
+  virtual UStaticMeshComponent& GetMeshComponent() = 0;
+  virtual const FCesiumPrimitiveFeatures& GetPrimitiveFeatures() const = 0;
+  virtual const FCesiumPrimitiveMetadata& GetPrimitiveMetadata() const = 0;
+  virtual const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const = 0;
+  virtual std::optional<uint32_t>
+  FindTexCoordIndexForGltfAttribute(int32_t accessorIndex) const = 0;
+};
