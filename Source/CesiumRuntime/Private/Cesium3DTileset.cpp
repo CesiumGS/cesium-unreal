@@ -445,14 +445,6 @@ void ACesium3DTileset::SetCesiumIonServer(UCesiumIonServer* Server) {
   }
 }
 
-void ACesium3DTileset::SetAllowMeshBuffersCPUAccess(
-    bool InMeshBuffersCPUAccess) {
-  if (bAllowMeshBuffersCPUAccess != InMeshBuffersCPUAccess) {
-    this->bAllowMeshBuffersCPUAccess = InMeshBuffersCPUAccess;
-    this->DestroyTileset();
-  }
-}
-
 void ACesium3DTileset::SetMaximumScreenSpaceError(
     double InMaximumScreenSpaceError) {
   if (MaximumScreenSpaceError != InMaximumScreenSpaceError) {

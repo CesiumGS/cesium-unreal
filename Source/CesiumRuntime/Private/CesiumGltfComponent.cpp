@@ -1670,12 +1670,6 @@ static void loadPrimitive(
     computeTangentSpace(StaticMeshBuildVertices);
   }
 
-  // Note: there is already a representation of the geometry kept in CPU memory,
-  // which is the CesiumGltf::Model, so we should avoid keeping a second copy...
-  // (TODO: remove option)
-  bool bNeedsCPUAccess = options.pMeshOptions->pNodeOptions->pModelOptions
-                             ->allowMeshBuffersCPUAccess;
-
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
 
@@ -1686,12 +1680,12 @@ static void loadPrimitive(
         true);
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
-        bNeedsCPUAccess);
+        false);
 
     FColorVertexBuffer& ColorVertexBuffer =
         LODResources.VertexBuffers.ColorVertexBuffer;
     if (hasVertexColors) {
-      ColorVertexBuffer.Init(StaticMeshBuildVertices, bNeedsCPUAccess);
+      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
     }
 
     uint32 numberOfTextureCoordinates =
@@ -1704,7 +1698,7 @@ static void loadPrimitive(
     vertexBuffer.Init(
         StaticMeshBuildVertices.Num(),
         numberOfTextureCoordinates,
-        bNeedsCPUAccess);
+        false);
 
     // Manually copy the vertices into the buffer. We do this because UE 5.3
     // and 5.4 have a bug where the overload of `FStaticMeshVertexBuffer::Init`
@@ -1751,9 +1745,6 @@ static void loadPrimitive(
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
-    if (bNeedsCPUAccess) {
-      LODResources.IndexBuffer.TrySetAllowCPUAccess(true);
-    }
     LODResources.IndexBuffer.SetIndices(
         indices,
         StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()

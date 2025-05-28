@@ -35,8 +35,6 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
   options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
-  options.allowMeshBuffersCPUAccess =
-      this->_pActor->GetAllowMeshBuffersCPUAccess();
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 

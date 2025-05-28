@@ -343,19 +343,6 @@ public:
   void InvalidateResolvedCameraManager();
 
   /**
-   * Whether to configure the Unreal mesh buffers to allow access from CPU. If
-   * this is false, the buffers can be freed from CPU memory at any time after
-   * they have been moved to GPU memory: set to true if you need to access these
-   * buffers for your game logic.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetAllowMeshBuffersCPUAccess,
-      BlueprintSetter = SetAllowMeshBuffersCPUAccess,
-      Category = "Cesium")
-  bool bAllowMeshBuffersCPUAccess = false;
-
-  /**
    * The maximum number of pixels of error when rendering this tileset.
    *
    * This is used to select an appropriate level-of-detail: A low value
@@ -1081,14 +1068,6 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetMaximumScreenSpaceError(double InMaximumScreenSpaceError);
-
-  UFUNCTION(BlueprintGetter, Category = "Cesium")
-  bool GetAllowMeshBuffersCPUAccess() const {
-    return bAllowMeshBuffersCPUAccess;
-  }
-
-  UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetAllowMeshBuffersCPUAccess(bool bMeshBuffersCPUAccess);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   bool GetEnableOcclusionCulling() const;
