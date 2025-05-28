@@ -7,7 +7,7 @@ Unreal Insights can display the scope of timing events as well as activity acros
 
 # Set up a repeatable test
 
-In this example, we will use our Cesium performance tests. Follow the steps outlined [here](https://github.com/CesiumGS/cesium-unreal/blob/profiling-documentation/Documentation/performance-profiling-setup-test.md).
+In this example, we will use our Cesium performance tests. Follow the steps outlined [here](performance-profiling-setup-test.md).
 
 # Prepare for capture
 

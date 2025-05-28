@@ -50,6 +50,8 @@ public:
   std::optional<uint32_t>
   FindTexCoordIndexForGltfAttribute(int32_t accessorIndex) const override;
 
+  virtual void OnCreatePhysicsState() override;
+
 private:
   CesiumPrimitiveData _cesiumData;
 };
