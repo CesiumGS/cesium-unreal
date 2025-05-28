@@ -3536,6 +3536,13 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   PrimaryComponentTick.bCanEverTick = false;
 }
 
+int32 UCesiumGltfComponent::GetTuningVersion() const {
+  if (pTile && pTile->getContent().getRenderContent()) {
+    return pTile->getContent().getRenderContent()->getModel()._tuningVersion;
+  }
+  return -1;
+}
+
 void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {

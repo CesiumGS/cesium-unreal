@@ -13,5 +13,5 @@ class UCesiumLoadedTile : public UInterface {
 class ICesiumLoadedTile {
   GENERATED_BODY()
 public:
+  virtual int32 GetTuningVersion() const = 0;
 };
-
