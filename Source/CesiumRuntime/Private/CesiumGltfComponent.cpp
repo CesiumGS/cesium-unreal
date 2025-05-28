@@ -3440,7 +3440,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::Tile& tile,
+    Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
@@ -3454,6 +3454,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   // }
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  Gltf->pTile = &tile;
   Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
@@ -3533,6 +3534,13 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
+}
+
+int32 UCesiumGltfComponent::GetTuningVersion() const {
+  if (pTile && pTile->getContent().getRenderContent()) {
+    return pTile->getContent().getRenderContent()->getModel()._tuningVersion;
+  }
+  return -1;
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(

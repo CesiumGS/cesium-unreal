@@ -1257,6 +1257,15 @@ public:
    */
   void UpdateTransformFromCesium();
 
+  /**
+   * Sets the glTF model tuner, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed. Can only be called in the same engine tick after the tileset
+   * actor was spawned, or {@link RefreshTileset} was called.
+   */
+  void
+  SetGltfTuner(const std::shared_ptr<Cesium3DTilesSelection::GltfTuner>& tuner);
+
 private:
   /**
    * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
@@ -1370,6 +1379,8 @@ private:
       _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  std::shared_ptr<Cesium3DTilesSelection::GltfTuner> _gltfTuner;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
