@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Added support for `TRIANGLE_FAN` primitives in tile meshes.
+- Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
 
 ##### Fixes :wrench:
 

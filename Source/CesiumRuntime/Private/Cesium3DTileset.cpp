@@ -992,7 +992,10 @@ void ACesium3DTileset::LoadTileset() {
            ->EnableExperimentalOcclusionCullingFeature &&
        this->EnableOcclusionCulling && this->BoundingVolumePoolComponent)
           ? this->BoundingVolumePoolComponent->getPool()
-          : nullptr};
+          : nullptr,
+      {},
+      _gltfTuner
+  };
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -2325,3 +2328,8 @@ void ACesium3DTileset::RuntimeSettingsChanged(
   }
 }
 #endif
+
+void ACesium3DTileset::SetGltfTuner(
+    const std::shared_ptr<Cesium3DTilesSelection::GltfTuner>& tuner) {
+  _gltfTuner = tuner;
+}
