@@ -5,6 +5,7 @@
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
+#include "CesiumLoadedTile.h"
 #include "CesiumModelMetadata.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
@@ -56,7 +57,7 @@ struct FRasterOverlayTile {
 };
 
 UCLASS()
-class UCesiumGltfComponent : public USceneComponent {
+class UCesiumGltfComponent : public USceneComponent, public ICesiumLoadedTile {
   GENERATED_BODY()
 
 public:
@@ -87,7 +88,7 @@ public:
       UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
-      const Cesium3DTilesSelection::Tile& tile,
+      Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision);
 
   UCesiumGltfComponent();
@@ -103,6 +104,8 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
+
+  Cesium3DTilesSelection::Tile* pTile = nullptr;
 
   FCesiumModelMetadata Metadata{};
   EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
