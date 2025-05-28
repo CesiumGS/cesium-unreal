@@ -12,6 +12,7 @@
 - Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
 - Fixed a bug in `UCesiumFeaturesMetadataComponent` where multiple references to same feature ID set would cause improper encoding of its feature IDs.
 - Fixed a crash that would occur when duplicating an `ACesiumGeoreference`.
+- Fixed a bug that caused tilesets to render incorrectly when Dynamic Material Instances were used for their material settings.
 - Removed an unnecessary copy operation that happened while constructing tile meshes.
 
 ### v2.16.0 - 2025-05-01

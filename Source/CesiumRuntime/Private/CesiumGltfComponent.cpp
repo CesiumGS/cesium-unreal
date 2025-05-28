@@ -3165,8 +3165,21 @@ static void loadPrimitiveGameThreadPart(
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
 
+    UMaterialInstanceDynamic* pBaseAsMaterialInstanceDynamic =
+        Cast<UMaterialInstanceDynamic>(pBaseMaterial);
+    UMaterialInstance* pParentMaterialInstance =
+        Cast<UMaterialInstance>(pBaseMaterial);
+
+    // If the base material is a UMaterialInstanceDynamic, Create() will
+    // reject it as a valid instance parent.  Defer to its non-dynamic parent
+    // instead.
+    if (pBaseAsMaterialInstanceDynamic) {
+      pParentMaterialInstance =
+          Cast<UMaterialInstance>(pParentMaterialInstance->Parent.Get());
+    }
+
     pMaterial = UMaterialInstanceDynamic::Create(
-        pBaseMaterial,
+        pParentMaterialInstance,
         nullptr,
         ImportedSlotName);
 
@@ -3187,36 +3200,44 @@ static void loadPrimitiveGameThreadPart(
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
 
-    UMaterialInstance* pBaseAsMaterialInstance =
-        Cast<UMaterialInstance>(pBaseMaterial);
     UCesiumMaterialUserData* pCesiumData =
-        pBaseAsMaterialInstance
-            ? pBaseAsMaterialInstance
+        pParentMaterialInstance
+            ? pParentMaterialInstance
                   ->GetAssetUserData<UCesiumMaterialUserData>()
             : nullptr;
 
     // If possible and necessary, attach the CesiumMaterialUserData now.
 #if WITH_EDITORONLY_DATA
-    if (pBaseAsMaterialInstance && !pCesiumData) {
+    if (pParentMaterialInstance && !pCesiumData) {
       const FStaticParameterSet& parameters =
-          pBaseAsMaterialInstance->GetStaticParameters();
+          pParentMaterialInstance->GetStaticParameters();
 
       bool hasLayers = parameters.bHasMaterialLayers;
       if (hasLayers) {
 #if WITH_EDITOR
         FScopedTransaction transaction(
             FText::FromString("Add Cesium User Data to Material"));
-        pBaseAsMaterialInstance->Modify();
+        pParentMaterialInstance->Modify();
 #endif
         pCesiumData = NewObject<UCesiumMaterialUserData>(
-            pBaseAsMaterialInstance,
+            pParentMaterialInstance,
             NAME_None,
             RF_Transactional);
-        pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
+        pParentMaterialInstance->AddAssetUserData(pCesiumData);
         pCesiumData->PostEditChangeOwner();
       }
     }
 #endif
+
+    // If CesiumMaterialUserData was not attached (e.g., material was
+    // dynamically created at runtime), then walk the parent chain of the
+    // material to find it.
+    while (pParentMaterialInstance && !pCesiumData) {
+      pParentMaterialInstance =
+          Cast<UMaterialInstance>(pParentMaterialInstance->Parent.Get());
+      pCesiumData =
+          pParentMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>();
+    }
 
     if (pCesiumData) {
       SetGltfParameterValues(
@@ -3277,6 +3298,42 @@ static void loadPrimitiveGameThreadPart(
             pMaterial,
             EMaterialParameterAssociation::LayerParameter,
             metadataIndex);
+      }
+    }
+
+    if (pBaseAsMaterialInstanceDynamic) {
+      // Ensure any parameters on the original UMaterialInstanceDynamic are
+      // transferred to the copy.
+      for (auto& it : pBaseAsMaterialInstanceDynamic->ScalarParameterValues) {
+        pMaterial->SetScalarParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it : pBaseAsMaterialInstanceDynamic->VectorParameterValues) {
+        pMaterial->SetVectorParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it :
+           pBaseAsMaterialInstanceDynamic->DoubleVectorParameterValues) {
+        pMaterial->SetVectorParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it : pBaseAsMaterialInstanceDynamic->TextureParameterValues) {
+        pMaterial->SetTextureParameterValueByInfo(
+            it.ParameterInfo,
+            it.ParameterValue);
+      }
+
+      for (auto& it : pBaseAsMaterialInstanceDynamic->FontParameterValues) {
+        pMaterial->SetFontParameterValue(
+            it.ParameterInfo,
+            it.FontValue,
+            it.FontPage);
       }
     }
   }
