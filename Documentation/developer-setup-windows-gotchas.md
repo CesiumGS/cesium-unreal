@@ -85,7 +85,12 @@ The solution here is to explicitly install the version of the build tools that y
 
 You may have different projects that need to use different compiler versions. If you use Visual Studio Code, the easiest way to deal with this is to set up custom "kits" for the different versions.
 
-Open the command palette (Ctrl-Shift-P) and choose `CMake: Edit User-Local CMake Kits`. Make two copies of the JSON object for the existing `amd64` kit. It will have a name similar to `Visual Studio Professional 2022 Release - amd64`. Name the two copies for the compiler version you want each to use, such as `14.38 - Visual Studio Professional 2022 Release - amd64`. Then, add the version to the `preferredGenerator.toolset` property. It should look like this (though your names and `visualStudio` properties may be different):
+Open the command palette (Ctrl-Shift-P) and choose `CMake: Edit User-Local CMake Kits`. Make two copies of the JSON object for the existing `amd64` kit. It will have a name similar to `Visual Studio Professional 2022 Release - amd64`. Name the two copies for the compiler version you want each to use, such as `14.38 - Visual Studio Professional 2022 Release - amd64`. Then, do the following:
+
+* Add the `version=14.38` or similar to the `preferredGenerator.toolset` property.
+* Create an entry for the `VCToolsVersion` environment variable with the full three-part version. You can find the three-part version for your installed toolsets by looking in `C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC` or similar.
+
+It should look like this (though your names and `visualStudio` properties may be different):
 
 ```json
 [
@@ -98,6 +103,9 @@ Open the command palette (Ctrl-Shift-P) and choose `CMake: Edit User-Local CMake
       "name": "Visual Studio 17 2022",
       "platform": "x64",
       "toolset": "host=x64,version=14.38"
+    },
+    "environmentVariables": {
+      "VCToolsVersion": "14.38.33130"
     }
   },
   {
@@ -109,6 +117,9 @@ Open the command palette (Ctrl-Shift-P) and choose `CMake: Edit User-Local CMake
       "name": "Visual Studio 17 2022",
       "platform": "x64",
       "toolset": "host=x64,version=14.44"
+    },
+    "environmentVariables": {
+      "VCToolsVersion": "14.44.35207"
     }
   },
   ...
