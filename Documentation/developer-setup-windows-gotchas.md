@@ -1,6 +1,6 @@
 # Developer Setup for Windows - Gotchas {#developer-setup-windows-gotchas}
 
-Compiling Cesium for Unreal requires that the vcpkg-based third-party dependencies, the cesium-native code, and the Cesium for Unreal code itself are compiler using the same (or compatible) versions of the MSVC compiler. This is remarkably hard to achieve! This guide will hopefully help you get there.
+Compiling Cesium for Unreal requires that the vcpkg-based third-party dependencies, the cesium-native code, and the Cesium for Unreal code itself are compiled using the same (or compatible) versions of the MSVC compiler. This is remarkably hard to achieve! This guide will hopefully help you get there.
 
 Some important facts to understand before continuing:
 
