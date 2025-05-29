@@ -17,7 +17,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install the Unreal Engine (version 5.3 or newer) from https://www.unrealengine.com/en-US/download
 
 > [!note]
-> In newer versions of Visual Studio 2022, it can be tricky to get everything building using compatible versions of the Visual C++ compiler. See [Developer Setup for Windows - Gotchas](developer-setup-windows-gotchas.md) for details and solutions, particularly if you run into compiler or linker errors following the instructions below.
+> In newer versions of Visual Studio 2022, it can be tricky to get everything building using compatible versions of the Visual C++ compiler. See <!--! \cond DOXYGEN_EXCLUDE !-->[Developer Setup for Windows - Gotchas](developer-setup-windows-gotchas.md)<!--! \endcond --><!--! \subpage developer-setup-windows-gotchas --> for details and solutions, particularly if you run into compiler or linker errors following the instructions below.
 
 ## To Cross Compile Android on Windows
 
