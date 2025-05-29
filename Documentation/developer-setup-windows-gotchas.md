@@ -4,7 +4,7 @@ Compiling Cesium for Unreal requires that the vcpkg-based third-party dependenci
 
 Some important facts to understand before continuing:
 
-1. "Visual Studio 2022" is not a compiler version, it's an IDE version, and may imply any number of compiler versions.
+1. "Visual Studio 2022" is not a compiler version, it's an IDE brand name, and may imply any number of compiler versions.
 2. Updates to Visual Studio 2022 often come with new versions of the MSVC compiler. For Visual Studio 2022, the MSVC compilers have version numbers like 14.x. Sometimes the compiler version is referred to as a "toolchain" version.
 3. Microsoft _does_ allow us to link together .lib files built with different versions of the MSVC compiler. However, the compiler version used to _link_ must be the same or newer than the _newest_ compiler that built any of the .libs (or any object files they contain).
 4. You can install any number of toolchain versions simultaneously. Go to "Add / Remove Programs" and Modify "Visual Studio Professional 2022". Then click the "Invididual Components" tab and scroll down to "Compilers, build tools, and runtimes". Tick the box next to the "MSVC v143 - VS2022 C++ x64/x86 build tools" version that you want to install.
