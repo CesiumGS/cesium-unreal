@@ -284,8 +284,7 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
   }
 
   pOwner->Modify();
-  pOwner->SetActorTransform(
-      FTransform(VecMath::createMatrix(NewLevelTransform)));
+  pOwner->SetActorTransform(VecMath::createTransform(NewLevelTransform));
 
   // Set the new sub-level georeference origin.
   this->Modify();
@@ -355,7 +354,7 @@ void UCesiumSubLevelComponent::PlaceOriginAtEcef(const FVector& NewOriginEcef) {
       Tileset->Modify();
       Root->Modify();
       Root->SetRelativeTransform(
-          FTransform(VecMath::createMatrix(RelativeTransformInNew)),
+          VecMath::createTransform(RelativeTransformInNew),
           false,
           nullptr,
           ETeleportType::TeleportPhysics);

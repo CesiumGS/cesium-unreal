@@ -11,9 +11,6 @@ public class CesiumRuntime : ModuleRules
 {
     public CesiumRuntime(ReadOnlyTargetRules Target) : base(Target)
     {
-        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-        ShadowVariableWarningLevel = WarningLevel.Off;
-
         PublicIncludePaths.AddRange(
             new string[] {
                 Path.Combine(ModuleDirectory, "../ThirdParty/include")
@@ -26,119 +23,56 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        string libPrefix;
-        string libPostfix;
         string platform;
+        string libSearchPattern;
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            platform = "Windows-x64";
-            libPostfix = ".lib";
-            libPrefix = "";
+            platform = "Windows-AMD64-";
+            libSearchPattern = "*.lib";
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            platform = "Darwin-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "Darwin-universal-";
+            libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
-            platform = "Android-xaarch64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "Android-aarch64-";
+            libSearchPattern = "lib*.a";
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            platform = "Linux-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
+            platform = "Linux-x86_64-";
+            libSearchPattern = "lib*.a";
         }
         else if(Target.Platform == UnrealTargetPlatform.IOS)
         {
-            platform = "iOS-xarm64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else {
-            platform = "Unknown";
-            libPostfix = ".Unknown";
-            libPrefix = "Unknown";
-        }
-
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-
-        string releasePostfix = "";
-        string debugPostfix = "d";
-
-        bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
-        string postfix = preferDebug ? debugPostfix : releasePostfix;
-
-        string[] libs = new string[]
-        {
-            "async++",
-            "Cesium3DTiles",
-            "Cesium3DTilesContent",
-            "Cesium3DTilesReader",
-            "Cesium3DTilesSelection",
-            "CesiumAsync",
-            "CesiumIonClient",
-            "CesiumGeometry",
-            "CesiumGeospatial",
-            "CesiumGltfReader",
-            "CesiumGltfContent",
-            "CesiumGltf",
-            "CesiumJsonReader",
-            "CesiumRasterOverlays",
-            "CesiumQuantizedMeshTerrain",
-            "CesiumUtility",
-            "csprng",
-            "draco",
-            "ktx",
-            //"MikkTSpace",
-            "meshoptimizer",
-            "modp_b64",
-            "s2geometry",
-            "spdlog",
-            "sqlite3",
-            "tinyxml2",
-            "turbojpeg",
-            "uriparser",
-            "webpdecoder",
-        };
-
-        // Use our own copy of MikkTSpace on Android.
-        if (Target.Platform == UnrealTargetPlatform.Android || Target.Platform == UnrealTargetPlatform.IOS)
-        {
-            libs = libs.Concat(new string[] { "MikkTSpace" }).ToArray();
-            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
-        }
-
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            libs = libs.Concat(new string[] { "tidy_static", "zlibstatic" }).ToArray();
+            platform = "iOS-ARM64-";
+            libSearchPattern = "lib*.a";
         }
         else
         {
-            libs = libs.Concat(new string[] { "tidy", "z" }).ToArray();
+            throw new InvalidOperationException("Cesium for Unreal does not support this platform.");
         }
 
-        if (preferDebug)
+        string libPathBase = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string libPathDebug = libPathBase + "Debug";
+        string libPathRelease = libPathBase + "Release";
+
+        bool useDebug = false;
+        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
         {
-            // We prefer Debug, but might still use Release if that's all that's available.
-            foreach (string lib in libs)
+            if (Directory.Exists(libPathDebug))
             {
-                string debugPath = Path.Combine(libPath, libPrefix + lib + debugPostfix + libPostfix);
-                if (!File.Exists(debugPath))
-                {
-                    Console.WriteLine("Using release build of cesium-native because a debug build is not available.");
-                    preferDebug = false;
-                    postfix = releasePostfix;
-                    break;
-                }
+                useDebug = true;
             }
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
+        string libPath = useDebug ? libPathDebug : libPathRelease;
+
+        string[] allLibs = Directory.Exists(libPath) ? Directory.GetFiles(libPath, libSearchPattern) : new string[0];
+
+        PublicAdditionalLibraries.AddRange(allLibs);
 
         PublicDependencyModuleNames.AddRange(
             new string[]
@@ -157,16 +91,21 @@ public class CesiumRuntime : ModuleRules
                 "DeveloperSettings",
                 "UMG",
                 "Renderer",
+                "OpenSSL",
                 "EnhancedInput"
             }
         );
 
-        // Use UE's MikkTSpace on non-Android
-        if (Target.Platform != UnrealTargetPlatform.Android)
+        // Use UE's MikkTSpace on most platforms, except Android and iOS.
+        // On those platforms, UE's isn't available, so we use our own.
+        if (Target.Platform != UnrealTargetPlatform.Android && Target.Platform != UnrealTargetPlatform.IOS)
         {
             PrivateDependencyModuleNames.Add("MikkTSpace");
         }
-
+        else
+        {
+            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
+        }
 
         PublicDefinitions.AddRange(
             new string[]
@@ -175,9 +114,13 @@ public class CesiumRuntime : ModuleRules
                 "LIBASYNC_STATIC",
                 "GLM_FORCE_XYZW_ONLY",
                 "GLM_FORCE_EXPLICIT_CTOR",
-                "GLM_FORCE_SIZE_T_LENGTH",
+                "GLM_ENABLE_EXPERIMENTAL",
                 "TIDY_STATIC",
-                "URI_STATIC_BUILD"
+                "URI_STATIC_BUILD",
+                "SWL_VARIANT_NO_CONSTEXPR_EMPLACE",
+                // Define to record the state of every tile, every frame, to a SQLite database.
+                // The database will be found in [Project Dir]/Saved/CesiumDebugTileStateDatabase.
+                // "CESIUM_DEBUG_TILE_STATES",
             }
         );
 
@@ -204,14 +147,11 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
+        ShadowVariableWarningLevel = WarningLevel.Off;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivatePCHHeaderFile = "Private/PCH.h";
 
-#if UE_5_4_OR_LATER
         CppStandard = CppStandardVersion.Cpp20;
-#else
-        CppStandard = CppStandardVersion.Cpp17;
-#endif
         bEnableExceptions = true;
     }
 }

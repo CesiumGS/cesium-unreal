@@ -55,7 +55,7 @@ enum class ECesiumFeatureTableAccessType_DEPRECATED : uint8 {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    "FPropertyDescription has been deprecated. Use FCesiumPropertyTablePropertyDescription instead.")
     FPropertyDescription;
 
 /**
@@ -103,7 +103,7 @@ struct CESIUMRUNTIME_API FPropertyDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    "FFeatureTableDescription has been deprecated. Use FCesiumPropertyTableDescription instead.")
     FFeatureTableDescription;
 
 /**
@@ -150,7 +150,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    "FFeatureTexturePropertyDescription has been deprecated. Use FCesiumPropertyTexturePropertyDescription instead.")
     FFeatureTexturePropertyDescription;
 
 /**
@@ -199,7 +199,7 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    "FFeatureTextureDescription has been deprecated. Use FCesiumPropertyTextureDescription instead.")
     FFeatureTextureDescription;
 
 /**
@@ -225,12 +225,7 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
-    FMetadataDescription;
-
-struct UE_DEPRECATED(
-    5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    "FMetadataDescription has been deprecated. Use FCesiumModelMetadataDescription instead.")
     FMetadataDescription;
 
 /**
@@ -267,6 +262,7 @@ struct CESIUMRUNTIME_API FMetadataDescription {
  * "Auto Fill" button. Once a selection of desired metadata is made, the
  * boiler-plate material code to access the selected properties can be
  * auto-generated using the "Generate Material" button.
+ * @deprecated Use UCesiumFeaturesMetadataComponent instead.
  */
 UCLASS(Deprecated)
 class CESIUMRUNTIME_API UDEPRECATED_CesiumEncodedMetadataComponent

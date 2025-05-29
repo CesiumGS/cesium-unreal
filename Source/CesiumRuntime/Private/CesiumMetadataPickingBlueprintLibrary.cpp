@@ -4,6 +4,10 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataValue.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveFeatures.h"
+
+#include <optional>
 
 static TMap<FString, FCesiumMetadataValue> EmptyCesiumMetadataValueMap;
 
@@ -148,23 +152,92 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
   return true;
 }
 
+namespace {
+/*
+ * Returns std:nullopt if the component isn't an instanced static mesh or
+ * if it doesn't have instance feature IDs. This will prompt
+ * GetPropertyTableValuesFromHit() to search for feature IDs in the primitive's
+ * attributes.
+ */
+std::optional<TMap<FString, FCesiumMetadataValue>>
+getInstancePropertyTableValues(
+    const FHitResult& Hit,
+    const UCesiumGltfComponent* pModel,
+    int64 FeatureIDSetIndex) {
+  const auto* pInstancedComponent =
+      Cast<UCesiumGltfInstancedComponent>(Hit.Component);
+  if (!IsValid(pInstancedComponent)) {
+    return std::nullopt;
+  }
+  const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures =
+      pInstancedComponent->pInstanceFeatures;
+  if (!pInstanceFeatures) {
+    return std::nullopt;
+  }
+
+  const TArray<FCesiumFeatureIdSet>& featureIDSets =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+          *pInstanceFeatures);
+  if (FeatureIDSetIndex < 0 || FeatureIDSetIndex >= featureIDSets.Num()) {
+    return TMap<FString, FCesiumMetadataValue>();
+  }
+
+  const FCesiumFeatureIdSet& featureIDSet = featureIDSets[FeatureIDSetIndex];
+  const int64 propertyTableIndex =
+      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
+
+  const TArray<FCesiumPropertyTable>& propertyTables =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(pModel->Metadata);
+  if (propertyTableIndex < 0 || propertyTableIndex >= propertyTables.Num()) {
+    return TMap<FString, FCesiumMetadataValue>();
+  }
+  const FCesiumPropertyTable& propertyTable =
+      propertyTables[propertyTableIndex];
+  int64 featureID =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+          *pInstanceFeatures,
+          Hit.Item,
+          FeatureIDSetIndex);
+  if (featureID < 0) {
+    return TMap<FString, FCesiumMetadataValue>();
+  }
+  return UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
+      propertyTable,
+      featureID);
+}
+} // namespace
+
 TMap<FString, FCesiumMetadataValue>
 UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesFromHit(
     const FHitResult& Hit,
     int64 FeatureIDSetIndex) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(Hit.Component);
-  if (!IsValid(pGltfComponent)) {
+  const UCesiumGltfComponent* pModel = nullptr;
+
+  if (const auto* pPrimComponent = Cast<UPrimitiveComponent>(Hit.Component);
+      !IsValid(pPrimComponent)) {
     return TMap<FString, FCesiumMetadataValue>();
+  } else {
+    pModel = Cast<UCesiumGltfComponent>(pPrimComponent->GetOuter());
   }
 
-  const UCesiumGltfComponent* pModel =
-      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
   if (!IsValid(pModel)) {
     return TMap<FString, FCesiumMetadataValue>();
   }
 
-  const CesiumPrimitiveData& primData = pGltfComponent->getPrimitiveData();
+  // Query for instance-level metadata first. (EXT_instance_features)
+  std::optional<TMap<FString, FCesiumMetadataValue>> maybeProperties =
+      getInstancePropertyTableValues(Hit, pModel, FeatureIDSetIndex);
+  if (maybeProperties) {
+    return *maybeProperties;
+  }
+
+  const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(Hit.Component);
+  if (!pCesiumPrimitive) {
+    return TMap<FString, FCesiumMetadataValue>();
+  }
+
+  // Query for primitive-level metadata. (EXT_mesh_features)
+  const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
   const FCesiumPrimitiveFeatures& features = primData.Features;
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
@@ -231,4 +304,52 @@ UCesiumMetadataPickingBlueprintLibrary::GetPropertyTextureValuesFromHit(
   return UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesFromHit(
       propertyTextures[PropertyTextureIndex],
       Hit);
+}
+
+static FCesiumPropertyTableProperty InvalidPropertyTableProperty;
+
+const FCesiumPropertyTableProperty&
+UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+    const UPrimitiveComponent* Component,
+    const FString& PropertyName,
+    int64 FeatureIDSetIndex) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(Component);
+  if (!IsValid(pGltfComponent)) {
+    return InvalidPropertyTableProperty;
+  }
+  const UCesiumGltfComponent* pModel =
+      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
+  if (!IsValid(pModel)) {
+    return InvalidPropertyTableProperty;
+  }
+  return FindPropertyTableProperty(
+      pGltfComponent->getPrimitiveData().Features,
+      pModel->Metadata,
+      PropertyName,
+      FeatureIDSetIndex);
+}
+
+const FCesiumPropertyTableProperty&
+UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
+    const FCesiumPrimitiveFeatures& Features,
+    const FCesiumModelMetadata& Metadata,
+    const FString& PropertyName,
+    int64 FeatureIDSetIndex) {
+  const TArray<FCesiumFeatureIdSet>& featureIDSets =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(Features);
+  if (FeatureIDSetIndex < 0 || FeatureIDSetIndex >= featureIDSets.Num()) {
+    return InvalidPropertyTableProperty;
+  }
+  const FCesiumFeatureIdSet& featureIDSet = featureIDSets[FeatureIDSetIndex];
+  const int64 propertyTableIndex =
+      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
+  const TArray<FCesiumPropertyTable>& propertyTables =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(Metadata);
+  if (propertyTableIndex < 0 || propertyTableIndex >= propertyTables.Num()) {
+    return InvalidPropertyTableProperty;
+  }
+  return UCesiumPropertyTableBlueprintLibrary::FindProperty(
+      propertyTables[propertyTableIndex],
+      PropertyName);
 }

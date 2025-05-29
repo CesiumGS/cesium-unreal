@@ -9,7 +9,7 @@
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 // quick macro for ellipsoid existence check
 #define ELLIPSOID_CHECK(thiz, ret)                                             \
@@ -732,8 +732,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
     glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
         pGeoreference->GetCoordinateSystem());
 
-    this->_setCurrentRelativeTransform(
-        FTransform(VecMath::createMatrix(anchorToLocal)));
+    this->_setCurrentRelativeTransform(VecMath::createTransform(anchorToLocal));
   } else {
     this->_lastRelativeTransformIsValid = false;
   }

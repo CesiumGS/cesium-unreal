@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumGltf/Class.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyTableProperty.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -54,7 +54,23 @@ public:
    */
   FCesiumPropertyTable(
       const CesiumGltf::Model& Model,
-      const CesiumGltf::PropertyTable& PropertyTable);
+      const CesiumGltf::PropertyTable& PropertyTable)
+      : FCesiumPropertyTable(
+            Model,
+            PropertyTable,
+            FCesiumMetadataEnumCollection::GetOrCreateFromModel(Model)) {}
+
+  /**
+   * Constructs a property table from a glTF Property Table.
+   *
+   * @param Model The model that stores EXT_structural_metadata.
+   * @param PropertyTable The target property table.
+   * @param pEnumCollection The enum collection to use, if any.
+   */
+  FCesiumPropertyTable(
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::PropertyTable& PropertyTable,
+      const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.
@@ -81,6 +97,8 @@ public:
   /**
    * Gets the status of the property table. If an error occurred while parsing
    * the property table from the glTF extension, this briefly conveys why.
+   *
+   * @param PropertyTable The property table.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -92,6 +110,8 @@ public:
   /**
    * Gets the name of the property table. If no name was specified in the glTF
    * extension, this returns an empty string.
+   *
+   * @param PropertyTable The property table.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -103,6 +123,8 @@ public:
   /**
    * Gets the number of values each property in the table is expected to have.
    * If an error occurred while parsing the property table, this returns zero.
+   *
+   * @param PropertyTable The property table.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -113,6 +135,8 @@ public:
 
   /**
    * Gets all the properties of the property table, mapped by property name.
+   *
+   * @param PropertyTable The property table.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -123,6 +147,8 @@ public:
 
   /**
    * Gets the names of the properties in this property table.
+   *
+   * @param PropertyTable The property table.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -135,6 +161,9 @@ public:
    * Retrieve a FCesiumPropertyTableProperty by name. If the property table
    * does not contain a property with that name, this returns an invalid
    * FCesiumPropertyTableProperty.
+   *
+   * @param PropertyTable The property table.
+   * @param PropertyName The name of the property to find.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -150,7 +179,8 @@ public:
    *
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
-   * @param featureID The ID of the feature.
+   * @param PropertyTable The property table.
+   * @param FeatureID The ID of the feature.
    * @return The property values mapped by property name.
    */
   UFUNCTION(
@@ -172,6 +202,7 @@ public:
    *
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
+   * @param PropertyTable The property table.
    * @param FeatureID The ID of the feature.
    * @return The property values as strings mapped by property name.
    */

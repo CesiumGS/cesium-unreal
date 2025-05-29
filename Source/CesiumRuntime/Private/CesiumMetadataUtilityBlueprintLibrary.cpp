@@ -1,8 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumMetadataUtilityBlueprintLibrary.h"
+
+#include "UObject/ObjectMacros.h"
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
-#include "CesiumMetadataUtilityBlueprintLibrary.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -100,7 +103,7 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
     UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 FaceID) {
-  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
       FeatureIDAttribute,
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
           Primitive,

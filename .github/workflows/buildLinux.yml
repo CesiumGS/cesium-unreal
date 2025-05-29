@@ -34,10 +34,12 @@ jobs:
           sudo swapon --show
           cat /proc/meminfo
           apt list --installed
+          sudo dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
+          sudo snap list
       - name: Removed unneeded packages to gain disk space
         run: |
           sudo apt update
-          sudo apt remove google-chrome-stable clang-13 clang-14 clang-15 llvm-13-dev llvm-13-linker-tools llvm-13-runtime llvm-13-tools llvm-13 llvm-14-dev llvm-14-linker-tools llvm-14-runtime llvm-14-tools llvm-14 llvm-15-dev llvm-15-linker-tools llvm-15-runtime llvm-15-tools llvm-15 x11-common xserver-common aspnetcore-runtime-6.0 aspnetcore-runtime-7.0 aspnetcore-runtime-8.0 aspnetcore-targeting-pack-6.0 aspnetcore-targeting-pack-7.0 aspnetcore-targeting-pack-8.0 docker-ce-cli docker-ce dotnet-apphost-pack-6.0 dotnet-apphost-pack-7.0 dotnet-apphost-pack-8.0 dotnet-host dotnet-hostfxr-6.0 dotnet-hostfxr-7.0 dotnet-hostfxr-8.0 dotnet-runtime-6.0 dotnet-runtime-7.0 dotnet-runtime-8.0 dotnet-runtime-deps-6.0 dotnet-runtime-deps-7.0 dotnet-runtime-deps-8.0 dotnet-sdk-6.0 dotnet-sdk-7.0 dotnet-sdk-8.0 dotnet-targeting-pack-6.0 dotnet-targeting-pack-7.0 dotnet-targeting-pack-8.0 eatmydata emacsen-common firebird3.0-common-doc firebird3.0-common firefox kubectl mercurial-common mercurial microsoft-edge-stable mssql-tools mysql-client-8.0 mysql-client-core-8.0 mysql-client mysql-common mysql-server-8.0 php8.1 postgresql-14
+          sudo apt remove google-chrome-stable clang-13 clang-14 clang-15 llvm-13-dev llvm-13-linker-tools llvm-13-runtime llvm-13-tools llvm-13 llvm-14-dev llvm-14-linker-tools llvm-14-runtime llvm-14-tools llvm-14 llvm-15-dev llvm-15-linker-tools llvm-15-runtime llvm-15-tools llvm-15 x11-common xserver-common aspnetcore-runtime-6.0 aspnetcore-runtime-7.0 aspnetcore-runtime-8.0 aspnetcore-targeting-pack-6.0 aspnetcore-targeting-pack-7.0 aspnetcore-targeting-pack-8.0 docker-ce-cli docker-ce dotnet-apphost-pack-6.0 dotnet-apphost-pack-7.0 dotnet-apphost-pack-8.0 dotnet-host dotnet-hostfxr-6.0 dotnet-hostfxr-7.0 dotnet-hostfxr-8.0 dotnet-runtime-6.0 dotnet-runtime-7.0 dotnet-runtime-8.0 dotnet-runtime-deps-6.0 dotnet-runtime-deps-7.0 dotnet-runtime-deps-8.0 dotnet-sdk-6.0 dotnet-sdk-7.0 dotnet-sdk-8.0 dotnet-targeting-pack-6.0 dotnet-targeting-pack-7.0 dotnet-targeting-pack-8.0 eatmydata emacsen-common firebird3.0-common-doc firebird3.0-common firefox kubectl mercurial-common mercurial microsoft-edge-stable mssql-tools mysql-client-8.0 mysql-client-core-8.0 mysql-client mysql-common mysql-server-8.0 php8.1 postgresql-14 azure-cli microsoft-edge-stable google-cloud-cli temurin-21-jdk temurin-17-jdk temurin-11-jdk temurin-8-jdk powershell google-cloud-cli-anthoscli mysql-server-core-8.0 containerd.io libllvm15 libllvm14 libllvm13 mono-devel libclang-common-15-dev libclang-common-14-dev libclang-common-13-dev
           df -h
       - name: Create some space to work in /mnt
         run: |
@@ -47,6 +49,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Configure vcpkg caching
+        uses: ./.github/actions/vcpkg-cache
+        with:
+          id: ${{ inputs.upload-package-base-name }}
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
@@ -63,12 +69,13 @@ jobs:
         run: |
           echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${{ inputs.upload-package-base-name }}-$GITHUB_REF_NAME" >> "$GITHUB_ENV"
-          echo "UNREAL_ENGINE_DIR=/mnt/work/${{ inputs.unreal-program-name }}" >> "$GITHUB_ENV"
+          echo "UNREAL_ENGINE_ROOT=/mnt/work/${{ inputs.unreal-program-name }}" >> "$GITHUB_ENV"
           echo "LINUX_MULTIARCH_ROOT=/mnt/work/${{ inputs.unreal-program-name }}/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/${{ inputs.clang-version }}/" >> "$GITHUB_ENV"
       - name: Build cesium-native
         run: |
           export UNREAL_ENGINE_COMPILER_DIR="${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
-          export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
+          export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/Unix/LibCxx"
+          export CESIUM_VCPKG_RELEASE_ONLY=TRUE
           cd extern
           cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --target install -j8
@@ -90,8 +97,8 @@ jobs:
           printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
       - name: Build plugin
         run: |
-          sed -i 's/\"EngineVersion\": \"5.1.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
-          cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+          sed -i 's/\"EngineVersion\": \"5.3.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          cd $UNREAL_ENGINE_ROOT/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
       - name: Fix RPATH
         run: |
@@ -99,26 +106,6 @@ jobs:
           patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
           patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
-      - name: Compress debug sections
-        run: |
-          for f in packages/CesiumForUnreal/Binaries/Linux/*.so; do objcopy --compress-debug-sections $f; done
-          for f in packages/CesiumForUnreal/Binaries/Linux/*.debug; do objcopy --compress-debug-sections $f; done
-          if [ -d "packages/CesiumForUnreal/Intermediate/Build/Linux/x64" ]; then
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Development/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/x64/UnrealGame/Shipping/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-          fi
-          if [ -d "packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA" ]; then
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Development/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-            for f in packages/CesiumForUnreal/Intermediate/Build/Linux/B4D820EA/UnrealGame/Shipping/CesiumRuntime/*.o; do
-              objcopy --compress-debug-sections $f
-            done
-          fi
       - name: Print disk space free
         run: |
           df -h

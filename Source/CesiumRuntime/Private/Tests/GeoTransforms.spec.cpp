@@ -1,8 +1,8 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "GeoTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
-#include "GeoTransforms.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGeospatial;
@@ -11,7 +11,9 @@ using namespace CesiumUtility;
 BEGIN_DEFINE_SPEC(
     FGeoTransformsSpec,
     "Cesium.Unit.GeoTransforms",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FGeoTransformsSpec)
 

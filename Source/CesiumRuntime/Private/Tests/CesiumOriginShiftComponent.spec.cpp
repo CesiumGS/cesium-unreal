@@ -2,9 +2,9 @@
 
 #if WITH_EDITOR
 
+#include "CesiumOriginShiftComponent.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGlobeAnchorComponent.h"
-#include "CesiumOriginShiftComponent.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumTestHelpers.h"
 #include "Editor.h"
@@ -18,7 +18,9 @@
 BEGIN_DEFINE_SPEC(
     FCesiumOriginShiftComponentSpec,
     "Cesium.Unit.OriginShiftComponent",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<UWorld> pWorld;

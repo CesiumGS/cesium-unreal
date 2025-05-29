@@ -7,6 +7,7 @@
 #include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumRuntime.h"
 
+#include "CesiumTestHelpers.h"
 #include "Editor.h"
 #include "Settings/LevelEditorPlaySettings.h"
 #include "Tests/AutomationCommon.h"
@@ -15,38 +16,19 @@
 
 namespace Cesium {
 
-struct LoadTestContext {
-  FString testName;
-  std::vector<TestPass> testPasses;
-
-  SceneGenerationContext creationContext;
-  SceneGenerationContext playContext;
-
-  float cameraFieldOfView = 90.0f;
-
-  ReportCallback reportStep;
-
-  void reset() {
-    testName.Reset();
-    testPasses.clear();
-    creationContext = playContext = SceneGenerationContext();
-    reportStep = nullptr;
-  }
-};
+void LoadTestContext::reset() {
+  testName.Reset();
+  testPasses.clear();
+  creationContext = playContext = SceneGenerationContext();
+  reportStep = nullptr;
+}
 
 LoadTestContext gLoadTestContext;
 
-DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
-    TimeLoadingCommand,
-    FString,
-    loggingName,
-    SceneGenerationContext&,
-    playContext,
-    TestPass&,
-    pass);
 bool TimeLoadingCommand::Update() {
 
   if (!pass.testInProgress) {
+    CesiumTestHelpers::pushAllowTickInEditor();
 
     // Set up the world for this pass
     playContext.syncWorldCamera();
@@ -75,41 +57,54 @@ bool TimeLoadingCommand::Update() {
   bool tilesetsloaded = playContext.areTilesetsDoneLoading();
   bool timedOut = pass.elapsedTime >= testTimeout;
 
-  if (tilesetsloaded || timedOut) {
-    pass.endMark = timeMark;
-    UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
+  if (timedOut) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("TIMED OUT: Loading stopped after %.2f seconds"),
+        pass.elapsedTime);
+    // Command is done
+    pass.testInProgress = false;
 
-    if (timedOut) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT("TIMED OUT: Loading stopped after %.2f seconds"),
-          pass.elapsedTime);
-    } else {
+    CesiumTestHelpers::popAllowTickInEditor();
+
+    return true;
+  }
+
+  if (tilesetsloaded) {
+    // Run verify step as part of timing
+    // This is useful for running additional logic after a load, or if the step
+    // exists in the pass solely, timing very specific functionality (like
+    // terrain queries)
+    bool verifyComplete = true;
+    if (pass.verifyStep)
+      verifyComplete =
+          pass.verifyStep(creationContext, playContext, pass.optionalParameter);
+
+    if (verifyComplete) {
+      pass.endMark = FPlatformTime::Seconds();
+      UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
+
+      pass.elapsedTime = pass.endMark - pass.startMark;
       UE_LOG(
           LogCesium,
           Display,
-          TEXT("Tileset load completed in %.2f seconds"),
+          TEXT("Pass completed in %.2f seconds"),
           pass.elapsedTime);
+
+      pass.testInProgress = false;
+
+      CesiumTestHelpers::popAllowTickInEditor();
+
+      // Command is done
+      return true;
     }
-
-    if (pass.verifyStep)
-      pass.verifyStep(playContext, pass.optionalParameter);
-
-    pass.testInProgress = false;
-
-    // Command is done
-    return true;
   }
 
   // Let world tick, we'll come back to this command
   return false;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    LoadTestScreenshotCommand,
-    FString,
-    screenshotName);
 bool LoadTestScreenshotCommand::Update() {
   UE_LOG(
       LogCesium,
@@ -139,10 +134,6 @@ void defaultReportStep(const std::vector<TestPass>& testPasses) {
   UE_LOG(LogCesium, Display, TEXT("%s"), *reportStr);
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
-    TestCleanupCommand,
-    LoadTestContext&,
-    context);
 bool TestCleanupCommand::Update() {
   // Tag the fastest pass
   if (context.testPasses.size() > 0) {
@@ -163,22 +154,43 @@ bool TestCleanupCommand::Update() {
   else
     defaultReportStep(context.testPasses);
 
-  // Turn on the editor tileset updates so we can see what we loaded
-  // gLoadTestContext.creationContext.setSuspendUpdate(false);
   return true;
 }
 
-DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
-    InitForPlayWhenReady,
-    SceneGenerationContext&,
-    creationContext,
-    SceneGenerationContext&,
-    playContext);
 bool InitForPlayWhenReady::Update() {
   if (!GEditor || !GEditor->IsPlayingSessionInEditor())
     return false;
   UE_LOG(LogCesium, Display, TEXT("Play in Editor ready..."));
   playContext.initForPlay(creationContext);
+  return true;
+}
+
+bool SetPlayerViewportSize::Update() {
+  for (auto playerControllerIt =
+           playContext.world->GetPlayerControllerIterator();
+       playerControllerIt;
+       playerControllerIt++) {
+    const TWeakObjectPtr<APlayerController> pPlayerController =
+        *playerControllerIt;
+    if (pPlayerController == nullptr) {
+      continue;
+    }
+
+    const APlayerCameraManager* pPlayerCameraManager =
+        pPlayerController->PlayerCameraManager;
+
+    if (!pPlayerCameraManager) {
+      continue;
+    }
+
+    ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+    if (LocPlayer && LocPlayer->ViewportClient &&
+        LocPlayer->ViewportClient->Viewport) {
+      LocPlayer->ViewportClient->Viewport->SetInitialSize(
+          FIntPoint(viewportWidth, viewportHeight));
+    }
+  }
+
   return true;
 }
 
@@ -230,11 +242,21 @@ bool RunLoadTest(
   Params.EditorPlaySettings->NewWindowWidth = viewportWidth;
   Params.EditorPlaySettings->NewWindowHeight = viewportHeight;
   Params.EditorPlaySettings->EnableGameSound = false;
+  Params.EditorPlaySettings->SetClientWindowSize(
+      FIntPoint(viewportWidth, viewportHeight));
   GEditor->RequestPlaySession(Params);
 
   // Wait until PIE is ready
   ADD_LATENT_AUTOMATION_COMMAND(
       InitForPlayWhenReady(context.creationContext, context.playContext));
+
+  // Make sure the player viewport is the correct size. This will not be the
+  // case otherwise in headless UE 5.5.
+  ADD_LATENT_AUTOMATION_COMMAND(SetPlayerViewportSize(
+      context.creationContext,
+      context.playContext,
+      viewportWidth,
+      viewportHeight));
 
   // Wait to show distinct gap in profiler
   ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
@@ -246,8 +268,11 @@ bool RunLoadTest(
     // Do our timing capture
     FString loggingName = testName + "-" + pass.name;
 
-    ADD_LATENT_AUTOMATION_COMMAND(
-        TimeLoadingCommand(loggingName, context.playContext, pass));
+    ADD_LATENT_AUTOMATION_COMMAND(TimeLoadingCommand(
+        loggingName,
+        context.creationContext,
+        context.playContext,
+        pass));
 
     ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 

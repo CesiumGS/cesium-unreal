@@ -17,7 +17,7 @@ class RasterizedPolygonsTileExcluder;
  * This is useful for clipping out parts of a tileset, for adding a water effect
  * in an area, and for many other purposes.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumPolygonRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
@@ -29,7 +29,7 @@ public:
    * The polygons to rasterize for this overlay.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TArray<ACesiumCartographicPolygon*> Polygons;
+  TArray<TSoftObjectPtr<ACesiumCartographicPolygon>> Polygons;
 
   /**
    * Whether to invert the selection specified by the polygons.

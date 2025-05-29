@@ -8,8 +8,6 @@
 #include <cstdint>
 #include <limits>
 
-using namespace CesiumGltf;
-
 namespace {
 /**
  * Callback on a std::any, assuming that it contains a
@@ -32,14 +30,15 @@ template <
     typename Callback>
 TResult
 propertyTexturePropertyCallback(const std::any& property, Callback&& callback) {
-  const PropertyTexturePropertyView<TProperty, Normalized>* pProperty =
-      std::any_cast<PropertyTexturePropertyView<TProperty, Normalized>>(
+  const CesiumGltf::PropertyTexturePropertyView<TProperty, Normalized>*
+      pProperty = std::any_cast<
+          CesiumGltf::PropertyTexturePropertyView<TProperty, Normalized>>(
           &property);
   if (pProperty) {
     return callback(*pProperty);
   }
 
-  return callback(PropertyTexturePropertyView<uint8_t>());
+  return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
 }
 
 /**
@@ -103,7 +102,7 @@ TResult scalarPropertyTexturePropertyCallback(
         property,
         std::forward<Callback>(callback));
   default:
-    return callback(PropertyTexturePropertyView<uint8_t>());
+    return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
   }
 }
 
@@ -129,30 +128,30 @@ TResult scalarArrayPropertyTexturePropertyCallback(
   switch (valueType.ComponentType) {
   case ECesiumMetadataComponentType::Int8:
     return propertyTexturePropertyCallback<
-        PropertyArrayView<int8_t>,
+        CesiumGltf::PropertyArrayView<int8_t>,
         Normalized,
         TResult,
         Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint8:
     return propertyTexturePropertyCallback<
-        PropertyArrayView<uint8_t>,
+        CesiumGltf::PropertyArrayView<uint8_t>,
         Normalized,
         TResult,
         Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Int16:
     return propertyTexturePropertyCallback<
-        PropertyArrayView<int16_t>,
+        CesiumGltf::PropertyArrayView<int16_t>,
         Normalized,
         TResult,
         Callback>(property, std::forward<Callback>(callback));
   case ECesiumMetadataComponentType::Uint16:
     return propertyTexturePropertyCallback<
-        PropertyArrayView<uint16_t>,
+        CesiumGltf::PropertyArrayView<uint16_t>,
         Normalized,
         TResult,
         Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTexturePropertyView<uint8_t>());
+    return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
   }
 }
 
@@ -202,7 +201,7 @@ TResult vecNPropertyTexturePropertyCallback(
         TResult,
         Callback>(property, std::forward<Callback>(callback));
   default:
-    return callback(PropertyTexturePropertyView<uint8_t>());
+    return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
   }
 }
 
@@ -249,7 +248,7 @@ TResult vecNPropertyTexturePropertyCallback(
         Callback>(property, valueType, std::forward<Callback>(callback));
   }
 
-  return callback(PropertyTexturePropertyView<uint8_t>());
+  return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
 }
 
 template <typename TResult, typename Callback>
@@ -262,7 +261,7 @@ TResult propertyTexturePropertyCallback(
   if (valueType.bIsArray && valueType.Type != ECesiumMetadataType::Scalar) {
 
     // Only scalar property arrays are supported.
-    return callback(PropertyTexturePropertyView<uint8_t>());
+    return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
   }
 
   if (valueType.bIsArray) {
@@ -309,7 +308,7 @@ TResult propertyTexturePropertyCallback(
                      valueType,
                      std::forward<Callback>(callback));
   default:
-    return callback(PropertyTexturePropertyView<uint8_t>());
+    return callback(CesiumGltf::PropertyTexturePropertyView<uint8_t>());
   }
 }
 
@@ -333,13 +332,12 @@ const CesiumGltf::Sampler* FCesiumPropertyTextureProperty::getSampler() const {
       });
 }
 
-const CesiumGltf::ImageCesium*
-FCesiumPropertyTextureProperty::getImage() const {
-  return propertyTexturePropertyCallback<const CesiumGltf::ImageCesium*>(
+const CesiumGltf::ImageAsset* FCesiumPropertyTextureProperty::getImage() const {
+  return propertyTexturePropertyCallback<const CesiumGltf::ImageAsset*>(
       this->_property,
       this->_valueType,
       this->_normalized,
-      [](const auto& view) -> const CesiumGltf::ImageCesium* {
+      [](const auto& view) -> const CesiumGltf::ImageAsset* {
         return view.getImage();
       });
 }
@@ -475,7 +473,8 @@ uint8 UCesiumPropertyTexturePropertyBlueprintLibrary::GetByte(
       Property._valueType,
       Property._normalized,
       [&UV, DefaultValue](const auto& view) -> uint8 {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -498,7 +497,8 @@ int32 UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger(
       Property._valueType,
       Property._normalized,
       [&UV, DefaultValue](const auto& view) -> int32 {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -521,7 +521,8 @@ float UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat(
       Property._valueType,
       Property._normalized,
       [&UV, DefaultValue](const auto& view) -> float {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -544,7 +545,8 @@ double UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat64(
       Property._valueType,
       Property._normalized,
       [&UV, DefaultValue](const auto& view) -> double {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -567,7 +569,8 @@ FIntPoint UCesiumPropertyTexturePropertyBlueprintLibrary::GetIntPoint(
       Property._valueType,
       Property._normalized,
       [&UV, &DefaultValue](const auto& view) -> FIntPoint {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -575,7 +578,7 @@ FIntPoint UCesiumPropertyTexturePropertyBlueprintLibrary::GetIntPoint(
           return DefaultValue;
         }
         auto value = *maybeValue;
-        if constexpr (IsMetadataString<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
           return UnrealMetadataConversions::toIntPoint(
               *maybeValue,
               DefaultValue);
@@ -597,7 +600,8 @@ FVector2D UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector2D(
       Property._valueType,
       Property._normalized,
       [&UV, &DefaultValue](const auto& view) -> FVector2D {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -605,7 +609,7 @@ FVector2D UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector2D(
           return DefaultValue;
         }
         auto value = *maybeValue;
-        if constexpr (IsMetadataString<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
           return UnrealMetadataConversions::toVector2D(value, DefaultValue);
         } else {
           auto maybeVec2 = CesiumGltf::
@@ -625,7 +629,8 @@ FIntVector UCesiumPropertyTexturePropertyBlueprintLibrary::GetIntVector(
       Property._valueType,
       Property._normalized,
       [&UV, &DefaultValue](const auto& view) -> FIntVector {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -633,7 +638,7 @@ FIntVector UCesiumPropertyTexturePropertyBlueprintLibrary::GetIntVector(
           return DefaultValue;
         }
         auto value = *maybeValue;
-        if constexpr (IsMetadataString<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
           return UnrealMetadataConversions::toIntVector(value, DefaultValue);
         } else {
           auto maybeVec3 = CesiumGltf::
@@ -653,7 +658,8 @@ FVector UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector(
       Property._valueType,
       Property._normalized,
       [&UV, &DefaultValue](const auto& view) -> FVector {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -661,7 +667,7 @@ FVector UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector(
           return DefaultValue;
         }
         auto value = *maybeValue;
-        if constexpr (IsMetadataString<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
           return UnrealMetadataConversions::toVector(value, DefaultValue);
         } else {
           auto maybeVec3 = CesiumGltf::
@@ -681,7 +687,8 @@ FVector4 UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector4(
       Property._valueType,
       Property._normalized,
       [&UV, &DefaultValue](const auto& view) -> FVector4 {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return DefaultValue;
         }
         auto maybeValue = view.get(UV.X, UV.Y);
@@ -689,7 +696,7 @@ FVector4 UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector4(
           return DefaultValue;
         }
         auto value = *maybeValue;
-        if constexpr (IsMetadataString<decltype(value)>::value) {
+        if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
           return UnrealMetadataConversions::toVector(value, DefaultValue);
         } else {
           auto maybeVec4 = CesiumGltf::
@@ -707,15 +714,17 @@ FCesiumPropertyArray UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [&UV](const auto& view) -> FCesiumPropertyArray {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+      [&UV, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumPropertyArray {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return FCesiumPropertyArray();
         }
         auto maybeValue = view.get(UV.X, UV.Y);
         if (maybeValue) {
           auto value = *maybeValue;
           if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-            return FCesiumPropertyArray(value);
+            return FCesiumPropertyArray(value, pEnumDefinition);
           }
         }
         return FCesiumPropertyArray();
@@ -729,14 +738,16 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [&UV](const auto& view) -> FCesiumMetadataValue {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid &&
-            view.status() !=
-                PropertyTexturePropertyViewStatus::EmptyPropertyWithDefault) {
+      [&UV, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
+        if (view.status() !=
+                CesiumGltf::PropertyTexturePropertyViewStatus::Valid &&
+            view.status() != CesiumGltf::PropertyTexturePropertyViewStatus::
+                                 EmptyPropertyWithDefault) {
           return FCesiumMetadataValue();
         }
 
-        return FCesiumMetadataValue(view.get(UV.X, UV.Y));
+        return FCesiumMetadataValue(view.get(UV.X, UV.Y), pEnumDefinition);
       });
 }
 
@@ -748,12 +759,14 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetRawValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [&UV](const auto& view) -> FCesiumMetadataValue {
-        if (view.status() != PropertyTexturePropertyViewStatus::Valid) {
+      [&UV, &pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
           return FCesiumMetadataValue();
         }
 
-        return FCesiumMetadataValue(view.getRaw(UV.X, UV.Y));
+        return FCesiumMetadataValue(view.getRaw(UV.X, UV.Y), pEnumDefinition);
       });
 }
 
@@ -770,7 +783,8 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no offset is specified.
-        return FCesiumMetadataValue(view.offset());
+        return FCesiumMetadataValue(
+            CesiumGltf::propertyValueViewToCopy(view.offset()));
       });
 }
 
@@ -782,7 +796,8 @@ FCesiumMetadataValue UCesiumPropertyTexturePropertyBlueprintLibrary::GetScale(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no scale is specified.
-        return FCesiumMetadataValue(view.scale());
+        return FCesiumMetadataValue(
+            CesiumGltf::propertyValueViewToCopy(view.scale()));
       });
 }
 
@@ -795,7 +810,8 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetMinimumValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no min is specified.
-        return FCesiumMetadataValue(view.min());
+        return FCesiumMetadataValue(
+            CesiumGltf::propertyValueViewToCopy(view.min()));
       });
 }
 
@@ -808,7 +824,8 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetMaximumValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no max is specified.
-        return FCesiumMetadataValue(view.max());
+        return FCesiumMetadataValue(
+            CesiumGltf::propertyValueViewToCopy(view.max()));
       });
 }
 
@@ -821,7 +838,8 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetNoDataValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no "no data" value is specified.
-        return FCesiumMetadataValue(view.noData());
+        return FCesiumMetadataValue(
+            CesiumGltf::propertyValueViewToCopy(view.noData()));
       });
 }
 
@@ -834,6 +852,7 @@ UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
       Property._normalized,
       [](const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no default value is specified.
-        return FCesiumMetadataValue(view.defaultValue());
+        return FCesiumMetadataValue(
+            CesiumGltf::propertyValueViewToCopy(view.defaultValue()));
       });
 }

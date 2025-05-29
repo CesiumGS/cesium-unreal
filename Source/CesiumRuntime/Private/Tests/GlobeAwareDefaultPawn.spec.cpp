@@ -2,6 +2,7 @@
 
 #if WITH_EDITOR
 
+#include "GlobeAwareDefaultPawn.h"
 #include "CesiumFlyToComponent.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGlobeAnchorComponent.h"
@@ -10,14 +11,15 @@
 #include "Editor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "GlobeAwareDefaultPawn.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationEditorCommon.h"
 
 BEGIN_DEFINE_SPEC(
     FGlobeAwareDefaultPawnSpec,
     "Cesium.Unit.GlobeAwareDefaultPawn",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 FDelegateHandle subscriptionPostPIEStarted;

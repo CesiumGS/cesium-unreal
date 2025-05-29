@@ -4,6 +4,7 @@
 
 #include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumPrimitive.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -19,6 +20,10 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
+/**
+ * A component that represents and renders a glTF mesh primitive made
+ * from triangles.
+ */
 UCLASS()
 class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
                                       public ICesiumPrimitive {
@@ -39,10 +44,16 @@ public:
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
 
+  virtual void OnCreatePhysicsState() override;
+
 private:
   CesiumPrimitiveData _cesiumData;
 };
 
+/**
+ * A component that represents and renders an instanced glTF mesh
+ * primitive made from triangles.
+ */
 UCLASS()
 class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
                                       public ICesiumPrimitive {
@@ -61,6 +72,8 @@ public:
 
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
+
+  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
 private:
   CesiumPrimitiveData _cesiumData;

@@ -10,7 +10,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
   // Structure to hold one-time initialization
@@ -160,6 +160,10 @@ void UCesiumFlyToComponent::FlyToLocationUnreal(
       YawAtDestination,
       PitchAtDestination,
       CanInterruptByMoving);
+}
+
+bool UCesiumFlyToComponent::IsFlightInProgress() const {
+  return this->_flightInProgress;
 }
 
 void UCesiumFlyToComponent::InterruptFlight() {

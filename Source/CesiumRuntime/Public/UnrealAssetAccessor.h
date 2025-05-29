@@ -4,6 +4,7 @@
 
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetAccessor.h"
+#include "Containers/Map.h"
 #include "Containers/UnrealString.h"
 #include "HAL/Platform.h"
 #include <cstddef>
@@ -25,7 +26,7 @@ public:
       const std::string& verb,
       const std::string& url,
       const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-      const gsl::span<const std::byte>& contentPayload) override;
+      const std::span<const std::byte>& contentPayload) override;
 
   virtual void tick() noexcept override;
 

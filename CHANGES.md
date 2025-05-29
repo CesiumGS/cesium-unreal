@@ -1,4 +1,193 @@
-# Change Log
+# Change Log {#changes}
+
+### ? - ?
+
+##### Additions :tada:
+
+- Added support for `TRIANGLE_FAN` primitives in tile meshes.
+
+##### Fixes :wrench:
+
+- Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
+- Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
+- Fixed a bug in `UCesiumFeaturesMetadataComponent` where multiple references to same feature ID set would cause improper encoding of its feature IDs.
+- Fixed a crash that would occur when duplicating an `ACesiumGeoreference`.
+- Fixed a bug that caused tilesets to render incorrectly when Dynamic Material Instances were used for their material settings.
+- Removed an unnecessary copy operation that happened while constructing tile meshes.
+
+### v2.16.0 - 2025-05-01
+
+##### Additions :tada:
+
+- Added a Cesium -> Geocoder -> Geocode Blueprint function, making it easy to query the Cesium ion geocoder.
+- Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
+
+##### Fixes :wrench:
+
+- Fixed a linking issue introduced in *v2.15.0* in `GoogleTilesTestSetup`.
+- The "unsupported primitive mode" warning is now only logged once to avoid console spam.
+- Request cache will now use `FPaths::ProjectUserDir` instead of `FPaths::EngineUserDir` on non-Android and non-iOS platforms, fixing a permissions issue in Development builds.
+- Fixed a build issue with KTX-Software's overlay port on Windows when there is no bash.exe in the system PATH and Git-for-windows is installed in a non-default directory.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.46.0 to v0.47.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.15.0 - 2025-04-01
+
+##### Additions :tada:
+
+- Actors spawned through the Cesium editor panel, such as tilesets and cartographic polygons, will now be parented to the first selected georeference - if any - instead of always being parented to the first georeference in the scene.
+- `WorldHeight` Runtime Virtual Texture output is now set to the Z component of the world position.
+
+##### Fixes :wrench:
+
+- Fixed a bug where a glTF material with `alphaMode=BLEND` would be rendered as opaque if its `baseColorFactor` was not set.
+- Fixed a crash that could occur when rapidly refreshing a tileset.
+- Fixed crash when tilesets with point clouds were used in combination with Hardware Ray Tracing.
+- Worked around an apparent Metal problem that prevented polygon clipping from working correctly on macOS.
+- Fixed normals being incorrectly written to Runtime Virtual Texture output in tangent space instead of in world space.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.45.0 to v0.46.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.14.1 - 2025-03-06
+
+##### Fixes :wrench:
+
+- Fixed the "Auto Fill" and "Generate Material" buttons on `UCesiumFeaturesMetadataComponent`, which broke with the previous release.
+
+### v2.14.0 - 2025-03-03
+
+##### Breaking Changes :mega:
+
+- `UCesiumFeaturesMetadataComponent` now directly stores `FCesiumFeatureMetadataDescription` instead of duplicating its inner properties.
+
+##### Additions :tada:
+
+- Added support for drawing 3D Tilesets to Runtime Virtual Textures.
+- Added `MLB_AngleMask` for masking Material Layers based on a tangent vector.
+- Added `ML_CesiumRVTBaseColorOverlay` for Overlaying the BaseColor of an RVT in your material.
+- Added support for enum structural metadata properties to `CesiumPropertyArray`, `CesiumPropertyTable`, `CesiumPropertyTableProperty`, `CesiumPropertyTexture`, `CesiumPropertyTextureProperty`, and `CesiumMetadataValue`.
+
+##### Fixes :wrench:
+
+- "External Tilesets" are now unloaded when they are no longer used. This will significantly reduce the growth of memory usage over time when using Google Photorealistic 3D Tiles and similar tilesets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.3 to v0.45.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.13.3 - 2025-02-12
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.2 to v0.44.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.13.2 - 2025-02-10
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.1 to v0.44.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.13.1 - 2025-02-03
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.44.0 to v0.44.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.13.0 - 2025-02-03
+
+##### Additions :tada:
+
+- Added `CesiumUrlTemplateRasterOverlay`, allowing a raster overlay to be added using tiles requested based on a specified URL template.
+- Added `EstimateTimeZoneForLongitude` method to `ACesiumSunSky` to set a reasonable `TimeZone` value at the given longitude.
+- The "Place Georeference Origin Here" button on `ACesiumGeoreference` will now adjust the time zone of the `ACesiumSunSky` instances that reference it, based on the new origin's longitude. This improves user experience when moving the origin to locations where it would be nighttime in the current time zone.
+- Added `RequestHeaders` property to `Cesium3DTileset`, allowing per-tileset headers to be specified.
+- Added `RequestHeaders` properties to `CesiumTileMapServiceRasterOverlay`, `CesiumUrlTemplateRasterOverlay`, `CesiumWebMapServiceRasterOverlay`,
+  and `CesiumWebMapTileServiceRasterOverlay`, allowing per-raster-overlay HTTP headers to be specified.
+
+##### Fixes :wrench:
+
+- Fixed another bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
+- Fixed a crash in `UCesiumIonServer` when running in a packaged build where tilesets are only created at runtime.
+- Worked around a limitation in Unreal's `FMatrix` -> `FTransform` conversion that prevented models with a small scale factor (e.g., where vertex positions are expressed in millimeters) from rendering because their scale was treated as 0.0.
+- Fixed a crash when calling `SampleHeightMostDetailed` blueprint function without a valid tileset.
+- Removed duplicate "Enable Water Mask" checkbox on `Cesium3DTileset` resulting from EditCondition flag.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.43.0 to v0.44.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.12.0 - 2025-01-02
+
+##### Breaking Changes :mega:
+
+- Removed support for Unreal Engine 5.2. Unreal Engine 5.3 or later is now required.
+- Renamed `FCesiumFeatureIdAttribute::GetFeatureIDForVertex` to `FCesiumFeatureIdAttribute::GetFeatureID`.
+- Renamed `FCesiumFeatureIdAttribute::GetVertexCount` to `FCesiumFeatureIdAttribute::GetCount`.
+
+##### Additions :tada:
+
+- Added support for metadata querying and styling on instanced models.
+
+##### Fixes :wrench:
+
+- Fixed a bug in `CesiumSubLevelSwitcherComponent` that could prevent all sub-levels from loading if a single sub-level failed to load.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.43.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.11.1 - 2025-02-14
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.42.0 to v0.42.1 in order to fix a critical bug when using Google Photorealistic 3D Tiles. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.11.0 - 2024-12-02
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.2. Future versions will require Unreal Engine v5.3+.
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.5.
+- Added a "From Ellipsoid" option to `Cesium3DTileset` to generate a tileset by tessellating the surface of the ellipsoid, producing a simple globe tileset without terrain features.
+
+##### Fixes :wrench:
+
+- Fixed a crash that could occur when using `SampleHeightMostDetailed` on a `Cesium3DTileset` with a raster overlay.
+- `CesiumPolygonRasterOverlay` now references `CesiumCartographicPolygon` instances using `TSoftObjectPtr`, which allows, for example, a raster overlay in the persistent level to use a polygon in a sub-level.
+- Fixed an overlay artifact bug that could occur when a `Cesium3DTileset` had three or more overlays.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.41.0 to v0.42.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.10.0 - 2024-11-01
+
+##### Additions :tada:
+
+- Added `CircumscribedGroundHeight` property to `CesiumSunSky`. It defaults to 0, which is consistent with the previous behavior. It can be set to a larger value (like 40) to avoid dark splotchy artifacts when zoomed out far from the globe in certain tilesets where geometry extends very far beyond the ellipsoid in the low-detail representation, such as Google Photorealistic 3D Tiles.
+- Added a shared assets system that ensures external images referenced by different glTFs will only be loaded once per image. Previously, these images would be loaded again for each glTF that referenced them. This significantly reduces memory usage for tilesets that reuse the same textures.
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused incorrect lighting for tilesets using `KHR_materials_unlit`.
+- Reduced the memory used by tiles with `KHR_materials_unlit`.
+- `CesiumGlobeAnchor` properties are no longer shown on the main `CesiumSunSky` Details panel, because it is almost never necessary to set these. They can still be set on the component's own Details panel if needed.
+- Fixed error messages in the Unreal log about uninitialized fields in `FCesiumSampleHeightResult`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.40.1 to v0.41.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.9.0 - 2024-10-01
+
+##### Additions :tada:
+
+- Added `SampleHeightMostDetailed` function to `Cesium3DTileset`, which asynchronously queries the height of a tileset at a list of positions. It is callable from both C++ and Blueprints.
+
+##### Fixes :wrench:
+
+- Drastically reduced tile mesh memory usage in UE 5.3 and 5.4 by working around a bug that causes those engine versions to add more texture coordinate sets than necessary.
+- Fixed a bug where the `scale`, `noData`, and `default` values of a property in `EXT_strutural_metadata` were not correctly passed to the tileset's material.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.39.0 to v0.40.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.8.0 - 2024-09-02
+
+##### Additions :tada:
+
+- Added universal (Intel and Apple Silicon) binaries for Unreal Engine 5.2. Unreal Engine 5.3 and 5.4 already had universal binaries.
+- Raster overlays now have `bAllowAnyoneToDestroyMe` set to true by default. This allows them to be dynamically removed and destroyed at runtime via the Blueprint `Destroy Component` function called from anywhere, including Level Blueprints. Previously, attempting to delete a raster overlay from outside the Actor would result in an error.
+
+##### Fixes :wrench:
+
+- Fixed a bug introduced in the previous release that caused instanced tilesets to render incorrectly.
+- Debug sections are no longer compressed on Linux and Android, improving compatibility.
+- Fixed a bug where calling `Refresh` on a `CesiumRasterOverlay` would cause the overlay to appear on the Cesium3DTileset, even if inactive.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.38.0 to v0.39.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.7.1 - 2024-08-01
 
@@ -124,7 +313,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 ##### Additions :tada:
 
- - Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
+- Added support for multiple Cesium ion servers by creating `CesiumIonServer` data assets.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.30.0 to v0.31.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
@@ -132,8 +321,8 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 ##### Additions :tada:
 
- - Added support for styling with property textures in `EXT_structural_metadata`.
- - Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
+- Added support for styling with property textures in `EXT_structural_metadata`.
+- Significantly improved tile download performance by adding `HttpThreadActiveFrameTimeInSeconds=0.001` to `Engine.ini`. This results in a major performance improvement for all tilesets, particularly Google Photorealistic 3D Tiles.
 - Added `HttpMaxConnectionsPerServer=40` to `Engine.ini`. By default, only 16 connections are allowed, which limits the performance when downloading tiles.
 
 ##### Fixes :wrench:
@@ -153,7 +342,7 @@ This release no longer supports Unreal Engine v5.0. Unreal Engine v5.1, v5.2, or
 ##### Breaking Changes :mega:
 
 - Removed `FCesiumIntegerColor`, `FCesiumFloatColor`, `UCesiumFeatureTexturePropertyBlueprintLibrary::GetIntegerColorFromTextureCoordinates` and `UCesiumFeatureTexturePropertyBlueprintLibrary::GetFloatColorFromTextureCoordinates`. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
-- Renamed `GetTextureCoordinateIndex` to `GetUnrealUVChannel` in both `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary`. Contrary to what the documentation claimed, this function retrieved the index of the texture coordinate set in the *Unreal static mesh*, which is not necessarily equal to the texture coordinate set index in the *glTF primitive*. For the latter value, use `GetGltfTextureCoordinateSetIndex` instead.
+- Renamed `GetTextureCoordinateIndex` to `GetUnrealUVChannel` in both `UCesiumFeatureIdTextureBlueprintLibrary` and `UCesiumPropertyTexturePropertyBlueprintLibrary`. Contrary to what the documentation claimed, this function retrieved the index of the texture coordinate set in the _Unreal static mesh_, which is not necessarily equal to the texture coordinate set index in the _glTF primitive_. For the latter value, use `GetGltfTextureCoordinateSetIndex` instead.
 - Removed the old "exclusion zones" feature, which has been deprecated since v1.11.0. Use `CesiumCartographicPolygon` or `CesiumTileExcluder` instead.
 
 ##### Additions :tada:
@@ -302,7 +491,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 ##### Fixes :wrench:
 
 - Added a workaround for an apparent bug in Unreal Engine 5.1 that prevented collisions from working with Cesium3DTilesets.
-- Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
+- Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn` to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.25.0 to v0.25.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
@@ -365,7 +554,7 @@ This will be the _last_ release that supports Unreal Engine v4.27. Future versio
 
 ##### Additions :tada:
 
-- The `FlyToAltitudeProfileCurve`, `FlyToProgressCurve`, `FlyToMaximumAltitudeCurve`, `FlyToDuration`, and `FlyToGranularityDegrees` properties of `GlobeAwareDefaultPawn`  / `DynamicPawn` may now be read and written from Blueprints.
+- The `FlyToAltitudeProfileCurve`, `FlyToProgressCurve`, `FlyToMaximumAltitudeCurve`, `FlyToDuration`, and `FlyToGranularityDegrees` properties of `GlobeAwareDefaultPawn` / `DynamicPawn` may now be read and written from Blueprints.
 - Added an option on `Cesium3DTileset` to ignore the `KHR_materials_unlit` extension entirely and use normal lighting and shadows.
 - Added `CreateNavCollision` property to `Cesium3DTileset`. When enabled, `CreateNavCollision` is called on the static meshes created for tiles.
 

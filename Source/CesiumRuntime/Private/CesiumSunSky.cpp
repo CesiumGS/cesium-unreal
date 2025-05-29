@@ -224,6 +224,8 @@ void ACesiumSunSky::EndPlay(const EEndPlayReason::Type EndPlayReason) {
         this->_transformUpdatedSubscription);
     this->_transformUpdatedSubscription.Reset();
   }
+
+  Super::EndPlay(EndPlayReason);
 }
 
 void ACesiumSunSky::Serialize(FArchive& Ar) {
@@ -535,7 +537,8 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
       pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
-  double maxRadius = pEllipsoid->GetMaximumRadius();
+  double maxRadius =
+      pEllipsoid->GetMaximumRadius() + this->CircumscribedGroundHeight * 1000.0;
 
   if (llh.Z / 1000.0 > this->CircumscribedGroundThreshold) {
     this->SetSkyAtmosphereGroundRadius(
@@ -562,6 +565,11 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
           radius * this->_computeScale() / 1000.0);
     }
   }
+}
+
+void ACesiumSunSky::EstimateTimeZoneForLongitude(double InLongitude) {
+  this->TimeZone = FMath::Clamp(InLongitude, -180.0, 180.0) / 15.0;
+  this->UpdateSun();
 }
 
 void ACesiumSunSky::GetHMSFromSolarTime(

@@ -11,7 +11,7 @@
  * A raster overlay that directly accesses a Web Map Service (WMS) server.
  * https://www.ogc.org/standards/wms
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumWebMapServiceRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
@@ -74,6 +74,12 @@ public:
       Category = "Cesium",
       meta = (ClampMin = 0))
   int32 MaximumLevel = 14;
+
+  /**
+   * HTTP headers to be attached to each request made for this raster overlay.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(

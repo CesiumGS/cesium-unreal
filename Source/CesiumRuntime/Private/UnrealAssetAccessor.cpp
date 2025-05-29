@@ -7,6 +7,10 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
+THIRD_PARTY_INCLUDES_START
+#include "CesiumUtility/Uri.h"
+THIRD_PARTY_INCLUDES_END
+#include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "HttpManager.h"
 #include "HttpModule.h"
@@ -20,7 +24,6 @@
 #include <cstring>
 #include <optional>
 #include <set>
-#include <uriparser/Uri.h>
 
 namespace {
 
@@ -58,9 +61,9 @@ public:
     return this->_headers;
   }
 
-  virtual gsl::span<const std::byte> data() const override {
+  virtual std::span<const std::byte> data() const override {
     const TArray<uint8>& content = this->_pResponse->GetContent();
-    return gsl::span(
+    return std::span(
         reinterpret_cast<const std::byte*>(content.GetData()),
         content.Num());
   }
@@ -147,6 +150,30 @@ bool isFile(const std::string& url) {
   return url.compare(0, sizeof(fileProtocol) - 1, fileProtocol) == 0;
 }
 
+void rejectPromiseOnUnsuccessfulConnection(
+    const CesiumAsync::Promise<std::shared_ptr<CesiumAsync::IAssetRequest>>&
+        promise,
+    FHttpRequestPtr pRequest) {
+#if ENGINE_VERSION_5_4_OR_HIGHER
+  if (pRequest->GetStatus() == EHttpRequestStatus::Failed) {
+    EHttpFailureReason failureReason = pRequest->GetFailureReason();
+    promise.reject(std::runtime_error(fmt::format(
+        "Request failed: {}",
+        TCHAR_TO_UTF8(LexToString(failureReason)))));
+  } else {
+    promise.reject(std::runtime_error(fmt::format(
+        "Request not successful: {}",
+        TCHAR_TO_UTF8(ToString(pRequest->GetStatus())))));
+  }
+#else
+  if (pRequest->GetStatus() == EHttpRequestStatus::Failed_ConnectionError) {
+    promise.reject(std::runtime_error("Connection failed."));
+  } else {
+    promise.reject(std::runtime_error("Request failed."));
+  }
+#endif
+}
+
 } // namespace
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
@@ -196,12 +223,7 @@ UnrealAssetAccessor::get(
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
               } else {
-                switch (pRequest->GetStatus()) {
-                case EHttpRequestStatus::Failed_ConnectionError:
-                  promise.reject(std::runtime_error("Connection failed."));
-                default:
-                  promise.reject(std::runtime_error("Request failed."));
-                }
+                rejectPromiseOnUnsuccessfulConnection(promise, pRequest);
               }
             });
 
@@ -215,7 +237,7 @@ UnrealAssetAccessor::request(
     const std::string& verb,
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-    const gsl::span<const std::byte>& contentPayload) {
+    const std::span<const std::byte>& contentPayload) {
 
   const FString& userAgent = this->_userAgent;
   const TMap<FString, FString>& cesiumRequestHeaders =
@@ -259,12 +281,7 @@ UnrealAssetAccessor::request(
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
               } else {
-                switch (pRequest->GetStatus()) {
-                case EHttpRequestStatus::Failed_ConnectionError:
-                  promise.reject(std::runtime_error("Connection failed."));
-                default:
-                  promise.reject(std::runtime_error("Request failed."));
-                }
+                rejectPromiseOnUnsuccessfulConnection(promise, pRequest);
               }
             });
 
@@ -304,8 +321,8 @@ public:
 
   virtual std::string contentType() const override { return std::string(); }
 
-  virtual gsl::span<const std::byte> data() const override {
-    return gsl::span<const std::byte>(
+  virtual std::span<const std::byte> data() const override {
+    return std::span<const std::byte>(
         reinterpret_cast<const std::byte*>(this->_data.GetData()),
         size_t(this->_data.Num()));
   }
@@ -323,32 +340,9 @@ const std::string UnrealFileAssetRequestResponse::getMethod = "GET";
 const CesiumAsync::HttpHeaders UnrealFileAssetRequestResponse::emptyHeaders{};
 
 std::string convertFileUriToFilename(const std::string& url) {
-  // According to the uriparser docs, both uriUriStringToWindowsFilenameA and
-  // uriUriStringToUnixFilenameA require an output buffer with space for at most
-  // length(url)+1 characters.
-  // https://uriparser.github.io/doc/api/latest/Uri_8h.html#a4afbc8453c7013b9618259bc57d81a39
-  std::string result(url.size() + 1, '\0');
-
-#ifdef _WIN32
-  int errorCode = uriUriStringToWindowsFilenameA(url.c_str(), result.data());
-#else
-  int errorCode = uriUriStringToUnixFilenameA(url.c_str(), result.data());
-#endif
-
-  // Truncate the string if necessary by finding the first null character.
-  size_t end = result.find('\0');
-  if (end != std::string::npos) {
-    result.resize(end);
-  }
-
-  // Remove query parameters from the URL if present, as they are no longer
-  // ignored by Unreal.
-  size_t pos = result.find("?");
-  if (pos != std::string::npos) {
-    result.erase(pos);
-  }
-
-  return result;
+  CesiumUtility::Uri parsedUri(url);
+  return CesiumUtility::Uri::uriPathToNativePath(
+      std::string(parsedUri.getPath()));
 }
 
 class FCesiumReadFileWorker : public FNonAbandonableTask {

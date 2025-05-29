@@ -48,7 +48,7 @@ public:
   /**
    * The Globe Anchor Component that precisely ties this Actor to the Globe.
    */
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   /**
@@ -296,6 +296,21 @@ protected:
   double CircumscribedGroundThreshold = 100.0;
 
   /**
+   * The height at which to place the bottom of the atmosphere when the player
+   * pawn is above the CircumscribedGroundThreshold. This is expressed as a
+   * height in kilometers above the maximum radius of the ellipsoid (usually
+   * WGS84). To avoid dark splotchy artifacts in the atmosphere when zoomed out
+   * far from the globe, this value must be above the greatest height achieved
+   * by any part of the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
+      Category = "Cesium|Atmosphere")
+  double CircumscribedGroundHeight = 0.0;
+
+  /**
    * The height of the atmosphere layer above the ground, in kilometers. This
    * value is automatically scaled according to the CesiumGeoreference Scale and
    * the Actor scale. However, Unreal Engine's SkyAtmosphere has a hard-coded
@@ -428,6 +443,22 @@ public:
 
   UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
   void UpdateAtmosphereRadius();
+
+  /**
+   * Adjusts the time zone of this CesiumSunSky to an estimate based on the
+   * given longitude.
+   *
+   * The time zone is naively calculated from the longitude, where every
+   * 15 degrees equals 1 hour. This may not necessarily match the official
+   * time zone at a given location within that longitude.
+   *
+   * This method will call @ref UpdateSun automatically.
+   *
+   * @param InLongitude The longitude that the calculated time zone will be
+   * based on in degrees in the range [-180, 180].
+   */
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
+  void EstimateTimeZoneForLongitude(double InLongitude);
 
   /**
    * Convert solar time to Hours:Minutes:Seconds. Copied the implementation

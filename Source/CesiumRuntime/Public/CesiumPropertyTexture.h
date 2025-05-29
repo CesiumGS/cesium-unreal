@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGltf/PropertyTextureView.h"
+#include "CesiumMetadataEnum.h"
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -41,7 +42,16 @@ public:
 
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture& PropertyTexture);
+      const CesiumGltf::PropertyTexture& PropertyTexture)
+      : FCesiumPropertyTexture(
+            model,
+            PropertyTexture,
+            FCesiumMetadataEnumCollection::GetOrCreateFromModel(model)) {}
+
+  FCesiumPropertyTexture(
+      const CesiumGltf::Model& model,
+      const CesiumGltf::PropertyTexture& PropertyTexture,
+      const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.
@@ -67,6 +77,8 @@ public:
   /**
    * Gets the status of the property texture. If the property texture is invalid
    * in any way, this briefly indicates why.
+   *
+   * @param PropertyTexture The property texture.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -78,6 +90,8 @@ public:
 
   /**
    * Gets the name of the property texture.
+   *
+   * @param PropertyTexture The property texture.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -89,6 +103,8 @@ public:
 
   /**
    * Gets all the properties of the property texture, mapped by property name.
+   *
+   * @param PropertyTexture The property texture.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -100,6 +116,8 @@ public:
   /**
    * Gets the names of the properties in this property texture. If the property
    * texture is invalid, this returns an empty array.
+   *
+   * @param PropertyTexture The property texture.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -112,6 +130,9 @@ public:
    * Retrieve a FCesiumPropertyTextureProperty by name. If the property texture
    * does not contain a property with that name, this returns an invalid
    * FCesiumPropertyTextureProperty.
+   *
+   * @param PropertyTexture The property texture.
+   * @param PropertyName The name of the property to find.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -132,6 +153,7 @@ public:
    * coordinate set. Use GetMetadataValuesForHit instead to sample the property
    * texture's properties with their respective texture coordinate sets.
    *
+   * @param PropertyTexture The property texture.
    * @param UV The texture coordinates.
    * @return The property values mapped by property name.
    */
@@ -152,6 +174,7 @@ public:
    * texture coordinate sets to be sampled from. This method uses the
    * corresponding texture coordinate sets to sample each property.
    *
+   * @param PropertyTexture The property texture.
    * @param Hit The trace hit result
    * @return The property values mapped by property name.
    */

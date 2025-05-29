@@ -29,7 +29,7 @@ enum class ECesiumWebMapTileServiceRasterOverlayProjection : uint8 {
  * If you're using a Web Map Tile Service via Cesium ion, use the "Cesium ion
  * Raster Overlay" component instead.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumWebMapTileServiceRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
@@ -266,6 +266,12 @@ public:
       Category = "Cesium",
       meta = (ClampMin = 64, ClampMax = 2048))
   int32 TileHeight = 256;
+
+  /**
+   * HTTP headers to be attached to each request made for this raster overlay.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
 
   virtual void Serialize(FArchive& Ar) override;
 

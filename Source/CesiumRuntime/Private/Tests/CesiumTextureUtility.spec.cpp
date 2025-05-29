@@ -1,26 +1,32 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
+#include "CesiumAsync/AsyncSystem.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "Misc/AutomationTest.h"
 #include "RenderingThread.h"
+#include <CesiumGltfReader/GltfReader.h>
+#include <UnrealTaskProcessor.h>
+#include <memory>
 
-using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
 using namespace CesiumUtility;
 
 BEGIN_DEFINE_SPEC(
     CesiumTextureUtilitySpec,
     "Cesium.Unit.CesiumTextureUtility",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
         EAutomationTestFlags::ProductFilter | EAutomationTestFlags::NonNullRHI)
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
-ImageCesium imageCesium;
+std::vector<uint8_t> expectedMipPixelsIfGenerated;
+CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pImageAsset;
 
 void RunTests();
 
 void CheckPixels(
-    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture);
+    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture,
+    bool requireMips = false);
 void CheckSRGB(
     const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture,
     bool expectedSRGB);
@@ -44,20 +50,35 @@ void CesiumTextureUtilitySpec::Define() {
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
       originalMipPixels.clear();
 
-      imageCesium = {};
-      imageCesium.width = 3;
-      imageCesium.height = 2;
+      pImageAsset.emplace();
+      pImageAsset->width = 3;
+      pImageAsset->height = 2;
       TestEqual(
           "image buffer size is correct",
           originalPixels.size(),
-          imageCesium.width * imageCesium.height * imageCesium.bytesPerChannel *
-              imageCesium.channels);
-      imageCesium.pixelData.resize(originalPixels.size());
+          pImageAsset->width * pImageAsset->height *
+              pImageAsset->bytesPerChannel * pImageAsset->channels);
+      pImageAsset->pixelData.resize(originalPixels.size());
 
       std::memcpy(
-          imageCesium.pixelData.data(),
+          pImageAsset->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
+
+      CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pCopy =
+          new CesiumGltf::ImageAsset(*pImageAsset);
+      CesiumGltfReader::ImageDecoder::generateMipMaps(*pCopy);
+
+      expectedMipPixelsIfGenerated.clear();
+
+      if (pCopy->mipPositions.size() >= 2) {
+        expectedMipPixelsIfGenerated.resize(pCopy->mipPositions[1].byteSize);
+        for (size_t iSrc = pCopy->mipPositions[1].byteOffset, iDest = 0;
+             iDest < pCopy->mipPositions[1].byteSize;
+             ++iSrc, ++iDest) {
+          expectedMipPixelsIfGenerated[iDest] = uint8_t(pCopy->pixelData[iSrc]);
+        }
+      }
     });
 
     RunTests();
@@ -65,31 +86,31 @@ void CesiumTextureUtilitySpec::Define() {
 
   Describe("With Mips", [this]() {
     BeforeEach([this]() {
-      imageCesium = {};
-      imageCesium.width = 3;
-      imageCesium.height = 2;
+      pImageAsset.emplace();
+      pImageAsset->width = 3;
+      pImageAsset->height = 2;
 
       // Original image (3x2)
       originalPixels = {0x20, 0x40, 0x80, 0xF0, 0x21, 0x41, 0x81, 0xF1,
                         0x22, 0x42, 0x82, 0xF2, 0x23, 0x43, 0x83, 0xF3,
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
-      imageCesium.mipPositions.emplace_back(
-          ImageCesiumMipPosition{0, originalPixels.size()});
+      pImageAsset->mipPositions.emplace_back(
+          CesiumGltf::ImageAssetMipPosition{0, originalPixels.size()});
 
       // Mip 1 (1x1)
       originalMipPixels = {0x26, 0x46, 0x86, 0xF6};
-      imageCesium.mipPositions.emplace_back(ImageCesiumMipPosition{
-          imageCesium.mipPositions[0].byteSize,
+      pImageAsset->mipPositions.emplace_back(CesiumGltf::ImageAssetMipPosition{
+          pImageAsset->mipPositions[0].byteSize,
           originalMipPixels.size()});
 
-      imageCesium.pixelData.resize(
+      pImageAsset->pixelData.resize(
           originalPixels.size() + originalMipPixels.size());
       std::memcpy(
-          imageCesium.pixelData.data(),
+          pImageAsset->pixelData.data(),
           originalPixels.data(),
           originalPixels.size());
       std::memcpy(
-          imageCesium.pixelData.data() + originalPixels.size(),
+          pImageAsset->pixelData.data() + originalPixels.size(),
           originalMipPixels.data(),
           originalMipPixels.size());
     });
@@ -99,22 +120,21 @@ void CesiumTextureUtilitySpec::Define() {
 }
 
 void CesiumTextureUtilitySpec::RunTests() {
-  It("ImageCesium non-sRGB", [this]() {
+  It("ImageAsset non-sRGB", [this]() {
     TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
-        imageCesium,
+        *pImageAsset,
         TextureAddress::TA_Mirror,
         TextureAddress::TA_Wrap,
         TextureFilter::TF_Bilinear,
         true,
         TextureGroup::TEXTUREGROUP_Cinematic,
         false,
-        std::nullopt,
-        nullptr);
+        std::nullopt);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, false);
     CheckAddress(
         pRefCountedTexture,
@@ -124,22 +144,21 @@ void CesiumTextureUtilitySpec::RunTests() {
     CheckGroup(pRefCountedTexture, TextureGroup::TEXTUREGROUP_Cinematic);
   });
 
-  It("ImageCesium sRGB", [this]() {
+  It("ImageAsset sRGB", [this]() {
     TUniquePtr<LoadedTextureResult> pHalfLoaded = loadTextureAnyThreadPart(
-        imageCesium,
+        *pImageAsset,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Mirror,
         TextureFilter::TF_Trilinear,
         true,
         TextureGroup::TEXTUREGROUP_Bokeh,
         true,
-        std::nullopt,
-        nullptr);
+        std::nullopt);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -150,26 +169,22 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Image and Sampler", [this]() {
-    Image image;
-    image.cesium = imageCesium;
-
-    Sampler sampler;
-    sampler.minFilter = Sampler::MinFilter::NEAREST;
-    sampler.magFilter = Sampler::MagFilter::NEAREST;
-    sampler.wrapS = Sampler::WrapS::MIRRORED_REPEAT;
-    sampler.wrapT = Sampler::WrapT::CLAMP_TO_EDGE;
+    CesiumGltf::Sampler sampler;
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::NEAREST;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::NEAREST;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE;
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
         loadTextureFromImageAndSamplerAnyThreadPart(
-            image,
+            *pImageAsset,
             sampler,
-            false,
-            nullptr);
+            false);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, false);
     CheckSRGB(pRefCountedTexture, false);
     CheckAddress(
         pRefCountedTexture,
@@ -180,40 +195,29 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Model", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    CesiumGltf::Image& image = model.images.emplace_back();
+    image.pAsset = pImageAsset;
 
-    Sampler& sampler = model.samplers.emplace_back();
-    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler.magFilter = Sampler::MagFilter::LINEAR;
-    sampler.wrapS = Sampler::WrapS::REPEAT;
-    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture = model.textures.emplace_back();
+    CesiumGltf::Texture& texture = model.textures.emplace_back();
     texture.source = 0;
     texture.sampler = 0;
 
-    std::vector<FCesiumTextureResourceBase*> textureResources;
-    textureResources.resize(model.images.size(), nullptr);
-
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(
-            model,
-            texture,
-            true,
-            textureResources);
+        loadTextureFromModelAnyThreadPart(model, texture, true);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
-    TestEqual(
-        "textureResources[0]",
-        textureResources[0],
-        pHalfLoaded->pTexture->getTextureResource().Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -224,66 +228,47 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Two textures referencing one image", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    CesiumGltf::Image& image = model.images.emplace_back();
+    image.pAsset = pImageAsset;
 
-    Sampler& sampler1 = model.samplers.emplace_back();
-    sampler1.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler1.magFilter = Sampler::MagFilter::LINEAR;
-    sampler1.wrapS = Sampler::WrapS::REPEAT;
-    sampler1.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler1 = model.samplers.emplace_back();
+    sampler1.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler1.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler1.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler1.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture1 = model.textures.emplace_back();
+    CesiumGltf::Texture& texture1 = model.textures.emplace_back();
     texture1.source = 0;
     texture1.sampler = 0;
 
-    Sampler& sampler2 = model.samplers.emplace_back();
-    sampler2.minFilter = Sampler::MinFilter::NEAREST;
-    sampler2.magFilter = Sampler::MagFilter::NEAREST;
-    sampler2.wrapS = Sampler::WrapS::MIRRORED_REPEAT;
-    sampler2.wrapT = Sampler::WrapT::REPEAT;
+    CesiumGltf::Sampler& sampler2 = model.samplers.emplace_back();
+    sampler2.minFilter = CesiumGltf::Sampler::MinFilter::NEAREST;
+    sampler2.magFilter = CesiumGltf::Sampler::MagFilter::NEAREST;
+    sampler2.wrapS = CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT;
+    sampler2.wrapT = CesiumGltf::Sampler::WrapT::REPEAT;
 
-    Texture& texture2 = model.textures.emplace_back();
+    CesiumGltf::Texture& texture2 = model.textures.emplace_back();
     texture2.source = 0;
     texture2.sampler = 1;
 
-    std::vector<FCesiumTextureResourceBase*> textureResources;
-    textureResources.resize(model.images.size(), nullptr);
-
     TUniquePtr<LoadedTextureResult> pHalfLoaded1 =
-        loadTextureFromModelAnyThreadPart(
-            model,
-            model.textures[0],
-            true,
-            textureResources);
+        loadTextureFromModelAnyThreadPart(model, model.textures[0], true);
     TestNotNull("pHalfLoaded1", pHalfLoaded1.Get());
     TestNotNull("pHalfLoaded1->pTexture", pHalfLoaded1->pTexture.get());
-    TestEqual(
-        "textureResources[0]",
-        textureResources[0],
-        pHalfLoaded1->pTexture->getTextureResource().Get());
 
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(
-            model,
-            model.textures[1],
-            false,
-            textureResources);
+        loadTextureFromModelAnyThreadPart(model, model.textures[1], false);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
-    TestEqual(
-        "textureResources[0]",
-        textureResources[0],
-        pHalfLoaded2->pTexture->getTextureResource().Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture1 =
         loadTextureGameThreadPart(model, pHalfLoaded1.Get());
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture2 =
         loadTextureGameThreadPart(model, pHalfLoaded2.Get());
 
-    CheckPixels(pRefCountedTexture1);
+    CheckPixels(pRefCountedTexture1, true);
     CheckSRGB(pRefCountedTexture1, true);
     CheckAddress(
         pRefCountedTexture1,
@@ -292,7 +277,7 @@ void CesiumTextureUtilitySpec::RunTests() {
     CheckFilter(pRefCountedTexture1, TextureFilter::TF_Default);
     CheckGroup(pRefCountedTexture1, TextureGroup::TEXTUREGROUP_World);
 
-    CheckPixels(pRefCountedTexture2);
+    CheckPixels(pRefCountedTexture2, false);
     CheckSRGB(pRefCountedTexture2, false);
     CheckAddress(
         pRefCountedTexture2,
@@ -310,40 +295,29 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Loading the same texture twice", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    CesiumGltf::Image& image = model.images.emplace_back();
+    image.pAsset = pImageAsset;
 
-    Sampler& sampler = model.samplers.emplace_back();
-    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler.magFilter = Sampler::MagFilter::LINEAR;
-    sampler.wrapS = Sampler::WrapS::REPEAT;
-    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture = model.textures.emplace_back();
+    CesiumGltf::Texture& texture = model.textures.emplace_back();
     texture.source = 0;
     texture.sampler = 0;
 
-    std::vector<FCesiumTextureResourceBase*> textureResources;
-    textureResources.resize(model.images.size(), nullptr);
-
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(
-            model,
-            texture,
-            true,
-            textureResources);
+        loadTextureFromModelAnyThreadPart(model, texture, true);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
-    TestEqual(
-        "textureResources[0]",
-        textureResources[0],
-        pHalfLoaded->pTexture->getTextureResource().Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -352,19 +326,12 @@ void CesiumTextureUtilitySpec::RunTests() {
     CheckFilter(pRefCountedTexture, TextureFilter::TF_Default);
     CheckGroup(pRefCountedTexture, TextureGroup::TEXTUREGROUP_World);
 
-    std::vector<FCesiumTextureResourceBase*> textureResources2;
-    textureResources2.resize(model.images.size(), nullptr);
-
     // Copy the model and load the same texture again.
     // This time there's no more pixel data, so it's necessary to use the
     // previously-created texture.
-    Model model2 = model;
+    CesiumGltf::Model model2 = model;
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(
-            model2,
-            model.textures[0],
-            true,
-            textureResources2);
+        loadTextureFromModelAnyThreadPart(model2, model.textures[0], true);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
     TestNull(
@@ -377,40 +344,29 @@ void CesiumTextureUtilitySpec::RunTests() {
   });
 
   It("Loading the same texture twice from one model", [this]() {
-    Model model;
+    CesiumGltf::Model model;
 
-    Image& image = model.images.emplace_back();
-    image.cesium = imageCesium;
+    CesiumGltf::Image& image = model.images.emplace_back();
+    image.pAsset = pImageAsset;
 
-    Sampler& sampler = model.samplers.emplace_back();
-    sampler.minFilter = Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
-    sampler.magFilter = Sampler::MagFilter::LINEAR;
-    sampler.wrapS = Sampler::WrapS::REPEAT;
-    sampler.wrapT = Sampler::WrapT::MIRRORED_REPEAT;
+    CesiumGltf::Sampler& sampler = model.samplers.emplace_back();
+    sampler.minFilter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    sampler.magFilter = CesiumGltf::Sampler::MagFilter::LINEAR;
+    sampler.wrapS = CesiumGltf::Sampler::WrapS::REPEAT;
+    sampler.wrapT = CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT;
 
-    Texture& texture = model.textures.emplace_back();
+    CesiumGltf::Texture& texture = model.textures.emplace_back();
     texture.source = 0;
     texture.sampler = 0;
 
-    std::vector<FCesiumTextureResourceBase*> textureResources;
-    textureResources.resize(model.images.size(), nullptr);
-
     TUniquePtr<LoadedTextureResult> pHalfLoaded =
-        loadTextureFromModelAnyThreadPart(
-            model,
-            texture,
-            true,
-            textureResources);
+        loadTextureFromModelAnyThreadPart(model, texture, true);
     TestNotNull("pHalfLoaded", pHalfLoaded.Get());
     TestNotNull("pHalfLoaded->pTexture", pHalfLoaded->pTexture.get());
-    TestEqual(
-        "textureResources[0]",
-        textureResources[0],
-        pHalfLoaded->pTexture->getTextureResource().Get());
 
     IntrusivePointer<ReferenceCountedUnrealTexture> pRefCountedTexture =
         loadTextureGameThreadPart(model, pHalfLoaded.Get());
-    CheckPixels(pRefCountedTexture);
+    CheckPixels(pRefCountedTexture, true);
     CheckSRGB(pRefCountedTexture, true);
     CheckAddress(
         pRefCountedTexture,
@@ -419,18 +375,11 @@ void CesiumTextureUtilitySpec::RunTests() {
     CheckFilter(pRefCountedTexture, TextureFilter::TF_Default);
     CheckGroup(pRefCountedTexture, TextureGroup::TEXTUREGROUP_World);
 
-    std::vector<FCesiumTextureResourceBase*> textureResources2;
-    textureResources2.resize(model.images.size(), nullptr);
-
     // Load the same texture again.
     // This time there's no more pixel data, so it's necessary to use the
     // previously-created texture.
     TUniquePtr<LoadedTextureResult> pHalfLoaded2 =
-        loadTextureFromModelAnyThreadPart(
-            model,
-            model.textures[0],
-            true,
-            textureResources2);
+        loadTextureFromModelAnyThreadPart(model, model.textures[0], true);
     TestNotNull("pHalfLoaded2", pHalfLoaded2.Get());
     TestNotNull("pHalfLoaded2->pTexture", pHalfLoaded2->pTexture.get());
     TestNull(
@@ -444,7 +393,8 @@ void CesiumTextureUtilitySpec::RunTests() {
 }
 
 void CesiumTextureUtilitySpec::CheckPixels(
-    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture) {
+    const IntrusivePointer<ReferenceCountedUnrealTexture>& pRefCountedTexture,
+    bool requireMips) {
   TestNotNull("pRefCountedTexture", pRefCountedTexture.get());
   TestNotNull(
       "pRefCountedTexture->getUnrealTexture()",
@@ -494,27 +444,35 @@ void CesiumTextureUtilitySpec::CheckPixels(
     TestEqual("pixel-alpha", readPixels[i].A, originalPixels[i * 4 + 3]);
   }
 
+  if (requireMips) {
+    TestTrue("Has Mips", !readPixelsMip1.IsEmpty());
+  }
+
   if (!readPixelsMip1.IsEmpty()) {
+    std::vector<uint8_t>& pixelsToMatch = originalMipPixels.empty()
+                                              ? expectedMipPixelsIfGenerated
+                                              : originalMipPixels;
+
     TestEqual(
         "read buffer size",
         readPixelsMip1.Num() * 4,
-        originalMipPixels.size());
+        pixelsToMatch.size());
     for (size_t i = 0;
-         i < readPixelsMip1.Num() && (i * 4 + 3) < originalMipPixels.size();
+         i < readPixelsMip1.Num() && (i * 4 + 3) < pixelsToMatch.size();
          ++i) {
-      TestEqual("mip pixel-red", readPixelsMip1[i].R, originalMipPixels[i * 4]);
+      TestEqual("mip pixel-red", readPixelsMip1[i].R, pixelsToMatch[i * 4]);
       TestEqual(
           "mip pixel-green",
           readPixelsMip1[i].G,
-          originalMipPixels[i * 4 + 1]);
+          pixelsToMatch[i * 4 + 1]);
       TestEqual(
           "mip pixel-blue",
           readPixelsMip1[i].B,
-          originalMipPixels[i * 4 + 2]);
+          pixelsToMatch[i * 4 + 2]);
       TestEqual(
           "mip pixel-alpha",
           readPixelsMip1[i].A,
-          originalMipPixels[i * 4 + 3]);
+          pixelsToMatch[i * 4 + 3]);
     }
   }
 }

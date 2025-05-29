@@ -1,17 +1,17 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "UnrealMetadataConversions.h"
 #include "CesiumTestHelpers.h"
 #include "Misc/AutomationTest.h"
-#include "UnrealMetadataConversions.h"
 
 #include <limits>
-
-using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FUnrealMetadataConversionsSpec,
     "Cesium.Unit.MetadataConversions",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FUnrealMetadataConversionsSpec)
 

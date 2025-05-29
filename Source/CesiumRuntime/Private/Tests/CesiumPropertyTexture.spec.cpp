@@ -1,25 +1,25 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPropertyTexture.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumPropertyTexture.h"
 #include "Misc/AutomationTest.h"
 #include <limits>
-
-using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTextureSpec,
     "Cesium.Unit.PropertyTexture",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
-Model model;
-MeshPrimitive* pPrimitive;
-ExtensionModelExtStructuralMetadata* pExtension;
-PropertyTexture* pPropertyTexture;
+CesiumGltf::Model model;
+CesiumGltf::MeshPrimitive* pPrimitive;
+CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension;
+CesiumGltf::PropertyTexture* pPropertyTexture;
 TObjectPtr<UCesiumGltfComponent> pModelComponent;
 TObjectPtr<UCesiumGltfPrimitiveComponent> pPrimitiveComponent;
 
@@ -31,10 +31,12 @@ const std::vector<FVector2D> texCoords{
 END_DEFINE_SPEC(FCesiumPropertyTextureSpec)
 
 void FCesiumPropertyTextureSpec::Define() {
+  using namespace CesiumGltf;
+
   BeforeEach([this]() {
     model = Model();
     pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-    pExtension->schema = Schema();
+    pExtension->schema.emplace();
     pPropertyTexture = &pExtension->propertyTextures.emplace_back();
   });
 
@@ -53,7 +55,7 @@ void FCesiumPropertyTextureSpec::Define() {
     });
 
     It("constructs invalid instance for missing schema", [this]() {
-      pExtension->schema = std::nullopt;
+      pExtension->schema.reset();
 
       FCesiumPropertyTexture propertyTexture(model, *pPropertyTexture);
       TestEqual(

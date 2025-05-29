@@ -16,153 +16,26 @@ jobs:
     steps:
       - name: Install Doxygen
         run: |
-          sudo apt install -y doxygen
+          cd ~
+          wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
+          tar xzf doxygen-1.12.0.linux.bin.tar.gz
+          export PATH=$PWD/doxygen-1.12.0/bin:$PATH
+          echo "PATH=$PATH" >> "$GITHUB_ENV"
+          doxygen --version
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Generate Documentation
         run: |
-          doxygen ./Documentation/Doxyfile
+          npm install
+          npm run doxygen
       - name: Publish Documentation Artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
           name: ReferenceDocumentation
           path: Documentation/Reference
-  Windows52:
-    uses: ./.github/workflows/buildWindows.yml
-    secrets: inherit
-    with:
-      runner-label: windows-2022
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-windows"
-      # These are specified in the Unreal Engine release notes under "IDE Version the Build farm compiles against"
-      # and using them ensures we're compiling our plugin in the exact same way that Unreal Engine itself is compiled.
-      cmake-generator: "Visual Studio 17 2022"
-      cmake-toolchain: "version=14.34"
-      cmake-platform: "x64,version=10.0.18362.0"
-      visual-studio-version: "2022"
-      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
-  TestWindows52:
-    needs: [Windows52]
-    uses: ./.github/workflows/testWindows.yml
-    secrets: inherit
-    with:
-      runner-label: windows-2022
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
-      unreal-program-name: "UE_5.2"
-      test-package-base-name: "CesiumForUnreal-52-windows"
-  Android52:
-    uses: ./.github/workflows/buildAndroid.yml
-    secrets: inherit
-    with:
-      runner-label: windows-2022
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-android"
-      android-ndk-version: "r25b"
-  Linux52:
-    uses: ./.github/workflows/buildLinux.yml
-    secrets: inherit
-    with:
-      runner-label: ubuntu-22.04
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/Linux_Unreal_Engine_5.2.0.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-linux"
-      clang-version: "v21_clang-15.0.1-centos7"
-  macOS52:
-    uses: ./.github/workflows/buildMac.yml
-    secrets: inherit
-    with:
-      runner-label: macos-12
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-macos"
-      xcode-version: "14.2"
-  iOS52:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-12
-      unreal-engine-version: "5.2.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/UE_52_macOS.zip"
-      unreal-program-name: "UE_5.2"
-      upload-package-base-name: "CesiumForUnreal-52-ios"
-      xcode-version: "14.2"
-  Combine52:
-    runs-on: ubuntu-latest
-    needs: [Windows52, Linux52, Android52, MacOS52, iOS52]
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - name: Set environment variables
-        run: |
-          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
-          export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-52-${CESIUM_UNREAL_VERSION}"
-          export BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME="CesiumForUnreal-52-SourceOnly-${CESIUM_UNREAL_VERSION}"
-          # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-macos-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download Android build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-android-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download Linux build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-linux-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download Windows build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-52-windows-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Publish combined package artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
-          path: combine
-      - name: Publish combined package artifact for the Unreal Marketplace
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME}}
-          path: |
-            combine
-            # These are built by Epic, and including them seems to confuse their process.
-            !combine/CesiumForUnreal/Binaries/**/*
-            !combine/CesiumForUnreal/Intermediate/**/*
-  TestPackage52:
-    needs: [Combine52]
-    uses: ./.github/workflows/testPackageOnWindows.yml
-    secrets: inherit
-    with:
-      runner-label: windows-2022
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.2.1/UE_5.2.1.zip"
-      unreal-program-name: "UE_5.2"
-      unreal-engine-association: "5.2"
-      test-package-base-name: "CesiumForUnreal-52"
-      visual-studio-version: "2022"
-      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
   Windows53:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
@@ -208,29 +81,19 @@ jobs:
       unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-linux"
       clang-version: "v22_clang-16.0.6-centos7"
-  macOS53:
-    uses: ./.github/workflows/buildMac.yml
+  Apple53:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-12
+      runner-label: macos-14
       unreal-engine-version: "5.3.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
       unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-macos"
-      xcode-version: "14.2"
-  iOS53:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-12
-      unreal-engine-version: "5.3.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.3.0/UE_53_macOS.zip"
-      unreal-program-name: "UE_5.3"
-      upload-package-base-name: "CesiumForUnreal-53-ios"
-      xcode-version: "14.2"
+      upload-package-base-name: "CesiumForUnreal-53-apple"
+      xcode-version: "15.4"
   Combine53:
     runs-on: ubuntu-latest
-    needs: [Windows53, Android53, Linux53, MacOS53, iOS53]
+    needs: [Windows53, Android53, Linux53, Apple53]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -243,15 +106,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-53-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-53-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-53-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -341,29 +199,19 @@ jobs:
       unreal-program-name: "UE_5.4"
       upload-package-base-name: "CesiumForUnreal-54-linux"
       clang-version: "v22_clang-16.0.6-centos7"
-  macOS54:
-    uses: ./.github/workflows/buildMac.yml
+  Apple54:
+    uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-13
+      runner-label: macos-14
       unreal-engine-version: "5.4.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
       unreal-program-name: "UE_5.4"
-      upload-package-base-name: "CesiumForUnreal-54-macos"
-      xcode-version: "14.2"
-  iOS54:
-    uses: ./.github/workflows/buildiOS.yml
-    secrets: inherit
-    with:
-      runner-label: macos-13
-      unreal-engine-version: "5.4.0"
-      unreal-engine-zip: "s3://cesium-unreal-engine/5.4.0/UE_54_macOS.zip"
-      unreal-program-name: "UE_5.4"
-      upload-package-base-name: "CesiumForUnreal-54-ios"
-      xcode-version: "14.2"
+      upload-package-base-name: "CesiumForUnreal-54-apple"
+      xcode-version: "15.4"
   Combine54:
     runs-on: ubuntu-latest
-    needs: [Windows54, Android54, Linux54, MacOS54, iOS54]
+    needs: [Windows54, Android54, Linux54, Apple54]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -376,15 +224,10 @@ jobs:
           echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
-      - name: Download iOS build
+      - name: Download Apple build
         uses: actions/download-artifact@v4
         with:
-          name: CesiumForUnreal-54-ios-${{ env.CESIUM_UNREAL_VERSION}}
-          path: combine
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
-        with:
-          name: CesiumForUnreal-54-macos-${{ env.CESIUM_UNREAL_VERSION}}
+          name: CesiumForUnreal-54-apple-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v4
@@ -429,3 +272,121 @@ jobs:
       test-package-base-name: "CesiumForUnreal-54"
       visual-studio-version: "2022"
       visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64,Microsoft.VisualStudio.Component.Windows10SDK.18362"
+  Windows55:
+    uses: ./.github/workflows/buildWindows.yml
+    secrets: inherit
+    with:
+      runner-label: "windows-2022"
+      unreal-engine-version: "5.5.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/UE_5.5.zip"
+      unreal-program-name: "UE_5.5"
+      upload-package-base-name: "CesiumForUnreal-55-windows"
+      # These are specified in the Unreal Engine release notes under "IDE Version the Build farm compiles against"
+      # and using them ensures we're compiling our plugin in the exact same way that Unreal Engine itself is compiled.
+      cmake-generator: "Visual Studio 17 2022"
+      cmake-toolchain: "version=14.38"
+      cmake-platform: "x64,version=10.0.22621.0"
+      visual-studio-version: "2022"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64,Microsoft.VisualStudio.Component.Windows11SDK.22621"
+  TestWindows55:
+    needs: [Windows55]
+    uses: ./.github/workflows/testWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/UE_5.5.zip"
+      unreal-program-name: "UE_5.5"
+      test-package-base-name: "CesiumForUnreal-55-windows"
+  Android55:
+    uses: ./.github/workflows/buildAndroid.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-version: "5.5.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/UE_5.5.zip"
+      unreal-program-name: "UE_5.5"
+      upload-package-base-name: "CesiumForUnreal-55-android"
+      android-ndk-version: "r25b"
+  Linux55:
+    uses: ./.github/workflows/buildLinux.yml
+    secrets: inherit
+    with:
+      runner-label: ubuntu-22.04
+      unreal-engine-version: "5.5.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/Linux_Unreal_Engine_5.5.0.zip"
+      unreal-program-name: "UE_5.5"
+      upload-package-base-name: "CesiumForUnreal-55-linux"
+      clang-version: "v23_clang-18.1.0-rockylinux8"
+  Apple55:
+    uses: ./.github/workflows/buildApple.yml
+    secrets: inherit
+    with:
+      runner-label: macos-14
+      unreal-engine-version: "5.5.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/UE_55_macOS.zip"
+      unreal-program-name: "UE_5.5"
+      upload-package-base-name: "CesiumForUnreal-55-apple"
+      xcode-version: "15.4"
+  Combine55:
+    runs-on: ubuntu-latest
+    needs: [Windows55, Android55, Linux55, Apple55]
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Set environment variables
+        run: |
+          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
+          export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-55-${CESIUM_UNREAL_VERSION}"
+          export BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME="CesiumForUnreal-55-SourceOnly-${CESIUM_UNREAL_VERSION}"
+          # Make these available to subsequent steps
+          echo "CESIUM_UNREAL_VERSION=$CESIUM_UNREAL_VERSION" >> $GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_PACKAGE_NAME" >> $GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME=$BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME" >> $GITHUB_ENV
+      - name: Download Apple build
+        uses: actions/download-artifact@v4
+        with:
+          name: CesiumForUnreal-55-apple-${{ env.CESIUM_UNREAL_VERSION}}
+          path: combine
+      - name: Download Android build
+        uses: actions/download-artifact@v4
+        with:
+          name: CesiumForUnreal-55-android-${{ env.CESIUM_UNREAL_VERSION}}
+          path: combine
+      - name: Download Linux build
+        uses: actions/download-artifact@v4
+        with:
+          name: CesiumForUnreal-55-linux-${{ env.CESIUM_UNREAL_VERSION}}
+          path: combine
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: CesiumForUnreal-55-windows-${{ env.CESIUM_UNREAL_VERSION}}
+          path: combine
+      - name: Publish combined package artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
+          path: combine
+      - name: Publish combined package artifact for the Unreal Marketplace
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME}}
+          path: |
+            combine
+            # These are built by Epic, and including them seems to confuse their process.
+            !combine/CesiumForUnreal/Binaries/**/*
+            !combine/CesiumForUnreal/Intermediate/**/*
+  TestPackage55:
+    needs: [Combine55]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    secrets: inherit
+    with:
+      runner-label: windows-2022
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.5.0/UE_5.5.zip"
+      unreal-program-name: "UE_5.5"
+      unreal-engine-association: "5.5"
+      test-package-base-name: "CesiumForUnreal-55"
+      visual-studio-version: "2022"
+      visual-studio-components: "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64,Microsoft.VisualStudio.Component.Windows11SDK.22621"

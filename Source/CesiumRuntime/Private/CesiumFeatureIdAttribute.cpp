@@ -4,11 +4,9 @@
 #include <CesiumGltf/Accessor.h>
 #include <CesiumGltf/Model.h>
 
-using namespace CesiumGltf;
-
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
-    const Model& Model,
-    const MeshPrimitive& Primitive,
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::MeshPrimitive& Primitive,
     const int64 FeatureIDAttribute,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
@@ -23,13 +21,6 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     return;
   }
 
-  const Accessor* accessor =
-      Model.getSafe<Accessor>(&Model.accessors, featureID->second);
-  if (!accessor || accessor->type != Accessor::Type::SCALAR) {
-    this->_status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
-    return;
-  }
-
   this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
       Model,
       Primitive,
@@ -37,7 +28,32 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
 
   this->_status = std::visit(
       [](auto view) {
-        if (view.status() != AccessorViewStatus::Valid) {
+        if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {
+          return ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
+        }
+
+        return ECesiumFeatureIdAttributeStatus::Valid;
+      },
+      this->_featureIdAccessor);
+}
+
+FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::Node& Node,
+    const int64 FeatureIDAttribute,
+    const FString& PropertyTableName)
+    : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
+      _featureIdAccessor(),
+      _attributeIndex(FeatureIDAttribute),
+      _propertyTableName(PropertyTableName) {
+  this->_featureIdAccessor = CesiumGltf::getFeatureIdAccessorView(
+      Model,
+      Node,
+      static_cast<int32_t>(this->_attributeIndex));
+
+  this->_status = std::visit(
+      [](auto&& view) {
+        if (view.status() != CesiumGltf::AccessorViewStatus::Valid) {
           return ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
         }
 
@@ -57,15 +73,17 @@ UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
   return FeatureIDAttribute._status;
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
-  return std::visit(CountFromAccessor{}, FeatureIDAttribute._featureIdAccessor);
+  return std::visit(
+      CesiumGltf::CountFromAccessor{},
+      FeatureIDAttribute._featureIdAccessor);
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
-    int64 VertexIndex) {
+    int64 Index) {
   return std::visit(
-      FeatureIdFromAccessor{VertexIndex},
+      CesiumGltf::FeatureIdFromAccessor{Index},
       FeatureIDAttribute._featureIdAccessor);
 }

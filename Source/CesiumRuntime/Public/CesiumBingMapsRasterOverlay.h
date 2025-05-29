@@ -22,7 +22,7 @@ enum class EBingMapsStyle : uint8 {
  * A raster overlay that directly accesses Bing Maps. If you're using Bing Maps
  * via Cesium ion, use the "Cesium ion Raster Overlay" component instead.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumBingMapsRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()

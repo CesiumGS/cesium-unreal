@@ -57,8 +57,7 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
   wmtsOptions.tileWidth = this->TileWidth;
   wmtsOptions.tileHeight = this->TileHeight;
 
-  const CesiumGeospatial::Ellipsoid& ellipsoid =
-      options.ellipsoid.value_or(CesiumGeospatial::Ellipsoid::WGS84);
+  const CesiumGeospatial::Ellipsoid& ellipsoid = options.ellipsoid;
 
   if (this->Projection ==
       ECesiumWebMapTileServiceRasterOverlayProjection::Geographic) {
@@ -104,10 +103,19 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
       wmtsOptions.tileMatrixLabels = labels;
     }
   }
+
+  std::vector<CesiumAsync::IAssetAccessor::THeader> headers;
+
+  for (const auto& [Key, Value] : this->RequestHeaders) {
+    headers.push_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
+  }
+
   return std::make_unique<CesiumRasterOverlays::WebMapTileServiceRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       TCHAR_TO_UTF8(*this->BaseUrl),
-      std::vector<CesiumAsync::IAssetAccessor::THeader>(),
+      headers,
       wmtsOptions,
       options);
 }

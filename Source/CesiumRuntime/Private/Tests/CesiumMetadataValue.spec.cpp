@@ -6,12 +6,12 @@
 
 #include <limits>
 
-using namespace CesiumGltf;
-
 BEGIN_DEFINE_SPEC(
     FCesiumMetadataValueSpec,
     "Cesium.Unit.MetadataValue",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumMetadataValueSpec)
 
@@ -89,8 +89,23 @@ void FCesiumMetadataValueSpec::Define() {
       TestFalse("IsArray", valueType.bIsArray);
     });
 
+    It("constructs enum value with correct type", [this]() {
+      FCesiumMetadataValue value(
+          0,
+          MakeShared<FCesiumMetadataEnum>(
+              StaticEnum<ECesiumMetadataBlueprintType>()));
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
+      TestEqual("Type", valueType.Type, ECesiumMetadataType::Enum);
+      TestEqual(
+          "ComponentType",
+          valueType.ComponentType,
+          ECesiumMetadataComponentType::Int32);
+      TestFalse("IsArray", valueType.bIsArray);
+    });
+
     It("constructs array value with correct type", [this]() {
-      PropertyArrayView<uint8_t> arrayView;
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView;
       FCesiumMetadataValue value(arrayView);
       FCesiumMetadataValueType valueType =
           UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
@@ -1105,6 +1120,18 @@ void FCesiumMetadataValueSpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
           FString(expected.c_str()));
     });
+
+    It("gets from enum", [this]() {
+      TSharedPtr<FCesiumMetadataEnum> enumDef = MakeShared<FCesiumMetadataEnum>(
+          StaticEnum<ECesiumMetadataBlueprintType>());
+      FCesiumMetadataValue value(
+          int32(ECesiumMetadataBlueprintType::Byte),
+          enumDef);
+      TestEqual(
+          "enum",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("Byte"));
+    });
   });
 
   Describe("GetArray", [this]() {
@@ -1131,7 +1158,8 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets array from array value", [this]() {
       std::vector<uint8_t> arrayValues{1, 2};
-      PropertyArrayView<uint8_t> arrayView(std::move(arrayValues));
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView =
+          std::vector(arrayValues);
 
       FCesiumMetadataValue value(arrayView);
       FCesiumPropertyArray array =
@@ -1196,7 +1224,7 @@ void FCesiumMetadataValueSpec::Define() {
     });
 
     It("returns false for array value", [this]() {
-      PropertyArrayView<uint8_t> arrayView;
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView;
       FCesiumMetadataValue value(arrayView);
       TestFalse(
           "IsEmpty",
@@ -1217,7 +1245,9 @@ void FCesiumMetadataValueSpec::Define() {
       values.Add({"scalar", FCesiumMetadataValue(-1)});
       values.Add({"vec2", FCesiumMetadataValue(glm::u8vec2(2, 3))});
       values.Add(
-          {"array", FCesiumMetadataValue(PropertyArrayView<uint8>({1, 2, 3}))});
+          {"array",
+           FCesiumMetadataValue(
+               CesiumGltf::PropertyArrayCopy<uint8>({1, 2, 3}))});
 
       const auto strings =
           UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(values);
@@ -1235,5 +1265,86 @@ void FCesiumMetadataValueSpec::Define() {
       TestTrue("has array value", pString != nullptr);
       TestEqual("array value as string", *pString, FString());
     });
+  });
+
+  Describe("GetUnsignedInteger64", [this]() {
+    const uint64_t defaultValue = static_cast<uint64_t>(0);
+
+    It("gets from in-range integers", [this, defaultValue]() {
+      FCesiumMetadataValue value(std::numeric_limits<uint64_t>::max() - 1);
+      TestEqual<uint64_t>(
+          "uint64_t",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          std::numeric_limits<uint64_t>::max() - 1);
+
+      value = FCesiumMetadataValue(std::numeric_limits<int64_t>::max() - 1);
+      TestEqual<uint64_t>(
+          "int64_t",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(std::numeric_limits<int64_t>::max() - 1));
+
+      value = FCesiumMetadataValue(static_cast<int16_t>(12345));
+      TestEqual<uint64_t>(
+          "smaller signed integer",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(12345));
+
+      value = FCesiumMetadataValue(static_cast<uint8_t>(255));
+      TestEqual<uint64_t>(
+          "smaller unsigned integer",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(255));
+    });
+
+    It("gets from boolean", [this, defaultValue]() {
+      FCesiumMetadataValue value(true);
+      TestEqual<uint64_t>(
+          "value",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(1));
+    });
+
+    It("gets from in-range floating point number", [this, defaultValue]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual<uint64_t>(
+          "float",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(1234));
+    });
+
+    It("gets from string", [this, defaultValue]() {
+      FCesiumMetadataValue value(std::string_view("1234"));
+      TestEqual<uint64_t>(
+          "value",
+          CesiumMetadataValueAccess::GetUnsignedInteger64(value, defaultValue),
+          static_cast<uint64_t>(1234));
+    });
+
+    It("returns default value for out-of-range numbers",
+       [this, defaultValue]() {
+         FCesiumMetadataValue value(-5);
+         TestEqual<uint64_t>(
+             "negative integer",
+             CesiumMetadataValueAccess::GetUnsignedInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+
+         value = FCesiumMetadataValue(-59.62f);
+         TestEqual<uint64_t>(
+             "negative floating-point number",
+             CesiumMetadataValueAccess::GetUnsignedInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+
+         value = FCesiumMetadataValue(std::numeric_limits<float>::max());
+         TestEqual<uint64_t>(
+             "positive floating-point number",
+             CesiumMetadataValueAccess::GetUnsignedInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+       });
   });
 }

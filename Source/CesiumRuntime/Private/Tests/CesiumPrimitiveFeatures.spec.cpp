@@ -1,29 +1,30 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPrimitiveFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltfSpecUtility.h"
-#include "CesiumPrimitiveFeatures.h"
 #include "Misc/AutomationTest.h"
-
-using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPrimitiveFeaturesSpec,
     "Cesium.Unit.PrimitiveFeatures",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
-Model model;
-MeshPrimitive* pPrimitive;
-ExtensionExtMeshFeatures* pExtension;
+CesiumGltf::Model model;
+CesiumGltf::MeshPrimitive* pPrimitive;
+CesiumGltf::ExtensionExtMeshFeatures* pExtension;
 END_DEFINE_SPEC(FCesiumPrimitiveFeaturesSpec)
 
 void FCesiumPrimitiveFeaturesSpec::Define() {
   Describe("Constructor", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pExtension = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pExtension =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
     });
 
     It("constructs with no feature ID sets", [this]() {
@@ -39,7 +40,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
     });
 
     It("constructs with single feature ID set", [this]() {
-      FeatureId& featureID = pExtension->featureIds.emplace_back();
+      CesiumGltf::FeatureId& featureID = pExtension->featureIds.emplace_back();
       featureID.featureCount = 10;
 
       FCesiumPrimitiveFeatures primitiveFeatures =
@@ -81,7 +82,8 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
           texCoords,
           0);
 
-      FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
+      CesiumGltf::FeatureId& implicitIDs =
+          pExtension->featureIds.emplace_back();
       implicitIDs.featureCount = 3;
 
       FCesiumPrimitiveFeatures primitiveFeatures =
@@ -100,7 +102,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       for (size_t i = 0; i < featureIDSets.Num(); i++) {
         const FCesiumFeatureIdSet& featureIDSet =
             featureIDSets[static_cast<int32>(i)];
-        const FeatureId& gltfFeatureID = pExtension->featureIds[i];
+        const CesiumGltf::FeatureId& gltfFeatureID = pExtension->featureIds[i];
         TestEqual(
             "Feature Count",
             UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
@@ -116,10 +118,11 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
   Describe("GetFeatureIDSetsOfType", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pExtension = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pExtension =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
 
       const std::vector<uint8_t> attributeIDs{0, 0, 0};
       AddFeatureIDsAsAttributeToModel(model, *pPrimitive, attributeIDs, 1, 0);
@@ -139,7 +142,8 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
           texCoords,
           0);
 
-      FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
+      CesiumGltf::FeatureId& implicitIDs =
+          pExtension->featureIds.emplace_back();
       implicitIDs.featureCount = 3;
     });
 
@@ -218,10 +222,11 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
   Describe("GetFirstVertexFromFace", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pExtension = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pExtension =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
     });
 
     It("returns -1 for out-of-bounds face index", [this]() {
@@ -229,7 +234,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
       FCesiumPrimitiveFeatures primitiveFeatures =
@@ -249,7 +254,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
     });
 
     It("returns correct value for primitive without indices", [this]() {
-      Accessor& accessor = model.accessors.emplace_back();
+      CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
       accessor.count = 9;
       const int64 numFaces = accessor.count / 3;
 
@@ -273,10 +278,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
-      Accessor& accessor = model.accessors.emplace_back();
+      CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
       accessor.count = 7;
       pPrimitive->attributes.insert(
           {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -298,10 +303,11 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
   Describe("GetFeatureIDFromFace", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      Mesh& mesh = model.meshes.emplace_back();
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      pExtension = &pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pExtension =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
     });
 
     It("returns -1 for primitive with empty feature ID sets", [this]() {
@@ -309,10 +315,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
-      Accessor& accessor = model.accessors.emplace_back();
+      CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
       accessor.count = 6;
       pPrimitive->attributes.insert(
           {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -342,10 +348,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       CreateIndicesForPrimitive(
           model,
           *pPrimitive,
-          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
           indices);
 
-      Accessor& accessor = model.accessors.emplace_back();
+      CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
       accessor.count = 7;
       pPrimitive->attributes.insert(
           {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -381,10 +387,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::ComponentType::UNSIGNED_BYTE,
+            CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 3;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -410,7 +416,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         std::vector<uint8_t> attributeIDs{1, 1, 1, 2, 2, 2, 0, 0, 0};
         AddFeatureIDsAsAttributeToModel(model, *pPrimitive, attributeIDs, 3, 0);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 9;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -437,10 +443,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::ComponentType::UNSIGNED_BYTE,
+            CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 7;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -481,10 +487,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::ComponentType::UNSIGNED_BYTE,
+            CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 3;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -525,7 +531,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
             texCoords,
             0);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 6;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -568,10 +574,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::ComponentType::UNSIGNED_BYTE,
+            CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 4;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -596,12 +602,13 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
     Describe("ImplicitFeatureIDs", [this]() {
       BeforeEach([this]() {
-        FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
+        CesiumGltf::FeatureId& implicitIDs =
+            pExtension->featureIds.emplace_back();
         implicitIDs.featureCount = 6;
       });
 
       It("returns -1 for out-of-bounds face index", [this]() {
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 6;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -624,7 +631,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       });
 
       It("returns correct values for primitive without indices", [this]() {
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 6;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -651,10 +658,10 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         CreateIndicesForPrimitive(
             model,
             *pPrimitive,
-            AccessorSpec::ComponentType::UNSIGNED_BYTE,
+            CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
             indices);
 
-        Accessor& accessor = model.accessors.emplace_back();
+        CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
         accessor.count = 4;
         pPrimitive->attributes.insert(
             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
@@ -692,16 +699,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
          CreateIndicesForPrimitive(
              model,
              *pPrimitive,
-             AccessorSpec::ComponentType::UNSIGNED_BYTE,
+             CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
              indices);
 
-         Accessor& accessor = model.accessors.emplace_back();
+         CesiumGltf::Accessor& accessor = model.accessors.emplace_back();
          accessor.count = 7;
          pPrimitive->attributes.insert(
              {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
 
          // Second feature ID set is implicit
-         FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
+         CesiumGltf::FeatureId& implicitIDs =
+             pExtension->featureIds.emplace_back();
          implicitIDs.featureCount = 7;
 
          FCesiumPrimitiveFeatures primitiveFeatures =

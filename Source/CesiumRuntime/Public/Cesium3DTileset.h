@@ -12,6 +12,7 @@
 #include "CesiumGeoreference.h"
 #include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
+#include "CesiumSampleHeightResult.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
@@ -25,6 +26,10 @@
 #include <unordered_map>
 #include <vector>
 #include "Cesium3DTileset.generated.h"
+
+#ifdef CESIUM_DEBUG_TILE_STATES
+#include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
+#endif
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
@@ -47,6 +52,12 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetLoadFailure,
     const FCesium3DTilesetLoadFailureDetails&);
 
+DECLARE_DELEGATE_ThreeParams(
+    FCesiumSampleHeightMostDetailedCallback,
+    ACesium3DTileset*,
+    const TArray<FCesiumSampleHeightResult>&,
+    const TArray<FString>&);
+
 /**
  * The delegate for the Acesium3DTileset::OnTilesetLoaded,
  * which is triggered from UpdateLoadStatus
@@ -67,7 +78,12 @@ enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from the specified Url.
    */
-  FromUrl UMETA(DisplayName = "From Url")
+  FromUrl UMETA(DisplayName = "From Url"),
+
+  /**
+   * The tileset will be loaded from the georeference ellipsoid.
+   */
+  FromEllipsoid UMETA(DisplayName = "From Ellipsoid")
 };
 
 UENUM(BlueprintType)
@@ -100,6 +116,27 @@ public:
   }
   UFUNCTION(BlueprintCallable, meta = (DeprecatedFunction))
   void SetMobility(EComponentMobility::Type NewMobility);
+
+  /**
+   * @brief Initiates an asynchronous query for the height of this tileset at a
+   * list of cartographic positions, where the Longitude (X) and Latitude (Y)
+   * are given in degrees. The most detailed available tiles are used to
+   * determine each height.
+   *
+   * The height of the input positions is ignored, unless height sampling fails
+   * at that location. The output height is expressed in meters above the
+   * ellipsoid (usually WGS84), which should not be confused with a height above
+   * mean sea level.
+   *
+   * @param LongitudeLatitudeHeightArray The cartographic positions for which to
+   * sample heights. The Longitude (X) and Latitude (Y) are expressed in
+   * degrees, while Height (Z) is given in meters.
+   * @param OnHeightsSampled A callback that is invoked in the game thread when
+   * heights have been sampled for all positions.
+   */
+  void SampleHeightMostDetailed(
+      const TArray<FVector>& LongitudeLatitudeHeightArray,
+      FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
 
 private:
   /**
@@ -599,6 +636,20 @@ public:
   bool LogSelectionStats = false;
 
   /**
+   * If true, logs stats on the assets in this tileset's shared asset system to
+   * the Output Log.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool LogSharedAssetStats = false;
+
+  /**
+   * If true, draws debug text above each tile being rendered with information
+   * about that tile.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool DrawTileInfo = false;
+
+  /**
    * Define the collision profile for all the 3D tiles created inside this
    * actor.
    */
@@ -714,6 +765,16 @@ private:
   UCesiumIonServer* CesiumIonServer;
 
   /**
+   * Headers to be attached to each request made for this tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRequestHeaders,
+      BlueprintSetter = SetRequestHeaders,
+      Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
+
+  /**
    * Check if the Cesium ion token used to access this tileset is working
    * correctly, and fix it if necessary.
    */
@@ -799,8 +860,7 @@ private:
       EditAnywhere,
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
-      Category = "Cesium|Rendering",
-      meta = (EditCondition = "!bIsMac"))
+      Category = "Cesium|Rendering")
   bool EnableWaterMask = false;
 
   /**
@@ -890,14 +950,50 @@ private:
       Category = "Cesium|Rendering")
   FCesiumPointCloudShading PointCloudShading;
 
+  /**
+   * Array of runtime virtual textures into which we draw the mesh for this
+   * actor. The material also needs to be set up to output to a virtual texture.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRuntimeVirtualTextures,
+      BlueprintSetter = SetRuntimeVirtualTextures,
+      Category = "VirtualTexture",
+      meta = (DisplayName = "Draw in Virtual Textures"))
+  TArray<TObjectPtr<URuntimeVirtualTexture>> RuntimeVirtualTextures;
+
+  /** Controls if this component draws in the main pass as well as in the
+   * virtual texture. You must refresh the Tileset after changing this value! */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetVirtualTextureRenderPassType,
+      Category = VirtualTexture,
+      meta = (DisplayName = "Draw in Main Pass"))
+  ERuntimeVirtualTextureMainPassType VirtualTextureRenderPassType =
+      ERuntimeVirtualTextureMainPassType::Exclusive;
+
+  /**
+   * Translucent objects with a lower sort priority draw behind objects with a
+   * higher priority. Translucent objects with the same priority are rendered
+   * from back-to-front based on their bounds origin. This setting is also used
+   * to sort objects being drawn into a runtime virtual texture.
+   *
+   * Ignored if the object is not translucent.  The default priority is zero.
+   * Warning: This should never be set to a non-default value unless you know
+   * what you are doing, as it will prevent the renderer from sorting correctly.
+   * It is especially problematic on dynamic gameplay effects.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetTranslucencySortPriority,
+      BlueprintSetter = SetTranslucencySortPriority,
+      AdvancedDisplay,
+      Category = Rendering)
+  int32 TranslucencySortPriority;
+
 protected:
   UPROPERTY()
   FString PlatformName;
-
-#if WITH_EDITORONLY_DATA
-  UPROPERTY()
-  bool bIsMac;
-#endif
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
@@ -922,6 +1018,12 @@ public:
   void SetUrl(const FString& InUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
+  TMap<FString, FString> GetRequestHeaders() const { return RequestHeaders; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetRequestHeaders(const TMap<FString, FString>& InRequestHeaders);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   int64 GetIonAssetID() const { return IonAssetID; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
@@ -935,6 +1037,26 @@ public:
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   UCesiumIonServer* GetCesiumIonServer() const { return CesiumIonServer; }
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  TArray<URuntimeVirtualTexture*> GetRuntimeVirtualTextures() const {
+    return RuntimeVirtualTextures;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "VirtualTexture")
+  void SetRuntimeVirtualTextures(
+      TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures);
+
+  UFUNCTION(BlueprintGetter, Category = "VirtualTexture")
+  ERuntimeVirtualTextureMainPassType GetVirtualTextureRenderPassType() const {
+    return VirtualTextureRenderPassType;
+  }
+
+  UFUNCTION(BlueprintGetter, Category = Rendering)
+  int32 GetTranslucencySortPriority() { return TranslucencySortPriority; }
+
+  UFUNCTION(BlueprintSetter, Category = Rendering)
+  void SetTranslucencySortPriority(int32 InTranslucencySortPriority);
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetCesiumIonServer(UCesiumIonServer* Server);
@@ -1047,10 +1169,12 @@ public:
 
   /**
    * This method is not supposed to be called by clients. It is currently
-   * only required by the UnrealResourcePreparer.
+   * only required by the UnrealPrepareRendererResources.
    *
+   * @internal
    * See {@link
-   * Cesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   * UCesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   * @endinternal
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
@@ -1059,6 +1183,11 @@ public:
   }
   const Cesium3DTilesSelection::Tileset* GetTileset() const {
     return this->_pTileset.Get();
+  }
+
+  const std::optional<FCesiumFeaturesMetadataDescription>&
+  getFeaturesMetadataDescription() const {
+    return this->_featuresMetadataDescription;
   }
 
   // AActor overrides (some or most of them should be protected)
@@ -1081,6 +1210,7 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
+  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
@@ -1159,8 +1289,8 @@ private:
    *
    * @param tiles The tiles
    */
-  void
-  showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
+  void showTilesToRender(const std::vector<CesiumUtility::IntrusivePointer<
+                             Cesium3DTilesSelection::Tile>>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -1190,6 +1320,10 @@ private:
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+
+#ifdef CESIUM_DEBUG_TILE_STATES
+  TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
+#endif
 
   std::optional<FCesiumFeaturesMetadataDescription>
       _featuresMetadataDescription;
@@ -1232,10 +1366,11 @@ private:
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
   // tilesToHideThisFrame may be hidden immediately.
-  std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
+  std::vector<CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>
+      _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
 
-  friend class UnrealResourcePreparer;
+  friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
 };

@@ -1,30 +1,43 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveFeatures.h"
+#include "CesiumGltf/ExtensionExtInstanceFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltf/ExtensionExtMeshGpuInstancing.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
-
-using namespace CesiumGltf;
 
 static FCesiumPrimitiveFeatures EmptyPrimitiveFeatures;
 
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
-    const Model& Model,
-    const MeshPrimitive& Primitive,
-    const ExtensionExtMeshFeatures& Features)
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::MeshPrimitive& Primitive,
+    const CesiumGltf::ExtensionExtMeshFeatures& Features)
     : _vertexCount(0), _primitiveMode(Primitive.mode) {
   this->_indexAccessor = CesiumGltf::getIndexAccessorView(Model, Primitive);
 
   auto positionIt = Primitive.attributes.find("POSITION");
   if (positionIt != Primitive.attributes.end()) {
-    const Accessor& positionAccessor =
+    const CesiumGltf::Accessor& positionAccessor =
         Model.getSafe(Model.accessors, positionIt->second);
     _vertexCount = positionAccessor.count;
   }
 
   for (const CesiumGltf::FeatureId& FeatureId : Features.featureIds) {
     this->_featureIdSets.Add(FCesiumFeatureIdSet(Model, Primitive, FeatureId));
+  }
+}
+
+FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::Node& Node,
+    const CesiumGltf::ExtensionExtInstanceFeatures& InstanceFeatures)
+    : _vertexCount(0), _primitiveMode(-1) {
+  if (Node.mesh < 0 || Node.mesh >= Model.meshes.size()) {
+    return;
+  }
+  for (const auto& featureId : InstanceFeatures.featureIds) {
+    this->_featureIdSets.Emplace(Model, Node, featureId);
   }
 }
 
@@ -98,6 +111,20 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
           PrimitiveFeatures,
           FaceIndex));
+}
+
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromInstance(
+    const FCesiumPrimitiveFeatures& InstanceFeatures,
+    int64 InstanceIndex,
+    int64 FeatureIDSetIndex) {
+  if (FeatureIDSetIndex < 0 ||
+      FeatureIDSetIndex >= InstanceFeatures._featureIdSets.Num()) {
+    return -1;
+  }
+  const auto& featureIDSet = InstanceFeatures._featureIdSets[FeatureIDSetIndex];
+  return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForInstance(
+      featureIDSet,
+      InstanceIndex);
 }
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromHit(

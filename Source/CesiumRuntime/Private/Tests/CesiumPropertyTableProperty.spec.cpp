@@ -1,21 +1,23 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
+#include "CesiumPropertyTableProperty.h"
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
-#include "CesiumPropertyTableProperty.h"
 #include "Misc/AutomationTest.h"
 #include <limits>
-
-using namespace CesiumGltf;
 
 BEGIN_DEFINE_SPEC(
     FCesiumPropertyTablePropertySpec,
     "Cesium.Unit.PropertyTableProperty",
-    EAutomationTestFlags::ApplicationContextMask |
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumPropertyTablePropertySpec)
 
 void FCesiumPropertyTablePropertySpec::Define() {
+  using namespace CesiumGltf;
+
   Describe("Constructor", [this]() {
     It("constructs invalid instance by default", [this]() {
       FCesiumPropertyTableProperty property;
@@ -39,8 +41,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
     It("constructs invalid instance from view with invalid definition",
        [this]() {
-         PropertyTablePropertyView<int8_t> propertyView(
-             PropertyTablePropertyViewStatus::ErrorArrayTypeMismatch);
+         CesiumGltf::PropertyTablePropertyView<int8_t> propertyView(
+             CesiumGltf::PropertyTablePropertyViewStatus::
+                 ErrorArrayTypeMismatch);
          FCesiumPropertyTableProperty property(propertyView);
          TestEqual(
              "PropertyTablePropertyStatus",
@@ -61,8 +64,9 @@ void FCesiumPropertyTablePropertySpec::Define() {
        });
 
     It("constructs invalid instance from view with invalid data", [this]() {
-      PropertyTablePropertyView<int8_t> propertyView(
-          PropertyTablePropertyViewStatus::ErrorBufferViewOutOfBounds);
+      CesiumGltf::PropertyTablePropertyView<int8_t> propertyView(
+          CesiumGltf::PropertyTablePropertyViewStatus::
+              ErrorBufferViewOutOfBounds);
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -83,18 +87,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("constructs valid instance", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -163,19 +167,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("constructs valid normalized instance", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
       classProperty.normalized = true;
 
       std::vector<uint8_t> values{0, 1, 255, 128};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      PropertyTablePropertyView<uint8_t, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<uint8_t, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -220,8 +224,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("constructs instance for fixed-length array property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -232,15 +236,16 @@ void FCesiumPropertyTablePropertySpec::Define() {
           static_cast<int64_t>(values.size()) / *classProperty.count;
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::None,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
+              PropertyComponentType::None,
+              PropertyComponentType::None);
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -284,8 +289,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("constructs instance for variable-length array property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -297,15 +302,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
       int64_t size = static_cast<int64_t>(offsets.size()) - 1;
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::Uint16,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(
+                  offsetsData.data(),
+                  offsetsData.size()),
+              std::span<const std::byte>(),
+              PropertyComponentType::Uint16,
+              PropertyComponentType::None);
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -350,8 +358,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("constructs valid instance with additional properties", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.normalized = true;
@@ -372,11 +380,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int32_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      PropertyTablePropertyView<int32_t, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -462,8 +470,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("constructs valid array instance with additional properties", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.normalized = true;
@@ -486,11 +494,12 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6, -1, -1};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      PropertyTablePropertyView<PropertyArrayView<int32_t>, true> propertyView(
-          propertyTableProperty,
-          classProperty,
-          static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>, true>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              static_cast<int64_t>(values.size()),
+              std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -676,17 +685,17 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::BOOLEAN;
 
       std::vector<std::byte> data{static_cast<std::byte>(0b10110001)};
 
-      PropertyTablePropertyView<bool> propertyView(
+      CesiumGltf::PropertyTablePropertyView<bool> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(8),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -712,17 +721,17 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from boolean property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::BOOLEAN;
 
       std::vector<std::byte> data{static_cast<std::byte>(0b10110001)};
 
-      PropertyTablePropertyView<bool> propertyView(
+      CesiumGltf::PropertyTablePropertyView<bool> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(8),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -771,17 +780,17 @@ void FCesiumPropertyTablePropertySpec::Define() {
       offsets[offsets.size() - 1] = currentOffset;
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::STRING;
 
-      PropertyTablePropertyView<std::string_view> propertyView(
+      CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint32);
 
@@ -825,19 +834,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
       std::vector<uint8_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<uint8_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<uint8_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -861,19 +870,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from uint8 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
       std::vector<uint8_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<uint8_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<uint8_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -898,19 +907,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{1, 24, 255, 256, -1, 28};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -936,8 +945,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
 
@@ -950,11 +959,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<uint8_t> values{1, 2, 3, 0, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<uint8_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<uint8_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1004,19 +1013,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1044,19 +1053,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from int32 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1081,8 +1090,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -1095,11 +1104,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       };
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<float> propertyView(
+      CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1125,8 +1134,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -1139,11 +1148,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<int32_t> values{-1, 2, -3, 0, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1197,19 +1206,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this, defaultInt64]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT64;
 
       std::vector<int64_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int64_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int64_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1237,19 +1246,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from int64 property", [this, defaultInt64]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT64;
 
       std::vector<int64_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int64_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int64_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1274,8 +1283,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this, defaultInt64]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::UINT64;
 
@@ -1286,11 +1295,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 100};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<uint64_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<uint64_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1316,8 +1325,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this, defaultInt64]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT64;
 
@@ -1330,11 +1339,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<int64_t> values{-1, 2, 0, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int64_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int64_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1386,19 +1395,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<float> propertyView(
+      CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1422,19 +1431,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from float property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
       std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<float> propertyView(
+      CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1466,16 +1475,16 @@ void FCesiumPropertyTablePropertySpec::Define() {
           std::numeric_limits<double>::max()};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
-      PropertyTablePropertyView<double> propertyView(
+      CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1506,8 +1515,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -1520,11 +1529,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<float> propertyView(
+      CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1566,19 +1575,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
       std::vector<double> values{-1.1, 2.2, -3.3, 4.0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<double> propertyView(
+      CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1606,19 +1615,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from double property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
       std::vector<double> values{-1.1, 2.2, -3.3, 4.0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<double> propertyView(
+      CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1643,8 +1652,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from normalized uint8 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
       classProperty.normalized = true;
@@ -1652,11 +1661,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<uint8_t> values{0, 128, 255, 0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<uint8_t, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<uint8_t, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1685,8 +1694,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::STRING;
 
       std::vector<std::string> values{"not a number", "10", "-2"};
@@ -1709,13 +1718,13 @@ void FCesiumPropertyTablePropertySpec::Define() {
       offsets[offsets.size() - 1] = currentOffset;
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
-      PropertyTablePropertyView<std::string_view> propertyView(
+      CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -1746,8 +1755,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -1760,11 +1769,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<double> values{-1.1, 2.2, -3.3, 4.0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<double> propertyView(
+      CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1807,8 +1816,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -1818,11 +1827,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::ivec2(10, 4)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::ivec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::ivec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1852,8 +1861,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::ivec2 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -1863,11 +1872,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::ivec2(10, 4)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::ivec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::ivec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1893,8 +1902,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -1904,11 +1913,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::vec3(std::numeric_limits<float>::max(), -1.0f, 2.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::vec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -1937,8 +1946,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -1954,11 +1963,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::ivec2(10, 4)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::ivec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::ivec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2008,8 +2017,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2019,11 +2028,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec2(1.5, -1.5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2053,8 +2062,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::dvec2 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2064,11 +2073,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec2(1.5, -1.5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2094,8 +2103,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from normalized glm::u8vec2 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::UINT8;
       classProperty.normalized = true;
@@ -2106,11 +2115,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::u8vec2(10, 4)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::u8vec2, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::u8vec2, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2140,8 +2149,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::STRING;
 
       std::vector<std::string> values{"X=10 Y=3", "not a vector", "X=-2 Y=4"};
@@ -2164,13 +2173,13 @@ void FCesiumPropertyTablePropertySpec::Define() {
       offsets[offsets.size() - 1] = currentOffset;
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
-      PropertyTablePropertyView<std::string_view> propertyView(
+      CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -2201,8 +2210,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2218,11 +2227,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec2(1.5, -1.5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2269,8 +2278,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -2280,11 +2289,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::ivec3(10, 4, 5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::ivec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::ivec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2314,8 +2323,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::ivec3 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -2325,11 +2334,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::ivec3(10, 4, 5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::ivec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::ivec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2355,8 +2364,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -2367,11 +2376,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::vec3(std::numeric_limits<float>::max(), -1.0f, 2.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::vec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2401,8 +2410,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -2422,11 +2431,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::ivec3(10, 4, 5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::ivec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::ivec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2476,8 +2485,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -2487,11 +2496,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::vec3(10.0f, 4.4f, 5.4f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::vec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2521,8 +2530,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::vec3 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -2532,11 +2541,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::vec3(10.0f, 4.4f, 5.4f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::vec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2562,8 +2571,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2574,11 +2583,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec2(std::numeric_limits<double>::max(), -1.0)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2612,8 +2621,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -2629,11 +2638,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::vec3(10.0f, 4.4f, 5.4f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::vec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2680,8 +2689,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2691,11 +2700,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec3(1.5, -1.5, -2.01)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2725,8 +2734,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::dvec3 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2736,11 +2745,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec3(1.5, -1.5, -2.01)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2766,8 +2775,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from normalized glm::i8vec3 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::INT8;
       classProperty.normalized = true;
@@ -2778,11 +2787,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::i8vec3(1, -1, -2)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::i8vec3, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::i8vec3, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2813,8 +2822,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::STRING;
 
       std::vector<std::string> values{
@@ -2840,13 +2849,13 @@ void FCesiumPropertyTablePropertySpec::Define() {
       offsets[offsets.size() - 1] = currentOffset;
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
-      PropertyTablePropertyView<std::string_view> propertyView(
+      CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -2877,8 +2886,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2894,11 +2903,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec3(1.5, -1.5, -2.01)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec3> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec3> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2945,8 +2954,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC4;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -2956,11 +2965,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec4(1.5, -1.5, -2.01, 5.5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec4> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec4> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -2990,8 +2999,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::dvec4 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC4;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -3001,11 +3010,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec4(1.5, -1.5, -2.01, 5.5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec4> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec4> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3035,8 +3044,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::i8vec4 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC4;
       classProperty.componentType = ClassProperty::ComponentType::INT8;
       classProperty.normalized = true;
@@ -3047,11 +3056,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::i8vec4(1, -1, -2, 5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::i8vec4, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::i8vec4, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3087,8 +3096,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::STRING;
 
       std::vector<std::string> values{
@@ -3114,13 +3123,13 @@ void FCesiumPropertyTablePropertySpec::Define() {
       offsets[offsets.size() - 1] = currentOffset;
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
-      PropertyTablePropertyView<std::string_view> propertyView(
+      CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
+          std::span<const std::byte>(data.data(), data.size()),
+          std::span<const std::byte>(),
+          std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
           PropertyComponentType::None,
           PropertyComponentType::Uint8);
       FCesiumPropertyTableProperty property(propertyView);
@@ -3151,8 +3160,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC4;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -3168,11 +3177,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::dvec4(1.5, -1.5, -2.01, 5.5)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dvec4> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dvec4> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3220,8 +3229,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::MAT4;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -3241,11 +3250,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dmat4> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dmat4> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3276,8 +3285,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::dmat4 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::MAT4;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -3297,11 +3306,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dmat4> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dmat4> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3338,8 +3347,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets from glm::u8mat4x4 property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::MAT4;
       classProperty.componentType = ClassProperty::ComponentType::INT8;
       classProperty.normalized = true;
@@ -3360,11 +3369,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::i8mat4x4, true> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::i8mat4x4, true> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3405,19 +3414,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("converts compatible values", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
       std::vector<double> values{-2.0, 10.5};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<double> propertyView(
+      CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3453,8 +3462,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns default values for incompatible type", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC2;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -3463,11 +3472,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           glm::vec2(1.5f, 0.1f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::vec2> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::vec2> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3492,8 +3501,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::MAT4;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT64;
 
@@ -3526,11 +3535,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<glm::dmat4> propertyView(
+      CesiumGltf::PropertyTablePropertyView<glm::dmat4> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -3569,19 +3578,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
   Describe("GetArray", [this]() {
     It("returns empty array for non-array property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -3629,8 +3638,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns empty array for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -3640,15 +3649,16 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<std::byte> data = GetValuesAsBytes(values);
       int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
 
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::None,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
+              PropertyComponentType::None,
+              PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -3686,8 +3696,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns array for fixed-length array property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -3697,15 +3707,16 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<std::byte> data = GetValuesAsBytes(values);
       int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
 
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::None,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
+              PropertyComponentType::None,
+              PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -3751,8 +3762,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns array for variable-length array property", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -3764,15 +3775,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
       int64 size = static_cast<int64_t>(offsets.size() - 1);
 
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(offsetsData.data(), offsetsData.size()),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::Uint16,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(
+                  offsetsData.data(),
+                  offsetsData.size()),
+              std::span<const std::byte>(),
+              PropertyComponentType::Uint16,
+              PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -3824,8 +3838,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -3837,15 +3851,16 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<std::byte> data = GetValuesAsBytes(values);
       int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
 
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::None,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
+              PropertyComponentType::None,
+              PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -3910,8 +3925,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
       classProperty.array = true;
@@ -3924,15 +3939,16 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<std::byte> data = GetValuesAsBytes(values);
       int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
 
-      PropertyTablePropertyView<PropertyArrayView<int32_t>> propertyView(
-          propertyTableProperty,
-          classProperty,
-          size,
-          gsl::span<const std::byte>(data.data(), data.size()),
-          gsl::span<const std::byte>(),
-          gsl::span<const std::byte>(),
-          PropertyComponentType::None,
-          PropertyComponentType::None);
+      CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
+          propertyView(
+              propertyTableProperty,
+              classProperty,
+              size,
+              std::span<const std::byte>(data.data(), data.size()),
+              std::span<const std::byte>(),
+              std::span<const std::byte>(),
+              PropertyComponentType::None,
+              PropertyComponentType::None);
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "PropertyTablePropertyStatus",
@@ -4019,19 +4035,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("returns empty value for invalid feature ID", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4061,19 +4077,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets value for valid feature IDs", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
       std::vector<int32_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4105,8 +4121,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with offset / scale", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
@@ -4119,11 +4135,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       classProperty.offset = offset;
       classProperty.scale = scale;
 
-      PropertyTablePropertyView<float> propertyView(
+      CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4155,8 +4171,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -4166,11 +4182,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<int32_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
@@ -4210,8 +4226,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
     });
 
     It("gets with noData / default value", [this]() {
-      PropertyTableProperty propertyTableProperty;
-      ClassProperty classProperty;
+      CesiumGltf::PropertyTableProperty propertyTableProperty;
+      CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::INT32;
 
@@ -4224,11 +4240,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<int32_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      PropertyTablePropertyView<int32_t> propertyView(
+      CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
           static_cast<int64_t>(values.size()),
-          gsl::span<const std::byte>(data.data(), data.size()));
+          std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
           "status",
