@@ -24,7 +24,7 @@ However, when compiling for your own development purposes, you can use this vers
 
 The Unreal Build Tool will use the latest compiler version that you have installed. So even after installing v14.38, Cesium for Unreal will likely attempt to compile with a later version like v14.44, and fail. It's possible to uninstall all the newer versions, but this is a huge hassle if you need the newer compiler for other projects.
 
-The solution is to explicitly tell the Unreal Build Tool to use v14.38. To do that, open `%AppData%\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml` and add this to it:
+The solution is to explicitly tell the Unreal Build Tool to use v14.38. To do that, open <!--! \cond DOXYGEN_EXCLUDE !-->`%AppData%\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml`<!--! \endcond --><!--! `%%AppData%\Unreal Engine\UnrealBuildTool\BuildConfiguration.xml` --> and add this to it:
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
@@ -36,7 +36,7 @@ The solution is to explicitly tell the Unreal Build Tool to use v14.38. To do th
 ```
 
 > [!note]
-> `%AppData%` is an environment variable that resolves to something like `C:\Users\UserName\AppData\Roaming`. In PowerShell, use `$env:AppData` instead.
+> The environment variable <!--! \cond DOXYGEN_EXCLUDE !-->`%AppData%`<!--! \endcond --><!--! `%%AppData%` --> resolves to something like `C:\Users\UserName\AppData\Roaming`. In PowerShell, use `$env:AppData` instead.
 
 With that, all builds invoked by Unreal Build Tool should use the chosen compiler version. You should see a message near the start of the build log confirming this:
 
