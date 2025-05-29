@@ -83,11 +83,18 @@ struct LoadedPrimitiveResult {
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
+
   /**
    * A map of feature ID set names to their corresponding texture coordinate
    * indices in the Unreal mesh.
    */
   TMap<FString, uint32_t> FeaturesMetadataTexCoordParameters;
+
+  /**
+   * A map of accessors indices that point to feature ID attributes to the index
+   * of the same feature ID set in CesiumPrimitiveFeatures.
+   */
+  std::unordered_map<int32_t, int32_t> AccessorToFeatureIdIndexMap;
 
   bool isUnlit = false;
 
