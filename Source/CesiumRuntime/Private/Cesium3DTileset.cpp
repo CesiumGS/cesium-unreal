@@ -1172,8 +1172,18 @@ void ACesium3DTileset::LoadTileset() {
 #endif
 
   this->_pTileset->getRootTileAvailableEvent().thenImmediately([thiz = this]() {
-    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pVoxelExtension =
-        thiz->_pTileset ? thiz->_pTileset->getVoxelContentExtension() : nullptr;
+    if (!thiz->_pTileset || !thiz->_pTileset->getRootTile()) {
+      return;
+    }
+
+    const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
+        thiz->_pTileset->getRootTile()->getContent().getExternalContent();
+    if (!pExternalContent) {
+      return;
+    }
+
+    const auto* pVoxelExtension = pExternalContent->getExtension<
+        Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
       thiz->initializeVoxelRenderer(*pVoxelExtension);
     }
@@ -2387,7 +2397,6 @@ void ACesium3DTileset::initializeVoxelRenderer(
       this->_pTileset->getRootTile();
   if (!pRootTile) {
     // Not sure how this could happen, but just in case...
-    CESIUM_ASSERT(false);
     return;
   }
 

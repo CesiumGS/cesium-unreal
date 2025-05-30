@@ -129,10 +129,13 @@ GetValueTypeFromClassProperty(const Cesium3DTiles::ClassProperty& Property) {
 
 void AutoFillVoxelClassDescription(
     FCesiumVoxelClassDescription& Description,
-    const std::string& VoxelClassID,
-    const Cesium3DTiles::Class& VoxelClass) {
+    const Cesium3DTiles::Schema& TilesetSchema,
+    const std::string& VoxelClassID) {
+  Description.ID = TilesetSchema.id.c_str();
 
-  for (const auto& propertyIt : VoxelClass.properties) {
+  const Cesium3DTiles::Class& voxelClass =
+      TilesetSchema.classes.at(VoxelClassID);
+  for (const auto& propertyIt : voxelClass.properties) {
     auto pExistingProperty = Description.Properties.FindByPredicate(
         [&propertyName = propertyIt.first](
             const FCesiumPropertyAttributePropertyDescription&
@@ -172,12 +175,19 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
   const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
   const Cesium3DTilesSelection::Tileset* pTileset =
       pOwner ? pOwner->GetTileset() : nullptr;
-  if (!pTileset) {
+  if (!pTileset || !pTileset->getRootTile()) {
     return;
   }
 
-  const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pVoxelExtension =
-      pTileset->getVoxelContentExtension();
+  const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
+      pTileset->getRootTile()->getContent().getExternalContent();
+  if (!pExternalContent) {
+    return;
+  }
+
+  const auto* pVoxelExtension =
+      pExternalContent
+          ->getExtension<Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
   if (!pVoxelExtension) {
     UE_LOG(
         LogCesium,
@@ -188,7 +198,6 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
     return;
   }
 
-  // TODO turn into helper? function
   const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
       pTileset->getMetadata();
   if (!pMetadata || !pMetadata->schema) {
@@ -205,8 +214,8 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
 
   AutoFillVoxelClassDescription(
       this->Description,
-      voxelClassId,
-      pMetadata->schema->classes.at(voxelClassId));
+      *pMetadata->schema,
+      voxelClassId);
 
   Super::PostEditChange();
 
