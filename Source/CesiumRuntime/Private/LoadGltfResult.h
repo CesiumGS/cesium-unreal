@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -29,6 +31,13 @@
 #include <vector>
 
 namespace LoadGltfResult {
+/**
+ * Represents the result of loading a glTF voxel primitive on a load thread.
+ */
+struct LoadedVoxelResult {
+  TMap<FString, ValidatedVoxelBuffer> attributeBuffers;
+};
+
 /**
  * Represents the result of loading a glTF primitive on a load thread.
  * Temporarily holds render data that will be used in the Unreal material, as
@@ -160,6 +169,8 @@ struct LoadedPrimitiveResult {
   CesiumGltf::IndexAccessorType IndexAccessor;
 
 #pragma endregion
+
+  std::optional<LoadedVoxelResult> voxelResult = std::nullopt;
 };
 
 /**
@@ -214,5 +225,13 @@ struct LoadedModelResult {
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
+
+  /**
+   * Points to the actual EXT_structural_metadata extension. Used for voxels
+   * because property attributes are not yet supported.
+   *
+   * TODO: Expand FCesiumModelMetadata so this is not necessary.
+   */
+  const CesiumGltf::ExtensionModelExtStructuralMetadata* pMetadata = nullptr;
 };
 } // namespace LoadGltfResult
