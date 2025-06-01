@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.16.1 - 2025-06-02
 
 ##### Additions :tada:
 
@@ -9,7 +9,7 @@
 ##### Fixes :wrench:
 
 - Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
-- Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
+- Add a missing include for `GEngine` when packaging from source, introduced in `v2.16.0`.
 - Fixed a bug in `UCesiumFeaturesMetadataComponent` where multiple references to same feature ID set would cause improper encoding of its feature IDs.
 - Fixed a crash that would occur when duplicating an `ACesiumGeoreference`.
 - Fixed a bug that caused tilesets to render incorrectly when Dynamic Material Instances were used for their material settings.
