@@ -15,6 +15,8 @@
 - Fixed a bug that caused tilesets to render incorrectly when Dynamic Material Instances were used for their material settings.
 - Removed an unnecessary copy operation that happened while constructing tile meshes.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.47.0 to v0.48.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.16.0 - 2025-05-01
 
 ##### Additions :tada:
