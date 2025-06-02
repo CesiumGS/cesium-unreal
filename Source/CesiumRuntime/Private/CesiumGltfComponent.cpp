@@ -643,6 +643,7 @@ static void mikkSetTSpaceBasic(
 
   TangentX.Y = -TangentX.Y;
   TangentY.Y = -TangentY.Y;
+  TangentZ.Y = -TangentZ.Y;
 
   vertexBuffer.SetVertexTangents(vertexIndex, TangentX, TangentY, TangentZ);
 }
