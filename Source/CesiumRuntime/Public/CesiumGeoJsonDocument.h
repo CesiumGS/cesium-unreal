@@ -35,6 +35,20 @@ struct FCesiumGeoJsonDocument {
           document)
       : _document(std::move(document)) {}
 
+  /**
+   * @brief Checks if this FCesiumVectorDocument is valid (document is not
+   * nullptr).
+   */
+  bool IsValid() const { return this->_document != nullptr; }
+
+  /**
+   * @brief Returns the `CesiumVectorData::VectorDocument` this wraps.
+   */
+  const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
+  GetDocument() const {
+    return this->_document;
+  }
+
 private:
   CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
 
@@ -46,7 +60,8 @@ private:
  * a `FCesiumVectorDocument`.
  */
 UCLASS()
-class UCesiumGeoJsonDocumentBlueprintLibrary : public UBlueprintFunctionLibrary {
+class UCesiumGeoJsonDocumentBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:

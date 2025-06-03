@@ -1,7 +1,7 @@
 #include "CesiumGeoJsonObject.h"
 
 #include "CesiumGeospatial/Cartographic.h"
-#include "CesiumGeospatial/CompositeCartographicPolygon.h"
+#include "CesiumGeospatial/CartographicPolygon.h"
 #include "Dom/JsonObject.h"
 
 #include <utility>
