@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "VoxelOctree.h"
+#include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
 
 #include <Cesium3DTilesContent/ImplicitTilingUtilities.h>
@@ -185,8 +186,13 @@ FVoxelOctree::~FVoxelOctree() {
   std::vector<std::byte> empty;
   std::swap(this->_octreeData, empty);
 
-  // Can we count on this being freed since it's a UTexture?
+  UTexture2D* pTexture = this->_pTexture;
   this->_pTexture = nullptr;
+
+  if (IsValid(pTexture)) {
+    pTexture->RemoveFromRoot();
+    CesiumLifetime::destroy(pTexture);
+  }
 }
 
 void FVoxelOctree::InitializeTexture(uint32 Width, uint32 MaximumTileCount) {

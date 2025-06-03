@@ -269,7 +269,7 @@ struct ShapeUtility
         result = IntersectBox(R);
         break;
       default:
-        return Utils.NewRayIntersections(Utils.NewIntersection(NO_HIT, 0), Utils.NewIntersection(NO_HIT, 0));
+        return Utils.NewRayIntersections(Utils.NewMissedIntersection(), Utils.NewMissedIntersection());
     }
     
     // Set start to 0.0 when ray is inside the shape.
@@ -748,6 +748,7 @@ VoxelDataTextures DataTextures;
 DataTextures.ShapeConstant = ShapeConstant;
 DataTextures.TileCount = TileCount;
 
+// Account for y-up -> z-up conventions for certain shapes.
 switch (ShapeConstant) {
   case BOX:
     DataTextures.GridDimensions = round(GridDimensions.xzy);

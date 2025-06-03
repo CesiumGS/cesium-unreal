@@ -48,6 +48,8 @@ public:
       ERHIFeatureLevel::Type featureLevel,
       uint32 requestedMemoryPerTexture);
 
+  ~FVoxelDataTextures();
+
   /**
    * Gets the maximum number of tiles that can be added to the data
    * textures. Equivalent to the maximum number of data slots.
@@ -66,7 +68,7 @@ public:
    * the given ID. Returns nullptr if the attribute does not exist.
    */
   UTexture* GetDataTexture(const FString& attributeId) const {
-    const Property* pProperty = this->_propertyMap.Find(attributeId);
+    const PropertyData* pProperty = this->_propertyMap.Find(attributeId);
     if (pProperty) {
       return pProperty->pTexture;
     }
@@ -116,15 +118,15 @@ private:
     Slot* Previous = nullptr;
   };
 
-  struct Property {
+  struct PropertyData {
     /**
      * The texture format used to store encoded property values.
      */
     EncodedFeaturesMetadata::EncodedPixelFormat encodedFormat;
 
-    // TODO: have to check RHISupportsVolumeTextures(GetFeatureLevel())
-    // not sure if same as SupportsVolumeTextureRendering, which is false on
-    // Vulkan Android, Metal, and OpenGL
+    /**
+     * The data texture for this property.
+     */
     UTexture* pTexture;
 
     /**
@@ -142,5 +144,5 @@ private:
   glm::uvec3 _tileCountAlongAxes;
   uint32 _maximumTileCount;
 
-  TMap<FString, Property> _propertyMap;
+  TMap<FString, PropertyData> _propertyMap;
 };

@@ -2136,6 +2136,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         pResult->tilesToRenderThisFrame,
         pResult->tileScreenSpaceErrorThisFrame);
   } else {
+    removeCollisionForTiles(pResult->tilesFadingOut);
     hideTiles(this->_tilesToHideNextFrame);
 
     _tilesToHideNextFrame.clear();
@@ -2377,8 +2378,12 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 
 void ACesium3DTileset::initializeVoxelRenderer(
     const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& VoxelExtension) {
-  const FCesiumVoxelClassDescription* pVoxelClassDescription =
-      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
+  const Cesium3DTilesSelection::Tile* pRootTile =
+      this->_pTileset->getRootTile();
+  if (!pRootTile) {
+    // Not sure how this would happen, but just in case...
+    return;
+  }
 
   // Validate that voxel metadata is present.
   const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
@@ -2388,17 +2393,13 @@ void ACesium3DTileset::initializeVoxelRenderer(
         LogCesium,
         Error,
         TEXT(
-            "Tileset %s contains voxels, but is missing a metadata schema to describe its contents."),
+            "Tileset %s contains voxels but is missing a metadata schema to describe its contents."),
         *this->GetName())
     return;
   }
 
-  const Cesium3DTilesSelection::Tile* pRootTile =
-      this->_pTileset->getRootTile();
-  if (!pRootTile) {
-    // Not sure how this could happen, but just in case...
-    return;
-  }
+  const FCesiumVoxelClassDescription* pVoxelClassDescription =
+      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
 
   this->_pVoxelRendererComponent = UCesiumVoxelRendererComponent::Create(
       this,

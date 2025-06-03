@@ -3,6 +3,7 @@
 #include "VoxelDataTextures.h"
 
 #include "CesiumGltfVoxelComponent.h"
+#include "CesiumLifetime.h"
 #include "CesiumMetadataPropertyDetails.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
@@ -21,7 +22,7 @@ using namespace EncodedFeaturesMetadata;
 
 /**
  * A Cesium texture resource that creates an initially empty `FRHITexture` for
- * FVoxelOctree.
+ * FVoxelDataTextures.
  */
 class FCesiumVoxelDataTextureResource : public FCesiumTextureResource {
 public:
@@ -104,7 +105,9 @@ FVoxelDataTextures::FVoxelDataTextures(
       _maximumTileCount(0),
       _propertyMap() {
   if (!RHISupportsVolumeTextures(featureLevel)) {
-    // TODO: 2D fallback?
+    // TODO: 2D fallback? Not sure if this check is the same as
+    // SupportsVolumeTextureRendering, which is false on Vulkan Android, Metal,
+    // and OpenGL
     UE_LOG(
         LogCesium,
         Error,
@@ -230,12 +233,26 @@ FVoxelDataTextures::FVoxelDataTextures(
   }
 }
 
+FVoxelDataTextures ::~FVoxelDataTextures() {
+  for (auto propertyIt : this->_propertyMap) {
+    UTexture* pTexture = propertyIt.Value.pTexture;
+    propertyIt.Value.pTexture = nullptr;
+    propertyIt.Value.pResource = nullptr;
+
+    if (IsValid(pTexture)) {
+      pTexture->RemoveFromRoot();
+      CesiumLifetime::destroy(pTexture);
+    }
+  }
+}
+
 /**
  * NOTE: This function assumes that the data being read from pData is the same
- * type that the texture expects. Coercive encoding behavior (similar to what is
- * done for CesiumPropertyTableProperty) could be added in the future.
+ * type that the texture expects. Coercive encoding behavior (similar to what
+ * is done for CesiumPropertyTableProperty) could be added in the future.
  */
 static void writeTo3DTexture(
+    UTexture* pTexture,
     FCesiumTextureResource* pResource,
     const std::byte* pData,
     FUpdateTextureRegion3D updateRegion,
@@ -244,8 +261,12 @@ static void writeTo3DTexture(
     return;
 
   ENQUEUE_RENDER_COMMAND(Cesium_CopyVoxels)
-  ([pResource, pData, updateRegion, texelSizeBytes](
+  ([pTexture, pResource, pData, updateRegion, texelSizeBytes](
        FRHICommandListImmediate& RHICmdList) {
+    if (!IsValid(pTexture)) {
+      return;
+    }
+
     // Pitch = size in bytes of each row of the source image.
     uint32 srcRowPitch = updateRegion.Width * texelSizeBytes;
     uint32 srcDepthPitch =
@@ -299,6 +320,7 @@ int64 FVoxelDataTextures::Add(const UCesiumGltfVoxelComponent& voxelComponent) {
     pData += pValidBuffer->pBufferView->byteOffset;
 
     writeTo3DTexture(
+        PropertyIt.Value.pTexture,
         PropertyIt.Value.pResource,
         pData,
         updateRegion,

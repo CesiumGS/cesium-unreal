@@ -67,9 +67,7 @@ void UCesiumVoxelRendererComponent::BeginDestroy() {
 namespace {
 EVoxelGridShape getVoxelGridShape(
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
-  const CesiumGeometry::OrientedBoundingBox* pBox =
-      std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume);
-  if (pBox) {
+  if (std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume)) {
     return EVoxelGridShape::Box;
   }
 
@@ -81,16 +79,20 @@ void setVoxelBoxProperties(
     UMaterialInstanceDynamic* pVoxelMaterial,
     const CesiumGeometry::OrientedBoundingBox& box) {
   glm::dmat3 halfAxes = box.getHalfAxes();
+
+  // The engine-provided Cube extends from [-50, 50], so a scale of 1/50 is
+  // incorporated into the component's transform to compensate.
   pVoxelComponent->HighPrecisionTransform = glm::dmat4(
       glm::dvec4(halfAxes[0], 0) * 0.02,
       glm::dvec4(halfAxes[1], 0) * 0.02,
       glm::dvec4(halfAxes[2], 0) * 0.02,
       glm::dvec4(box.getCenter(), 1));
 
-  // The transform and scale of the box are handled in the component's
-  // transform, so there is no need to duplicate it here. Instead, this
-  // transform is configured to scale the engine-provided Cube ([-50, 50]) to
-  // unit space ([-1, 1]).
+  // Distinct from the component's transform above, this scales from the
+  // engine-provided Cube's space ([-50, 50]) to a unit space of [-1, 1]. This
+  // is specifically used to fit the raymarched cube into the bounds of the
+  // explicit cube mesh. In other words, this scale must be applied in-shader to
+  // account for the actual mesh's bounds.
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
@@ -344,7 +346,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         LogCesium,
         Error,
         TEXT(
-            "Tileset %s contains voxels, but cannot find the metadata class that describes its contents."),
+            "Tileset %s does not contain the metadata class that is referenced by its voxel content."),
         *pTilesetActor->GetName())
     return nullptr;
   }
@@ -356,7 +358,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("Tileset %s contains voxels but has invalid dimensions."),
+        TEXT("Tileset %s has invalid voxel grid dimensions."),
         *pTilesetActor->GetName())
     return nullptr;
   }
@@ -445,8 +447,9 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   glm::uvec3 dataDimensions =
       glm::uvec3(dimensions[0], dimensions[1], dimensions[2]) + paddingBefore +
       paddingAfter;
+
   if (shape == EVoxelGridShape::Box || shape == EVoxelGridShape::Cylinder) {
-    // Account for y-up in glTF -> z-up in 3D Tiles.
+    // Account for the transformation between y-up (glTF) to z-up (3D Tiles).
     dataDimensions =
         glm::uvec3(dataDimensions.x, dataDimensions.z, dataDimensions.y);
   }
