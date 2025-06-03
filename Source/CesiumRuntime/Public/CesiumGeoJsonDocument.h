@@ -10,6 +10,7 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectMacros.h"
 
+#include <memory>
 #include <optional>
 
 #include "CesiumGeoJsonDocument.generated.h"
@@ -31,12 +32,11 @@ struct FCesiumGeoJsonDocument {
    * `CesiumVectorData::GeoJsonDocument`.
    */
   FCesiumGeoJsonDocument(
-      CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&&
-          document)
+      std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document)
       : _document(std::move(document)) {}
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _document;
 
   friend class UCesiumGeoJsonDocumentBlueprintLibrary;
 };
@@ -46,7 +46,8 @@ private:
  * a `FCesiumVectorDocument`.
  */
 UCLASS()
-class UCesiumGeoJsonDocumentBlueprintLibrary : public UBlueprintFunctionLibrary {
+class UCesiumGeoJsonDocumentBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:

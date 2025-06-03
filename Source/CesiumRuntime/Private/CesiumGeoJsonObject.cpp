@@ -1,7 +1,6 @@
 #include "CesiumGeoJsonObject.h"
 
 #include "CesiumGeospatial/Cartographic.h"
-#include "CesiumGeospatial/CompositeCartographicPolygon.h"
 #include "Dom/JsonObject.h"
 
 #include <utility>
@@ -119,53 +118,49 @@ bool UCesiumGeoJsonFeatureBlueprintLibrary::IsValid(
 
 bool UCesiumGeoJsonObjectBlueprintLibrary::IsValid(
     const FCesiumGeoJsonObject& InObject) {
-  return InObject._document != nullptr && InObject._object != nullptr;
+  return InObject._pDocument != nullptr && InObject._pObject != nullptr;
 }
 
 ECesiumGeoJsonObjectType UCesiumGeoJsonObjectBlueprintLibrary::GetObjectType(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
-  return (ECesiumGeoJsonObjectType)InObject._object->getType();
+  return (ECesiumGeoJsonObjectType)InObject._pObject->getType();
 }
 
 namespace {
-FVector
-cartographicToVector(const CesiumGeospatial::Cartographic& coordinates) {
-  return FVector(
-      CesiumUtility::Math::radiansToDegrees(coordinates.longitude),
-      CesiumUtility::Math::radiansToDegrees(coordinates.latitude),
-      coordinates.height);
+FVector degreesToVector(const glm::dvec3& coordinates) {
+  return FVector(coordinates.x, coordinates.y, coordinates.z);
 }
 } // namespace
 
 FVector UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsPoint(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonPoint* pPoint =
-      std::get_if<CesiumVectorData::GeoJsonPoint>(&InObject._object->value);
+      std::get_if<CesiumVectorData::GeoJsonPoint>(&InObject._pObject->value);
 
   if (!pPoint) {
     return FVector::ZeroVector;
   }
 
-  return cartographicToVector(pPoint->coordinates);
+  return degreesToVector(pPoint->coordinates);
 }
 
 TArray<FVector> UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPoint(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonMultiPoint* pMultiPoint =
       std::get_if<CesiumVectorData::GeoJsonMultiPoint>(
-          &InObject._object->value);
+          &InObject._pObject->value);
 
   if (!pMultiPoint) {
     return TArray<FVector>();
@@ -175,7 +170,7 @@ TArray<FVector> UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPoint(
   Points.Reserve(pMultiPoint->coordinates.size());
 
   for (size_t i = 0; i < pMultiPoint->coordinates.size(); i++) {
-    Points.Emplace(cartographicToVector(pMultiPoint->coordinates[i]));
+    Points.Emplace(degreesToVector(pMultiPoint->coordinates[i]));
   }
 
   return Points;
@@ -184,13 +179,13 @@ TArray<FVector> UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPoint(
 FCesiumGeoJsonLineString
 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsLineString(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonLineString* pLineString =
       std::get_if<CesiumVectorData::GeoJsonLineString>(
-          &InObject._object->value);
+          &InObject._pObject->value);
 
   if (!pLineString) {
     return TArray<FVector>();
@@ -200,7 +195,7 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsLineString(
   Points.Reserve(pLineString->coordinates.size());
 
   for (size_t i = 0; i < pLineString->coordinates.size(); i++) {
-    Points.Emplace(cartographicToVector(pLineString->coordinates[i]));
+    Points.Emplace(degreesToVector(pLineString->coordinates[i]));
   }
 
   return FCesiumGeoJsonLineString(MoveTemp(Points));
@@ -209,13 +204,13 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsLineString(
 TArray<FCesiumGeoJsonLineString>
 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonMultiLineString* pMultiLineString =
       std::get_if<CesiumVectorData::GeoJsonMultiLineString>(
-          &InObject._object->value);
+          &InObject._pObject->value);
 
   if (!pMultiLineString) {
     return TArray<FCesiumGeoJsonLineString>();
@@ -229,7 +224,7 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
     Points.Reserve(pMultiLineString->coordinates[i].size());
 
     for (size_t j = 0; j < pMultiLineString->coordinates[i].size(); j++) {
-      Points.Emplace(cartographicToVector(pMultiLineString->coordinates[i][j]));
+      Points.Emplace(degreesToVector(pMultiLineString->coordinates[i][j]));
     }
 
     Lines.Emplace(MoveTemp(Points));
@@ -240,30 +235,30 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
 
 FCesiumGeoJsonPolygon UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsPolygon(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonPolygon* pPolygon =
-      std::get_if<CesiumVectorData::GeoJsonPolygon>(&InObject._object->value);
+      std::get_if<CesiumVectorData::GeoJsonPolygon>(&InObject._pObject->value);
 
   if (!pPolygon) {
     return FCesiumGeoJsonPolygon();
   }
 
-  return FCesiumGeoJsonPolygon(InObject._document, &pPolygon->coordinates);
+  return FCesiumGeoJsonPolygon(InObject._pDocument, &pPolygon->coordinates);
 }
 
 TArray<FCesiumGeoJsonPolygon>
 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPolygon(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonMultiPolygon* pMultiPolygon =
       std::get_if<CesiumVectorData::GeoJsonMultiPolygon>(
-          &InObject._object->value);
+          &InObject._pObject->value);
 
   if (!pMultiPolygon) {
     return TArray<FCesiumGeoJsonPolygon>();
@@ -273,7 +268,7 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPolygon(
   Polygons.Reserve(pMultiPolygon->coordinates.size());
 
   for (size_t i = 0; i < pMultiPolygon->coordinates.size(); i++) {
-    Polygons.Emplace(InObject._document, &pMultiPolygon->coordinates[i]);
+    Polygons.Emplace(InObject._pDocument, &pMultiPolygon->coordinates[i]);
   }
 
   return Polygons;
@@ -282,13 +277,13 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPolygon(
 TArray<FCesiumGeoJsonObject>
 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsGeometryCollection(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonGeometryCollection* pGeometryCollection =
       std::get_if<CesiumVectorData::GeoJsonGeometryCollection>(
-          &InObject._object->value);
+          &InObject._pObject->value);
 
   if (!pGeometryCollection) {
 
@@ -300,7 +295,7 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsGeometryCollection(
 
   for (size_t i = 0; i < pGeometryCollection->geometries.size(); i++) {
     Geometries.Emplace(FCesiumGeoJsonObject(
-        InObject._document,
+        InObject._pDocument,
         &pGeometryCollection->geometries[i]));
   }
 
@@ -309,38 +304,42 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsGeometryCollection(
 
 FCesiumGeoJsonFeature UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsFeature(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonFeature* pFeature =
-      std::get_if<CesiumVectorData::GeoJsonFeature>(&InObject._object->value);
+      std::get_if<CesiumVectorData::GeoJsonFeature>(&InObject._pObject->value);
 
   if (!pFeature) {
     return FCesiumGeoJsonFeature();
   }
 
-  return FCesiumGeoJsonFeature(InObject._document, pFeature);
+  return FCesiumGeoJsonFeature(InObject._pDocument, pFeature);
 }
 
 TArray<FCesiumGeoJsonFeature>
 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsFeatureCollection(
     const FCesiumGeoJsonObject& InObject) {
-  if (!InObject._document || !InObject._object) {
+  if (!InObject._pDocument || !InObject._pObject) {
     return {};
   }
 
   const CesiumVectorData::GeoJsonFeatureCollection* pFeatureCollection =
       std::get_if<CesiumVectorData::GeoJsonFeatureCollection>(
-          &InObject._object->value);
+          &InObject._pObject->value);
 
   TArray<FCesiumGeoJsonFeature> Features;
   Features.Reserve(pFeatureCollection->features.size());
 
   for (size_t i = 0; i < pFeatureCollection->features.size(); i++) {
-    Features.Emplace(FCesiumGeoJsonFeature(
-        InObject._document,
-        &pFeatureCollection->features[i]));
+    const CesiumVectorData::GeoJsonFeature* pFeature =
+        pFeatureCollection->features[i]
+            .getIf<CesiumVectorData::GeoJsonFeature>();
+    if (pFeature == nullptr) {
+      continue;
+    }
+    Features.Emplace(FCesiumGeoJsonFeature(InObject._pDocument, pFeature));
   }
 
   return Features;
@@ -360,7 +359,7 @@ UCesiumGeoJsonPolygonBlueprintFunctionLibrary::GetPolygonRings(
     Points.Reserve((*InPolygon._rings)[i].size());
 
     for (size_t j = 0; j < (*InPolygon._rings)[i].size(); j++) {
-      Points.Emplace(cartographicToVector((*InPolygon._rings)[i][j]));
+      Points.Emplace(degreesToVector((*InPolygon._rings)[i][j]));
     }
 
     Rings.Emplace(MoveTemp(Points));

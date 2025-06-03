@@ -9,37 +9,45 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SharedPointer.h"
 
+#include <glm/ext/vector_double3.hpp>
+#include <memory>
+
 #include "CesiumGeoJsonObject.generated.h"
 
 /**
- * @brief A single node in the vector document.
- *
- * A node typically contains geometry along with metadata attached to that
- * geometry.
+ * @brief A single object in the GeoJSON document.
  */
 USTRUCT(BlueprintType)
 struct FCesiumGeoJsonObject {
   GENERATED_BODY()
 
   /**
-   * @brief Creates a new `FCesiumGeoJsonObject` containing an empty vector
-   * node.
+   * @brief Creates a new `FCesiumGeoJsonObject` containing an empty GeoJSON
+   * object.
    */
-  FCesiumGeoJsonObject() : _document(nullptr), _object(nullptr) {}
+  FCesiumGeoJsonObject() : _pDocument(nullptr), _pObject(nullptr) {}
 
   /**
    * @brief Creates a new `FCesiumGeoJsonObject` wrapping the provided
    * `CesiumVectorData::GeoJsonObject`.
    */
   FCesiumGeoJsonObject(
-      const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-          doc,
-      const CesiumVectorData::GeoJsonObject* node)
-      : _document(doc), _object(node) {}
+      const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& doc,
+      const CesiumVectorData::GeoJsonObject* pObject)
+      : _pDocument(doc), _pObject(pObject) {}
+
+  const std::shared_ptr<CesiumVectorData::GeoJsonDocument>&
+  getDocument() const {
+    return this->_pDocument;
+  }
+
+  const CesiumVectorData::GeoJsonObject* getObject() const {
+    return this->_pObject;
+  }
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
-  const CesiumVectorData::GeoJsonObject* _object;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
+  const CesiumVectorData::GeoJsonObject* _pObject;
 
   friend class UCesiumGeoJsonObjectBlueprintLibrary;
 };
@@ -75,13 +83,12 @@ struct FCesiumGeoJsonFeature {
    * `CesiumVectorData::GeoJsonFeature`.
    */
   FCesiumGeoJsonFeature(
-      const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-          document,
+      const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& document,
       const CesiumVectorData::GeoJsonFeature* feature)
       : _document(document), _feature(feature) {}
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _document;
   const CesiumVectorData::GeoJsonFeature* _feature;
 
   friend class UCesiumGeoJsonFeatureBlueprintLibrary;
@@ -162,15 +169,13 @@ struct FCesiumGeoJsonPolygon {
    * provided `CesiumGeospatial::CompositeCartographicPolygon`.
    */
   FCesiumGeoJsonPolygon(
-      const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-          document,
-      const std::vector<std::vector<CesiumGeospatial::Cartographic>>* rings)
+      const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& document,
+      const std::vector<std::vector<glm::dvec3>>* rings)
       : _document(document), _rings(rings) {}
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>
-      _document;
-  const std::vector<std::vector<CesiumGeospatial::Cartographic>>* _rings;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _document;
+  const std::vector<std::vector<glm::dvec3>>* _rings;
 
   friend class UCesiumGeoJsonPolygonBlueprintFunctionLibrary;
 };

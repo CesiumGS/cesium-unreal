@@ -12,9 +12,8 @@ bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
   std::span<const std::byte> bytes(
       reinterpret_cast<const std::byte*>(str.data()),
       str.size());
-  CesiumUtility::Result<
-      CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>>
-      documentResult = CesiumVectorData::GeoJsonDocument::fromGeoJson(bytes);
+  CesiumUtility::Result<CesiumVectorData::GeoJsonDocument> documentResult =
+      CesiumVectorData::GeoJsonDocument::fromGeoJson(bytes);
 
   if (!documentResult.errors.errors.empty()) {
     documentResult.errors.logError(
@@ -28,9 +27,10 @@ bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
         "Warnings while loading GeoJSON from string");
   }
 
-  if (documentResult.pValue) {
-    OutVectorDocument =
-        FCesiumGeoJsonDocument(std::move(documentResult.pValue));
+  if (documentResult.value) {
+    OutVectorDocument = FCesiumGeoJsonDocument(
+        std::make_shared<CesiumVectorData::GeoJsonDocument>(
+            std::move(*documentResult.value)));
     return true;
   }
 
@@ -45,7 +45,7 @@ FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
 
   return FCesiumGeoJsonObject(
       InVectorDocument._document,
-      &InVectorDocument._document->getRootObject());
+      &InVectorDocument._document->rootObject);
 }
 
 UCesiumLoadVectorDocumentFromIonAsyncAction*
@@ -70,8 +70,8 @@ void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
       TCHAR_TO_UTF8(*this->IonAssetEndpointUrl))
       .thenInMainThread(
           [Callback = this->OnLoadResult](
-              CesiumUtility::Result<CesiumUtility::IntrusivePointer<
-                  CesiumVectorData::GeoJsonDocument>>&& result) {
+              CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&
+                  result) {
             if (result.errors.hasErrors()) {
               result.errors.logError(
                   spdlog::default_logger(),
@@ -81,10 +81,12 @@ void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
                   "Warnings loading GeoJSON:");
             }
 
-            if (result.pValue) {
+            if (result.value) {
               Callback.Broadcast(
                   true,
-                  FCesiumGeoJsonDocument(MoveTemp(result.pValue)));
+                  FCesiumGeoJsonDocument(
+                      std::make_shared<CesiumVectorData::GeoJsonDocument>(
+                          std::move(*result.value))));
             } else {
               Callback.Broadcast(false, {});
             }
