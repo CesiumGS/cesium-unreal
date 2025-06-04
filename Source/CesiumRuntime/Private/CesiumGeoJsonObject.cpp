@@ -130,6 +130,49 @@ ECesiumGeoJsonObjectType UCesiumGeoJsonObjectBlueprintLibrary::GetObjectType(
   return (ECesiumGeoJsonObjectType)InObject._pObject->getType();
 }
 
+FBox UCesiumGeoJsonObjectBlueprintLibrary::GetBoundingBox(
+    const FCesiumGeoJsonObject& InObject,
+    EHasValue& Branches) {
+  if (!InObject._pDocument || !InObject._pObject) {
+    Branches = EHasValue::NoValue;
+    return {};
+  }
+
+  const std::optional<CesiumGeometry::AxisAlignedBox>& boundingBox =
+      InObject._pObject->getBoundingBox();
+  if (boundingBox) {
+    Branches = EHasValue::HasValue;
+    return FBox(
+        FVector(
+            boundingBox->minimumX,
+            boundingBox->minimumY,
+            boundingBox->minimumZ),
+        FVector(
+            boundingBox->maximumX,
+            boundingBox->maximumY,
+            boundingBox->maximumZ));
+  }
+
+  Branches = EHasValue::NoValue;
+  return {};
+}
+
+FJsonObjectWrapper UCesiumGeoJsonObjectBlueprintLibrary::GetForeignMembers(
+    const FCesiumGeoJsonObject& InObject) {
+  if (!InObject._pDocument || !InObject._pObject) {
+    return {};
+  }
+
+  TSharedPtr<FJsonObject> object = MakeShared<FJsonObject>();
+  for (const auto& [k, v] : InObject._pObject->getForeignMembers()) {
+    object->SetField(UTF8_TO_TCHAR(k.c_str()), jsonValueToUnrealJsonValue(v));
+  }
+
+  FJsonObjectWrapper wrapper;
+  wrapper.JsonObject = object;
+  return wrapper;
+}
+
 namespace {
 FVector degreesToVector(const glm::dvec3& coordinates) {
   return FVector(coordinates.x, coordinates.y, coordinates.z);

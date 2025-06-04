@@ -221,6 +221,9 @@ public:
   GetPolygonRings(const FCesiumGeoJsonPolygon& InPolygon);
 };
 
+UENUM()
+enum class EHasValue : uint8 { HasValue, NoValue };
+
 /**
  * @brief A Blueprint Funciton Library for interacting with `FCesiumVectorNode`
  * values.
@@ -236,6 +239,17 @@ public:
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static ECesiumGeoJsonObjectType
   GetObjectType(const FCesiumGeoJsonObject& InObject);
+
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Object",
+      Meta = (ExpandEnumAsExecs = "Branches"))
+  static FBox
+  GetBoundingBox(const FCesiumGeoJsonObject& InObject, EHasValue& Branches);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
+  static FJsonObjectWrapper
+  GetForeignMembers(const FCesiumGeoJsonObject& InObject);
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static FVector GetObjectAsPoint(const FCesiumGeoJsonObject& InObject);

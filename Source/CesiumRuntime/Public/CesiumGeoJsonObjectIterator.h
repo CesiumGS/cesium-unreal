@@ -39,4 +39,20 @@ public:
       BlueprintPure,
       Category = "Cesium|Vector|Iterator")
   static bool IsEnded(const FCesiumGeoJsonObjectIterator& Iterator);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Iterator")
+  static FCesiumGeoJsonFeature
+  GetFeature(UPARAM(Ref) FCesiumGeoJsonObjectIterator& Iterator) {
+    const CesiumVectorData::GeoJsonObject* pFeatureObject =
+        Iterator._iterator.getFeature();
+    if (pFeatureObject) {
+      const CesiumVectorData::GeoJsonFeature* pFeature =
+          pFeatureObject->getIf<CesiumVectorData::GeoJsonFeature>();
+      if (pFeature) {
+        return FCesiumGeoJsonFeature(Iterator._object.getDocument(), pFeature);
+      }
+    }
+
+    return FCesiumGeoJsonFeature();
+  }
 };
