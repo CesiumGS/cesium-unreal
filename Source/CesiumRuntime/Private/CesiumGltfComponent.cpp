@@ -3536,11 +3536,11 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   PrimaryComponentTick.bCanEverTick = false;
 }
 
-int32 UCesiumGltfComponent::GetTuningVersion() const {
-  if (pTile && pTile->getContent().getRenderContent()) {
-    return pTile->getContent().getRenderContent()->getModel()._tuningVersion;
-  }
-  return -1;
+const CesiumGltf::Model* UCesiumGltfComponent::GetGltfModel() const {
+  if (pTile)
+    if (auto RenderContent = pTile->getContent().getRenderContent())
+      return &RenderContent->getModel();
+  return nullptr;
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(

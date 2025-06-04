@@ -6,6 +6,10 @@
 
 #include "CesiumLoadedTile.generated.h"
 
+namespace CesiumGltf {
+struct Model;
+}
+
 UINTERFACE()
 class UCesiumLoadedTile : public UInterface {
   GENERATED_BODY()
@@ -13,5 +17,5 @@ class UCesiumLoadedTile : public UInterface {
 class ICesiumLoadedTile {
   GENERATED_BODY()
 public:
-  virtual int32 GetTuningVersion() const = 0;
+  virtual const CesiumGltf::Model* GetGltfModel() const = 0;
 };

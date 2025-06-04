@@ -136,7 +136,7 @@ public:
   virtual void BeginDestroy() override;
 
   // from ICesiumLoadedTile
-  int32 GetTuningVersion() const override;
+  const CesiumGltf::Model* GetGltfModel() const override;
 
   void UpdateFade(float fadePercentage, bool fadingIn);
 
