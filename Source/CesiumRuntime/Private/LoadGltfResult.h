@@ -87,6 +87,13 @@ struct LoadedPrimitiveResult {
    */
   std::unordered_map<int32_t, int32_t> AccessorToFeatureIdIndexMap;
 
+  /**
+   * A map of accessors indices that point to feature ID attributes to the
+   * value that indicates that no feature is associated with the vertices or
+   * texels that have this value.
+   */
+  std::unordered_map<int32_t, int64_t> AccessorToNullFeatureIdMap;
+
   bool isUnlit = false;
 
   bool onlyLand = true;

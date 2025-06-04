@@ -317,9 +317,10 @@ void AutoFillFeatureIdSetDescriptions(
       pDescription->PropertyTableName = getNameForPropertyTable(propertyTable);
     }
 
-    pDescription->bHasNullFeatureId =
-        UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(featureIDSet) >
-        -1;
+    const int64 nullFeatureId =
+        UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(featureIDSet);
+    pDescription->NullFeatureId = (nullFeatureId > -1) ? nullFeatureId : -1;
+    pDescription->bHasNullFeatureId = (nullFeatureId > -1);
 
     if (type == ECesiumFeatureIdSetType::Texture) {
       FCesiumFeatureIdTexture featureIdTexture =
