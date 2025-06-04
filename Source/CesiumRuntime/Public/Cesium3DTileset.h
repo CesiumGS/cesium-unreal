@@ -39,6 +39,7 @@ class CesiumViewExtension;
 struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
+class GltfModifier;
 class Tileset;
 class TilesetView;
 class TileOcclusionRendererProxyPool;
@@ -1258,13 +1259,13 @@ public:
   void UpdateTransformFromCesium();
 
   /**
-   * Sets the glTF model tuner, an optional extension class that can edit
+   * Sets the glTF modifier, an optional extension class that can edit
    * each tile's glTF model after it has been loaded, before it can be
    * displayed. Can only be called in the same engine tick after the tileset
    * actor was spawned, or {@link RefreshTileset} was called.
    */
-  void
-  SetGltfTuner(const std::shared_ptr<Cesium3DTilesSelection::GltfTuner>& tuner);
+  void SetGltfModifier(
+      const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& InModifier);
 
 private:
   /**
@@ -1380,7 +1381,7 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
-  std::shared_ptr<Cesium3DTilesSelection::GltfTuner> _gltfTuner;
+  std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _gltfModifier;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
