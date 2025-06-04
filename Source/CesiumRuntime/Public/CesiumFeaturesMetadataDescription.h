@@ -70,13 +70,19 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
   FString PropertyTableName;
 
   /**
-   * The null feature ID for the feature ID set. This value indicates that no
-   * feature is associated with the vertex or texel containing the value. If no
-   * such value is specified, this defaults to -1, which prevents it from being
-   * unnecessarily included in the generated material.
+   * Whether a null feature ID exists for the feature ID set. This value
+   * indicates that no feature is associated with the vertex or texel containing
+   * the value. If no such value is specified, this defaults to -1, which
+   * prevents it from being unnecessarily included in the generated material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   bool bHasNullFeatureId = false;
+
+  /**
+   * The null feature ID for the feature ID set, if any.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  int64 NullFeatureId = -1;
 };
 
 /**

@@ -193,6 +193,11 @@ void accumulateFeaturesMetadataAccessors(
               primitive,
               attributeName,
               gltfToUnrealTexCoordMap));
+      if (encodedFeatureIDSet.nullFeatureId) {
+        primitiveResult.AccessorToNullFeatureIdMap.emplace(
+            accessorIndex,
+            encodedFeatureIDSet.nullFeatureId.value());
+      }
     } else if (encodedFeatureIDSet.texture) {
       int64 setIndex = encodedFeatureIDSet.texture->textureCoordinateSetIndex;
       std::string attributeName = "TEXCOORD_" + std::to_string(setIndex);
@@ -365,7 +370,8 @@ void copyFeatureIds(
     uint32_t textureCoordinateIndex,
     FStaticMeshVertexBuffer& vertices,
     const TArray<uint32>& indices,
-    bool duplicateVertices) {
+    bool duplicateVertices,
+    const std::optional<int64>& nullFeatureId = std::nullopt) {
   const TArray<FCesiumFeatureIdSet>& featureIdSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
           primitiveFeatures);
@@ -378,6 +384,7 @@ void copyFeatureIds(
   const FCesiumFeatureIdAttribute& featureIdAttribute =
       UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
           featureIdSet);
+  const float nullFeatureId_u = static_cast<float>(nullFeatureId.value_or(0));
 
   // We encode unsigned integer feature ids as floats in the u-channel of
   // a texture coordinate slot.
@@ -390,7 +397,7 @@ void copyFeatureIds(
       vertices.SetVertexUV(
           i,
           textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
+          FVector2f(featureId < 0.0f ? nullFeatureId_u : featureId, 0.0f));
     }
   } else {
     for (int64_t i = 0; i < vertices.GetNumVertices(); ++i) {
@@ -400,7 +407,7 @@ void copyFeatureIds(
       vertices.SetVertexUV(
           i,
           textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
+          FVector2f(featureId < 0.0f ? nullFeatureId_u : featureId, 0.0f));
     }
   }
 }
@@ -412,7 +419,8 @@ void copyFeatureIds_DEPRECATED(
     uint32_t textureCoordinateIndex,
     FStaticMeshVertexBuffer& vertices,
     const TArray<uint32>& indices,
-    bool duplicateVertices) {
+    bool duplicateVertices,
+    const std::optional<int64>& nullFeatureId = std::nullopt) {
   TArray<FCesiumFeatureIdAttribute> featureIdAttributes =
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
           metadataPrimitive);
@@ -421,6 +429,7 @@ void copyFeatureIds_DEPRECATED(
 
   const FCesiumFeatureIdAttribute& featureIdAttribute =
       featureIdAttributes[attributeIndex];
+  const float nullFeatureId_u = static_cast<float>(nullFeatureId.value_or(0));
 
   // We encode unsigned integer feature ids as floats in the u-channel of
   // a texture coordinate slot.
@@ -433,7 +442,7 @@ void copyFeatureIds_DEPRECATED(
       vertices.SetVertexUV(
           i,
           textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
+          FVector2f(featureId < 0.0f ? nullFeatureId_u : featureId, 0.0f));
     }
   } else {
     for (int64_t i = 0; i < vertices.GetNumVertices(); ++i) {
@@ -443,7 +452,7 @@ void copyFeatureIds_DEPRECATED(
       vertices.SetVertexUV(
           i,
           textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
+          FVector2f(featureId < 0.0f ? nullFeatureId_u : featureId, 0.0f));
     }
   }
 }
@@ -485,6 +494,16 @@ void copyTextureCoordinates(
   }
 }
 
+inline std::optional<int64> getOptionalNullFeatureId(
+    const LoadedPrimitiveResult& result,
+    int32_t accessorIndex) {
+  auto nullFeatureIdIt = result.AccessorToNullFeatureIdMap.find(accessorIndex);
+  if (nullFeatureIdIt != result.AccessorToNullFeatureIdMap.end())
+    return nullFeatureIdIt->second;
+  else
+    return std::nullopt;
+}
+
 void populateUnrealTexCoords(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
@@ -507,7 +526,8 @@ void populateUnrealTexCoords(
           gltfToUnrealTexCoordMap[indexPair.first],
           vertices,
           indices,
-          duplicateVertices);
+          duplicateVertices,
+          getOptionalNullFeatureId(result, indexPair.first));
     }
   } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
     for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
@@ -517,7 +537,8 @@ void populateUnrealTexCoords(
           gltfToUnrealTexCoordMap[indexPair.first],
           vertices,
           indices,
-          duplicateVertices);
+          duplicateVertices,
+          getOptionalNullFeatureId(result, indexPair.first));
     }
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS

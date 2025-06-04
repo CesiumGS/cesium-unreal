@@ -243,6 +243,10 @@ EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
     encodedSet->propertyTableName = pDescription->PropertyTableName;
     encodedSet->nullFeatureId =
         UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(set);
+    if (encodedSet->nullFeatureId <= -1 && pDescription->bHasNullFeatureId &&
+        pDescription->NullFeatureId > -1) {
+      encodedSet->nullFeatureId = pDescription->NullFeatureId;
+    }
 
     result.featureIdSets.Add(*encodedSet);
   }
