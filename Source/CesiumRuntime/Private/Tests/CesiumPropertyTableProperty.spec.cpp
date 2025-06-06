@@ -4059,18 +4059,15 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(property, -1);
-      FCesiumMetadataValueType valueType; // Unknown type
       TestTrue(
-          "negative index value type",
-          UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==
-              valueType);
+          "negative index",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
 
       value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(property, 10);
       TestTrue(
-          "out-of-range positive index value type",
-          UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==
-              valueType);
+          "out-of-range positive index",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
     });
 
     It("gets value for valid feature IDs", [this]() {
