@@ -1,25 +1,49 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveMetadata.h"
-#include "CesiumGltf/AccessorView.h"
-#include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
-#include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumPropertyAttribute.h"
+
+#include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
+#include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
+#include <CesiumGltf/Model.h>
 
 static FCesiumPrimitiveMetadata EmptyPrimitiveMetadata;
 
 FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
-    const CesiumGltf::MeshPrimitive& Primitive,
-    const CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata& Metadata)
-    : _propertyTextureIndices(), _propertyAttributeIndices() {
-  this->_propertyTextureIndices.Reserve(Metadata.propertyTextures.size());
-  for (const int64 propertyTextureIndex : Metadata.propertyTextures) {
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata& metadata)
+    : _propertyTextureIndices(),
+      _propertyAttributes(),
+      _propertyAttributeIndices() {
+  this->_propertyTextureIndices.Reserve(metadata.propertyTextures.size());
+  for (const int64 propertyTextureIndex : metadata.propertyTextures) {
     this->_propertyTextureIndices.Emplace(propertyTextureIndex);
   }
 
-  this->_propertyAttributeIndices.Reserve(Metadata.propertyAttributes.size());
-  for (const int64 propertyAttributeIndex : Metadata.propertyAttributes) {
+  this->_propertyAttributeIndices.Reserve(metadata.propertyAttributes.size());
+  for (const int64 propertyAttributeIndex : metadata.propertyAttributes) {
     this->_propertyAttributeIndices.Emplace(propertyAttributeIndex);
+  }
+
+  const auto* pModelMetadata =
+      model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+  if (metadata.propertyAttributes.empty() && pModelMetadata) {
+    return;
+  }
+
+  for (const int64 propertyAttributeIndex : metadata.propertyAttributes) {
+    if (propertyAttributeIndex < 0 ||
+        propertyAttributeIndex >=
+            int64_t(pModelMetadata->propertyAttributes.size())) {
+      continue;
+    }
+
+    this->_propertyAttributes.Emplace(FCesiumPropertyAttribute(
+        model,
+        primitive,
+        pModelMetadata->propertyAttributes[propertyAttributeIndex]));
   }
 }
 
@@ -39,6 +63,12 @@ const TArray<int64>&
 UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
     UPARAM(ref) const FCesiumPrimitiveMetadata& PrimitiveMetadata) {
   return PrimitiveMetadata._propertyTextureIndices;
+}
+
+const TArray<FCesiumPropertyAttribute>&
+UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes(
+    UPARAM(ref) const FCesiumPrimitiveMetadata& PrimitiveMetadata) {
+  return PrimitiveMetadata._propertyAttributes;
 }
 
 const TArray<int64>&
