@@ -1,10 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTexture.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumGltf/PropertyTexturePropertyView.h"
-#include "CesiumGltf/PropertyTextureView.h"
 #include "CesiumMetadataPickingBlueprintLibrary.h"
+
+#include <CesiumGltf/Model.h>
+#include <CesiumGltf/PropertyTexturePropertyView.h>
+#include <CesiumGltf/PropertyTextureView.h>
 
 static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 

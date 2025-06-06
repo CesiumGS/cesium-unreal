@@ -6,10 +6,12 @@
 #include "CesiumMetadataValue.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
 #include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/PropertyTexturePropertyView.h>
 #include <any>
 #include <optional>
+
 #include "CesiumPropertyTextureProperty.generated.h"
 
 /**
@@ -319,6 +321,44 @@ public:
       UPARAM(ref) const FCesiumPropertyTextureProperty& Property,
       const FVector2D& UV,
       int32 DefaultValue = 0);
+
+  /**
+   * Attempts to retrieve the value for the given feature as a signed 64-bit
+   * integer. Although property texture properties do not directly support
+   * 64-bit integers, this can be used to losslessly retrieve values from
+   * unsigned 32-bit integer properties.
+   *
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
+   *
+   * Property values are converted as follows:
+   *
+   * - If the value is an integer and between -2^63 and (2^63 - 1), it is
+   * returned as-is.
+   * - If the value is a floating-point number in the aforementioned range, it
+   * is truncated (rounded toward zero) and returned.
+   *
+   * In all other cases, the user-defined default value is returned. If the
+   * property texture property is somehow invalid, the user-defined default
+   * value is returned.
+   *
+   * @param Property The property texture property.
+   * @param UV The texture coordinates.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as an Integer64.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTextureProperty")
+  static int64 GetInteger64(
+      UPARAM(ref) const FCesiumPropertyTextureProperty& Property,
+      const FVector2D& UV,
+      int64 DefaultValue = 0);
 
   /**
    * Attempts to retrieve the value at the given texture coordinates as a
