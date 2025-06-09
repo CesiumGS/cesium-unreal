@@ -10,13 +10,13 @@
 static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 
 FCesiumPropertyTexture::FCesiumPropertyTexture(
-    const CesiumGltf::Model& Model,
-    const CesiumGltf::PropertyTexture& PropertyTexture,
+    const CesiumGltf::Model& model,
+    const CesiumGltf::PropertyTexture& propertyTexture,
     const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection)
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTextureClass),
-      _name(PropertyTexture.name.value_or("").c_str()),
-      _className(PropertyTexture.classProperty.c_str()) {
-  CesiumGltf::PropertyTextureView propertyTextureView(Model, PropertyTexture);
+      _name(propertyTexture.name.value_or("").c_str()),
+      _className(propertyTexture.classProperty.c_str()) {
+  CesiumGltf::PropertyTextureView propertyTextureView(model, propertyTexture);
   switch (propertyTextureView.status()) {
   case CesiumGltf::PropertyTextureViewStatus::Valid:
     _status = ECesiumPropertyTextureStatus::Valid;
@@ -27,7 +27,7 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
   }
 
   const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
-      Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+      model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   // If there was no schema, we would've gotten ErrorMissingSchema for the
   // propertyTextureView status.
   check(pExtension != nullptr && pExtension->schema != nullptr);
@@ -36,8 +36,8 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
   for (const auto& classPropertyPair : pClass->properties) {
     {
       const auto& propertyPair =
-          PropertyTexture.properties.find(classPropertyPair.first);
-      if (propertyPair == PropertyTexture.properties.end()) {
+          propertyTexture.properties.find(classPropertyPair.first);
+      if (propertyPair == propertyTexture.properties.end()) {
         continue;
       }
 

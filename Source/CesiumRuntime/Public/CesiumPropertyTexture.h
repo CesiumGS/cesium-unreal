@@ -37,21 +37,37 @@ struct CESIUMRUNTIME_API FCesiumPropertyTexture {
   GENERATED_USTRUCT_BODY()
 
 public:
+  /**
+   * Construct an empty property texture instance.
+   */
   FCesiumPropertyTexture()
       : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTexture) {}
 
+  /**
+   * Constructs a property texture from the given glTF.
+   *
+   * @param model The model that stores EXT_structural_metadata.
+   * @param propertyTexture The target property texture.
+   */
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture& PropertyTexture)
+      const CesiumGltf::PropertyTexture& propertyTexture)
       : FCesiumPropertyTexture(
             model,
-            PropertyTexture,
+            propertyTexture,
             FCesiumMetadataEnumCollection::GetOrCreateFromModel(model)) {}
 
+  /**
+   * Constructs a property texture from the given glTF.
+   *
+   * @param model The model that stores EXT_structural_metadata.
+   * @param propertyTexture The target property texture.
+   * @param pEnumCollection The enum collection to use, if any.
+   */
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture& PropertyTexture,
-      const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection);
+      const CesiumGltf::PropertyTexture& propertyTexture,
+      const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.
