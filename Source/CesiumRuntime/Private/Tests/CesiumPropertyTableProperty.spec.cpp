@@ -26,7 +26,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
@@ -50,7 +50,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
              UCesiumPropertyTablePropertyBlueprintLibrary::
                  GetPropertyTablePropertyStatus(property),
              ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-         TestEqual<int64>(
+         TestEqual<int64_t>(
              "Size",
              UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
                  property),
@@ -73,7 +73,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidPropertyData);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
@@ -97,7 +97,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
@@ -106,11 +106,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType expectedType(
           ECesiumMetadataType::Scalar,
@@ -131,10 +131,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
 
       // Test that the returns are as expected for non-array properties.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
-          static_cast<int64_t>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTablePropertyBlueprintLibrary::
@@ -178,7 +178,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<uint8_t, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
@@ -187,11 +187,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType expectedType(
           ECesiumMetadataType::Scalar,
@@ -212,10 +212,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
 
       // Test that the returns are as expected for non-array properties.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
-          static_cast<int64_t>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTablePropertyBlueprintLibrary::
@@ -232,8 +232,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       classProperty.count = 3;
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6};
-      const int64_t size =
-          static_cast<int64_t>(values.size()) / *classProperty.count;
+      const int64_t size = int64_t(values.size()) / *classProperty.count;
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
@@ -253,11 +252,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(size));
+          int64_t(size));
 
       FCesiumMetadataValueType expectedType(
           ECesiumMetadataType::Scalar,
@@ -277,7 +276,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           "IsNormalized",
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
 
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
           *classProperty.count);
@@ -301,7 +300,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       std::vector<uint16_t> offsets{0, 1, 3, 6};
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
 
-      int64_t size = static_cast<int64_t>(offsets.size()) - 1;
+      int64_t size = int64_t(offsets.size()) - 1;
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
           propertyView(
               propertyTableProperty,
@@ -321,7 +320,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
@@ -346,10 +345,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
 
       // The arrays vary in length, so GetArraySize() should return zero.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
-          static_cast<int64>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTablePropertyBlueprintLibrary::
@@ -383,7 +382,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
@@ -392,11 +391,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType expectedType(
           ECesiumMetadataType::Scalar,
@@ -417,10 +416,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
 
       // Test that the returns are as expected for non-array properties.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
-          static_cast<int64_t>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTablePropertyBlueprintLibrary::
@@ -498,7 +497,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyView(
               propertyTableProperty,
               classProperty,
-              static_cast<int64_t>(values.size()),
+              int64_t(values.size()),
               std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
@@ -507,11 +506,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType expectedType(
           ECesiumMetadataType::Scalar,
@@ -531,10 +530,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           "IsNormalized",
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property));
 
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTablePropertyBlueprintLibrary::
@@ -549,7 +548,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       TestEqual(
           TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "Offset0",
           UCesiumMetadataValueBlueprintLibrary::GetFloat64(
@@ -569,7 +568,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       TestEqual(
           TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "Scale0",
           UCesiumMetadataValueBlueprintLibrary::GetFloat64(
@@ -590,7 +589,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       TestEqual(
           TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "Max0",
           UCesiumMetadataValueBlueprintLibrary::GetFloat64(
@@ -611,7 +610,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       TestEqual(
           TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "Min0",
           UCesiumMetadataValueBlueprintLibrary::GetFloat64(
@@ -632,7 +631,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       TestEqual(
           TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "NoData0",
           UCesiumMetadataValueBlueprintLibrary::GetInteger(
@@ -653,7 +652,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       TestEqual(
           TEXT("Size"),
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(*classProperty.count));
+          int64_t(*classProperty.count));
       TestEqual(
           "DefaultValue0",
           UCesiumMetadataValueBlueprintLibrary::GetFloat64(
@@ -694,7 +693,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<bool> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(8),
+          int64_t(8),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -702,11 +701,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(8));
+          int64_t(8));
 
       TestFalse(
           "negative index",
@@ -730,7 +729,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<bool> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(8),
+          int64_t(8),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -741,18 +740,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<bool>
           expected{true, false, false, false, true, true, false, true};
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(expected.size()));
+          int64_t(expected.size()));
 
       for (size_t i = 0; i < expected.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 false),
             expected[i]);
       }
@@ -787,7 +786,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()),
           std::span<const std::byte>(),
           std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
@@ -800,11 +799,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<bool> expected{true, false, false, true, false, true};
       for (size_t i = 0; i < expected.size(); i++) {
@@ -812,7 +811,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetBoolean(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 false),
             expected[i]);
       }
@@ -845,7 +844,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<uint8_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -853,11 +852,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -881,7 +880,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<uint8_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -889,18 +888,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             values[i]);
       }
@@ -918,7 +917,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -926,11 +925,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<uint8_t> expected{1, 24, 255, 0, 0, 28};
       for (size_t i = 0; i < expected.size(); i++) {
@@ -938,7 +937,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             expected[i]);
       }
@@ -962,7 +961,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<uint8_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -970,11 +969,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         if (values[i] == noDataValue) {
@@ -982,7 +981,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
                   property,
-                  static_cast<int64>(i),
+                  int64_t(i),
                   0),
               defaultValue);
         } else {
@@ -990,7 +989,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(
                   property,
-                  static_cast<int64>(i),
+                  int64_t(i),
                   0),
               values[i]);
         }
@@ -1024,7 +1023,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1032,11 +1031,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -1064,7 +1063,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1072,18 +1071,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             values[i]);
       }
@@ -1107,7 +1106,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1115,11 +1114,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<int32_t> expected{1, -24, 0, 2456, 0};
       for (size_t i = 0; i < expected.size(); i++) {
@@ -1127,7 +1126,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             expected[i]);
       }
@@ -1151,7 +1150,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1159,11 +1158,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         if (values[i] == noDataValue) {
@@ -1171,7 +1170,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
                   property,
-                  static_cast<int64>(i),
+                  int64_t(i),
                   0),
               defaultValue);
         } else {
@@ -1179,7 +1178,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger(
                   property,
-                  static_cast<int64>(i),
+                  int64_t(i),
                   0),
               values[i]);
         }
@@ -1188,7 +1187,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
   });
 
   Describe("GetInteger64", [this]() {
-    int64_t defaultInt64 = static_cast<int64_t>(0);
+    int64_t defaultInt64 = int64_t(0);
 
     It("returns default value for invalid property", [this, defaultInt64]() {
       FCesiumPropertyTableProperty property;
@@ -1197,7 +1196,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "value",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
               property,
@@ -1217,7 +1216,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int64_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1225,19 +1224,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "negative index",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
               property,
               -1),
           defaultInt64);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "out-of-range positive index",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
               property,
@@ -1245,7 +1244,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           defaultInt64);
     });
 
-    It("gets from int64 property", [this, defaultInt64]() {
+    It("gets from int64_t property", [this, defaultInt64]() {
       CesiumGltf::PropertyTableProperty propertyTableProperty;
       CesiumGltf::ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::SCALAR;
@@ -1257,7 +1256,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int64_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1265,18 +1264,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
-        TestEqual<int64>(
+        TestEqual<int64_t>(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 defaultInt64),
             values[i]);
       }
@@ -1298,7 +1297,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<uint64_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1306,19 +1305,19 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<int64_t> expected{10, 20, 30, 0};
       for (size_t i = 0; i < expected.size(); i++) {
-        TestEqual<int64>(
+        TestEqual<int64_t>(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 defaultInt64),
             expected[i]);
       }
@@ -1342,7 +1341,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int64_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1350,27 +1349,27 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         if (values[i] == noDataValue) {
-          TestEqual<int64>(
+          TestEqual<int64_t>(
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
                   property,
-                  static_cast<int64>(i),
+                  int64_t(i),
                   defaultInt64),
               defaultValue);
         } else {
-          TestEqual<int64>(
+          TestEqual<int64_t>(
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
                   property,
-                  static_cast<int64>(i),
+                  int64_t(i),
                   defaultInt64),
               values[i]);
         }
@@ -1406,7 +1405,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1414,11 +1413,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -1442,7 +1441,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1450,18 +1449,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             values[i]);
       }
@@ -1483,7 +1482,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1491,11 +1490,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<float> expected(4);
       for (size_t i = 0; i < values.size(); i++) {
@@ -1508,7 +1507,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0.0f),
             expected[i]);
       }
@@ -1532,7 +1531,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1540,18 +1539,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             values[i] * scale + offset);
       }
@@ -1586,7 +1585,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1594,11 +1593,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -1626,7 +1625,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1634,18 +1633,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             values[i]);
       }
@@ -1664,7 +1663,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<uint8_t, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1672,11 +1671,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestTrue(
           "IsNormalized",
@@ -1687,7 +1686,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             static_cast<double>(values[i]) / 255.0);
       }
@@ -1721,7 +1720,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()),
           std::span<const std::byte>(),
           std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
@@ -1733,11 +1732,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<double> expected{
           0.0,
@@ -1748,7 +1747,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0.0),
             expected[i]);
       }
@@ -1772,7 +1771,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1780,18 +1779,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 0),
             values[i] * scale + offset);
       }
@@ -1830,7 +1829,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::ivec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1838,11 +1837,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -1875,7 +1874,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::ivec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1883,11 +1882,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FIntPoint expected(values[i][0], values[i][1]);
@@ -1895,7 +1894,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FIntPoint(0)),
             expected);
       }
@@ -1916,7 +1915,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1924,11 +1923,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FIntPoint> expected{
           FIntPoint(1, 2),
@@ -1939,7 +1938,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FIntPoint(0)),
             expected[i]);
       }
@@ -1966,7 +1965,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::ivec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -1974,11 +1973,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FIntPoint expected;
@@ -1992,7 +1991,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FIntPoint(0)),
             expected);
       }
@@ -2031,7 +2030,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2039,11 +2038,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -2076,7 +2075,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2084,11 +2083,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector2D expected(values[i][0], values[i][1]);
@@ -2096,7 +2095,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector2D::Zero()),
             expected);
       }
@@ -2118,7 +2117,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::u8vec2, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2126,11 +2125,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestTrue(
           "IsNormalized",
@@ -2142,7 +2141,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector2D::Zero()),
             FVector2D(expected[0], expected[1]));
       }
@@ -2176,7 +2175,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()),
           std::span<const std::byte>(),
           std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
@@ -2188,11 +2187,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FVector2D> expected{
           FVector2D(10, 3),
@@ -2203,7 +2202,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector2D::Zero()),
             expected[i]);
       }
@@ -2230,7 +2229,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2238,11 +2237,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector2D expected(
@@ -2253,7 +2252,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector2D::Zero()),
             expected);
       }
@@ -2292,7 +2291,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::ivec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2300,11 +2299,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -2337,7 +2336,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::ivec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2345,11 +2344,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FIntVector expected(values[i][0], values[i][1], values[i][2]);
@@ -2357,7 +2356,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FIntVector(0)),
             expected);
       }
@@ -2379,7 +2378,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2387,11 +2386,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FIntVector> expected{
           FIntVector(1, 2, 3),
@@ -2403,7 +2402,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FIntVector(0)),
             expected[i]);
       }
@@ -2434,7 +2433,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::ivec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2442,11 +2441,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FIntVector expected;
@@ -2460,7 +2459,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FIntVector(0)),
             expected);
       }
@@ -2499,7 +2498,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2507,11 +2506,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -2544,7 +2543,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2552,11 +2551,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector3f expected(values[i][0], values[i][1], values[i][2]);
@@ -2564,8 +2563,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
                 property,
-                static_cast<int64>(i),
-                FVector3f(0)),
+                int64_t(i),
+                FVector3f::Zero()),
             expected);
       }
     });
@@ -2586,7 +2585,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2594,11 +2593,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FVector3f> expected(4);
       for (size_t i = 0; i < 2; i++) {
@@ -2614,7 +2613,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector3f::Zero()),
             expected[i]);
       }
@@ -2641,7 +2640,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::vec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2649,11 +2648,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector3f expected(
@@ -2664,7 +2663,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector3f(0)),
             expected);
       }
@@ -2703,7 +2702,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2711,11 +2710,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -2748,7 +2747,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2756,11 +2755,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector expected(values[i][0], values[i][1], values[i][2]);
@@ -2768,7 +2767,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector::Zero()),
             expected);
       }
@@ -2790,7 +2789,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::i8vec3, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2798,11 +2797,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestTrue(
           "IsNormalized",
@@ -2815,7 +2814,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector::Zero()),
             FVector(expected[0], expected[1], expected[2]));
       }
@@ -2852,7 +2851,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()),
           std::span<const std::byte>(),
           std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
@@ -2864,11 +2863,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FVector> expected{
           FVector(10, 3, 4),
@@ -2879,7 +2878,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector::Zero()),
             expected[i]);
       }
@@ -2906,7 +2905,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec3> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2914,11 +2913,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector expected(
@@ -2929,7 +2928,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector::Zero()),
             expected);
       }
@@ -2968,7 +2967,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec4> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -2976,11 +2975,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -3013,7 +3012,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec4> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3021,11 +3020,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector4 expected(
@@ -3037,7 +3036,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector4::Zero()),
             expected);
       }
@@ -3059,7 +3058,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::i8vec4, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3067,11 +3066,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestTrue(
           "IsNormalized",
@@ -3089,7 +3088,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector4::Zero()),
             FVector4(expected[0], expected[1], expected[2], expected[3]));
       }
@@ -3126,7 +3125,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<std::string_view> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()),
           std::span<const std::byte>(),
           std::span<const std::byte>(offsetsData.data(), offsetsData.size()),
@@ -3138,11 +3137,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FVector> expected{
           FVector4(10, 3, 4, 2),
@@ -3153,7 +3152,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector4::Zero()),
             expected[i]);
       }
@@ -3180,7 +3179,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dvec4> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3188,11 +3187,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FVector4 expected(
@@ -3204,7 +3203,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FVector4::Zero()),
             expected);
       }
@@ -3253,7 +3252,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dmat4> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3261,11 +3260,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestEqual(
           "negative index",
@@ -3309,7 +3308,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dmat4> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3317,11 +3316,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FMatrix> expected(2);
       expected[0] = FMatrix(
@@ -3340,7 +3339,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FMatrix::Identity),
             expected[i]);
       }
@@ -3372,7 +3371,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::i8mat4x4, true> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3380,11 +3379,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       TestTrue(
           "IsNormalized",
@@ -3407,7 +3406,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FMatrix::Identity),
             expected[i]);
       }
@@ -3425,7 +3424,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<double> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3433,11 +3432,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FMatrix> expected(2);
       expected[0] = FMatrix(
@@ -3455,7 +3454,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FMatrix::Identity),
             expected[i]);
       }
@@ -3475,7 +3474,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::vec2> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3483,18 +3482,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FMatrix::Identity),
             FMatrix::Identity);
       }
@@ -3538,7 +3537,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<glm::dmat4> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3546,11 +3545,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       std::vector<FMatrix> expected(2);
       expected[0] = FMatrix(
@@ -3569,7 +3568,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
                 property,
-                static_cast<int64>(i),
+                int64_t(i),
                 FMatrix::Identity),
             expected[i]);
       }
@@ -3589,7 +3588,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -3597,11 +3596,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(values.size()));
+          int64_t(values.size()));
 
       FCesiumPropertyArray array =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, 0);
@@ -3647,7 +3646,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
+      int64_t size = int64_t(values.size()) / *classProperty.count;
 
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
           propertyView(
@@ -3665,7 +3664,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
@@ -3705,7 +3704,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
+      int64_t size = int64_t(values.size()) / *classProperty.count;
 
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
           propertyView(
@@ -3723,21 +3722,21 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
           size);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
           *classProperty.count);
 
-      for (int64 i = 0; i < size; i++) {
+      for (int64_t i = 0; i < size; i++) {
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
-        int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual<int64>("array size", arraySize, *classProperty.count);
+        int64_t arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
+        TestEqual<int64_t>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,
@@ -3747,8 +3746,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
             UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array) ==
                 valueType);
 
-        int64 arrayOffset = i * arraySize;
-        for (int64 j = 0; j < arraySize; j++) {
+        int64_t arrayOffset = i * arraySize;
+        for (int64_t j = 0; j < arraySize; j++) {
           std::string label(
               "array" + std::to_string(i) + " value" + std::to_string(j));
           FCesiumMetadataValue value =
@@ -3773,7 +3772,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<uint16_t> offsets{0, 2, 3, 6};
       std::vector<std::byte> offsetsData = GetValuesAsBytes(offsets);
-      int64 size = static_cast<int64_t>(offsets.size() - 1);
+      int64_t size = int64_t(offsets.size() - 1);
 
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
           propertyView(
@@ -3793,18 +3792,18 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
           size);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
-          static_cast<int64_t>(0));
+          int64_t(0));
 
       std::vector<std::vector<int32_t>> expected{{1, 2}, {3}, {4, 5, 6}};
-      for (int64 i = 0; i < size; i++) {
+      for (int64_t i = 0; i < size; i++) {
         const std::vector<int32_t>& expectedArray =
             expected[static_cast<size_t>(i)];
         FCesiumPropertyArray array =
@@ -3812,7 +3811,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
         TestEqual(
             "array size",
             UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-            static_cast<int64>(expectedArray.size()));
+            int64_t(expectedArray.size()));
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,
@@ -3826,9 +3825,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           std::string label(
               "array" + std::to_string(i) + " value" + std::to_string(j));
           FCesiumMetadataValue value =
-              UCesiumPropertyArrayBlueprintLibrary::GetValue(
-                  array,
-                  static_cast<int64>(j));
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, int64_t(j));
           TestEqual(
               label.c_str(),
               UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
@@ -3849,7 +3846,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6, -1, -1};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
+      int64_t size = int64_t(values.size()) / *classProperty.count;
 
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
           propertyView(
@@ -3867,21 +3864,21 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
           size);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
           *classProperty.count);
 
-      for (int64 i = 0; i < size - 1; i++) {
+      for (int64_t i = 0; i < size - 1; i++) {
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
-        int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual<int64>("array size", arraySize, *classProperty.count);
+        int64_t arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
+        TestEqual<int64_t>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,
@@ -3891,8 +3888,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
             UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array) ==
                 valueType);
 
-        int64 arrayOffset = i * arraySize;
-        for (int64 j = 0; j < arraySize; j++) {
+        int64_t arrayOffset = i * arraySize;
+        for (int64_t j = 0; j < arraySize; j++) {
           std::string label(
               "array" + std::to_string(i) + " value" + std::to_string(j));
           FCesiumMetadataValue value =
@@ -3910,10 +3907,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
               property,
               size - 1);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "array size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(0));
+          int64_t(0));
       FCesiumMetadataValueType valueType(
           ECesiumMetadataType::Invalid,
           ECesiumMetadataComponentType::None,
@@ -3937,7 +3934,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int32_t> values{1, 2, 3, 4, 5, 6, -1, -1};
       std::vector<std::byte> data = GetValuesAsBytes(values);
-      int64 size = static_cast<int64_t>(values.size()) / *classProperty.count;
+      int64_t size = int64_t(values.size()) / *classProperty.count;
 
       CesiumGltf::PropertyTablePropertyView<PropertyArrayView<int32_t>>
           propertyView(
@@ -3955,21 +3952,21 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
           size);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(property),
           *classProperty.count);
 
-      for (int64 i = 0; i < size; i++) {
+      for (int64_t i = 0; i < size; i++) {
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
-        int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual<int64>("array size", arraySize, *classProperty.count);
+        int64_t arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
+        TestEqual<int64_t>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,
@@ -3995,8 +3992,8 @@ void FCesiumPropertyTablePropertySpec::Define() {
               UCesiumMetadataValueBlueprintLibrary::GetInteger(value1, 0),
               20);
         } else {
-          int64 arrayOffset = i * arraySize;
-          for (int64 j = 0; j < arraySize; j++) {
+          int64_t arrayOffset = i * arraySize;
+          for (int64_t j = 0; j < arraySize; j++) {
             std::string label(
                 "array" + std::to_string(i) + " value" + std::to_string(j));
             FCesiumMetadataValue value =
@@ -4019,11 +4016,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64_t>(0));
+          int64_t(0));
 
       FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(property, 0);
@@ -4046,7 +4043,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -4054,26 +4051,23 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(property, -1);
-      FCesiumMetadataValueType valueType; // Unknown type
       TestTrue(
-          "negative index value type",
-          UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==
-              valueType);
+          "negative index",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
 
       value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(property, 10);
       TestTrue(
-          "out-of-range positive index value type",
-          UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==
-              valueType);
+          "out-of-range positive index",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
     });
 
     It("gets value for valid feature IDs", [this]() {
@@ -4088,7 +4082,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -4096,11 +4090,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType valueType(
           ECesiumMetadataType::Scalar,
@@ -4138,7 +4132,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<float> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -4146,11 +4140,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType valueType(
           ECesiumMetadataType::Scalar,
@@ -4185,7 +4179,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -4193,11 +4187,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType valueType(
           ECesiumMetadataType::Scalar,
@@ -4243,7 +4237,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       CesiumGltf::PropertyTablePropertyView<int32_t> propertyView(
           propertyTableProperty,
           classProperty,
-          static_cast<int64_t>(values.size()),
+          int64_t(values.size()),
           std::span<const std::byte>(data.data(), data.size()));
       FCesiumPropertyTableProperty property(propertyView);
       TestEqual(
@@ -4251,11 +4245,11 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          static_cast<int64>(values.size()));
+          int64_t(values.size()));
 
       FCesiumMetadataValueType valueType(
           ECesiumMetadataType::Scalar,

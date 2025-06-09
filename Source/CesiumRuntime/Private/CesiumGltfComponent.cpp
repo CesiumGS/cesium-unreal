@@ -645,6 +645,7 @@ static void mikkSetTSpaceBasic(
 
   TangentX.Y = -TangentX.Y;
   TangentY.Y = -TangentY.Y;
+  TangentZ.Y = -TangentZ.Y;
 
   vertexBuffer.SetVertexTangents(vertexIndex, TangentX, TangentY, TangentZ);
 }
@@ -1099,7 +1100,7 @@ static void loadPrimitiveFeaturesMetadata(
       pFeatures ? FCesiumPrimitiveFeatures(model, primitive, *pFeatures)
                 : FCesiumPrimitiveFeatures();
   primitiveResult.Metadata =
-      pMetadata ? FCesiumPrimitiveMetadata(primitive, *pMetadata)
+      pMetadata ? FCesiumPrimitiveMetadata(model, primitive, *pMetadata)
                 : FCesiumPrimitiveMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -3374,83 +3375,87 @@ static void loadPrimitiveGameThreadPart(
 
 #if PLATFORM_MAC
   // TODO: figure out why water material crashes mac
-  UMaterialInterface* pBaseMaterial = is_in_blend_mode(loadResult)
-                                          ? pGltf->BaseMaterialWithTranslucency
-                                          : pGltf->BaseMaterial;
+  UMaterialInterface* pUserDesignatedMaterial =
+      is_in_blend_mode(loadResult) ? pGltf->BaseMaterialWithTranslucency
+                                   : pGltf->BaseMaterial;
 #else
-  UMaterialInterface* pBaseMaterial;
+  UMaterialInterface* pUserDesignatedMaterial;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
-    pBaseMaterial = pGltf->BaseMaterialWithWater;
+    pUserDesignatedMaterial = pGltf->BaseMaterialWithWater;
   } else {
-    pBaseMaterial = is_in_blend_mode(loadResult)
-                        ? pGltf->BaseMaterialWithTranslucency
-                        : pGltf->BaseMaterial;
+    pUserDesignatedMaterial = is_in_blend_mode(loadResult)
+                                  ? pGltf->BaseMaterialWithTranslucency
+                                  : pGltf->BaseMaterial;
   }
 #endif
 
-  UMaterialInstanceDynamic* pMaterial;
+  UMaterialInstanceDynamic* pMaterialForGltfPrimitive;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
 
-    UMaterialInstanceDynamic* pBaseAsMaterialInstanceDynamic =
-        Cast<UMaterialInstanceDynamic>(pBaseMaterial);
-    UMaterialInstance* pParentMaterialInstance =
-        Cast<UMaterialInstance>(pBaseMaterial);
+    UMaterialInstanceDynamic* pUserDesignatedMaterialAsDynamic =
+        Cast<UMaterialInstanceDynamic>(pUserDesignatedMaterial);
 
-    // If the base material is a UMaterialInstanceDynamic, Create() will
-    // reject it as a valid instance parent.  Defer to its non-dynamic parent
-    // instead.
-    if (pBaseAsMaterialInstanceDynamic) {
-      pParentMaterialInstance =
-          Cast<UMaterialInstance>(pParentMaterialInstance->Parent.Get());
-    }
+    // If the user-designated material is a UMaterialInstanceDynamic, Create()
+    // will reject it as a valid instance parent.  Defer to its non-dynamic
+    // parent instead.
+    UMaterialInterface* pBaseMaterial =
+        pUserDesignatedMaterialAsDynamic
+            ? pUserDesignatedMaterialAsDynamic->Parent.Get()
+            : pUserDesignatedMaterial;
 
-    pMaterial = UMaterialInstanceDynamic::Create(
-        pParentMaterialInstance,
+    pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
+        pBaseMaterial,
         nullptr,
         ImportedSlotName);
 
-    pMaterial->SetFlags(
+    pMaterialForGltfPrimitive->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     SetGltfParameterValues(
         model,
         loadResult,
         material,
         pbr,
-        pMaterial,
+        pMaterialForGltfPrimitive,
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
     SetWaterParameterValues(
         model,
         loadResult,
-        pMaterial,
+        pMaterialForGltfPrimitive,
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
 
+    // The base material might be a Material, or it might be a MaterialInstance.
+    // Only MaterialInstances can use the material layer system, so only
+    // MaterialInstances will have UCesiumMaterialUserData.
+    UMaterialInstance* pBaseAsMaterialInstance =
+        Cast<UMaterialInstance>(pBaseMaterial);
+
     UCesiumMaterialUserData* pCesiumData =
-        pParentMaterialInstance
-            ? pParentMaterialInstance
+        pBaseAsMaterialInstance
+            ? pBaseAsMaterialInstance
                   ->GetAssetUserData<UCesiumMaterialUserData>()
             : nullptr;
 
     // If possible and necessary, attach the CesiumMaterialUserData now.
 #if WITH_EDITORONLY_DATA
-    if (pParentMaterialInstance && !pCesiumData) {
+    if (pBaseAsMaterialInstance && !pCesiumData) {
       const FStaticParameterSet& parameters =
-          pParentMaterialInstance->GetStaticParameters();
+          pBaseAsMaterialInstance->GetStaticParameters();
 
       bool hasLayers = parameters.bHasMaterialLayers;
       if (hasLayers) {
 #if WITH_EDITOR
         FScopedTransaction transaction(
             FText::FromString("Add Cesium User Data to Material"));
-        pParentMaterialInstance->Modify();
+        pBaseAsMaterialInstance->Modify();
 #endif
         pCesiumData = NewObject<UCesiumMaterialUserData>(
-            pParentMaterialInstance,
+            pBaseAsMaterialInstance,
             NAME_None,
             RF_Transactional);
-        pParentMaterialInstance->AddAssetUserData(pCesiumData);
+        pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
         pCesiumData->PostEditChangeOwner();
       }
     }
@@ -3459,11 +3464,13 @@ static void loadPrimitiveGameThreadPart(
     // If CesiumMaterialUserData was not attached (e.g., material was
     // dynamically created at runtime), then walk the parent chain of the
     // material to find it.
-    while (pParentMaterialInstance && !pCesiumData) {
-      pParentMaterialInstance =
-          Cast<UMaterialInstance>(pParentMaterialInstance->Parent.Get());
-      pCesiumData =
-          pParentMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>();
+    while (pBaseAsMaterialInstance && !pCesiumData) {
+      pBaseAsMaterialInstance =
+          Cast<UMaterialInstance>(pBaseAsMaterialInstance->Parent.Get());
+      if (pBaseAsMaterialInstance) {
+        pCesiumData = pBaseAsMaterialInstance
+                          ->GetAssetUserData<UCesiumMaterialUserData>();
+      }
     }
 
     if (pCesiumData) {
@@ -3472,7 +3479,7 @@ static void loadPrimitiveGameThreadPart(
           loadResult,
           material,
           pbr,
-          pMaterial,
+          pMaterialForGltfPrimitive,
           EMaterialParameterAssociation::LayerParameter,
           0);
 
@@ -3480,13 +3487,13 @@ static void loadPrimitiveGameThreadPart(
       // are off.
       int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
       if (fadeLayerIndex >= 0) {
-        pMaterial->SetScalarParameterValueByInfo(
+        pMaterialForGltfPrimitive->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
                 "FadePercentage",
                 EMaterialParameterAssociation::LayerParameter,
                 fadeLayerIndex),
             1.0f);
-        pMaterial->SetScalarParameterValueByInfo(
+        pMaterialForGltfPrimitive->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
                 "FadingType",
                 EMaterialParameterAssociation::LayerParameter,
@@ -3500,7 +3507,7 @@ static void loadPrimitiveGameThreadPart(
         SetWaterParameterValues(
             model,
             loadResult,
-            pMaterial,
+            pMaterialForGltfPrimitive,
             EMaterialParameterAssociation::LayerParameter,
             waterIndex);
       }
@@ -3513,7 +3520,7 @@ static void loadPrimitiveGameThreadPart(
             model,
             *pGltf,
             loadResult,
-            pMaterial,
+            pMaterialForGltfPrimitive,
             EMaterialParameterAssociation::LayerParameter,
             featuresMetadataIndex);
       } else if (metadataIndex >= 0) {
@@ -3522,42 +3529,43 @@ static void loadPrimitiveGameThreadPart(
             model,
             *pGltf,
             loadResult,
-            pMaterial,
+            pMaterialForGltfPrimitive,
             EMaterialParameterAssociation::LayerParameter,
             metadataIndex);
       }
     }
 
-    if (pBaseAsMaterialInstanceDynamic) {
+    if (pUserDesignatedMaterialAsDynamic) {
       // Ensure any parameters on the original UMaterialInstanceDynamic are
       // transferred to the copy.
-      for (auto& it : pBaseAsMaterialInstanceDynamic->ScalarParameterValues) {
-        pMaterial->SetScalarParameterValueByInfo(
+      for (auto& it : pUserDesignatedMaterialAsDynamic->ScalarParameterValues) {
+        pMaterialForGltfPrimitive->SetScalarParameterValueByInfo(
             it.ParameterInfo,
             it.ParameterValue);
       }
 
-      for (auto& it : pBaseAsMaterialInstanceDynamic->VectorParameterValues) {
-        pMaterial->SetVectorParameterValueByInfo(
+      for (auto& it : pUserDesignatedMaterialAsDynamic->VectorParameterValues) {
+        pMaterialForGltfPrimitive->SetVectorParameterValueByInfo(
             it.ParameterInfo,
             it.ParameterValue);
       }
 
       for (auto& it :
-           pBaseAsMaterialInstanceDynamic->DoubleVectorParameterValues) {
-        pMaterial->SetVectorParameterValueByInfo(
+           pUserDesignatedMaterialAsDynamic->DoubleVectorParameterValues) {
+        pMaterialForGltfPrimitive->SetVectorParameterValueByInfo(
             it.ParameterInfo,
             it.ParameterValue);
       }
 
-      for (auto& it : pBaseAsMaterialInstanceDynamic->TextureParameterValues) {
-        pMaterial->SetTextureParameterValueByInfo(
+      for (auto& it :
+           pUserDesignatedMaterialAsDynamic->TextureParameterValues) {
+        pMaterialForGltfPrimitive->SetTextureParameterValueByInfo(
             it.ParameterInfo,
             it.ParameterValue);
       }
 
-      for (auto& it : pBaseAsMaterialInstanceDynamic->FontParameterValues) {
-        pMaterial->SetFontParameterValue(
+      for (auto& it : pUserDesignatedMaterialAsDynamic->FontParameterValues) {
+        pMaterialForGltfPrimitive->SetFontParameterValue(
             it.ParameterInfo,
             it.FontValue,
             it.FontPage);
@@ -3588,9 +3596,9 @@ static void loadPrimitiveGameThreadPart(
 
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  pMaterial->TwoSided = true;
+  pMaterialForGltfPrimitive->TwoSided = true;
 
-  pStaticMesh->AddMaterial(pMaterial);
+  pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
 
   pStaticMesh->SetLightingGuid();
 
