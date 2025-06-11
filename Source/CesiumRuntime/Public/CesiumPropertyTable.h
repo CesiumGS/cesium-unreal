@@ -49,27 +49,27 @@ public:
   /**
    * Constructs a property table from a glTF Property Table.
    *
-   * @param Model The model that stores EXT_structural_metadata.
-   * @param PropertyTable The target property table.
+   * @param model The model that stores EXT_structural_metadata.
+   * @param propertyTable The target property table.
    */
   FCesiumPropertyTable(
-      const CesiumGltf::Model& Model,
-      const CesiumGltf::PropertyTable& PropertyTable)
+      const CesiumGltf::Model& model,
+      const CesiumGltf::PropertyTable& propertyTable)
       : FCesiumPropertyTable(
-            Model,
-            PropertyTable,
-            FCesiumMetadataEnumCollection::GetOrCreateFromModel(Model)) {}
+            model,
+            propertyTable,
+            FCesiumMetadataEnumCollection::GetOrCreateFromModel(model)) {}
 
   /**
    * Constructs a property table from a glTF Property Table.
    *
-   * @param Model The model that stores EXT_structural_metadata.
-   * @param PropertyTable The target property table.
+   * @param model The model that stores EXT_structural_metadata.
+   * @param propertyTable The target property table.
    * @param pEnumCollection The enum collection to use, if any.
    */
   FCesiumPropertyTable(
-      const CesiumGltf::Model& Model,
-      const CesiumGltf::PropertyTable& PropertyTable,
+      const CesiumGltf::Model& model,
+      const CesiumGltf::PropertyTable& propertyTable,
       const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection);
 
   /**

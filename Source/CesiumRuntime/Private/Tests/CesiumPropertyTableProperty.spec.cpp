@@ -3809,7 +3809,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
             expected[static_cast<size_t>(i)];
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
-        TestEqual(
+        TestEqual<int64_t>(
             "array size",
             UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
             int64_t(expectedArray.size()));
