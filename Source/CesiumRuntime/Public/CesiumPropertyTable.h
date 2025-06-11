@@ -44,7 +44,7 @@ public:
    * Construct an empty property table instance.
    */
   FCesiumPropertyTable()
-      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTable) {};
+      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTable) {}
 
   /**
    * Constructs a property table from a glTF Property Table.
