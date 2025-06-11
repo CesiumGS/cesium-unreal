@@ -7,6 +7,7 @@
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
 
+#include "Math/Vector.h"
 #include "UObject/ObjectMacros.h"
 
 #include "CesiumLoadedTile.generated.h"
@@ -23,6 +24,11 @@ public:
   /** Get the tile identifier: this is informational only, as there is no
    * guarantee of unicity */
   virtual const Cesium3DTilesSelection::TileID& GetTileID() const = 0;
+  /** Scaling factor to be applied (component-wise multiplication) to glTF
+   * vertices of this tile's models to obtain the values represented in their
+   * matching mesh component (see @{link
+   * UCesiumLoadedTilePrimitive::GetMeshComponent). */
+  virtual FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const = 0;
   virtual const FCesiumModelMetadata& GetModelMetadata() const = 0;
   virtual void SetRenderReady(bool bToggle) = 0;
 };

@@ -1558,6 +1558,8 @@ static void loadPrimitive(
   positionBuffer.Init(numVertices, false);
 
   {
+    // Note: scaling from glTF vertices to Unreal's must match
+    // UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor
     if (duplicateVertices) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (uint32 i = 0; i < numVertices; ++i) {
@@ -3599,6 +3601,15 @@ const FCesiumModelMetadata& UCesiumGltfComponent::GetModelMetadata() const {
 
 const Cesium3DTilesSelection::TileID& UCesiumGltfComponent::GetTileID() const {
   return pTile->getTileID();
+}
+
+FVector
+UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor() const {
+  // Note: replicates logic from (static) loadPrimitive
+  return FVector(
+      CesiumPrimitiveData::positionScaleFactor,
+      -CesiumPrimitiveData::positionScaleFactor,
+      CesiumPrimitiveData::positionScaleFactor);
 }
 
 void UCesiumGltfComponent::SetRenderReady(bool bToggle) {

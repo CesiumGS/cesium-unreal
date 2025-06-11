@@ -140,6 +140,7 @@ public:
   // from ICesiumLoadedTile
   const FCesiumModelMetadata& GetModelMetadata() const override;
   const Cesium3DTilesSelection::TileID& GetTileID() const override;
+  FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const override;
   void SetRenderReady(bool bToggle) override;
 
   void UpdateFade(float fadePercentage, bool fadingIn);
