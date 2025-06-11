@@ -450,7 +450,7 @@ void FCesiumPropertyAttributePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyAttributePropertyBlueprintLibrary::GetByte(
                 property,
-                int64(i),
+                int64_t(i),
                 0),
             expected[i]);
       }
@@ -494,14 +494,14 @@ void FCesiumPropertyAttributePropertySpec::Define() {
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyAttributePropertyBlueprintLibrary::GetByte(
                   property,
-                  int64(i)),
+                  int64_t(i)),
               defaultValue);
         } else {
           TestEqual(
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyAttributePropertyBlueprintLibrary::GetByte(
                   property,
-                  int64(i)),
+                  int64_t(i)),
               values[i]);
         }
       }
@@ -748,13 +748,13 @@ void FCesiumPropertyAttributePropertySpec::Define() {
               property),
           static_cast<int64_t>(values.size()));
 
-      TestEqual(
+      TestEqual<int64_t>(
           "negative index",
           UCesiumPropertyAttributePropertyBlueprintLibrary::GetInteger64(
               property,
               -1),
           0);
-      TestEqual(
+      TestEqual<int64_t>(
           "out-of-range positive index",
           UCesiumPropertyAttributePropertyBlueprintLibrary::GetInteger64(
               property,
@@ -790,7 +790,7 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           ECesiumPropertyAttributePropertyStatus::Valid);
 
       for (size_t i = 0; i < values.size(); i++) {
-        TestEqual(
+        TestEqual<int64_t>(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyAttributePropertyBlueprintLibrary::GetInteger64(
                 property,
@@ -832,7 +832,7 @@ void FCesiumPropertyAttributePropertySpec::Define() {
 
       std::vector<int64_t> expected{0, 2, int64_t(values[2]), 4, 2};
       for (size_t i = 0; i < values.size(); i++) {
-        TestEqual(
+        TestEqual<int64_t>(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyAttributePropertyBlueprintLibrary::GetInteger64(
                 property,
@@ -875,14 +875,14 @@ void FCesiumPropertyAttributePropertySpec::Define() {
 
       for (size_t i = 0; i < values.size(); i++) {
         if (values[i] == noDataValue) {
-          TestEqual(
+          TestEqual<int64_t>(
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyAttributePropertyBlueprintLibrary::GetInteger64(
                   property,
                   int64_t(i)),
               defaultValue);
         } else {
-          TestEqual(
+          TestEqual<int64_t>(
               std::string("value" + std::to_string(i)).c_str(),
               UCesiumPropertyAttributePropertyBlueprintLibrary::GetInteger64(
                   property,
@@ -2026,7 +2026,7 @@ void FCesiumPropertyAttributePropertySpec::Define() {
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyAttributePropertyBlueprintLibrary::GetVector3f(
                 property,
-                int64(i),
+                int64_t(i),
                 FVector3f::Zero()),
             expected[i]);
       }
