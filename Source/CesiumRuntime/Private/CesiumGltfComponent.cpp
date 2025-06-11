@@ -44,11 +44,13 @@
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
+#include <CesiumGltf/ExtensionExtPrimitiveVoxels.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
 #include <CesiumGltf/KhrTextureTransform.h>
+#include <CesiumGltf/Padding.h>
 #include <CesiumGltf/PropertyType.h>
 #include <CesiumGltf/TextureInfo.h>
 #include <CesiumGltf/VertexAttributeSemantics.h>
@@ -89,6 +91,8 @@ public:
   LoadedModelResult loadModelResult{};
 };
 } // namespace
+
+const int32_t VoxelPrimitiveMode = 2147483647;
 
 template <class... T> struct IsAccessorView;
 
@@ -1884,6 +1888,144 @@ static void loadIndexedPrimitive(
   }
 }
 
+namespace {
+bool dimensionsAreConsideredEqual(
+    EVoxelGridShape gridShape,
+    const std::vector<int64_t>& gltfDimensions,
+    const std::vector<int64_t>& tilesetDimensions) {
+  switch (gridShape) {
+  case EVoxelGridShape::Box:
+  case EVoxelGridShape::Cylinder:
+    // Because glTF is y-up and 3D Tiles is z-up, it is correct for the y- and
+    // z-dimensions to be swapped between the tileset.json and its tiles.
+    return gltfDimensions[0] == tilesetDimensions[0] &&
+           gltfDimensions[1] == tilesetDimensions[2] &&
+           gltfDimensions[2] == tilesetDimensions[1];
+  default:
+    // For ellipsoid voxels, dimensions are not affected by the y-up
+    // transformation.
+    return gltfDimensions == tilesetDimensions;
+  }
+}
+
+bool paddingIsConsideredEqual(
+    EVoxelGridShape gridShape,
+    const std::optional<CesiumGltf::Padding>& gltfPadding,
+    const std::optional<Cesium3DTiles::Padding>& tilesetPadding) {
+  if (gltfPadding.has_value() != tilesetPadding.has_value()) {
+    return false;
+  }
+
+  if (!gltfPadding.has_value() && !tilesetPadding.has_value()) {
+    return true;
+  }
+
+  return dimensionsAreConsideredEqual(
+             gridShape,
+             gltfPadding->before,
+             tilesetPadding->before) &&
+         dimensionsAreConsideredEqual(
+             gridShape,
+             gltfPadding->after,
+             tilesetPadding->after);
+}
+} // namespace
+
+static void loadVoxels(
+    LoadedPrimitiveResult& primitiveResult,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const CesiumGltf::ExtensionExtPrimitiveVoxels& voxelExtension,
+    const glm::dmat4x4& transform,
+    const CreatePrimitiveOptions& options) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadVoxels)
+  if (primitive.mode != VoxelPrimitiveMode) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Primitive mode %d does not match the voxel constant for EXT_primitive_voxels (2147483647). Skipped."),
+        primitive.mode);
+    return;
+  }
+
+  const CreateVoxelOptions* pVoxelOptions =
+      options.pMeshOptions->pNodeOptions->pModelOptions->pVoxelOptions;
+  if (!pVoxelOptions || !pVoxelOptions->pTilesetExtension) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "glTF voxel primitive can't be rendered because the tileset does not contain 3DTILES_content_voxels. Skipped."));
+    return;
+  }
+
+  const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pTilesetExtension =
+      pVoxelOptions->pTilesetExtension;
+  if (!dimensionsAreConsideredEqual(
+          pVoxelOptions->gridShape,
+          voxelExtension.dimensions,
+          pTilesetExtension->dimensions)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Voxel primitive dimensions do not match the dimensions specified by the tileset. Skipped."));
+    return;
+  }
+
+  if (!paddingIsConsideredEqual(
+          pVoxelOptions->gridShape,
+          voxelExtension.padding,
+          pTilesetExtension->padding)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Voxel primitive padding does not match the padding specified by the tileset. Skipped."));
+    return;
+  }
+
+  const CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata*
+      pPrimitiveMetadata = primitive.getExtension<
+          CesiumGltf::ExtensionMeshPrimitiveExtStructuralMetadata>();
+  if (!pPrimitiveMetadata || pPrimitiveMetadata->propertyAttributes.empty()) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "glTF voxel primitive is missing EXT_structural_metadata. Skipped."));
+    return;
+  }
+
+  const CesiumGltf::Model& model =
+      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  const CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+
+  const std::string name = getPrimitiveName(model, mesh, primitive);
+  primitiveResult.name = name;
+  primitiveResult.primitiveIndex = options.primitiveIndex;
+  primitiveResult.transform = transform * yInvertMatrix;
+  primitiveResult.Metadata =
+      pPrimitiveMetadata
+          ? FCesiumPrimitiveMetadata(model, primitive, *pPrimitiveMetadata)
+          : FCesiumPrimitiveMetadata();
+
+  TArray<FCesiumPropertyAttribute> propertyAttributes =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes(
+          primitiveResult.Metadata);
+
+  FString classAsFString(pTilesetExtension->classProperty.c_str());
+
+  for (int32 i = 0; i < propertyAttributes.Num(); i++) {
+    // Find the property attribute that shares the same class property as the
+    // tileset.
+    if (propertyAttributes[i].getClassName() == classAsFString) {
+      primitiveResult.voxelPropertyAttributeIndex = i;
+      break;
+    }
+  }
+}
+
 static void loadPrimitive(
     LoadedPrimitiveResult& result,
     const glm::dmat4x4& transform,
@@ -1896,6 +2038,18 @@ static void loadPrimitive(
   const CesiumGltf::MeshPrimitive& primitive =
       model.meshes[options.pMeshOptions->meshIndex]
           .primitives[options.primitiveIndex];
+
+  if (primitive.attributes.empty()) {
+    return;
+  }
+
+  const CesiumGltf::ExtensionExtPrimitiveVoxels* pVoxelExtension =
+      primitive.getExtension<CesiumGltf::ExtensionExtPrimitiveVoxels>();
+  if (pVoxelExtension) {
+    // Special path for voxels.
+    loadVoxels(result, primitive, *pVoxelExtension, transform, options);
+    return;
+  }
 
   auto positionAccessorIt =
       primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::POSITION);
@@ -1959,7 +2113,8 @@ static void loadMesh(
     loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.RenderData) {
+    if (!primitiveResult.RenderData &&
+        primitiveResult.voxelPropertyAttributeIndex < 0) {
       result->primitiveResults.pop_back();
     }
   }
@@ -3037,11 +3192,11 @@ static void loadPrimitiveGameThreadPart(
   FName componentName = "";
 #endif
 
-  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
-      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
-
   CesiumGltf::MeshPrimitive& meshPrimitive =
       model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
+
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
@@ -3426,6 +3581,54 @@ static void loadPrimitiveGameThreadPart(
   }
 }
 
+static void loadVoxelsGameThreadPart(
+    CesiumGltf::Model& model,
+    UCesiumGltfComponent* pGltf,
+    LoadedPrimitiveResult& loadResult,
+    const Cesium3DTilesSelection::Tile& tile,
+    ACesium3DTileset* pTilesetActor) {
+  TArray<FCesiumPropertyAttribute> attributes =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes(
+          loadResult.Metadata);
+
+  if (attributes.IsEmpty()) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Voxel primitive has no valid property attributes; skipped."));
+    return;
+  }
+
+  const CesiumGeometry::OctreeTileID* tileId =
+      std::get_if<CesiumGeometry::OctreeTileID>(&tile.getTileID());
+  if (!tileId) {
+    return;
+  }
+
+  int32_t index = *loadResult.voxelPropertyAttributeIndex;
+  CESIUM_ASSERT(index >= 0 && index < attributes.Num());
+
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
+
+  UCesiumGltfVoxelComponent* pVoxel =
+      NewObject<UCesiumGltfVoxelComponent>(pGltf, componentName);
+
+  pVoxel->TileId = *tileId;
+  pVoxel->PropertyAttribute = std::move(attributes[index]);
+
+  pVoxel->SetMobility(pGltf->Mobility);
+  pVoxel->SetupAttachment(pGltf);
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+    pVoxel->RegisterComponent();
+  }
+}
+
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumAsync::AsyncSystem& AsyncSystem,
@@ -3461,56 +3664,66 @@ UCesiumGltfComponent::CreateOffGameThread(
   //   return nullptr;
   // }
 
-  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
-  Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
-  Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
+  pGltf->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
-  Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
-  Gltf->EncodedMetadata_DEPRECATED =
+  pGltf->Metadata = std::move(pReal->loadModelResult.Metadata);
+  pGltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
+  pGltf->EncodedMetadata_DEPRECATED =
       std::move(pReal->loadModelResult.EncodedMetadata_DEPRECATED);
 
   if (pBaseMaterial) {
-    Gltf->BaseMaterial = pBaseMaterial;
+    pGltf->BaseMaterial = pBaseMaterial;
   }
 
   if (pBaseTranslucentMaterial) {
-    Gltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
+    pGltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
   }
 
   if (pBaseWaterMaterial) {
-    Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
+    pGltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  Gltf->CustomDepthParameters = CustomDepthParameters;
+  pGltf->CustomDepthParameters = CustomDepthParameters;
 
-  encodeModelMetadataGameThreadPart(Gltf->EncodedMetadata);
+  encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
-  if (Gltf->EncodedMetadata_DEPRECATED) {
-    encodeMetadataGameThreadPart(*Gltf->EncodedMetadata_DEPRECATED);
+  if (pGltf->EncodedMetadata_DEPRECATED) {
+    encodeMetadataGameThreadPart(*pGltf->EncodedMetadata_DEPRECATED);
   }
 
   for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
-        loadPrimitiveGameThreadPart(
-            model,
-            Gltf,
-            primitive,
-            cesiumToUnrealTransform,
-            tile,
-            createNavCollision,
-            pTilesetActor,
-            node.InstanceTransforms,
-            node.pInstanceFeatures);
+        if (primitive.voxelPropertyAttributeIndex) {
+          loadVoxelsGameThreadPart(
+              model,
+              pGltf,
+              primitive,
+              tile,
+              pTilesetActor);
+        } else {
+          loadPrimitiveGameThreadPart(
+              model,
+              pGltf,
+              primitive,
+              cesiumToUnrealTransform,
+              tile,
+              createNavCollision,
+              pTilesetActor,
+              node.InstanceTransforms,
+              node.pInstanceFeatures);
+        }
       }
     }
   }
 
-  Gltf->SetVisibility(false, true);
-  Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-  return Gltf;
+  pGltf->SetVisibility(false, true);
+  pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  return pGltf;
 }
 
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
