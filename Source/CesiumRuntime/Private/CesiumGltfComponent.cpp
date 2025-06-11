@@ -92,6 +92,8 @@ public:
 };
 } // namespace
 
+const int32_t VoxelPrimitiveMode = 2147483647;
+
 template <class... T> struct IsAccessorView;
 
 template <class T> struct IsAccessorView<T> : std::false_type {};
@@ -1936,7 +1938,7 @@ static void loadVoxels(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadVoxels)
-  if (primitive.mode != 2147483647) {
+  if (primitive.mode != VoxelPrimitiveMode) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -1995,107 +1997,33 @@ static void loadVoxels(
     return;
   }
 
-  const CesiumGltf::ExtensionModelExtStructuralMetadata* pModelMetadata =
-      options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult
-          ->pMetadata;
-  if (!pModelMetadata || pModelMetadata->propertyAttributes.empty()) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "glTF voxel primitive is attached to a model without EXT_structural_metadata. Skipped."));
-    return;
-  }
-
   const CesiumGltf::Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
 
   const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
-
-  const CesiumGltf::PropertyAttribute* pPropertyAttribute = nullptr;
-
-  // Find the property attribute that shares the same class property as the
-  // tileset.
-  for (int32_t index : pPrimitiveMetadata->propertyAttributes) {
-    if (index < 0 ||
-        index >=
-            static_cast<int32>(pPrimitiveMetadata->propertyAttributes.size())) {
-      continue;
-    }
-
-    const CesiumGltf::PropertyAttribute* pAttribute =
-        &pModelMetadata->propertyAttributes[index];
-    if (pAttribute->classProperty == pTilesetExtension->classProperty) {
-      pPropertyAttribute = pAttribute;
-      break;
-    }
-  }
-
-  if (!pPropertyAttribute) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "glTF voxel primitive is missing the required voxel metadata class. Skipped."));
-    return;
-  }
-
-  primitiveResult.voxelResult.emplace();
-
-  for (auto propertyIt : pPropertyAttribute->properties) {
-    const std::string& attributeNameInPrimitive = propertyIt.second.attribute;
-    if (primitive.attributes.find(attributeNameInPrimitive) ==
-        primitive.attributes.end()) {
-      continue;
-    }
-
-    int32 index = primitive.attributes.at(propertyIt.second.attribute);
-
-    const CesiumGltf::Accessor* pAccessor =
-        model.getSafe<CesiumGltf::Accessor>(&model.accessors, index);
-    if (!pAccessor || pAccessor->count != pVoxelOptions->voxelCount) {
-      continue;
-    }
-
-    const CesiumGltf::BufferView* pBufferView =
-        model.getSafe<CesiumGltf::BufferView>(
-            &model.bufferViews,
-            pAccessor->bufferView);
-    if (!pBufferView) {
-      continue;
-    }
-
-    if (pAccessor->count * pAccessor->computeBytesPerVertex() !=
-        pBufferView->byteLength) {
-      // Don't try to copy if the buffer view does not match the expected size.
-      continue;
-    }
-
-    const CesiumGltf::Buffer* pBuffer =
-        model.getSafe<CesiumGltf::Buffer>(&model.buffers, pBufferView->buffer);
-    if (!pBuffer) {
-      continue;
-    }
-
-    size_t totalBytes =
-        static_cast<size_t>(pBufferView->byteOffset + pBufferView->byteLength);
-    if (totalBytes > pBuffer->cesium.data.size()) {
-      continue;
-    }
-
-    primitiveResult.voxelResult->attributeBuffers.Add(
-        FString(propertyIt.first.c_str()),
-        ValidatedVoxelBuffer{pBuffer, pBufferView});
-  }
-
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.transform = transform * yInvertMatrix;
   primitiveResult.Metadata =
       pPrimitiveMetadata
-          ? FCesiumPrimitiveMetadata(primitive, *pPrimitiveMetadata)
+          ? FCesiumPrimitiveMetadata(model, primitive, *pPrimitiveMetadata)
           : FCesiumPrimitiveMetadata();
+
+  TArray<FCesiumPropertyAttribute> propertyAttributes =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes(
+          primitiveResult.Metadata);
+
+  FString classAsFString(pTilesetExtension->classProperty.c_str());
+
+  for (int32 i = 0; i < propertyAttributes.Num(); i++) {
+    // Find the property attribute that shares the same class property as the
+    // tileset.
+    if (propertyAttributes[i].getClassName() == classAsFString) {
+      primitiveResult.voxelPropertyAttributeIndex = i;
+      break;
+    }
+  }
 }
 
 static void loadPrimitive(
@@ -2185,7 +2113,8 @@ static void loadMesh(
     loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.RenderData && !primitiveResult.voxelResult) {
+    if (!primitiveResult.RenderData &&
+        primitiveResult.voxelPropertyAttributeIndex < 0) {
       result->primitiveResults.pop_back();
     }
   }
@@ -2565,7 +2494,6 @@ static void loadModelMetadata(
         }
       });
 
-  result.pMetadata = pModelMetadata;
   result.Metadata = FCesiumModelMetadata(model, *pModelMetadata);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
@@ -3264,11 +3192,11 @@ static void loadPrimitiveGameThreadPart(
   FName componentName = "";
 #endif
 
-  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
-      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
-
   CesiumGltf::MeshPrimitive& meshPrimitive =
       model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
+
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
@@ -3659,11 +3587,15 @@ static void loadVoxelsGameThreadPart(
     LoadedPrimitiveResult& loadResult,
     const Cesium3DTilesSelection::Tile& tile,
     ACesium3DTileset* pTilesetActor) {
-  if (loadResult.voxelResult->attributeBuffers.IsEmpty()) {
+  TArray<FCesiumPropertyAttribute> attributes =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes(
+          loadResult.Metadata);
+
+  if (attributes.IsEmpty()) {
     UE_LOG(
         LogCesium,
         Warning,
-        TEXT("Voxel primitive has no valid attributes; skipped."));
+        TEXT("Voxel primitive has no valid property attributes; skipped."));
     return;
   }
 
@@ -3673,20 +3605,20 @@ static void loadVoxelsGameThreadPart(
     return;
   }
 
+  int32_t index = *loadResult.voxelPropertyAttributeIndex;
+  CESIUM_ASSERT(index >= 0 && index < attributes.Num());
+
 #if DEBUG_GLTF_ASSET_NAMES
   FName componentName = createSafeName(loadResult.name, "");
 #else
   FName componentName = "";
 #endif
 
-  CesiumGltf::MeshPrimitive& meshPrimitive =
-      model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
   UCesiumGltfVoxelComponent* pVoxel =
       NewObject<UCesiumGltfVoxelComponent>(pGltf, componentName);
 
-  pVoxel->tileId = *tileId;
-  pVoxel->attributeBuffers =
-      std::move(loadResult.voxelResult->attributeBuffers);
+  pVoxel->TileId = *tileId;
+  pVoxel->PropertyAttribute = std::move(attributes[index]);
 
   pVoxel->SetMobility(pGltf->Mobility);
   pVoxel->SetupAttachment(pGltf);
@@ -3732,45 +3664,51 @@ UCesiumGltfComponent::CreateOffGameThread(
   //   return nullptr;
   // }
 
-  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
-  Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
-  Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
+  pGltf->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
-  Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
-  Gltf->EncodedMetadata_DEPRECATED =
+  pGltf->Metadata = std::move(pReal->loadModelResult.Metadata);
+  pGltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
+  pGltf->EncodedMetadata_DEPRECATED =
       std::move(pReal->loadModelResult.EncodedMetadata_DEPRECATED);
 
   if (pBaseMaterial) {
-    Gltf->BaseMaterial = pBaseMaterial;
+    pGltf->BaseMaterial = pBaseMaterial;
   }
 
   if (pBaseTranslucentMaterial) {
-    Gltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
+    pGltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
   }
 
   if (pBaseWaterMaterial) {
-    Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
+    pGltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  Gltf->CustomDepthParameters = CustomDepthParameters;
+  pGltf->CustomDepthParameters = CustomDepthParameters;
 
-  encodeModelMetadataGameThreadPart(Gltf->EncodedMetadata);
+  encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
-  if (Gltf->EncodedMetadata_DEPRECATED) {
-    encodeMetadataGameThreadPart(*Gltf->EncodedMetadata_DEPRECATED);
+  if (pGltf->EncodedMetadata_DEPRECATED) {
+    encodeMetadataGameThreadPart(*pGltf->EncodedMetadata_DEPRECATED);
   }
 
   for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
-        if (primitive.voxelResult) {
-          loadVoxelsGameThreadPart(model, Gltf, primitive, tile, pTilesetActor);
+        if (primitive.voxelPropertyAttributeIndex) {
+          loadVoxelsGameThreadPart(
+              model,
+              pGltf,
+              primitive,
+              tile,
+              pTilesetActor);
         } else {
           loadPrimitiveGameThreadPart(
               model,
-              Gltf,
+              pGltf,
               primitive,
               cesiumToUnrealTransform,
               tile,
@@ -3783,9 +3721,9 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
 
-  Gltf->SetVisibility(false, true);
-  Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-  return Gltf;
+  pGltf->SetVisibility(false, true);
+  pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  return pGltf;
 }
 
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {

@@ -104,18 +104,6 @@ FVoxelDataTextures::FVoxelDataTextures(
       _tileCountAlongAxes(0),
       _maximumTileCount(0),
       _propertyMap() {
-  if (!RHISupportsVolumeTextures(featureLevel)) {
-    // TODO: 2D fallback? Not sure if this check is the same as
-    // SupportsVolumeTextureRendering, which is false on Vulkan Android, Metal,
-    // and OpenGL
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "Volume textures are not supported. Unable to create the textures necessary for rendering voxels."))
-    return;
-  }
-
   if (!pVoxelClass) {
     UE_LOG(
         LogCesium,
@@ -126,6 +114,18 @@ FVoxelDataTextures::FVoxelDataTextures(
   }
 
   if (pVoxelClass->Properties.IsEmpty()) {
+    return;
+  }
+
+  if (!RHISupportsVolumeTextures(featureLevel)) {
+    // TODO: 2D fallback? Not sure if this check is the same as
+    // SupportsVolumeTextureRendering, which is false on Vulkan Android, Metal,
+    // and OpenGL
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Volume textures are not supported. Unable to create the textures necessary for rendering voxels."))
     return;
   }
 
@@ -244,6 +244,13 @@ FVoxelDataTextures ::~FVoxelDataTextures() {
       CesiumLifetime::destroy(pTexture);
     }
   }
+
+  this->_propertyMap.Empty();
+}
+
+UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
+  const TextureData* pProperty = this->_propertyMap.Find(attributeId);
+  return pProperty ? pProperty->pTexture : nullptr;
 }
 
 /**
@@ -251,39 +258,94 @@ FVoxelDataTextures ::~FVoxelDataTextures() {
  * type that the texture expects. Coercive encoding behavior (similar to what
  * is done for CesiumPropertyTableProperty) could be added in the future.
  */
-static void writeTo3DTexture(
-    UTexture* pTexture,
-    FCesiumTextureResource* pResource,
-    const std::byte* pData,
-    FUpdateTextureRegion3D updateRegion,
-    uint32 texelSizeBytes) {
-  if (!pResource || !pData)
+// static void directCopyTo3dTexture(
+//     UTexture* pTexture,
+//     FCesiumTextureResource* pResource,
+//     const std::byte* pData,
+//     FUpdateTextureRegion3D updateRegion,
+//     uint32 texelSizeBytes) {
+//   if (!pResource || !pData)
+//     return;
+//
+//   ENQUEUE_RENDER_COMMAND(Cesium_CopyVoxels)
+//   ([pTexture, pResource, pData, updateRegion, texelSizeBytes](
+//        FRHICommandListImmediate& RHICmdList) {
+//     if (!IsValid(pTexture)) {
+//       return;
+//     }
+//
+//     // Pitch = size in bytes of each row of the source image.
+//     uint32 srcRowPitch = updateRegion.Width * texelSizeBytes;
+//     uint32 srcDepthPitch =
+//         updateRegion.Width * updateRegion.Height * texelSizeBytes;
+//
+//     RHIUpdateTexture3D(
+//         pResource->TextureRHI,
+//         0,
+//         updateRegion,
+//         srcRowPitch,
+//         srcDepthPitch,
+//         (const uint8*)(pData));
+//   });
+// }
+
+/*static*/ void FVoxelDataTextures::writeToTexture(
+    const FCesiumPropertyAttributeProperty& property,
+    const FVoxelDataTextures::TextureData& data,
+    const FUpdateTextureRegion3D& updateRegion) {
+  if (!data.pResource || !data.pTexture)
     return;
 
+  uint32 texelSizeBytes =
+      data.encodedFormat.channels * data.encodedFormat.bytesPerChannel;
+
   ENQUEUE_RENDER_COMMAND(Cesium_CopyVoxels)
-  ([pTexture, pResource, pData, updateRegion, texelSizeBytes](
-       FRHICommandListImmediate& RHICmdList) {
+  ([pTexture = data.pTexture,
+    pResource = data.pResource,
+    format = data.encodedFormat.format,
+    &property,
+    updateRegion,
+    texelSizeBytes](FRHICommandListImmediate& RHICmdList) {
+    // We're trusting that Cesium3DTileset will destroy its attached
+    // CesiumVoxelRendererComponent (and thus the VoxelDataTextures)
+    // before unloading glTFs. As long as the texture is valid, so is the
+    // CesiumPropertyAttributeProperty.
     if (!IsValid(pTexture)) {
       return;
     }
 
-    // Pitch = size in bytes of each row of the source image.
-    uint32 srcRowPitch = updateRegion.Width * texelSizeBytes;
-    uint32 srcDepthPitch =
-        updateRegion.Width * updateRegion.Height * texelSizeBytes;
+    FUpdateTexture3DData UpdateData =
+        RHIBeginUpdateTexture3D(pResource->TextureRHI, 0, updateRegion);
 
-    RHIUpdateTexture3D(
-        pResource->TextureRHI,
-        0,
-        updateRegion,
-        srcRowPitch,
-        srcDepthPitch,
-        (const uint8*)(pData));
+    for (uint32 z = 0; z < updateRegion.Depth; z++) {
+      for (uint32 y = 0; y < updateRegion.Height; y++) {
+        int64 sourceIndex = int64(
+            z * updateRegion.Width * updateRegion.Height +
+            y * updateRegion.Width);
+        uint8* pDestRow = UpdateData.Data + z * UpdateData.DepthPitch +
+                          y * UpdateData.RowPitch;
+
+        for (uint32 x = 0; x < updateRegion.Width; x++) {
+          FCesiumMetadataValue rawValue =
+              UCesiumPropertyAttributePropertyBlueprintLibrary::GetRawValue(
+                  property,
+                  sourceIndex++);
+
+          float* pFloat =
+              reinterpret_cast<float*>(pDestRow + x * texelSizeBytes);
+          FMemory::Memcpy<float>(
+              *pFloat,
+              UCesiumMetadataValueBlueprintLibrary::GetFloat(rawValue, 0.0f));
+        }
+      }
+    }
+
+    RHIEndUpdateTexture3D(UpdateData);
   });
 }
 
-int64 FVoxelDataTextures::Add(const UCesiumGltfVoxelComponent& voxelComponent) {
-  uint32 slotIndex = ReserveNextSlot();
+int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
+  uint32 slotIndex = this->reserveNextSlot();
   if (slotIndex < 0) {
     return -1;
   }
@@ -308,28 +370,23 @@ int64 FVoxelDataTextures::Add(const UCesiumGltfVoxelComponent& voxelComponent) {
   uint32 index = static_cast<uint32>(slotIndex);
 
   for (auto PropertyIt : this->_propertyMap) {
-    const ValidatedVoxelBuffer* pValidBuffer =
-        voxelComponent.attributeBuffers.Find(PropertyIt.Key);
-    if (!pValidBuffer) {
+    const FCesiumPropertyAttributeProperty& property =
+        UCesiumPropertyAttributeBlueprintLibrary::FindProperty(
+            voxelComponent.PropertyAttribute,
+            PropertyIt.Key);
+
+    if (UCesiumPropertyAttributePropertyBlueprintLibrary::
+            GetPropertyAttributePropertyStatus(property) !=
+        ECesiumPropertyAttributePropertyStatus::Valid) {
       continue;
     }
 
-    uint32 texelSizeBytes = PropertyIt.Value.encodedFormat.bytesPerChannel *
-                            PropertyIt.Value.encodedFormat.channels;
-    const std::byte* pData = pValidBuffer->pBuffer->cesium.data.data();
-    pData += pValidBuffer->pBufferView->byteOffset;
-
-    writeTo3DTexture(
-        PropertyIt.Value.pTexture,
-        PropertyIt.Value.pResource,
-        pData,
-        updateRegion,
-        texelSizeBytes);
+    writeToTexture(property, PropertyIt.Value, updateRegion);
   }
   return slotIndex;
 }
 
-int64 FVoxelDataTextures::ReserveNextSlot() {
+int64 FVoxelDataTextures::reserveNextSlot() {
   // Remove head from list of empty slots
   FVoxelDataTextures::Slot* pSlot = this->_pEmptySlotsHead;
   if (!pSlot) {
@@ -352,7 +409,7 @@ int64 FVoxelDataTextures::ReserveNextSlot() {
   return pSlot->Index;
 }
 
-bool FVoxelDataTextures::Release(uint32 slotIndex) {
+bool FVoxelDataTextures::release(uint32 slotIndex) {
   if (slotIndex >= this->_slots.size()) {
     return false; // Index out of bounds
   }

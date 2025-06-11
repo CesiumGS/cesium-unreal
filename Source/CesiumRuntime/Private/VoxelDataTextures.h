@@ -54,56 +54,50 @@ public:
    * Gets the maximum number of tiles that can be added to the data
    * textures. Equivalent to the maximum number of data slots.
    */
-  uint32 GetMaximumTileCount() const {
+  uint32 getMaximumTileCount() const {
     return static_cast<uint32>(this->_slots.size());
   }
 
   /**
    * Gets the number of tiles along each dimension of the textures.
    */
-  glm::uvec3 GetTileCountAlongAxes() const { return this->_tileCountAlongAxes; }
+  glm::uvec3 getTileCountAlongAxes() const { return this->_tileCountAlongAxes; }
 
   /**
    * Retrieves the texture containing the data for the attribute with
    * the given ID. Returns nullptr if the attribute does not exist.
    */
-  UTexture* GetDataTexture(const FString& attributeId) const {
-    const PropertyData* pProperty = this->_propertyMap.Find(attributeId);
-    if (pProperty) {
-      return pProperty->pTexture;
-    }
-    return nullptr;
-  }
+  UTexture* getTexture(const FString& attributeId) const;
 
   /**
    * @brief Retrieves how many data textures exist.
    */
-  int32 GetTextureCount() const { return this->_propertyMap.Num(); }
+  int32 getTextureCount() const { return this->_propertyMap.Num(); }
 
   /**
    * Whether or not all slots in the textures are occupied.
    */
-  bool IsFull() const { return this->_pEmptySlotsHead == nullptr; }
+  bool isFull() const { return this->_pEmptySlotsHead == nullptr; }
 
   /**
    * Attempts to add the voxel tile to the data textures.
    *
    * @returns The index of the reserved slot, or -1 if none were available.
    */
-  int64_t Add(const UCesiumGltfVoxelComponent& voxelComponent);
+  int64_t add(const UCesiumGltfVoxelComponent& voxelComponent);
 
   /**
    * Reserves the next available empty slot.
    *
    * @returns The index of the reserved slot, or -1 if none were available.
    */
-  int64 ReserveNextSlot();
+  int64 reserveNextSlot();
 
   /**
    * Releases the slot at the specified index, making the space available for
    * another voxel tile.
    */
-  bool Release(uint32 slotIndex);
+  bool release(uint32 slotIndex);
 
 private:
   /**
@@ -118,7 +112,7 @@ private:
     Slot* Previous = nullptr;
   };
 
-  struct PropertyData {
+  struct TextureData {
     /**
      * The texture format used to store encoded property values.
      */
@@ -136,6 +130,11 @@ private:
     FCesiumTextureResource* pResource;
   };
 
+  static void writeToTexture(
+      const FCesiumPropertyAttributeProperty& property,
+      const TextureData& data,
+      const FUpdateTextureRegion3D& region);
+
   std::vector<Slot> _slots;
   Slot* _pEmptySlotsHead;
   Slot* _pOccupiedSlotsHead;
@@ -144,5 +143,5 @@ private:
   glm::uvec3 _tileCountAlongAxes;
   uint32 _maximumTileCount;
 
-  TMap<FString, PropertyData> _propertyMap;
+  TMap<FString, TextureData> _propertyMap;
 };

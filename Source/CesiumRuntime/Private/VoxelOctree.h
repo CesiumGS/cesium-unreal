@@ -22,14 +22,14 @@ public:
   static const uint32 TexelsPerNode = 9;
 
   static UCesiumVoxelOctreeTexture*
-  Create(uint32 Width, uint32 MaximumTileCount);
+  create(uint32 Width, uint32 MaximumTileCount);
 
   /**
    * Updates the octree texture with the new input data.
    */
-  void Update(const std::vector<std::byte>& data);
+  void update(const std::vector<std::byte>& data);
 
-  uint32_t GetTilesPerRow() const { return this->_tilesPerRow; }
+  uint32_t getTilesPerRow() const { return this->_tilesPerRow; }
 
 private:
   FCesiumTextureResource* _pResource;
@@ -46,16 +46,16 @@ public:
    * @brief A representation of a tile in an implicitly tiled octree.
    */
   struct Node {
-    bool HasChildren;
-    double LastKnownScreenSpaceError;
-    int64_t DataSlotIndex;
-    Node* Parent;
+    Node* pParent;
+    bool hasChildren;
+    double lastKnownScreenSpaceError;
+    int64_t dataSlotIndex;
 
     Node()
-        : HasChildren(false),
-          LastKnownScreenSpaceError(0.0),
-          DataSlotIndex(-1),
-          Parent(nullptr) {}
+        : pParent(nullptr),
+          hasChildren(false),
+          lastKnownScreenSpaceError(0.0),
+          dataSlotIndex(-1) {}
   };
 
   /**
@@ -105,7 +105,15 @@ public:
    *
    * @param TileID The octree tile ID.
    */
-  Node* GetNode(const CesiumGeometry::OctreeTileID& TileID) const;
+  const Node* getNode(const CesiumGeometry::OctreeTileID& TileID) const;
+
+  /**
+   * @brief Gets a node in the octree at the specified tile ID. Returns nullptr
+   * if it does not exist.
+   *
+   * @param TileID The octree tile ID.
+   */
+  Node* getNode(const CesiumGeometry::OctreeTileID& TileID);
 
   /**
    * @brief Creates a node in the octree at the specified tile ID, including the
@@ -116,7 +124,7 @@ public:
    * @param TileID The octree tile ID.
    * @param Whether the node was successfully added.
    */
-  bool CreateNode(const CesiumGeometry::OctreeTileID& TileID);
+  bool createNode(const CesiumGeometry::OctreeTileID& TileID);
 
   /**
    * @brief Attempts to remove the node at the specified tile ID.
@@ -128,16 +136,26 @@ public:
    * @param TileID The octree tile ID.
    * @return Whether the node was successfully removed.
    */
-  bool RemoveNode(const CesiumGeometry::OctreeTileID& TileID);
+  bool removeNode(const CesiumGeometry::OctreeTileID& TileID);
 
-  bool IsNodeRenderable(const CesiumGeometry::OctreeTileID& TileID) const;
+  bool isNodeRenderable(const CesiumGeometry::OctreeTileID& TileID) const;
 
+  void initializeTexture(uint32 width, uint32 maximumTileCount);
+
+  /**
+   * @brief Retrieves the texture containing the encoded octree.
+   */
+  UTexture2D* getTexture() const { return this->_pTexture; }
+
+  void updateTexture();
+
+private:
   /**
    * @brief Retrieves the tile IDs for the children of the given tile. Does not
    * validate whether these exist in the octree.
    */
   static std::array<CesiumGeometry::OctreeTileID, 8>
-  ComputeChildTileIDs(const CesiumGeometry::OctreeTileID& TileID);
+  computeChildTileIDs(const CesiumGeometry::OctreeTileID& TileID);
 
   /**
    * @brief Retrieves the tile ID for the parent of the given tile. Does not
@@ -147,18 +165,8 @@ public:
    * tile (i.e., level 0).
    */
   static std::optional<CesiumGeometry::OctreeTileID>
-  ComputeParentTileID(const CesiumGeometry::OctreeTileID& TileID);
+  computeParentTileID(const CesiumGeometry::OctreeTileID& TileID);
 
-  void InitializeTexture(uint32 Width, uint32 MaximumTileCount);
-
-  /**
-   * @brief Retrieves the texture containing the encoded octree.
-   */
-  UTexture2D* GetTexture() const { return this->_pTexture; }
-
-  void UpdateTexture();
-
-private:
   /**
    * @brief Inserts the input values to the data vector, automatically
    * expanding it if the target index is out-of-bounds.

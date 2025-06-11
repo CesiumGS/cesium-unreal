@@ -66,14 +66,14 @@ public:
   /**
    * @brief Retrieves the texture containing the encoded octree.
    */
-  UTexture2D* GetOctreeTexture() const { return this->_octree.GetTexture(); }
+  UTexture2D* GetOctreeTexture() const { return this->_octree.getTexture(); }
 
   /**
    * @brief Retrieves the texture containing the data for the attribute with
    * the given ID. Returns nullptr if the attribute does not exist.
    */
   UTexture* GetDataTexture(const FString& attributeId) const {
-    return this->_dataTextures.GetDataTexture(attributeId);
+    return this->_dataTextures.getTexture(attributeId);
   }
 
   /**

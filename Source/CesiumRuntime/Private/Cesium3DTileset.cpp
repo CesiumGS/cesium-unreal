@@ -1288,8 +1288,7 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
-  // It did crash in Tick() when we trigger refresh events at a high frequency,
-  // typically if the user clicks a button "frantically"...)
+  // This would crash in Tick() when if refresh events were triggered frequently.
   this->_tilesToHideNextFrame.clear();
 
   if (!this->_pTileset) {

@@ -32,15 +32,15 @@ FVoxelResources::FVoxelResources(
       _loadedNodeIds(),
       _visibleTileQueue() {
   uint32 width = MaximumOctreeTextureWidth;
-  uint32 maximumTileCount = this->_dataTextures.GetMaximumTileCount();
-  this->_octree.InitializeTexture(width, maximumTileCount);
+  uint32 maximumTileCount = this->_dataTextures.getMaximumTileCount();
+  this->_octree.initializeTexture(width, maximumTileCount);
   this->_loadedNodeIds.reserve(maximumTileCount);
 }
 
 FVoxelResources::~FVoxelResources() {}
 
 FVector FVoxelResources::GetTileCount() const {
-  auto tileCount = this->_dataTextures.GetTileCountAlongAxes();
+  auto tileCount = this->_dataTextures.getTileCountAlongAxes();
   return FVector(tileCount.x, tileCount.y, tileCount.z);
 }
 
@@ -75,7 +75,7 @@ void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
     for (USceneComponent* pChild : Children) {
       UCesiumGltfVoxelComponent* pVoxelComponent =
           Cast<UCesiumGltfVoxelComponent>(pChild);
-      if (!pVoxelComponent || pVoxelComponent->attributeBuffers.IsEmpty()) {
+      if (!pVoxelComponent) {
         continue;
       }
 
@@ -97,9 +97,9 @@ void FVoxelResources::Update(
           size_t index,
           const UCesiumGltfVoxelComponent* pVoxel) {
         double sse = VisibleTileScreenSpaceErrors[index];
-        FVoxelOctree::Node* pNode = octree.GetNode(pVoxel->tileId);
+        FVoxelOctree::Node* pNode = octree.getNode(pVoxel->TileId);
         if (pNode) {
-          pNode->LastKnownScreenSpaceError = sse;
+          pNode->lastKnownScreenSpaceError = sse;
         }
 
         // Don't create the missing node just yet? It may not be added to the
@@ -118,22 +118,22 @@ void FVoxelResources::Update(
       [&octree = this->_octree](
           const CesiumGeometry::OctreeTileID& lhs,
           const CesiumGeometry::OctreeTileID& rhs) {
-        FVoxelOctree::Node* pLeft = octree.GetNode(lhs);
-        FVoxelOctree::Node* pRight = octree.GetNode(rhs);
+        const FVoxelOctree::Node* pLeft = octree.getNode(lhs);
+        const FVoxelOctree::Node* pRight = octree.getNode(rhs);
         if (!pLeft) {
           return false;
         }
         if (!pRight) {
           return true;
         }
-        return computePriority(pLeft->LastKnownScreenSpaceError) >
-               computePriority(pRight->LastKnownScreenSpaceError);
+        return computePriority(pLeft->lastKnownScreenSpaceError) >
+               computePriority(pRight->lastKnownScreenSpaceError);
       });
 
   bool shouldUpdateOctree = false;
   // It is possible for the data textures to not exist (e.g., the default voxel
   // material), so check this explicitly.
-  bool dataTexturesExist = this->_dataTextures.GetTextureCount() > 0;
+  bool dataTexturesExist = this->_dataTextures.getTextureCount() > 0;
 
   size_t existingNodeCount = this->_loadedNodeIds.size();
   size_t destroyedNodeCount = 0;
@@ -144,9 +144,9 @@ void FVoxelResources::Update(
     for (; !this->_visibleTileQueue.empty(); this->_visibleTileQueue.pop()) {
       const VoxelTileUpdateInfo& currentTile = this->_visibleTileQueue.top();
       const CesiumGeometry::OctreeTileID& currentTileId =
-          currentTile.pComponent->tileId;
-      FVoxelOctree::Node* pNode = this->_octree.GetNode(currentTileId);
-      if (pNode && pNode->DataSlotIndex >= 0) {
+          currentTile.pComponent->TileId;
+      FVoxelOctree::Node* pNode = this->_octree.getNode(currentTileId);
+      if (pNode && pNode->dataSlotIndex >= 0) {
         // Node has already been loaded into the data textures.
         continue;
       }
@@ -154,7 +154,7 @@ void FVoxelResources::Update(
       // Otherwise, check that the data textures have the space to add it.
       const UCesiumGltfVoxelComponent* pVoxel = currentTile.pComponent;
       size_t addNodeIndex = 0;
-      if (this->_dataTextures.IsFull()) {
+      if (this->_dataTextures.isFull()) {
         addNodeIndex = existingNodeCount - 1 - destroyedNodeCount;
         if (addNodeIndex >= this->_loadedNodeIds.size()) {
           // This happens when all of the previously loaded nodes have been
@@ -167,28 +167,28 @@ void FVoxelResources::Update(
         const CesiumGeometry::OctreeTileID& lowestPriorityId =
             this->_loadedNodeIds[addNodeIndex];
         FVoxelOctree::Node* pLowestPriorityNode =
-            this->_octree.GetNode(lowestPriorityId);
+            this->_octree.getNode(lowestPriorityId);
 
         // Release the data slot of the lowest priority node.
-        this->_dataTextures.Release(pLowestPriorityNode->DataSlotIndex);
-        pLowestPriorityNode->DataSlotIndex = -1;
+        this->_dataTextures.release(pLowestPriorityNode->dataSlotIndex);
+        pLowestPriorityNode->dataSlotIndex = -1;
 
         // Attempt to remove the node and simplify the octree.
         // Will not succeed if the node's siblings are renderable, or if this
         // node contains renderable children.
-        shouldUpdateOctree |= this->_octree.RemoveNode(lowestPriorityId);
+        shouldUpdateOctree |= this->_octree.removeNode(lowestPriorityId);
       } else {
         addNodeIndex = existingNodeCount + addedNodeCount;
         addedNodeCount++;
       }
 
       // Create the node if it does not already exist in the tree.
-      bool createdNewNode = this->_octree.CreateNode(currentTileId);
-      pNode = this->_octree.GetNode(currentTileId);
-      pNode->LastKnownScreenSpaceError = currentTile.sse;
+      bool createdNewNode = this->_octree.createNode(currentTileId);
+      pNode = this->_octree.getNode(currentTileId);
+      pNode->lastKnownScreenSpaceError = currentTile.sse;
 
-      pNode->DataSlotIndex = this->_dataTextures.Add(*pVoxel);
-      bool addedToDataTexture = (pNode->DataSlotIndex >= 0);
+      pNode->dataSlotIndex = this->_dataTextures.add(*pVoxel);
+      bool addedToDataTexture = (pNode->dataSlotIndex >= 0);
       shouldUpdateOctree |= createdNewNode || addedToDataTexture;
 
       if (!addedToDataTexture) {
@@ -204,20 +204,20 @@ void FVoxelResources::Update(
     for (; !this->_visibleTileQueue.empty(); this->_visibleTileQueue.pop()) {
       const VoxelTileUpdateInfo& currentTile = this->_visibleTileQueue.top();
       const CesiumGeometry::OctreeTileID& currentTileId =
-          currentTile.pComponent->tileId;
+          currentTile.pComponent->TileId;
       // Create the node if it does not already exist in the tree.
-      shouldUpdateOctree |= this->_octree.CreateNode(currentTileId);
+      shouldUpdateOctree |= this->_octree.createNode(currentTileId);
 
-      FVoxelOctree::Node* pNode = this->_octree.GetNode(currentTileId);
-      pNode->LastKnownScreenSpaceError = currentTile.sse;
+      FVoxelOctree::Node* pNode = this->_octree.getNode(currentTileId);
+      pNode->lastKnownScreenSpaceError = currentTile.sse;
       // Set to arbitrary index. This will prompt the tile to render even though
       // it does not actually have data.
-      pNode->DataSlotIndex = 0;
+      pNode->dataSlotIndex = 0;
     }
   }
 
   if (shouldUpdateOctree) {
-    this->_octree.UpdateTexture();
+    this->_octree.updateTexture();
   }
 }
 

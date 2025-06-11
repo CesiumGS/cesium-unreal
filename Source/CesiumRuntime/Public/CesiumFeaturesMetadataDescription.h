@@ -253,10 +253,9 @@ struct CESIUMRUNTIME_API FCesiumPropertyAttributePropertyDescription {
 
   /**
    * Describes how the property will be encoded as data on the GPU, if possible.
-   * TODO: Make this EditAnywhere once coercive encoding is supported.
    */
-   UPROPERTY()
-   FCesiumMetadataEncodingDetails EncodingDetails;
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumMetadataEncodingDetails EncodingDetails;
 };
 
 /**
