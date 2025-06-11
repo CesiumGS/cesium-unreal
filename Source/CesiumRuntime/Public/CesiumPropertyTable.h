@@ -25,7 +25,7 @@ enum class ECesiumPropertyTableStatus : uint8 {
   /* The property table instance was not initialized from an actual glTF
      property table. */
   ErrorInvalidPropertyTable,
-  /* The property table's class could be found in the schema of the metadata
+  /* The property table's class could not be found in the schema of the metadata
      extension. */
   ErrorInvalidPropertyTableClass
 };
@@ -44,7 +44,7 @@ public:
    * Construct an empty property table instance.
    */
   FCesiumPropertyTable()
-      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTable){};
+      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTable) {};
 
   /**
    * Constructs a property table from a glTF Property Table.

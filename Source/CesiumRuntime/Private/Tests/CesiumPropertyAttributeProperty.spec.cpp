@@ -2988,11 +2988,9 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           UCesiumPropertyAttributePropertyBlueprintLibrary::GetValue(
               property,
               0);
-      FCesiumMetadataValueType valueType; // Unknown type
       TestTrue(
-          "value type",
-          UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==
-              valueType);
+          "value empty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
     });
 
     It("returns empty value for invalid index", [this]() {
@@ -3179,11 +3177,9 @@ void FCesiumPropertyAttributePropertySpec::Define() {
                 property,
                 i);
         if (values[i] == noData) {
-          // Empty value indicated by invalid value type.
           TestTrue(
-              "value type",
-              UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==
-                  FCesiumMetadataValueType());
+              "value empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
         } else {
           TestTrue(
               "value type",

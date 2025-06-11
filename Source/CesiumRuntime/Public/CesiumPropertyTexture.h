@@ -22,8 +22,8 @@ enum class ECesiumPropertyTextureStatus : uint8 {
   /* The property texture instance was not initialized from an actual glTF
    property texture. */
   ErrorInvalidPropertyTexture,
-  /* The property texture's class could be found in the schema of the metadata
-   extension. */
+  /* The property texture's class could not be found in the schema of the
+   metadata extension. */
   ErrorInvalidPropertyTextureClass
 };
 

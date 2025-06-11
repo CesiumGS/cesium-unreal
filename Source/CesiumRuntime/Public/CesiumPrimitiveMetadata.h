@@ -19,7 +19,7 @@ struct ExtensionMeshPrimitiveExtStructuralMetadata;
  * A Blueprint-accessible wrapper for a glTF Primitive's EXT_structural_metadata
  * extension. It holds the property attributes used by the primitive, as well as
  * the indices of the property textures associated with it, which index into the
- * respective arrays in the model's EXT_structural_metadata extension.
+ * array of property textures in the model's EXT_structural_metadata extension.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveMetadata {
@@ -100,8 +100,6 @@ public:
    * primitive.
    */
   UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
       Category = "Cesium|Primitive|Metadata",
       Meta =
           (DeprecatedFunction,
