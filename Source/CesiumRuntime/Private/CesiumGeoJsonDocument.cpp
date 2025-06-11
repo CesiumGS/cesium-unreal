@@ -1,7 +1,8 @@
 #include "CesiumGeoJsonDocument.h"
 #include "CesiumRuntime.h"
 
-#include "CesiumUtility/Result.h"
+#include <CesiumAsync/IAssetAccessor.h>
+#include <CesiumUtility/Result.h>
 
 #include <span>
 
@@ -68,6 +69,57 @@ void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
       this->AssetId,
       TCHAR_TO_UTF8(*this->IonAccessToken),
       TCHAR_TO_UTF8(*this->IonAssetEndpointUrl))
+      .thenInMainThread(
+          [Callback = this->OnLoadResult](
+              CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&
+                  result) {
+            if (result.errors.hasErrors()) {
+              result.errors.logError(
+                  spdlog::default_logger(),
+                  "Errors loading GeoJSON:");
+              result.errors.logWarning(
+                  spdlog::default_logger(),
+                  "Warnings loading GeoJSON:");
+            }
+
+            if (result.value) {
+              Callback.Broadcast(
+                  true,
+                  FCesiumGeoJsonDocument(
+                      std::make_shared<CesiumVectorData::GeoJsonDocument>(
+                          std::move(*result.value))));
+            } else {
+              Callback.Broadcast(false, {});
+            }
+          });
+}
+
+UCesiumLoadVectorDocumentFromUrlAsyncAction*
+UCesiumLoadVectorDocumentFromUrlAsyncAction::LoadFromUrl(
+    const FString& Url,
+    const TMap<FString, FString>& Headers) {
+  UCesiumLoadVectorDocumentFromUrlAsyncAction* pAction =
+      NewObject<UCesiumLoadVectorDocumentFromUrlAsyncAction>();
+  pAction->Url = Url;
+  pAction->Headers = Headers;
+  return pAction;
+}
+
+void UCesiumLoadVectorDocumentFromUrlAsyncAction::Activate() {
+  std::vector<CesiumAsync::IAssetAccessor::THeader> requestHeaders;
+  requestHeaders.reserve(this->Headers.Num());
+
+  for (const auto& [Key, Value] : this->Headers) {
+    requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
+  }
+
+  CesiumVectorData::GeoJsonDocument::fromUrl(
+      getAsyncSystem(),
+      getAssetAccessor(),
+      TCHAR_TO_UTF8(*this->Url),
+      std::move(requestHeaders))
       .thenInMainThread(
           [Callback = this->OnLoadResult](
               CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&

@@ -79,7 +79,7 @@ public:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-    FCesiumVectorDocumentIonLoadDelegate,
+    FCesiumVectorDocumentAsyncLoadDelegate,
     bool,
     Success,
     FCesiumGeoJsonDocument,
@@ -108,11 +108,40 @@ public:
       const FString& IonAssetEndpointUrl = "https://api.cesium.com/");
 
   UPROPERTY(BlueprintAssignable)
-  FCesiumVectorDocumentIonLoadDelegate OnLoadResult;
+  FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
 
   virtual void Activate() override;
 
   int64 AssetId;
   FString IonAccessToken;
   FString IonAssetEndpointUrl;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumLoadVectorDocumentFromUrlAsyncAction
+    : public UBlueprintAsyncActionBase {
+  GENERATED_BODY()
+public:
+  /**
+   * @brief Attempts to load a vector document from a URL.
+   *
+   * If successful, `Success` will be true and `Document` will contain the
+   * loaded document.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Document",
+      meta =
+          (BlueprintInternalUseOnly = true,
+           DisplayName = "Load Vector Document from URL"))
+  static UCesiumLoadVectorDocumentFromUrlAsyncAction*
+  LoadFromUrl(const FString& Url, const TMap<FString, FString>& Headers);
+
+  UPROPERTY(BlueprintAssignable)
+  FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
+
+  virtual void Activate() override;
+
+  FString Url;
+  TMap<FString, FString> Headers;
 };
