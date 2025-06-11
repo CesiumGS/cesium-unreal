@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTextureView.h"
 #include "CesiumMetadataEnum.h"
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+
+#include <CesiumGltf/PropertyTextureView.h>
+
 #include "CesiumPropertyTexture.generated.h"
 
 namespace CesiumGltf {

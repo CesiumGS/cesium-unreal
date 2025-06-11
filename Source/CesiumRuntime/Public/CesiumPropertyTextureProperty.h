@@ -52,14 +52,14 @@ public:
 
   template <typename T, bool Normalized>
   FCesiumPropertyTextureProperty(
-      const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& Property,
+      const CesiumGltf::PropertyTexturePropertyView<T, Normalized>& property,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
       : _status(ECesiumPropertyTexturePropertyStatus::ErrorInvalidProperty),
-        _property(Property),
+        _property(property),
         _valueType(),
         _normalized(Normalized),
         _pEnumDefinition(pEnumDefinition) {
-    switch (Property.status()) {
+    switch (property.status()) {
     case CesiumGltf::PropertyTexturePropertyViewStatus::Valid:
       _status = ECesiumPropertyTexturePropertyStatus::Valid;
       break;

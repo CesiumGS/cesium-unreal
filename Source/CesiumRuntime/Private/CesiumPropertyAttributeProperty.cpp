@@ -1,10 +1,10 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyAttributeProperty.h"
-#include "CesiumGltf/MetadataConversions.h"
-#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataEnum.h"
 #include "UnrealMetadataConversions.h"
+#include <CesiumGltf/MetadataConversions.h>
+#include <CesiumGltf/PropertyTypeTraits.h>
 #include <utility>
 
 namespace {
