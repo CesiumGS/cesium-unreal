@@ -1,4 +1,5 @@
 #include "CesiumGeoJsonDocument.h"
+#include "CesiumIonServer.h"
 #include "CesiumRuntime.h"
 
 #include <CesiumAsync/IAssetAccessor.h>
@@ -52,23 +53,27 @@ FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
 UCesiumLoadVectorDocumentFromIonAsyncAction*
 UCesiumLoadVectorDocumentFromIonAsyncAction::LoadFromIon(
     int64 AssetId,
-    const FString& IonAccessToken,
-    const FString& IonAssetEndpointUrl) {
+    const UCesiumIonServer* CesiumIonServer,
+    const FString& IonAccessToken) {
   UCesiumLoadVectorDocumentFromIonAsyncAction* pAction =
       NewObject<UCesiumLoadVectorDocumentFromIonAsyncAction>();
   pAction->AssetId = AssetId;
   pAction->IonAccessToken = IonAccessToken;
-  pAction->IonAssetEndpointUrl = IonAssetEndpointUrl;
+  pAction->CesiumIonServer = CesiumIonServer;
   return pAction;
 }
 
 void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
+  const std::string token(
+      this->IonAccessToken.IsEmpty()
+          ? TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken)
+          : TCHAR_TO_UTF8(*this->IonAccessToken));
   CesiumVectorData::GeoJsonDocument::fromCesiumIonAsset(
       getAsyncSystem(),
       getAssetAccessor(),
       this->AssetId,
-      TCHAR_TO_UTF8(*this->IonAccessToken),
-      TCHAR_TO_UTF8(*this->IonAssetEndpointUrl))
+      token,
+      std::string(TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)) + "/")
       .thenInMainThread(
           [Callback = this->OnLoadResult](
               CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&

@@ -7,6 +7,18 @@
 #include <variant>
 #include <vector>
 
+ECesiumGeoJsonFeatureIdType UCesiumGeoJsonFeatureBlueprintLibrary::GetIdType(
+    const FCesiumGeoJsonFeature& InFeature) {
+  if (!InFeature._document || !InFeature._feature ||
+      std::holds_alternative<std::monostate>(InFeature._feature->id)) {
+    return ECesiumGeoJsonFeatureIdType::None;
+  }
+
+  return std::holds_alternative<int64_t>(InFeature._feature->id)
+             ? ECesiumGeoJsonFeatureIdType::Integer
+             : ECesiumGeoJsonFeatureIdType::String;
+}
+
 int64 UCesiumGeoJsonFeatureBlueprintLibrary::GetIdAsInteger(
     const FCesiumGeoJsonFeature& InFeature) {
   if (!InFeature._document || !InFeature._feature) {

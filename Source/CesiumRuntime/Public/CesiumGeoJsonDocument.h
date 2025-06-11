@@ -93,6 +93,10 @@ public:
   /**
    * @brief Attempts to load a vector document from a Cesium ion asset.
    *
+   * If the provided `IonAccessToken` is an empty string, the
+   * `DefaultIonAccessToken` from the provided `CesiumIonServer` will be used
+   * instead.
+   *
    * If successful, `Success` will be true and `Document` will contain the
    * loaded document.
    */
@@ -104,8 +108,8 @@ public:
            DisplayName = "Load Vector Document from Cesium ion"))
   static UCesiumLoadVectorDocumentFromIonAsyncAction* LoadFromIon(
       int64 AssetId,
-      const FString& IonAccessToken,
-      const FString& IonAssetEndpointUrl = "https://api.cesium.com/");
+      const UCesiumIonServer* CesiumIonServer,
+      const FString& IonAccessToken);
 
   UPROPERTY(BlueprintAssignable)
   FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
@@ -114,7 +118,9 @@ public:
 
   int64 AssetId;
   FString IonAccessToken;
-  FString IonAssetEndpointUrl;
+
+  UPROPERTY()
+  const UCesiumIonServer* CesiumIonServer;
 };
 
 UCLASS()
