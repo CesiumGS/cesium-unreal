@@ -25,25 +25,24 @@ struct FCesiumGeoJsonDocument {
   /**
    * @brief Creates an empty `FCesiumGeoJsonDocument`.
    */
-  FCesiumGeoJsonDocument() : _document(nullptr) {}
+  FCesiumGeoJsonDocument();
 
   /**
    * @brief Creates a `FCesiumGeoJsonDocument` wrapping the provided
    * `CesiumVectorData::GeoJsonDocument`.
    */
   FCesiumGeoJsonDocument(
-      std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document)
-      : _document(std::move(document)) {}
+      std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document);
 
 private:
-  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _document;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
 
   friend class UCesiumGeoJsonDocumentBlueprintLibrary;
 };
 
 /**
  * @brief A Blueprint Function Library providing functions for interacting with
- * a `FCesiumVectorDocument`.
+ * a `FCesiumGeoJsonDocument`.
  */
 UCLASS()
 class UCesiumGeoJsonDocumentBlueprintLibrary
@@ -52,7 +51,7 @@ class UCesiumGeoJsonDocumentBlueprintLibrary
 
 public:
   /**
-   * @brief Attempts to load a `FCesiumVectorDocument` from a string containing
+   * @brief Attempts to load a `FCesiumGeoJsonDocument` from a string containing
    * GeoJSON data.
    *
    * If loading fails, this function will return false and `OutVectorDocument`

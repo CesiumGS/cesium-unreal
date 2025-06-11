@@ -76,7 +76,7 @@ struct FCesiumGeoJsonFeature {
   GENERATED_BODY()
 
   /** @brief Creates a new `FCesiumVectorPrimitive` with an empty primitive. */
-  FCesiumGeoJsonFeature() : _document(nullptr), _feature(nullptr) {}
+  FCesiumGeoJsonFeature();
 
   /**
    * @brief Creates a new `FCesiumGeoJsonFeature` wrapping the provided
@@ -84,12 +84,11 @@ struct FCesiumGeoJsonFeature {
    */
   FCesiumGeoJsonFeature(
       const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& document,
-      const CesiumVectorData::GeoJsonFeature* feature)
-      : _document(document), _feature(feature) {}
+      const CesiumVectorData::GeoJsonFeature* feature);
 
 private:
-  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _document;
-  const CesiumVectorData::GeoJsonFeature* _feature;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
+  const CesiumVectorData::GeoJsonFeature* _pFeature;
 
   friend class UCesiumGeoJsonFeatureBlueprintLibrary;
 };

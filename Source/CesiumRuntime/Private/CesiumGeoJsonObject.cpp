@@ -2,29 +2,38 @@
 
 #include "CesiumGeospatial/Cartographic.h"
 #include "Dom/JsonObject.h"
+#include "VecMath.h"
 
 #include <utility>
 #include <variant>
 #include <vector>
 
+FCesiumGeoJsonFeature::FCesiumGeoJsonFeature()
+    : _pDocument(nullptr), _pFeature(nullptr) {}
+
+FCesiumGeoJsonFeature::FCesiumGeoJsonFeature(
+    const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& document,
+    const CesiumVectorData::GeoJsonFeature* feature)
+    : _pDocument(document), _pFeature(feature) {}
+
 ECesiumGeoJsonFeatureIdType UCesiumGeoJsonFeatureBlueprintLibrary::GetIdType(
     const FCesiumGeoJsonFeature& InFeature) {
-  if (!InFeature._document || !InFeature._feature ||
-      std::holds_alternative<std::monostate>(InFeature._feature->id)) {
+  if (!InFeature._pDocument || !InFeature._pFeature ||
+      std::holds_alternative<std::monostate>(InFeature._pFeature->id)) {
     return ECesiumGeoJsonFeatureIdType::None;
   }
 
-  return std::holds_alternative<int64_t>(InFeature._feature->id)
+  return std::holds_alternative<int64_t>(InFeature._pFeature->id)
              ? ECesiumGeoJsonFeatureIdType::Integer
              : ECesiumGeoJsonFeatureIdType::String;
 }
 
 int64 UCesiumGeoJsonFeatureBlueprintLibrary::GetIdAsInteger(
     const FCesiumGeoJsonFeature& InFeature) {
-  if (!InFeature._document || !InFeature._feature) {
+  if (!InFeature._pDocument || !InFeature._pFeature) {
     return -1;
   }
-  const int64_t* pId = std::get_if<int64_t>(&InFeature._feature->id);
+  const int64_t* pId = std::get_if<int64_t>(&InFeature._pFeature->id);
   if (!pId) {
     return -1;
   }
@@ -34,7 +43,7 @@ int64 UCesiumGeoJsonFeatureBlueprintLibrary::GetIdAsInteger(
 
 FString UCesiumGeoJsonFeatureBlueprintLibrary::GetIdAsString(
     const FCesiumGeoJsonFeature& InFeature) {
-  if (!InFeature._document || !InFeature._feature) {
+  if (!InFeature._pDocument || !InFeature._pFeature) {
     return {};
   }
   struct GetIdVisitor {
@@ -45,7 +54,7 @@ FString UCesiumGeoJsonFeatureBlueprintLibrary::GetIdAsString(
     FString operator()(const std::monostate& id) { return {}; }
   };
 
-  return std::visit(GetIdVisitor{}, InFeature._feature->id);
+  return std::visit(GetIdVisitor{}, InFeature._pFeature->id);
 }
 
 namespace {
@@ -66,9 +75,27 @@ jsonValueToUnrealJsonValue(const CesiumUtility::JsonValue& value) {
       return MakeShared<FJsonValueNumber>(value);
     }
     TSharedPtr<FJsonValue> operator()(const std::uint64_t& value) {
+      // If this value will fit into a double losslessly, we return it as a JSON
+      // number.
+      const std::optional<double> doubleOpt =
+          CesiumUtility::losslessNarrow<double, std::uint64_t>(value);
+      if (doubleOpt) {
+        return MakeShared<FJsonValueNumber>(*doubleOpt);
+      }
+
+      // Otherwise, we return it as a number string.
       return MakeShared<FJsonValueNumberString>(FString::FromInt(value));
     }
     TSharedPtr<FJsonValue> operator()(const std::int64_t& value) {
+      // If this value will fit into a double losslessly, we return it as a JSON
+      // number.
+      const std::optional<double> doubleOpt =
+          CesiumUtility::losslessNarrow<double, std::int64_t>(value);
+      if (doubleOpt) {
+        return MakeShared<FJsonValueNumber>(*doubleOpt);
+      }
+
+      // Otherwise, we return it as a number string.
       return MakeShared<FJsonValueNumberString>(FString::FromInt(value));
     }
     TSharedPtr<FJsonValue>
@@ -96,36 +123,36 @@ jsonValueToUnrealJsonValue(const CesiumUtility::JsonValue& value) {
 
 FJsonObjectWrapper UCesiumGeoJsonFeatureBlueprintLibrary::GetProperties(
     const FCesiumGeoJsonFeature& InFeature) {
-  if (!InFeature._document || !InFeature._feature) {
+  if (!InFeature._pDocument || !InFeature._pFeature) {
     return {};
   }
   TSharedPtr<FJsonObject> object = MakeShared<FJsonObject>();
-  if (InFeature._feature->properties) {
-    for (const auto& [k, v] : *InFeature._feature->properties) {
+  if (InFeature._pFeature->properties) {
+    for (const auto& [k, v] : *InFeature._pFeature->properties) {
       object->SetField(UTF8_TO_TCHAR(k.c_str()), jsonValueToUnrealJsonValue(v));
     }
   }
 
   FJsonObjectWrapper wrapper;
-  wrapper.JsonObject = object;
+  wrapper.JsonObject = MoveTemp(object);
   return wrapper;
 }
 
 FCesiumGeoJsonObject UCesiumGeoJsonFeatureBlueprintLibrary::GetGeometry(
     const FCesiumGeoJsonFeature& InFeature) {
-  if (!InFeature._document || !InFeature._feature ||
-      !InFeature._feature->geometry) {
+  if (!InFeature._pDocument || !InFeature._pFeature ||
+      !InFeature._pFeature->geometry) {
     return {};
   }
 
   return FCesiumGeoJsonObject(
-      InFeature._document,
-      InFeature._feature->geometry.get());
+      InFeature._pDocument,
+      InFeature._pFeature->geometry.get());
 }
 
 bool UCesiumGeoJsonFeatureBlueprintLibrary::IsValid(
     const FCesiumGeoJsonFeature& InFeature) {
-  return InFeature._document != nullptr && InFeature._feature != nullptr;
+  return InFeature._pDocument != nullptr && InFeature._pFeature != nullptr;
 }
 
 bool UCesiumGeoJsonObjectBlueprintLibrary::IsValid(
@@ -181,15 +208,9 @@ FJsonObjectWrapper UCesiumGeoJsonObjectBlueprintLibrary::GetForeignMembers(
   }
 
   FJsonObjectWrapper wrapper;
-  wrapper.JsonObject = object;
+  wrapper.JsonObject = MoveTemp(object);
   return wrapper;
 }
-
-namespace {
-FVector degreesToVector(const glm::dvec3& coordinates) {
-  return FVector(coordinates.x, coordinates.y, coordinates.z);
-}
-} // namespace
 
 FVector UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsPoint(
     const FCesiumGeoJsonObject& InObject) {
@@ -204,7 +225,7 @@ FVector UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsPoint(
     return FVector::ZeroVector;
   }
 
-  return degreesToVector(pPoint->coordinates);
+  return VecMath::createVector(pPoint->coordinates);
 }
 
 TArray<FVector> UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPoint(
@@ -225,7 +246,7 @@ TArray<FVector> UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiPoint(
   Points.Reserve(pMultiPoint->coordinates.size());
 
   for (size_t i = 0; i < pMultiPoint->coordinates.size(); i++) {
-    Points.Emplace(degreesToVector(pMultiPoint->coordinates[i]));
+    Points.Emplace(VecMath::createVector(pMultiPoint->coordinates[i]));
   }
 
   return Points;
@@ -250,7 +271,7 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsLineString(
   Points.Reserve(pLineString->coordinates.size());
 
   for (size_t i = 0; i < pLineString->coordinates.size(); i++) {
-    Points.Emplace(degreesToVector(pLineString->coordinates[i]));
+    Points.Emplace(VecMath::createVector(pLineString->coordinates[i]));
   }
 
   return FCesiumGeoJsonLineString(MoveTemp(Points));
@@ -279,7 +300,8 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
     Points.Reserve(pMultiLineString->coordinates[i].size());
 
     for (size_t j = 0; j < pMultiLineString->coordinates[i].size(); j++) {
-      Points.Emplace(degreesToVector(pMultiLineString->coordinates[i][j]));
+      Points.Emplace(
+          VecMath::createVector(pMultiLineString->coordinates[i][j]));
     }
 
     Lines.Emplace(MoveTemp(Points));
@@ -414,7 +436,7 @@ UCesiumGeoJsonPolygonBlueprintFunctionLibrary::GetPolygonRings(
     Points.Reserve((*InPolygon._rings)[i].size());
 
     for (size_t j = 0; j < (*InPolygon._rings)[i].size(); j++) {
-      Points.Emplace(degreesToVector((*InPolygon._rings)[i][j]));
+      Points.Emplace(VecMath::createVector((*InPolygon._rings)[i][j]));
     }
 
     Rings.Emplace(MoveTemp(Points));

@@ -7,6 +7,12 @@
 
 #include <span>
 
+FCesiumGeoJsonDocument::FCesiumGeoJsonDocument() : _pDocument(nullptr) {}
+
+FCesiumGeoJsonDocument::FCesiumGeoJsonDocument(
+    std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document)
+    : _pDocument(std::move(document)) {}
+
 bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
     const FString& InString,
     FCesiumGeoJsonDocument& OutVectorDocument) {
@@ -41,13 +47,13 @@ bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
 
 FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
     const FCesiumGeoJsonDocument& InVectorDocument) {
-  if (!InVectorDocument._document) {
+  if (!InVectorDocument._pDocument) {
     return FCesiumGeoJsonObject();
   }
 
   return FCesiumGeoJsonObject(
-      InVectorDocument._document,
-      &InVectorDocument._document->rootObject);
+      InVectorDocument._pDocument,
+      &InVectorDocument._pDocument->rootObject);
 }
 
 UCesiumLoadVectorDocumentFromIonAsyncAction*

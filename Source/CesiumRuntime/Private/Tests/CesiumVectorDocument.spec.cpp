@@ -5,13 +5,13 @@
 #include "Misc/AutomationTest.h"
 
 BEGIN_DEFINE_SPEC(
-    FCesiumVectorDocumentSpec,
-    "Cesium.Unit.CesiumVectorDocument",
+    FCesiumGeoJsonDocumentSpec,
+    "Cesium.Unit.CesiumGeoJsonDocument",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
         EAutomationTestFlags::ProductFilter | EAutomationTestFlags::NonNullRHI)
-END_DEFINE_SPEC(FCesiumVectorDocumentSpec)
+END_DEFINE_SPEC(FCesiumGeoJsonDocumentSpec)
 
-void FCesiumVectorDocumentSpec::Define() {
+void FCesiumGeoJsonDocumentSpec::Define() {
   Describe("UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString", [this]() {
     It("loads a valid GeoJSON document", [this]() {
       FCesiumGeoJsonDocument Document;
