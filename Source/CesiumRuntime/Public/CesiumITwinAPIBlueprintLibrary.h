@@ -28,7 +28,8 @@ public:
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|iTwin")
   FString GetAccessToken() {
-    return UTF8_TO_TCHAR(this->pConnection->getAuthToken().getToken().c_str());
+    return UTF8_TO_TCHAR(
+        this->pConnection->getAuthenticationToken().getToken().c_str());
   }
 
   TSharedPtr<CesiumITwinClient::Connection>& GetConnection() {

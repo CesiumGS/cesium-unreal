@@ -1196,12 +1196,19 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading tileset for asset ID %d"),
         this->ITwinCesiumContentID);
 
-    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-        externals,
-        Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory(
-            static_cast<uint32_t>(this->ITwinCesiumContentID),
-            this->ITwinConnection->GetConnection()->getAuthToken().getToken()),
-        options);
+    {
+      const std::string token = IsValid(this->ITwinConnection)
+                                    ? this->ITwinConnection->GetConnection()
+                                          ->getAuthenticationToken()
+                                          .getToken()
+                                    : "";
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+          externals,
+          Cesium3DTilesSelection::ITwinCesiumCuratedContentLoaderFactory(
+              static_cast<uint32_t>(this->ITwinCesiumContentID),
+              token),
+          options);
+    }
     break;
   case ETilesetSource::FromIModelMeshExportService:
     UE_LOG(
@@ -1210,13 +1217,20 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading mesh export for iModel ID %s"),
         *this->IModelID);
 
-    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-        externals,
-        Cesium3DTilesSelection::IModelMeshExportContentLoaderFactory(
-            TCHAR_TO_UTF8(*this->IModelID),
-            std::nullopt,
-            this->ITwinConnection->GetConnection()->getAuthToken().getToken()),
-        options);
+    {
+      const std::string token = IsValid(this->ITwinConnection)
+                                    ? this->ITwinConnection->GetConnection()
+                                          ->getAuthenticationToken()
+                                          .getToken()
+                                    : "";
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+          externals,
+          Cesium3DTilesSelection::IModelMeshExportContentLoaderFactory(
+              TCHAR_TO_UTF8(*this->IModelID),
+              std::nullopt,
+              token),
+          options);
+    }
     break;
   case ETilesetSource::FromITwinRealityData:
     UE_LOG(
@@ -1225,42 +1239,61 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading reality data ID %s"),
         *this->RealityDataID);
 
-    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
-        externals,
-        Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory(
-            TCHAR_TO_UTF8(*this->RealityDataID),
-            this->ITwinID.IsEmpty() ? std::nullopt
-                                    : std::make_optional<std::string>(
-                                          TCHAR_TO_UTF8(*this->ITwinID)),
-            this->ITwinConnection->GetConnection()->getAuthToken().getToken(),
-            [asyncSystem, pConnection = this->ITwinConnection->GetConnection()](
-                const std::string&) {
-              if (!pConnection->getRefreshToken()) {
-                return asyncSystem.createResolvedFuture<
-                    CesiumUtility::
-                        Result<std::string>>(CesiumUtility::ErrorList::error(
-                    "Access token for reality data is expired, no refresh token available."));
-              }
+    {
+      const std::string token = IsValid(this->ITwinConnection)
+                                    ? this->ITwinConnection->GetConnection()
+                                          ->getAuthenticationToken()
+                                          .getToken()
+                                    : "";
 
-              return pConnection->me().thenImmediately(
-                  [pConnection](
-                      CesiumUtility::Result<CesiumITwinClient::UserProfile>&&
-                          result) -> CesiumUtility::Result<std::string> {
-                    if (!result.value) {
-                      return CesiumUtility::Result<std::string>(result.errors);
-                    }
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+          externals,
+          Cesium3DTilesSelection::ITwinRealityDataContentLoaderFactory(
+              TCHAR_TO_UTF8(*this->RealityDataID),
+              this->ITwinID.IsEmpty() ? std::nullopt
+                                      : std::make_optional<std::string>(
+                                            TCHAR_TO_UTF8(*this->ITwinID)),
+              token,
+              [asyncSystem,
+               pConnectionObject = this->ITwinConnection](const std::string&) {
+                if (!IsValid(pConnectionObject) ||
+                    !pConnectionObject->GetConnection().IsValid()) {
+                  return asyncSystem.createResolvedFuture<
+                      CesiumUtility::
+                          Result<std::string>>(CesiumUtility::ErrorList::error(
+                      "iTwin connection property on tileset is not valid."));
+                }
 
-                    if (!pConnection->getAuthToken().isValid()) {
-                      return CesiumUtility::Result<
-                          std::string>(CesiumUtility::ErrorList::error(
-                          "Tried to refresh access token for reality data, but was not able to obtain valid token."));
-                    }
+                const TSharedPtr<CesiumITwinClient::Connection> pConnection =
+                    pConnectionObject->GetConnection();
+                if (!pConnection->getRefreshToken()) {
+                  return asyncSystem.createResolvedFuture<
+                      CesiumUtility::
+                          Result<std::string>>(CesiumUtility::ErrorList::error(
+                      "Access token for reality data is expired, no refresh token available."));
+                }
 
-                    return CesiumUtility::Result<std::string>(
-                        pConnection->getAuthToken().getToken());
-                  });
-            }),
-        options);
+                return pConnection->me().thenImmediately(
+                    [pConnection](
+                        CesiumUtility::Result<CesiumITwinClient::UserProfile>&&
+                            result) -> CesiumUtility::Result<std::string> {
+                      if (!result.value) {
+                        return CesiumUtility::Result<std::string>(
+                            result.errors);
+                      }
+
+                      if (!pConnection->getAuthenticationToken().isValid()) {
+                        return CesiumUtility::Result<
+                            std::string>(CesiumUtility::ErrorList::error(
+                            "Tried to refresh access token for reality data, but was not able to obtain valid token."));
+                      }
+
+                      return CesiumUtility::Result<std::string>(
+                          pConnection->getAuthenticationToken().getToken());
+                    });
+              }),
+          options);
+    }
     break;
   }
 

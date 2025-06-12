@@ -56,11 +56,14 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
         }
 
         if (!connection.value) {
-          this->OnAuthorizationEvent.Broadcast(
-              ECesiumITwinAuthorizationDelegateType::Failure,
-              FString(),
-              nullptr,
-              errorListToArray(connection.errors));
+          AsyncTask(ENamedThreads::GameThread, [connection, this]() {
+            this->OnAuthorizationEvent.Broadcast(
+                ECesiumITwinAuthorizationDelegateType::Failure,
+                FString(),
+                nullptr,
+                errorListToArray(connection.errors));
+            this->SetReadyToDestroy();
+          });
         } else {
           TSharedPtr<CesiumITwinClient::Connection> pInternalConnection =
               MakeShared<CesiumITwinClient::Connection>(
@@ -68,12 +71,14 @@ void UCesiumITwinAPIAuthorizeAsyncAction::Activate() {
           UCesiumITwinConnection* pConnection =
               NewObject<UCesiumITwinConnection>();
           pConnection->SetConnection(pInternalConnection);
-          this->OnAuthorizationEvent.Broadcast(
-              ECesiumITwinAuthorizationDelegateType::Success,
-              FString(),
-              pConnection,
-              TArray<FString>());
-          this->SetReadyToDestroy();
+          AsyncTask(ENamedThreads::GameThread, [pConnection, this]() {
+            this->OnAuthorizationEvent.Broadcast(
+                ECesiumITwinAuthorizationDelegateType::Success,
+                FString(),
+                pConnection,
+                TArray<FString>());
+            this->SetReadyToDestroy();
+          });
         }
       });
 }
