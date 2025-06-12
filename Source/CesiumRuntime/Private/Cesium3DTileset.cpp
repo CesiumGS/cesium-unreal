@@ -236,17 +236,20 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(this);
   }
 
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        pRoot,
-        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-    this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
-        this,
-        &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
+  if (this->ResolvedGeoreference) {
+    UCesium3DTilesetRoot* pRoot =
+        Cast<UCesium3DTilesetRoot>(this->RootComponent);
+    if (pRoot) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          pRoot,
+          &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+      this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
+          this,
+          &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
 
-    // Update existing tile positions, if any.
-    pRoot->HandleGeoreferenceUpdated();
+      // Update existing tile positions, if any.
+      pRoot->HandleGeoreferenceUpdated();
+    }
   }
 
   return this->ResolvedGeoreference;
@@ -1753,7 +1756,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
-  return Cesium3DTilesSelection::ViewState::create(
+  return Cesium3DTilesSelection::ViewState(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
