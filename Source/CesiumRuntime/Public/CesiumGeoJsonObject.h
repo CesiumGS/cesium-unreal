@@ -9,37 +9,45 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SharedPointer.h"
 
+#include <glm/ext/vector_double3.hpp>
+#include <memory>
+
 #include "CesiumGeoJsonObject.generated.h"
 
 /**
- * @brief A single node in the vector document.
- *
- * A node typically contains geometry along with metadata attached to that
- * geometry.
+ * @brief A single object in the GeoJSON document.
  */
 USTRUCT(BlueprintType)
 struct FCesiumGeoJsonObject {
   GENERATED_BODY()
 
   /**
-   * @brief Creates a new `FCesiumGeoJsonObject` containing an empty vector
-   * node.
+   * @brief Creates a new `FCesiumGeoJsonObject` containing an empty GeoJSON
+   * object.
    */
-  FCesiumGeoJsonObject() : _document(nullptr), _object(nullptr) {}
+  FCesiumGeoJsonObject() : _pDocument(nullptr), _pObject(nullptr) {}
 
   /**
    * @brief Creates a new `FCesiumGeoJsonObject` wrapping the provided
    * `CesiumVectorData::GeoJsonObject`.
    */
   FCesiumGeoJsonObject(
-      const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-          doc,
-      const CesiumVectorData::GeoJsonObject* node)
-      : _document(doc), _object(node) {}
+      const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& doc,
+      const CesiumVectorData::GeoJsonObject* pObject)
+      : _pDocument(doc), _pObject(pObject) {}
+
+  const std::shared_ptr<CesiumVectorData::GeoJsonDocument>&
+  getDocument() const {
+    return this->_pDocument;
+  }
+
+  const CesiumVectorData::GeoJsonObject* getObject() const {
+    return this->_pObject;
+  }
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
-  const CesiumVectorData::GeoJsonObject* _object;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
+  const CesiumVectorData::GeoJsonObject* _pObject;
 
   friend class UCesiumGeoJsonObjectBlueprintLibrary;
 };
@@ -68,23 +76,40 @@ struct FCesiumGeoJsonFeature {
   GENERATED_BODY()
 
   /** @brief Creates a new `FCesiumVectorPrimitive` with an empty primitive. */
-  FCesiumGeoJsonFeature() : _document(nullptr), _feature(nullptr) {}
+  FCesiumGeoJsonFeature();
 
   /**
    * @brief Creates a new `FCesiumGeoJsonFeature` wrapping the provided
    * `CesiumVectorData::GeoJsonFeature`.
    */
   FCesiumGeoJsonFeature(
-      const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-          document,
-      const CesiumVectorData::GeoJsonFeature* feature)
-      : _document(document), _feature(feature) {}
+      const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& document,
+      const CesiumVectorData::GeoJsonFeature* feature);
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
-  const CesiumVectorData::GeoJsonFeature* _feature;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
+  const CesiumVectorData::GeoJsonFeature* _pFeature;
 
   friend class UCesiumGeoJsonFeatureBlueprintLibrary;
+};
+
+/**
+ * @brief The type of a feature's ID field.
+ */
+UENUM(BlueprintType)
+enum class ECesiumGeoJsonFeatureIdType {
+  /**
+   * @brief The feature has no ID.
+   */
+  None,
+  /**
+   * @brief The feature's ID is an integer.
+   */
+  Integer,
+  /**
+   * @brief The feature's ID is a string.
+   */
+  String
 };
 
 UCLASS()
@@ -92,6 +117,16 @@ class UCesiumGeoJsonFeatureBlueprintLibrary : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief Returns true if this feature's
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Vector|Feature")
+  static ECesiumGeoJsonFeatureIdType
+  GetIdType(const FCesiumGeoJsonFeature& InFeature);
+
   /**
    * @brief Returns the ID of the provided feature, or -1 if no ID was
    * present or if the ID is not an integer.
@@ -162,14 +197,13 @@ struct FCesiumGeoJsonPolygon {
    * provided `CesiumGeospatial::CompositeCartographicPolygon`.
    */
   FCesiumGeoJsonPolygon(
-      const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-          document,
-      const std::vector<std::vector<CesiumGeospatial::Cartographic>>* rings)
+      const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& document,
+      const std::vector<std::vector<glm::dvec3>>* rings)
       : _document(document), _rings(rings) {}
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
-  const std::vector<std::vector<CesiumGeospatial::Cartographic>>* _rings;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _document;
+  const std::vector<std::vector<glm::dvec3>>* _rings;
 
   friend class UCesiumGeoJsonPolygonBlueprintFunctionLibrary;
 };
@@ -216,6 +250,13 @@ public:
 };
 
 /**
+ * @brief Enum used for branching when a UFUNCTION could return a value or could
+ * return no value.
+ */
+UENUM()
+enum class EHasValue : uint8 { HasValue, NoValue };
+
+/**
  * @brief A Blueprint Funciton Library for interacting with `FCesiumVectorNode`
  * values.
  */
@@ -224,44 +265,119 @@ class UCesiumGeoJsonObjectBlueprintLibrary : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief Checks if the provided GeoJSON object is valid.
+   *
+   * Any operations performed with an invalid object will likely give incorrect
+   * results.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static bool IsValid(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief Returns the `ECesiumGeoJsonObjectType` of the GeoJSON value this
+   * object represents.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static ECesiumGeoJsonObjectType
   GetObjectType(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief Attempts to obtain this GeoJSON object's bounding box. If the `No
+   * Value` branch is called, the object has no bounding box.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Object",
+      Meta = (ExpandEnumAsExecs = "Branches"))
+  static FBox
+  GetBoundingBox(const FCesiumGeoJsonObject& InObject, EHasValue& Branches);
+
+  /**
+   * @brief Obtains any foreign members on this GeoJSON object.
+   *
+   * Foreign members are members found in the loaded GeoJSON document that
+   * are not part of the specification for this GeoJSON object type.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
+  static FJsonObjectWrapper
+  GetForeignMembers(const FCesiumGeoJsonObject& InObject);
+
+  /**
+   * @brief If this object is a GeoJSON Point type, this returns the
+   * `coordinates` of that Point. Otherwise, a zero vector is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static FVector GetObjectAsPoint(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON MultiPoint type, this returns the array
+   * of `coordinates` on that MultiPoint object. Otherwise, an empty array is
+   * returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static TArray<FVector>
   GetObjectAsMultiPoint(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON LineString type, this returns a
+   * `FCesiumGeoJsonLineString` representing that line. Otherwise, a
+   * `FCesiumGeoJsonLineString` without any points is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static FCesiumGeoJsonLineString
   GetObjectAsLineString(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON MultiLineString type, this returns an
+   * array of `FCesiumGeoJsonLineString` objects representing the lines.
+   * Otherwise, an empty array is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static TArray<FCesiumGeoJsonLineString>
   GetObjectAsMultiLineString(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON Polygon type, this returns a
+   * `FCesiumGeoJsonPolygon` representing that line. Otherwise, a
+   * `FCesiumGeoJsonPolygon` without any points is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static FCesiumGeoJsonPolygon
   GetObjectAsPolygon(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON MultiPolygon type, this returns an
+   * array of `FCesiumGeoJsonPolygon` objects representing the polygons.
+   * Otherwise, an empty array is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static TArray<FCesiumGeoJsonPolygon>
   GetObjectAsMultiPolygon(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON GeometryCollection type, this returns an
+   * array of `FCesiumGeoJsonObject` objects representing the objects.
+   * Otherwise, an empty array is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static TArray<FCesiumGeoJsonObject>
   GetObjectAsGeometryCollection(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON Feature type, this returns a
+   * `FCesiumGeoJsonFeature` representing that feature. Otherwise, an invalid
+   * `FCesiumGeoJsonFeature` is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static FCesiumGeoJsonFeature
   GetObjectAsFeature(const FCesiumGeoJsonObject& InObject);
 
+  /**
+   * @brief If this object is a GeoJSON FeatureCollection type, this returns an
+   * array of `FCesiumGeoJsonFeature` objects representing the features.
+   * Otherwise, an empty array is returned.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static TArray<FCesiumGeoJsonFeature>
   GetObjectAsFeatureCollection(const FCesiumGeoJsonObject& InObject);

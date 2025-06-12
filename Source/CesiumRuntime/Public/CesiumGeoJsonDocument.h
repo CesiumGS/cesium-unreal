@@ -10,6 +10,7 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectMacros.h"
 
+#include <memory>
 #include <optional>
 
 #include "CesiumGeoJsonDocument.generated.h"
@@ -24,16 +25,14 @@ struct FCesiumGeoJsonDocument {
   /**
    * @brief Creates an empty `FCesiumGeoJsonDocument`.
    */
-  FCesiumGeoJsonDocument() : _document(nullptr) {}
+  FCesiumGeoJsonDocument();
 
   /**
    * @brief Creates a `FCesiumGeoJsonDocument` wrapping the provided
    * `CesiumVectorData::GeoJsonDocument`.
    */
   FCesiumGeoJsonDocument(
-      CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&&
-          document)
-      : _document(std::move(document)) {}
+      std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document);
 
   /**
    * @brief Checks if this FCesiumVectorDocument is valid (document is not
@@ -50,14 +49,14 @@ struct FCesiumGeoJsonDocument {
   }
 
 private:
-  CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument> _document;
+  std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
 
   friend class UCesiumGeoJsonDocumentBlueprintLibrary;
 };
 
 /**
  * @brief A Blueprint Function Library providing functions for interacting with
- * a `FCesiumVectorDocument`.
+ * a `FCesiumGeoJsonDocument`.
  */
 UCLASS()
 class UCesiumGeoJsonDocumentBlueprintLibrary
@@ -66,7 +65,7 @@ class UCesiumGeoJsonDocumentBlueprintLibrary
 
 public:
   /**
-   * @brief Attempts to load a `FCesiumVectorDocument` from a string containing
+   * @brief Attempts to load a `FCesiumGeoJsonDocument` from a string containing
    * GeoJSON data.
    *
    * If loading fails, this function will return false and `OutVectorDocument`
@@ -93,7 +92,7 @@ public:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-    FCesiumVectorDocumentIonLoadDelegate,
+    FCesiumVectorDocumentAsyncLoadDelegate,
     bool,
     Success,
     FCesiumGeoJsonDocument,
@@ -107,6 +106,10 @@ public:
   /**
    * @brief Attempts to load a vector document from a Cesium ion asset.
    *
+   * If the provided `IonAccessToken` is an empty string, the
+   * `DefaultIonAccessToken` from the provided `CesiumIonServer` will be used
+   * instead.
+   *
    * If successful, `Success` will be true and `Document` will contain the
    * loaded document.
    */
@@ -118,15 +121,46 @@ public:
            DisplayName = "Load Vector Document from Cesium ion"))
   static UCesiumLoadVectorDocumentFromIonAsyncAction* LoadFromIon(
       int64 AssetId,
-      const FString& IonAccessToken,
-      const FString& IonAssetEndpointUrl = "https://api.cesium.com/");
+      const UCesiumIonServer* CesiumIonServer,
+      const FString& IonAccessToken);
 
   UPROPERTY(BlueprintAssignable)
-  FCesiumVectorDocumentIonLoadDelegate OnLoadResult;
+  FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
 
   virtual void Activate() override;
 
   int64 AssetId;
   FString IonAccessToken;
-  FString IonAssetEndpointUrl;
+
+  UPROPERTY()
+  const UCesiumIonServer* CesiumIonServer;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumLoadVectorDocumentFromUrlAsyncAction
+    : public UBlueprintAsyncActionBase {
+  GENERATED_BODY()
+public:
+  /**
+   * @brief Attempts to load a vector document from a URL.
+   *
+   * If successful, `Success` will be true and `Document` will contain the
+   * loaded document.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Document",
+      meta =
+          (BlueprintInternalUseOnly = true,
+           DisplayName = "Load Vector Document from URL"))
+  static UCesiumLoadVectorDocumentFromUrlAsyncAction*
+  LoadFromUrl(const FString& Url, const TMap<FString, FString>& Headers);
+
+  UPROPERTY(BlueprintAssignable)
+  FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
+
+  virtual void Activate() override;
+
+  FString Url;
+  TMap<FString, FString> Headers;
 };
