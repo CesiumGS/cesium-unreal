@@ -35,7 +35,10 @@ public:
    * Creates an iterator over the GeoJSON object that will return this object
    * and any children (and children of those children, and so on).
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Object")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Object",
+      meta = (DisplayName = "Create GeoJSON Object Iterator"))
   static FCesiumGeoJsonObjectIterator
   Iterate(const FCesiumGeoJsonObject& Object);
 
@@ -44,7 +47,10 @@ public:
    * object. If no more objects are available, an invalid FCesiumGeoJsonObject
    * is returned.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Iterator")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Next (Object Iterator)"))
   static FCesiumGeoJsonObject Next(UPARAM(Ref)
                                        FCesiumGeoJsonObjectIterator& Iterator);
 
@@ -54,7 +60,8 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Vector|Iterator")
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Is Ended (Object Iterator)"))
   static bool IsEnded(const FCesiumGeoJsonObjectIterator& Iterator);
 
   /**
@@ -67,7 +74,10 @@ public:
    * return the same Feature object. Calling GetFeature on the FeatureCollection
    * will return an invalid feature as there is no parent feature.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Iterator")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Get Feature From GeoJSON Object Iterator"))
   static FCesiumGeoJsonFeature
   GetFeature(UPARAM(Ref) FCesiumGeoJsonObjectIterator& Iterator);
 };
@@ -102,7 +112,10 @@ public:
    * Creates an iterator over the GeoJSON object that will return any point
    * values in the object and any of its children.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Object")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Object",
+      meta = (DisplayName = "Create GeoJSON Point Iterator"))
   static FCesiumGeoJsonPointIterator
   Iterate(const FCesiumGeoJsonObject& Object);
 
@@ -110,7 +123,10 @@ public:
    * Moves the iterator to the next available point value and returns that
    * point. If no more points are available, a zero vector is returned.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Iterator")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Next (Point Iterator)"))
   static FVector Next(UPARAM(Ref) FCesiumGeoJsonPointIterator& Iterator);
 
   /**
@@ -119,7 +135,8 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Vector|Iterator")
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Is Ended (Point Iterator)"))
   static bool IsEnded(const FCesiumGeoJsonPointIterator& Iterator);
 };
 
@@ -154,7 +171,10 @@ public:
    * Creates an iterator over the GeoJSON object that will return any line
    * string values in the object and any of its children.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Object")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Object",
+      meta = (DisplayName = "Create GeoJSON LineString Iterator"))
   static FCesiumGeoJsonLineStringIterator
   Iterate(const FCesiumGeoJsonObject& Object);
 
@@ -163,7 +183,10 @@ public:
    * line string. If no more line strings are available, an empty line is
    * returned.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Iterator")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Next (LineString Iterator)"))
   static FCesiumGeoJsonLineString
   Next(UPARAM(Ref) FCesiumGeoJsonLineStringIterator& Iterator);
 
@@ -173,7 +196,8 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Vector|Iterator")
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Is Ended (LineString Iterator)"))
   static bool IsEnded(const FCesiumGeoJsonLineStringIterator& Iterator);
 };
 
@@ -208,7 +232,10 @@ public:
    * Creates an iterator over the GeoJSON object that will return any polygon
    * values in the object and any of its children.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Object")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Object",
+      meta = (DisplayName = "Create GeoJSON Polygon Iterator"))
   static FCesiumGeoJsonPolygonIterator
   Iterate(const FCesiumGeoJsonObject& Object);
 
@@ -217,7 +244,10 @@ public:
    * polygon. If no more polygons are available, an empty polygon is
    * returned.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Iterator")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Next (Polygon Iterator)"))
   static FCesiumGeoJsonPolygon
   Next(UPARAM(Ref) FCesiumGeoJsonPolygonIterator& Iterator);
 
@@ -227,6 +257,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Vector|Iterator")
+      Category = "Cesium|Vector|Iterator",
+      meta = (DisplayName = "Is Ended (Polygon Iterator)"))
   static bool IsEnded(const FCesiumGeoJsonPolygonIterator& Iterator);
 };
