@@ -13,6 +13,15 @@ FCesiumGeoJsonDocument::FCesiumGeoJsonDocument(
     std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document)
     : _pDocument(std::move(document)) {}
 
+bool FCesiumGeoJsonDocument::IsValid() const {
+  return this->_pDocument != nullptr;
+}
+
+const std::shared_ptr<CesiumVectorData::GeoJsonDocument>&
+FCesiumGeoJsonDocument::GetDocument() const {
+  return this->_pDocument;
+}
+
 bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
     const FString& InString,
     FCesiumGeoJsonDocument& OutVectorDocument) {

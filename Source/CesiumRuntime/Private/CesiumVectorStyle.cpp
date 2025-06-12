@@ -1,9 +1,11 @@
 #include "CesiumVectorStyle.h"
 
+#include "CesiumUtility/Color.h"
+
 CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
   return CesiumVectorData::VectorStyle{
       CesiumVectorData::LineStyle{
-          CesiumVectorData::Color{
+          CesiumUtility::Color{
               this->LineStyle.Color.R,
               this->LineStyle.Color.G,
               this->LineStyle.Color.B,
@@ -12,7 +14,7 @@ CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
           this->LineStyle.Width,
           (CesiumVectorData::LineWidthMode)this->LineStyle.WidthMode},
       CesiumVectorData::PolygonStyle{
-          CesiumVectorData::Color{
+          CesiumUtility::Color{
               this->PolygonStyle.Color.R,
               this->PolygonStyle.Color.G,
               this->PolygonStyle.Color.B,

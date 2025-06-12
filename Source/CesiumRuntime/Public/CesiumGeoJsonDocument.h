@@ -35,18 +35,15 @@ struct FCesiumGeoJsonDocument {
       std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document);
 
   /**
-   * @brief Checks if this FCesiumVectorDocument is valid (document is not
+   * @brief Checks if this FCesiumGeoJsonDocument is valid (document is not
    * nullptr).
    */
-  bool IsValid() const { return this->_document != nullptr; }
+  bool IsValid() const;
 
   /**
-   * @brief Returns the `CesiumVectorData::VectorDocument` this wraps.
+   * @brief Returns the `CesiumVectorData::GeoJsonDocument` this wraps.
    */
-  const CesiumUtility::IntrusivePointer<CesiumVectorData::GeoJsonDocument>&
-  GetDocument() const {
-    return this->_document;
-  }
+  const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& GetDocument() const;
 
 private:
   std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;

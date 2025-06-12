@@ -9,13 +9,13 @@
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "Delegates/Delegate.h"
-#include "CesiumVectorDocumentRasterOverlay.generated.h"
+#include "CesiumGeoJsonDocumentRasterOverlay.generated.h"
 
 /**
  * The projection used by a CesiumVectorDocumentRasterOverlay.
  */
 UENUM(BlueprintType)
-enum class ECesiumVectorDocumentRasterOverlayProjection : uint8 {
+enum class ECesiumGeoJsonDocumentRasterOverlayProjection : uint8 {
   /**
    * The raster overlay is projected using Web Mercator.
    */
@@ -32,20 +32,24 @@ enum class ECesiumVectorDocumentRasterOverlayProjection : uint8 {
  * data from.
  */
 UENUM(BlueprintType)
-enum class ECesiumVectorDocumentRasterOverlaySource : uint8 {
+enum class ECesiumGeoJsonDocumentRasterOverlaySource : uint8 {
   /**
-   * The raster overlay will display the provided VectorDocument.
+   * The raster overlay will display the provided GeoJsonDocument.
    */
   FromDocument = 0,
   /**
-   * The raster overlay will load the VectorDocument from Cesium ion.
+   * The raster overlay will load a GeoJsonDocument from Cesium ion.
    */
-  FromCesiumIon = 1
+  FromCesiumIon = 1,
+  /**
+   * The raster overlay will load a GeoJsonDocument from a URL.
+   */
+  FromUrl = 2
 };
 
 DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(
     bool,
-    FCesiumVectorDocumentRasterOverlayStyleCallback,
+    FCesiumGeoJsonDocumentRasterOverlayStyleCallback,
     FCesiumGeoJsonObject,
     InObject,
     FCesiumVectorStyle&,
@@ -56,7 +60,7 @@ UCLASS(
     BlueprintType,
     Blueprintable,
     meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumVectorDocumentRasterOverlay
+class CESIUMRUNTIME_API UCesiumGeoJsonDocumentRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
 
@@ -67,12 +71,12 @@ public:
    * Mercator.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  ECesiumVectorDocumentRasterOverlayProjection Projection =
-      ECesiumVectorDocumentRasterOverlayProjection::WebMercator;
+  ECesiumGeoJsonDocumentRasterOverlayProjection Projection =
+      ECesiumGeoJsonDocumentRasterOverlayProjection::WebMercator;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  ECesiumVectorDocumentRasterOverlaySource Source =
-      ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon;
+  ECesiumGeoJsonDocumentRasterOverlaySource Source =
+      ECesiumGeoJsonDocumentRasterOverlaySource::FromCesiumIon;
 
   /**
    * The ID of the Cesium ion asset to use.
@@ -83,7 +87,7 @@ public:
       Category = "Cesium",
       meta =
           (EditCondition =
-               "Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon"))
+               "Source == ECesiumGeoJsonDocumentRasterOverlaySource::FromCesiumIon"))
   int64 IonAssetID;
 
   /**
@@ -96,18 +100,52 @@ public:
       AdvancedDisplay,
       meta =
           (EditCondition =
-               "Source == ECesiumVectorDocumentRasterOverlaySource::FromCesiumIon"))
+               "Source == ECesiumGeoJsonDocumentRasterOverlaySource::FromCesiumIon"))
   UCesiumIonServer* CesiumIonServer;
 
+  /**
+   * A FCesiumGeoJsonDocument to display.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
       meta =
           (EditCondition =
-               "Source == ECesiumVectorDocumentRasterOverlaySource::FromDocument"))
-  FCesiumGeoJsonDocument VectorDocument;
+               "Source == ECesiumGeoJsonDocumentRasterOverlaySource::FromDocument"))
+  FCesiumGeoJsonDocument GeoJsonDocument;
 
+  /**
+   * A URL to load a GeoJSON document from.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumGeoJsonDocumentRasterOverlaySource::FromUrl"))
+  FString Url;
+
+  /**
+   * Headers to use while making a request to `Url` to load a GeoJSON document.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumGeoJsonDocumentRasterOverlaySource::FromUrl"))
+  TMap<FString, FString> RequestHeaders;
+
+  /**
+   * The number of mip levels to generate for each tile of this raster overlay.
+   *
+   * Additional mip levels can improve the visual quality of tiles farther from
+   * the camera at the cost of additional rasterization time to create each mip
+   * level.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -115,11 +153,21 @@ public:
       meta = (ClampMin = "0", ClampMax = "8"))
   int32 MipLevels = 0;
 
+  /**
+   * The default style to use for this raster overlay.
+   *
+   * If no style is set on a GeoJSON object or any of its parents, this style
+   * will be used instead.
+   */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FCesiumVectorStyle DefaultStyle;
 
+  /**
+   * A callback that will be called to set the styles of each object in the
+   * loaded document.
+   */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FCesiumVectorDocumentRasterOverlayStyleCallback StyleCallback;
+  FCesiumGeoJsonDocumentRasterOverlayStyleCallback StyleCallback;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
