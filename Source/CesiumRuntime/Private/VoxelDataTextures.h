@@ -130,7 +130,12 @@ private:
     FCesiumTextureResource* pResource;
   };
 
-  static void writeToTexture(
+  static void directCopyToTexture(
+      const FCesiumPropertyAttributeProperty& property,
+      const TextureData& data,
+      const FUpdateTextureRegion3D& region);
+
+  static void incrementalWriteToTexture(
       const FCesiumPropertyAttributeProperty& property,
       const TextureData& data,
       const FUpdateTextureRegion3D& region);

@@ -141,9 +141,10 @@ FVoxelDataTextures::FVoxelDataTextures(
       continue;
     }
 
+    this->_propertyMap.Add(Property.Name, {encodedFormat, nullptr, nullptr});
+
     uint32 texelSizeBytes =
         encodedFormat.channels * encodedFormat.bytesPerChannel;
-    this->_propertyMap.Add(Property.Name, {encodedFormat, nullptr, nullptr});
     maximumTexelSizeBytes = FMath::Max(maximumTexelSizeBytes, texelSizeBytes);
   }
 
@@ -258,38 +259,7 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
  * type that the texture expects. Coercive encoding behavior (similar to what
  * is done for CesiumPropertyTableProperty) could be added in the future.
  */
-// static void directCopyTo3dTexture(
-//     UTexture* pTexture,
-//     FCesiumTextureResource* pResource,
-//     const std::byte* pData,
-//     FUpdateTextureRegion3D updateRegion,
-//     uint32 texelSizeBytes) {
-//   if (!pResource || !pData)
-//     return;
-//
-//   ENQUEUE_RENDER_COMMAND(Cesium_CopyVoxels)
-//   ([pTexture, pResource, pData, updateRegion, texelSizeBytes](
-//        FRHICommandListImmediate& RHICmdList) {
-//     if (!IsValid(pTexture)) {
-//       return;
-//     }
-//
-//     // Pitch = size in bytes of each row of the source image.
-//     uint32 srcRowPitch = updateRegion.Width * texelSizeBytes;
-//     uint32 srcDepthPitch =
-//         updateRegion.Width * updateRegion.Height * texelSizeBytes;
-//
-//     RHIUpdateTexture3D(
-//         pResource->TextureRHI,
-//         0,
-//         updateRegion,
-//         srcRowPitch,
-//         srcDepthPitch,
-//         (const uint8*)(pData));
-//   });
-// }
-
-/*static*/ void FVoxelDataTextures::writeToTexture(
+/*static*/ void FVoxelDataTextures::directCopyToTexture(
     const FCesiumPropertyAttributeProperty& property,
     const FVoxelDataTextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
@@ -299,7 +269,47 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   uint32 texelSizeBytes =
       data.encodedFormat.channels * data.encodedFormat.bytesPerChannel;
 
-  ENQUEUE_RENDER_COMMAND(Cesium_CopyVoxels)
+  const uint8* pData =
+      reinterpret_cast<const uint8*>(property.getAccessorData());
+
+  ENQUEUE_RENDER_COMMAND(Cesium_DirectCopyVoxels)
+  ([pTexture = data.pTexture,
+    pResource = data.pResource,
+    format = data.encodedFormat.format,
+    &property,
+    updateRegion,
+    texelSizeBytes,
+    pData](FRHICommandListImmediate& RHICmdList) {
+    if (!IsValid(pTexture)) {
+      return;
+    }
+
+    // Pitch = size in bytes of each row of the source image.
+    uint32 srcRowPitch = updateRegion.Width * texelSizeBytes;
+    uint32 srcDepthPitch =
+        updateRegion.Width * updateRegion.Height * texelSizeBytes;
+
+    RHIUpdateTexture3D(
+        pResource->TextureRHI,
+        0,
+        updateRegion,
+        srcRowPitch,
+        srcDepthPitch,
+        pData);
+  });
+}
+
+/*static*/ void FVoxelDataTextures::incrementalWriteToTexture(
+    const FCesiumPropertyAttributeProperty& property,
+    const FVoxelDataTextures::TextureData& data,
+    const FUpdateTextureRegion3D& updateRegion) {
+  if (!data.pResource || !data.pTexture)
+    return;
+
+  uint32 texelSizeBytes =
+      data.encodedFormat.channels * data.encodedFormat.bytesPerChannel;
+
+  ENQUEUE_RENDER_COMMAND(Cesium_IncrementalWriteVoxels)
   ([pTexture = data.pTexture,
     pResource = data.pResource,
     format = data.encodedFormat.format,
@@ -319,7 +329,7 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
 
     for (uint32 z = 0; z < updateRegion.Depth; z++) {
       for (uint32 y = 0; y < updateRegion.Height; y++) {
-        int64 sourceIndex = int64(
+        int64_t sourceIndex = int64_t(
             z * updateRegion.Width * updateRegion.Height +
             y * updateRegion.Width);
         uint8* pDestRow = UpdateData.Data + z * UpdateData.DepthPitch +
@@ -381,7 +391,14 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
       continue;
     }
 
-    writeToTexture(property, PropertyIt.Value, updateRegion);
+    uint32 texelSizeBytes = PropertyIt.Value.encodedFormat.channels *
+                            PropertyIt.Value.encodedFormat.bytesPerChannel;
+
+    if (property.getAccessorStride() == texelSizeBytes) {
+      directCopyToTexture(property, PropertyIt.Value, updateRegion);
+    } else {
+      incrementalWriteToTexture(property, PropertyIt.Value, updateRegion);
+    }
   }
   return slotIndex;
 }

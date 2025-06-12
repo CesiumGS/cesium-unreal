@@ -12,8 +12,7 @@
 #include <CesiumGltf/PropertyAttributePropertyView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 #include <any>
-#include <glm/glm.hpp>
-#include <variant>
+#include <span>
 
 #include "CesiumPropertyAttributeProperty.generated.h"
 
@@ -125,6 +124,16 @@ public:
     _valueType = TypeToMetadataValueType<T>(EnumDefinition);
     _normalized = Normalized;
   }
+
+  /**
+   * @brief Gets the stride of the underlying accessor.
+   */
+  int64 getAccessorStride() const;
+
+  /**
+   * @brief Gets a pointer to the first byte of the underlying accessor's data.
+   */
+  const std::byte* getAccessorData() const;
 
 private:
   ECesiumPropertyAttributePropertyStatus _status;
