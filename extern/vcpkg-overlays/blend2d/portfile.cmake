@@ -16,7 +16,7 @@ vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
 # iOS will not allow us to use JIT, so we need to disable it in Blend2D.
 # Once we're using manifest mode for Unreal, we can get rid of this overlay port and use the above feature.
 if(VCPKG_TARGET_IS_IOS)
-    set(IOS_DISABLE_JIT "-DBLEND2D_NO_JIT")
+    set(IOS_DISABLE_JIT "-DBLEND2D_NO_JIT=ON")
 endif()
 
 vcpkg_cmake_configure(
