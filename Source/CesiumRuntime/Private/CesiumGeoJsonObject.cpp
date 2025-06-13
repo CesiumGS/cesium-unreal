@@ -166,6 +166,35 @@ ECesiumGeoJsonObjectType UCesiumGeoJsonObjectBlueprintLibrary::GetObjectType(
     return {};
   }
 
+  // Assert that enums are equivalent.
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::Point ==
+      (uint32_t)ECesiumGeoJsonObjectType::Point);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::MultiPoint ==
+      (uint32_t)ECesiumGeoJsonObjectType::MultiPoint);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::LineString ==
+      (uint32_t)ECesiumGeoJsonObjectType::LineString);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::MultiLineString ==
+      (uint32_t)ECesiumGeoJsonObjectType::MultiLineString);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::Polygon ==
+      (uint32_t)ECesiumGeoJsonObjectType::Polygon);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::MultiPolygon ==
+      (uint32_t)ECesiumGeoJsonObjectType::MultiPolygon);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::GeometryCollection ==
+      (uint32_t)ECesiumGeoJsonObjectType::GeometryCollection);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::Feature ==
+      (uint32_t)ECesiumGeoJsonObjectType::Feature);
+  static_assert(
+      (uint32_t)CesiumVectorData::GeoJsonObjectType::FeatureCollection ==
+      (uint32_t)ECesiumGeoJsonObjectType::FeatureCollection);
+
   return (ECesiumGeoJsonObjectType)InObject._pObject->getType();
 }
 
