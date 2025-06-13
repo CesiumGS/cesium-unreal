@@ -5,21 +5,21 @@
 CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
   return CesiumVectorData::VectorStyle{
       CesiumVectorData::LineStyle{
-          CesiumUtility::Color{
-              this->LineStyle.Color.R,
-              this->LineStyle.Color.G,
-              this->LineStyle.Color.B,
-              this->LineStyle.Color.A},
-          (CesiumVectorData::ColorMode)this->LineStyle.ColorMode,
+          {CesiumUtility::Color{
+               this->LineStyle.Color.R,
+               this->LineStyle.Color.G,
+               this->LineStyle.Color.B,
+               this->LineStyle.Color.A},
+           (CesiumVectorData::ColorMode)this->LineStyle.ColorMode},
           this->LineStyle.Width,
           (CesiumVectorData::LineWidthMode)this->LineStyle.WidthMode},
       CesiumVectorData::PolygonStyle{
-          CesiumUtility::Color{
-              this->PolygonStyle.Color.R,
-              this->PolygonStyle.Color.G,
-              this->PolygonStyle.Color.B,
-              this->PolygonStyle.Color.A},
-          (CesiumVectorData::ColorMode)this->PolygonStyle.ColorMode,
+          {CesiumUtility::Color{
+               this->PolygonStyle.Color.R,
+               this->PolygonStyle.Color.G,
+               this->PolygonStyle.Color.B,
+               this->PolygonStyle.Color.A},
+           (CesiumVectorData::ColorMode)this->PolygonStyle.ColorMode},
           this->PolygonStyle.Fill,
           this->PolygonStyle.Outline}};
 }
