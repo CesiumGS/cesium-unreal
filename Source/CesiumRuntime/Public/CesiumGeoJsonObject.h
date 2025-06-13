@@ -97,7 +97,7 @@ private:
  * @brief The type of a feature's ID field.
  */
 UENUM(BlueprintType)
-enum class ECesiumGeoJsonFeatureIdType {
+enum class ECesiumGeoJsonFeatureIdType : uint8 {
   /**
    * @brief The feature has no ID.
    */
