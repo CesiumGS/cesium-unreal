@@ -3197,8 +3197,8 @@ static void loadPrimitiveGameThreadPart(
           pBaseMaterial,
           ImportedSlotName);
       if (pMaterialForGltfPrimitive) {
-        // pMaterialForGltfPrimitive created above may not have used the suggested
-        // pBaseMaterial passed as input
+        // pMaterialForGltfPrimitive created above may not have used the
+        // suggested pBaseMaterial passed as input
         pBaseMaterial = pMaterialForGltfPrimitive->Parent.Get();
         // may have changed but we don't need it from now on:
         pUserDesignatedMaterialAsDynamic = nullptr;
@@ -3559,8 +3559,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
 void UCesiumGltfComponent::OnVisibilityChanged() {
   USceneComponent::OnVisibilityChanged();
-  auto* pLifecycleEventReceiver =
-      Cast<ACesium3DTileset>(GetOuter())->GetLifecycleEventReceiver();
+  auto* pLifecycleEventReceiver = GetTilesetActor().GetLifecycleEventReceiver();
   if (pLifecycleEventReceiver)
     pLifecycleEventReceiver->OnVisibilityChanged(*this, GetVisibleFlag());
 }
@@ -3601,6 +3600,10 @@ const FCesiumModelMetadata& UCesiumGltfComponent::GetModelMetadata() const {
 
 const Cesium3DTilesSelection::TileID& UCesiumGltfComponent::GetTileID() const {
   return pTile->getTileID();
+}
+
+ACesium3DTileset& UCesiumGltfComponent::GetTilesetActor() {
+  return *Cast<ACesium3DTileset>(GetOuter());
 }
 
 FVector
