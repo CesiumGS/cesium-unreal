@@ -52,6 +52,8 @@ public:
   virtual ~UCesiumVoxelRendererComponent();
 
   void BeginDestroy() override;
+  bool IsReadyForFinishDestroy() override;
+
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* DefaultMaterial = nullptr;
 

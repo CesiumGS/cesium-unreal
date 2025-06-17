@@ -20,78 +20,6 @@
 using namespace CesiumGltf;
 using namespace EncodedFeaturesMetadata;
 
-/**
- * A Cesium texture resource that creates an initially empty `FRHITexture` for
- * FVoxelDataTextures.
- */
-class FCesiumVoxelDataTextureResource : public FCesiumTextureResource {
-public:
-  FCesiumVoxelDataTextureResource(
-      TextureGroup textureGroup,
-      uint32 width,
-      uint32 height,
-      uint32 depth,
-      EPixelFormat format,
-      TextureFilter filter,
-      TextureAddress addressX,
-      TextureAddress addressY,
-      bool sRGB,
-      uint32 extData);
-
-protected:
-  virtual FTextureRHIRef InitializeTextureRHI() override;
-};
-
-FCesiumVoxelDataTextureResource::FCesiumVoxelDataTextureResource(
-    TextureGroup textureGroup,
-    uint32 width,
-    uint32 height,
-    uint32 depth,
-    EPixelFormat format,
-    TextureFilter filter,
-    TextureAddress addressX,
-    TextureAddress addressY,
-    bool sRGB,
-    uint32 extData)
-    : FCesiumTextureResource(
-          textureGroup,
-          width,
-          height,
-          depth,
-          format,
-          filter,
-          addressX,
-          addressY,
-          sRGB,
-          false,
-          extData,
-          true) {}
-
-FTextureRHIRef FCesiumVoxelDataTextureResource::InitializeTextureRHI() {
-  FRHIResourceCreateInfo createInfo{TEXT("FCesiumVoxelDataTextureResource")};
-  createInfo.BulkData = nullptr;
-  createInfo.ExtData = this->_platformExtData;
-
-  ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
-  if (this->bSRGB) {
-    textureFlags |= TexCreate_SRGB;
-  }
-
-  // Create a new 3D RHI texture, initially empty.
-  return RHICreateTexture(
-      FRHITextureCreateDesc::Create3D(createInfo.DebugName)
-          .SetExtent(int32(this->_width), int32(this->_height))
-          .SetDepth(this->_depth)
-          .SetFormat(this->_format)
-          .SetNumMips(1)
-          .SetNumSamples(1)
-          .SetFlags(textureFlags)
-          .SetInitialState(ERHIAccess::Unknown)
-          .SetExtData(createInfo.ExtData)
-          .SetGPUMask(createInfo.GPUMask)
-          .SetClearValue(createInfo.ClearValueBinding));
-}
-
 FVoxelDataTextures::FVoxelDataTextures(
     const FCesiumVoxelClassDescription* pVoxelClass,
     const glm::uvec3& dataDimensions,
@@ -196,7 +124,7 @@ FVoxelDataTextures::FVoxelDataTextures(
   // Create the actual textures.
   for (auto& propertyIt : this->_propertyMap) {
     FCesiumTextureResource* pTextureResource =
-        MakeUnique<FCesiumVoxelDataTextureResource>(
+        FCesiumTextureResource::CreateEmpty(
             TextureGroup::TEXTUREGROUP_8BitData,
             actualDimensions.x,
             actualDimensions.y,
@@ -205,8 +133,7 @@ FVoxelDataTextures::FVoxelDataTextures(
             TextureFilter::TF_Nearest,
             TextureAddress::TA_Clamp,
             TextureAddress::TA_Clamp,
-            false,
-            0)
+            false)
             .Release();
 
     UVolumeTexture* pTexture = NewObject<UVolumeTexture>(

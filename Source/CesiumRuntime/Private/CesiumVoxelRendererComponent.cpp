@@ -60,9 +60,15 @@ void UCesiumVoxelRendererComponent::BeginDestroy() {
   // Reset the pointers.
   this->MeshComponent = nullptr;
   this->_pOctree.Reset();
-//  this->_pDataTextures->BeginDestroy();
+  //  this->_pDataTextures->BeginDestroy();
 
   Super::BeginDestroy();
+}
+
+bool UCesiumVoxelRendererComponent::IsReadyForFinishDestroy() {
+  if (this->_pDataTextures.IsValid()) {
+  }
+  return Super::IsReadyForFinishDestroy();
 }
 
 namespace {
@@ -92,8 +98,8 @@ void setVoxelBoxProperties(
   // Distinct from the component's transform above, this scales from the
   // engine-provided Cube's space ([-50, 50]) to a unit space of [-1, 1]. This
   // is specifically used to fit the raymarched cube into the bounds of the
-  // explicit cube mesh. In other words, this scale must be applied in-shader to
-  // account for the actual mesh's bounds.
+  // explicit cube mesh. In other words, this scale must be applied in-shader
+  // to account for the actual mesh's bounds.
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
@@ -125,7 +131,8 @@ getMetadataValue(const std::optional<CesiumUtility::JsonValue>& jsonValue) {
       return FCesiumMetadataValue();
     }
 
-    // Attempt to convert the array to a vec4 (or a value with less dimensions).
+    // Attempt to convert the array to a vec4 (or a value with less
+    // dimensions).
     size_t endIndex = FMath::Min(array.size(), (size_t)4);
     TArray<float> values;
     for (size_t i = 0; i < endIndex; i++) {
@@ -464,7 +471,8 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   //   const Cesium3DTiles::MetadataEntity& metadata =
   //   *tilesetMetadata.metadata;
   //   // TODO: This should find the property by "TILESET_TILE_COUNT"
-  //   if (metadata.properties.find("tileCount") != metadata.properties.end()) {
+  //   if (metadata.properties.find("tileCount") != metadata.properties.end())
+  //   {
   //     const CesiumUtility::JsonValue& value =
   //         metadata.properties.at("tileCount");
   //     if (value.isInt64()) {
@@ -477,7 +485,8 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
 
   // if (knownTileCount > 0) {
   //  uint32 maximumTextureMemory =
-  //      getMaximumTextureMemory(pDescription, dataDimensions, knownTileCount);
+  //      getMaximumTextureMemory(pDescription, dataDimensions,
+  //      knownTileCount);
   //  requestedTextureMemory = FMath::Min(
   //      maximumTextureMemory,
   //      FVoxelResources::MaximumDataTextureMemoryBytes);
@@ -690,8 +699,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
 
       FVoxelOctree::Node* pNode = this->_pOctree->getNode(currentTileId);
       pNode->lastKnownScreenSpaceError = currentTile.sse;
-      // Set to arbitrary index. This will prompt the tile to render even though
-      // it does not actually have data.
+      // Set to arbitrary index. This will prompt the tile to render even
+      // though it does not actually have data.
       pNode->dataIndex = 0;
       pNode->isDataReady = true;
     }

@@ -130,6 +130,9 @@ private:
     /**
      * @brief A pointer to the texture resource. There is no way to retrieve
      * this through the UTexture API, so the pointer is stored here.
+     *
+     * Although this would ideally be a TUniquePtr, it prevents TMap from
+     * compiling.
      */
     FCesiumTextureResource* pResource;
   };

@@ -10,75 +10,6 @@
 using namespace CesiumGeometry;
 using namespace Cesium3DTilesContent;
 
-/**
- * A Cesium texture resource that creates an initially empty `FRHITexture` for
- * FVoxelOctree.
- */
-class FCesiumVoxelOctreeTextureResource : public FCesiumTextureResource {
-public:
-  FCesiumVoxelOctreeTextureResource(
-      TextureGroup textureGroup,
-      uint32 width,
-      uint32 height,
-      EPixelFormat format,
-      TextureFilter filter,
-      TextureAddress addressX,
-      TextureAddress addressY,
-      bool sRGB,
-      uint32 extData);
-
-protected:
-  virtual FTextureRHIRef InitializeTextureRHI() override;
-};
-
-FCesiumVoxelOctreeTextureResource::FCesiumVoxelOctreeTextureResource(
-    TextureGroup textureGroup,
-    uint32 width,
-    uint32 height,
-    EPixelFormat format,
-    TextureFilter filter,
-    TextureAddress addressX,
-    TextureAddress addressY,
-    bool sRGB,
-    uint32 extData)
-    : FCesiumTextureResource(
-          textureGroup,
-          width,
-          height,
-          0,
-          format,
-          filter,
-          addressX,
-          addressY,
-          sRGB,
-          false,
-          extData,
-          true) {}
-
-FTextureRHIRef FCesiumVoxelOctreeTextureResource::InitializeTextureRHI() {
-  FRHIResourceCreateInfo createInfo{TEXT("FVoxelOctreeTextureResource")};
-  createInfo.BulkData = nullptr;
-  createInfo.ExtData = this->_platformExtData;
-
-  ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
-  if (this->bSRGB) {
-    textureFlags |= TexCreate_SRGB;
-  }
-
-  // Create a new 2D RHI texture, initially empty.
-  return RHICreateTexture(
-      FRHITextureCreateDesc::Create2D(createInfo.DebugName)
-          .SetExtent(int32(this->_width), int32(this->_height))
-          .SetFormat(this->_format)
-          .SetNumMips(1)
-          .SetNumSamples(1)
-          .SetFlags(textureFlags)
-          .SetInitialState(ERHIAccess::Unknown)
-          .SetExtData(createInfo.ExtData)
-          .SetGPUMask(createInfo.GPUMask)
-          .SetClearValue(createInfo.ClearValueBinding));
-}
-
 void UCesiumVoxelOctreeTexture::update(const std::vector<std::byte>& data) {
   if (!this->_pResource || !this->_pResource->TextureRHI) {
     return;
@@ -112,7 +43,7 @@ void UCesiumVoxelOctreeTexture::update(const std::vector<std::byte>& data) {
   // Pitch = size in bytes of each row of the source image
   uint32 sourcePitch = region.Width * sizeof(uint32);
   ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
-  ([pResource = this->_pResource, &data, region, sourcePitch](
+  ([pResource = this->_pResource.Get(), &data, region, sourcePitch](
        FRHICommandListImmediate& RHICmdList) {
     RHIUpdateTexture2D(
         pResource->TextureRHI,
@@ -121,6 +52,8 @@ void UCesiumVoxelOctreeTexture::update(const std::vector<std::byte>& data) {
         sourcePitch,
         reinterpret_cast<const uint8*>(data.data()));
   });
+
+  // this->_fence.BeginFence();
 }
 
 /*static*/ UCesiumVoxelOctreeTexture*
@@ -130,17 +63,17 @@ UCesiumVoxelOctreeTexture::create(uint32 Width, uint32 MaximumTileCount) {
   Height = static_cast<uint32>(FMath::CeilToInt64(Height));
   Height = FMath::Clamp(Height, 1, Width);
 
-  TUniquePtr<FCesiumVoxelOctreeTextureResource> pResource =
-      MakeUnique<FCesiumVoxelOctreeTextureResource>(
+  FCesiumTextureResourceUniquePtr pResource =
+      FCesiumTextureResource::CreateEmpty(
           TextureGroup::TEXTUREGROUP_8BitData,
           Width,
           Height,
+          1, // Depth
           EPixelFormat::PF_R8G8B8A8,
           TextureFilter::TF_Nearest,
           TextureAddress::TA_Clamp,
           TextureAddress::TA_Clamp,
-          false,
-          0);
+          false);
 
   UCesiumVoxelOctreeTexture* pTexture = NewObject<UCesiumVoxelOctreeTexture>(
       GetTransientPackage(),
@@ -158,10 +91,14 @@ UCesiumVoxelOctreeTexture::create(uint32 Width, uint32 MaximumTileCount) {
   pTexture->NeverStream = true;
 
   pTexture->_tilesPerRow = TilesPerRow;
-  pTexture->_pResource = pResource.Release();
-  pTexture->SetResource(pTexture->_pResource);
+  pTexture->_pResource = std::move(pResource);
+  pTexture->SetResource(pTexture->_pResource.Get());
 
   return pTexture;
+}
+
+bool UCesiumVoxelOctreeTexture::isReadyToDestroy() const {
+  return this->_fence.IsFenceComplete();
 }
 
 size_t FVoxelOctree::OctreeTileIDHash::operator()(

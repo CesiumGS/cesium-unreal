@@ -4,6 +4,7 @@
 
 #include "CesiumTextureResource.h"
 #include "Engine/Texture2D.h"
+#include "RenderCommandFence.h"
 
 #include <CesiumGeometry/OctreeTileID.h>
 #include <array>
@@ -31,9 +32,12 @@ public:
 
   uint32_t getTilesPerRow() const { return this->_tilesPerRow; }
 
+  bool isReadyToDestroy() const;
+
 private:
-  FCesiumTextureResource* _pResource;
+  FCesiumTextureResourceUniquePtr _pResource;
   uint32_t _tilesPerRow;
+  FRenderCommandFence _fence;
 };
 
 /**
@@ -226,7 +230,6 @@ private:
       uint32 textureIndex,
       uint32 parentOctreeIndex,
       uint32 parentTextureIndex);
-
 
   struct OctreeTileIDHash {
     size_t operator()(const CesiumGeometry::OctreeTileID& tileId) const;
