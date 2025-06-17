@@ -47,13 +47,10 @@ enum class ECesiumGeoJsonDocumentRasterOverlaySource : uint8 {
   FromUrl = 2
 };
 
-DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(
-    bool,
-    FCesiumGeoJsonDocumentRasterOverlayStyleCallback,
-    FCesiumGeoJsonObject,
-    InObject,
-    FCesiumVectorStyle&,
-    OutStyle);
+DECLARE_DYNAMIC_DELEGATE_OneParam(
+    FCesiumGeoJsonDocumentRasterOverlayOnDocumentLoadedCallback,
+    FCesiumGeoJsonDocument,
+    InDocument);
 
 UCLASS(
     ClassGroup = Cesium,
@@ -163,11 +160,10 @@ public:
   FCesiumVectorStyle DefaultStyle;
 
   /**
-   * A callback that will be called to set the styles of each object in the
-   * loaded document.
+   * A callback that will be called when the document has been loaded.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FCesiumGeoJsonDocumentRasterOverlayStyleCallback StyleCallback;
+  FCesiumGeoJsonDocumentRasterOverlayOnDocumentLoadedCallback OnDocumentLoaded;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(

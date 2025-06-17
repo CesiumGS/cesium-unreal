@@ -77,10 +77,10 @@ struct FCesiumVectorLineStyle {
 };
 
 /**
- * The style used to draw polygons.
+ * The style used to fill polygons.
  */
 USTRUCT(BlueprintType)
-struct FCesiumVectorPolygonStyle {
+struct FCesiumVectorPolygonFillStyle {
   GENERATED_BODY()
 
   /**
@@ -93,19 +93,46 @@ struct FCesiumVectorPolygonStyle {
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECesiumVectorColorMode ColorMode = ECesiumVectorColorMode::Normal;
+};
+
+/**
+ * The style used to draw polygons.
+ */
+USTRUCT(BlueprintType)
+struct FCesiumVectorPolygonStyle {
+  GENERATED_BODY()
+
   /**
-   * Whether the polygon should be filled. The `ColorStyle` specified
-   * here will be used for the fill color.
+   * Whether the polygon should be filled.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool Fill = true;
+
   /**
-   * Whether the polygon should be outlined. The `LineStyle` specified on
-   * the same `FCesiumVectorDocumentRasterOverlayStyle` as this will be used for
-   * the stroke color.
+   * If `Fill` is true, this style will be used when filling the polygon.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "Fill"))
+  FCesiumVectorPolygonFillStyle FillStyle;
+
+  /**
+   * Whether the polygon should be outlined.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool Outline = false;
+
+  /**
+   * If `Outline` is true, this style will be used when outlining the polygon.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "Outline"))
+  FCesiumVectorLineStyle OutlineStyle;
 };
 
 /**

@@ -11,6 +11,38 @@
 
 #include "CesiumRuntime.h"
 
+namespace {
+CesiumAsync::Future<std::shared_ptr<CesiumVectorData::GeoJsonDocument>>
+wrapLoaderFuture(
+    UCesiumGeoJsonDocumentRasterOverlay* pThis,
+    CesiumAsync::Future<
+        CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>>&& future) {
+  return std::move(future).thenInMainThread(
+      [pThis](CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&
+                  documentResult)
+          -> std::shared_ptr<CesiumVectorData::GeoJsonDocument> {
+        if (!documentResult.errors) {
+          documentResult.errors.logError(
+              spdlog::default_logger(),
+              "Errors loading GeoJSON document: ");
+          return nullptr;
+        }
+
+        std::shared_ptr<CesiumVectorData::GeoJsonDocument> pGeoJsonDocument =
+            std::make_shared<CesiumVectorData::GeoJsonDocument>(
+                std::move(*documentResult.value));
+
+        /*if (pThis->OnDocumentLoaded.IsBound()) {
+          pThis->OnDocumentLoaded.Execute(FCesiumGeoJsonDocument(
+              std::shared_ptr<CesiumVectorData::GeoJsonDocument>(
+                  pGeoJsonDocument)));
+        }*/
+
+        return std::move(pGeoJsonDocument);
+      });
+}
+} // namespace
+
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
@@ -28,27 +60,8 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
     projection = CesiumGeospatial::WebMercatorProjection(options.ellipsoid);
   }
 
-  std::optional<CesiumRasterOverlays::GeoJsonDocumentRasterOverlayStyleCallback>
-      callbackOpt = std::nullopt;
-
-  if (this->StyleCallback.IsBound()) {
-    callbackOpt =
-        [Callback = this->StyleCallback](
-            const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& doc,
-            const CesiumVectorData::GeoJsonObject* pNode)
-        -> std::optional<CesiumVectorData::VectorStyle> {
-      FCesiumVectorStyle style;
-      if (Callback.Execute(FCesiumGeoJsonObject(doc, pNode), style)) {
-        return style.toNative();
-      }
-
-      return std::nullopt;
-    };
-  }
-
   CesiumRasterOverlays::GeoJsonDocumentRasterOverlayOptions vectorOptions{
       this->DefaultStyle.toNative(),
-      callbackOpt,
       std::move(projection),
       options.ellipsoid,
       this->MipLevels};
@@ -61,10 +74,15 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
 
     return std::make_unique<CesiumRasterOverlays::GeoJsonDocumentRasterOverlay>(
         TCHAR_TO_UTF8(*this->MaterialLayerKey),
-        CesiumRasterOverlays::IonGeoJsonDocumentRasterOverlaySource{
-            this->IonAssetID,
-            TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken),
-            TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)},
+        wrapLoaderFuture(
+            this,
+            CesiumVectorData::GeoJsonDocument::fromCesiumIonAsset(
+                getAsyncSystem(),
+                getAssetAccessor(),
+                this->IonAssetID,
+                TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken),
+                std::string(TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)) +
+                    "/")),
         vectorOptions,
         options);
   } else if (
@@ -78,14 +96,23 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
 
     return std::make_unique<CesiumRasterOverlays::GeoJsonDocumentRasterOverlay>(
         TCHAR_TO_UTF8(*this->MaterialLayerKey),
-        CesiumRasterOverlays::UrlGeoJsonDocumentRasterOverlaySource{
-            TCHAR_TO_UTF8(*this->Url),
-            std::move(headers)},
+        wrapLoaderFuture(
+            this,
+            CesiumVectorData::GeoJsonDocument::fromUrl(
+                getAsyncSystem(),
+                getAssetAccessor(),
+                TCHAR_TO_UTF8(*this->Url),
+                std::move(headers))),
         vectorOptions,
         options);
   }
 
+  if (this->OnDocumentLoaded.IsBound()) {
+    this->OnDocumentLoaded.Execute(this->GeoJsonDocument);
+  }
+
   return std::make_unique<CesiumRasterOverlays::GeoJsonDocumentRasterOverlay>(
+      getAsyncSystem(),
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->GeoJsonDocument.GetDocument(),
       vectorOptions,
