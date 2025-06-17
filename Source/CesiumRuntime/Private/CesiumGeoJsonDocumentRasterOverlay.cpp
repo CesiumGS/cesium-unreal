@@ -32,13 +32,13 @@ wrapLoaderFuture(
             std::make_shared<CesiumVectorData::GeoJsonDocument>(
                 std::move(*documentResult.value));
 
-        /*if (pThis->OnDocumentLoaded.IsBound()) {
+        if (pThis->OnDocumentLoaded.IsBound()) {
           pThis->OnDocumentLoaded.Execute(FCesiumGeoJsonDocument(
               std::shared_ptr<CesiumVectorData::GeoJsonDocument>(
                   pGeoJsonDocument)));
-        }*/
+        }
 
-        return std::move(pGeoJsonDocument);
+        return pGeoJsonDocument;
       });
 }
 } // namespace
