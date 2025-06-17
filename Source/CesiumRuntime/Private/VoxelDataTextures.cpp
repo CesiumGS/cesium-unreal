@@ -141,10 +141,12 @@ FVoxelDataTextures::FVoxelDataTextures(
       continue;
     }
 
-    this->_propertyMap.Add(Property.Name, {encodedFormat, nullptr, nullptr});
-
     uint32 texelSizeBytes =
         encodedFormat.channels * encodedFormat.bytesPerChannel;
+    this->_propertyMap.Add(
+        Property.Name,
+        {encodedFormat, texelSizeBytes, nullptr, nullptr});
+
     maximumTexelSizeBytes = FMath::Max(maximumTexelSizeBytes, texelSizeBytes);
   }
 
@@ -184,9 +186,9 @@ FVoxelDataTextures::FVoxelDataTextures(
   this->_slots.resize(this->_maximumTileCount, Slot());
   for (size_t i = 0; i < this->_slots.size(); i++) {
     Slot* pSlot = &_slots[i];
-    pSlot->Index = static_cast<int64>(i);
-    pSlot->Previous = i > 0 ? &_slots[i - 1] : nullptr;
-    pSlot->Next = i < _slots.size() - 1 ? &_slots[i + 1] : nullptr;
+    pSlot->index = static_cast<int64_t>(i);
+    pSlot->pPrevious = i > 0 ? &_slots[i - 1] : nullptr;
+    pSlot->pNext = i < _slots.size() - 1 ? &_slots[i + 1] : nullptr;
   }
 
   this->_pEmptySlotsHead = &this->_slots[0];
@@ -234,20 +236,34 @@ FVoxelDataTextures::FVoxelDataTextures(
   }
 }
 
-FVoxelDataTextures ::~FVoxelDataTextures() {
-  for (auto propertyIt : this->_propertyMap) {
-    UTexture* pTexture = propertyIt.Value.pTexture;
-    propertyIt.Value.pTexture = nullptr;
-    propertyIt.Value.pResource = nullptr;
+FVoxelDataTextures::~FVoxelDataTextures() {}
 
-    if (IsValid(pTexture)) {
-      pTexture->RemoveFromRoot();
-      CesiumLifetime::destroy(pTexture);
-    }
-  }
-
-  this->_propertyMap.Empty();
-}
+// void FVoxelDataTextures::BeginDestroy() {
+//  for (auto propertyIt : this->_propertyMap) {
+//    UTexture* pTexture = propertyIt.Value.pTexture;
+//    pTexture->BeginDestroy();
+//    propertyIt.Value.pTexture = nullptr;
+//    propertyIt.Value.pResource = nullptr;
+//
+//    if (IsValid(pTexture)) {
+//      pTexture->RemoveFromRoot();
+//      CesiumLifetime::destroy(pTexture);
+//    }
+//  }
+//
+//  this->_propertyMap.Empty();
+//
+//  Super::BeginDestroy();
+//}
+//
+// bool FVoxelDataTextures::IsReadyForFinishDestroy() {
+//  // for (auto propertyIt : this->_propertyMap) {
+//  //   UTexture* pTexture = propertyIt.Value.pTexture;
+//  //   if (pTexture && !pTexture->IsReadyForFinishDestroy())
+//  //     return false;
+//  // }
+//  return Super::IsReadyForFinishDestroy();
+//}
 
 UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   const TextureData* pProperty = this->_propertyMap.Find(attributeId);
@@ -266,9 +282,6 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   if (!data.pResource || !data.pTexture)
     return;
 
-  uint32 texelSizeBytes =
-      data.encodedFormat.channels * data.encodedFormat.bytesPerChannel;
-
   const uint8* pData =
       reinterpret_cast<const uint8*>(property.getAccessorData());
 
@@ -278,7 +291,7 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
     format = data.encodedFormat.format,
     &property,
     updateRegion,
-    texelSizeBytes,
+    texelSizeBytes = data.texelSizeBytes,
     pData](FRHICommandListImmediate& RHICmdList) {
     if (!IsValid(pTexture)) {
       return;
@@ -306,16 +319,14 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   if (!data.pResource || !data.pTexture)
     return;
 
-  uint32 texelSizeBytes =
-      data.encodedFormat.channels * data.encodedFormat.bytesPerChannel;
-
   ENQUEUE_RENDER_COMMAND(Cesium_IncrementalWriteVoxels)
   ([pTexture = data.pTexture,
     pResource = data.pResource,
     format = data.encodedFormat.format,
     &property,
     updateRegion,
-    texelSizeBytes](FRHICommandListImmediate& RHICmdList) {
+    texelSizeBytes =
+        data.texelSizeBytes](FRHICommandListImmediate& RHICmdList) {
     // We're trusting that Cesium3DTileset will destroy its attached
     // CesiumVoxelRendererComponent (and thus the VoxelDataTextures)
     // before unloading glTFs. As long as the texture is valid, so is the
@@ -354,8 +365,16 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   });
 }
 
+bool FVoxelDataTextures::isSlotLoaded(int64 index) const {
+  if (index < 0 || index >= int64(this->_slots.size()))
+    return false;
+
+  return this->_slots[size_t(index)].fence &&
+         this->_slots[size_t(index)].fence->IsFenceComplete();
+}
+
 int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
-  uint32 slotIndex = this->reserveNextSlot();
+  int64 slotIndex = this->reserveNextSlot();
   if (slotIndex < 0) {
     return -1;
   }
@@ -391,16 +410,43 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
       continue;
     }
 
-    uint32 texelSizeBytes = PropertyIt.Value.encodedFormat.channels *
-                            PropertyIt.Value.encodedFormat.bytesPerChannel;
-
-    if (property.getAccessorStride() == texelSizeBytes) {
+    if (property.getAccessorStride() == PropertyIt.Value.texelSizeBytes) {
       directCopyToTexture(property, PropertyIt.Value, updateRegion);
     } else {
       incrementalWriteToTexture(property, PropertyIt.Value, updateRegion);
     }
   }
+
+  this->_slots[slotIndex].fence.emplace().BeginFence();
+
   return slotIndex;
+}
+
+bool FVoxelDataTextures::release(int64_t slotIndex) {
+  if (slotIndex < 0 || slotIndex >= int64(this->_slots.size())) {
+    return false; // Index out of bounds
+  }
+
+  Slot* pSlot = &this->_slots[slotIndex];
+  pSlot->fence.reset();
+
+  if (pSlot->pPrevious) {
+    pSlot->pPrevious->pNext = pSlot->pNext;
+  }
+  if (pSlot->pNext) {
+    pSlot->pNext->pPrevious = pSlot->pPrevious;
+  }
+
+  // Move to list of empty slots (as the new head)
+  pSlot->pNext = this->_pEmptySlotsHead;
+  if (pSlot->pNext) {
+    pSlot->pNext->pPrevious = pSlot;
+  }
+
+  pSlot->pPrevious = nullptr;
+  this->_pEmptySlotsHead = pSlot;
+
+  return true;
 }
 
 int64 FVoxelDataTextures::reserveNextSlot() {
@@ -410,43 +456,18 @@ int64 FVoxelDataTextures::reserveNextSlot() {
     return -1;
   }
 
-  this->_pEmptySlotsHead = pSlot->Next;
+  this->_pEmptySlotsHead = pSlot->pNext;
 
   if (this->_pEmptySlotsHead) {
-    this->_pEmptySlotsHead->Previous = nullptr;
+    this->_pEmptySlotsHead->pPrevious = nullptr;
   }
 
   // Move to list of occupied slots (as the new head)
-  pSlot->Next = this->_pOccupiedSlotsHead;
-  if (pSlot->Next) {
-    this->_pOccupiedSlotsHead->Previous = pSlot;
+  pSlot->pNext = this->_pOccupiedSlotsHead;
+  if (pSlot->pNext) {
+    this->_pOccupiedSlotsHead->pPrevious = pSlot;
   }
   this->_pOccupiedSlotsHead = pSlot;
 
-  return pSlot->Index;
-}
-
-bool FVoxelDataTextures::release(uint32 slotIndex) {
-  if (slotIndex >= this->_slots.size()) {
-    return false; // Index out of bounds
-  }
-
-  Slot* pSlot = &this->_slots[slotIndex];
-  if (pSlot->Previous) {
-    pSlot->Previous->Next = pSlot->Next;
-  }
-  if (pSlot->Next) {
-    pSlot->Next->Previous = pSlot->Previous;
-  }
-
-  // Move to list of empty slots (as the new head)
-  pSlot->Next = this->_pEmptySlotsHead;
-  if (pSlot->Next) {
-    pSlot->Next->Previous = pSlot;
-  }
-
-  pSlot->Previous = nullptr;
-  this->_pEmptySlotsHead = pSlot;
-
-  return true;
+  return pSlot->index;
 }

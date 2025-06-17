@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "VoxelResources.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -10,11 +9,15 @@
 #include "CustomDepthParameters.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Templates/UniquePtr.h"
+#include "VoxelDataTextures.h"
 #include "VoxelGridShape.h"
+#include "VoxelOctree.h"
 
 #include <Cesium3DTilesSelection/Tile.h>
 #include <glm/glm.hpp>
 #include <optional>
+#include <queue>
+#include <vector>
 
 #include "CesiumVoxelRendererComponent.generated.h"
 
@@ -30,8 +33,8 @@ UCLASS()
  * A component that enables raycasted voxel rendering. This is only attached to
  * a Cesium3DTileset when it contains voxel data.
  *
- * Unlike typical glTF meshes, voxels are rendered by raycasting in an Unreal
- * material attached to a placeholder cube mesh.
+ * Unlike typical triangle meshes, voxels are rendered by raycasting in an
+ * Unreal material attached to a placeholder cube mesh.
  */
 class UCesiumVoxelRendererComponent : public USceneComponent {
   GENERATED_BODY()
@@ -73,6 +76,8 @@ public:
    */
   glm::dmat4x4 HighPrecisionTransform;
 
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+
   /**
    * Updates the voxel renderer based on the newly visible tiles.
    *
@@ -85,9 +90,14 @@ public:
       const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
-
 private:
+  /**
+   * Value constants taken from CesiumJS.
+   */
+  static const uint32 MaximumOctreeTextureWidth = 2048;
+  static const uint32 MaximumDataTextureMemoryBytes = 512 * 1024 * 1024;
+  static const uint32 DefaultDataTextureMemoryBytes = 128 * 1024 * 1024;
+
   static UMaterialInstanceDynamic* CreateVoxelMaterial(
       UCesiumVoxelRendererComponent* pVoxelComponent,
       const FVector& dimensions,
@@ -98,10 +108,37 @@ private:
       const FCesiumVoxelClassDescription* pDescription,
       const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
-  /**
-   * The resources used to render voxels across the tileset.
-   */
-  TUniquePtr<FVoxelResources> _pResources = nullptr;
+  static double computePriority(double sse);
+
+  struct VoxelTileUpdateInfo {
+    const UCesiumGltfVoxelComponent* pComponent;
+    double sse;
+    double priority;
+  };
+
+  struct ScreenSpaceErrorGreaterComparator {
+    bool
+    operator()(const VoxelTileUpdateInfo& lhs, const VoxelTileUpdateInfo& rhs) {
+      return lhs.priority > rhs.priority;
+    }
+  };
+
+  struct ScreenSpaceErrorLessComparator {
+    bool
+    operator()(const VoxelTileUpdateInfo& lhs, const VoxelTileUpdateInfo& rhs) {
+      return lhs.priority < rhs.priority;
+    }
+  };
+
+  using MaxPriorityQueue = std::priority_queue<
+      VoxelTileUpdateInfo,
+      std::vector<VoxelTileUpdateInfo>,
+      ScreenSpaceErrorLessComparator>;
+
+  TUniquePtr<FVoxelOctree> _pOctree;
+  TUniquePtr<FVoxelDataTextures> _pDataTextures;
+  std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;
+  MaxPriorityQueue _visibleTileQueue;
 
   /**
    * The tileset that owns this voxel renderer.

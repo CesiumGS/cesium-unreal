@@ -49,13 +49,15 @@ public:
     Node* pParent;
     bool hasChildren;
     double lastKnownScreenSpaceError;
-    int64_t dataSlotIndex;
+    int64_t dataIndex;
+    bool isDataReady;
 
     Node()
         : pParent(nullptr),
           hasChildren(false),
           lastKnownScreenSpaceError(0.0),
-          dataSlotIndex(-1) {}
+          dataIndex(-1),
+          isDataReady(false) {}
   };
 
   /**
@@ -151,13 +153,6 @@ public:
 
 private:
   /**
-   * @brief Retrieves the tile IDs for the children of the given tile. Does not
-   * validate whether these exist in the octree.
-   */
-  static std::array<CesiumGeometry::OctreeTileID, 8>
-  computeChildTileIDs(const CesiumGeometry::OctreeTileID& TileID);
-
-  /**
    * @brief Retrieves the tile ID for the parent of the given tile. Does not
    * validate whether either tile exists in the octree.
    *
@@ -232,32 +227,31 @@ private:
       uint32 parentOctreeIndex,
       uint32 parentTextureIndex);
 
+
+  struct OctreeTileIDHash {
+    size_t operator()(const CesiumGeometry::OctreeTileID& tileId) const;
+  };
+
   // This implementation is inspired by Linear (hashed) Octrees:
   // https://geidav.wordpress.com/2014/08/18/advanced-octrees-2-node-representations/
   //
-  // First, nodes must track their parent / child relationships so that the tree
-  // structure can be encoded to a texture, for voxel raymarching.
-  //
-  // Second, nodes must be easily created and/or accessed. cesium-native passes
-  // tiles in over in a vector without spatial organization. Typical tree
+  // Nodes must track their parent / child relationships so that the tree
+  // structure can be encoded to a texture, for voxel raymarching. However,
+  // nodes must also be easily created and/or accessed. cesium-native passes
+  // tiles over in a vector without spatial organization. Typical tree
   // queries are O(log(n)) where n = # tree levels. This is unideal, since it's
   // likely that multiple tiles will be made visible in an update based on
   // movement.
   //
   // The compromise: a hashmap that stores octree nodes based on their tile ID.
   // The nodes don't point to any children themselves; instead, they store a
-  // bool indicating whether or not children have been created for them. It's up
-  // to the octree to properly manage this.
-  struct OctreeTileIDHash {
-    size_t operator()(const CesiumGeometry::OctreeTileID& tileId) const;
-  };
-
+  // bool indicating whether or not children have been created for them. It's on
+  // the octree to properly manage this.
   using NodeMap =
       std::unordered_map<CesiumGeometry::OctreeTileID, Node, OctreeTileIDHash>;
   NodeMap _nodes;
 
   UCesiumVoxelOctreeTexture* _pTexture;
-
   // As the octree grows, save the allocated memory so that recomputing the
   // same-size octree won't require more allocations.
   std::vector<std::byte> _octreeData;

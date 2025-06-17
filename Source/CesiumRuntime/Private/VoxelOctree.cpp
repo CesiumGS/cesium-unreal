@@ -232,7 +232,7 @@ bool FVoxelOctree::createNode(const CesiumGeometry::OctreeTileID& TileID) {
     return false;
   }
 
-  // Create this node first.
+  // Create the target node first.
   this->_nodes.insert({TileID, Node()});
   pNode = &this->_nodes[TileID];
 
@@ -243,11 +243,11 @@ bool FVoxelOctree::createNode(const CesiumGeometry::OctreeTileID& TileID) {
   for (uint32_t level = TileID.level; level > 0; level--) {
     CesiumGeometry::OctreeTileID parentTileID =
         *computeParentTileID(currentTileID);
-    if (this->_nodes.find(parentTileID) == this->_nodes.end()) {
+    if (this->_nodes.contains(parentTileID)) {
+      foundExistingParent = true;
+    } else {
       // Parent doesn't exist, so create it.
       this->_nodes.insert({parentTileID, Node()});
-    } else {
-      foundExistingParent = true;
     }
 
     FVoxelOctree::Node* pParent = &this->_nodes[parentTileID];
@@ -255,12 +255,11 @@ bool FVoxelOctree::createNode(const CesiumGeometry::OctreeTileID& TileID) {
 
     // The parent *shouldn't* have children at this point. Otherwise, our
     // target node would have already been found.
-    std::array<CesiumGeometry::OctreeTileID, 8> childIds =
-        computeChildTileIDs(parentTileID);
-    for (CesiumGeometry::OctreeTileID& childId : childIds) {
-      if (this->_nodes.find(childId) == this->_nodes.end()) {
-        this->_nodes.insert({childId, Node()});
-        this->_nodes[childId].pParent = pParent;
+    for (const CesiumGeometry::OctreeTileID& child :
+         ImplicitTilingUtilities::getChildren(parentTileID)) {
+      if (!this->_nodes.contains(child)) {
+        this->_nodes.insert({child, Node()});
+        this->_nodes[child].pParent = pParent;
       }
     }
 
@@ -278,12 +277,12 @@ bool FVoxelOctree::createNode(const CesiumGeometry::OctreeTileID& TileID) {
   return true;
 }
 
-bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& TileID) {
-  if (TileID.level == 0) {
+bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& tileId) {
+  if (tileId.level == 0) {
     return false;
   }
 
-  if (isNodeRenderable(TileID)) {
+  if (isNodeRenderable(tileId)) {
     return false;
   }
 
@@ -294,11 +293,11 @@ bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& TileID) {
   // There may be cases where the children rely on the parent for rendering.
   // If so, the node's data cannot be easily released.
   // TODO: can you also attempt to destroy the node?
-  CesiumGeometry::OctreeTileID parentTileID = *computeParentTileID(TileID);
-  std::array<CesiumGeometry::OctreeTileID, 8> siblingIds =
-      computeChildTileIDs(parentTileID);
-  for (const CesiumGeometry::OctreeTileID& siblingId : siblingIds) {
-    if (siblingId == TileID)
+  CesiumGeometry::OctreeTileID parentTileId = *computeParentTileID(tileId);
+  Cesium3DTilesContent::OctreeChildren siblings =
+      ImplicitTilingUtilities::getChildren(parentTileId);
+  for (const CesiumGeometry::OctreeTileID& siblingId : siblings) {
+    if (siblingId == tileId)
       continue;
 
     if (isNodeRenderable(siblingId)) {
@@ -314,14 +313,14 @@ bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& TileID) {
   }
 
   // Otherwise, okay to remove the nodes.
-  for (const CesiumGeometry::OctreeTileID& siblingId : siblingIds) {
+  for (const CesiumGeometry::OctreeTileID& siblingId : siblings) {
     this->_nodes.erase(this->_nodes.find(siblingId));
   }
-  this->getNode(parentTileID)->hasChildren = false;
+  this->getNode(parentTileId)->hasChildren = false;
 
   // Continue to recursively remove parent nodes as long as they aren't
   // renderable either.
-  removeNode(parentTileID);
+  removeNode(parentTileId);
 
   return true;
 }
@@ -333,25 +332,7 @@ bool FVoxelOctree::isNodeRenderable(
     return false;
   }
 
-  return pNode->dataSlotIndex >= 0 || pNode->hasChildren;
-}
-
-/*static*/ std::array<CesiumGeometry::OctreeTileID, 8>
-FVoxelOctree::computeChildTileIDs(const CesiumGeometry::OctreeTileID& TileID) {
-  uint32 level = TileID.level + 1;
-  uint32 x = TileID.x << 1;
-  uint32 y = TileID.y << 1;
-  uint32 z = TileID.z << 1;
-
-  return {
-      OctreeTileID(level, x, y, z),
-      OctreeTileID(level, x + 1, y, z),
-      OctreeTileID(level, x, y + 1, z),
-      OctreeTileID(level, x + 1, y + 1, z),
-      OctreeTileID(level, x, y, z + 1),
-      OctreeTileID(level, x + 1, y, z + 1),
-      OctreeTileID(level, x, y + 1, z + 1),
-      OctreeTileID(level, x + 1, y + 1, z + 1)};
+  return pNode->isDataReady || pNode->hasChildren;
 }
 
 /*static*/ std::optional<CesiumGeometry::OctreeTileID>
@@ -412,20 +393,20 @@ void FVoxelOctree::encodeNode(
     parentOctreeIndex = octreeIndex;
     parentTextureIndex = parentOctreeIndex * TexelsPerNode + 1;
 
-    std::array<CesiumGeometry::OctreeTileID, 8> childIds =
-        computeChildTileIDs(tileId);
-    for (uint32 i = 0; i < childIds.size(); i++) {
+    uint32 childIndex = 0;
+    for (const CesiumGeometry::OctreeTileID& childId :
+         ImplicitTilingUtilities::getChildren(tileId)) {
       octreeIndex = nodeCount;
       textureIndex = octreeIndex * TexelsPerNode;
 
       encodeNode(
-          childIds[i],
+          childId,
           nodeData,
           nodeCount,
           octreeIndex,
           textureIndex,
           parentOctreeIndex,
-          parentTextureIndex + i);
+          parentTextureIndex + childIndex++);
     }
   } else {
     // Leaf nodes involve more complexity.
@@ -433,16 +414,16 @@ void FVoxelOctree::encodeNode(
     uint16 value = 0;
     uint16 levelDifference = 0;
 
-    if (pNode->dataSlotIndex >= 0) {
+    if (pNode->isDataReady) {
       flag = ENodeFlag::Leaf;
-      value = static_cast<uint16>(pNode->dataSlotIndex);
+      value = static_cast<uint16>(pNode->dataIndex);
     } else if (pNode->pParent) {
       FVoxelOctree::Node* pParent = pNode->pParent;
 
       for (uint32 levelsAbove = 1; levelsAbove <= tileId.level; levelsAbove++) {
-        if (pParent->dataSlotIndex >= 0) {
+        if (pParent->isDataReady) {
           flag = ENodeFlag::Leaf;
-          value = static_cast<uint16>(pParent->dataSlotIndex);
+          value = static_cast<uint16>(pParent->dataIndex);
           levelDifference = levelsAbove;
           break;
         }

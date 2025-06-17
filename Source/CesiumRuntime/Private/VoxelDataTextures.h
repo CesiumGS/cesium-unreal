@@ -5,13 +5,9 @@
 #include "CesiumCommon.h"
 #include "CesiumMetadataValueType.h"
 #include "EncodedFeaturesMetadata.h"
+#include "RenderCommandFence.h"
 #include <CesiumGltf/PropertyType.h>
-
 #include <glm/glm.hpp>
-
-namespace Cesium3DTiles {
-struct Class;
-}
 
 struct FCesiumVoxelClassDescription;
 class FCesiumTextureResource;
@@ -43,15 +39,18 @@ public:
    * voxel attribute.
    */
   FVoxelDataTextures(
-      const FCesiumVoxelClassDescription* pVoxelClass,
+      const FCesiumVoxelClassDescription* pDescription,
       const glm::uvec3& dataDimensions,
       ERHIFeatureLevel::Type featureLevel,
       uint32 requestedMemoryPerTexture);
 
   ~FVoxelDataTextures();
 
+  // virtual void BeginDestroy() override;
+  // virtual bool IsReadyForFinishDestroy() override;
+
   /**
-   * Gets the maximum number of tiles that can be added to the data
+   * @brief Gets the maximum number of tiles that can be added to the data
    * textures. Equivalent to the maximum number of data slots.
    */
   uint32 getMaximumTileCount() const {
@@ -59,12 +58,12 @@ public:
   }
 
   /**
-   * Gets the number of tiles along each dimension of the textures.
+   * @brief Gets the number of tiles along each dimension of the textures.
    */
   glm::uvec3 getTileCountAlongAxes() const { return this->_tileCountAlongAxes; }
 
   /**
-   * Retrieves the texture containing the data for the attribute with
+   * @brief Retrieves the texture containing the data for the attribute with
    * the given ID. Returns nullptr if the attribute does not exist.
    */
   UTexture* getTexture(const FString& attributeId) const;
@@ -75,70 +74,94 @@ public:
   int32 getTextureCount() const { return this->_propertyMap.Num(); }
 
   /**
-   * Whether or not all slots in the textures are occupied.
+   * @brief Whether or not all slots in the textures are occupied.
    */
   bool isFull() const { return this->_pEmptySlotsHead == nullptr; }
 
   /**
-   * Attempts to add the voxel tile to the data textures.
+   * @brief Whether or not the slot at the given index is loaded.
+   */
+  bool isSlotLoaded(int64 index) const;
+
+  /**
+   * @brief Attempts to add the voxel tile to the data textures.
    *
    * @returns The index of the reserved slot, or -1 if none were available.
    */
   int64_t add(const UCesiumGltfVoxelComponent& voxelComponent);
 
   /**
-   * Reserves the next available empty slot.
-   *
-   * @returns The index of the reserved slot, or -1 if none were available.
+   * @brief Releases the slot at the specified index, making the space available
+   * for another voxel tile.
    */
-  int64 reserveNextSlot();
-
-  /**
-   * Releases the slot at the specified index, making the space available for
-   * another voxel tile.
-   */
-  bool release(uint32 slotIndex);
+  bool release(int64_t slotIndex);
 
 private:
   /**
-   * Represents a slot in the voxel data texture that contains a single
+   * @brief Represents a slot in the voxel data texture that contains a single
    * tile's data. Slots function like nodes in a linked list in order to track
    * which slots are occupied with data, while preventing the need for 2 vectors
    * with maximum tile capacity.
    */
   struct Slot {
-    int64 Index = -1;
-    Slot* Next = nullptr;
-    Slot* Previous = nullptr;
+    int64_t index = -1;
+    Slot* pNext = nullptr;
+    Slot* pPrevious = nullptr;
+    std::optional<FRenderCommandFence> fence;
   };
 
   struct TextureData {
     /**
-     * The texture format used to store encoded property values.
+     * @brief The texture format used to store encoded property values.
      */
     EncodedFeaturesMetadata::EncodedPixelFormat encodedFormat;
 
     /**
-     * The data texture for this property.
+     * @brief The size of a texel in the texture, in bytes. Derived from the
+     * texture format.
+     */
+    uint32 texelSizeBytes;
+
+    /**
+     * @brief The data texture for this property.
      */
     UTexture* pTexture;
 
     /**
-     * A pointer to the texture resource. There is no way to retrieve this
-     * through the UTexture API, so the pointer is stored here.
+     * @brief A pointer to the texture resource. There is no way to retrieve
+     * this through the UTexture API, so the pointer is stored here.
      */
     FCesiumTextureResource* pResource;
   };
 
+  /**
+   * @brief Directly copies the buffer from the given property attribute
+   * property to the texture. This is much faster than
+   * incrementalWriteToTexture, but requires the attribute data to be
+   * contiguous.
+   */
   static void directCopyToTexture(
       const FCesiumPropertyAttributeProperty& property,
       const TextureData& data,
       const FUpdateTextureRegion3D& region);
 
+  /**
+   * @brief Incrementally writes the data from the given property attribute
+   * property to the texture. Each element is converted to uint8 or float,
+   * depending on the texture format, before being written to the pixel.
+   * Necessary for some accessor types or accessors with non-continguous data.
+   */
   static void incrementalWriteToTexture(
       const FCesiumPropertyAttributeProperty& property,
       const TextureData& data,
       const FUpdateTextureRegion3D& region);
+
+  /**
+   * @brief Reserves the next available empty slot.
+   *
+   * @returns The index of the reserved slot, or -1 if none were available.
+   */
+  int64_t reserveNextSlot();
 
   std::vector<Slot> _slots;
   Slot* _pEmptySlotsHead;
