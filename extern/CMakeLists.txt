@@ -124,6 +124,8 @@ endif()
 # Our OpenSSL is part of Unreal Engine, so need to install it.
 set(CESIUM_EXCLUDE_INSTALL_HEADERS openssl)
 set(CESIUM_EXCLUDE_INSTALL_STATIC_LIBS openssl)
+# Skip including curl asset accessor as it causes issues on Android and iOS
+set(CESIUM_DISABLE_CesiumCurl TRUE)
 
 add_subdirectory(cesium-native)
 
