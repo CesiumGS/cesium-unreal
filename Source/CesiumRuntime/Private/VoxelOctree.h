@@ -7,63 +7,140 @@
 #include "RenderCommandFence.h"
 
 #include <CesiumGeometry/OctreeTileID.h>
-#include <array>
 #include <optional>
 #include <unordered_map>
 
+/**
+ * A texture that encodes information from \FVoxelOctree.
+ */
 class UCesiumVoxelOctreeTexture : public UTexture2D {
 public:
   /**
-   * @brief Constant representing the number of texels used to represent a node
-   * in the octree texture.
+   * @brief The number of texels used to represent a node in the texture.
    *
    * The first texel is used to store an index to the node's parent. The
    * remaining eight represent the indices of the node's children.
    */
   static const uint32 TexelsPerNode = 9;
 
-  static UCesiumVoxelOctreeTexture*
-  create(uint32 Width, uint32 MaximumTileCount);
+  /**
+   * @brief The maximum allowed width for the texture. Value taken from
+   * CesiumJS.
+   */
+  static const uint32 MaximumOctreeTextureWidth = 2048;
 
   /**
-   * Updates the octree texture with the new input data.
+   * @brief Creates a new texture with the specified tile capacity.
    */
-  void update(const std::vector<std::byte>& data);
+  static UCesiumVoxelOctreeTexture* create(uint32 MaximumTileCount);
 
+  /**
+   * @brief Gets the number of tiles encoded in a single row of the texture.
+   */
   uint32_t getTilesPerRow() const { return this->_tilesPerRow; }
 
-  bool isReadyToDestroy() const;
+  /**
+   * @brief Updates the octree texture with the new input data.
+   *
+   * @returns True if the update succeeded, false otherwise.
+   */
+  bool update(const std::vector<std::byte>& data);
 
 private:
   FCesiumTextureResourceUniquePtr _pResource;
   uint32_t _tilesPerRow;
-  FRenderCommandFence _fence;
 };
 
 /**
- * @brief A representation of an implicitly tiled octree containing voxel
- * values.
+ * @brief A representation of an implicit octree tileset containing voxels.
+ *
+ * This is relevant to the raycasted approach for rendering voxels and
+ * is meant to be paired with \ref VoxelDataTextures. The structure of
+ * the voxel tileset is communicated to the shader through a texture.
+ * Tiles with renderable data are linked to slots in \ref VoxelDataTextures.
+ *
+ * The connection with \ref VoxelDataTextures is managed externally by
+ * \UCesiumVoxelRendererComponent.
  */
 class FVoxelOctree {
 public:
   /**
-   * @brief A representation of a tile in an implicitly tiled octree.
+   * @brief A tile in an implicitly tiled octree.
    */
   struct Node {
-    Node* pParent;
-    bool hasChildren;
-    double lastKnownScreenSpaceError;
-    int64_t dataIndex;
-    bool isDataReady;
-
-    Node()
-        : pParent(nullptr),
-          hasChildren(false),
-          lastKnownScreenSpaceError(0.0),
-          dataIndex(-1),
-          isDataReady(false) {}
+    /**
+     * @brief Points to the parent of the node, if it exists.
+     */
+    Node* pParent = nullptr;
+    /**
+     * @brief Whether the tile's children exist in the octree.
+     */
+    bool hasChildren = false;
+    /**
+     * @brief The tile's last known screen space error.
+     */
+    double lastKnownScreenSpaceError = 0.0;
+    /**
+     * @brief The index of the slot that this tile occupies in \ref
+     * VoxelDataTextures, if any.
+     */
+    int64_t dataIndex = -1;
+    bool isDataReady = false;
   };
 
+  /**
+   * @brief Constructs an initially empty octree with the specified tile
+   * capacity.
+   */
+  FVoxelOctree(uint32 maximumTileCount);
+
+  ~FVoxelOctree();
+
+  /**
+   * @brief Gets a node in the octree at the specified tile ID. Returns nullptr
+   * if it does not exist.
+   *
+   * @param TileID The octree tile ID.
+   */
+  const Node* getNode(const CesiumGeometry::OctreeTileID& TileID) const;
+
+  /**
+   * @copydoc getNode
+   */
+  Node* getNode(const CesiumGeometry::OctreeTileID& TileID);
+
+  /**
+   * @brief Creates a node in the octree at the specified tile ID, including the
+   * parent nodes needed to traverse to it.
+   *
+   * If the node already exists, this returns false.
+   *
+   * @param TileID The octree tile ID.
+   * @param Whether the node was successfully added.
+   */
+  bool createNode(const CesiumGeometry::OctreeTileID& TileID);
+
+  /**
+   * @brief Attempts to remove the node at the specified tile ID.
+   *
+   * This will fail to remove the node from the tree if:
+   *
+   * - the node is the root of the tree
+   * - the node has renderable siblings
+   *
+   * @param TileID The octree tile ID.
+   * @return Whether the node was successfully removed.
+   */
+  bool removeNode(const CesiumGeometry::OctreeTileID& TileID);
+
+  /**
+   * @brief Retrieves the texture containing the encoded octree.
+   */
+  UTexture2D* getTexture() const { return this->_pTexture; }
+
+  void updateTexture();
+
+private:
   /**
    * @brief An enum that indicates the type of a node encoded on the GPU.
    * Indicates what the numerical data value represents for that node.
@@ -101,70 +178,6 @@ public:
      */
     Internal = 2,
   };
-
-  FVoxelOctree();
-  ~FVoxelOctree();
-
-  /**
-   * @brief Gets a node in the octree at the specified tile ID. Returns nullptr
-   * if it does not exist.
-   *
-   * @param TileID The octree tile ID.
-   */
-  const Node* getNode(const CesiumGeometry::OctreeTileID& TileID) const;
-
-  /**
-   * @brief Gets a node in the octree at the specified tile ID. Returns nullptr
-   * if it does not exist.
-   *
-   * @param TileID The octree tile ID.
-   */
-  Node* getNode(const CesiumGeometry::OctreeTileID& TileID);
-
-  /**
-   * @brief Creates a node in the octree at the specified tile ID, including the
-   * parent nodes needed to traverse to it.
-   *
-   * If the node already exists, this returns false.
-   *
-   * @param TileID The octree tile ID.
-   * @param Whether the node was successfully added.
-   */
-  bool createNode(const CesiumGeometry::OctreeTileID& TileID);
-
-  /**
-   * @brief Attempts to remove the node at the specified tile ID.
-   *
-   * This will fail to remove the node from the tree if:
-   * - the node is the root of the tree
-   * - the node has renderable siblings
-   *
-   * @param TileID The octree tile ID.
-   * @return Whether the node was successfully removed.
-   */
-  bool removeNode(const CesiumGeometry::OctreeTileID& TileID);
-
-  bool isNodeRenderable(const CesiumGeometry::OctreeTileID& TileID) const;
-
-  void initializeTexture(uint32 width, uint32 maximumTileCount);
-
-  /**
-   * @brief Retrieves the texture containing the encoded octree.
-   */
-  UTexture2D* getTexture() const { return this->_pTexture; }
-
-  void updateTexture();
-
-private:
-  /**
-   * @brief Retrieves the tile ID for the parent of the given tile. Does not
-   * validate whether either tile exists in the octree.
-   *
-   * @returns The parent tile ID, or std::nullopt if the given tile is a root
-   * tile (i.e., level 0).
-   */
-  static std::optional<CesiumGeometry::OctreeTileID>
-  computeParentTileID(const CesiumGeometry::OctreeTileID& TileID);
 
   /**
    * @brief Inserts the input values to the data vector, automatically
@@ -231,31 +244,37 @@ private:
       uint32 parentOctreeIndex,
       uint32 parentTextureIndex);
 
+  bool isNodeRenderable(const CesiumGeometry::OctreeTileID& TileID) const;
+
   struct OctreeTileIDHash {
     size_t operator()(const CesiumGeometry::OctreeTileID& tileId) const;
   };
 
-  // This implementation is inspired by Linear (hashed) Octrees:
-  // https://geidav.wordpress.com/2014/08/18/advanced-octrees-2-node-representations/
-  //
-  // Nodes must track their parent / child relationships so that the tree
-  // structure can be encoded to a texture, for voxel raymarching. However,
-  // nodes must also be easily created and/or accessed. cesium-native passes
-  // tiles over in a vector without spatial organization. Typical tree
-  // queries are O(log(n)) where n = # tree levels. This is unideal, since it's
-  // likely that multiple tiles will be made visible in an update based on
-  // movement.
-  //
-  // The compromise: a hashmap that stores octree nodes based on their tile ID.
-  // The nodes don't point to any children themselves; instead, they store a
-  // bool indicating whether or not children have been created for them. It's on
-  // the octree to properly manage this.
+  /**
+   * This implementation is inspired by Linear (hashed) Octrees:
+   * https://geidav.wordpress.com/2014/08/18/advanced-octrees-2-node-representations/
+   *
+   * Nodes must track their parent / child relationships so that the tree
+   * structure can be encoded to a texture, for voxel raymarching. However,
+   * nodes must also be easily created and/or accessed. cesium-native passes
+   * tiles over in a vector without spatial organization. Typical tree
+   * queries are O(log(n)) where n = # tree levels. This is unideal, since it's
+   * likely that multiple tiles will be made visible in an update based on
+   * movement.
+   *
+   * The compromise: a hashmap that stores octree nodes based on their tile ID.
+   * The nodes don't point to any children themselves; instead, they store a
+   * bool indicating whether or not children have been created for them. It's on
+   * the octree to properly manage this.
+   */
   using NodeMap =
       std::unordered_map<CesiumGeometry::OctreeTileID, Node, OctreeTileIDHash>;
   NodeMap _nodes;
 
   UCesiumVoxelOctreeTexture* _pTexture;
+  std::optional<FRenderCommandFence> _fence;
+
   // As the octree grows, save the allocated memory so that recomputing the
   // same-size octree won't require more allocations.
-  std::vector<std::byte> _octreeData;
+  std::vector<std::byte> _data;
 };

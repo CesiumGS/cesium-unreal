@@ -492,7 +492,6 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   //      FVoxelResources::MaximumDataTextureMemoryBytes);
   //}
 
-  pVoxelComponent->_pOctree = MakeUnique<FVoxelOctree>();
   if (pDescription && pVoxelMesh->GetScene()) {
     pVoxelComponent->_pDataTextures = MakeUnique<FVoxelDataTextures>(
         pDescription,
@@ -501,12 +500,11 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         requestedTextureMemory);
   }
 
-  uint32 width = MaximumOctreeTextureWidth;
   uint32 maximumTileCount =
       pVoxelComponent->_pDataTextures
           ? pVoxelComponent->_pDataTextures->getMaximumTileCount()
           : 1;
-  pVoxelComponent->_pOctree->initializeTexture(width, maximumTileCount);
+  pVoxelComponent->_pOctree = MakeUnique<FVoxelOctree>(maximumTileCount);
   pVoxelComponent->_loadedNodeIds.reserve(maximumTileCount);
 
   CreateGltfOptions::CreateVoxelOptions& options = pVoxelComponent->Options;

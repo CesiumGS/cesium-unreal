@@ -96,7 +96,6 @@ private:
   /**
    * Value constants taken from CesiumJS.
    */
-  static const uint32 MaximumOctreeTextureWidth = 2048;
   static const uint32 MaximumDataTextureMemoryBytes = 512 * 1024 * 1024;
   static const uint32 DefaultDataTextureMemoryBytes = 128 * 1024 * 1024;
 
