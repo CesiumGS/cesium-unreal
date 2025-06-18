@@ -5,6 +5,7 @@
 #include "CesiumUtility/IntrusivePointer.h"
 #include "CesiumVectorData/GeoJsonDocument.h"
 #include "CesiumVectorData/GeoJsonObject.h"
+#include "CesiumVectorStyle.h"
 #include "JsonObjectWrapper.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SharedPointer.h"
@@ -381,4 +382,35 @@ public:
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Vector|Object")
   static TArray<FCesiumGeoJsonFeature>
   GetObjectAsFeatureCollection(const FCesiumGeoJsonObject& InObject);
+
+  /**
+   * @brief Returns the `FCesiumVectorStyle` attached to this object, if any. If
+   * there is no style attached to this object, the `No Value` branch is taken.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Vector|Object",
+      Meta = (ExpandEnumAsExecs = "Branches"))
+  static FCesiumVectorStyle
+  GetStyle(const FCesiumGeoJsonObject& InObject, EHasValue& Branches);
+
+  /**
+   * @brief Sets the style of the given `FCesiumGeoJsonObject`.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Object")
+  static void SetStyle(
+      UPARAM(Ref) FCesiumGeoJsonObject& InObject,
+      const FCesiumVectorStyle& InStyle);
+
+  /**
+   * @brief Removes any existing style on the given GeoJSON object.
+   *
+   * GeoJSON objects without a style specified will inherit their style from
+   * their parent object, or that parent's parent, and so on up the tree. If no
+   * styles are found anywhere in the ancestors of this object, the default
+   * style will be used.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Vector|Object")
+  static void ClearStyle(UPARAM(Ref) FCesiumGeoJsonObject& InObject);
 };
