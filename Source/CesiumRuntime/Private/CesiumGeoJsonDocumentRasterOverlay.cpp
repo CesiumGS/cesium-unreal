@@ -21,7 +21,7 @@ wrapLoaderFuture(
       [pThis](CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&
                   documentResult)
           -> std::shared_ptr<CesiumVectorData::GeoJsonDocument> {
-        if (!documentResult.errors) {
+        if (documentResult.errors) {
           documentResult.errors.logError(
               spdlog::default_logger(),
               "Errors loading GeoJSON document: ");
