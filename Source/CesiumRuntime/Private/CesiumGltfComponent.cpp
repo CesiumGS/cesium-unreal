@@ -390,7 +390,7 @@ void copyFeatureIds(
       vertices.SetVertexUV(
           i,
           textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
+          FVector2f(featureId, 0.0f));
     }
   } else {
     for (int64_t i = 0; i < vertices.GetNumVertices(); ++i) {
@@ -400,7 +400,7 @@ void copyFeatureIds(
       vertices.SetVertexUV(
           i,
           textureCoordinateIndex,
-          FVector2f(glm::max(featureId, 0.0f), 0.0f));
+          FVector2f(featureId, 0.0f));
     }
   }
 }
