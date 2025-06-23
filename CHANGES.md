@@ -2,6 +2,12 @@
 
 ### ? - ?
 
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.3. Future versions will require Unreal Engine v5.4+.
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.6.
+
 ##### Breaking Changes :mega:
 
 - Feature IDs that are encoded by `UCesiumFeaturesMetadataComponent` will now use a default null feature ID of `-1` instead of `0`.
