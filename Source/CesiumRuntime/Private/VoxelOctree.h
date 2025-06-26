@@ -18,8 +18,8 @@ public:
   /**
    * @brief The number of texels used to represent a node in the texture.
    *
-   * The first texel is used to store an index to the node's parent. The
-   * remaining eight represent the indices of the node's children.
+   * The first texel stores an index to the node's parent. The remaining eight
+   * represent the indices of the node's children.
    */
   static const uint32 TexelsPerNode = 9;
 
@@ -55,11 +55,11 @@ private:
  * @brief A representation of an implicit octree tileset containing voxels.
  *
  * This is relevant to the raycasted approach for rendering voxels and
- * is meant to be paired with \ref VoxelDataTextures. The structure of
+ * is meant to be paired with \ref FVoxelDataTextures. The structure of
  * the voxel tileset is communicated to the shader through a texture.
- * Tiles with renderable data are linked to slots in \ref VoxelDataTextures.
+ * Tiles with renderable data are linked to slots in \ref FVoxelDataTextures.
  *
- * The connection with \ref VoxelDataTextures is managed externally by
+ * The connection with \ref FVoxelDataTextures is managed externally by
  * \UCesiumVoxelRendererComponent.
  */
 class FVoxelOctree {
@@ -138,7 +138,9 @@ public:
    */
   UTexture2D* getTexture() const { return this->_pTexture; }
 
-  void updateTexture();
+  bool updateTexture();
+
+  bool canBeDestroyed() const;
 
 private:
   /**

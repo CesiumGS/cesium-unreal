@@ -3,6 +3,7 @@
 #include "CesiumVoxelRendererComponent.h"
 #include "CalcBounds.h"
 #include "Cesium3DTileset.h"
+#include "CesiumGltfComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRuntime.h"
@@ -59,15 +60,19 @@ void UCesiumVoxelRendererComponent::BeginDestroy() {
 
   // Reset the pointers.
   this->MeshComponent = nullptr;
-  this->_pOctree.Reset();
-  //  this->_pDataTextures->BeginDestroy();
 
   Super::BeginDestroy();
 }
 
 bool UCesiumVoxelRendererComponent::IsReadyForFinishDestroy() {
-  if (this->_pDataTextures.IsValid()) {
+  if (this->_pOctree.IsValid() && !this->_pOctree->canBeDestroyed()) {
+    return false;
   }
+
+  if (this->_pDataTextures.IsValid()) {
+    return this->_pDataTextures->canBeDestroyed();
+  }
+
   return Super::IsReadyForFinishDestroy();
 }
 
@@ -549,9 +554,9 @@ void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
       continue;
     }
 
-    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+    UCesiumGltfComponent* pGltf = static_cast<UCesiumGltfComponent*>(
         pRenderContent->getRenderResources());
-    if (!Gltf) {
+    if (!pGltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
       // or the tile is from an external tileset and does not directly
@@ -559,7 +564,7 @@ void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
       continue;
     }
 
-    const TArray<USceneComponent*>& Children = Gltf->GetAttachChildren();
+    const TArray<USceneComponent*>& Children = pGltf->GetAttachChildren();
     for (USceneComponent* pChild : Children) {
       UCesiumGltfVoxelComponent* pVoxelComponent =
           Cast<UCesiumGltfVoxelComponent>(pChild);
@@ -632,8 +637,9 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
       FVoxelOctree::Node* pNode = this->_pOctree->getNode(currentTileId);
       if (pNode && pNode->dataIndex >= 0) {
         // Node has already been loaded into the data textures.
-        pNode->isDataReady =
-            this->_pDataTextures->isSlotLoaded(pNode->dataIndex);
+        bool loaded = this->_pDataTextures->isSlotLoaded(pNode->dataIndex);
+        shouldUpdateOctree = loaded != pNode->isDataReady;
+        pNode->isDataReady = loaded;
         continue;
       }
 

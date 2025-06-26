@@ -46,9 +46,6 @@ public:
 
   ~FVoxelDataTextures();
 
-  // virtual void BeginDestroy() override;
-  // virtual bool IsReadyForFinishDestroy() override;
-
   /**
    * @brief Gets the maximum number of tiles that can be added to the data
    * textures. Equivalent to the maximum number of data slots.
@@ -82,6 +79,8 @@ public:
    * @brief Whether or not the slot at the given index is loaded.
    */
   bool isSlotLoaded(int64 index) const;
+
+  bool canBeDestroyed() const;
 
   /**
    * @brief Attempts to add the voxel tile to the data textures.

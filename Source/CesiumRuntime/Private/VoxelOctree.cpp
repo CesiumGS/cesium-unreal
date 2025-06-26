@@ -138,6 +138,8 @@ FVoxelOctree::FVoxelOctree(uint32 maximumTileCount)
 }
 
 FVoxelOctree::~FVoxelOctree() {
+  CESIUM_ASSERT(!this->_fence || this->_fence->IsFenceComplete());
+
   std::vector<std::byte> empty;
   std::swap(this->_data, empty);
 
@@ -364,9 +366,9 @@ void FVoxelOctree::encodeNode(
   }
 }
 
-void FVoxelOctree::updateTexture() {
+bool FVoxelOctree::updateTexture() {
   if (!this->_pTexture || (this->_fence && !this->_fence->IsFenceComplete())) {
-    return;
+    return false;
   }
 
   this->_fence.reset();
@@ -397,5 +399,12 @@ void FVoxelOctree::updateTexture() {
     // Prevent changes to the data while the texture is updating on the render
     // thread.
     this->_fence.emplace().BeginFence();
+    return true;
   }
+
+  return false;
+}
+
+bool FVoxelOctree::canBeDestroyed() const {
+  return this->_fence ? this->_fence->IsFenceComplete() : true;
 }

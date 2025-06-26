@@ -165,32 +165,10 @@ FVoxelDataTextures::FVoxelDataTextures(
 
 FVoxelDataTextures::~FVoxelDataTextures() {}
 
-// void FVoxelDataTextures::BeginDestroy() {
-//  for (auto propertyIt : this->_propertyMap) {
-//    UTexture* pTexture = propertyIt.Value.pTexture;
-//    pTexture->BeginDestroy();
-//    propertyIt.Value.pTexture = nullptr;
-//    propertyIt.Value.pResource = nullptr;
-//
-//    if (IsValid(pTexture)) {
-//      pTexture->RemoveFromRoot();
-//      CesiumLifetime::destroy(pTexture);
-//    }
-//  }
-//
-//  this->_propertyMap.Empty();
-//
-//  Super::BeginDestroy();
-//}
-//
-// bool FVoxelDataTextures::IsReadyForFinishDestroy() {
-//  // for (auto propertyIt : this->_propertyMap) {
-//  //   UTexture* pTexture = propertyIt.Value.pTexture;
-//  //   if (pTexture && !pTexture->IsReadyForFinishDestroy())
-//  //     return false;
-//  // }
-//  return Super::IsReadyForFinishDestroy();
-//}
+bool FVoxelDataTextures::canBeDestroyed() const {
+  // TODO
+  //  return true;
+}
 
 UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   const TextureData* pProperty = this->_propertyMap.Find(attributeId);
