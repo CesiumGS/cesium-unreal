@@ -53,6 +53,7 @@ public:
 
   void BeginDestroy() override;
   bool IsReadyForFinishDestroy() override;
+  void FinishDestroy() override;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* DefaultMaterial = nullptr;
@@ -145,4 +146,6 @@ private:
    * The tileset that owns this voxel renderer.
    */
   ACesium3DTileset* _pTileset = nullptr;
+
+  bool _needsOctreeUpdate;
 };

@@ -70,10 +70,18 @@ bool UCesiumVoxelRendererComponent::IsReadyForFinishDestroy() {
   }
 
   if (this->_pDataTextures.IsValid()) {
+    this->_pDataTextures->pollLoadingSlots();
     return this->_pDataTextures->canBeDestroyed();
   }
 
   return Super::IsReadyForFinishDestroy();
+}
+
+void UCesiumVoxelRendererComponent::FinishDestroy() {
+  this->_pOctree.Reset();
+  this->_pDataTextures.Reset();
+
+  Super::FinishDestroy();
 }
 
 namespace {
@@ -622,8 +630,6 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
                computePriority(pRight->lastKnownScreenSpaceError);
       });
 
-  bool shouldUpdateOctree = false;
-
   size_t existingNodeCount = this->_loadedNodeIds.size();
   size_t destroyedNodeCount = 0;
   size_t addedNodeCount = 0;
@@ -637,9 +643,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
       FVoxelOctree::Node* pNode = this->_pOctree->getNode(currentTileId);
       if (pNode && pNode->dataIndex >= 0) {
         // Node has already been loaded into the data textures.
-        bool loaded = this->_pDataTextures->isSlotLoaded(pNode->dataIndex);
-        shouldUpdateOctree = loaded != pNode->isDataReady;
-        pNode->isDataReady = loaded;
+        pNode->isDataReady =
+            this->_pDataTextures->isSlotLoaded(pNode->dataIndex);
         continue;
       }
 
@@ -669,7 +674,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
         // Attempt to remove the node and simplify the octree.
         // Will not succeed if the node's siblings are renderable, or if this
         // node contains renderable children.
-        shouldUpdateOctree |= this->_pOctree->removeNode(lowestPriorityId);
+        this->_needsOctreeUpdate |=
+            this->_pOctree->removeNode(lowestPriorityId);
       } else {
         addNodeIndex = existingNodeCount + addedNodeCount;
         addedNodeCount++;
@@ -682,7 +688,7 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
 
       pNode->dataIndex = this->_pDataTextures->add(*pVoxel);
       bool addedToDataTexture = (pNode->dataIndex >= 0);
-      shouldUpdateOctree |= createdNewNode || addedToDataTexture;
+      this->_needsOctreeUpdate |= createdNewNode || addedToDataTexture;
 
       if (!addedToDataTexture) {
         continue;
@@ -692,6 +698,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
         this->_loadedNodeIds.push_back(currentTileId);
       }
     }
+
+    this->_needsOctreeUpdate |= this->_pDataTextures->pollLoadingSlots();
   } else {
     // If there are no data textures, then for all of the visible nodes...
     for (; !this->_visibleTileQueue.empty(); this->_visibleTileQueue.pop()) {
@@ -699,7 +707,7 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
       const CesiumGeometry::OctreeTileID& currentTileId =
           currentTile.pComponent->TileId;
       // Create the node if it does not already exist in the tree.
-      shouldUpdateOctree |= this->_pOctree->createNode(currentTileId);
+      this->_needsOctreeUpdate |= this->_pOctree->createNode(currentTileId);
 
       FVoxelOctree::Node* pNode = this->_pOctree->getNode(currentTileId);
       pNode->lastKnownScreenSpaceError = currentTile.sse;
@@ -710,8 +718,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
     }
   }
 
-  if (shouldUpdateOctree) {
-    this->_pOctree->updateTexture();
+  if (this->_needsOctreeUpdate) {
+    this->_needsOctreeUpdate = this->_pOctree->updateTexture();
   }
 }
 

@@ -82,9 +82,15 @@ public:
     double lastKnownScreenSpaceError = 0.0;
     /**
      * @brief The index of the slot that this tile occupies in \ref
-     * VoxelDataTextures, if any.
+     * FVoxelDataTextures, if any.
      */
     int64_t dataIndex = -1;
+    /**
+     * @brief Whether this tile's data is actually loaded into \ref
+     * FVoxelDataTextures. Although the node may have an assigned slot index,
+     * the data must be uploaded to the texture during the render thread, and
+     * thus won't be immediately available to render.
+     */
     bool isDataReady = false;
   };
 

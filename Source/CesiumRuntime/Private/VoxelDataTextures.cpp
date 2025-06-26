@@ -26,6 +26,7 @@ FVoxelDataTextures::FVoxelDataTextures(
     ERHIFeatureLevel::Type featureLevel,
     uint32 requestedMemoryPerTexture)
     : _slots(),
+      _loadingSlots(),
       _pEmptySlotsHead(nullptr),
       _pOccupiedSlotsHead(nullptr),
       _dataDimensions(dataDimensions),
@@ -166,8 +167,7 @@ FVoxelDataTextures::FVoxelDataTextures(
 FVoxelDataTextures::~FVoxelDataTextures() {}
 
 bool FVoxelDataTextures::canBeDestroyed() const {
-  // TODO
-  //  return true;
+  return this->_loadingSlots.size() == 0;
 }
 
 UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
@@ -270,14 +270,6 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   });
 }
 
-bool FVoxelDataTextures::isSlotLoaded(int64 index) const {
-  if (index < 0 || index >= int64(this->_slots.size()))
-    return false;
-
-  return this->_slots[size_t(index)].fence &&
-         this->_slots[size_t(index)].fence->IsFenceComplete();
-}
-
 int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
   int64 slotIndex = this->reserveNextSlot();
   if (slotIndex < 0) {
@@ -323,6 +315,7 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
   }
 
   this->_slots[slotIndex].fence.emplace().BeginFence();
+  this->_loadingSlots.insert(slotIndex);
 
   return slotIndex;
 }
@@ -375,4 +368,20 @@ int64 FVoxelDataTextures::reserveNextSlot() {
   this->_pOccupiedSlotsHead = pSlot;
 
   return pSlot->index;
+}
+
+bool FVoxelDataTextures::isSlotLoaded(int64 index) const {
+  if (index < 0 || index >= int64(this->_slots.size()))
+    return false;
+
+  return this->_slots[size_t(index)].fence &&
+         this->_slots[size_t(index)].fence->IsFenceComplete();
+}
+
+bool FVoxelDataTextures::pollLoadingSlots() {
+  size_t loadingSlotCount = this->_loadingSlots.size();
+  std::erase_if(this->_loadingSlots, [thiz = this](size_t i) {
+    return thiz->isSlotLoaded(i);
+  });
+  return loadingSlotCount != this->_loadingSlots.size();
 }

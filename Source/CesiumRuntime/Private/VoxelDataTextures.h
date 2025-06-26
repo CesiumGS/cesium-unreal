@@ -6,8 +6,10 @@
 #include "CesiumMetadataValueType.h"
 #include "EncodedFeaturesMetadata.h"
 #include "RenderCommandFence.h"
+
 #include <CesiumGltf/PropertyType.h>
 #include <glm/glm.hpp>
+#include <unordered_set>
 
 struct FCesiumVoxelClassDescription;
 class FCesiumTextureResource;
@@ -76,13 +78,6 @@ public:
   bool isFull() const { return this->_pEmptySlotsHead == nullptr; }
 
   /**
-   * @brief Whether or not the slot at the given index is loaded.
-   */
-  bool isSlotLoaded(int64 index) const;
-
-  bool canBeDestroyed() const;
-
-  /**
    * @brief Attempts to add the voxel tile to the data textures.
    *
    * @returns The index of the reserved slot, or -1 if none were available.
@@ -94,6 +89,23 @@ public:
    * for another voxel tile.
    */
   bool release(int64_t slotIndex);
+
+  /**
+   * @brief Whether or not the slot at the given index has loaded data.
+   */
+  bool isSlotLoaded(int64 index) const;
+
+  /**
+   * @brief Whether the textures can be destroyed. Returns false if there are
+   * any render thread commands in flight.
+   */
+  bool canBeDestroyed() const;
+
+  /**
+   * @brief Checks the progress of slots with data being loaded into the
+   * megatexture. Retusn true if any slots completed loading.
+   */
+  bool pollLoadingSlots();
 
 private:
   /**
@@ -166,6 +178,8 @@ private:
   int64_t reserveNextSlot();
 
   std::vector<Slot> _slots;
+  std::unordered_set<size_t> _loadingSlots;
+
   Slot* _pEmptySlotsHead;
   Slot* _pOccupiedSlotsHead;
 
