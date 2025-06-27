@@ -15,7 +15,7 @@ FCesiumGeoJsonDocument::FCesiumGeoJsonDocument(
 
 bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
     const FString& InString,
-    FCesiumGeoJsonDocument& OutVectorDocument) {
+    FCesiumGeoJsonDocument& OutGeoJsonDocument) {
   const std::string str = TCHAR_TO_UTF8(*InString);
   std::span<const std::byte> bytes(
       reinterpret_cast<const std::byte*>(str.data()),
@@ -36,7 +36,7 @@ bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
   }
 
   if (documentResult.value) {
-    OutVectorDocument = FCesiumGeoJsonDocument(
+    OutGeoJsonDocument = FCesiumGeoJsonDocument(
         std::make_shared<CesiumVectorData::GeoJsonDocument>(
             std::move(*documentResult.value)));
     return true;
@@ -46,30 +46,30 @@ bool UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
 }
 
 FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
-    const FCesiumGeoJsonDocument& InVectorDocument) {
-  if (!InVectorDocument._pDocument) {
+    const FCesiumGeoJsonDocument& InGeoJsonDocument) {
+  if (!InGeoJsonDocument._pDocument) {
     return FCesiumGeoJsonObject();
   }
 
   return FCesiumGeoJsonObject(
-      InVectorDocument._pDocument,
-      &InVectorDocument._pDocument->rootObject);
+      InGeoJsonDocument._pDocument,
+      &InGeoJsonDocument._pDocument->rootObject);
 }
 
-UCesiumLoadVectorDocumentFromIonAsyncAction*
-UCesiumLoadVectorDocumentFromIonAsyncAction::LoadFromIon(
+UCesiumLoadGeoJsonDocumentFromIonAsyncAction*
+UCesiumLoadGeoJsonDocumentFromIonAsyncAction::LoadFromIon(
     int64 AssetId,
     const UCesiumIonServer* CesiumIonServer,
     const FString& IonAccessToken) {
-  UCesiumLoadVectorDocumentFromIonAsyncAction* pAction =
-      NewObject<UCesiumLoadVectorDocumentFromIonAsyncAction>();
+  UCesiumLoadGeoJsonDocumentFromIonAsyncAction* pAction =
+      NewObject<UCesiumLoadGeoJsonDocumentFromIonAsyncAction>();
   pAction->AssetId = AssetId;
   pAction->IonAccessToken = IonAccessToken;
   pAction->CesiumIonServer = CesiumIonServer;
   return pAction;
 }
 
-void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
+void UCesiumLoadGeoJsonDocumentFromIonAsyncAction::Activate() {
   const std::string token(
       this->IonAccessToken.IsEmpty()
           ? TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken)
@@ -105,18 +105,18 @@ void UCesiumLoadVectorDocumentFromIonAsyncAction::Activate() {
           });
 }
 
-UCesiumLoadVectorDocumentFromUrlAsyncAction*
-UCesiumLoadVectorDocumentFromUrlAsyncAction::LoadFromUrl(
+UCesiumLoadGeoJsonDocumentFromUrlAsyncAction*
+UCesiumLoadGeoJsonDocumentFromUrlAsyncAction::LoadFromUrl(
     const FString& Url,
     const TMap<FString, FString>& Headers) {
-  UCesiumLoadVectorDocumentFromUrlAsyncAction* pAction =
-      NewObject<UCesiumLoadVectorDocumentFromUrlAsyncAction>();
+  UCesiumLoadGeoJsonDocumentFromUrlAsyncAction* pAction =
+      NewObject<UCesiumLoadGeoJsonDocumentFromUrlAsyncAction>();
   pAction->Url = Url;
   pAction->Headers = Headers;
   return pAction;
 }
 
-void UCesiumLoadVectorDocumentFromUrlAsyncAction::Activate() {
+void UCesiumLoadGeoJsonDocumentFromUrlAsyncAction::Activate() {
   std::vector<CesiumAsync::IAssetAccessor::THeader> requestHeaders;
   requestHeaders.reserve(this->Headers.Num());
 
