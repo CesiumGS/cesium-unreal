@@ -35,6 +35,8 @@ public class CesiumRuntime : ModuleRules
         {
             platform = "Darwin-universal-";
             libSearchPattern = "lib*.a";
+
+            PublicFrameworks.Add("SystemConfiguration");
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -46,7 +48,7 @@ public class CesiumRuntime : ModuleRules
             platform = "Linux-x86_64-";
             libSearchPattern = "lib*.a";
         }
-        else if(Target.Platform == UnrealTargetPlatform.IOS)
+        else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
             platform = "iOS-ARM64-";
             libSearchPattern = "lib*.a";
