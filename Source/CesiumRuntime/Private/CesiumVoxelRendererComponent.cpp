@@ -77,13 +77,6 @@ bool UCesiumVoxelRendererComponent::IsReadyForFinishDestroy() {
   return Super::IsReadyForFinishDestroy();
 }
 
-void UCesiumVoxelRendererComponent::FinishDestroy() {
-  this->_pOctree.Reset();
-  this->_pDataTextures.Reset();
-
-  Super::FinishDestroy();
-}
-
 namespace {
 EVoxelGridShape getVoxelGridShape(
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {

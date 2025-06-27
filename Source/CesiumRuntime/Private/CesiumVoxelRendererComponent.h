@@ -53,7 +53,6 @@ public:
 
   void BeginDestroy() override;
   bool IsReadyForFinishDestroy() override;
-  void FinishDestroy() override;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* DefaultMaterial = nullptr;

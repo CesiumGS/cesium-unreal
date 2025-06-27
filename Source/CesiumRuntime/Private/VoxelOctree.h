@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumTextureResource.h"
 #include "Engine/Texture2D.h"
 #include "RenderCommandFence.h"
 
@@ -10,11 +9,24 @@
 #include <optional>
 #include <unordered_map>
 
+class FVoxelOctree;
+
 /**
- * A texture that encodes information from \FVoxelOctree.
+ * A texture that encodes information from \ref FVoxelOctree.
  */
-class UCesiumVoxelOctreeTexture : public UTexture2D {
+class UVoxelOctreeTexture : public UTexture2D {
 public:
+  /**
+   * @brief Creates a new texture with the specified tile capacity.
+   */
+  static UVoxelOctreeTexture* create(uint32 maximumTileCount);
+
+  /**
+   * @brief Updates the texture, capturing the structure of the given octree.
+   */
+  void update(const FVoxelOctree& octree);
+
+private:
   /**
    * @brief The number of texels used to represent a node in the texture.
    *
@@ -30,25 +42,109 @@ public:
   static const uint32 MaximumOctreeTextureWidth = 2048;
 
   /**
-   * @brief Creates a new texture with the specified tile capacity.
+   * @brief An enum that indicates the type of a node encoded on the GPU.
+   * Indicates what the numerical data value represents for that node.
    */
-  static UCesiumVoxelOctreeTexture* create(uint32 MaximumTileCount);
+  enum class ENodeFlag : uint8 {
+    /**
+     * Empty leaf node that should be skipped when rendering.
+     *
+     * This may happen if a node's sibling is renderable, but neither it nor its
+     * parent are renderable, which can happen Native's algorithm loads higher
+     * LOD tiles before their ancestors.
+     */
+    Empty = 0,
+    /**
+     * Renderable leaf node with two possibilities:
+     *
+     * 1. The leaf node has its own data. The encoded data value refers to an
+     * index in the data texture of the slot containing the voxel tile's data.
+     *
+     * 2. The leaf node has no data of its own but is forced to render (such as
+     * when its siblings are renderable but it is not). The leaf will attempt to
+     * render the data of the nearest ancestor. The encoded data value refers to
+     * an index in the data texture of the slot containing the ancestor voxel
+     * tile's data.
+     *
+     * The latter is a unique case that contains an extra packed value -- the
+     * level difference from the nearest renderable ancestor. This is so the
+     * rendering implementation can deduce the correct texture coordinates. If
+     * the leaf node contains its own data, then this value is 0.
+     */
+    Leaf = 1,
+    /**
+     * Internal node. The encoded data value refers to an index in the octree
+     * texture where its full representation is located.
+     */
+    Internal = 2,
+  };
 
   /**
-   * @brief Gets the number of tiles encoded in a single row of the texture.
+   * @brief Inserts the input values to the texture's data vector, automatically
+   * expanding it if the target index is out-of-bounds.
    */
-  uint32_t getTilesPerRow() const { return this->_tilesPerRow; }
+  void insertNodeData(
+      uint32 textureIndex,
+      ENodeFlag nodeFlag,
+      uint16 data,
+      uint8 renderableLevelDifference = 0);
 
   /**
-   * @brief Updates the octree texture with the new input data.
+   * @brief Recursively writes octree nodes as their expected representation
+   * in the GPU texture.
    *
-   * @returns True if the update succeeded, false otherwise.
+   * Example Below (shown as binary tree instead of octree for
+   * demonstration purposes)
+   *
+   * Tree:
+   *           0
+   *          / \
+   *         /   \
+   *        /     \
+   *       1       3
+   *      / \     / \
+   *     L0  2   L3 L4
+   *        / \
+   *       L1 L2
+   *
+   *
+   * GPU Array:
+   * L = leaf index
+   * * = index to parent node
+   * node index:   0_______  1________  2________  3_________
+   * data array:  [*0, 1, 3, *0, L0, 2, *1 L1, L2, *0, L3, L4]
+   *
+   * The array is generated from a depth-first traversal. The end result could
+   * be an unbalanced tree, so the parent index is stored at each node to make
+   * it possible to traverse upwards.
+   *
+   * Nodes are indexed by the order in which they appear in the traversal.
+   *
+   * @param octree The voxel octree.
+   * @param tileId The ID of the node to be encoded.
+   * @param nodeCount The current number of encoded numbers, used to assign
+   * indices to each node. Accumulates over all calls of this function.
+   * @param octreeIndex The index of the node relative to all the nodes
+   * encountered in the octree, based on nodeCount. Acts as the identifier for
+   * the node.
+   * @param textureIndex The texel index of the node within the texture where
+   * the node will be expanded if it is an internal node.
+   * @param parentOctreeIndex The octree index of the parent.
+   * @param parentTextureIndex The texel index of the node within the texture
+   * where the node data will be written, relative to the parent's texel
+   * index.
    */
-  bool update(const std::vector<std::byte>& data);
+  void encodeNode(
+      const FVoxelOctree& octree,
+      const CesiumGeometry::OctreeTileID& tileId,
+      uint32& nodeCount,
+      uint32 octreeIndex,
+      uint32 textureIndex,
+      uint32 parentOctreeIndex,
+      uint32 parentTextureIndex);
 
-private:
-  FCesiumTextureResourceUniquePtr _pResource;
-  uint32_t _tilesPerRow;
+  uint32 _tilesPerRow;
+  std::vector<std::byte> _data;
 };
 
 /**
@@ -149,109 +245,6 @@ public:
   bool canBeDestroyed() const;
 
 private:
-  /**
-   * @brief An enum that indicates the type of a node encoded on the GPU.
-   * Indicates what the numerical data value represents for that node.
-   */
-  enum class ENodeFlag : uint8 {
-    /**
-     * Empty leaf node that should be skipped when rendering.
-     *
-     * This may happen if a node's sibling is renderable, but neither it nor its
-     * parent are renderable, which can happen Native's algorithm loads higher
-     * LOD tiles before their ancestors.
-     */
-    Empty = 0,
-    /**
-     * Renderable leaf node with two possibilities:
-     *
-     * 1. The leaf node has its own data. The encoded data value refers to an
-     * index in the data texture of the slot containing the voxel tile's data.
-     *
-     * 2. The leaf node has no data of its own but is forced to render (such as
-     * when its siblings are renderable but it is not). The leaf will attempt to
-     * render the data of the nearest ancestor. The encoded data value refers to
-     * an index in the data texture of the slot containing the ancestor voxel
-     * tile's data.
-     *
-     * The latter is a unique case that contains an extra packed value -- the
-     * level difference from the nearest renderable ancestor. This is so the
-     * rendering implementation can deduce the correct texture coordinates. If
-     * the leaf node contains its own data, then this value is 0.
-     */
-    Leaf = 1,
-    /**
-     * Internal node. The encoded data value refers to an index in the octree
-     * texture where its full representation is located.
-     */
-    Internal = 2,
-  };
-
-  /**
-   * @brief Inserts the input values to the data vector, automatically
-   * expanding it if the target index is out-of-bounds.
-   */
-  static void insertNodeData(
-      std::vector<std::byte>& nodeData,
-      uint32 textureIndex,
-      ENodeFlag nodeFlag,
-      uint16 data,
-      uint8 renderableLevelDifference = 0);
-
-  /**
-   * @brief Recursively writes octree nodes as their expected representation
-   * in the GPU texture.
-   *
-   * Example Below (shown as binary tree instead of octree for
-   * demonstration purposes)
-   *
-   * Tree:
-   *           0
-   *          / \
-   *         /   \
-   *        /     \
-   *       1       3
-   *      / \     / \
-   *     L0  2   L3 L4
-   *        / \
-   *       L1 L2
-   *
-   *
-   * GPU Array:
-   * L = leaf index
-   * * = index to parent node
-   * node index:   0_______  1________  2________  3_________
-   * data array:  [*0, 1, 3, *0, L0, 2, *1 L1, L2, *0, L3, L4]
-   *
-   * The array is generated from a depth-first traversal. The end result could
-   * be an unbalanced tree, so the parent index is stored at each node to make
-   * it possible to traverse upwards.
-   *
-   * Nodes are indexed by the order in which they appear in the traversal.
-   *
-   * @param pNode The node to be encoded.
-   * @param nodeData The data buffer to write to.
-   * @param nodeCount The current number of encoded numbers, used to assign
-   * indices to each node. Accumulates over all calls of this function.
-   * @param octreeIndex The index of the node relative to all the nodes
-   * encountered in the octree, based on nodeCount. Acts as the identifier for
-   * the node.
-   * @param textureIndex The texel index of the node within the texture where
-   * the node will be expanded if it is an internal node.
-   * @param parentOctreeIndex The octree index of the parent.
-   * @param parentTextureIndex The texel index of the node within the texture
-   * where the node data will be written, relative to the parent's texel
-   * index.
-   */
-  void encodeNode(
-      const CesiumGeometry::OctreeTileID& tileId,
-      std::vector<std::byte>& nodeData,
-      uint32& nodeCount,
-      uint32 octreeIndex,
-      uint32 textureIndex,
-      uint32 parentOctreeIndex,
-      uint32 parentTextureIndex);
-
   bool isNodeRenderable(const CesiumGeometry::OctreeTileID& TileID) const;
 
   struct OctreeTileIDHash {
@@ -279,7 +272,8 @@ private:
       std::unordered_map<CesiumGeometry::OctreeTileID, Node, OctreeTileIDHash>;
   NodeMap _nodes;
 
-  UCesiumVoxelOctreeTexture* _pTexture;
+  UVoxelOctreeTexture* _pTexture;
+  uint32_t _tilesPerRow;
   std::optional<FRenderCommandFence> _fence;
 
   // As the octree grows, save the allocated memory so that recomputing the

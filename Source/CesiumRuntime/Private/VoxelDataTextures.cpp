@@ -74,7 +74,7 @@ FVoxelDataTextures::FVoxelDataTextures(
         encodedFormat.channels * encodedFormat.bytesPerChannel;
     this->_propertyMap.Add(
         Property.Name,
-        {encodedFormat, texelSizeBytes, nullptr, nullptr});
+        {encodedFormat, texelSizeBytes, nullptr});
 
     maximumTexelSizeBytes = FMath::Max(maximumTexelSizeBytes, texelSizeBytes);
   }
@@ -124,18 +124,17 @@ FVoxelDataTextures::FVoxelDataTextures(
 
   // Create the actual textures.
   for (auto& propertyIt : this->_propertyMap) {
-    FCesiumTextureResource* pTextureResource =
-        FCesiumTextureResource::CreateEmpty(
-            TextureGroup::TEXTUREGROUP_8BitData,
-            actualDimensions.x,
-            actualDimensions.y,
-            actualDimensions.z,
-            propertyIt.Value.encodedFormat.format,
-            TextureFilter::TF_Nearest,
-            TextureAddress::TA_Clamp,
-            TextureAddress::TA_Clamp,
-            false)
-            .Release();
+    FTextureResource* pResource = FCesiumTextureResource::CreateEmpty(
+                                      TextureGroup::TEXTUREGROUP_8BitData,
+                                      actualDimensions.x,
+                                      actualDimensions.y,
+                                      actualDimensions.z,
+                                      propertyIt.Value.encodedFormat.format,
+                                      TextureFilter::TF_Nearest,
+                                      TextureAddress::TA_Clamp,
+                                      TextureAddress::TA_Clamp,
+                                      false)
+                                      .Release();
 
     UVolumeTexture* pTexture = NewObject<UVolumeTexture>(
         GetTransientPackage(),
@@ -149,14 +148,15 @@ FVoxelDataTextures::FVoxelDataTextures(
     pTexture->SRGB = false;
     pTexture->NeverStream = true;
 
-    pTexture->SetResource(pTextureResource);
-
+    pTexture->SetResource(pResource);
     propertyIt.Value.pTexture = pTexture;
-    propertyIt.Value.pResource = pTextureResource;
 
     ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
-    ([pTexture,
-      pResource = pTextureResource](FRHICommandListImmediate& RHICmdList) {
+    ([pTexture, pResource = pTexture->GetResource()](
+         FRHICommandListImmediate& RHICmdList) {
+      if (!pResource)
+        return;
+
       pResource->SetTextureReference(
           pTexture->TextureReference.TextureReferenceRHI);
       pResource->InitResource(FRHICommandListImmediate::Get());
@@ -164,7 +164,9 @@ FVoxelDataTextures::FVoxelDataTextures(
   }
 }
 
-FVoxelDataTextures::~FVoxelDataTextures() {}
+FVoxelDataTextures::~FVoxelDataTextures() {
+  CESIUM_ASSERT(this->canBeDestroyed());
+}
 
 bool FVoxelDataTextures::canBeDestroyed() const {
   return this->_loadingSlots.size() == 0;
@@ -184,7 +186,7 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
     const FCesiumPropertyAttributeProperty& property,
     const FVoxelDataTextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
-  if (!data.pResource || !data.pTexture)
+  if (!data.pTexture)
     return;
 
   const uint8* pData =
@@ -192,15 +194,15 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
 
   ENQUEUE_RENDER_COMMAND(Cesium_DirectCopyVoxels)
   ([pTexture = data.pTexture,
-    pResource = data.pResource,
     format = data.encodedFormat.format,
     &property,
     updateRegion,
     texelSizeBytes = data.texelSizeBytes,
     pData](FRHICommandListImmediate& RHICmdList) {
-    if (!IsValid(pTexture)) {
+    FTextureResource* pResource =
+        IsValid(pTexture) ? pTexture->GetResource() : nullptr;
+    if (!pResource)
       return;
-    }
 
     // Pitch = size in bytes of each row of the source image.
     uint32 srcRowPitch = updateRegion.Width * texelSizeBytes;
@@ -221,24 +223,20 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
     const FCesiumPropertyAttributeProperty& property,
     const FVoxelDataTextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
-  if (!data.pResource || !data.pTexture)
+  if (!data.pTexture)
     return;
 
   ENQUEUE_RENDER_COMMAND(Cesium_IncrementalWriteVoxels)
   ([pTexture = data.pTexture,
-    pResource = data.pResource,
     format = data.encodedFormat.format,
     &property,
     updateRegion,
     texelSizeBytes =
         data.texelSizeBytes](FRHICommandListImmediate& RHICmdList) {
-    // We're trusting that Cesium3DTileset will destroy its attached
-    // CesiumVoxelRendererComponent (and thus the VoxelDataTextures)
-    // before unloading glTFs. As long as the texture is valid, so is the
-    // CesiumPropertyAttributeProperty.
-    if (!IsValid(pTexture)) {
+    FTextureResource* pResource =
+        IsValid(pTexture) ? pTexture->GetResource() : nullptr;
+    if (!pResource)
       return;
-    }
 
     FUpdateTexture3DData UpdateData =
         RHIBeginUpdateTexture3D(pResource->TextureRHI, 0, updateRegion);
@@ -295,7 +293,7 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
 
   uint32 index = static_cast<uint32>(slotIndex);
 
-  for (auto PropertyIt : this->_propertyMap) {
+  for (const auto& PropertyIt : this->_propertyMap) {
     const FCesiumPropertyAttributeProperty& property =
         UCesiumPropertyAttributeBlueprintLibrary::FindProperty(
             voxelComponent.PropertyAttribute,
