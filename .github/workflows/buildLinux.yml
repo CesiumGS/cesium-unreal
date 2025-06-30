@@ -45,10 +45,11 @@ jobs:
         run: |
           sudo mkdir /mnt/work
           sudo chown $(whoami) /mnt/work
-      - name: Check out repository code
+      - name: Check out minimal build files
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          sparse-checkout: |
+            .github
       - name: Configure vcpkg caching
         uses: ./.github/actions/vcpkg-cache
         with:
@@ -60,6 +61,10 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install Ninja and patchelf
         run: |
           sudo apt install -y ninja-build patchelf
