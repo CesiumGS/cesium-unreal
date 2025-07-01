@@ -14,6 +14,8 @@ This is the last release of Cesium for Unreal that will support Unreal Engine v5
 - Added support for Unreal Engine 5.6.
 - Added a C++ and Blueprint API for loading and accessing GeoJSON data.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.48.0 to v0.49.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.16.1 - 2025-06-02
 
 ##### Additions :tada:
