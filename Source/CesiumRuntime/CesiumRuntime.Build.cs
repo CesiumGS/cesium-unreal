@@ -94,7 +94,9 @@ public class CesiumRuntime : ModuleRules
                 "DeveloperSettings",
                 "UMG",
                 "Renderer",
-                "OpenSSL"
+                "OpenSSL",
+                "Json",
+                "JsonUtilities"
             }
         );
 
