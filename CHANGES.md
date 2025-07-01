@@ -7,6 +7,7 @@ This is the last release of Cesium for Unreal that will support Unreal Engine v5
 ##### Additions :tada:
 
 - Added support for Unreal Engine 5.6.
+- Added a C++ and Blueprint API for loading and accessing GeoJSON data.
 
 ##### Breaking Changes :mega:
 
