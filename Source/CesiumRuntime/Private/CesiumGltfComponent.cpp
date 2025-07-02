@@ -727,8 +727,7 @@ static void computeFlatNormals(FStaticMeshVertexBuffers& vertices) {
 }
 
 template <typename TIndex>
-static Chaos::FTriangleMeshImplicitObjectPtr
-BuildChaosTriangleMeshes(
+static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
     const FPositionVertexBuffer& vertexBuffer,
     const TArray<uint32>& indices);
 
@@ -3758,8 +3757,7 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
 }
 
 template <typename TIndex>
-static Chaos::FTriangleMeshImplicitObjectPtr
-BuildChaosTriangleMeshes(
+static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
     const FPositionVertexBuffer& positionBuffer,
     const TArray<uint32>& indices) {
   uint32 vertexCount = positionBuffer.GetNumVertices();
