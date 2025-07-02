@@ -160,7 +160,7 @@ It probably means Unreal doesn't like your Xcode version. Be sure that a support
 
 If the project file generation succeeds, you should see a file named `CesiumForUnrealSamples (Mac).xcworkspace` in the same directory as your uproject. Double-click it to open Xcode.
 
-In Xcode, on the Product -> Scheme menu, choose `devEditor`. If you want to build a debug configuration, go to Product -> Scheme -> Edit Scheme... and then change the "Build Configuration" to "DebugGame".
+In Xcode, on the Product -> Scheme menu, choose `devEditor`. If you want to build a debug configuration, go to Product -> Scheme -> Edit Scheme -> Run, select the Info tab and then change the "Build Configuration" to "DebugGame".
 
 Build by choosing Product -> Build. Watch the progress in the "Report Navigator" which is the rightmost icon above the tree on the left.
 
