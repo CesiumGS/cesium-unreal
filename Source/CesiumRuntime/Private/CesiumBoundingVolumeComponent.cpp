@@ -101,15 +101,10 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusion(
     return;
   }
 
-#if ENGINE_VERSION_5_4_OR_HIGHER
-  FPrimitiveComponentId componentId = this->GetPrimitiveSceneId();
-#else
-  FPrimitiveComponentId componentId = this->ComponentId;
-#endif
 
   TileOcclusionState occlusionState =
       cesiumViewExtension.getPrimitiveOcclusionState(
-          componentId,
+          this->GetPrimitiveSceneId(),
           _occlusionState == TileOcclusionState::Occluded,
           _mappedFrameTime);
 
