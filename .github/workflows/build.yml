@@ -36,7 +36,7 @@ jobs:
         with:
           name: ReferenceDocumentation
           path: Documentation/Reference
- Windows54:
+  Windows54:
     uses: ./.github/workflows/buildWindows.yml
     secrets: inherit
     with:
