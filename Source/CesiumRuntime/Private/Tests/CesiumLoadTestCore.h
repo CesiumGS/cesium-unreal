@@ -8,31 +8,25 @@
 #include <swl/variant.hpp>
 
 #include "CesiumSceneGeneration.h"
+#include "CesiumTestPass.h"
+#include "Tests/AutomationCommon.h"
 
 namespace Cesium {
-
-struct TestPass {
-  typedef swl::variant<int, float> TestingParameter;
-  typedef std::function<void(SceneGenerationContext&, TestingParameter)>
-      SetupCallback;
-  typedef std::function<
-      bool(SceneGenerationContext&, SceneGenerationContext&, TestingParameter)>
-      VerifyCallback;
-
-  FString name;
-  SetupCallback setupStep;
-  VerifyCallback verifyStep;
-  TestingParameter optionalParameter;
-
-  bool testInProgress = false;
-  double startMark = 0;
-  double endMark = 0;
-  double elapsedTime = 0;
-
-  bool isFastest = false;
-};
-
 typedef std::function<void(const std::vector<TestPass>&)> ReportCallback;
+
+struct LoadTestContext {
+  FString testName;
+  std::vector<TestPass> testPasses;
+
+  SceneGenerationContext creationContext;
+  SceneGenerationContext playContext;
+
+  float cameraFieldOfView = 90.0f;
+
+  ReportCallback reportStep;
+
+  void reset();
+};
 
 bool RunLoadTest(
     const FString& testName,
@@ -41,6 +35,45 @@ bool RunLoadTest(
     int viewportWidth,
     int viewportHeight,
     ReportCallback optionalReportStep = nullptr);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
+    TimeLoadingCommand,
+    FString,
+    loggingName,
+    SceneGenerationContext&,
+    creationContext,
+    SceneGenerationContext&,
+    playContext,
+    TestPass&,
+    pass);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    LoadTestScreenshotCommand,
+    FString,
+    screenshotName);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    TestCleanupCommand,
+    LoadTestContext&,
+    context);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(
+    InitForPlayWhenReady,
+    SceneGenerationContext&,
+    creationContext,
+    SceneGenerationContext&,
+    playContext);
+
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
+    SetPlayerViewportSize,
+    SceneGenerationContext&,
+    creationContext,
+    SceneGenerationContext&,
+    playContext,
+    int,
+    viewportWidth,
+    int,
+    viewportHeight);
 
 }; // namespace Cesium
 

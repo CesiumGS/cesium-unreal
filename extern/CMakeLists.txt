@@ -112,6 +112,7 @@ endif()
 # Our OpenSSL is part of Unreal Engine, so need to install it.
 set(CESIUM_EXCLUDE_INSTALL_HEADERS openssl)
 set(CESIUM_EXCLUDE_INSTALL_STATIC_LIBS openssl)
+SET(CESIUM_DISABLE_CURL ON)
 
 if(CESIUM_UNREAL_NATIVE_DIRECTORY)
   # These packages are used in the public headers of Cesium libraries, so we need to distribute the headers and binaries
@@ -158,6 +159,7 @@ endif()
 option(BUILD_SHARED_LIB OFF)
 option(SUPPORT_CONSOLE_APP OFF)
 set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5")
 add_subdirectory(tidy-html5)
 
 add_subdirectory(swl-variant)

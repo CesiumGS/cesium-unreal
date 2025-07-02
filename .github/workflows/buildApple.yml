@@ -52,10 +52,16 @@ jobs:
           sudo rm -rf /Applications/Xcode_15.2.app
           sudo rm -rf /Applications/Xcode_15.3.0.app
           sudo rm -rf /Applications/Xcode_15.3.app
+          if [ "${{ inputs.xcode-version }}" != "15.4" ]; then
+            sudo rm -rf /Applications/Xcode_15.4.0.app
+            sudo rm -rf /Applications/Xcode_15.4.app
+          fi
           sudo rm -rf /Applications/Xcode_16.0.0.app
           sudo rm -rf /Applications/Xcode_16.0.app
-          sudo rm -rf /Applications/Xcode_16.1.0.app
-          sudo rm -rf /Applications/Xcode_16.1.app
+          if [ "${{ inputs.xcode-version }}" != "16.1" ]; then
+            sudo rm -rf /Applications/Xcode_16.1.0.app
+            sudo rm -rf /Applications/Xcode_16.1.app
+          fi
           sudo rm -rf /Applications/Xcode_16.1_beta.app
           sudo rm -rf /Applications/Xcode_16_beta_6.app
           ls /Applications
