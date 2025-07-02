@@ -148,7 +148,8 @@ You may see an error message like this:
 > Your Mac is set to use CommandLineTools for its build tools (/Library/Developer/CommandLineTools). Unreal expects Xcode as the build tools. Please install Xcode if it's not already, then do one of the following:
 >   - Run Xcode, go to Settings, and in the Locations tab, choose your Xcode in Command Line Tools dropdown.
 >   - In Terminal, run 'sudo xcode-select -s /Applications/Xcode.app' (or an alternate location if you installed Xcode to a non-standard location)
-      > Either way, you will need to enter your Mac password.
+>
+> Either way, you will need to enter your Mac password.
 
 In which case, do what it says.
 
