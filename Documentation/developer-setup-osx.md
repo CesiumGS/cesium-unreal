@@ -59,7 +59,6 @@ cmake -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build build --target install --parallel 14
 ```
 
-
 This will install the built libraries to one of these subdirectories of `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/Source/ThirdParty/lib/`, depending on your configuration and processor architecture:
 
 * `Darwin-arm64-Debug` - Debug configuration for Apple Silicon.
