@@ -101,7 +101,6 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusion(
     return;
   }
 
-
   TileOcclusionState occlusionState =
       cesiumViewExtension.getPrimitiveOcclusionState(
           this->GetPrimitiveSceneId(),
