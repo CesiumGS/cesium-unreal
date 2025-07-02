@@ -392,6 +392,7 @@ int64 FCesiumPropertyAttributeProperty::getAccessorStride() const {
         return view.accessorView().stride();
       });
 }
+
 const std::byte* FCesiumPropertyAttributeProperty::getAccessorData() const {
   return propertyAttributePropertyCallback<const std::byte*>(
       this->_property,

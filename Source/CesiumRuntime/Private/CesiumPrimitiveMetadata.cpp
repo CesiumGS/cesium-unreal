@@ -22,6 +22,7 @@ FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
     this->_propertyTextureIndices.Emplace(propertyTextureIndex);
   }
 
+  // For backwards compatibility with GetPropertyAttributeIndices().
   this->_propertyAttributeIndices.Reserve(metadata.propertyAttributes.size());
   for (const int64 propertyAttributeIndex : metadata.propertyAttributes) {
     this->_propertyAttributeIndices.Emplace(propertyAttributeIndex);
@@ -29,7 +30,7 @@ FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
 
   const auto* pModelMetadata =
       model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
-  if (metadata.propertyAttributes.empty() && pModelMetadata) {
+  if (!pModelMetadata) {
     return;
   }
 

@@ -25,8 +25,8 @@ enum class ECesiumPropertyAttributeStatus : uint8 {
   /* The property attribute instance was not initialized from an actual glTF
      property attribute. */
   ErrorInvalidPropertyAttribute,
-  /* The property attribute's class could be found in the schema of the metadata
-     extension. */
+  /* The property attribute's class could not be found in the schema of the
+     metadata extension. */
   ErrorInvalidPropertyAttributeClass
 };
 

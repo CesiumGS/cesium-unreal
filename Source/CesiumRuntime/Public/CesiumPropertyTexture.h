@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTextureView.h"
 #include "CesiumMetadataEnum.h"
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+
+#include <CesiumGltf/PropertyTextureView.h>
+
 #include "CesiumPropertyTexture.generated.h"
 
 namespace CesiumGltf {
@@ -22,8 +24,8 @@ enum class ECesiumPropertyTextureStatus : uint8 {
   /* The property texture instance was not initialized from an actual glTF
    property texture. */
   ErrorInvalidPropertyTexture,
-  /* The property texture's class could be found in the schema of the metadata
-   extension. */
+  /* The property texture's class could not be found in the schema of the
+   metadata extension. */
   ErrorInvalidPropertyTextureClass
 };
 

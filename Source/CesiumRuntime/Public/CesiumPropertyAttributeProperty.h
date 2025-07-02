@@ -5,14 +5,12 @@
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
-#include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
 #include <CesiumGltf/PropertyAttributePropertyView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 #include <any>
-#include <span>
 
 #include "CesiumPropertyAttributeProperty.generated.h"
 
@@ -244,6 +242,10 @@ public:
   /**
    * Attempts to retrieve the value for the given index as a signed 32-bit
    * integer.
+   *
+   * Although property attribute properties do not directly support
+   * 32-bit signed integers, this can be used to losslessly retrieve values from
+   * smaller integer properties.
    *
    * For numeric properties, the raw value will be transformed by the property's
    * normalization, scale, and offset before it is further converted. If the raw
