@@ -156,7 +156,7 @@ If you see a message like this:
 
 > Exception while generating include data for UnrealEditor: Platform Mac is not a valid platform to build. Check that the SDK is installed properly.
 
-It probably means Unreal doesn't like your Xcode version. Be sure that a supported version of Xcode is installed.
+It probably means Unreal doesn't like your Xcode version. Be sure that a supported version of Xcode is installed. Supported Xcode versions are specified in `/Users/Shared/Epic Games/UE_5.4/Engine/Config/Apple/Apple_SDK.json`.
 
 If the project file generation succeeds, you should see a file named `CesiumForUnrealSamples (Mac).xcworkspace` in the same directory as your uproject. Double-click it to open Xcode.
 
