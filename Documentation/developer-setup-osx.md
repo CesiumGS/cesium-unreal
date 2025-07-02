@@ -8,7 +8,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Install Xcode 14.2+ from https://developer.apple.com/xcode/resources/
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
-- Install the minimum supported version of Unreal Engine (version 5.3 as of this writing) from https://www.unrealengine.com/en-US/download
+- Install the minimum supported version of Unreal Engine (version 5.4 as of this writing) from https://www.unrealengine.com/en-US/download
 
 # Cloning the git repos
 
