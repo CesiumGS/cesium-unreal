@@ -68,30 +68,33 @@ UVoxelOctreeTexture::create(uint32 maximumTileCount) {
   return pTexture;
 }
 
-void UVoxelOctreeTexture::update(const FVoxelOctree& octree) {
-  this->_data.clear();
+void UVoxelOctreeTexture::update(
+    const FVoxelOctree& octree,
+    std::vector<std::byte>& result) {
+  result.clear();
 
   uint32_t nodeCount = 0;
   encodeNode(
       octree,
       CesiumGeometry::OctreeTileID(0, 0, 0, 0),
       nodeCount,
-      0,  /* octreeIndex */
-      0,  /* textureIndex */
-      0,  /* parentOctreeIndex */
-      0); /* parentTextureIndex */
+      0, /* octreeIndex */
+      0, /* textureIndex */
+      0, /* parentOctreeIndex */
+      0,
+      result); /* parentTextureIndex */
 
   // Pad the data as necessary for the texture copy.
   uint32 regionWidth = this->_tilesPerRow * TexelsPerNode * sizeof(uint32);
-  uint32 regionHeight = glm::ceil((float)this->_data.size() / regionWidth);
+  uint32 regionHeight = glm::ceil((float)result.size() / regionWidth);
   uint32 expectedSize = regionWidth * regionHeight;
 
-  if (this->_data.size() != expectedSize) {
-    this->_data.resize(expectedSize, std::byte(0));
+  if (result.size() != expectedSize) {
+    result.resize(expectedSize, std::byte(0));
   }
 
   // Compute the area of the texture that actually needs updating.
-  uint32 texelCount = this->_data.size() / sizeof(uint32);
+  uint32 texelCount = result.size() / sizeof(uint32);
   uint32 tileCount = texelCount / TexelsPerNode;
 
   glm::uvec2 updateExtent;
@@ -120,32 +123,35 @@ void UVoxelOctreeTexture::update(const FVoxelOctree& octree) {
   uint32 sourcePitch = region.Width * sizeof(uint32);
 
   ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
-  ([pResource = this->GetResource(), &data = this->_data, region, sourcePitch](
+  ([pResource = this->GetResource(), &result, region, sourcePitch](
        FRHICommandListImmediate& RHICmdList) {
     RHIUpdateTexture2D(
         pResource->TextureRHI,
         0,
         region,
         sourcePitch,
-        reinterpret_cast<const uint8*>(data.data()));
+        reinterpret_cast<const uint8*>(result.data()));
   });
 }
 
 void UVoxelOctreeTexture::insertNodeData(
+    std::vector<std::byte>& data,
     uint32 textureIndex,
     ENodeFlag nodeFlag,
-    uint16 data,
+    uint16 dataValue,
     uint8 renderableLevelDifference) {
   uint32_t dataIndex = textureIndex * sizeof(uint32_t);
-  if (this->_data.size() < dataIndex + sizeof(uint32_t)) {
-    this->_data.resize(dataIndex + sizeof(uint32_t));
+
+  const size_t desiredSize = dataIndex + sizeof(uint32_t);
+  if (data.size() < desiredSize) {
+    data.resize(desiredSize);
   }
 
   // Explicitly encode the values in little endian order.
-  this->_data[dataIndex] = std::byte(nodeFlag);
-  this->_data[dataIndex + 1] = std::byte(renderableLevelDifference);
-  this->_data[dataIndex + 2] = std::byte(data & 0x00ff);
-  this->_data[dataIndex + 3] = std::byte(data >> 8);
+  data[dataIndex] = std::byte(nodeFlag);
+  data[dataIndex + 1] = std::byte(renderableLevelDifference);
+  data[dataIndex + 2] = std::byte(dataValue & 0x00ff);
+  data[dataIndex + 3] = std::byte(dataValue >> 8);
 };
 
 void UVoxelOctreeTexture::encodeNode(
@@ -155,14 +161,23 @@ void UVoxelOctreeTexture::encodeNode(
     uint32 octreeIndex,
     uint32 textureIndex,
     uint32 parentOctreeIndex,
-    uint32 parentTextureIndex) {
+    uint32 parentTextureIndex,
+    std::vector<std::byte>& result) {
   const FVoxelOctree::Node* pNode = octree.getNode(tileId);
   CESIUM_ASSERT(pNode);
 
   if (pNode->hasChildren) {
     // Point the parent and child octree indices at each other
-    insertNodeData(parentTextureIndex, ENodeFlag::Internal, octreeIndex);
-    insertNodeData(textureIndex, ENodeFlag::Internal, parentOctreeIndex);
+    insertNodeData(
+        result,
+        parentTextureIndex,
+        ENodeFlag::Internal,
+        octreeIndex);
+    insertNodeData(
+        result,
+        textureIndex,
+        ENodeFlag::Internal,
+        parentOctreeIndex);
     nodeCount++;
 
     // Continue traversing
@@ -182,7 +197,8 @@ void UVoxelOctreeTexture::encodeNode(
           octreeIndex,
           textureIndex,
           parentOctreeIndex,
-          parentTextureIndex + childIndex++);
+          parentTextureIndex + childIndex++,
+          result);
     }
   } else {
     // Leaf nodes involve more complexity.
@@ -214,7 +230,7 @@ void UVoxelOctreeTexture::encodeNode(
         }
       }
     }
-    insertNodeData(parentTextureIndex, flag, value, levelDifference);
+    insertNodeData(result, parentTextureIndex, flag, value, levelDifference);
     nodeCount++;
   }
 }
@@ -367,7 +383,7 @@ bool FVoxelOctree::updateTexture() {
   }
 
   this->_fence.reset();
-  this->_pTexture->update(*this);
+  this->_pTexture->update(*this, this->_data);
 
   // Prevent changes to the data while the texture is updating on the render
   // thread.

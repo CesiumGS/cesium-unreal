@@ -712,7 +712,7 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
   }
 
   if (this->_needsOctreeUpdate) {
-    this->_needsOctreeUpdate = this->_pOctree->updateTexture();
+    this->_needsOctreeUpdate = !this->_pOctree->updateTexture();
   }
 }
 

@@ -22,9 +22,16 @@ public:
   static UVoxelOctreeTexture* create(uint32 maximumTileCount);
 
   /**
-   * @brief Updates the texture, capturing the structure of the given octree.
+   * @brief Updates the texture, encoding the structure of the given octree as
+   * in the result vector and prompting an update during the render thread.
+   *
+   * Storing non-trivial types on `UVoxelOctreeTexture` often results in
+   * memory corruption when the texture is created. Thus, this requires the
+   * vector to be externally supplied and managed. It is recommended to use a
+   * FRenderCommandFence to query when the texture update completes, as to avoid
+   * destroying the vector mid-update.
    */
-  void update(const FVoxelOctree& octree);
+  void update(const FVoxelOctree& octree, std::vector<std::byte>& result);
 
 private:
   /**
@@ -80,13 +87,14 @@ private:
   };
 
   /**
-   * @brief Inserts the input values to the texture's data vector, automatically
+   * @brief Inserts the input values to the given data vector, automatically
    * expanding it if the target index is out-of-bounds.
    */
   void insertNodeData(
+      std::vector<std::byte>& data,
       uint32 textureIndex,
       ENodeFlag nodeFlag,
-      uint16 data,
+      uint16 dataValue,
       uint8 renderableLevelDifference = 0);
 
   /**
@@ -141,10 +149,10 @@ private:
       uint32 octreeIndex,
       uint32 textureIndex,
       uint32 parentOctreeIndex,
-      uint32 parentTextureIndex);
+      uint32 parentTextureIndex,
+      std::vector<std::byte>& result);
 
   uint32 _tilesPerRow;
-  std::vector<std::byte> _data;
 };
 
 /**
