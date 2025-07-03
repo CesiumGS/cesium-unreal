@@ -222,8 +222,6 @@ FTexture2DRHIRef createAsyncTextureAndWait(
     ETextureCreateFlags Flags,
     void** InitialMipData,
     uint32 NumInitialMips) {
-
-#if ENGINE_VERSION_5_4_OR_HIGHER
   FGraphEventRef CompletionEvent;
 
   FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
@@ -243,25 +241,6 @@ FTexture2DRHIRef createAsyncTextureAndWait(
   }
 
   return result;
-#else
-  FGraphEventRef CompletionEvent;
-
-  FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
-      SizeX,
-      SizeY,
-      Format,
-      NumMips,
-      Flags,
-      InitialMipData,
-      NumInitialMips,
-      CompletionEvent);
-
-  if (CompletionEvent) {
-    CompletionEvent->Wait();
-  }
-
-  return result;
-#endif
 }
 
 /**

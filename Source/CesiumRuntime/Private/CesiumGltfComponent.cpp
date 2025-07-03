@@ -731,12 +731,7 @@ static void computeFlatNormals(FStaticMeshVertexBuffers& vertices) {
 }
 
 template <typename TIndex>
-#if ENGINE_VERSION_5_4_OR_HIGHER
-static Chaos::FTriangleMeshImplicitObjectPtr
-#else
-static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-#endif
-BuildChaosTriangleMeshes(
+static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
     const FPositionVertexBuffer& vertexBuffer,
     const TArray<uint32>& indices);
 
@@ -3551,11 +3546,7 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
-#if ENGINE_VERSION_5_4_OR_HIGHER
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
-#else
-      pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
-#endif
     }
 
     // Mark physics meshes created, no matter if we actually have a collision
@@ -3979,12 +3970,7 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
 }
 
 template <typename TIndex>
-#if ENGINE_VERSION_5_4_OR_HIGHER
-static Chaos::FTriangleMeshImplicitObjectPtr
-#else
-static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-#endif
-BuildChaosTriangleMeshes(
+static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
     const FPositionVertexBuffer& positionBuffer,
     const TArray<uint32>& indices) {
   uint32 vertexCount = positionBuffer.GetNumVertices();
@@ -4016,7 +4002,6 @@ BuildChaosTriangleMeshes(
   TArray<uint16> materials;
   materials.SetNum(triangles.Num());
 
-#if ENGINE_VERSION_5_4_OR_HIGHER
   return new Chaos::FTriangleMeshImplicitObject(
       MoveTemp(vertices),
       MoveTemp(triangles),
@@ -4024,13 +4009,4 @@ BuildChaosTriangleMeshes(
       MoveTemp(pFaceRemap),
       nullptr,
       false);
-#else
-  return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
-      MoveTemp(vertices),
-      MoveTemp(triangles),
-      MoveTemp(materials),
-      MoveTemp(pFaceRemap),
-      nullptr,
-      false);
-#endif
 }
