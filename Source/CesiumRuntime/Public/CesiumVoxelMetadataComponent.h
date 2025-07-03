@@ -151,7 +151,7 @@ protected:
 
 private:
 #if WITH_EDITOR
-  UVolumeTexture* DefaultVolumeTexture;
+  TObjectPtr<UTexture> pDefaultVolumeTexture;
   static const FString ShaderPreviewTemplate;
 
   void UpdateShaderPreview();

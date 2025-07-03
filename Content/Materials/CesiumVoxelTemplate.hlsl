@@ -161,186 +161,6 @@ struct RayIntersectionUtility
   }
 };
 
-// SHAPE_INTERSECTIONS is the number of ray-*shape* intersections (i.e., the volume intersection pairs),
-// INTERSECTIONS_LENGTH is the number of ray-*surface* intersections.
-#define SHAPE_INTERSECTIONS 7
-#define INTERSECTIONS_LENGTH SHAPE_INTERSECTIONS * 2
-
-// HLSL does not like array struct members, so the data has to be stored at the top-level.
-// The size is also hardcoded because dynamically sized arrays are not allowed.
-float4 miss = float4(0, 0, 0, NO_HIT);
-float4 IntersectionList[INTERSECTIONS_LENGTH] =
-{
-  miss, miss, miss, miss, miss, miss, miss,
-  miss, miss, miss, miss, miss, miss, miss,
-};
-
-struct IntersectionListState
-{
-  // Don't access these member variables directly - call the functions instead.
-  // Store an array of encoded ray-surface intersections. (See EncodeIntersection).
-  
-  int Length; // Set based on ShapeConstant
-  int Index; // Used to emulate dynamic indexing.
-  
-  // The variables below relate to the shapes that the intersection is inside (counting when it is
-  // on the surface itself). e.g., given a hollow ellipsoid volume,
-  // count = 1 on the outer ellipsoid, 2 on the inner ellipsoid.
-  int SurroundingShapeCount;
-  bool IsInsidePositiveShape; // will be true as long as it is inside any positive shape.
-  
-  /**
-  * Intersections are encoded as float4s:
-  * - .xyz for the surface normal at the intersection point
-  * - .w for the T value
-  * The normal's scale encodes the shape intersection type: 
-  * length(intersection.xyz) = 1: positive shape entry  
-  * length(intersection.xyz) = 2: positive shape exit
-  * length(intersection.xyz) = 3: negative shape entry  
-  * length(intersection.xyz) = 4: negative shape exit
-  *
-  * When the voxel volume is hollow, the "positive" shape is the original volume.
-  * The "negative" shape is subtracted from the positive shape.
-  */
-  float4 EncodeIntersection(in Intersection Input, bool IsPositive, bool IsEntering)
-  {
-    float scale = float(!IsPositive) * 2.0 + float(!IsEntering) + 1.0;
-    return float4(Input.Normal * scale, Input.t);
-  }
-
-  /**
-  * Sort the intersections from min T to max T with bubble sort. Also prepares for iteration
-  * over the intersections.
-  *
-  * Note: If this sorting function changes, some of the intersection tests may need to be updated.
-  * Search for "Sort()" to find those areas.
-  */
-  void Sort(inout float4 Data[INTERSECTIONS_LENGTH])
-  {
-    const int sortPasses = INTERSECTIONS_LENGTH - 1;
-    for (int n = sortPasses; n > 0; --n)
-    {
-      // Skip to n = Length - 1
-      if (n >= Length)
-      {
-        continue;
-      }
-      
-      for (int i = 0; i < sortPasses; ++i)
-      {
-      // The loop should be: for (i = 0; i < n; ++i) {...} but since loops with
-      // non-constant conditions are not allowed, this breaks early instead.
-        if (i >= n)
-        {
-          break;
-        }
-
-        float4 first = Data[i + 0];
-        float4 second = Data[i + 1];
-
-        bool inOrder = first.w <= second.w;
-        Data[i + 0] = inOrder ? first : second;
-        Data[i + 1] = inOrder ? second : first;
-      }
-    }
-
-    // Prepare initial state for GetNextIntersections()
-    Index = 0;
-    SurroundingShapeCount = 0;
-    IsInsidePositiveShape = false;
-  }
-
-  RayIntersections GetFirstIntersections(in float4 Data[INTERSECTIONS_LENGTH])
-  {
-    RayIntersections result = (RayIntersections) 0;
-    result.Entry.t = Data[0].w;
-    result.Entry.Normal = normalize(Data[0].xyz);
-    result.Exit.t = Data[1].w;
-    result.Exit.Normal = normalize(Data[1].xyz);
-
-    return result;
-  }
-
-  /**
-  * Gets the intersection at the current value of Index, while managing the state of the ray's
-  * trajectory with respect to the intersected shapes.
-  */
-  RayIntersections GetNextIntersections(in float4 Data[INTERSECTIONS_LENGTH])
-  {
-    RayIntersections result = (RayIntersections) 0;
-    result.Entry.t = NO_HIT;
-    result.Exit.t = NO_HIT;
-
-    if (Index >= Length)
-    {
-      return result;
-    }
-
-    float4 surfaceIntersection = float4(0, 0, 0, NO_HIT);
-
-    for (int i = 0; i < INTERSECTIONS_LENGTH; ++i)
-    {
-      // The loop should be: for (i = index; i < loopCount; ++i) {...} but it's not possible
-      // to loop with non-constant condition. Instead, continue until i = index.
-      if (i < Index)
-      {
-        continue;
-      }
-
-      Index = i + 1;
-
-      surfaceIntersection = Data[i];
-      // Maps from [1-4] -> [0-3] (see EncodeIntersection for the types)
-      int intersectionType = int(length(surfaceIntersection.xyz) - 0.5);
-      bool isCurrentShapePositive = intersectionType < 2;
-      bool isEnteringShape = (intersectionType % 2) == 0;
-
-      SurroundingShapeCount += isEnteringShape ? +1 : -1;
-      IsInsidePositiveShape = isCurrentShapePositive ? isEnteringShape : IsInsidePositiveShape;
-
-      // True if entering positive shape or exiting negative shape
-      if (IsInsidePositiveShape && isEnteringShape == isCurrentShapePositive)
-      {
-        result.Entry.t = surfaceIntersection.w;
-        result.Entry.Normal = normalize(surfaceIntersection.xyz);
-      }
-
-      // True if exiting the outermost positive shape
-      bool isExitingOutermostShape = !isEnteringShape && isCurrentShapePositive && SurroundingShapeCount == 0;
-      // True if entering negative shape while being inside a positive one
-      bool isEnteringNegativeFromPositive = isEnteringShape && !isCurrentShapePositive && SurroundingShapeCount == 2 && IsInsidePositiveShape;
-      
-      if (isExitingOutermostShape || isEnteringNegativeFromPositive)
-      {
-        result.Exit.t = surfaceIntersection.w;
-        result.Exit.Normal = normalize(surfaceIntersection.xyz);
-        // Entry and exit have been found, so the loop can stop
-        if (isExitingOutermostShape)
-        {
-          // After exiting the outermost positive shape, there is nothing left to intersect. Jump to the end.
-          Index = INTERSECTIONS_LENGTH;
-        }
-        break;
-      }
-      // Otherwise, keep searching for the correct exit.
-    }
-    
-    return result;
-  }
-};
-
-// Use defines instead of real functions to get array access with a non-constant index.
-
-/**
-* Encodes and stores a single intersection.
-*/
-#define setSurfaceIntersection(/*inout float4[]*/ list, /*in IntersectionListState*/ state, /*int*/ index, /*Intersection*/ intersection, /*bool*/ isPositive, /*bool*/ isEntering) (list)[(index)] = (state).EncodeIntersection((intersection), (isPositive), (isEntering))
-
-/**
-* Encodes and stores the given shape intersections, i.e., the intersections where a ray enters and exits a volume.
-*/
-#define setShapeIntersections(/*inout float4[]*/ list, /*in IntersectionListState*/ state, /*int*/ pairIndex, /*RayIntersection*/ intersections) (list)[(pairIndex) * 2 + 0] = (state).EncodeIntersection((intersections).Entry, (pairIndex) == 0, true); (list)[(pairIndex) * 2 + 1] = (state).EncodeIntersection((intersections).Exit, (pairIndex) == 0, false)
-
 /*===========================
   END RAY + INTERSECTION UTILITY
 =============================*/
@@ -356,7 +176,6 @@ struct IntersectionListState
 struct ShapeUtility
 {
   RayIntersectionUtility Utils;
-  IntersectionListState ListState;
   
   int ShapeConstant;
 
@@ -404,16 +223,15 @@ struct ShapeUtility
   /**
   * Interpret the input bounds (Local Space) according to the voxel grid shape.
   */
-  void Initialize(in int InShapeConstant, in float3 InMinBounds, in float3 InMaxBounds, in float4 PackedData0, in float4 PackedData1, in float4 PackedData2, in float4 PackedData3, in float4 PackedData4, in float4 PackedData5)
+  void Initialize(in int InShapeConstant)
   {
     ShapeConstant = InShapeConstant;
-    ListState = (IntersectionListState) 0;
     
     if (ShapeConstant == BOX)
     {
       // Default unit box bounds.
-      MinBounds = float3(-1, -1, -1);
-      MaxBounds = float3(1, 1, 1);
+      MinBounds = -1;
+      MaxBounds = 1;
     }
     else if (ShapeConstant == ELLIPSOID)
     {
@@ -445,10 +263,8 @@ struct ShapeUtility
   /**
    * Tests whether the input ray (Unit Space) intersects the box. Outputs the intersections in Unit Space.
    */
-  void IntersectBox(in Ray R, out float4 Intersections[INTERSECTIONS_LENGTH])
+  RayIntersections IntersectBox(in Ray R)
   {
-    ListState.Length = 2;
-    
     // Consider the box as the intersection of the space between 3 pairs of parallel planes.
 
     // Compute the distance along the ray to each plane.
@@ -467,10 +283,8 @@ struct ShapeUtility
 
     if (entryT > exitT)
     {
-      result.Entry.t = NO_HIT;
-      result.Exit.t = NO_HIT;
-      setShapeIntersections(Intersections, ListState, 0, result);
-      return;
+      Intersection miss = Utils.NewMissedIntersection();
+      return Utils.NewRayIntersections(miss, miss);
     }
 
     // Compute normals
@@ -482,8 +296,8 @@ struct ShapeUtility
     bool3 isFirstExit = bool3(Utils.Equal(exits, float3(exitT, exitT, exitT)));
     result.Exit.Normal = float3(isFirstExit) * directions;
     result.Exit.t = exitT;
-    
-    setShapeIntersections(Intersections, ListState, 0, result);
+
+    return result;
   }
 
   /**
@@ -1129,20 +943,21 @@ struct ShapeUtility
   /**
   * Tests whether the input ray (Unit Space) intersects the shape.
   */
-  RayIntersections
-    IntersectShape(in Ray R, out float4 Intersections[INTERSECTIONS_LENGTH])
+  RayIntersections IntersectShape(in Ray R)
   {
+    RayIntersections result;
+    
     [branch]
     switch (ShapeConstant)
     {
       case BOX:
-        IntersectBox(R, Intersections);
+        result = IntersectBox(R);
         break;
       case ELLIPSOID:
         IntersectEllipsoid(R, Intersections);
         break;
       default:
-        return Utils.NewRayIntersections(Utils.NewIntersection(NO_HIT, 0), Utils.NewIntersection(NO_HIT, 0));
+        return Utils.NewRayIntersections(Utils.NewMissedIntersection(), Utils.NewMissedIntersection());
     }
     
     RayIntersections result = ListState.GetFirstIntersections(Intersections);
@@ -1735,7 +1550,7 @@ struct VoxelDataTextures
 
 Octree VoxelOctree;
 VoxelOctree.ShapeUtils = (ShapeUtility) 0;
-VoxelOctree.ShapeUtils.Initialize(ShapeConstant, ShapeMinBounds, ShapeMaxBounds, PackedData0, PackedData1, PackedData2, PackedData3, PackedData4, PackedData5);
+VoxelOctree.ShapeUtils.Initialize(ShapeConstant);
 
 Ray R = (Ray) 0;
 R.Origin = RayOrigin;
@@ -1766,7 +1581,7 @@ R.Direction = RayDirection;
 // Shape UV Space: Voxel space from [0, 1] conforming to the actual voxel volume. The volume could be a box, a part of a cylinder, or a region on an ellipsoid.
 // (Vanilla) UV Space: Voxel space within an untransformed voxel octree. This can be envisioned as a simple cube spanning [0, 1] in three dimensions.
 
-RayIntersections Intersections = VoxelOctree.ShapeUtils.IntersectShape(R, IntersectionList);
+RayIntersections Intersections = VoxelOctree.ShapeUtils.IntersectShape(R);
 if (Intersections.Entry.t == NO_HIT) {
   return 0;
 }
@@ -1784,6 +1599,7 @@ VoxelDataTextures DataTextures;
 DataTextures.ShapeConstant = ShapeConstant;
 DataTextures.TileCount = TileCount;
 
+// Account for y-up -> z-up conventions for certain shapes.
 switch (ShapeConstant) {
   case BOX:
     DataTextures.GridDimensions = round(GridDimensions.xzy);

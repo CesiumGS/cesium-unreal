@@ -124,6 +124,7 @@ endif()
 # Our OpenSSL is part of Unreal Engine, so need to install it.
 set(CESIUM_EXCLUDE_INSTALL_HEADERS openssl)
 set(CESIUM_EXCLUDE_INSTALL_STATIC_LIBS openssl)
+SET(CESIUM_DISABLE_CURL ON)
 
 add_subdirectory(cesium-native)
 
@@ -145,6 +146,7 @@ endif()
 option(BUILD_SHARED_LIB OFF)
 option(SUPPORT_CONSOLE_APP OFF)
 set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5")
 add_subdirectory(tidy-html5)
 
 # Don't build the cesium-native tests by default

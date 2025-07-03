@@ -1,7 +1,9 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "VoxelOctree.h"
+#include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
+#include "CesiumTextureResource.h"
 
 #include <Cesium3DTilesContent/ImplicitTilingUtilities.h>
 #include <glm/glm.hpp>
@@ -9,82 +11,91 @@
 using namespace CesiumGeometry;
 using namespace Cesium3DTilesContent;
 
-/**
- * A Cesium texture resource that creates an initially empty `FRHITexture` for
- * FVoxelOctree.
- */
-class FCesiumVoxelOctreeTextureResource : public FCesiumTextureResource {
-public:
-  FCesiumVoxelOctreeTextureResource(
-      TextureGroup textureGroup,
-      uint32 width,
-      uint32 height,
-      EPixelFormat format,
-      TextureFilter filter,
-      TextureAddress addressX,
-      TextureAddress addressY,
-      bool sRGB,
-      uint32 extData);
+/*static*/ UVoxelOctreeTexture*
+UVoxelOctreeTexture::create(uint32 maximumTileCount) {
+  const uint32 width = MaximumOctreeTextureWidth;
+  uint32 tilesPerRow = width / TexelsPerNode;
 
-protected:
-  virtual FTextureRHIRef InitializeTextureRHI() override;
-};
+  float height = (float)maximumTileCount / (float)tilesPerRow;
+  height = static_cast<uint32>(FMath::CeilToInt64(height));
+  height = FMath::Clamp(height, 1, MaximumOctreeTextureWidth);
 
-FCesiumVoxelOctreeTextureResource::FCesiumVoxelOctreeTextureResource(
-    TextureGroup textureGroup,
-    uint32 width,
-    uint32 height,
-    EPixelFormat format,
-    TextureFilter filter,
-    TextureAddress addressX,
-    TextureAddress addressY,
-    bool sRGB,
-    uint32 extData)
-    : FCesiumTextureResource(
-          textureGroup,
-          width,
-          height,
-          0,
-          format,
-          filter,
-          addressX,
-          addressY,
-          sRGB,
-          false,
-          extData,
-          true) {}
+  FTextureResource* pResource = FCesiumTextureResource::CreateEmpty(
+                                    TextureGroup::TEXTUREGROUP_8BitData,
+                                    MaximumOctreeTextureWidth,
+                                    height,
+                                    1, /* Depth */
+                                    EPixelFormat::PF_R8G8B8A8,
+                                    TextureFilter::TF_Nearest,
+                                    TextureAddress::TA_Clamp,
+                                    TextureAddress::TA_Clamp,
+                                    false)
+                                    .Release();
 
-FTextureRHIRef FCesiumVoxelOctreeTextureResource::InitializeTextureRHI() {
-  FRHIResourceCreateInfo createInfo{TEXT("FVoxelOctreeTextureResource")};
-  createInfo.BulkData = nullptr;
-  createInfo.ExtData = this->_platformExtData;
+  UVoxelOctreeTexture* pTexture = NewObject<UVoxelOctreeTexture>(
+      GetTransientPackage(),
+      MakeUniqueObjectName(
+          GetTransientPackage(),
+          UTexture2D::StaticClass(),
+          "VoxelOctreeTexture"),
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
-  if (this->bSRGB) {
-    textureFlags |= TexCreate_SRGB;
+  pTexture->AddressX = TextureAddress::TA_Clamp;
+  pTexture->AddressY = TextureAddress::TA_Clamp;
+  pTexture->Filter = TextureFilter::TF_Nearest;
+  pTexture->LODGroup = TextureGroup::TEXTUREGROUP_8BitData;
+  pTexture->SRGB = false;
+  pTexture->NeverStream = true;
+
+  if (!pTexture || !pResource) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Could not create texture for voxel octree."));
+    return nullptr;
   }
 
-  // Create a new 2D RHI texture, initially empty.
-  return RHICreateTexture(
-      FRHITextureCreateDesc::Create2D(createInfo.DebugName)
-          .SetExtent(int32(this->_width), int32(this->_height))
-          .SetFormat(this->_format)
-          .SetNumMips(1)
-          .SetNumSamples(1)
-          .SetFlags(textureFlags)
-          .SetInitialState(ERHIAccess::Unknown)
-          .SetExtData(createInfo.ExtData)
-          .SetGPUMask(createInfo.GPUMask)
-          .SetClearValue(createInfo.ClearValueBinding));
+  pTexture->SetResource(pResource);
+  pTexture->_tilesPerRow = tilesPerRow;
+
+  ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
+  ([pTexture,
+    pResource = pTexture->GetResource()](FRHICommandListImmediate& RHICmdList) {
+    pResource->SetTextureReference(
+        pTexture->TextureReference.TextureReferenceRHI);
+    pResource->InitResource(FRHICommandListImmediate::Get());
+  });
+
+  return pTexture;
 }
 
-void UCesiumVoxelOctreeTexture::Update(const std::vector<std::byte>& data) {
-  if (!this->_pResource || !this->_pResource->TextureRHI) {
-    return;
+void UVoxelOctreeTexture::update(
+    const FVoxelOctree& octree,
+    std::vector<std::byte>& result) {
+  result.clear();
+
+  uint32_t nodeCount = 0;
+  encodeNode(
+      octree,
+      CesiumGeometry::OctreeTileID(0, 0, 0, 0),
+      nodeCount,
+      0, /* octreeIndex */
+      0, /* textureIndex */
+      0, /* parentOctreeIndex */
+      0,
+      result); /* parentTextureIndex */
+
+  // Pad the data as necessary for the texture copy.
+  uint32 regionWidth = this->_tilesPerRow * TexelsPerNode * sizeof(uint32);
+  uint32 regionHeight = glm::ceil((float)result.size() / regionWidth);
+  uint32 expectedSize = regionWidth * regionHeight;
+
+  if (result.size() != expectedSize) {
+    result.resize(expectedSize, std::byte(0));
   }
 
   // Compute the area of the texture that actually needs updating.
-  uint32 texelCount = data.size() / sizeof(uint32);
+  uint32 texelCount = result.size() / sizeof(uint32);
   uint32 tileCount = texelCount / TexelsPerNode;
 
   glm::uvec2 updateExtent;
@@ -105,161 +116,198 @@ void UCesiumVoxelOctreeTexture::Update(const std::vector<std::byte>& data) {
   region.SrcX = 0;
   region.SrcY = 0;
 
-  region.Width = FMath::Clamp(region.Width, 1, this->_pResource->GetSizeX());
-  region.Height = FMath::Clamp(region.Height, 1, this->_pResource->GetSizeY());
+  region.Width = FMath::Clamp(region.Width, 1, this->GetResource()->GetSizeX());
+  region.Height =
+      FMath::Clamp(region.Height, 1, this->GetResource()->GetSizeY());
 
   // Pitch = size in bytes of each row of the source image
   uint32 sourcePitch = region.Width * sizeof(uint32);
+
   ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
-  ([pResource = this->_pResource, &data, region, sourcePitch](
+  ([pResource = this->GetResource(), &result, region, sourcePitch](
        FRHICommandListImmediate& RHICmdList) {
-    // The data could be emptied if the tileset refreshes mid-update.
-    if (!data.empty()) {
-      RHIUpdateTexture2D(
-          pResource->TextureRHI,
-          0,
-          region,
-          sourcePitch,
-          reinterpret_cast<const uint8*>(data.data()));
-    }
+    RHIUpdateTexture2D(
+        pResource->TextureRHI,
+        0,
+        region,
+        sourcePitch,
+        reinterpret_cast<const uint8*>(result.data()));
   });
 }
 
-/*static*/ UCesiumVoxelOctreeTexture*
-UCesiumVoxelOctreeTexture::Create(uint32 Width, uint32 MaximumTileCount) {
-  uint32 TilesPerRow = Width / TexelsPerNode;
-  float Height = (float)MaximumTileCount / (float)TilesPerRow;
-  Height = static_cast<uint32>(FMath::CeilToInt64(Height));
-  Height = FMath::Clamp(Height, 1, Width);
+void UVoxelOctreeTexture::insertNodeData(
+    std::vector<std::byte>& data,
+    uint32 textureIndex,
+    ENodeFlag nodeFlag,
+    uint16 dataValue,
+    uint8 renderableLevelDifference) {
+  uint32_t dataIndex = textureIndex * sizeof(uint32_t);
 
-  TUniquePtr<FCesiumVoxelOctreeTextureResource> pResource =
-      MakeUnique<FCesiumVoxelOctreeTextureResource>(
-          TextureGroup::TEXTUREGROUP_8BitData,
-          Width,
-          Height,
-          EPixelFormat::PF_R8G8B8A8,
-          TextureFilter::TF_Nearest,
-          TextureAddress::TA_Clamp,
-          TextureAddress::TA_Clamp,
-          false,
-          0);
+  const size_t desiredSize = dataIndex + sizeof(uint32_t);
+  if (data.size() < desiredSize) {
+    data.resize(desiredSize);
+  }
 
-  UCesiumVoxelOctreeTexture* pTexture = NewObject<UCesiumVoxelOctreeTexture>(
-      GetTransientPackage(),
-      MakeUniqueObjectName(
-          GetTransientPackage(),
-          UTexture2D::StaticClass(),
-          "VoxelOctreeTexture"),
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  // Explicitly encode the values in little endian order.
+  data[dataIndex] = std::byte(nodeFlag);
+  data[dataIndex + 1] = std::byte(renderableLevelDifference);
+  data[dataIndex + 2] = std::byte(dataValue & 0x00ff);
+  data[dataIndex + 3] = std::byte(dataValue >> 8);
+};
 
-  pTexture->AddressX = TextureAddress::TA_Clamp;
-  pTexture->AddressY = TextureAddress::TA_Clamp;
-  pTexture->Filter = TextureFilter::TF_Nearest;
-  pTexture->LODGroup = TextureGroup::TEXTUREGROUP_8BitData;
-  pTexture->SRGB = false;
-  pTexture->NeverStream = true;
+void UVoxelOctreeTexture::encodeNode(
+    const FVoxelOctree& octree,
+    const CesiumGeometry::OctreeTileID& tileId,
+    uint32& nodeCount,
+    uint32 octreeIndex,
+    uint32 textureIndex,
+    uint32 parentOctreeIndex,
+    uint32 parentTextureIndex,
+    std::vector<std::byte>& result) {
+  const FVoxelOctree::Node* pNode = octree.getNode(tileId);
+  CESIUM_ASSERT(pNode);
 
-  pTexture->_tilesPerRow = TilesPerRow;
-  pTexture->_pResource = pResource.Release();
-  pTexture->SetResource(pTexture->_pResource);
+  if (pNode->hasChildren) {
+    // Point the parent and child octree indices at each other
+    insertNodeData(
+        result,
+        parentTextureIndex,
+        ENodeFlag::Internal,
+        octreeIndex);
+    insertNodeData(
+        result,
+        textureIndex,
+        ENodeFlag::Internal,
+        parentOctreeIndex);
+    nodeCount++;
 
-  return pTexture;
+    // Continue traversing
+    parentOctreeIndex = octreeIndex;
+    parentTextureIndex = parentOctreeIndex * TexelsPerNode + 1;
+
+    uint32 childIndex = 0;
+    for (const CesiumGeometry::OctreeTileID& childId :
+         ImplicitTilingUtilities::getChildren(tileId)) {
+      octreeIndex = nodeCount;
+      textureIndex = octreeIndex * TexelsPerNode;
+
+      encodeNode(
+          octree,
+          childId,
+          nodeCount,
+          octreeIndex,
+          textureIndex,
+          parentOctreeIndex,
+          parentTextureIndex + childIndex++,
+          result);
+    }
+  } else {
+    // Leaf nodes involve more complexity.
+    ENodeFlag flag = ENodeFlag::Empty;
+    uint16 value = 0;
+    uint16 levelDifference = 0;
+
+    if (pNode->isDataReady) {
+      flag = ENodeFlag::Leaf;
+      value = static_cast<uint16>(pNode->dataIndex);
+    } else if (pNode->pParent) {
+      FVoxelOctree::Node* pParent = pNode->pParent;
+
+      for (uint32 levelsAbove = 1; levelsAbove <= tileId.level; levelsAbove++) {
+        if (pParent->isDataReady) {
+          flag = ENodeFlag::Leaf;
+          value = static_cast<uint16>(pParent->dataIndex);
+          levelDifference = levelsAbove;
+          break;
+        }
+
+        // Continue trying to find a renderable ancestor.
+        pParent = pParent->pParent;
+
+        if (!pParent) {
+          // This happens if we've reached the root node and it's not
+          // renderable.
+          break;
+        }
+      }
+    }
+    insertNodeData(result, parentTextureIndex, flag, value, levelDifference);
+    nodeCount++;
+  }
 }
 
 size_t FVoxelOctree::OctreeTileIDHash::operator()(
     const CesiumGeometry::OctreeTileID& tileId) const {
-  // Tiles with the same morton index, but on different levels, are
-  // distinguished by an offset. This offset is equal to the number of tiles on
-  // the levels above it, which is the sum of a series, where n = tile.level -
-  // 1:
+  // Tiles with the same morton index on different levels are distinguished by
+  // an offset. This offset is equal to the total number of tiles on the levels
+  // above it, i.e., the sum of a series where n = tile.level - 1:
   // 1 + 8 + 8^2 + ... + 8^n = (8^(n+1) - 1) / (8 - 1)
-  // e.g., for TileID(2, 0, 0, 0), the morton index is 0, but the hash = 9.
+  // For example, TileID(2, 0, 0, 0) has a morton index of 0, but it hashes
+  // to 9.
   size_t levelOffset =
       tileId.level > 0 ? (std::pow(8, tileId.level) - 1) / 7 : 0;
   return levelOffset + ImplicitTilingUtilities::computeMortonIndex(tileId);
 }
 
-FVoxelOctree::FVoxelOctree() : _nodes() {
+FVoxelOctree::FVoxelOctree(uint32 maximumTileCount)
+    : _nodes(), _pTexture(nullptr), _fence(std::nullopt), _data() {
   CesiumGeometry::OctreeTileID rootTileID(0, 0, 0, 0);
   this->_nodes.insert({rootTileID, Node()});
+  this->_pTexture = UVoxelOctreeTexture::create(maximumTileCount);
 }
 
 FVoxelOctree::~FVoxelOctree() {
-  std::vector<std::byte> empty;
-  std::swap(this->_octreeData, empty);
-
-  // Can we count on this being freed since it's a UTexture?
-  this->_pTexture = nullptr;
+  CESIUM_ASSERT(!this->_fence || this->_fence->IsFenceComplete());
 }
 
-void FVoxelOctree::InitializeTexture(uint32 Width, uint32 MaximumTileCount) {
-  this->_pTexture = UCesiumVoxelOctreeTexture::Create(Width, MaximumTileCount);
-  FTextureResource* pResource =
-      this->_pTexture ? this->_pTexture->GetResource() : nullptr;
-  if (!pResource) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT("Could not create texture for voxel octree."));
-    return;
-  }
-
-  ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
-  ([pTexture = this->_pTexture,
-    pResource](FRHICommandListImmediate& RHICmdList) {
-    pResource->SetTextureReference(
-        pTexture->TextureReference.TextureReferenceRHI);
-    pResource->InitResource(FRHICommandListImmediate::Get());
-  });
+const FVoxelOctree::Node*
+FVoxelOctree::getNode(const CesiumGeometry::OctreeTileID& TileID) const {
+  return this->_nodes.contains(TileID) ? &this->_nodes.at(TileID) : nullptr;
 }
 
 FVoxelOctree::Node*
-FVoxelOctree::GetNode(const CesiumGeometry::OctreeTileID& TileID) const {
-  if (this->_nodes.find(TileID) != this->_nodes.end()) {
-    return const_cast<FVoxelOctree::Node*>(&this->_nodes.at(TileID));
-  }
-  return nullptr;
+FVoxelOctree::getNode(const CesiumGeometry::OctreeTileID& TileID) {
+  return this->_nodes.contains(TileID) ? &this->_nodes.at(TileID) : nullptr;
 }
 
-bool FVoxelOctree::CreateNode(const CesiumGeometry::OctreeTileID& TileID) {
-  FVoxelOctree::Node* pNode = this->GetNode(TileID);
+bool FVoxelOctree::createNode(const CesiumGeometry::OctreeTileID& TileID) {
+  FVoxelOctree::Node* pNode = this->getNode(TileID);
   if (pNode) {
     return false;
   }
 
-  // Create this node first.
+  // Create the target node first.
   this->_nodes.insert({TileID, Node()});
   pNode = &this->_nodes[TileID];
 
   // Starting from the target node, traverse the tree upwards and create the
-  // missing nodes. Stop when we've found an existing parent node.
-  CesiumGeometry::OctreeTileID currentTileID = TileID;
+  // missing ancestors. Stop when we've found an existing parent node.
+  OctreeTileID currentTileID = TileID;
   bool foundExistingParent = false;
+
   for (uint32_t level = TileID.level; level > 0; level--) {
-    CesiumGeometry::OctreeTileID parentTileID =
-        *ComputeParentTileID(currentTileID);
-    if (this->_nodes.find(parentTileID) == this->_nodes.end()) {
-      // Parent doesn't exist, so create it.
-      this->_nodes.insert({parentTileID, Node()});
-    } else {
+    OctreeTileID parentTileID =
+        *ImplicitTilingUtilities::getParentID(currentTileID);
+    if (this->_nodes.contains(parentTileID)) {
       foundExistingParent = true;
+    } else {
+      this->_nodes.insert({parentTileID, Node()});
     }
 
     FVoxelOctree::Node* pParent = &this->_nodes[parentTileID];
-    pNode->Parent = pParent;
+    pNode->pParent = pParent;
 
     // The parent *shouldn't* have children at this point. Otherwise, our
     // target node would have already been found.
-    std::array<CesiumGeometry::OctreeTileID, 8> childIds =
-        ComputeChildTileIDs(parentTileID);
-    for (CesiumGeometry::OctreeTileID& childId : childIds) {
-      if (this->_nodes.find(childId) == this->_nodes.end()) {
-        this->_nodes.insert({childId, Node()});
-        this->_nodes[childId].Parent = pParent;
+    for (const CesiumGeometry::OctreeTileID& child :
+         ImplicitTilingUtilities::getChildren(parentTileID)) {
+      if (!this->_nodes.contains(child)) {
+        this->_nodes.insert({child, Node()});
+        this->_nodes[child].pParent = pParent;
       }
     }
 
-    pParent->HasChildren = true;
+    pParent->hasChildren = true;
     if (foundExistingParent) {
       // The parent already existed in the tree previously, no need to create
       // its ancestors.
@@ -273,12 +321,12 @@ bool FVoxelOctree::CreateNode(const CesiumGeometry::OctreeTileID& TileID) {
   return true;
 }
 
-bool FVoxelOctree::RemoveNode(const CesiumGeometry::OctreeTileID& TileID) {
-  if (TileID.level == 0) {
+bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& tileId) {
+  if (tileId.level == 0) {
     return false;
   }
 
-  if (IsNodeRenderable(TileID)) {
+  if (isNodeRenderable(tileId)) {
     return false;
   }
 
@@ -288,15 +336,13 @@ bool FVoxelOctree::RemoveNode(const CesiumGeometry::OctreeTileID& TileID) {
 
   // There may be cases where the children rely on the parent for rendering.
   // If so, the node's data cannot be easily released.
-  // TODO: can you also attempt to destroy the node?
-  CesiumGeometry::OctreeTileID parentTileID = *ComputeParentTileID(TileID);
-  std::array<CesiumGeometry::OctreeTileID, 8> siblingIds =
-      ComputeChildTileIDs(parentTileID);
-  for (const CesiumGeometry::OctreeTileID& siblingId : siblingIds) {
-    if (siblingId == TileID)
+  OctreeTileID parentTileId = *ImplicitTilingUtilities::getParentID(tileId);
+  OctreeChildren siblings = ImplicitTilingUtilities::getChildren(parentTileId);
+  for (const OctreeTileID& siblingId : siblings) {
+    if (siblingId == tileId)
       continue;
 
-    if (IsNodeRenderable(siblingId)) {
+    if (isNodeRenderable(siblingId)) {
       hasRenderableSiblings = true;
       break;
     }
@@ -309,180 +355,42 @@ bool FVoxelOctree::RemoveNode(const CesiumGeometry::OctreeTileID& TileID) {
   }
 
   // Otherwise, okay to remove the nodes.
-  for (const CesiumGeometry::OctreeTileID& siblingId : siblingIds) {
+  for (const OctreeTileID& siblingId : siblings) {
     this->_nodes.erase(this->_nodes.find(siblingId));
   }
-  this->GetNode(parentTileID)->HasChildren = false;
+  this->getNode(parentTileId)->hasChildren = false;
 
   // Continue to recursively remove parent nodes as long as they aren't
   // renderable either.
-  RemoveNode(parentTileID);
+  removeNode(parentTileId);
 
   return true;
 }
 
-bool FVoxelOctree::IsNodeRenderable(
+bool FVoxelOctree::isNodeRenderable(
     const CesiumGeometry::OctreeTileID& TileID) const {
-  FVoxelOctree::Node* pNode = this->GetNode(TileID);
+  const FVoxelOctree::Node* pNode = this->getNode(TileID);
   if (!pNode) {
     return false;
   }
 
-  return pNode->DataSlotIndex >= 0 || pNode->HasChildren;
+  return pNode->dataIndex > 0 || pNode->hasChildren;
 }
 
-/*static*/ std::array<CesiumGeometry::OctreeTileID, 8>
-FVoxelOctree::ComputeChildTileIDs(const CesiumGeometry::OctreeTileID& TileID) {
-  uint32 level = TileID.level + 1;
-  uint32 x = TileID.x << 1;
-  uint32 y = TileID.y << 1;
-  uint32 z = TileID.z << 1;
+bool FVoxelOctree::updateTexture() {
+  if (!this->_pTexture || (this->_fence && !this->_fence->IsFenceComplete())) {
+    return false;
+  }
 
-  return {
-      OctreeTileID(level, x, y, z),
-      OctreeTileID(level, x + 1, y, z),
-      OctreeTileID(level, x, y + 1, z),
-      OctreeTileID(level, x + 1, y + 1, z),
-      OctreeTileID(level, x, y, z + 1),
-      OctreeTileID(level, x + 1, y, z + 1),
-      OctreeTileID(level, x, y + 1, z + 1),
-      OctreeTileID(level, x + 1, y + 1, z + 1)};
+  this->_fence.reset();
+  this->_pTexture->update(*this, this->_data);
+
+  // Prevent changes to the data while the texture is updating on the render
+  // thread.
+  this->_fence.emplace().BeginFence();
+  return true;
 }
 
-/*static*/ std::optional<CesiumGeometry::OctreeTileID>
-FVoxelOctree::ComputeParentTileID(const CesiumGeometry::OctreeTileID& TileID) {
-  if (TileID.level == 0) {
-    return std::nullopt;
-  }
-  return CesiumGeometry::OctreeTileID(
-      TileID.level - 1,
-      TileID.x >> 1,
-      TileID.y >> 1,
-      TileID.z >> 1);
-}
-
-/*static*/ void FVoxelOctree::insertNodeData(
-    std::vector<std::byte>& nodeData,
-    uint32 textureIndex,
-    FVoxelOctree::ENodeFlag nodeFlag,
-    uint16 data,
-    uint8 renderableLevelDifference) {
-  uint32 dataIndex = textureIndex * sizeof(uint32);
-  if (nodeData.size() <= dataIndex) {
-    nodeData.resize(dataIndex + sizeof(uint32), std::byte(0));
-  }
-  // Explicitly encode the values in little endian order.
-  nodeData[dataIndex] = std::byte(nodeFlag);
-  nodeData[dataIndex + 1] = std::byte(renderableLevelDifference);
-  nodeData[dataIndex + 2] = std::byte(data & 0x00ff);
-  nodeData[dataIndex + 3] = std::byte(data >> 8);
-};
-
-void FVoxelOctree::encodeNode(
-    const CesiumGeometry::OctreeTileID& tileId,
-    std::vector<std::byte>& nodeData,
-    uint32& nodeCount,
-    uint32 octreeIndex,
-    uint32 textureIndex,
-    uint32 parentOctreeIndex,
-    uint32 parentTextureIndex) {
-  constexpr uint32 TexelsPerNode = UCesiumVoxelOctreeTexture::TexelsPerNode;
-
-  Node* pNode = &this->_nodes[tileId];
-  if (pNode->HasChildren) {
-    // Point the parent and child octree indices at each other
-    insertNodeData(
-        nodeData,
-        parentTextureIndex,
-        ENodeFlag::Internal,
-        octreeIndex);
-    insertNodeData(
-        nodeData,
-        textureIndex,
-        ENodeFlag::Internal,
-        parentOctreeIndex);
-    nodeCount++;
-
-    // Continue traversing
-    parentOctreeIndex = octreeIndex;
-    parentTextureIndex = parentOctreeIndex * TexelsPerNode + 1;
-
-    std::array<CesiumGeometry::OctreeTileID, 8> childIds =
-        ComputeChildTileIDs(tileId);
-    for (uint32 i = 0; i < childIds.size(); i++) {
-      octreeIndex = nodeCount;
-      textureIndex = octreeIndex * TexelsPerNode;
-
-      encodeNode(
-          childIds[i],
-          nodeData,
-          nodeCount,
-          octreeIndex,
-          textureIndex,
-          parentOctreeIndex,
-          parentTextureIndex + i);
-    }
-  } else {
-    // Leaf nodes involve more complexity.
-    ENodeFlag flag = ENodeFlag::Empty;
-    uint16 value = 0;
-    uint16 levelDifference = 0;
-
-    if (pNode->DataSlotIndex >= 0) {
-      flag = ENodeFlag::Leaf;
-      value = static_cast<uint16>(pNode->DataSlotIndex);
-    } else if (pNode->Parent) {
-      FVoxelOctree::Node* pParent = pNode->Parent;
-
-      for (uint32 levelsAbove = 1; levelsAbove <= tileId.level; levelsAbove++) {
-        if (pParent->DataSlotIndex >= 0) {
-          flag = ENodeFlag::Leaf;
-          value = static_cast<uint16>(pParent->DataSlotIndex);
-          levelDifference = levelsAbove;
-          break;
-        }
-
-        // Continue trying to find a renderable ancestor.
-        pParent = pParent->Parent;
-
-        if (!pParent) {
-          // This happens if we've reached the root node and it's not
-          // renderable.
-          break;
-        }
-      }
-    }
-    insertNodeData(nodeData, parentTextureIndex, flag, value, levelDifference);
-    nodeCount++;
-  }
-}
-
-void FVoxelOctree::UpdateTexture() {
-  if (!this->_pTexture) {
-    return;
-  }
-
-  this->_octreeData.clear();
-  uint32_t nodeCount = 0;
-  encodeNode(
-      CesiumGeometry::OctreeTileID(0, 0, 0, 0),
-      this->_octreeData,
-      nodeCount,
-      0,
-      0,
-      0,
-      0);
-
-  // Pad the data as necessary for the texture copy.
-  uint32 regionWidth = this->_pTexture->GetTilesPerRow() *
-                       UCesiumVoxelOctreeTexture::TexelsPerNode *
-                       sizeof(uint32);
-  uint32 regionHeight =
-      glm::ceil((float)this->_octreeData.size() / regionWidth);
-  uint32 expectedSize = regionWidth * regionHeight;
-  if (this->_octreeData.size() != expectedSize) {
-    this->_octreeData.resize(expectedSize, std::byte(0));
-  }
-
-  this->_pTexture->Update(this->_octreeData);
+bool FVoxelOctree::canBeDestroyed() const {
+  return this->_fence ? this->_fence->IsFenceComplete() : true;
 }

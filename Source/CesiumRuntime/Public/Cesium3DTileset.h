@@ -1273,9 +1273,9 @@ private:
       UCesiumEllipsoid* NewEllpisoid);
 
   /**
-   * Initializes the CesiumVoxelRenderer component for rendering voxel data.
+   * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering voxel data.
    */
-  void initializeVoxelRenderer(
+  void createVoxelRenderer(
       const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
           VoxelExtension);
 

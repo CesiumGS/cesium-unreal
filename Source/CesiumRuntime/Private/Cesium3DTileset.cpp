@@ -238,17 +238,20 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(this);
   }
 
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        pRoot,
-        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-    this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
-        this,
-        &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
+  if (this->ResolvedGeoreference) {
+    UCesium3DTilesetRoot* pRoot =
+        Cast<UCesium3DTilesetRoot>(this->RootComponent);
+    if (pRoot) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          pRoot,
+          &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+      this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
+          this,
+          &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
 
-    // Update existing tile positions, if any.
-    pRoot->HandleGeoreferenceUpdated();
+      // Update existing tile positions, if any.
+      pRoot->HandleGeoreferenceUpdated();
+    }
   }
 
   return this->ResolvedGeoreference;
@@ -1169,10 +1172,20 @@ void ACesium3DTileset::LoadTileset() {
 #endif
 
   this->_pTileset->getRootTileAvailableEvent().thenImmediately([thiz = this]() {
-    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pVoxelExtension =
-        thiz->_pTileset ? thiz->_pTileset->getVoxelContentExtension() : nullptr;
+    if (!thiz->_pTileset || !thiz->_pTileset->getRootTile()) {
+      return;
+    }
+
+    const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
+        thiz->_pTileset->getRootTile()->getContent().getExternalContent();
+    if (!pExternalContent) {
+      return;
+    }
+
+    const auto* pVoxelExtension = pExternalContent->getExtension<
+        Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
-      thiz->initializeVoxelRenderer(*pVoxelExtension);
+      thiz->createVoxelRenderer(*pVoxelExtension);
     }
   });
 
@@ -1275,8 +1288,8 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
-  // It did crash in Tick() when we trigger refresh events at a high frequency,
-  // typically if the user clicks a button "frantically"...)
+  // This would crash in Tick() when if refresh events were triggered
+  // frequently.
   this->_tilesToHideNextFrame.clear();
 
   if (!this->_pTileset) {
@@ -1595,7 +1608,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
-  return Cesium3DTilesSelection::ViewState::create(
+  return Cesium3DTilesSelection::ViewState(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
@@ -2123,6 +2136,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         pResult->tilesToRenderThisFrame,
         pResult->tileScreenSpaceErrorThisFrame);
   } else {
+    removeCollisionForTiles(pResult->tilesFadingOut);
     hideTiles(this->_tilesToHideNextFrame);
 
     _tilesToHideNextFrame.clear();
@@ -2362,10 +2376,14 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 }
 #endif
 
-void ACesium3DTileset::initializeVoxelRenderer(
+void ACesium3DTileset::createVoxelRenderer(
     const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& VoxelExtension) {
-  const FCesiumVoxelClassDescription* pVoxelClassDescription =
-      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
+  const Cesium3DTilesSelection::Tile* pRootTile =
+      this->_pTileset->getRootTile();
+  if (!pRootTile) {
+    // Not sure how this would happen, but just in case...
+    return;
+  }
 
   // Validate that voxel metadata is present.
   const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
@@ -2375,18 +2393,13 @@ void ACesium3DTileset::initializeVoxelRenderer(
         LogCesium,
         Error,
         TEXT(
-            "Tileset %s contains voxels, but is missing a metadata schema to describe its contents."),
+            "Tileset %s contains voxels but is missing a metadata schema to describe its contents."),
         *this->GetName())
     return;
   }
 
-  const Cesium3DTilesSelection::Tile* pRootTile =
-      this->_pTileset->getRootTile();
-  if (!pRootTile) {
-    // Not sure how this could happen, but just in case...
-    CESIUM_ASSERT(false);
-    return;
-  }
+  const FCesiumVoxelClassDescription* pVoxelClassDescription =
+      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
 
   this->_pVoxelRendererComponent = UCesiumVoxelRendererComponent::Create(
       this,

@@ -3,6 +3,7 @@
 #include "CesiumVoxelRendererComponent.h"
 #include "CalcBounds.h"
 #include "Cesium3DTileset.h"
+#include "CesiumGltfComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRuntime.h"
@@ -59,9 +60,21 @@ void UCesiumVoxelRendererComponent::BeginDestroy() {
 
   // Reset the pointers.
   this->MeshComponent = nullptr;
-  this->_pResources.Reset();
 
   Super::BeginDestroy();
+}
+
+bool UCesiumVoxelRendererComponent::IsReadyForFinishDestroy() {
+  if (this->_pOctree.IsValid() && !this->_pOctree->canBeDestroyed()) {
+    return false;
+  }
+
+  if (this->_pDataTextures.IsValid()) {
+    this->_pDataTextures->pollLoadingSlots();
+    return this->_pDataTextures->canBeDestroyed();
+  }
+
+  return Super::IsReadyForFinishDestroy();
 }
 
 namespace {
@@ -82,16 +95,20 @@ void setVoxelBoxProperties(
     UMaterialInstanceDynamic* pVoxelMaterial,
     const CesiumGeometry::OrientedBoundingBox& box) {
   glm::dmat3 halfAxes = box.getHalfAxes();
+
+  // The engine-provided Cube extends from [-50, 50], so a scale of 1/50 is
+  // incorporated into the component's transform to compensate.
   pVoxelComponent->HighPrecisionTransform = glm::dmat4(
       glm::dvec4(halfAxes[0], 0) * 0.02,
       glm::dvec4(halfAxes[1], 0) * 0.02,
       glm::dvec4(halfAxes[2], 0) * 0.02,
       glm::dvec4(box.getCenter(), 1));
 
-  // The transform and scale of the box are handled in the component's
-  // transform, so there is no need to duplicate it here. Instead, this
-  // transform is configured to scale the engine-provided Cube ([-50, 50]) to
-  // unit space ([-1, 1]).
+  // Distinct from the component's transform above, this scales from the
+  // engine-provided Cube's space ([-50, 50]) to a unit space of [-1, 1]. This
+  // is specifically used to fit the raymarched cube into the bounds of the
+  // explicit cube mesh. In other words, this scale must be applied in-shader
+  // to account for the actual mesh's bounds.
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
@@ -407,7 +424,8 @@ getMetadataValue(const std::optional<CesiumUtility::JsonValue>& jsonValue) {
       return FCesiumMetadataValue();
     }
 
-    // Attempt to convert the array to a vec4 (or a value with less dimensions).
+    // Attempt to convert the array to a vec4 (or a value with less
+    // dimensions).
     size_t endIndex = FMath::Min(array.size(), (size_t)4);
     TArray<float> values;
     for (size_t i = 0; i < endIndex; i++) {
@@ -446,29 +464,6 @@ getMetadataValue(const std::optional<CesiumUtility::JsonValue>& jsonValue) {
   return FCesiumMetadataValue();
 }
 
-// uint32 getMaximumTextureMemory(
-//     const FCesiumVoxelClassDescription* pDescription,
-//     const glm::uvec3& gridDimensions,
-//     uint64_t tileCount) {
-//   int32_t pixelSize = 0;
-//
-//   if (pDescription) {
-//     for (const FCesiumPropertyAttributePropertyDescription& Property :
-//          pDescription->Properties) {
-//       EncodedFeaturesMetadata::EncodedPixelFormat pixelFormat =
-//           EncodedFeaturesMetadata::getPixelFormat(
-//               Property.EncodingDetails.Type,
-//               Property.EncodingDetails.ComponentType);
-//       pixelSize = FMath::Max(
-//           pixelSize,
-//           pixelFormat.bytesPerChannel * pixelFormat.channels);
-//     }
-//   }
-//
-//   return (uint32)pixelSize * gridDimensions.x * gridDimensions.y *
-//          gridDimensions.z * tileCount;
-// }
-
 } // namespace
 
 /*static*/ UMaterialInstanceDynamic*
@@ -497,7 +492,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
           UTF8_TO_TCHAR("Octree"),
           EMaterialParameterAssociation::LayerParameter,
           0),
-      pVoxelComponent->_pResources->GetOctreeTexture());
+      pVoxelComponent->_pOctree->getTexture());
   pVoxelMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape Constant"),
@@ -558,7 +553,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
                 FName(PropertyName),
                 EMaterialParameterAssociation::LayerParameter,
                 0),
-            pVoxelComponent->_pResources->GetDataTexture(Property.Name));
+            pVoxelComponent->_pDataTextures->getTexture(Property.Name));
 
         if (Property.PropertyDetails.bHasScale) {
           EncodedFeaturesMetadata::SetPropertyParameterValue(
@@ -610,12 +605,14 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
       }
     }
 
+    const glm::uvec3& tileCount =
+        pVoxelComponent->_pDataTextures->getTileCountAlongAxes();
     pVoxelMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo(
             UTF8_TO_TCHAR("Tile Count"),
             EMaterialParameterAssociation::LayerParameter,
             0),
-        pVoxelComponent->_pResources->GetTileCount());
+        FVector(tileCount.x, tileCount.y, tileCount.z));
   }
 
   return pVoxelMaterial;
@@ -638,7 +635,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         LogCesium,
         Error,
         TEXT(
-            "Tileset %s contains voxels, but cannot find the metadata class that describes its contents."),
+            "Tileset %s does not contain the metadata class that is referenced by its voxel content."),
         *pTilesetActor->GetName())
     return nullptr;
   }
@@ -650,7 +647,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("Tileset %s contains voxels but has invalid dimensions."),
+        TEXT("Tileset %s has invalid voxel grid dimensions."),
         *pTilesetActor->GetName())
     return nullptr;
   }
@@ -702,14 +699,13 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
 
   const Cesium3DTiles::Class* pVoxelClass =
       &tilesetMetadata.schema->classes.at(voxelClassId);
-  assert(pVoxelClass != nullptr);
+  CESIUM_ASSERT(pVoxelClass != nullptr);
 
   UCesiumVoxelRendererComponent* pVoxelComponent =
       NewObject<UCesiumVoxelRendererComponent>(pTilesetActor);
   pVoxelComponent->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   pVoxelComponent->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pVoxelComponent->_pTileset = pTilesetActor;
 
   UStaticMeshComponent* pVoxelMesh =
       NewObject<UStaticMeshComponent>(pVoxelComponent);
@@ -739,45 +735,44 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   glm::uvec3 dataDimensions =
       glm::uvec3(dimensions[0], dimensions[1], dimensions[2]) + paddingBefore +
       paddingAfter;
+
   if (shape == EVoxelGridShape::Box || shape == EVoxelGridShape::Cylinder) {
-    // Account for y-up in glTF -> z-up in 3D Tiles.
+    // Account for the transformation between y-up (glTF) to z-up (3D Tiles).
     dataDimensions =
         glm::uvec3(dataDimensions.x, dataDimensions.z, dataDimensions.y);
   }
 
-  uint32 requestedTextureMemory =
-      FVoxelResources::DefaultDataTextureMemoryBytes;
+  uint32 knownTileCount = 0;
+  if (tilesetMetadata.metadata) {
+    const Cesium3DTiles::MetadataEntity& metadata = *tilesetMetadata.metadata;
+    const Cesium3DTiles::Class& tilesetClass =
+        tilesetMetadata.schema->classes.at(metadata.classProperty);
+    for (const auto propertyIt : tilesetClass.properties) {
+      if (propertyIt.second.semantic == "TILESET_TILE_COUNT") {
+        const auto tileCountIt = metadata.properties.find(propertyIt.first);
+        if (tileCountIt != metadata.properties.end()) {
+          knownTileCount =
+              tileCountIt->second.getSafeNumberOrDefault<uint32>(0);
+        }
+        break;
+      }
+    }
+  }
 
-  // uint64_t knownTileCount = 0;
-  // if (tilesetMetadata.metadata) {
-  //   const Cesium3DTiles::MetadataEntity& metadata =
-  //   *tilesetMetadata.metadata;
-  //   // TODO: This should find the property by "TILESET_TILE_COUNT"
-  //   if (metadata.properties.find("tileCount") != metadata.properties.end()) {
-  //     const CesiumUtility::JsonValue& value =
-  //         metadata.properties.at("tileCount");
-  //     if (value.isInt64()) {
-  //       knownTileCount = value.getInt64OrDefault(0);
-  //     } else if (value.isUint64()) {
-  //       knownTileCount = value.getUint64OrDefault(0);
-  //     }
-  //   }
-  // }
+  if (pDescription && pVoxelMesh->GetScene()) {
+    pVoxelComponent->_pDataTextures = MakeUnique<FVoxelMegatextures>(
+        *pDescription,
+        dataDimensions,
+        pVoxelMesh->GetScene()->GetFeatureLevel(),
+        knownTileCount);
+  }
 
-  // if (knownTileCount > 0) {
-  //  uint32 maximumTextureMemory =
-  //      getMaximumTextureMemory(pDescription, dataDimensions, knownTileCount);
-  //  requestedTextureMemory = FMath::Min(
-  //      maximumTextureMemory,
-  //      FVoxelResources::MaximumDataTextureMemoryBytes);
-  //}
-
-  pVoxelComponent->_pResources = MakeUnique<FVoxelResources>(
-      pDescription,
-      shape,
-      dataDimensions,
-      pVoxelMesh->GetScene()->GetFeatureLevel(),
-      requestedTextureMemory);
+  uint32 maximumTileCount =
+      pVoxelComponent->_pDataTextures
+          ? pVoxelComponent->_pDataTextures->getMaximumTileCount()
+          : 1;
+  pVoxelComponent->_pOctree = MakeUnique<FVoxelOctree>(maximumTileCount);
+  pVoxelComponent->_loadedNodeIds.reserve(maximumTileCount);
 
   CreateGltfOptions::CreateVoxelOptions& options = pVoxelComponent->Options;
   options.pTilesetExtension = &voxelExtension;
@@ -804,10 +799,182 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   return pVoxelComponent;
 }
 
+namespace {
+template <typename Func>
+void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
+  for (size_t i = 0; i < tiles.size(); i++) {
+    const Cesium3DTilesSelection::Tile::Pointer& pTile = tiles[i];
+    if (!pTile ||
+        pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+      continue;
+    }
+
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* pGltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
+    if (!pGltf) {
+      // When a tile does not have render resources (i.e. a glTF), then
+      // the resources either have not yet been loaded or prepared,
+      // or the tile is from an external tileset and does not directly
+      // own renderable content. In both cases, the tile is ignored here.
+      continue;
+    }
+
+    const TArray<USceneComponent*>& Children = pGltf->GetAttachChildren();
+    for (USceneComponent* pChild : Children) {
+      UCesiumGltfVoxelComponent* pVoxelComponent =
+          Cast<UCesiumGltfVoxelComponent>(pChild);
+      if (!pVoxelComponent) {
+        continue;
+      }
+
+      f(i, pVoxelComponent);
+    }
+  }
+}
+} // namespace
+
 void UCesiumVoxelRendererComponent::UpdateTiles(
     const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
     const std::vector<double>& VisibleTileScreenSpaceErrors) {
-  this->_pResources->Update(VisibleTiles, VisibleTileScreenSpaceErrors);
+  forEachRenderableVoxelTile(
+      VisibleTiles,
+      [&VisibleTileScreenSpaceErrors,
+       &priorityQueue = this->_visibleTileQueue,
+       &pOctree = this->_pOctree](
+          size_t index,
+          const UCesiumGltfVoxelComponent* pVoxel) {
+        double sse = VisibleTileScreenSpaceErrors[index];
+        FVoxelOctree::Node* pNode = pOctree->getNode(pVoxel->TileId);
+        if (pNode) {
+          pNode->lastKnownScreenSpaceError = sse;
+        }
+
+        // Don't create the missing node just yet? It may not be added to the
+        // tree depending on the priority of other nodes.
+        priorityQueue.push({pVoxel, sse, computePriority(sse)});
+      });
+
+  if (this->_visibleTileQueue.empty()) {
+    return;
+  }
+
+  // Sort the existing nodes in the megatexture by highest to lowest priority.
+  std::sort(
+      this->_loadedNodeIds.begin(),
+      this->_loadedNodeIds.end(),
+      [&pOctree = this->_pOctree](
+          const CesiumGeometry::OctreeTileID& lhs,
+          const CesiumGeometry::OctreeTileID& rhs) {
+        const FVoxelOctree::Node* pLeft = pOctree->getNode(lhs);
+        const FVoxelOctree::Node* pRight = pOctree->getNode(rhs);
+        if (!pLeft) {
+          return false;
+        }
+        if (!pRight) {
+          return true;
+        }
+        return computePriority(pLeft->lastKnownScreenSpaceError) >
+               computePriority(pRight->lastKnownScreenSpaceError);
+      });
+
+  size_t existingNodeCount = this->_loadedNodeIds.size();
+  size_t destroyedNodeCount = 0;
+  size_t addedNodeCount = 0;
+
+  if (this->_pDataTextures) {
+    // For all of the visible nodes...
+    for (; !this->_visibleTileQueue.empty(); this->_visibleTileQueue.pop()) {
+      const VoxelTileUpdateInfo& currentTile = this->_visibleTileQueue.top();
+      const CesiumGeometry::OctreeTileID& currentTileId =
+          currentTile.pComponent->TileId;
+      FVoxelOctree::Node* pNode = this->_pOctree->getNode(currentTileId);
+      if (pNode && pNode->dataIndex >= 0) {
+        // Node has already been loaded into the data textures.
+        pNode->isDataReady =
+            this->_pDataTextures->isSlotLoaded(pNode->dataIndex);
+        continue;
+      }
+
+      // Otherwise, check that the data textures have the space to add it.
+      const UCesiumGltfVoxelComponent* pVoxel = currentTile.pComponent;
+      size_t addNodeIndex = 0;
+      if (this->_pDataTextures->isFull()) {
+        addNodeIndex = existingNodeCount - 1 - destroyedNodeCount;
+        if (addNodeIndex >= this->_loadedNodeIds.size()) {
+          // This happens when all of the previously loaded nodes have been
+          // replaced with new ones.
+          continue;
+        }
+
+        destroyedNodeCount++;
+
+        const CesiumGeometry::OctreeTileID& lowestPriorityId =
+            this->_loadedNodeIds[addNodeIndex];
+        FVoxelOctree::Node* pLowestPriorityNode =
+            this->_pOctree->getNode(lowestPriorityId);
+
+        // Release the data slot of the lowest priority node.
+        this->_pDataTextures->release(pLowestPriorityNode->dataIndex);
+        pLowestPriorityNode->dataIndex = -1;
+        pLowestPriorityNode->isDataReady = false;
+
+        // Attempt to remove the node and simplify the octree.
+        // Will not succeed if the node's siblings are renderable, or if this
+        // node contains renderable children.
+        this->_needsOctreeUpdate |=
+            this->_pOctree->removeNode(lowestPriorityId);
+      } else {
+        addNodeIndex = existingNodeCount + addedNodeCount;
+        addedNodeCount++;
+      }
+
+      // Create the node if it does not already exist in the tree.
+      bool createdNewNode = this->_pOctree->createNode(currentTileId);
+      pNode = this->_pOctree->getNode(currentTileId);
+      pNode->lastKnownScreenSpaceError = currentTile.sse;
+
+      pNode->dataIndex = this->_pDataTextures->add(*pVoxel);
+      bool addedToDataTexture = (pNode->dataIndex >= 0);
+      this->_needsOctreeUpdate |= createdNewNode || addedToDataTexture;
+
+      if (!addedToDataTexture) {
+        continue;
+      } else if (addNodeIndex < this->_loadedNodeIds.size()) {
+        this->_loadedNodeIds[addNodeIndex] = currentTileId;
+      } else {
+        this->_loadedNodeIds.push_back(currentTileId);
+      }
+    }
+
+    this->_needsOctreeUpdate |= this->_pDataTextures->pollLoadingSlots();
+  } else {
+    // If there are no data textures, then for all of the visible nodes...
+    for (; !this->_visibleTileQueue.empty(); this->_visibleTileQueue.pop()) {
+      const VoxelTileUpdateInfo& currentTile = this->_visibleTileQueue.top();
+      const CesiumGeometry::OctreeTileID& currentTileId =
+          currentTile.pComponent->TileId;
+      // Create the node if it does not already exist in the tree.
+      this->_needsOctreeUpdate |= this->_pOctree->createNode(currentTileId);
+
+      FVoxelOctree::Node* pNode = this->_pOctree->getNode(currentTileId);
+      pNode->lastKnownScreenSpaceError = currentTile.sse;
+      // Set to arbitrary index. This will prompt the tile to render even
+      // though it does not actually have data.
+      pNode->dataIndex = 0;
+      pNode->isDataReady = true;
+    }
+  }
+
+  if (this->_needsOctreeUpdate) {
+    this->_needsOctreeUpdate = !this->_pOctree->updateTexture();
+  }
 }
 
 namespace {
@@ -899,4 +1066,8 @@ void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
 
     updateEllipsoidVoxelParameters(pMaterial, pGeoreference);
   }
+}
+
+double UCesiumVoxelRendererComponent::computePriority(double sse) {
+  return 10.0 * sse / (sse + 1.0);
 }
