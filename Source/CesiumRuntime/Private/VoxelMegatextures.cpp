@@ -92,11 +92,9 @@ FVoxelMegatextures::FVoxelMegatextures(
 
   // Find a best fit for the requested memory. Given a target volume
   // (maximumTexelCount) and the slot dimensions (xyz), find some scalar that
-  // fits the dimensions as close as possible.
-  float scalar = std::cbrtf(float(maximumTexelCount) / float(texelsPerSlot));
-  glm::vec3 textureDimensions = glm::round(scalar * glm::vec3(slotDimensions));
-
-  this->_tileCountAlongAxes = glm::uvec3(textureDimensions) / slotDimensions;
+  // scales the slot dimensions to the volume as closely as possible.
+  float dimension = std::cbrtf(float(maximumTexelCount) / float(texelsPerSlot));
+  this->_tileCountAlongAxes = glm::uvec3(glm::ceil(dimension));
 
   if (glm::any(glm::equal(this->_tileCountAlongAxes, glm::uvec3(0)))) {
     UE_LOG(
@@ -107,7 +105,7 @@ FVoxelMegatextures::FVoxelMegatextures(
     return;
   }
 
-  glm::uvec3 actualDimensions = this->_tileCountAlongAxes * slotDimensions;
+  glm::uvec3 textureDimensions = this->_tileCountAlongAxes * slotDimensions;
 
   this->_maximumTileCount = this->_tileCountAlongAxes.x *
                             this->_tileCountAlongAxes.y *
@@ -128,9 +126,9 @@ FVoxelMegatextures::FVoxelMegatextures(
   for (auto& propertyIt : this->_propertyMap) {
     FTextureResource* pResource = FCesiumTextureResource::CreateEmpty(
                                       TextureGroup::TEXTUREGROUP_8BitData,
-                                      actualDimensions.x,
-                                      actualDimensions.y,
-                                      actualDimensions.z,
+                                      textureDimensions.x,
+                                      textureDimensions.y,
+                                      textureDimensions.z,
                                       propertyIt.Value.encodedFormat.format,
                                       TextureFilter::TF_Nearest,
                                       TextureAddress::TA_Clamp,

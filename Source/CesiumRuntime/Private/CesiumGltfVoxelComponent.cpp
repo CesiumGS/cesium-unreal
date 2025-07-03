@@ -9,6 +9,4 @@ UCesiumGltfVoxelComponent::UCesiumGltfVoxelComponent() {
 
 UCesiumGltfVoxelComponent::~UCesiumGltfVoxelComponent() {}
 
-void UCesiumGltfVoxelComponent::BeginDestroy() {
-  Super::BeginDestroy();
-}
+void UCesiumGltfVoxelComponent::BeginDestroy() { Super::BeginDestroy(); }
