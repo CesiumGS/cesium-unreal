@@ -433,7 +433,6 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   pVoxelComponent->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   pVoxelComponent->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pVoxelComponent->_pTileset = pTilesetActor;
 
   UStaticMeshComponent* pVoxelMesh =
       NewObject<UStaticMeshComponent>(pVoxelComponent);

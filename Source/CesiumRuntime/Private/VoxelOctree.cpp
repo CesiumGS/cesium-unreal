@@ -15,6 +15,7 @@ using namespace Cesium3DTilesContent;
 UVoxelOctreeTexture::create(uint32 maximumTileCount) {
   const uint32 width = MaximumOctreeTextureWidth;
   uint32 tilesPerRow = width / TexelsPerNode;
+
   float height = (float)maximumTileCount / (float)tilesPerRow;
   height = static_cast<uint32>(FMath::CeilToInt64(height));
   height = FMath::Clamp(height, 1, MaximumOctreeTextureWidth);
@@ -335,7 +336,6 @@ bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& tileId) {
 
   // There may be cases where the children rely on the parent for rendering.
   // If so, the node's data cannot be easily released.
-  // TODO: can you also attempt to destroy the node?
   OctreeTileID parentTileId = *ImplicitTilingUtilities::getParentID(tileId);
   OctreeChildren siblings = ImplicitTilingUtilities::getChildren(parentTileId);
   for (const OctreeTileID& siblingId : siblings) {

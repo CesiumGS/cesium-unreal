@@ -1185,7 +1185,7 @@ void ACesium3DTileset::LoadTileset() {
     const auto* pVoxelExtension = pExternalContent->getExtension<
         Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
-      thiz->initializeVoxelRenderer(*pVoxelExtension);
+      thiz->createVoxelRenderer(*pVoxelExtension);
     }
   });
 
@@ -1288,7 +1288,8 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
-  // This would crash in Tick() when if refresh events were triggered frequently.
+  // This would crash in Tick() when if refresh events were triggered
+  // frequently.
   this->_tilesToHideNextFrame.clear();
 
   if (!this->_pTileset) {
@@ -2375,7 +2376,7 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 }
 #endif
 
-void ACesium3DTileset::initializeVoxelRenderer(
+void ACesium3DTileset::createVoxelRenderer(
     const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& VoxelExtension) {
   const Cesium3DTilesSelection::Tile* pRootTile =
       this->_pTileset->getRootTile();

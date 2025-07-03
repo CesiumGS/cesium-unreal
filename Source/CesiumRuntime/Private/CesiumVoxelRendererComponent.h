@@ -15,7 +15,6 @@
 
 #include <Cesium3DTilesSelection/Tile.h>
 #include <glm/glm.hpp>
-#include <optional>
 #include <queue>
 #include <vector>
 
@@ -140,11 +139,5 @@ private:
   TUniquePtr<FVoxelDataTextures> _pDataTextures;
   std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;
   MaxPriorityQueue _visibleTileQueue;
-
-  /**
-   * The tileset that owns this voxel renderer.
-   */
-  ACesium3DTileset* _pTileset = nullptr;
-
   bool _needsOctreeUpdate;
 };

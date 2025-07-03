@@ -1907,12 +1907,12 @@ bool paddingIsConsideredEqual(
     EVoxelGridShape gridShape,
     const std::optional<CesiumGltf::Padding>& gltfPadding,
     const std::optional<Cesium3DTiles::Padding>& tilesetPadding) {
-  if (gltfPadding.has_value() != tilesetPadding.has_value()) {
-    return false;
+  if (!gltfPadding && !tilesetPadding) {
+    return true;
   }
 
-  if (!gltfPadding.has_value() && !tilesetPadding.has_value()) {
-    return true;
+  if (gltfPadding.has_value() != tilesetPadding.has_value()) {
+    return false;
   }
 
   return dimensionsAreConsideredEqual(
