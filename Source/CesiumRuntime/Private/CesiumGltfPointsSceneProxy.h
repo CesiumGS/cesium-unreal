@@ -19,6 +19,7 @@ struct FCesiumGltfPointsSceneProxyTilesetData {
   bool UsesAdditiveRefinement;
   float GeometricError;
   glm::vec3 Dimensions;
+  bool bLinesList;
 
   FCesiumGltfPointsSceneProxyTilesetData();
 
@@ -36,7 +37,8 @@ public:
 
   FCesiumGltfPointsSceneProxy(
       UCesiumGltfPointsComponent* InComponent,
-      ERHIFeatureLevel::Type InFeatureLevel);
+      ERHIFeatureLevel::Type InFeatureLevel,
+      bool bLinesList);
 
   virtual ~FCesiumGltfPointsSceneProxy();
 

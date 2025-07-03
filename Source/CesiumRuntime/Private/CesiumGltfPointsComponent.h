@@ -28,6 +28,8 @@ public:
   // error.
   glm::vec3 Dimensions;
 
+  bool bLinesList = false;
+
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
 };

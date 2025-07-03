@@ -1328,6 +1328,7 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
     break;
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
   case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  case CesiumGltf::MeshPrimitive::Mode::LINES:
   default:
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
     for (int32 i = 0; i < indicesView.size(); ++i) {
@@ -1360,6 +1361,7 @@ static void loadPrimitive(
 
   switch (primitive.mode) {
   case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  case CesiumGltf::MeshPrimitive::Mode::LINES:
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
@@ -1540,8 +1542,10 @@ static void loadPrimitive(
   bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
   bool needToGenerateTangents = needsTangents && !hasTangents;
   bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
-  duplicateVertices = duplicateVertices &&
-                      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+  duplicateVertices =
+      duplicateVertices &&
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::LINES;
 
   uint32 numVertices =
       duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
@@ -1759,7 +1763,8 @@ static void loadPrimitive(
   section.MinVertexIndex = 0;
   section.MaxVertexIndex = numVertices - 1;
   section.bEnableCollision =
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::LINES;
   section.bCastShadow = true;
   section.MaterialIndex = 0;
 
@@ -1786,7 +1791,8 @@ static void loadPrimitive(
 #if ENGINE_VERSION_5_5_OR_HIGHER
   // UE 5.5 requires that we do this in order to avoid a crash when ray
   // tracing is enabled.
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::LINES) {
     // UE 5.5 requires that we do this in order to avoid a crash when ray
     // tracing is enabled.
     RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
@@ -1800,7 +1806,7 @@ static void loadPrimitive(
 
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+  if (section.bEnableCollision &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
     if (numVertices != 0 && indices.Num() != 0) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
@@ -3040,9 +3046,12 @@ static void loadPrimitiveGameThreadPart(
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-  if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS ||
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINES) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
+    pPointMesh->bLinesList =
+        (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINES);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
@@ -3114,7 +3123,8 @@ static void loadPrimitiveGameThreadPart(
     // sense, but if Unreal will crash trying to generate ray tracing
     // information for a static mesh without triangles.
     pStaticMesh->bSupportRayTracing =
-        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::LINES;
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
