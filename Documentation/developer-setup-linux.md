@@ -13,11 +13,11 @@ After compiling Unreal Engine, set the following environment variables in your `
 
 ```bash
 export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
-export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v20_clang-13.0.1-centos7/x86_64-unknown-linux-gnu
+export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v22_clang-16.0.6-centos7/x86_64-unknown-linux-gnu
 export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Unix/LibCxx
 ```
 > [!note]
-> `v20_clang-13.0.1-centos7` is correct for Unreal Engine v5.0.3. It may be different for other versions of Unreal Engine. See [https://docs.unrealengine.com/5.0/en-US/SharingAndReleasing/Linux/GettingStarted/](https://docs.unrealengine.com/5.0/en-US/linux-development-requirements-for-unreal-engine/) or the equivalent for your version of Unreal Engine.
+> `v22_clang-16.0.6-centos7` is correct for Unreal Engine v5.4. It may be different for other versions of Unreal Engine. See the [Unreal documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/linux-development-requirements-for-unreal-engine?application_version=5.4) for the equivalent for your version of Unreal Engine.
 
 # Cloning the git repos
 

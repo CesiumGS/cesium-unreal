@@ -7,6 +7,7 @@
 #include "RHIResources.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneInterface.h"
+#include "SceneView.h"
 #include "StaticMeshResources.h"
 
 FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
@@ -50,19 +51,11 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
 
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 
-#if ENGINE_VERSION_5_4_OR_HIGHER
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
     FRHICommandListBase& RHICmdList) {
   AttenuationVertexFactory.InitResource(RHICmdList);
   AttenuationIndexBuffer.InitResource(RHICmdList);
 }
-#else
-void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
-  FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
-  AttenuationVertexFactory.InitResource(RHICmdList);
-  AttenuationIndexBuffer.InitResource(RHICmdList);
-}
-#endif
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {
   AttenuationVertexFactory.ReleaseResource();
