@@ -9,6 +9,7 @@
 #include "HAL/Platform.h"
 #include <cstddef>
 
+class IHttpRequest;
 class CESIUMRUNTIME_API UnrealAssetAccessor
     : public CesiumAsync::IAssetAccessor {
 public:
@@ -30,6 +31,8 @@ public:
 
   virtual void tick() noexcept override;
 
+  static TSet<TSharedRef<IHttpRequest, ESPMode::ThreadSafe>> _pendingRequests;
+  static FCriticalSection _pendingRequestsLock;
 private:
   CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> getFromFile(
       const CesiumAsync::AsyncSystem& asyncSystem,
