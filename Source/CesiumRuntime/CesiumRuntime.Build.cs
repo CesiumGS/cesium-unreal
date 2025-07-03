@@ -152,7 +152,7 @@ public class CesiumRuntime : ModuleRules
         );
 
         ShadowVariableWarningLevel = WarningLevel.Off;
-        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         CppStandard = CppStandardVersion.Cpp20;
