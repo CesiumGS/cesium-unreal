@@ -3,6 +3,7 @@
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyArray.h"
 #include "UnrealMetadataConversions.h"
+
 #include <CesiumGltf/MetadataConversions.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 
