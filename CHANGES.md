@@ -1,5 +1,18 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- `FCesiumPrimitiveMetadata::GetPropertyAttributeIndices` is now deprecated. Use `GetPropertyAttributes` to directly get the `FCesiumPropertyAttribute`s instead.
+
+##### Additions :tada:
+
+- Added `FCesiumPropertyAttributeProperty` to represent glTF property attribute properties and `UCesiumPropertyAttributePropertyBlueprintLibrary` to retrieve their values.
+- Added `FCesiumPropertyAttribute` to represent glTF property attributes and `UCesiumPropertyAttributeBlueprintLibrary` to act upon them with Blueprints.
+- Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
+- Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
+
 ### v2.17.0 - 2025-07-01
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.3. Future versions will require Unreal Engine v5.4+.
