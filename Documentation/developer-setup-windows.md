@@ -14,7 +14,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
     > Visual Studio options are derived from Unreal Engine's [recommended setup](https://dev.epicgames.com/documentation/en-us/unreal-engine/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine?application_version=5.3)
 - Install the .NET Core 3.1 Runtime, [link](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.32-windows-x64-installer?cid=getdotnetcore)
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
-- Install the Unreal Engine (version 5.3 or newer) from https://www.unrealengine.com/en-US/download
+- Install the Unreal Engine (version 5.4 or newer) from https://www.unrealengine.com/en-US/download
 
 > [!note]
 > In newer versions of Visual Studio 2022, it can be tricky to get everything building using compatible versions of the Visual C++ compiler. See <!--! \cond DOXYGEN_EXCLUDE !-->[Developer Setup for Windows - Gotchas](developer-setup-windows-gotchas.md)<!--! \endcond --><!--! \subpage developer-setup-windows-gotchas --> for details and solutions, particularly if you run into compiler or linker errors following the instructions below.

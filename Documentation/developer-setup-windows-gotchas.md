@@ -13,14 +13,14 @@ Some important facts to understand before continuing:
 
 The Cesium for Unreal plugin code includes and links with a great deal of Unreal Engine code. It is built by the Unreal Build Tool, even when you compile from within Visual Studio.
 
-The MSVC compiler version that Epic used to build a release version of Unreal Engine can be found in that version's release notes. For example, the [release notes for Unreal Engine 5.3](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5.3-release-notes) include this information:
+The MSVC compiler version that Epic used to build a release version of Unreal Engine can be found in that version's release notes. For example, the [release notes for Unreal Engine 5.4](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-5.4-release-notes?application_version=5.4) include this information:
 
 > * IDE Version the Build farm compiles against
->   * Visual Studio: Visual Studio 2022 17.4 14.34.31933 toolchain and Windows 10 SDK (10.0.18362.0)
+>   * Visual Studio: Visual Studio 2022 17.8 14.38.33130 toolchain and Windows 10 SDK (10.0.18362.0)
 
-For maximum compatibility, released versions of Cesium for Unreal should be built with _exactly_ this version, v14.34.31933, and this is what we do on CI.
+For maximum compatibility, released versions of Cesium for Unreal should be built with _exactly_ this version, v14.38.33130, and this is what we do on CI.
 
-However, when compiling for your own development purposes, you can use this version or any compatible newer one. In general, newer compilers work just fine, but not always. A change in the v14.42 compiler (and later versions) means that some Unreal Engine 5.3 header files cannot be compiled with it. So, on development systems, we usually use the v14.38 toolchain, because this version works with all currently-supported versions of Unreal Engine: 5.4, 5.5, and 5.6. Install it from Add/Remove Programs by following the instructions in the top section.
+However, when compiling for your own development purposes, you can use this version or any compatible newer one. In general, newer compilers work just fine, but not always. A change in the v14.42 compiler (and later versions) means that some Unreal Engine 5.4 header files cannot be compiled with it. So, on development systems, we usually use the v14.38 toolchain, because this version works with all currently-supported versions of Unreal Engine: 5.4, 5.5, and 5.6. Install it from Add/Remove Programs by following the instructions in the top section.
 
 The Unreal Build Tool will use the latest compiler version that you have installed. So even after installing v14.38, Cesium for Unreal will likely attempt to compile with a later version like v14.44, and fail. It's possible to uninstall all the newer versions, but this is a huge hassle if you need the newer compiler for other projects.
 
