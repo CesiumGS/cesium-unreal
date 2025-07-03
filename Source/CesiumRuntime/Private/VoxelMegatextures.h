@@ -16,8 +16,9 @@ class FCesiumTextureResource;
 class UCesiumGltfVoxelComponent;
 
 /**
- * Manages the data texture resources for a voxel dataset, where
- * each data texture represents an attribute. This is responsible for
+ * Data texture resources for a voxel dataset, with one texture per voxel
+ * attribute. A data texture is a "megatexture" containing numerous slots, each
+ * of which can store the data of one voxel primitive. This is responsible for
  * synchronizing which slots are occupied across all data textures.
  *
  * Due to the requirements of voxel rendering (primarily, sampling voxels from
@@ -28,25 +29,27 @@ class UCesiumGltfVoxelComponent;
  * Counterpart to Megatexture.js in CesiumJS, except this takes advantage of 3D
  * textures to simplify some of the texture read/write math.
  */
-class FVoxelDataTextures {
+class FVoxelMegatextures {
 public:
   /**
    * @brief Constructs a set of voxel data textures.
    *
-   * @param pVoxelClass The voxel class description, indicating which metadata
+   * @param description The voxel class description, indicating which metadata
    * attributes to encode.
-   * @param dataDimensions The dimensions of the voxel data, including padding.
+   * @param slotDimensions The dimensions of each slot (i.e, the voxel grid
+   * dimensions, including padding).
    * @param featureLevel The RHI feature level associated with the scene.
-   * @param requestedMemoryPerTexture The requested texture memory for each
-   * voxel attribute.
+   * @param knownTileCount The number of known tiles in the tileset. This
+   * informs how much texture memory will be allocated for the data textures. If
+   * this is zero, a default value will be used.
    */
-  FVoxelDataTextures(
-      const FCesiumVoxelClassDescription* pDescription,
-      const glm::uvec3& dataDimensions,
+  FVoxelMegatextures(
+      const FCesiumVoxelClassDescription& description,
+      const glm::uvec3& slotDimensions,
       ERHIFeatureLevel::Type featureLevel,
-      uint32 requestedMemoryPerTexture);
+      uint32 knownTileCount);
 
-  ~FVoxelDataTextures();
+  ~FVoxelMegatextures();
 
   /**
    * @brief Gets the maximum number of tiles that can be added to the data
@@ -66,11 +69,6 @@ public:
    * the given ID. Returns nullptr if the attribute does not exist.
    */
   UTexture* getTexture(const FString& attributeId) const;
-
-  /**
-   * @brief Retrieves how many data textures exist.
-   */
-  int32 getTextureCount() const { return this->_propertyMap.Num(); }
 
   /**
    * @brief Whether or not all slots in the textures are occupied.
@@ -96,18 +94,24 @@ public:
   bool isSlotLoaded(int64 index) const;
 
   /**
-   * @brief Whether the textures can be destroyed. Returns false if there are
-   * any render thread commands in flight.
-   */
-  bool canBeDestroyed() const;
-
-  /**
    * @brief Checks the progress of slots with data being loaded into the
    * megatexture. Retusn true if any slots completed loading.
    */
   bool pollLoadingSlots();
 
+  /**
+   * @brief Whether the textures can be destroyed. Returns false if there are
+   * any render thread commands in flight.
+   */
+  bool canBeDestroyed() const;
+
 private:
+  /**
+   * Value constants taken from CesiumJS.
+   */
+  static const uint32 MaximumTextureMemoryBytes = 512 * 1024 * 1024;
+  static const uint32 DefaultTextureMemoryBytes = 128 * 1024 * 1024;
+
   /**
    * @brief Represents a slot in the voxel data texture that contains a single
    * tile's data. Slots function like nodes in a linked list in order to track
@@ -174,7 +178,7 @@ private:
   Slot* _pEmptySlotsHead;
   Slot* _pOccupiedSlotsHead;
 
-  glm::uvec3 _dataDimensions;
+  glm::uvec3 _slotDimensions;
   glm::uvec3 _tileCountAlongAxes;
   uint32 _maximumTileCount;
 

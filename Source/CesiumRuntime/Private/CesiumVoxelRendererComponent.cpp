@@ -177,29 +177,6 @@ getMetadataValue(const std::optional<CesiumUtility::JsonValue>& jsonValue) {
   return FCesiumMetadataValue();
 }
 
-// uint32 getMaximumTextureMemory(
-//     const FCesiumVoxelClassDescription* pDescription,
-//     const glm::uvec3& gridDimensions,
-//     uint64_t tileCount) {
-//   int32_t pixelSize = 0;
-//
-//   if (pDescription) {
-//     for (const FCesiumPropertyAttributePropertyDescription& Property :
-//          pDescription->Properties) {
-//       EncodedFeaturesMetadata::EncodedPixelFormat pixelFormat =
-//           EncodedFeaturesMetadata::getPixelFormat(
-//               Property.EncodingDetails.Type,
-//               Property.EncodingDetails.ComponentType);
-//       pixelSize = FMath::Max(
-//           pixelSize,
-//           pixelFormat.bytesPerChannel * pixelFormat.channels);
-//     }
-//   }
-//
-//   return (uint32)pixelSize * gridDimensions.x * gridDimensions.y *
-//          gridDimensions.z * tileCount;
-// }
-
 } // namespace
 
 /*static*/ UMaterialInstanceDynamic*
@@ -469,40 +446,29 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         glm::uvec3(dataDimensions.x, dataDimensions.z, dataDimensions.y);
   }
 
-  uint32 requestedTextureMemory = DefaultDataTextureMemoryBytes;
-
-  // uint64_t knownTileCount = 0;
-  // if (tilesetMetadata.metadata) {
-  //   const Cesium3DTiles::MetadataEntity& metadata =
-  //   *tilesetMetadata.metadata;
-  //   // TODO: This should find the property by "TILESET_TILE_COUNT"
-  //   if (metadata.properties.find("tileCount") != metadata.properties.end())
-  //   {
-  //     const CesiumUtility::JsonValue& value =
-  //         metadata.properties.at("tileCount");
-  //     if (value.isInt64()) {
-  //       knownTileCount = value.getInt64OrDefault(0);
-  //     } else if (value.isUint64()) {
-  //       knownTileCount = value.getUint64OrDefault(0);
-  //     }
-  //   }
-  // }
-
-  // if (knownTileCount > 0) {
-  //  uint32 maximumTextureMemory =
-  //      getMaximumTextureMemory(pDescription, dataDimensions,
-  //      knownTileCount);
-  //  requestedTextureMemory = FMath::Min(
-  //      maximumTextureMemory,
-  //      FVoxelResources::MaximumDataTextureMemoryBytes);
-  //}
+  uint32 knownTileCount = 0;
+  if (tilesetMetadata.metadata) {
+    const Cesium3DTiles::MetadataEntity& metadata = *tilesetMetadata.metadata;
+    const Cesium3DTiles::Class& tilesetClass =
+        tilesetMetadata.schema->classes.at(metadata.classProperty);
+    for (const auto propertyIt : tilesetClass.properties) {
+      if (propertyIt.second.semantic == "TILESET_TILE_COUNT") {
+        const auto tileCountIt = metadata.properties.find(propertyIt.first);
+        if (tileCountIt != metadata.properties.end()) {
+          knownTileCount =
+              tileCountIt->second.getSafeNumberOrDefault<uint32>(0);
+        }
+        break;
+      }
+    }
+  }
 
   if (pDescription && pVoxelMesh->GetScene()) {
-    pVoxelComponent->_pDataTextures = MakeUnique<FVoxelDataTextures>(
-        pDescription,
+    pVoxelComponent->_pDataTextures = MakeUnique<FVoxelMegatextures>(
+        *pDescription,
         dataDimensions,
         pVoxelMesh->GetScene()->GetFeatureLevel(),
-        requestedTextureMemory);
+        knownTileCount);
   }
 
   uint32 maximumTileCount =
@@ -626,7 +592,7 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
   size_t destroyedNodeCount = 0;
   size_t addedNodeCount = 0;
 
-  if (this->_pDataTextures != nullptr) {
+  if (this->_pDataTextures) {
     // For all of the visible nodes...
     for (; !this->_visibleTileQueue.empty(); this->_visibleTileQueue.pop()) {
       const VoxelTileUpdateInfo& currentTile = this->_visibleTileQueue.top();

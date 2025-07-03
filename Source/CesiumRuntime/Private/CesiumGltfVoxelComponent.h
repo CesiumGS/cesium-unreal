@@ -11,11 +11,12 @@
 #include "CesiumGltfVoxelComponent.generated.h"
 
 /**
- * A barebones component representing a glTF voxel primitive.
+ * A minimal component representing a glTF voxel primitive.
  *
- * This does not hold any mesh data itself; instead, it contains the property
- * attribute used.UCesiumVoxelRendererComponent takes care of voxel rendering
- * for an entire tileset.
+ * This component is not a mesh component. Instead, it contains the property
+ * attribute used for the voxel primitive. It is \ref
+ * UCesiumVoxelRendererComponent that handles voxel rendering for the entire
+ * tileset.
  */
 UCLASS()
 class UCesiumGltfVoxelComponent : public USceneComponent {

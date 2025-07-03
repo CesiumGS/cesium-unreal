@@ -1,6 +1,6 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "VoxelDataTextures.h"
+#include "VoxelMegatextures.h"
 
 #include "CesiumGltfVoxelComponent.h"
 #include "CesiumLifetime.h"
@@ -16,40 +16,32 @@
 
 #include <Cesium3DTiles/Class.h>
 #include <CesiumGltf/PropertyType.h>
+#include <glm/gtx/component_wise.hpp>
 
 using namespace CesiumGltf;
 using namespace EncodedFeaturesMetadata;
 
-FVoxelDataTextures::FVoxelDataTextures(
-    const FCesiumVoxelClassDescription* pVoxelClass,
-    const glm::uvec3& dataDimensions,
+FVoxelMegatextures::FVoxelMegatextures(
+    const FCesiumVoxelClassDescription& description,
+    const glm::uvec3& slotDimensions,
     ERHIFeatureLevel::Type featureLevel,
-    uint32 requestedMemoryPerTexture)
+    uint32 knownTileCount)
     : _slots(),
       _loadingSlots(),
       _pEmptySlotsHead(nullptr),
       _pOccupiedSlotsHead(nullptr),
-      _dataDimensions(dataDimensions),
+      _slotDimensions(slotDimensions),
       _tileCountAlongAxes(0),
       _maximumTileCount(0),
       _propertyMap() {
-  if (!pVoxelClass) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Voxel tileset is missing a UCesiumVoxelMetadataComponent. Add a UCesiumVoxelMetadataComponent to visualize the metadata within the tileset."))
-    return;
-  }
-
-  if (pVoxelClass->Properties.IsEmpty()) {
+  if (description.Properties.IsEmpty()) {
     return;
   }
 
   if (!RHISupportsVolumeTextures(featureLevel)) {
     // TODO: 2D fallback? Not sure if this check is the same as
     // SupportsVolumeTextureRendering, which is false on Vulkan Android, Metal,
-    // and OpenGL
+    // and OpenGL.
     UE_LOG(
         LogCesium,
         Error,
@@ -62,7 +54,7 @@ FVoxelDataTextures::FVoxelDataTextures(
   // So first, identify which attribute is the largest in size.
   uint32 maximumTexelSizeBytes = 0;
   for (const FCesiumPropertyAttributePropertyDescription& Property :
-       pVoxelClass->Properties) {
+       description.Properties) {
     EncodedPixelFormat encodedFormat = getPixelFormat(
         Property.EncodingDetails.Type,
         Property.EncodingDetails.ComponentType);
@@ -88,14 +80,25 @@ FVoxelDataTextures::FVoxelDataTextures(
     return;
   }
 
-  uint32 texelCount = requestedMemoryPerTexture / maximumTexelSizeBytes;
-  uint32 textureDimension = std::cbrtf(static_cast<float>(texelCount));
+  uint32 texelsPerSlot = glm::compMul(slotDimensions);
+  uint32 memoryPerTexture = DefaultTextureMemoryBytes;
+  if (knownTileCount > 0) {
+    memoryPerTexture = glm::min(
+        maximumTexelSizeBytes * texelsPerSlot * knownTileCount,
+        MaximumTextureMemoryBytes);
+  }
 
-  this->_tileCountAlongAxes =
-      glm::uvec3(textureDimension) / this->_dataDimensions;
+  uint32 maximumTexelCount = memoryPerTexture / maximumTexelSizeBytes;
 
-  if (this->_tileCountAlongAxes.x == 0 || this->_tileCountAlongAxes.y == 0 ||
-      this->_tileCountAlongAxes.z == 0) {
+  // Find a best fit for the requested memory. Given a target volume
+  // (maximumTexelCount) and the slot dimensions (xyz), find some scalar that
+  // fits the dimensions as close as possible.
+  float scalar = std::cbrtf(float(maximumTexelCount) / float(texelsPerSlot));
+  glm::vec3 textureDimensions = glm::round(scalar * glm::vec3(slotDimensions));
+
+  this->_tileCountAlongAxes = glm::uvec3(textureDimensions) / slotDimensions;
+
+  if (glm::any(glm::equal(this->_tileCountAlongAxes, glm::uvec3(0)))) {
     UE_LOG(
         LogCesium,
         Error,
@@ -104,8 +107,7 @@ FVoxelDataTextures::FVoxelDataTextures(
     return;
   }
 
-  glm::uvec3 actualDimensions =
-      this->_tileCountAlongAxes * this->_dataDimensions;
+  glm::uvec3 actualDimensions = this->_tileCountAlongAxes * slotDimensions;
 
   this->_maximumTileCount = this->_tileCountAlongAxes.x *
                             this->_tileCountAlongAxes.y *
@@ -164,15 +166,15 @@ FVoxelDataTextures::FVoxelDataTextures(
   }
 }
 
-FVoxelDataTextures::~FVoxelDataTextures() {
+FVoxelMegatextures::~FVoxelMegatextures() {
   CESIUM_ASSERT(this->canBeDestroyed());
 }
 
-bool FVoxelDataTextures::canBeDestroyed() const {
+bool FVoxelMegatextures::canBeDestroyed() const {
   return this->_loadingSlots.size() == 0;
 }
 
-UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
+UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
   const TextureData* pProperty = this->_propertyMap.Find(attributeId);
   return pProperty ? pProperty->pTexture : nullptr;
 }
@@ -182,9 +184,9 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
  * type that the texture expects. Coercive encoding behavior (similar to what
  * is done for CesiumPropertyTableProperty) could be added in the future.
  */
-/*static*/ void FVoxelDataTextures::directCopyToTexture(
+/*static*/ void FVoxelMegatextures::directCopyToTexture(
     const FCesiumPropertyAttributeProperty& property,
-    const FVoxelDataTextures::TextureData& data,
+    const FVoxelMegatextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
   if (!data.pTexture)
     return;
@@ -219,9 +221,9 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   });
 }
 
-/*static*/ void FVoxelDataTextures::incrementalWriteToTexture(
+/*static*/ void FVoxelMegatextures::incrementalWriteToTexture(
     const FCesiumPropertyAttributeProperty& property,
-    const FVoxelDataTextures::TextureData& data,
+    const FVoxelMegatextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
   if (!data.pTexture)
     return;
@@ -268,7 +270,7 @@ UTexture* FVoxelDataTextures::getTexture(const FString& attributeId) const {
   });
 }
 
-int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
+int64 FVoxelMegatextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
   int64 slotIndex = this->reserveNextSlot();
   if (slotIndex < 0) {
     return -1;
@@ -276,9 +278,9 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
 
   // Compute the update region for the data textures.
   FUpdateTextureRegion3D updateRegion;
-  updateRegion.Width = this->_dataDimensions.x;
-  updateRegion.Height = this->_dataDimensions.y;
-  updateRegion.Depth = this->_dataDimensions.z;
+  updateRegion.Width = this->_slotDimensions.x;
+  updateRegion.Height = this->_slotDimensions.y;
+  updateRegion.Depth = this->_slotDimensions.z;
   updateRegion.SrcX = 0;
   updateRegion.SrcY = 0;
   updateRegion.SrcZ = 0;
@@ -287,9 +289,9 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
   uint32 indexZ = slotIndex / zSlice;
   uint32 indexY = (slotIndex % zSlice) / this->_tileCountAlongAxes.x;
   uint32 indexX = slotIndex % this->_tileCountAlongAxes.x;
-  updateRegion.DestZ = indexZ * this->_dataDimensions.z;
-  updateRegion.DestY = indexY * this->_dataDimensions.y;
-  updateRegion.DestX = indexX * this->_dataDimensions.x;
+  updateRegion.DestZ = indexZ * this->_slotDimensions.z;
+  updateRegion.DestY = indexY * this->_slotDimensions.y;
+  updateRegion.DestX = indexX * this->_slotDimensions.x;
 
   uint32 index = static_cast<uint32>(slotIndex);
 
@@ -318,7 +320,7 @@ int64 FVoxelDataTextures::add(const UCesiumGltfVoxelComponent& voxelComponent) {
   return slotIndex;
 }
 
-bool FVoxelDataTextures::release(int64_t slotIndex) {
+bool FVoxelMegatextures::release(int64_t slotIndex) {
   if (slotIndex < 0 || slotIndex >= int64(this->_slots.size())) {
     return false; // Index out of bounds
   }
@@ -345,9 +347,9 @@ bool FVoxelDataTextures::release(int64_t slotIndex) {
   return true;
 }
 
-int64 FVoxelDataTextures::reserveNextSlot() {
+int64 FVoxelMegatextures::reserveNextSlot() {
   // Remove head from list of empty slots
-  FVoxelDataTextures::Slot* pSlot = this->_pEmptySlotsHead;
+  FVoxelMegatextures::Slot* pSlot = this->_pEmptySlotsHead;
   if (!pSlot) {
     return -1;
   }
@@ -368,7 +370,7 @@ int64 FVoxelDataTextures::reserveNextSlot() {
   return pSlot->index;
 }
 
-bool FVoxelDataTextures::isSlotLoaded(int64 index) const {
+bool FVoxelMegatextures::isSlotLoaded(int64 index) const {
   if (index < 0 || index >= int64(this->_slots.size()))
     return false;
 
@@ -376,7 +378,7 @@ bool FVoxelDataTextures::isSlotLoaded(int64 index) const {
          this->_slots[size_t(index)].fence->IsFenceComplete();
 }
 
-bool FVoxelDataTextures::pollLoadingSlots() {
+bool FVoxelMegatextures::pollLoadingSlots() {
   size_t loadingSlotCount = this->_loadingSlots.size();
   std::erase_if(this->_loadingSlots, [thiz = this](size_t i) {
     return thiz->isSlotLoaded(i);

@@ -9,7 +9,7 @@
 #include "CustomDepthParameters.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Templates/UniquePtr.h"
-#include "VoxelDataTextures.h"
+#include "VoxelMegatextures.h"
 #include "VoxelGridShape.h"
 #include "VoxelOctree.h"
 
@@ -29,11 +29,10 @@ struct FCesiumVoxelClassDescription;
 
 UCLASS()
 /**
- * A component that enables raycasted voxel rendering. This is only attached to
- * a Cesium3DTileset when it contains voxel data.
+ * A component that enables raymarched voxel rendering across an entire tileset.
  *
- * Unlike typical triangle meshes, voxels are rendered by raycasting in an
- * Unreal material attached to a placeholder cube mesh.
+ * Unlike triangle meshes, voxels are rendered by raymarching in an Unreal
+ * material assigned to a placeholder cube mesh.
  */
 class UCesiumVoxelRendererComponent : public USceneComponent {
   GENERATED_BODY()
@@ -92,12 +91,6 @@ public:
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
 private:
-  /**
-   * Value constants taken from CesiumJS.
-   */
-  static const uint32 MaximumDataTextureMemoryBytes = 512 * 1024 * 1024;
-  static const uint32 DefaultDataTextureMemoryBytes = 128 * 1024 * 1024;
-
   static UMaterialInstanceDynamic* CreateVoxelMaterial(
       UCesiumVoxelRendererComponent* pVoxelComponent,
       const FVector& dimensions,
@@ -116,14 +109,7 @@ private:
     double priority;
   };
 
-  struct ScreenSpaceErrorGreaterComparator {
-    bool
-    operator()(const VoxelTileUpdateInfo& lhs, const VoxelTileUpdateInfo& rhs) {
-      return lhs.priority > rhs.priority;
-    }
-  };
-
-  struct ScreenSpaceErrorLessComparator {
+  struct PriorityLessComparator {
     bool
     operator()(const VoxelTileUpdateInfo& lhs, const VoxelTileUpdateInfo& rhs) {
       return lhs.priority < rhs.priority;
@@ -133,10 +119,10 @@ private:
   using MaxPriorityQueue = std::priority_queue<
       VoxelTileUpdateInfo,
       std::vector<VoxelTileUpdateInfo>,
-      ScreenSpaceErrorLessComparator>;
+      PriorityLessComparator>;
 
   TUniquePtr<FVoxelOctree> _pOctree;
-  TUniquePtr<FVoxelDataTextures> _pDataTextures;
+  TUniquePtr<FVoxelMegatextures> _pDataTextures;
   std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;
   MaxPriorityQueue _visibleTileQueue;
   bool _needsOctreeUpdate;
