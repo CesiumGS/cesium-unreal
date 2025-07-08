@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Made `CesiumEllipsoidFunctions` accessible outside of the plugin. 
+- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin. 
 
 ##### Fixes :wrench:
 
