@@ -2,13 +2,10 @@
 
 ### ? - ?
 
-##### Additions :tada:
-
-- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin. 
-
 ##### Fixes :wrench:
 
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
+- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin. 
 
 ### v2.17.0 - 2025-07-01
 
