@@ -87,7 +87,7 @@ public:
    * Otherwise, it can appear in a popover.
    */
   UPROPERTY(BlueprintReadOnly, Category = "Cesium|Geocoder")
-  bool bShowOnScreen;
+  bool bShowOnScreen = false;
 };
 
 /**
@@ -121,7 +121,7 @@ public:
       BlueprintReadOnly,
       Category = "Cesium|Geocoder",
       meta = (AllowPrivateAccess))
-  FVector LongitudeLatitudeHeight;
+  FVector LongitudeLatitudeHeight = FVector::Zero();
 
   /**
    * @brief The globe rectangle that bounds the feature. The box's `Min.X` is

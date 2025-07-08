@@ -6,6 +6,10 @@
 
 - Made `CesiumEllipsoidFunctions` accessible outside of the plugin. 
 
+##### Fixes :wrench:
+
+- Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
+
 ### v2.17.0 - 2025-07-01
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.3. Future versions will require Unreal Engine v5.4+.
