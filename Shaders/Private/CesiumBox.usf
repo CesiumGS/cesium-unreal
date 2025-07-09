@@ -1,0 +1,68 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumBoxShape.usf: Utility for intersecting a ray with a box shape.
+=============================================================================*/
+
+#include "CesiumRayIntersection.usf"
+
+struct Box
+{
+  float3 MinBounds;
+  float3 MaxBounds;
+  
+  /**
+   * Tests whether the input ray (Unit Space) intersects the box. Outputs the intersections in Unit Space.
+   */
+  RayIntersections Intersect(in Ray R)
+  {
+    // Consider the box as the intersection of the space between 3 pairs of parallel planes.
+
+    // Compute the distance along the ray to each plane.
+    float3 t0 = (MinBounds - R.Origin) / R.Direction;
+    float3 t1 = (MaxBounds - R.Origin) / R.Direction;
+
+    // Identify candidate entries/exits based on distance from ray position.
+    float3 entries = min(t0, t1);
+    float3 exits = max(t0, t1);
+
+    // The actual intersection points are the furthest entry and the closest exit.
+    // Do not allow intersections to go behind the shape (negative t).
+    RayIntersections result = (RayIntersections) 0;
+    float entryT = max(MaxComponent(entries), 0);
+    float exitT = max(MinComponent(exits), 0);
+
+    if (entryT > exitT)
+    {
+      Intersection miss = NewMissedIntersection();
+      return NewRayIntersections(miss, miss);
+    }
+
+    // Compute normals
+    float3 directions = sign(R.Direction);
+    bool3 isLastEntry = bool3(Equal(entries, float3(entryT, entryT, entryT)));
+    result.Entry.Normal = -1.0 * float3(isLastEntry) * directions;
+    result.Entry.t = entryT;
+   
+    bool3 isFirstExit = bool3(Equal(exits, float3(exitT, exitT, exitT)));
+    result.Exit.Normal = float3(isFirstExit) * directions;
+    result.Exit.t = exitT;
+
+    return result;
+  }
+
+  /**
+   * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
+   * box geometry. Also outputs the Jacobian transpose for future use.
+   */
+  float3 ConvertUVToShapeUVSpace(in float3 PositionUV, out float3x3 JacobianT)
+  {
+    // For Box, Cartesian UV space = UV shape space, so we can use PositionUV as-is.
+    // The Jacobian is the identity matrix, except that a step of 1 only spans half the shape
+    // space [-1, 1], so the identity is scaled.
+    JacobianT = float3x3(0.5f, 0, 0, 0, 0.5f, 0, 0, 0, 0.5f);
+    return PositionUV;
+  }
+};

@@ -1,0 +1,5 @@
+#pragma once
+
+#define BOX 1
+#define CYLINDER 2
+#define ELLIPSOID 3
