@@ -1,5 +1,11 @@
 #pragma once
 
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumShapeConstants.usf: Constants for supported shape types. (See CesiumShape.usf)
+=============================================================================*/
+
 #define BOX 1
 #define CYLINDER 2
 #define ELLIPSOID 3

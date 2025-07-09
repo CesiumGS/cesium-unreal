@@ -3,7 +3,7 @@
 // Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 /*=============================================================================
-	CesiumBoxShape.usf: Utility for intersecting a ray with a box shape.
+	CesiumBox.usf: An implicit box shape that may be intersected by a ray.
 =============================================================================*/
 
 #include "CesiumRayIntersection.usf"

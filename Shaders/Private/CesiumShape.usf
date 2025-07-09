@@ -3,7 +3,7 @@
 // Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 /*=============================================================================
-	CesiumShape.usf: Utility for intersecting a ray with implicit shapes.
+	CesiumShape.usf: An implicit shape that can be intersected by a ray.
 =============================================================================*/
 
 #include "CesiumShapeConstants.usf"

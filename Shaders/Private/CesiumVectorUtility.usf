@@ -1,6 +1,6 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
-
 #pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 /*===========================
   CesiumVectorUtility.usf: General utility for handling vectors (e.g., float3s).

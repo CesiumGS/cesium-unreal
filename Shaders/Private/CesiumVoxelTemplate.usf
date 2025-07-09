@@ -4,6 +4,9 @@
 	CesiumVoxelTemplate.usf: Template for creating custom shaders to style voxel data.
 =============================================================================*/
 
+// This depends on CesiumVoxelOctree.usf, but a local #include cannot be resolved here.
+// It must be linked under "Include File Paths" in a Custom node in the material.
+
 /*=======================
   BEGIN CUSTOM SHADER
 =========================*/
