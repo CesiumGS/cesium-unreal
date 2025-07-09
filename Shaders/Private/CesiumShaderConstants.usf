@@ -1,0 +1,10 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
+/*===========================
+  CesiumShaderConstants.usf: Definitions of common constants for Cesium shaders.
+=============================*/
+
+#define CZM_INFINITY 5906376272000.0 // Distance from the Sun to Pluto in meters.
+#define CZM_PI_OVER_TWO 1.5707963267948966
+#define CZM_PI 3.141592653589793
+#define CZM_TWO_PI 6.283185307179586

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumVoxelMetadataComponent.h"
 
@@ -12,6 +12,7 @@
 #include "EncodedMetadataConversions.h"
 #include "GenerateMaterialUtility.h"
 #include "Misc/FileHelper.h"
+#include "ShaderCore.h"
 #include "UnrealMetadataConversions.h"
 
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
@@ -229,24 +230,24 @@ struct VoxelMetadataClassification : public MaterialNodeClassification {
 };
 
 struct MaterialResourceLibrary {
-  FString HlslShaderTemplate;
+  FString ShaderTemplate;
   UMaterialFunctionMaterialLayer* MaterialLayerTemplate;
   TObjectPtr<UTexture> pDefaultVolumeTexture;
 
   MaterialResourceLibrary() {
-    static FString ContentDir = IPluginManager::Get()
-                                    .FindPlugin(TEXT("CesiumForUnreal"))
-                                    ->GetContentDir();
-    FFileHelper::LoadFileToString(
-        HlslShaderTemplate,
-        *(ContentDir / "Materials/CesiumVoxelTemplate.hlsl"));
+    FString Path = GetShaderSourceFilePath(
+        "/Plugin/CesiumForUnreal/Private/CesiumVoxelTemplate.usf");
+
+    if (!Path.IsEmpty()) {
+      FFileHelper::LoadFileToString(ShaderTemplate, *Path);
+    }
 
     MaterialLayerTemplate = LoadObjFromPath<UMaterialFunctionMaterialLayer>(
         "/CesiumForUnreal/Materials/Layers/ML_CesiumVoxel");
   }
 
   bool isValid() const {
-    return !HlslShaderTemplate.IsEmpty() && MaterialLayerTemplate &&
+    return !ShaderTemplate.IsEmpty() && MaterialLayerTemplate &&
            pDefaultVolumeTexture;
   }
 };
@@ -768,9 +769,9 @@ static void GenerateMaterialNodes(
   NodeY = DataSectionY;
 
   // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
-  // CesiumVoxelTemplate.hlsl contains "%s" formatters that will be replaced
+  // CesiumVoxelTemplate.usf contains "%s" formatters that will be replaced
   // with generated code.
-  FLazyPrintf LazyPrintf(*ResourceLibrary.HlslShaderTemplate);
+  FLazyPrintf LazyPrintf(*ResourceLibrary.ShaderTemplate);
   CustomShaderBuilder Builder;
 
   const TArray<FCesiumPropertyAttributePropertyDescription>& Properties =
