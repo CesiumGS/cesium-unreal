@@ -313,7 +313,8 @@ struct CustomShaderBuilder {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
       DeclareShaderProperties +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareShaderProperties += " " + DefaultValueName + ";";
     }
   }

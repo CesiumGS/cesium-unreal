@@ -80,7 +80,7 @@ public:
    *
    * @returns The index of the reserved slot, or -1 if none were available.
    */
-  int64_t add(const UCesiumGltfVoxelComponent& voxelComponent);
+  int64 add(const UCesiumGltfVoxelComponent& voxelComponent);
 
   /**
    * @brief Releases the slot at the specified index, making the space available
@@ -119,7 +119,7 @@ private:
    * with maximum tile capacity.
    */
   struct Slot {
-    int64_t index = -1;
+    int64 index = -1;
     Slot* pNext = nullptr;
     Slot* pPrevious = nullptr;
     std::optional<FRenderCommandFence> fence;
@@ -170,7 +170,7 @@ private:
    *
    * @returns The index of the reserved slot, or -1 if none were available.
    */
-  int64_t reserveNextSlot();
+  int64 reserveNextSlot();
 
   std::vector<Slot> _slots;
   std::unordered_set<size_t> _loadingSlots;
