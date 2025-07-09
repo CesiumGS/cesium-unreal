@@ -484,6 +484,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
       FName("VoxelMaterial"));
   pVoxelMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pVoxelComponent->_pTileset = pTilesetActor;
 
   EVoxelGridShape shape = pVoxelComponent->Options.gridShape;
 
@@ -858,7 +859,7 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
 
         // Don't create the missing node just yet? It may not be added to the
         // tree depending on the priority of other nodes.
-        priorityQueue.push({pVoxel, sse, computePriority(sse)});
+        priorityQueue.push({pVoxel, sse, computePriority(pVoxel->TileId, sse)});
       });
 
   if (this->_visibleTileQueue.empty()) {
@@ -880,8 +881,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
         if (!pRight) {
           return true;
         }
-        return computePriority(pLeft->lastKnownScreenSpaceError) >
-               computePriority(pRight->lastKnownScreenSpaceError);
+        return computePriority(lhs, pLeft->lastKnownScreenSpaceError) >
+               computePriority(rhs, pRight->lastKnownScreenSpaceError);
       });
 
   size_t existingNodeCount = this->_loadedNodeIds.size();
@@ -1068,6 +1069,12 @@ void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
   }
 }
 
-double UCesiumVoxelRendererComponent::computePriority(double sse) {
-  return 10.0 * sse / (sse + 1.0);
+double UCesiumVoxelRendererComponent::computePriority(
+    const CesiumGeometry::OctreeTileID& tileId,
+    double sse) {
+  // This heuristic is intentionally biased towards tiles with lower levels.
+  // Without this, tilesets with many leaf tiles will kick all of the lower
+  // level detail tiles from the megatexture, resulting in holes or other
+  // artifacts.
+  return sse / (sse + 1.0 + tileId.level);
 }
