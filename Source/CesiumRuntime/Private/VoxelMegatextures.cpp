@@ -13,6 +13,7 @@
 #include "EncodedMetadataConversions.h"
 #include "Engine/VolumeTexture.h"
 #include "Templates/UniquePtr.h"
+#include "UObject/Package.h"
 
 #include <Cesium3DTiles/Class.h>
 #include <CesiumGltf/PropertyType.h>
