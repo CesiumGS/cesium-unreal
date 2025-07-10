@@ -55,8 +55,7 @@ using namespace GenerateMaterialUtility;
 
 static const FString RaymarchDescription = "Voxel Raymarch";
 
-UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent()
-    : UActorComponent() {
+UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UTexture> DefaultVolumeTexture;
@@ -313,7 +312,8 @@ struct CustomShaderBuilder {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
       DeclareShaderProperties +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareShaderProperties += " " + DefaultValueName + ";";
     }
   }
@@ -380,7 +380,8 @@ struct CustomShaderBuilder {
       // Declare the value transforms underneath the corresponding data texture
       // variable. e.g., float myProperty_SCALE;
       DeclareDataTextureVariables +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareDataTextureVariables += " " + ScaleName + ";";
       SetDataTextures +=
           "\nDataTextures." + ScaleName + " = " + ScaleName + ";";
@@ -392,7 +393,8 @@ struct CustomShaderBuilder {
     if (Property.PropertyDetails.bHasOffset) {
       FString OffsetName = PropertyName + MaterialPropertyOffsetSuffix;
       DeclareDataTextureVariables +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareDataTextureVariables += " " + OffsetName + ";";
       SetDataTextures +=
           "\nDataTextures." + OffsetName + " = " + OffsetName + ";";
@@ -418,7 +420,8 @@ struct CustomShaderBuilder {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
       DeclareDataTextureVariables +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareDataTextureVariables += " " + DefaultValueName + ";";
       SetDataTextures +=
           "\nDataTextures." + DefaultValueName + " = " + DefaultValueName + ";";
@@ -512,7 +515,7 @@ ClassifyNodes(UMaterialFunctionMaterialLayer* Layer) {
       UMaterialExpressionMaterialFunctionCall* pFunctionCall =
           Cast<UMaterialExpressionMaterialFunctionCall>(pNode);
       const FString& FunctionName =
-          pFunctionCall && pFunctionCall->MaterialFunction
+          (pFunctionCall && pFunctionCall->MaterialFunction)
               ? pFunctionCall->MaterialFunction->GetName()
               : FString();
       if (FunctionName.Contains("BreakOutFloat4")) {

@@ -388,9 +388,7 @@ int64 FCesiumPropertyAttributeProperty::getAccessorStride() const {
       this->_property,
       this->_valueType,
       this->_normalized,
-      [](const auto& view) -> int64 {
-        return view.accessorView().stride();
-      });
+      [](const auto& view) -> int64 { return view.accessorView().stride(); });
 }
 
 const std::byte* FCesiumPropertyAttributeProperty::getAccessorData() const {

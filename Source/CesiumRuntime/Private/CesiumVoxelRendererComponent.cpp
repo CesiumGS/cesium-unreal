@@ -537,7 +537,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   }
 
   if (pDescription && pVoxelClass) {
-    for (const auto propertyIt : pVoxelClass->properties) {
+    for (const auto& propertyIt : pVoxelClass->properties) {
       FString UnrealName(propertyIt.first.c_str());
 
       for (const FCesiumPropertyAttributePropertyDescription& Property :
@@ -748,7 +748,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
     const Cesium3DTiles::MetadataEntity& metadata = *tilesetMetadata.metadata;
     const Cesium3DTiles::Class& tilesetClass =
         tilesetMetadata.schema->classes.at(metadata.classProperty);
-    for (const auto propertyIt : tilesetClass.properties) {
+    for (const auto& propertyIt : tilesetClass.properties) {
       if (propertyIt.second.semantic == "TILESET_TILE_COUNT") {
         const auto tileCountIt = metadata.properties.find(propertyIt.first);
         if (tileCountIt != metadata.properties.end()) {
