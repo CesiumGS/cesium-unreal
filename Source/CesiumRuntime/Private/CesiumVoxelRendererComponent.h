@@ -9,8 +9,8 @@
 #include "CustomDepthParameters.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Templates/UniquePtr.h"
-#include "VoxelMegatextures.h"
 #include "VoxelGridShape.h"
+#include "VoxelMegatextures.h"
 #include "VoxelOctree.h"
 
 #include <Cesium3DTilesSelection/Tile.h>
