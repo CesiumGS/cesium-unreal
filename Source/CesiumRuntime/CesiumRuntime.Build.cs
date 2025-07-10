@@ -96,7 +96,9 @@ public class CesiumRuntime : ModuleRules
                 "Renderer",
                 "OpenSSL",
                 "Json",
-                "JsonUtilities"
+                "JsonUtilities",
+                "Slate",
+                "SlateCore"
             }
         );
 
@@ -135,8 +137,6 @@ public class CesiumRuntime : ModuleRules
             PublicDependencyModuleNames.AddRange(
                 new string[] {
                     "UnrealEd",
-                    "Slate",
-                    "SlateCore",
                     "WorldBrowser",
                     "ContentBrowser",
                     "MaterialEditor"
