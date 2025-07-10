@@ -1273,11 +1273,12 @@ private:
       UCesiumEllipsoid* NewEllpisoid);
 
   /**
-   * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering voxel data.
+   * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering
+   * voxel data.
    */
-  void createVoxelRenderer(
-      const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
-          VoxelExtension);
+  void
+  createVoxelRenderer(const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
+                          VoxelExtension);
 
   /**
    * Writes the values of all properties of this actor into the

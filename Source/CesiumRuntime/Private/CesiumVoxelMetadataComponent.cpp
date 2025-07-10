@@ -55,8 +55,7 @@ using namespace GenerateMaterialUtility;
 
 static const FString RaymarchDescription = "Voxel Raymarch";
 
-UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent()
-    : UActorComponent() {
+UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UTexture> DefaultVolumeTexture;
