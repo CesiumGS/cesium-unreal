@@ -4,6 +4,7 @@
 
 #include "CesiumEditorReparentHandler.h"
 #include "CesiumEditorSubLevelMutex.h"
+#include "CesiumITwinSession.h"
 #include "CesiumIonServerManager.h"
 #include "CesiumIonSession.h"
 #include "CoreMinimal.h"
@@ -40,6 +41,8 @@ public:
     assert(_pModule);
     return get()->_serverManager;
   }
+
+  static CesiumITwinSession& iTwinSession();
 
   static ACesium3DTileset* FindFirstTilesetSupportingOverlays();
   static ACesium3DTileset* FindFirstTilesetWithAssetID(int64_t assetID);
@@ -105,6 +108,8 @@ private:
   TSharedRef<SDockTab>
   SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
 
+  TSharedRef<SDockTab> SpawnITwinTab(const FSpawnTabArgs& TabSpawnArgs);
+
   void OnTilesetLoadFailure(const FCesium3DTilesetLoadFailureDetails& details);
   void OnRasterOverlayLoadFailure(
       const FCesiumRasterOverlayLoadFailureDetails& details);
@@ -116,6 +121,8 @@ private:
   FDelegateHandle _rasterOverlayLoadFailureSubscription;
   FDelegateHandle _tilesetIonTroubleshootingSubscription;
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
+
+  std::shared_ptr<CesiumITwinSession> _iTwinSession = nullptr;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
   CesiumEditorReparentHandler _reparentHandler;

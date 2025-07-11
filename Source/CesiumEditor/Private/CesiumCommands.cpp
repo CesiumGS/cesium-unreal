@@ -57,6 +57,13 @@ void FCesiumCommands::RegisterCommands() {
       "Open the Cesium panel",
       EUserInterfaceActionType::Button,
       FInputChord());
+
+  UI_COMMAND(
+      OpenITwinPanel,
+      "iTwin",
+      "Open the iTwin panel",
+      EUserInterfaceActionType::Button,
+      FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

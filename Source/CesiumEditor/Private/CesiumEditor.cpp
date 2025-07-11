@@ -22,10 +22,10 @@
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "ITwinPanel.h"
 #include "Interfaces/IPluginManager.h"
 #include "LevelEditor.h"
 #include "PropertyEditorModule.h"
-#include "Selection.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 
@@ -154,6 +154,9 @@ void populateCesiumStyleSet(TSharedPtr<FSlateStyleSet>& StyleSet) {
   StyleSet->Set(
       "Cesium.MenuIcon",
       new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
+  StyleSet->Set(
+      "ITwin.MenuIcon",
+      new IMAGE_BRUSH(TEXT("iTwin-40x40"), Icon40x40));
 
   // Give Cesium Actors a Cesium icon in the editor
   StyleSet->Set(
@@ -212,6 +215,10 @@ void populateCesiumStyleSet(TSharedPtr<FSlateStyleSet>& StyleSet) {
       new IMAGE_BRUSH(
           "Cesium_for_Unreal_light_color_vertical-height150",
           FVector2D(184.0f, 150.0f)));
+
+  StyleSet->Set(
+      "ITwin.Logo",
+      new IMAGE_BRUSH("iTwin-512x512", FVector2D(512.0f, 512.0f)));
 
   StyleSet->Set(
       "WelcomeText",
@@ -293,6 +300,15 @@ void FCesiumEditorModule::StartupModule() {
 
   FGlobalTabmanager::Get()
       ->RegisterNomadTabSpawner(
+          TEXT("iTwin"),
+          FOnSpawnTab::CreateRaw(this, &FCesiumEditorModule::SpawnITwinTab))
+      .SetGroup(WorkspaceMenu::GetMenuStructure().GetLevelEditorCategory())
+      .SetDisplayName(FText::FromString(TEXT("iTwin")))
+      .SetTooltipText(FText::FromString(TEXT("ITwin")))
+      .SetIcon(FSlateIcon(TEXT("CesiumStyleSet"), TEXT("ITwin.MenuIcon")));
+
+  FGlobalTabmanager::Get()
+      ->RegisterNomadTabSpawner(
           TEXT("CesiumIon"),
           FOnSpawnTab::CreateRaw(
               this,
@@ -334,6 +350,19 @@ void FCesiumEditorModule::StartupModule() {
           pTabManager->TryInvokeTab(FTabId(TEXT("Cesium")));
         }));
 
+    toolbarCommandList->MapAction(
+        FCesiumCommands::Get().OpenITwinPanel,
+        FExecuteAction::CreateLambda([]() {
+          FLevelEditorModule* pLevelEditorModule =
+              FModuleManager::GetModulePtr<FLevelEditorModule>(
+                  FName(TEXT("LevelEditor")));
+          TSharedPtr<FTabManager> pTabManager =
+              pLevelEditorModule
+                  ? pLevelEditorModule->GetLevelEditorTabManager()
+                  : FGlobalTabmanager::Get();
+          pTabManager->TryInvokeTab(FTabId(TEXT("iTwin")));
+        }));
+
     TSharedPtr<FExtender> pToolbarExtender = MakeShared<FExtender>();
     pToolbarExtender->AddToolBarExtension(
         "Settings",
@@ -342,6 +371,7 @@ void FCesiumEditorModule::StartupModule() {
         FToolBarExtensionDelegate::CreateLambda([](FToolBarBuilder& builder) {
           builder.BeginSection("Cesium");
           builder.AddToolBarButton(FCesiumCommands::Get().OpenCesiumPanel);
+          builder.AddToolBarButton(FCesiumCommands::Get().OpenITwinPanel);
           builder.EndSection();
         }));
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
@@ -387,6 +417,8 @@ void FCesiumEditorModule::ShutdownModule() {
     this->_rasterOverlayIonTroubleshootingSubscription.Reset();
   }
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
+  FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("CesiumIon"));
+  FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("iTwin"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
   unregisterDetailCustomization();
@@ -397,6 +429,14 @@ TSharedRef<SDockTab>
 FCesiumEditorModule::SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs) {
   TSharedRef<SDockTab> SpawnedTab =
       SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(CesiumPanel)];
+
+  return SpawnedTab;
+}
+
+TSharedRef<SDockTab>
+FCesiumEditorModule::SpawnITwinTab(const FSpawnTabArgs& TabSpawnArgs) {
+  TSharedRef<SDockTab> SpawnedTab =
+      SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(ITwinPanel)];
 
   return SpawnedTab;
 }
@@ -658,20 +698,8 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-  // Try to obtain the georeference from the selected actors, if possible.
-  // If not, just go with the default georeference.
-  ACesiumGeoreference* Georeference = nullptr;
-  for (FSelectionIterator It = GEditor->GetSelectedActorIterator(); It; ++It) {
-    ACesiumGeoreference* PossibleGeoreference = Cast<ACesiumGeoreference>(*It);
-    if (IsValid(PossibleGeoreference) &&
-        PossibleGeoreference->GetLevel() == pCurrentLevel) {
-      Georeference = PossibleGeoreference;
-    }
-  }
-
-  if (Georeference == nullptr) {
-    Georeference = ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
-  }
+  ACesiumGeoreference* Georeference =
+      ACesiumGeoreference::GetDefaultGeoreference(pCurrentWorld);
 
   // Spawn the new Actor with the same world transform as the
   // CesiumGeoreference. This way it will match the existing globe. The user may
@@ -747,4 +775,16 @@ UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {
   }
 
   return pResult;
+}
+
+CesiumITwinSession& FCesiumEditorModule::iTwinSession() {
+  assert(_pModule);
+  FCesiumEditorModule* pModule = get();
+
+  if (!pModule->_iTwinSession) {
+    pModule->_iTwinSession =
+        std::make_shared<CesiumITwinSession>(getAsyncSystem(), getAssetAccessor());
+  }
+
+  return *pModule->_iTwinSession;
 }
