@@ -11,8 +11,6 @@
 
 #include "CesiumVoxelMetadataComponent.generated.h"
 
-class UVolumeTexture;
-
 /**
  * @brief Description of the metadata properties available in the class used by
  * the 3DTILES_content_voxels extension. Exposes what properties are available
@@ -150,10 +148,10 @@ protected:
 #endif
 
 private:
-#if WITH_EDITOR
   TObjectPtr<UTexture> pDefaultVolumeTexture;
-  static const FString ShaderPreviewTemplate;
 
+#if WITH_EDITOR
+  static const FString ShaderPreviewTemplate;
   void UpdateShaderPreview();
 #endif
 };

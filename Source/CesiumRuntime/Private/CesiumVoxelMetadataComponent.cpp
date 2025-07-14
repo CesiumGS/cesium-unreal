@@ -15,6 +15,7 @@
 #include "ShaderCore.h"
 #include "UnrealMetadataConversions.h"
 
+#include <Cesium3DTiles/Class.h>
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 
 #if WITH_EDITOR
@@ -47,8 +48,7 @@
 #include "Modules/ModuleManager.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "UObject/Package.h"
-
-#include <Cesium3DTiles/Class.h>
+#endif
 
 using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
@@ -128,15 +128,13 @@ GetValueTypeFromClassProperty(const Cesium3DTiles::ClassProperty& Property) {
 }
 
 void AutoFillVoxelClassDescription(
-    FCesiumVoxelClassDescription& Description,
-    const Cesium3DTiles::Schema& TilesetSchema,
-    const std::string& VoxelClassID) {
-  Description.ID = TilesetSchema.id.c_str();
+    FCesiumVoxelClassDescription& description,
+    const std::string& voxelClassID,
+    const Cesium3DTiles::Class& voxelClass) {
+  description.ID = voxelClassID.c_str();
 
-  const Cesium3DTiles::Class& voxelClass =
-      TilesetSchema.classes.at(VoxelClassID);
   for (const auto& propertyIt : voxelClass.properties) {
-    auto pExistingProperty = Description.Properties.FindByPredicate(
+    auto pExistingProperty = description.Properties.FindByPredicate(
         [&propertyName = propertyIt.first](
             const FCesiumPropertyAttributePropertyDescription&
                 existingProperty) {
@@ -149,7 +147,7 @@ void AutoFillVoxelClassDescription(
     }
 
     FCesiumPropertyAttributePropertyDescription& property =
-        Description.Properties.Emplace_GetRef();
+        description.Properties.Emplace_GetRef();
     property.Name = propertyIt.first.c_str();
 
     property.PropertyDetails.SetValueType(
@@ -214,8 +212,8 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
 
   AutoFillVoxelClassDescription(
       this->Description,
-      *pMetadata->schema,
-      voxelClassId);
+      voxelClassId,
+      pMetadata->schema->classes.at(voxelClassId));
 
   Super::PostEditChange();
 
@@ -456,7 +454,6 @@ struct CustomShaderBuilder {
     "\tfloat4 Shade(CustomShaderProperties Properties) {\n"
     "%s\n"
     "\t}\n}";
-#endif
 
 void UCesiumVoxelMetadataComponent::UpdateShaderPreview() {
   // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
