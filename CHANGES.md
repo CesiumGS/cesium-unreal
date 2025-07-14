@@ -13,6 +13,11 @@
 - Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
 - Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
 
+##### Fixes :wrench:
+
+- Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
+- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin. 
+
 ### v2.17.0 - 2025-07-01
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.3. Future versions will require Unreal Engine v5.4+.
