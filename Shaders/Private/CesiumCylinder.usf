@@ -36,6 +36,7 @@ struct Cylinder
 
     // Flags are packed in CesiumVoxelRendererComponent.cpp
     RadiusHasMinimumBound = bool(PackedData0.x);
+    RadiusIsFlat = bool(PackedData0.y);
 
     AngleRangeFlag = round(PackedData1.x);
     AngleMinHasDiscontinuity = bool(PackedData1.y);
@@ -124,12 +125,12 @@ struct Cylinder
     
     RayIntersections OuterResult = IntersectBoundedCylinder(R, MaxBounds.x, float2(MinBounds.z, MaxBounds.z));
     setShapeIntersections(Intersections, ListState, 0, OuterResult);
-
     if (OuterResult.Entry.t == NO_HIT)
     {
       return;
     }
 
+    ListState.Length += 2;
     if (RadiusIsFlat)
     {
       // When the cylinder is perfectly thin it's necessary to sandwich the
@@ -157,24 +158,36 @@ struct Cylinder
     else if (RadiusHasMinimumBound)
     {
       RayIntersections InnerResult = IntersectInfiniteCylinder(R, MinBounds.x, false);
-      setShapeIntersection(Intersections, ListState, 1, InnerResult);
+      setShapeIntersections(Intersections, ListState, 1, InnerResult);
     }
-
-    // TODO
-#if defined(CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_UNDER_HALF)
-        RayShapeIntersection wedgeIntersect = intersectRegularWedge(ray, u_cylinderRenderAngleMinMax);
-        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE, wedgeIntersect);
-#elif defined(CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_OVER_HALF)
-        RayShapeIntersection wedgeIntersects[2];
-        intersectFlippedWedge(ray, u_cylinderRenderAngleMinMax, wedgeIntersects);
-        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 0, wedgeIntersects[0]);
-        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 1, wedgeIntersects[1]);
-#elif defined(CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_EQUAL_ZERO)
-        RayShapeIntersection wedgeIntersects[2];
-        intersectHalfPlane(ray, u_cylinderRenderAngleMinMax.x, wedgeIntersects);
-        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 0, wedgeIntersects[0]);
-        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 1, wedgeIntersects[1]);
-#endif
+    
+    float2 AngleBounds = float2(MinBounds.y, MaxBounds.y);
+    if (AngleRangeFlag == ANGLE_UNDER_HALF)
+    {
+      // The shape's angle range is over half, so we intersect a NEGATIVE shape that is under half.
+      RayIntersections WedgeResult = IntersectRegularWedge(R, AngleBounds);
+      setShapeIntersections(Intersections, ListState, 2, WedgeResult);
+      ListState.Length += 2;
+    }
+    else if (AngleRangeFlag == ANGLE_OVER_HALF)
+    {
+      // The shape's angle range is under half, so we intersect a NEGATIVE shape that is over half.
+      RayIntersections FirstResult = (RayIntersections) 0;
+      RayIntersections SecondResult = (RayIntersections) 0;
+      IntersectFlippedWedge(R, AngleBounds, FirstResult, SecondResult);
+      setShapeIntersections(Intersections, ListState, 2, FirstResult);
+      setShapeIntersections(Intersections, ListState, 3, SecondResult);
+      ListState.Length += 4;
+    }
+    else if (AngleRangeFlag == ANGLE_EQUAL_ZERO)
+    {
+      RayIntersections FirstResult = (RayIntersections) 0;
+      RayIntersections SecondResult = (RayIntersections) 0;
+      IntersectHalfPlane(R, AngleBounds.x, FirstResult, SecondResult);
+      setShapeIntersections(Intersections, ListState, 2, FirstResult);
+      setShapeIntersections(Intersections, ListState, 3, SecondResult);
+      ListState.Length += 4;
+    }
   }
 
   /**

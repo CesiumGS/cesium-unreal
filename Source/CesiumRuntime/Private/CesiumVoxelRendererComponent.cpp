@@ -145,22 +145,22 @@ enum AngleDescription : int8 {
   OverHalf = 4
 };
 
-AngleDescription interpretCylinderAngle(double value) {
+AngleDescription interpretCylinderRange(double value) {
   const double angleEpsilon = CesiumUtility::Math::Epsilon10;
 
-  if (value > angleEpsilon &&
+  if (value >= CesiumUtility::Math::OnePi - angleEpsilon &&
       value < CesiumUtility::Math::TwoPi - angleEpsilon) {
     // angle range > PI
     return AngleDescription::OverHalf;
   }
-  if (value < CesiumUtility::Math::OnePi - angleEpsilon) {
+  if (value > angleEpsilon &&
+      value < CesiumUtility::Math::OnePi - angleEpsilon) {
     // angle range < PI
     return AngleDescription::UnderHalf;
   }
-  if (value >= CesiumUtility::Math::OnePi - angleEpsilon &&
-      value <= CesiumUtility::Math::OnePi + angleEpsilon) {
-    // angle range ~= PI
-    return AngleDescription::Half;
+  if (value <= angleEpsilon) {
+    // angle range ~= 0
+    return AngleDescription::Zero;
   }
 
   return AngleDescription::None;
@@ -223,7 +223,7 @@ void setVoxelCylinderProperties(
     bool isAngleReversed = angularBounds.y < angularBounds.x;
     double angleRange =
         angularBounds.y - angularBounds.x + isAngleReversed * defaultRange;
-    AngleDescription angleRangeIndicator = interpretCylinderAngle(angleRange);
+    AngleDescription angleRangeIndicator = interpretCylinderRange(angleRange);
 
     // Refers to the discontinuity at angle -pi / pi.
     const double discontinuityEpsilon =
