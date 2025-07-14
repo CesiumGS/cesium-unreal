@@ -125,11 +125,11 @@ void FCesiumPropertyTexturePropertySpec::Define() {
               property));
 
       // Test that the returns are as expected for non-array properties.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
-          static_cast<int64_t>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -214,11 +214,11 @@ void FCesiumPropertyTexturePropertySpec::Define() {
               property));
 
       // Test that the returns are as expected for non-array properties.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
-          static_cast<int64_t>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -278,7 +278,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
               property));
 
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
@@ -356,11 +356,11 @@ void FCesiumPropertyTexturePropertySpec::Define() {
               property));
 
       // Test that the returns are as expected for non-array properties.
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
-          static_cast<int64_t>(0));
+          int64_t(0));
       TestEqual(
           "ArrayElementBlueprintType",
           UCesiumPropertyTexturePropertyBlueprintLibrary::
@@ -737,6 +737,174 @@ void FCesiumPropertyTexturePropertySpec::Define() {
     });
   });
 
+  Describe("GetInteger64", [this]() {
+    It("returns default value for invalid property", [this]() {
+      FCesiumPropertyTextureProperty property;
+      TestEqual(
+          "status",
+          UCesiumPropertyTexturePropertyBlueprintLibrary::
+              GetPropertyTexturePropertyStatus(property),
+          ECesiumPropertyTexturePropertyStatus::ErrorInvalidProperty);
+      TestEqual(
+          "value",
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64(
+              property,
+              FVector2D::Zero()),
+          0);
+    });
+
+    It("gets from uint32 property", [this]() {
+      PropertyTextureProperty propertyTextureProperty;
+      ClassProperty classProperty;
+      classProperty.type = ClassProperty::Type::SCALAR;
+      classProperty.componentType = ClassProperty::ComponentType::UINT32;
+
+      Sampler sampler;
+      ImageAsset image;
+      image.width = 2;
+      image.height = 2;
+      image.channels = 4;
+      image.bytesPerChannel = 1;
+
+      std::vector<uint32_t> values{1, 2, 3, 4};
+      image.pixelData = GetValuesAsBytes(values);
+
+      if (FPlatformProperties::IsLittleEndian()) {
+        propertyTextureProperty.channels = {0, 1, 2, 3};
+      } else {
+        propertyTextureProperty.channels = {3, 2, 1, 0};
+      }
+
+      PropertyTexturePropertyView<uint32_t> propertyView(
+          propertyTextureProperty,
+          classProperty,
+          sampler,
+          image);
+      FCesiumPropertyTextureProperty property(propertyView);
+      TestEqual(
+          "status",
+          UCesiumPropertyTexturePropertyBlueprintLibrary::
+              GetPropertyTexturePropertyStatus(property),
+          ECesiumPropertyTexturePropertyStatus::Valid);
+
+      for (size_t i = 0; i < texCoords.size(); i++) {
+        TestEqual<int64_t>(
+            std::string("value" + std::to_string(i)).c_str(),
+            UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64(
+                property,
+                texCoords[i]),
+            int64_t(values[i]));
+      }
+    });
+
+    It("converts compatible values", [this]() {
+      PropertyTextureProperty propertyTextureProperty;
+      ClassProperty classProperty;
+      classProperty.type = ClassProperty::Type::SCALAR;
+      classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
+
+      Sampler sampler;
+      ImageAsset image;
+      image.width = 2;
+      image.height = 2;
+      image.channels = 4;
+      image.bytesPerChannel = 1;
+
+      std::vector<float> values{
+          1.234f,
+          -24.5f,
+          std::numeric_limits<float>::lowest(),
+          2456.80f};
+      image.pixelData = GetValuesAsBytes(values);
+      if (FPlatformProperties::IsLittleEndian()) {
+        propertyTextureProperty.channels = {0, 1, 2, 3};
+      } else {
+        propertyTextureProperty.channels = {3, 2, 1, 0};
+      }
+
+      PropertyTexturePropertyView<float> propertyView(
+          propertyTextureProperty,
+          classProperty,
+          sampler,
+          image);
+      FCesiumPropertyTextureProperty property(propertyView);
+      TestEqual(
+          "status",
+          UCesiumPropertyTexturePropertyBlueprintLibrary::
+              GetPropertyTexturePropertyStatus(property),
+          ECesiumPropertyTexturePropertyStatus::Valid);
+
+      std::vector<int32_t> expected{1, -24, 0, 2456};
+      for (size_t i = 0; i < texCoords.size(); i++) {
+        TestEqual(
+            std::string("value" + std::to_string(i)).c_str(),
+            UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger(
+                property,
+                texCoords[i]),
+            expected[i]);
+      }
+    });
+
+    It("gets with noData / default value", [this]() {
+      PropertyTextureProperty propertyTextureProperty;
+      ClassProperty classProperty;
+      classProperty.type = ClassProperty::Type::SCALAR;
+      classProperty.componentType = ClassProperty::ComponentType::UINT32;
+
+      uint32_t noDataValue = 0;
+      uint32_t defaultValue = 10;
+
+      classProperty.noData = noDataValue;
+      classProperty.defaultProperty = defaultValue;
+
+      Sampler sampler;
+      ImageAsset image;
+      image.width = 2;
+      image.height = 2;
+      image.channels = 4;
+      image.bytesPerChannel = 1;
+
+      std::vector<uint32_t> values{0, 2, 3, 4};
+      image.pixelData = GetValuesAsBytes(values);
+
+      if (FPlatformProperties::IsLittleEndian()) {
+        propertyTextureProperty.channels = {0, 1, 2, 3};
+      } else {
+        propertyTextureProperty.channels = {3, 2, 1, 0};
+      }
+
+      PropertyTexturePropertyView<uint32_t> propertyView(
+          propertyTextureProperty,
+          classProperty,
+          sampler,
+          image);
+      FCesiumPropertyTextureProperty property(propertyView);
+      TestEqual(
+          "status",
+          UCesiumPropertyTexturePropertyBlueprintLibrary::
+              GetPropertyTexturePropertyStatus(property),
+          ECesiumPropertyTexturePropertyStatus::Valid);
+
+      for (size_t i = 0; i < texCoords.size(); i++) {
+        if (values[i] == noDataValue) {
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger(
+                  property,
+                  texCoords[i]),
+              defaultValue);
+        } else {
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger(
+                  property,
+                  texCoords[i]),
+              values[i]);
+        }
+      }
+    });
+  });
+
   Describe("GetFloat", [this]() {
     It("returns default value for invalid property", [this]() {
       FCesiumPropertyTextureProperty property;
@@ -833,7 +1001,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat(
                 property,
                 texCoords[i]),
-            static_cast<float>(values[i]));
+            float(values[i]));
       }
     });
 
@@ -946,7 +1114,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat64(
                 property,
                 texCoords[i]),
-            static_cast<double>(values[i]) / 255.0);
+            double(values[i]) / 255.0);
       }
     });
 
@@ -990,7 +1158,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat64(
                 property,
                 texCoords[i]),
-            static_cast<double>(values[i]));
+            double(values[i]));
       }
     });
 
@@ -1037,7 +1205,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat64(
                 property,
                 texCoords[i]),
-            (static_cast<double>(values[i]) / 255.0) * scale + offset);
+            (double(values[i]) / 255.0) * scale + offset);
       }
     });
   });
@@ -1371,8 +1539,8 @@ void FCesiumPropertyTexturePropertySpec::Define() {
 
       for (size_t i = 0; i < texCoords.size(); i++) {
         FVector2D expected(
-            static_cast<double>(values[i][0]) / 255.0 * scale[0] + offset[0],
-            static_cast<double>(values[i][1]) / 255.0 * scale[1] + offset[1]);
+            double(values[i][0]) / 255.0 * scale[0] + offset[0],
+            double(values[i][1]) / 255.0 * scale[1] + offset[1]);
 
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
@@ -1718,9 +1886,9 @@ void FCesiumPropertyTexturePropertySpec::Define() {
 
       for (size_t i = 0; i < texCoords.size(); i++) {
         FVector expected(
-            static_cast<double>(values[i][0]) / 255.0 * scale[0] + offset[0],
-            static_cast<double>(values[i][1]) / 255.0 * scale[1] + offset[1],
-            static_cast<double>(values[i][2]) / 255.0 * scale[2] + offset[2]);
+            double(values[i][0]) / 255.0 * scale[0] + offset[0],
+            double(values[i][1]) / 255.0 * scale[1] + offset[1],
+            double(values[i][2]) / 255.0 * scale[2] + offset[2]);
         TestEqual(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetVector(
@@ -2021,7 +2189,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           UCesiumPropertyTexturePropertyBlueprintLibrary::
               GetPropertyTexturePropertyStatus(property),
           ECesiumPropertyTexturePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
@@ -2032,8 +2200,9 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
                 property,
                 texCoords[i]);
-        int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual<int64>("array size", arraySize, *classProperty.count);
+        int64_t arraySize =
+            UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
+        TestEqual<int64_t>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Uint8,
@@ -2043,8 +2212,8 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array) ==
                 valueType);
 
-        int64 arrayOffset = i * arraySize;
-        for (int64 j = 0; j < arraySize; j++) {
+        int64_t arrayOffset = i * arraySize;
+        for (int64_t j = 0; j < arraySize; j++) {
           std::string label(
               "array" + std::to_string(i) + " value" + std::to_string(j));
           FCesiumMetadataValue value =
@@ -2052,7 +2221,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           TestEqual(
               label.c_str(),
               UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-              values[static_cast<size_t>(arrayOffset + j)]);
+              values[size_t(arrayOffset + j)]);
         }
       }
     });
@@ -2089,7 +2258,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           UCesiumPropertyTexturePropertyBlueprintLibrary::
               GetPropertyTexturePropertyStatus(property),
           ECesiumPropertyTexturePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
@@ -2100,8 +2269,9 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
                 property,
                 texCoords[i]);
-        int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual<int64>("array size", arraySize, *classProperty.count);
+        int64_t arraySize =
+            UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
+        TestEqual<int64_t>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Uint8,
@@ -2111,8 +2281,8 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array) ==
                 valueType);
 
-        int64 arrayOffset = i * arraySize;
-        for (int64 j = 0; j < arraySize; j++) {
+        int64_t arrayOffset = i * arraySize;
+        for (int64_t j = 0; j < arraySize; j++) {
           std::string label(
               "array" + std::to_string(i) + " value" + std::to_string(j));
           FCesiumMetadataValue value =
@@ -2120,7 +2290,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           TestEqual(
               label.c_str(),
               UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-              values[static_cast<size_t>(arrayOffset + j)]);
+              values[size_t(arrayOffset + j)]);
         }
       }
 
@@ -2130,10 +2300,10 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
               property,
               texCoords[texCoords.size() - 1]);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "array size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64_t>(0));
+          int64_t(0));
       FCesiumMetadataValueType valueType(
           ECesiumMetadataType::Invalid,
           ECesiumMetadataComponentType::None,
@@ -2177,7 +2347,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
           UCesiumPropertyTexturePropertyBlueprintLibrary::
               GetPropertyTexturePropertyStatus(property),
           ECesiumPropertyTexturePropertyStatus::Valid);
-      TestEqual<int64>(
+      TestEqual<int64_t>(
           "ArraySize",
           UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
               property),
@@ -2188,8 +2358,9 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             UCesiumPropertyTexturePropertyBlueprintLibrary::GetArray(
                 property,
                 texCoords[i]);
-        int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual<int64>("array size", arraySize, *classProperty.count);
+        int64_t arraySize =
+            UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
+        TestEqual<int64_t>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Uint8,
@@ -2215,8 +2386,8 @@ void FCesiumPropertyTexturePropertySpec::Define() {
               UCesiumMetadataValueBlueprintLibrary::GetInteger(value1, 0),
               20);
         } else {
-          int64 arrayOffset = i * arraySize;
-          for (int64 j = 0; j < arraySize; j++) {
+          int64_t arrayOffset = i * arraySize;
+          for (int64_t j = 0; j < arraySize; j++) {
             std::string label(
                 "array" + std::to_string(i) + " value" + std::to_string(j));
             FCesiumMetadataValue value =
@@ -2224,7 +2395,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
             TestEqual(
                 label.c_str(),
                 UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-                values[static_cast<size_t>(arrayOffset + j)]);
+                values[size_t(arrayOffset + j)]);
           }
         }
       }
