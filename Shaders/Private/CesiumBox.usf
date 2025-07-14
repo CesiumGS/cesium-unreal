@@ -6,7 +6,7 @@
 	CesiumBox.usf: An implicit box shape that may be intersected by a ray.
 =============================================================================*/
 
-#include "CesiumRayIntersection.usf"
+#include "CesiumRayIntersectionList.usf"
 
 struct Box
 {
@@ -16,10 +16,11 @@ struct Box
   /**
    * Tests whether the input ray (Unit Space) intersects the box. Outputs the intersections in Unit Space.
    */
-  RayIntersections Intersect(in Ray R)
+  void Intersect(in Ray R, inout float4 Intersections[INTERSECTIONS_LENGTH], inout IntersectionListState ListState)
   {
+    ListState.Length = 2;
+    
     // Consider the box as the intersection of the space between 3 pairs of parallel planes.
-
     // Compute the distance along the ray to each plane.
     float3 t0 = (MinBounds - R.Origin) / R.Direction;
     float3 t1 = (MaxBounds - R.Origin) / R.Direction;
@@ -36,8 +37,10 @@ struct Box
 
     if (entryT > exitT)
     {
-      Intersection miss = NewMissedIntersection();
-      return NewRayIntersections(miss, miss);
+      result.Entry.t = NO_HIT;
+      result.Exit.t = NO_HIT;
+      setShapeIntersections(Intersections, ListState, 0, result);
+      return;
     }
 
     // Compute normals
@@ -50,7 +53,7 @@ struct Box
     result.Exit.Normal = float3(isFirstExit) * directions;
     result.Exit.t = exitT;
 
-    return result;
+    setShapeIntersections(Intersections, ListState, 0, result);
   }
 
   /**
