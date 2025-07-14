@@ -8,12 +8,14 @@
 
 #include "CesiumShapeConstants.usf"
 #include "CesiumBox.usf"
+#include "CesiumCylinder.usf"
 #include "CesiumEllipsoidRegion.usf"
 
 struct Shape
 {
   int ShapeConstant;
   Box BoxShape;
+  Cylinder CylinderShape;
   EllipsoidRegion RegionShape;
   IntersectionListState ListState;
   
@@ -28,10 +30,13 @@ struct Shape
     switch (ShapeConstant)
     {
       case BOX:
-      // Initialize with default unit box bounds.
+        // Initialize with default unit box bounds.
         BoxShape.MinBounds = -1;
         BoxShape.MaxBounds = 1;
         break;
+      case CYLINDER:
+        CylinderShape.MinBounds = InMinBounds; // radius, angle, height
+        CylinderShape.MaxBounds = InMaxBounds; // radius, angle, height
       case ELLIPSOID:
         RegionShape.Initialize(InMinBounds, InMaxBounds, PackedData0, PackedData1, PackedData2, PackedData3, PackedData4, PackedData5);
         break;
@@ -48,6 +53,9 @@ struct Shape
     {
       case BOX:
         BoxShape.Intersect(R, Intersections, ListState);
+        break;
+      case CYLINDER:
+        CylinderShape.IntersectCylinder(R, Intersections, ListState);
         break;
       case ELLIPSOID:
         RegionShape.Intersect(R, Intersections, ListState);
@@ -97,6 +105,8 @@ struct Shape
     [branch]
     switch (ShapeConstant)
     {
+      case CYLINDER:
+        return CylinderShape.ScaleUVToShapeUVSpace(UV);
       case ELLIPSOID:
         return RegionShape.ScaleUVToShapeUVSpace(UV);
       case BOX:
@@ -115,6 +125,8 @@ struct Shape
     {
       case BOX:
         return BoxShape.ConvertUVToShapeUVSpace(UVPosition, JacobianT);
+      case CYLINDER:
+        return CylinderShape.ConvertUVToShapeUVSpace(UVPosition, JacobianT);
       case ELLIPSOID:
         return RegionShape.ConvertUVToShapeUVSpace(UVPosition, JacobianT);
       default:

@@ -1,0 +1,138 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumCylinder.usf: An implicit cylinder that may be intersected by a ray.
+=============================================================================*/
+
+#include "CesiumRayIntersectionList.usf"
+
+struct Cylinder
+{
+  float3 MinBounds;
+  float3 MaxBounds;
+  
+  /**
+  * Tests whether the input ray intersects the volume defined by two xy-planes at the specified z values.
+  */
+  RayIntersections IntersectHeightBounds(in Ray R, in float2 HeightBounds, in bool IsConvex)
+  {
+    float zPosition = R.Origin.z;
+    float zDirection = R.Direction.z;
+
+    float tmin = (HeightBounds.x - zPosition) / zDirection;
+    float tmax = (HeightBounds.y - zPosition) / zDirection;
+
+    // Normals point outside the volume
+    float signFlip = IsConvex ? 1.0 : -1.0;
+    Intersection min = NewIntersection(tmin, float3(0.0, 0.0, -1.0 * signFlip));
+    Intersection max = NewIntersection(tmax, float3(0.0, 0.0, 1.0 * signFlip));
+
+    bool isTopEntry = zDirection < 0.0;
+    if (isTopEntry)
+    {
+      return NewRayIntersections(max, min);
+    }
+    else
+    {
+      return NewRayIntersections(min, max);
+    }
+  }
+  
+  /**
+  * Tests whether the input ray intersects an infinite cylinder with the given radius.
+  */
+  RayIntersections IntersectInfiniteCylinder(in Ray R, in float Radius, in bool IsConvex)
+  {
+    float3 o = R.Origin;
+    float3 d = R.Direction;
+
+    float a = dot(d.xy, d.xy);
+    float b = dot(o.xy, d.xy);
+    float c = dot(o.xy, o.xy) - Radius * Radius;
+    float determinant = b * b - a * c;
+
+    if (determinant < 0.0)
+    {
+      Intersection miss = NewIntersection(NO_HIT, normalize(R.Direction));
+      return NewRayIntersections(miss, miss);
+    }
+
+    determinant = sqrt(determinant);
+    float t1 = (-b - determinant) / a;
+    float t2 = (-b + determinant) / a;
+    float signFlip = IsConvex ? 1.0 : -1.0;
+    Intersection intersect1 = NewIntersection(t1, float3(normalize(o.xy + t1 * d.xy) * signFlip, 0.0));
+    Intersection intersect2 = NewIntersection(t2, float3(normalize(o.xy + t2 * d.xy) * signFlip, 0.0));
+
+    return NewRayIntersections(intersect1, intersect2);
+  }
+
+  /**
+   * Tests whether the given ray intersects a right cylindrical solid of the given radius and height bounds.
+   * The shape is assumed to be convex.
+   */
+  RayIntersections IntersectBoundedCylinder(in Ray R, in float Radius, in float2 MinMaxHeight)
+  {
+    RayIntersections infiniteCylinderIntersection = IntersectInfiniteCylinder(R, Radius, true);
+    RayIntersections heightIntersection = IntersectHeightBounds(R, MinMaxHeight, true);
+    return ResolveIntersections(infiniteCylinderIntersection, heightIntersection);
+  }
+  
+  /**
+   * Tests whether the input ray (Unit Space) intersects the cylinder. Outputs the intersections in Unit Space.
+   */
+  void IntersectCylinder(in Ray R, out float4 Intersections[INTERSECTIONS_LENGTH], inout IntersectionListState ListState)
+  {
+    ListState.Length = 2;
+    
+    RayIntersections OuterResult = IntersectBoundedCylinder(R, MaxBounds.x, float2(MinBounds.z, MaxBounds.z));
+    setShapeIntersections(Intersections, ListState, 0, OuterResult);
+
+    // In CesiumJS there's a check for the inner cylinder, because clipping planes / exaggeration
+    // can adjust the min radius. But it currently is not supported in Cesium for Unreal, so we
+    // exclude the math here for simplicity.
+
+    // The same comment applies to the angle bounds of the cylinder.
+  }
+
+  /**
+  * Scales the input UV coordinates from [0, 1] to their values in UV Shape Space.  
+  */
+  float3 ScaleUVToShapeUVSpace(in float3 UV)
+  {
+    // For CYLINDER: Once clipping / exaggeration is supported, an offset + scale
+    // should be applied to its radius / height / angle. (See CesiumJS)
+    return UV;
+  }
+  
+ /**
+   * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
+   * ellipsoid geometry. Also outputs the Jacobian transpose for future use.
+   */
+  float3 ConvertUVToShapeUVSpace(in float3 PositionUV, out float3x3 JacobianT)
+  {
+    // First convert UV to "Unit Space derivative".
+    float3 unitPosition = UVToUnit(PositionUV);
+
+    float radius = length(unitPosition.xy); // [0, 1]
+    float3 radial = normalize(float3(unitPosition.xy, 0.0));
+
+    // Shape space height is defined within [0, 1]
+    float height = PositionUV.z; // [0, 1]
+    float3 z = float3(0.0, 0.0, 1.0);
+
+    float angle = atan2(unitPosition.y, unitPosition.x);
+    float3 east = normalize(float3(-unitPosition.y, unitPosition.x, 0.0));
+
+    JacobianT = float3x3(radial, z, east / length(unitPosition.xy));
+
+    // Then convert Unit Space to Shape UV Space.
+    angle = (angle + CZM_PI) / CZM_TWO_PI;
+    
+    // This currently does nothing for height / radius because the bounds of the cylinder are always the same.
+    // Once clipping / exaggeration are added, this must change. (See CesiumJS)
+    return float3(radius, angle, height);
+  }
+};
