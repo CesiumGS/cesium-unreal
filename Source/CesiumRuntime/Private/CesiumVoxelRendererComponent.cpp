@@ -132,6 +132,40 @@ void setVoxelBoxProperties(
       FVector4(0, 0, 0.02, 0));
 }
 
+/**
+ * @brief Describes the quality of a radian value relative to the axis it is
+ * defined in. This determines the math for the ray-intersection tested against
+ * that value in the voxel shader.
+ */
+enum AngleDescription : int8 {
+  None = 0,
+  Zero = 1,
+  UnderHalf = 2,
+  Half = 3,
+  OverHalf = 4
+};
+
+AngleDescription interpretCylinderAngle(double value) {
+  const double angleEpsilon = CesiumUtility::Math::Epsilon10;
+
+  if (value > angleEpsilon &&
+      value < CesiumUtility::Math::TwoPi - angleEpsilon) {
+    // angle range > PI
+    return AngleDescription::OverHalf;
+  }
+  if (value < CesiumUtility::Math::OnePi - angleEpsilon) {
+    // angle range < PI
+    return AngleDescription::UnderHalf;
+  }
+  if (value >= CesiumUtility::Math::OnePi - angleEpsilon &&
+      value <= CesiumUtility::Math::OnePi + angleEpsilon) {
+    // angle range ~= PI
+    return AngleDescription::Half;
+  }
+
+  return AngleDescription::None;
+}
+
 void setVoxelCylinderProperties(
     UCesiumVoxelRendererComponent* pVoxelComponent,
     UMaterialInstanceDynamic* pVoxelMaterial,
@@ -147,20 +181,132 @@ void setVoxelCylinderProperties(
       glm::dvec4(halfAxes[2], 0) * 0.02,
       glm::dvec4(box.getCenter(), 1));
 
-  // For now, only the height bounds and maximum radius are used.
-  // The angle will be relevant when clipping.
+  // The default bounds define the minimum and maximum extents for the shape's
+  // actual bounds, in the order of (radius, angle, height).
+  const FVector defaultMinimumBounds(0, -CesiumUtility::Math::OnePi, -1);
+  const FVector defaultMaximumBounds(1, CesiumUtility::Math::OnePi, 1);
+
+  const glm::dvec2& radialBounds = cylinder.getRadialBounds();
+  const glm::dvec2& angularBounds = cylinder.getAngularBounds();
+
+  double normalizedMinimumRadius = radialBounds.x / radialBounds.y;
+  double radiusUVScale = 1;
+  double radiusUVOffset = 0;
+  FIntPoint radiusFlags(0);
+
+  // Radius
+  {
+    double radiusRange = radialBounds.y - radialBounds.x;
+    bool hasNonzeroMinimumRadius = normalizedMinimumRadius > 0.0;
+    bool hasFlatRadius = radialBounds.x == radialBounds.y;
+
+    if (hasNonzeroMinimumRadius && radiusRange > 0.0) {
+      radiusUVScale = 1.0 / radiusRange;
+      radiusUVOffset = -radialBounds.x / radiusRange;
+    }
+
+    radiusFlags.X = hasNonzeroMinimumRadius;
+    radiusFlags.Y = hasFlatRadius;
+  }
+
+  // Defines the extents of the longitude in UV space. In other words, this
+  // expresses the minimum, maximum, and midpoint values of the longitude range
+  // in UV space.
+  FVector angleUVExtents = FVector::Zero();
+
+  double angleUVScale = 1.0;
+  double angleUVOffset = 0.0;
+  FIntVector4 angleFlags(0);
+  // Angle
+  {
+    const double defaultRange = CesiumUtility::Math::TwoPi;
+    bool isAngleReversed = angularBounds.y < angularBounds.x;
+    double angleRange =
+        angularBounds.y - angularBounds.x + isAngleReversed * defaultRange;
+    AngleDescription angleRangeIndicator = interpretCylinderAngle(angleRange);
+
+    // Refers to the discontinuity at angle -pi / pi.
+    const double discontinuityEpsilon =
+        CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
+    bool angleMinimumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+        angularBounds.x,
+        -CesiumUtility::Math::OnePi,
+        discontinuityEpsilon);
+    bool angleMaximumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+        angularBounds.y,
+        CesiumUtility::Math::OnePi,
+        discontinuityEpsilon);
+
+    angleFlags.X = angleRangeIndicator;
+    angleFlags.Y = angleMinimumHasDiscontinuity;
+    angleFlags.Z = angleMaximumHasDiscontinuity;
+    angleFlags.W = isAngleReversed;
+
+    // Compute the extents of the angle range in UV Shape Space.
+    double minimumAngleUV =
+        (angularBounds.x - defaultMinimumBounds.Y) / defaultRange;
+    double maximumAngleUV =
+        (angularBounds.y - defaultMinimumBounds.Y) / defaultRange;
+    // Given an angle range, represents the actual value where "0" would be
+    // in UV coordinates.
+    double angleRangeUVZero = 1.0 - angleRange / defaultRange;
+    // TODO: document this
+    double angleRangeUVZeroMid =
+        glm::fract(maximumAngleUV + 0.5 * angleRangeUVZero);
+
+    angleUVExtents =
+        FVector(minimumAngleUV, maximumAngleUV, angleRangeUVZeroMid);
+
+    const double angleEpsilon = CesiumUtility::Math::Epsilon10;
+    if (angleRange > angleEpsilon) {
+      angleUVScale = defaultRange / angleRange;
+      angleUVOffset = -(angularBounds.x - defaultMinimumBounds.Y) / angleRange;
+    }
+  }
+
+  // Shape Min Bounds = Cylinder Min (xyz)
+  // X = radius (normalized), Y = angle, Z = height (unused)
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape Min Bounds"),
           EMaterialParameterAssociation::LayerParameter,
           0),
-      FVector(0, -CesiumUtility::Math::OnePi, -1));
+      FVector(normalizedMinimumRadius, angularBounds.x, -1));
+
+  // Shape Max Bounds = Cylinder Max (xyz)
+  // X = radius (normalized), Y = angle, Z = height (unused)
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape Max Bounds"),
           EMaterialParameterAssociation::LayerParameter,
           0),
-      FVector(1, CesiumUtility::Math::OnePi, 1));
+      FVector(1.0, angularBounds.y, 1));
+
+  // Data is packed across multiple vec4s to conserve space.
+  // 0 = Radius Range Flags (xy)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 0"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(radiusFlags.X, radiusFlags.Y));
+
+  // 1 = Angle Range Flags (xyzw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 1"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(angleFlags));
+
+  // 2 = UV -> Shape UV Transforms (scale / offset)
+  // Radius (xy), Angle (zw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(radiusUVScale, radiusUVOffset, angleUVScale, angleUVOffset));
 
   // The transform and scale of the cylinder are handled in the component's
   // transform, so there is no need to duplicate it here. Instead, this
@@ -186,41 +332,28 @@ void setVoxelCylinderProperties(
       FVector4(0, 0, 0.02, 0));
 }
 
-/**
- * @brief Describes the quality of a radian value relative to the axis it is
- * defined in. This determines the math for the ray-intersection tested against
- * that value in the voxel shader.
- */
-enum CartographicAngleDescription : int8 {
-  None = 0,
-  Zero = 1,
-  UnderHalf = 2,
-  Half = 3,
-  OverHalf = 4
-};
-
-CartographicAngleDescription interpretLongitudeRange(double value) {
+AngleDescription interpretLongitudeRange(double value) {
   const double longitudeEpsilon = CesiumUtility::Math::Epsilon10;
 
   if (value >= CesiumUtility::Math::OnePi - longitudeEpsilon &&
       value < CesiumUtility::Math::TwoPi - longitudeEpsilon) {
     // longitude range > PI
-    return CartographicAngleDescription::OverHalf;
+    return AngleDescription::OverHalf;
   }
   if (value > longitudeEpsilon &&
       value < CesiumUtility::Math::OnePi - longitudeEpsilon) {
     // longitude range < PI
-    return CartographicAngleDescription::UnderHalf;
+    return AngleDescription::UnderHalf;
   }
   if (value < longitudeEpsilon) {
     // longitude range ~= 0
-    return CartographicAngleDescription::Zero;
+    return AngleDescription::Zero;
   }
 
-  return CartographicAngleDescription::None;
+  return AngleDescription::None;
 }
 
-CartographicAngleDescription interpretLatitudeValue(double value) {
+AngleDescription interpretLatitudeValue(double value) {
   const double latitudeEpsilon = CesiumUtility::Math::Epsilon10;
   const double zeroLatitudeEpsilon =
       CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
@@ -228,18 +361,18 @@ CartographicAngleDescription interpretLatitudeValue(double value) {
   if (value > -CesiumUtility::Math::OnePi + latitudeEpsilon &&
       value < -zeroLatitudeEpsilon) {
     // latitude between (-PI, 0)
-    return CartographicAngleDescription::UnderHalf;
+    return AngleDescription::UnderHalf;
   }
   if (value >= -zeroLatitudeEpsilon && value <= +zeroLatitudeEpsilon) {
     // latitude ~= 0
-    return CartographicAngleDescription::Half;
+    return AngleDescription::Half;
   }
   if (value > zeroLatitudeEpsilon) {
     // latitude between (0, PI)
-    return CartographicAngleDescription::OverHalf;
+    return AngleDescription::OverHalf;
   }
 
-  return CartographicAngleDescription::None;
+  return AngleDescription::None;
 }
 
 FVector getEllipsoidRadii(const ACesiumGeoreference* pGeoreference) {
@@ -321,7 +454,7 @@ void setVoxelEllipsoidProperties(
         CesiumUtility::Math::TwoPi,
         discontinuityEpsilon);
 
-    CartographicAngleDescription longitudeRangeIndicator =
+    AngleDescription longitudeRangeIndicator =
         interpretLongitudeRange(longitudeRange);
 
     longitudeFlags.X = longitudeRangeIndicator;
@@ -355,9 +488,9 @@ void setVoxelEllipsoidProperties(
   }
 
   // Latitude
-  CartographicAngleDescription latitudeMinValueFlag =
+  AngleDescription latitudeMinValueFlag =
       interpretLatitudeValue(minimumLatitude);
-  CartographicAngleDescription latitudeMaxValueFlag =
+  AngleDescription latitudeMaxValueFlag =
       interpretLatitudeValue(maximumLatitude);
   double latitudeUVScale = 1;
   double latitudeUVOffset = 0;

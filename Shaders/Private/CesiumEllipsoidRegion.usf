@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "CesiumRayIntersectionList.usf"
+#include "CesiumLongitudeWedge.usf"
 
 struct EllipsoidRegion
 {
@@ -460,12 +461,6 @@ struct EllipsoidRegion
       return NewRayIntersections(Multiply(farSide, -1), intersect);
     }
   }
-  
-  
-#define ANGLE_EQUAL_ZERO 1
-#define ANGLE_UNDER_HALF 2
-#define ANGLE_HALF 3
-#define ANGLE_OVER_HALF 4
 
   /**
   * Tests whether the input ray (Unit Space) intersects the ellipsoid region. Outputs the intersections in Unit Space.
@@ -760,7 +755,7 @@ struct EllipsoidRegion
   }
   
   
- /**
+  /**
    * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
    * ellipsoid geometry. Also outputs the Jacobian transpose for future use.
    */

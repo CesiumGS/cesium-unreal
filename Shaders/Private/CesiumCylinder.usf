@@ -7,11 +7,46 @@
 =============================================================================*/
 
 #include "CesiumRayIntersectionList.usf"
+#include "CesiumLongitudeWedge.usf"
 
 struct Cylinder
 {
   float3 MinBounds;
   float3 MaxBounds;
+  
+  float RadiusUVScale;
+  float RadiusUVOffset;
+  
+  float3 AngleUVExtents; // X = min, Y = max, Z = midpoint
+  float AngleUVScale;
+  float AngleUVOffset;
+
+  bool RadiusHasMinimumBound;
+  bool RadiusIsFlat;
+
+  uint AngleRangeFlag;
+  bool AngleMinHasDiscontinuity;
+  bool AngleMaxHasDiscontinuity;
+  bool AngleIsReversed;
+
+  void Initialize(float3 InMinBounds, float3 InMaxBounds, float4 PackedData0, float4 PackedData1, float4 PackedData2)
+  {
+    MinBounds = InMinBounds; // radius, angle, height
+    MaxBounds = InMaxBounds; // radius, angle, height
+
+    // Flags are packed in CesiumVoxelRendererComponent.cpp
+    RadiusHasMinimumBound = bool(PackedData0.x);
+
+    AngleRangeFlag = round(PackedData1.x);
+    AngleMinHasDiscontinuity = bool(PackedData1.y);
+    AngleMaxHasDiscontinuity = bool(PackedData1.z);
+    AngleIsReversed = bool(PackedData1.w);
+    
+    RadiusUVScale = PackedData2.x;
+    RadiusUVOffset = PackedData2.y;
+    AngleUVScale = PackedData2.z;
+    AngleUVOffset = PackedData2.w;
+  }
   
   /**
   * Tests whether the input ray intersects the volume defined by two xy-planes at the specified z values.
@@ -29,9 +64,9 @@ struct Cylinder
     Intersection min = NewIntersection(tmin, float3(0.0, 0.0, -1.0 * signFlip));
     Intersection max = NewIntersection(tmax, float3(0.0, 0.0, 1.0 * signFlip));
 
-    bool isTopEntry = zDirection < 0.0;
-    if (isTopEntry)
+    if (zDirection < 0.0)
     {
+      // Ray entered from the top plane down.
       return NewRayIntersections(max, min);
     }
     else
@@ -90,11 +125,56 @@ struct Cylinder
     RayIntersections OuterResult = IntersectBoundedCylinder(R, MaxBounds.x, float2(MinBounds.z, MaxBounds.z));
     setShapeIntersections(Intersections, ListState, 0, OuterResult);
 
-    // In CesiumJS there's a check for the inner cylinder, because clipping planes / exaggeration
-    // can adjust the min radius. But it currently is not supported in Cesium for Unreal, so we
-    // exclude the math here for simplicity.
+    if (OuterResult.Entry.t == NO_HIT)
+    {
+      return;
+    }
 
-    // The same comment applies to the angle bounds of the cylinder.
+    if (RadiusIsFlat)
+    {
+      // When the cylinder is perfectly thin it's necessary to sandwich the
+      // inner cylinder intersection inside the outer cylinder intersection.
+     
+      // Without this special case,
+      // [outerMin, outerMax, innerMin, innerMax] will bubble sort to
+      // [outerMin, innerMin, outerMax, innerMax] which will cause the back
+      // side of the cylinder to be invisible because it will think the ray
+      // is still inside the inner (negative) cylinder after exiting the
+      // outer (positive) cylinder.
+     
+      // With this special case,
+      // [outerMin, innerMin, innerMax, outerMax] will bubble sort to
+      // [outerMin, innerMin, innerMax, outerMax] which will work correctly.
+     
+      // Note: If Sort() changes its sorting function
+      // from bubble sort to something else, this code may need to change.
+      RayIntersections InnerResult = IntersectInfiniteCylinder(R, 1.0, false);
+      setSurfaceIntersection(Intersections, ListState, 0, OuterResult.Entry, true, true); // positive, entering
+      setSurfaceIntersection(Intersections, ListState, 1, InnerResult.Entry, false, true); // negative, entering
+      setSurfaceIntersection(Intersections, ListState, 2, InnerResult.Exit, false, false); // negative, exiting
+      setSurfaceIntersection(Intersections, ListState, 3, OuterResult.Exit, true, false); // positive, exiting
+    }
+    else if (RadiusHasMinimumBound)
+    {
+      RayIntersections InnerResult = IntersectInfiniteCylinder(R, MinBounds.x, false);
+      setShapeIntersection(Intersections, ListState, 1, InnerResult);
+    }
+
+    // TODO
+#if defined(CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_UNDER_HALF)
+        RayShapeIntersection wedgeIntersect = intersectRegularWedge(ray, u_cylinderRenderAngleMinMax);
+        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE, wedgeIntersect);
+#elif defined(CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_OVER_HALF)
+        RayShapeIntersection wedgeIntersects[2];
+        intersectFlippedWedge(ray, u_cylinderRenderAngleMinMax, wedgeIntersects);
+        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 0, wedgeIntersects[0]);
+        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 1, wedgeIntersects[1]);
+#elif defined(CYLINDER_HAS_RENDER_BOUNDS_ANGLE_RANGE_EQUAL_ZERO)
+        RayShapeIntersection wedgeIntersects[2];
+        intersectHalfPlane(ray, u_cylinderRenderAngleMinMax.x, wedgeIntersects);
+        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 0, wedgeIntersects[0]);
+        setShapeIntersection(ix, CYLINDER_INTERSECTION_INDEX_ANGLE + 1, wedgeIntersects[1]);
+#endif
   }
 
   /**
@@ -102,9 +182,20 @@ struct Cylinder
   */
   float3 ScaleUVToShapeUVSpace(in float3 UV)
   {
-    // For CYLINDER: Once clipping / exaggeration is supported, an offset + scale
-    // should be applied to its radius / height / angle. (See CesiumJS)
-    return UV;
+    float radius = UV.x;
+    if (RadiusHasMinimumBound)
+    {
+      radius /= RadiusUVScale;
+    }
+
+    // Convert from [0, 1] to radians [-pi, pi]
+    float angle = UV.y * CZM_TWO_PI;
+    if (AngleRangeFlag > 0)
+    {
+      angle /= AngleUVScale;
+    }
+    
+    return float3(radius, angle, UV.z);
   }
   
  /**
@@ -129,10 +220,39 @@ struct Cylinder
     JacobianT = float3x3(radial, z, east / length(unitPosition.xy));
 
     // Then convert Unit Space to Shape UV Space.
-    angle = (angle + CZM_PI) / CZM_TWO_PI;
+    // Radius: shift and scale to [0, 1]
+    float radiusUV = radius;
+    if (RadiusHasMinimumBound)
+    {
+      radiusUV = radiusUV * RadiusUVScale + RadiusUVOffset;
+    }
     
-    // This currently does nothing for height / radius because the bounds of the cylinder are always the same.
-    // Once clipping / exaggeration are added, this must change. (See CesiumJS)
-    return float3(radius, angle, height);
+    // Angle: shift and scale to [0, 1]
+    float angleUV = (angle + CZM_PI) / CZM_TWO_PI;
+
+    // Correct the angle when max < min
+    // Technically this should compare against min angle, but it has precision problems so compare against the middle of empty space.
+    if (AngleIsReversed)
+    {
+      angleUV += float(angleUV < AngleUVExtents.z);
+    }
+
+    // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
+    if (AngleMinHasDiscontinuity)
+    {
+      angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
+    }
+
+    if (AngleMaxHasDiscontinuity)
+    {
+      angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
+    }
+    
+    if (AngleRangeFlag > 0)
+    {
+      angleUV = angleUV * AngleUVScale + AngleUVOffset;
+    }
+    
+    return float3(radiusUV, angleUV, height);
   }
 };
