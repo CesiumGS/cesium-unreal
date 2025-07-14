@@ -68,15 +68,6 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString PropertyTableName;
-
-  /**
-   * The null feature ID for the feature ID set. This value indicates that no
-   * feature is associated with the vertex or texel containing the value. If no
-   * such value is specified, this defaults to -1, which prevents it from being
-   * unnecessarily included in the generated material.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  bool bHasNullFeatureId = false;
 };
 
 /**
@@ -253,10 +244,9 @@ struct CESIUMRUNTIME_API FCesiumPropertyAttributePropertyDescription {
 
   /**
    * Describes how the property will be encoded as data on the GPU, if possible.
-   * TODO: Make this EditAnywhere once coercive encoding is supported.
    */
-   UPROPERTY()
-   FCesiumMetadataEncodingDetails EncodingDetails;
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumMetadataEncodingDetails EncodingDetails;
 };
 
 /**

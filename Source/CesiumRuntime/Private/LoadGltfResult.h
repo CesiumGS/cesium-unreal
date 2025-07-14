@@ -32,13 +32,6 @@
 
 namespace LoadGltfResult {
 /**
- * Represents the result of loading a glTF voxel primitive on a load thread.
- */
-struct LoadedVoxelResult {
-  TMap<FString, ValidatedVoxelBuffer> attributeBuffers;
-};
-
-/**
  * Represents the result of loading a glTF primitive on a load thread.
  * Temporarily holds render data that will be used in the Unreal material, as
  * well as any data that needs to be transferred to the corresponding
@@ -67,12 +60,9 @@ struct LoadedPrimitiveResult {
   int32_t materialIndex = -1;
 
   glm::dmat4x4 transform{1.0};
-#if ENGINE_VERSION_5_4_OR_HIGHER
+
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
-#else
-  TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-      pCollisionMesh = nullptr;
-#endif
+
   std::string name{};
 
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
@@ -83,11 +73,18 @@ struct LoadedPrimitiveResult {
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
+
   /**
    * A map of feature ID set names to their corresponding texture coordinate
    * indices in the Unreal mesh.
    */
   TMap<FString, uint32_t> FeaturesMetadataTexCoordParameters;
+
+  /**
+   * A map of accessors indices that point to feature ID attributes to the index
+   * of the same feature ID set in CesiumPrimitiveFeatures.
+   */
+  std::unordered_map<int32_t, int32_t> AccessorToFeatureIdIndexMap;
 
   bool isUnlit = false;
 
@@ -163,7 +160,10 @@ struct LoadedPrimitiveResult {
 
 #pragma endregion
 
-  std::optional<LoadedVoxelResult> voxelResult = std::nullopt;
+  /**
+   * The index of the property attribute that is used by voxels.
+   */
+  std::optional<int32_t> voxelPropertyAttributeIndex;
 };
 
 /**
@@ -218,13 +218,5 @@ struct LoadedModelResult {
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
-
-  /**
-   * Points to the actual EXT_structural_metadata extension. Used for voxels
-   * because property attributes are not yet supported.
-   *
-   * TODO: Expand FCesiumModelMetadata so this is not necessary.
-   */
-  const CesiumGltf::ExtensionModelExtStructuralMetadata* pMetadata = nullptr;
 };
 } // namespace LoadGltfResult

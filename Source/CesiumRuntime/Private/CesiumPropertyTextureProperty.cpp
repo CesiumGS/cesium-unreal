@@ -512,6 +512,30 @@ int32 UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger(
       });
 }
 
+int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64(
+    UPARAM(ref) const FCesiumPropertyTextureProperty& Property,
+    const FVector2D& UV,
+    int64 DefaultValue) {
+  return propertyTexturePropertyCallback<int64>(
+      Property._property,
+      Property._valueType,
+      Property._normalized,
+      [&UV, DefaultValue](const auto& view) -> int64 {
+        if (view.status() !=
+            CesiumGltf::PropertyTexturePropertyViewStatus::Valid) {
+          return DefaultValue;
+        }
+        auto maybeValue = view.get(UV.X, UV.Y);
+        if (maybeValue) {
+          auto value = *maybeValue;
+          return CesiumGltf::MetadataConversions<int64, decltype(value)>::
+              convert(value)
+                  .value_or(DefaultValue);
+        }
+        return DefaultValue;
+      });
+}
+
 float UCesiumPropertyTexturePropertyBlueprintLibrary::GetFloat(
     UPARAM(ref) const FCesiumPropertyTextureProperty& Property,
     const FVector2D& UV,

@@ -1273,11 +1273,12 @@ private:
       UCesiumEllipsoid* NewEllpisoid);
 
   /**
-   * Initializes the CesiumVoxelRenderer component for rendering voxel data.
+   * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering
+   * voxel data.
    */
-  void initializeVoxelRenderer(
-      const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
-          VoxelExtension);
+  void
+  createVoxelRenderer(const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
+                          VoxelExtension);
 
   /**
    * Writes the values of all properties of this actor into the
@@ -1302,8 +1303,8 @@ private:
    *
    * @param tiles The tiles
    */
-  void
-  showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
+  void showTilesToRender(const std::vector<CesiumUtility::IntrusivePointer<
+                             Cesium3DTilesSelection::Tile>>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -1386,7 +1387,8 @@ private:
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
   // tilesToHideThisFrame may be hidden immediately.
-  std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
+  std::vector<CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>
+      _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
 

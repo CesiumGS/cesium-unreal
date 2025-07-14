@@ -238,17 +238,20 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(this);
   }
 
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        pRoot,
-        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-    this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
-        this,
-        &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
+  if (this->ResolvedGeoreference) {
+    UCesium3DTilesetRoot* pRoot =
+        Cast<UCesium3DTilesetRoot>(this->RootComponent);
+    if (pRoot) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          pRoot,
+          &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+      this->ResolvedGeoreference->OnEllipsoidChanged.AddUniqueDynamic(
+          this,
+          &ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged);
 
-    // Update existing tile positions, if any.
-    pRoot->HandleGeoreferenceUpdated();
+      // Update existing tile positions, if any.
+      pRoot->HandleGeoreferenceUpdated();
+    }
   }
 
   return this->ResolvedGeoreference;
@@ -671,7 +674,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
-      this->_pTileset->getRootTile();
+      this->_pTileset ? this->_pTileset->getRootTile() : nullptr;
   if (!pRootTile) {
     return;
   }
@@ -1169,10 +1172,20 @@ void ACesium3DTileset::LoadTileset() {
 #endif
 
   this->_pTileset->getRootTileAvailableEvent().thenImmediately([thiz = this]() {
-    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pVoxelExtension =
-        thiz->_pTileset ? thiz->_pTileset->getVoxelContentExtension() : nullptr;
+    if (!thiz->_pTileset || !thiz->_pTileset->getRootTile()) {
+      return;
+    }
+
+    const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
+        thiz->_pTileset->getRootTile()->getContent().getExternalContent();
+    if (!pExternalContent) {
+      return;
+    }
+
+    const auto* pVoxelExtension = pExternalContent->getExtension<
+        Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
-      thiz->initializeVoxelRenderer(*pVoxelExtension);
+      thiz->createVoxelRenderer(*pVoxelExtension);
     }
   });
 
@@ -1273,6 +1286,11 @@ void ACesium3DTileset::DestroyTileset() {
     CesiumLifetime::destroyComponentRecursively(this->_pVoxelRendererComponent);
     this->_pVoxelRendererComponent = nullptr;
   }
+
+  // Tiles are about to be deleted, so we should not keep raw pointers on them.
+  // This would crash in Tick() when if refresh events were triggered
+  // frequently.
+  this->_tilesToHideNextFrame.clear();
 
   if (!this->_pTileset) {
     return;
@@ -1590,7 +1608,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
-  return Cesium3DTilesSelection::ViewState::create(
+  return Cesium3DTilesSelection::ViewState(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
@@ -1684,7 +1702,8 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 namespace {
 template <typename Func>
 void forEachRenderableTile(const auto& tiles, Func&& f) {
-  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+  for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
+           pTile : tiles) {
     if (!pTile ||
         pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1712,13 +1731,17 @@ void forEachRenderableTile(const auto& tiles, Func&& f) {
 }
 
 void removeVisibleTilesFromList(
-    std::vector<Cesium3DTilesSelection::Tile*>& list,
-    const std::vector<Cesium3DTilesSelection::Tile*>& visibleTiles) {
+    std::vector<CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>&
+        list,
+    const std::vector<
+        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>&
+        visibleTiles) {
   if (list.empty()) {
     return;
   }
 
-  for (Cesium3DTilesSelection::Tile* pTile : visibleTiles) {
+  for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
+           pTile : visibleTiles) {
     auto it = std::find(list.begin(), list.end(), pTile);
     if (it != list.end()) {
       list.erase(it);
@@ -1735,11 +1758,15 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+void hideTiles(
+    const std::vector<
+        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
   forEachRenderableTile(
       tiles,
-      [](Cesium3DTilesSelection::Tile* /*pTile*/, UCesiumGltfComponent* pGltf) {
+      [](const CesiumUtility::IntrusivePointer<
+             Cesium3DTilesSelection::Tile>& /*pTile*/,
+         UCesiumGltfComponent* pGltf) {
         if (pGltf->IsVisible()) {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
           pGltf->SetVisibility(false, true);
@@ -1758,11 +1785,14 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
  * list. This includes tiles that are fading out.
  */
 void removeCollisionForTiles(
-    const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
+    const std::unordered_set<
+        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RemoveCollisionForTiles)
   forEachRenderableTile(
       tiles,
-      [](Cesium3DTilesSelection::Tile* /*pTile*/, UCesiumGltfComponent* pGltf) {
+      [](const CesiumUtility::IntrusivePointer<
+             Cesium3DTilesSelection::Tile>& /*pTile*/,
+         UCesiumGltfComponent* pGltf) {
         TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
         pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
       });
@@ -1843,10 +1873,11 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         ResolveGeoreference();
     check(Georeference);
 
-    for (Cesium3DTilesSelection::Tile* tile : result.tilesToRenderThisFrame) {
+    for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
+             pTile : result.tilesToRenderThisFrame) {
       CesiumGeometry::OrientedBoundingBox obb =
           Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
-              tile->getBoundingVolume(),
+              pTile->getBoundingVolume(),
               Georeference->GetEllipsoid()->GetNativeEllipsoid());
 
       FVector unrealCenter =
@@ -1857,9 +1888,9 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           TEXT("ID %s (%p)"),
           UTF8_TO_TCHAR(
               Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
-                  tile->getTileID())
+                  pTile->getTileID())
                   .c_str()),
-          tile);
+          pTile.get());
 
       DrawDebugString(World, unrealCenter, text, nullptr, FColor::Red, 0, true);
     }
@@ -1943,13 +1974,15 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 }
 
 void ACesium3DTileset::showTilesToRender(
-    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+    const std::vector<
+        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
   forEachRenderableTile(
       tiles,
       [&RootComponent = this->RootComponent,
        &BodyInstance = this->BodyInstance](
-          Cesium3DTilesSelection::Tile* pTile,
+          const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
+              pTile,
           UCesiumGltfComponent* pGltf) {
         applyActorCollisionSettings(BodyInstance, pGltf);
 
@@ -1988,7 +2021,8 @@ static void updateTileFades(const auto& tiles, bool fadingIn) {
   forEachRenderableTile(
       tiles,
       [fadingIn](
-          Cesium3DTilesSelection::Tile* pTile,
+          const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
+              pTile,
           UCesiumGltfComponent* pGltf) {
         float percentage = pTile->getContent()
                                .getRenderContent()
@@ -2075,11 +2109,22 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
   if (this->_captureMovieMode) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
-    pResult = &this->_pTileset->updateViewOffline(frustums);
+    pResult = &this->_pTileset->updateViewGroupOffline(
+        this->_pTileset->getDefaultViewGroup(),
+        frustums);
   } else {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
-    pResult = &this->_pTileset->updateView(frustums, DeltaTime);
+    pResult = &this->_pTileset->updateViewGroup(
+        this->_pTileset->getDefaultViewGroup(),
+        frustums,
+        DeltaTime);
   }
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTiles)
+    this->_pTileset->loadTiles();
+  }
+
   updateLastViewUpdateResultState(*pResult);
 
   removeVisibleTilesFromList(
@@ -2092,10 +2137,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         pResult->tileScreenSpaceErrorThisFrame);
   } else {
     removeCollisionForTiles(pResult->tilesFadingOut);
-    hideTiles(_tilesToHideNextFrame);
+    hideTiles(this->_tilesToHideNextFrame);
 
     _tilesToHideNextFrame.clear();
-    for (Cesium3DTilesSelection::Tile* pTile : pResult->tilesFadingOut) {
+    for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
+             pTile : pResult->tilesFadingOut) {
       Cesium3DTilesSelection::TileRenderContent* pRenderContent =
           pTile->getContent().getRenderContent();
       if (!this->UseLodTransitions ||
@@ -2330,10 +2376,14 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 }
 #endif
 
-void ACesium3DTileset::initializeVoxelRenderer(
+void ACesium3DTileset::createVoxelRenderer(
     const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& VoxelExtension) {
-  const FCesiumVoxelClassDescription* pVoxelClassDescription =
-      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
+  const Cesium3DTilesSelection::Tile* pRootTile =
+      this->_pTileset->getRootTile();
+  if (!pRootTile) {
+    // Not sure how this would happen, but just in case...
+    return;
+  }
 
   // Validate that voxel metadata is present.
   const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
@@ -2343,18 +2393,13 @@ void ACesium3DTileset::initializeVoxelRenderer(
         LogCesium,
         Error,
         TEXT(
-            "Tileset %s contains voxels, but is missing a metadata schema to describe its contents."),
+            "Tileset %s contains voxels but is missing a metadata schema to describe its contents."),
         *this->GetName())
     return;
   }
 
-  const Cesium3DTilesSelection::Tile* pRootTile =
-      this->_pTileset->getRootTile();
-  if (!pRootTile) {
-    // Not sure how this could happen, but just in case...
-    CESIUM_ASSERT(false);
-    return;
-  }
+  const FCesiumVoxelClassDescription* pVoxelClassDescription =
+      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
 
   this->_pVoxelRendererComponent = UCesiumVoxelRendererComponent::Create(
       this,

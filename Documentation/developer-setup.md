@@ -20,7 +20,6 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 - To build Cesium for Unreal, you must first compile and cmake-install cesium-native and its dependencies to `Plugins/cesium-unreal/Source/ThirdParty`.
 - cesium-native is built and installed using CMake and the `CMakeLists.txt` found in the `cesium-unreal/extern` directory, _not_ the one in the `cesium-unreal/extern/cesium-native` directory. When installing from this directory, the default install path will put cesium-native where Cesium for Unreal expects to find it.
 - You must use the same compiler to build cesium-native and Cesium for Unreal.
-- On Windows, packaging the Cesium for Unreal plugin on Windows requires Visual Studio 2017. This means you must also build cesium-native with Visual Studio 2017 in order for plugin packaging to be successful. But if you're not concerned with packaging, you can use Visual Studio 2019 exclusively.
 - The Unreal project "DebugGame" configuration tries to use the debug build of cesium-native if one is built and installed, and falls back on the release build otherwise. The "Development" and "Shipping" configurations use the release build exclusively.
 - Our CI build process checks for formatting using clang, and fails if code is improperly formatted. To run clang on all source code before committing, run `npm ci` to install node modules, then `npm run format`.
 
@@ -37,8 +36,8 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 
 ## Deployment instructions
 
-- The [Packaging Guide](packaging-guide.md) describes how to create a package and use it in a local Unreal installation. This is similar to installing it from the Unreal Engine Marketplace, but allows testing non-release branches.
 - The [Release Process](release-process.md) describes the necessary steps to publish a new version of the plugin to the Unreal Marketplace.
+- To package the plugin, take a look at the scripts that do the packaging on [GitHub Actions](https://github.com/CesiumGS/cesium-unreal/blob/main/.github/workflows/build.yml).
 
 ## Run the tests
 

@@ -5,6 +5,7 @@
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
 #include "CesiumUtility/CreditSystem.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "ScreenCreditsWidget.h"
@@ -21,7 +22,6 @@
 #include "Modules/ModuleManager.h"
 #endif
 
-/*static*/ UObject* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 namespace {
 
 /**
@@ -42,14 +42,9 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
         TEXT("No valid level for findValidDefaultCreditSystem"));
     return nullptr;
   }
-#if ENGINE_VERSION_5_4_OR_HIGHER
+
   TArray<TObjectPtr<AActor>>& Actors = Level->Actors;
-  using LevelActorPointer = TObjectPtr<AActor>*;
-#else
-  TArray<AActor*>& Actors = Level->Actors;
-  using LevelActorPointer = AActor**;
-#endif
-  LevelActorPointer DefaultCreditSystemPtr =
+  TObjectPtr<AActor>* DefaultCreditSystemPtr =
       Actors.FindByPredicate([](AActor* const& InItem) {
         if (!IsValid(InItem)) {
           return false;
@@ -89,17 +84,6 @@ FName ACesiumCreditSystem::DEFAULT_CREDITSYSTEM_TAG =
 
 /*static*/ ACesiumCreditSystem*
 ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
-  // Blueprint loading can only happen in a constructor, so we instantiate a
-  // loader object that retrieves the blueprint class in its constructor. We can
-  // destroy the loader immediately once it's done since it will have already
-  // set CesiumCreditSystemBP.
-  if (!CesiumCreditSystemBP) {
-    UCesiumCreditSystemBPLoader* bpLoader =
-        NewObject<UCesiumCreditSystemBPLoader>();
-    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP.LoadSynchronous();
-    bpLoader->ConditionalBeginDestroy();
-  }
-
   UWorld* world = WorldContextObject->GetWorld();
   // This method can be called by actors even when opening the content browser.
   if (!IsValid(world)) {
@@ -154,8 +138,12 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     spawnParameters.OverrideLevel = world->PersistentLevel;
+    UCesiumCreditSystemBPLoader* bpLoader =
+        GEngine->GetEngineSubsystem<UCesiumCreditSystemBPLoader>();
+    UClass* CesiumCreditSystemBP =
+        Cast<UClass>(bpLoader->CesiumCreditSystemBP.LoadSynchronous());
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
-        Cast<UClass>(CesiumCreditSystemBP),
+        CesiumCreditSystemBP,
         spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
     // this function without a valid world context object.
@@ -333,13 +321,14 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     return;
   }
 
+  const CesiumUtility::CreditsSnapshot& credits = _pCreditSystem->getSnapshot();
+
   const std::vector<CesiumUtility::Credit>& creditsToShowThisFrame =
-      _pCreditSystem->getCreditsToShowThisFrame();
+      credits.currentCredits;
 
   // if the credit list has changed, we want to reformat the credits
-  CreditsUpdated =
-      creditsToShowThisFrame.size() != _lastCreditsCount ||
-      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
+  CreditsUpdated = creditsToShowThisFrame.size() != _lastCreditsCount ||
+                   credits.removedCredits.size() > 0;
 
   if (CreditsUpdated) {
     FString OnScreenCredits;
@@ -385,7 +374,6 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
     CreditsWidget->SetCredits(Credits, OnScreenCredits);
   }
-  _pCreditSystem->startNextFrame();
 }
 
 namespace {

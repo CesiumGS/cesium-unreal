@@ -2,44 +2,21 @@
 
 #pragma once
 
+#include "CesiumPrimitiveMetadata.h"
 #include "CoreMinimal.h"
+
 #include <CesiumGeometry/OctreeTileID.h>
 #include <unordered_map>
 
 #include "CesiumGltfVoxelComponent.generated.h"
 
-namespace CesiumGltf {
-struct Model;
-struct MeshPrimitive;
-struct PropertyAttribute;
-struct Accessor;
-struct BufferView;
-struct Buffer;
-} // namespace CesiumGltf
-
-
-class ACesium3DTileset;
-
 /**
- * Pointers to a buffer that has already been validated, such that:
- * - The accessor count is equal to the number of total voxels in the grid.
- * - The buffer view on the buffer is valid.
+ * A minimal component representing a glTF voxel primitive.
  *
- * This should be replaced when PropertyAttributeProperty is supported, since it
- * is functionally the same (and the latter would be more robust).
- */
-struct ValidatedVoxelBuffer {
-  const CesiumGltf::Buffer* pBuffer;
-  const CesiumGltf::BufferView* pBufferView;
-};
-
-/**
- * A barebones component representing a glTF voxel primitive.
- *
- * The voxel rendering for an entire tileset is done singlehandedly by
- * UCesiumVoxelRendererComponent. Therefore, this component does not hold any
- * mesh data itself. Instead, it stores pointers to the glTF primitive for easy
- * retrieval of the voxel attributes.
+ * This component is not a mesh component. Instead, it contains the property
+ * attribute used for the voxel primitive. It is \ref
+ * UCesiumVoxelRendererComponent that handles voxel rendering for the entire
+ * tileset.
  */
 UCLASS()
 class UCesiumGltfVoxelComponent : public USceneComponent {
@@ -52,6 +29,6 @@ public:
 
   void BeginDestroy();
 
-  CesiumGeometry::OctreeTileID tileId;
-  TMap<FString, ValidatedVoxelBuffer> attributeBuffers;
+  CesiumGeometry::OctreeTileID TileId;
+  FCesiumPropertyAttribute PropertyAttribute;
 };

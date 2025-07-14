@@ -9,8 +9,4 @@ UCesiumGltfVoxelComponent::UCesiumGltfVoxelComponent() {
 
 UCesiumGltfVoxelComponent::~UCesiumGltfVoxelComponent() {}
 
-void UCesiumGltfVoxelComponent::BeginDestroy() {
-  this->attributeBuffers.Empty();
-
-  Super::BeginDestroy();
-}
+void UCesiumGltfVoxelComponent::BeginDestroy() { Super::BeginDestroy(); }

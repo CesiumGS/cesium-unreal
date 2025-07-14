@@ -1,0 +1,54 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*===========================
+  CesiumVectorUtility.usf: General utility for handling vectors (e.g., float3s).
+=============================*/
+
+float MaxComponent(float3 v)
+{
+  return max(max(v.x, v.y), v.z);
+}
+
+float MinComponent(float3 v)
+{
+  return min(min(v.x, v.y), v.z);
+}
+
+bool3 Equal(float3 v1, float3 v2)
+{
+  return bool3(v1.x == v2.x, v1.y == v2.y, v1.z == v2.z);
+}
+
+bool IsInRange(in float3 v, in float3 min, in float3 max)
+{
+  bool3 inRange = (clamp(v, min, max) == v);
+  return inRange.x && inRange.y && inRange.z;
+}
+
+/**
+* Construct an integer value (little endian) from two normalized uint8 values.
+*/
+int ConstructInt(in float2 value)
+{
+  return int(value.x * 255.0) + (256 * int(value.y * 255.0));
+}
+
+/**
+* Converts a position from Unit Shape Space coordinates to UV Space.
+* [-1, -1] => [0, 1]
+*/
+float3 UnitToUV(float3 UnitPosition)
+{
+  return 0.5 * UnitPosition + 0.5;
+}
+
+/**
+* Converts a position from UV Space coordinates to Unit Shape Space.
+* [0, 1] => [-1, -1]
+*/
+float3 UVToUnit(float3 UVPosition)
+{
+  return 2.0 * UVPosition - 1.0;
+}

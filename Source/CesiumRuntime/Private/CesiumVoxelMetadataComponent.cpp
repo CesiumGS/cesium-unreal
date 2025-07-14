@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumVoxelMetadataComponent.h"
 
@@ -12,6 +12,7 @@
 #include "EncodedMetadataConversions.h"
 #include "GenerateMaterialUtility.h"
 #include "Misc/FileHelper.h"
+#include "ShaderCore.h"
 #include "UnrealMetadataConversions.h"
 
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
@@ -54,17 +55,16 @@ using namespace GenerateMaterialUtility;
 
 static const FString RaymarchDescription = "Voxel Raymarch";
 
-UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent()
-    : UActorComponent() {
+UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UVolumeTexture> DefaultVolumeTexture;
+    ConstructorHelpers::FObjectFinder<UTexture> DefaultVolumeTexture;
     FConstructorStatics()
         : DefaultVolumeTexture(
               TEXT("/Engine/EngineResources/DefaultVolumeTexture")) {}
   };
   static FConstructorStatics ConstructorStatics;
-  DefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
+  pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
 
 #if WITH_EDITOR
   this->UpdateShaderPreview();
@@ -129,11 +129,13 @@ GetValueTypeFromClassProperty(const Cesium3DTiles::ClassProperty& Property) {
 
 void AutoFillVoxelClassDescription(
     FCesiumVoxelClassDescription& Description,
-    const std::string& VoxelClassID,
-    const Cesium3DTiles::Class& VoxelClass) {
-  Description.ID = VoxelClassID.c_str();
+    const Cesium3DTiles::Schema& TilesetSchema,
+    const std::string& VoxelClassID) {
+  Description.ID = TilesetSchema.id.c_str();
 
-  for (const auto& propertyIt : VoxelClass.properties) {
+  const Cesium3DTiles::Class& voxelClass =
+      TilesetSchema.classes.at(VoxelClassID);
+  for (const auto& propertyIt : voxelClass.properties) {
     auto pExistingProperty = Description.Properties.FindByPredicate(
         [&propertyName = propertyIt.first](
             const FCesiumPropertyAttributePropertyDescription&
@@ -173,12 +175,19 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
   const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
   const Cesium3DTilesSelection::Tileset* pTileset =
       pOwner ? pOwner->GetTileset() : nullptr;
-  if (!pTileset) {
+  if (!pTileset || !pTileset->getRootTile()) {
     return;
   }
 
-  const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pVoxelExtension =
-      pTileset->getVoxelContentExtension();
+  const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
+      pTileset->getRootTile()->getContent().getExternalContent();
+  if (!pExternalContent) {
+    return;
+  }
+
+  const auto* pVoxelExtension =
+      pExternalContent
+          ->getExtension<Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
   if (!pVoxelExtension) {
     UE_LOG(
         LogCesium,
@@ -189,7 +198,6 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
     return;
   }
 
-  // TODO turn into helper? function
   const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
       pTileset->getMetadata();
   if (!pMetadata || !pMetadata->schema) {
@@ -206,8 +214,8 @@ void UCesiumVoxelMetadataComponent::AutoFill() {
 
   AutoFillVoxelClassDescription(
       this->Description,
-      voxelClassId,
-      pMetadata->schema->classes.at(voxelClassId));
+      *pMetadata->schema,
+      voxelClassId);
 
   Super::PostEditChange();
 
@@ -221,25 +229,25 @@ struct VoxelMetadataClassification : public MaterialNodeClassification {
 };
 
 struct MaterialResourceLibrary {
-  FString HlslShaderTemplate;
+  FString ShaderTemplate;
   UMaterialFunctionMaterialLayer* MaterialLayerTemplate;
-  UVolumeTexture* DefaultVolumeTexture;
+  TObjectPtr<UTexture> pDefaultVolumeTexture;
 
   MaterialResourceLibrary() {
-    static FString ContentDir = IPluginManager::Get()
-                                    .FindPlugin(TEXT("CesiumForUnreal"))
-                                    ->GetContentDir();
-    FFileHelper::LoadFileToString(
-        HlslShaderTemplate,
-        *(ContentDir / "Materials/CesiumVoxelTemplate.hlsl"));
+    FString Path = GetShaderSourceFilePath(
+        "/Plugin/CesiumForUnreal/Private/CesiumVoxelTemplate.usf");
+
+    if (!Path.IsEmpty()) {
+      FFileHelper::LoadFileToString(ShaderTemplate, *Path);
+    }
 
     MaterialLayerTemplate = LoadObjFromPath<UMaterialFunctionMaterialLayer>(
         "/CesiumForUnreal/Materials/Layers/ML_CesiumVoxel");
   }
 
   bool isValid() const {
-    return !HlslShaderTemplate.IsEmpty() && MaterialLayerTemplate &&
-           DefaultVolumeTexture;
+    return !ShaderTemplate.IsEmpty() && MaterialLayerTemplate &&
+           pDefaultVolumeTexture;
   }
 };
 
@@ -304,7 +312,8 @@ struct CustomShaderBuilder {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
       DeclareShaderProperties +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareShaderProperties += " " + DefaultValueName + ";";
     }
   }
@@ -371,7 +380,8 @@ struct CustomShaderBuilder {
       // Declare the value transforms underneath the corresponding data texture
       // variable. e.g., float myProperty_SCALE;
       DeclareDataTextureVariables +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareDataTextureVariables += " " + ScaleName + ";";
       SetDataTextures +=
           "\nDataTextures." + ScaleName + " = " + ScaleName + ";";
@@ -383,7 +393,8 @@ struct CustomShaderBuilder {
     if (Property.PropertyDetails.bHasOffset) {
       FString OffsetName = PropertyName + MaterialPropertyOffsetSuffix;
       DeclareDataTextureVariables +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareDataTextureVariables += " " + OffsetName + ";";
       SetDataTextures +=
           "\nDataTextures." + OffsetName + " = " + OffsetName + ";";
@@ -409,7 +420,8 @@ struct CustomShaderBuilder {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
       DeclareDataTextureVariables +=
-          "\n\t" + isNormalizedProperty ? normalizedHlslType : encodedHlslType;
+          "\n\t" +
+          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
       DeclareDataTextureVariables += " " + DefaultValueName + ";";
       SetDataTextures +=
           "\nDataTextures." + DefaultValueName + " = " + DefaultValueName + ";";
@@ -503,7 +515,7 @@ ClassifyNodes(UMaterialFunctionMaterialLayer* Layer) {
       UMaterialExpressionMaterialFunctionCall* pFunctionCall =
           Cast<UMaterialExpressionMaterialFunctionCall>(pNode);
       const FString& FunctionName =
-          pFunctionCall && pFunctionCall->MaterialFunction
+          (pFunctionCall && pFunctionCall->MaterialFunction)
               ? pFunctionCall->MaterialFunction->GetName()
               : FString();
       if (FunctionName.Contains("BreakOutFloat4")) {
@@ -613,8 +625,6 @@ static void GenerateNodesForMetadataPropertyTransforms(
     OffsetInput.InputName = FName(ParameterName);
     OffsetInput.Input.Expression = Parameter;
   }
-
-  FString swizzle = GetSwizzleForEncodedType(Type);
 
   if (PropertyDetails.bHasNoDataValue) {
     NodeY += Incr;
@@ -762,9 +772,9 @@ static void GenerateMaterialNodes(
   NodeY = DataSectionY;
 
   // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
-  // CesiumVoxelTemplate.hlsl contains "%s" formatters that will be replaced
+  // CesiumVoxelTemplate.usf contains "%s" formatters that will be replaced
   // with generated code.
-  FLazyPrintf LazyPrintf(*ResourceLibrary.HlslShaderTemplate);
+  FLazyPrintf LazyPrintf(*ResourceLibrary.ShaderTemplate);
   CustomShaderBuilder Builder;
 
   const TArray<FCesiumPropertyAttributePropertyDescription>& Properties =
@@ -798,7 +808,8 @@ static void GenerateMaterialNodes(
     PropertyData->MaterialExpressionEditorY = NodeY;
     // Set the initial value to default volume texture to avoid compilation
     // errors with the default 2D texture.
-    PropertyData->Texture = ResourceLibrary.DefaultVolumeTexture;
+    PropertyData->Texture =
+        Cast<UTexture>(ResourceLibrary.pDefaultVolumeTexture);
     MaterialState.AutoGeneratedNodes.Add(PropertyData);
 
     FCustomInput& PropertyInput = RaymarchNode->Inputs.Emplace_GetRef();
@@ -972,7 +983,7 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
   }
 
   MaterialResourceLibrary ResourceLibrary;
-  ResourceLibrary.DefaultVolumeTexture = this->DefaultVolumeTexture;
+  ResourceLibrary.pDefaultVolumeTexture = this->pDefaultVolumeTexture;
   if (!ResourceLibrary.isValid()) {
     UE_LOG(
         LogCesium,

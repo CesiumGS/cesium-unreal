@@ -1,0 +1,307 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumVoxelOctree.usf: Utility for initializing and traversing a voxel octree.
+=============================================================================*/
+
+#include "CesiumShape.usf"
+
+// An octree node is encoded by 9 texels.
+// The first texel contains the index of the node's parent.
+// The other texels contain the indices of the node's children.
+#define TEXELS_PER_NODE 9
+
+#define OCTREE_MAX_LEVELS 32 // Hardcoded because HLSL doesn't like variable length loops
+
+#define OCTREE_FLAG_EMPTY 0
+#define OCTREE_FLAG_LEAF 1
+#define OCTREE_FLAG_INTERNAL 2
+
+#define MINIMUM_STEP_SCALAR (0.02)
+#define SHIFT_EPSILON (0.001)
+
+struct Node
+{
+  int Flag;
+  // "Data" is interpreted differently depending on the flag of the node.
+  // For internal nodes, this refers to the index of the node in the octree texture,
+  // where its children data are stored.
+  // For leaf nodes, this represents the index in the megatexture where the node's
+  // actual metadata is stored.
+  int Data;
+  // Only applicable to leaf nodes.
+  int LevelDifference;
+};
+
+/*
+ * Representation of an in-progress traversal of an octree. Points to a node at the given coords,
+ * and keeps track of the parent in case the traversal needs to be reversed.
+ *
+ * NOTE the difference between "coordinates" and "index".
+ * Octree coordinates are given as int4, representing the X, Y, Z, of the node in its tree level (W).
+ * These are not to be confused with the index of a node within the actual texture.
+ */
+struct OctreeTraversal
+{
+  int4 Coords; // W = Octree Level (starting from 0); XYZ = Index of node within that level
+  int Index;
+};
+
+struct TileSample
+{
+  int Index; // Index of the sample in the voxel data texture.
+  int4 Coords;
+  float3 LocalUV;
+};
+
+struct VoxelOctree
+{
+  Texture2D NodeData;
+  uint TextureWidth;
+  uint TextureHeight;
+  uint TilesPerRow;
+  uint3 GridDimensions;
+  Shape GridShape;
+  
+  /**
+   * Sets the octree texture and computes related variables.
+   */
+  void SetNodeData(in Texture2D DataTexture)
+  {
+    NodeData = DataTexture;
+    NodeData.GetDimensions(TextureWidth, TextureHeight);
+    TilesPerRow = TextureWidth / TEXELS_PER_NODE;
+  }
+
+  /**
+   * Given an octree-relative UV position, converts it to the corresponding position
+   * within the UV-space of the *tile* at the specified coordinates.
+   */
+  float3 GetTileUV(in float3 PositionUV, in int4 Coords)
+  {
+    // Get the size of the tile at the given level.
+    float tileSize = float(1u << Coords.w);
+    return PositionUV * tileSize - float3(Coords.xyz);
+  }
+  
+  /**
+   * Given an octree-relative UV position, checks whether it is inside the tile
+   * specified by the octree coords. Assumes the position is always inside the
+   * root tile of the tileset.
+   */
+  bool IsInsideTile(in float3 PositionUV, in int4 OctreeCoords)
+  {
+    float3 tileUV = GetTileUV(PositionUV, OctreeCoords);
+    bool isInside = IsInRange(tileUV, 0, 1);
+    return isInside || OctreeCoords.w == 0;
+  }
+  
+  TileSample GetSampleFromNode(in Node Node, in float4 OctreeCoords)
+  {
+    TileSample result = (TileSample) 0;
+    result.Index = (Node.Flag != OCTREE_FLAG_EMPTY)
+        ? Node.Data
+        : -1;
+    float denominator = float(1u << Node.LevelDifference);
+    result.Coords = int4(OctreeCoords.xyz / denominator, OctreeCoords.w - Node.LevelDifference);
+    return result;
+  }
+  
+  Node GetNodeFromTexture(in int2 TextureIndex)
+  {
+    float4 nodeData = NodeData.Load(int3(TextureIndex.x, TextureIndex.y, 0));
+    Node node = (Node) 0;
+    node.Flag = int(nodeData.x * 255.0);
+    node.LevelDifference = int(nodeData.y * 255.0);
+    node.Data = ConstructInt(nodeData.zw);
+    return node;
+  }
+  
+  /**
+  * Given the index of a node, converts it to texture indices, which are needed to actually
+  * retrieve the node data from the octree texture.
+  */
+  int2 GetTextureIndexOfNode(in int NodeIndex)
+  {
+    int2 result;
+    result.x = (NodeIndex % TilesPerRow) * TEXELS_PER_NODE;
+    result.y = NodeIndex / TilesPerRow;
+    return result;
+  }
+
+  Node GetChildNode(in int NodeIndex, in int3 ChildCoord)
+  {
+    int childIndex = ChildCoord.z * 4 + ChildCoord.y * 2 + ChildCoord.x;
+    int2 textureIndex = GetTextureIndexOfNode(NodeIndex);
+    textureIndex.x += 1 + childIndex;
+    return GetNodeFromTexture(textureIndex);
+  }
+
+  Node GetParentNode(in int NodeIndex)
+  {
+    return GetNodeFromTexture(GetTextureIndexOfNode(NodeIndex));
+  }
+  
+  /**
+  * Given a UV position [0, 1] within the voxel grid, traverse to the leaf containing it.
+  * Outputs the node's corresponding data texture index and octree coordinates.
+  */
+  Node TraverseToLeaf(in float3 PositionUV, inout OctreeTraversal Traversal)
+  {
+    // Get the size of the node at the current level
+    float sizeAtLevel = exp2(-1.0 * float(Traversal.Coords.w));
+    float3 start = float3(Traversal.Coords.xyz) * sizeAtLevel;
+    float3 end = start + sizeAtLevel;
+    
+    Node child;
+
+    for (int i = 0; i < OCTREE_MAX_LEVELS; ++i)
+    {
+      // Find the octree child that contains the given position.
+      // Example: the point (0.75, 0.25, 0.75) belongs to the child at coords (1, 0, 1)
+      float3 center = 0.5 * (start + end);
+      int3 childCoord = step(center, PositionUV);
+
+      // Get the octree coordinates for the next level down.
+      Traversal.Coords = int4(Traversal.Coords.xyz * 2 + childCoord, Traversal.Coords.w + 1);
+
+      child = GetChildNode(Traversal.Index, childCoord);
+
+      if (child.Flag != OCTREE_FLAG_INTERNAL)
+      {
+        // Found leaf - stop traversing
+        break;
+      }
+
+      // Keep going!
+      start = lerp(start, center, childCoord);
+      end = lerp(center, end, childCoord);
+      Traversal.Index = child.Data;
+    }
+
+    return child;
+  }
+
+  void BeginTraversal(in float3 PositionUV, out OctreeTraversal Traversal, out TileSample Sample)
+  {
+    Traversal = (OctreeTraversal) 0;
+
+    // Start from root
+    Node currentNode = GetNodeFromTexture(int2(0, 0));
+    if (currentNode.Flag == OCTREE_FLAG_INTERNAL)
+    {
+      currentNode = TraverseToLeaf(PositionUV, Traversal);
+    }
+
+    Sample = GetSampleFromNode(currentNode, Traversal.Coords);
+    Sample.LocalUV = clamp(GetTileUV(PositionUV, Sample.Coords), 0.0, 1.0);
+  }
+
+  void ResumeTraversal(in float3 PositionUV, inout OctreeTraversal Traversal, inout TileSample Sample)
+  {
+    if (IsInsideTile(PositionUV, Traversal.Coords))
+    {
+      // Continue to sample the same tile, marching to a different voxel.
+      Sample.LocalUV = clamp(GetTileUV(PositionUV, Sample.Coords), 0.0, 1.0);
+      return;
+    }
+
+    // Otherwise, go up tree until we find a parent tile containing the position.
+    for (int i = 0; i < OCTREE_MAX_LEVELS; ++i)
+    {
+      Traversal.Coords.w -= 1; // Up one level
+      Traversal.Coords.xyz /= 2; // Get coordinates of the parent tile.
+      
+      if (IsInsideTile(PositionUV, Traversal.Coords))
+      {
+        break;
+      }
+      Node parent = GetParentNode(Traversal.Index);
+      Traversal.Index = parent.Data;
+    }
+
+    // Go down tree
+    Node node = TraverseToLeaf(PositionUV, Traversal);
+    Sample = GetSampleFromNode(node, Traversal.Coords);
+    Sample.LocalUV = clamp(GetTileUV(PositionUV, Sample.Coords), 0.0, 1.0);
+  }
+
+  /**
+  * Given UV coordinates within a tile, and the voxel dimensions along a ray
+  * passing through the coordinates, find the intersections where the ray enters
+  * and exits the voxel cell.
+  *
+  * Outputs the distance to the points and the surface normals in UV Shape Space.
+  */
+  RayIntersections GetVoxelIntersections(in float3 TileUV, in float3 VoxelSizeAlongRay)
+  {
+    float3 voxelCoord = TileUV * float3(GridDimensions);
+    float3 directions = sign(VoxelSizeAlongRay);
+    float3 positiveDirections = max(directions, 0.0);
+    float3 entryCoord = lerp(ceil(voxelCoord), floor(voxelCoord), positiveDirections);
+    float3 exitCoord = entryCoord + directions;
+
+    RayIntersections Intersections;
+
+    float3 distanceFromEntry = -abs((entryCoord - voxelCoord) * VoxelSizeAlongRay);
+    float lastEntry = MaxComponent(distanceFromEntry);
+    bool3 isLastEntry = Equal(distanceFromEntry, float3(lastEntry, lastEntry, lastEntry));
+    Intersections.Entry.Normal = -1.0 * float3(isLastEntry) * directions;
+    Intersections.Entry.t = lastEntry;
+
+    float3 distanceToExit = abs((exitCoord - voxelCoord) * VoxelSizeAlongRay);
+    float firstExit = MinComponent(distanceToExit);
+    bool3 isFirstExit = Equal(distanceToExit, float3(firstExit, firstExit, firstExit));
+    Intersections.Exit.Normal = float3(isFirstExit) * directions;
+    Intersections.Exit.t = firstExit;
+
+    return Intersections;
+  }
+  
+  /**
+  * Gets the size of a voxel cell within the given octree level.
+  */
+  float3 GetVoxelSizeAtLevel(in int Level)
+  {
+    float3 sampleCount = float(1u << Level) * float3(GridDimensions);
+    float3 voxelSizeUV = 1.0 / sampleCount;
+    return GridShape.ScaleUVToShapeUVSpace(voxelSizeUV);
+  }
+  
+  /**
+   * Computes the next intersection in the octree by stepping to the next voxel cell
+   * within the shape along the ray.
+   *
+   * Outputs the distance relative to the initial intersection, as opposed to the distance from the
+   * origin of the ray.
+   */
+  Intersection GetNextVoxelIntersection(in TileSample Sample, in float3 Direction, in RayIntersections ShapeIntersections, in float3x3 JacobianT, in float CurrentT)
+  {
+    // The Jacobian is computed in a space where the shape spans [-1, 1].
+    // But the ray is marched in a space where the shape fills [0, 1].
+    // So we need to scale the Jacobian by 2.
+    float3 gradient = 2.0 * mul(Direction, JacobianT);
+    float3 voxelSizeAlongRay = GetVoxelSizeAtLevel(Sample.Coords.w) / gradient;
+    RayIntersections voxelIntersections = GetVoxelIntersections(Sample.LocalUV, voxelSizeAlongRay);
+
+    // Transform normal from UV Shape Space to Cartesian space. 
+    float3 voxelNormal = normalize(mul(JacobianT, voxelIntersections.Entry.Normal));
+    // Then, compare with the original shape intersection to choose the appropriate normal.
+    Intersection voxelEntry = NewIntersection(CurrentT + voxelIntersections.Entry.t, voxelNormal);
+    Intersection entry = Max(ShapeIntersections.Entry, voxelEntry);
+
+    float fixedStep = MinComponent(abs(voxelSizeAlongRay));
+    float shift = fixedStep * SHIFT_EPSILON;
+    float dt = voxelIntersections.Exit.t + shift;
+    if ((CurrentT + dt) > ShapeIntersections.Exit.t)
+    {
+      // Stop at end of shape.
+      dt = ShapeIntersections.Exit.t - CurrentT + shift;
+    }
+    float stepSize = clamp(dt, fixedStep * MINIMUM_STEP_SCALAR, fixedStep + shift);
+
+    return NewIntersection(stepSize, entry.Normal);
+  }
+};

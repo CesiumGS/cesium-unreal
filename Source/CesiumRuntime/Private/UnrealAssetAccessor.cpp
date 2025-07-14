@@ -154,7 +154,6 @@ void rejectPromiseOnUnsuccessfulConnection(
     const CesiumAsync::Promise<std::shared_ptr<CesiumAsync::IAssetRequest>>&
         promise,
     FHttpRequestPtr pRequest) {
-#if ENGINE_VERSION_5_4_OR_HIGHER
   if (pRequest->GetStatus() == EHttpRequestStatus::Failed) {
     EHttpFailureReason failureReason = pRequest->GetFailureReason();
     promise.reject(std::runtime_error(fmt::format(
@@ -165,13 +164,6 @@ void rejectPromiseOnUnsuccessfulConnection(
         "Request not successful: {}",
         TCHAR_TO_UTF8(ToString(pRequest->GetStatus())))));
   }
-#else
-  if (pRequest->GetStatus() == EHttpRequestStatus::Failed_ConnectionError) {
-    promise.reject(std::runtime_error("Connection failed."));
-  } else {
-    promise.reject(std::runtime_error("Request failed."));
-  }
-#endif
 }
 
 } // namespace
