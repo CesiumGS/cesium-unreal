@@ -148,10 +148,10 @@ protected:
 #endif
 
 private:
-#if WITH_EDITOR
   TObjectPtr<UTexture> pDefaultVolumeTexture;
-  static const FString ShaderPreviewTemplate;
 
+#if WITH_EDITOR
+  static const FString ShaderPreviewTemplate;
   void UpdateShaderPreview();
 #endif
 };
