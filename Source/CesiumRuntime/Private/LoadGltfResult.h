@@ -58,12 +58,9 @@ struct LoadedPrimitiveResult {
   int32_t materialIndex = -1;
 
   glm::dmat4x4 transform{1.0};
-#if ENGINE_VERSION_5_4_OR_HIGHER
+
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
-#else
-  TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-      pCollisionMesh = nullptr;
-#endif
+
   std::string name{};
 
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;

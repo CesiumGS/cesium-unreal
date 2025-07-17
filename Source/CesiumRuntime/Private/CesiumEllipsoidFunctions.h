@@ -12,7 +12,7 @@ class Ellipsoid;
  * A collection of methods for working with {@link CesiumGeospatial::Ellipsoid}
  * objects from Unreal.
  */
-class CesiumEllipsoidFunctions {
+class CESIUMRUNTIME_API CesiumEllipsoidFunctions {
 public:
   /**
    * Scale the given Ellipsoid-Centered, Ellipsoid-Fixed position along the

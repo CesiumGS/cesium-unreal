@@ -82,3 +82,6 @@ file(INSTALL "${OPENSSL_INCLUDE_PATH}/" DESTINATION "${CURRENT_PACKAGES_DIR}/inc
 configure_file("${CMAKE_CURRENT_LIST_DIR}/libcrypto.pc.in" "${CURRENT_PACKAGES_DIR}/lib/pkgconfig/libcrypto.pc" @ONLY)
 configure_file("${CMAKE_CURRENT_LIST_DIR}/libssl.pc.in" "${CURRENT_PACKAGES_DIR}/lib/pkgconfig/libssl.pc" @ONLY)
 configure_file("${CMAKE_CURRENT_LIST_DIR}/openssl.pc.in" "${CURRENT_PACKAGES_DIR}/lib/pkgconfig/openssl.pc" @ONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/libcrypto.pc.in" "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig/libcrypto.pc" @ONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/libssl.pc.in" "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig/libssl.pc" @ONLY)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/openssl.pc.in" "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig/openssl.pc" @ONLY)
