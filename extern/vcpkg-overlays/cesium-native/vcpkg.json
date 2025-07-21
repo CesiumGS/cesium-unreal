@@ -1,6 +1,6 @@
 {
   "name": "cesium-native",
-  "version-string": "0.41.0",
+  "version-string": "0.49.0",
   "features": {
     "dependencies-only": {
       "description": "install port's dependencies without the port"
@@ -10,11 +10,11 @@
     "vcpkg-cmake",
     "vcpkg-cmake-config",
     "asyncplusplus",
+    "curl",
     "doctest",
     "expected-lite",
     "fmt",
     "glm",
-    "ms-gsl",
     "rapidjson",
     "spdlog",
     "stb",
