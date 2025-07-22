@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added the interface `ICesium3DTilesetLifecycleEventReceiver`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetLifecycleEventReceiver`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
+
 ##### Fixes :wrench:
 
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
@@ -46,7 +50,6 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 - Added a Cesium -> Geocoder -> Geocode Blueprint function, making it easy to query the Cesium ion geocoder.
 - Added `UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty` to search for a `FCesiumPropertyTableProperty` by name on a given `UPrimitiveComponent`.
-- Added the class `CesiumMeshBuildCallbacks`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetMeshBuildCallbacks`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
 
 ##### Fixes :wrench:
 
