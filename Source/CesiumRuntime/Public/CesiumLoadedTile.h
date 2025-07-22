@@ -32,7 +32,6 @@ public:
   virtual FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const = 0;
   virtual ACesium3DTileset& GetTilesetActor() = 0;
   virtual const FCesiumModelMetadata& GetModelMetadata() const = 0;
-  virtual void SetRenderReady(bool bToggle) = 0;
 };
 
 UINTERFACE()
