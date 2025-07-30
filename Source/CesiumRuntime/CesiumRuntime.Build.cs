@@ -19,7 +19,8 @@ public class CesiumRuntime : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-              Path.Combine(GetModuleDirectory("Renderer"), "Private")
+              Path.Combine(GetModuleDirectory("Renderer"), "Private"),
+              Path.Combine(GetModuleDirectory("Renderer"), "Internal")
             }
         );
 
@@ -34,6 +35,8 @@ public class CesiumRuntime : ModuleRules
         {
             platform = "Darwin-universal-";
             libSearchPattern = "lib*.a";
+
+            PublicFrameworks.Add("SystemConfiguration");
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -45,7 +48,7 @@ public class CesiumRuntime : ModuleRules
             platform = "Linux-x86_64-";
             libSearchPattern = "lib*.a";
         }
-        else if(Target.Platform == UnrealTargetPlatform.IOS)
+        else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
             platform = "iOS-ARM64-";
             libSearchPattern = "lib*.a";
@@ -93,7 +96,9 @@ public class CesiumRuntime : ModuleRules
                 "Renderer",
                 "OpenSSL",
                 "Json",
-                "JsonUtilities"
+                "JsonUtilities",
+                "Slate",
+                "SlateCore"
             }
         );
 
@@ -132,8 +137,6 @@ public class CesiumRuntime : ModuleRules
             PublicDependencyModuleNames.AddRange(
                 new string[] {
                     "UnrealEd",
-                    "Slate",
-                    "SlateCore",
                     "WorldBrowser",
                     "ContentBrowser",
                     "MaterialEditor"
@@ -149,7 +152,7 @@ public class CesiumRuntime : ModuleRules
         );
 
         ShadowVariableWarningLevel = WarningLevel.Off;
-        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         CppStandard = CppStandardVersion.Cpp20;
