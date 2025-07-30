@@ -16,10 +16,6 @@ FCesiumPropertyAttribute::FCesiumPropertyAttribute(
       _className(propertyAttribute.classProperty.c_str()),
       _elementCount(0),
       _properties() {
-  if (primitive.attributes.empty()) {
-    return;
-  }
-
   CesiumGltf::PropertyAttributeView propertyAttributeView{
       model,
       propertyAttribute};
