@@ -793,4 +793,3 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
 }
-
