@@ -411,8 +411,8 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
           VecMath::createQuaternion(EastSouthUpRotation),
           scale);
 
-  const ACesiumGeoreference* georeference = this->ResolveGeoreference();
-  if (georeference) {
+  const ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (pGeoreference) {
     const CesiumGeospatial::Ellipsoid& ellipsoid =
         georeference->GetEllipsoid()->GetNativeEllipsoid();
 
