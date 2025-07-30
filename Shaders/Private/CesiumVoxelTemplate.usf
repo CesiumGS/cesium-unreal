@@ -68,15 +68,12 @@ struct VoxelMegatextures
     float3 LocalUV = Sample.LocalUV;
     uint3 DataDimensions = GridDimensions + PaddingBefore + PaddingAfter;
 
-    float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
-    // Account for padding
-    VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
-    
     if (ShapeConstant == BOX)
     {
       // Since glTFs are y-up (and 3D Tiles is z-up), the data must be accessed to reflect the transforms
       // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
-      VoxelCoords = float3(VoxelCoords.x, DataDimensions.y - VoxelCoords.z, VoxelCoords.y);
+      // VoxelCoords = float3(VoxelCoords.x, (DataDimensions.y - 1u) - VoxelCoords.z, VoxelCoords.y);
+      LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
     }
     else if (ShapeConstant == CYLINDER)
     {
@@ -84,9 +81,14 @@ struct VoxelMegatextures
       // (i.e., the root tile only).
       // TODO: This assumes that the root tile is a whole cylinder, but the root tile may be
       // a partial cylinder.
-      float Angle = (Sample.Coords.w == 0) ? (VoxelCoords.y + DataDimensions.z / 2.0) % DataDimensions.z : VoxelCoords.y;
-      VoxelCoords = float3(VoxelCoords.x, VoxelCoords.z, Angle);
+      LocalUV = float3(LocalUV.x, frac(LocalUV.z + 0.5), LocalUV.y);
+      //float Angle = (Sample.Coords.w == 0) ? (VoxelCoords.y + (float)DataDimensions.z / 2.0) % DataDimensions.z : VoxelCoords.y;
+      //VoxelCoords = float3(VoxelCoords.x, VoxelCoords.z, Angle);
     } 
+    
+    float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
+    // Account for padding
+    VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
     
     int3 Coords = TileCoords + VoxelCoords;
     
@@ -235,8 +237,7 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
   // Keep raymarching
   CurrentT += NextIntersection.t;
   if (CurrentT > EndT) {
-    if (ShapeConstant == ELLIPSOID) {
-      // For CYLINDER: once clipping / exaggeration is supported, this must be done for cylinders too.
+    if (ShapeConstant != BOX) {
       Intersections = Octree.GridShape.ListState.GetNextIntersections(IntersectionList);
       if (Intersections.Entry.t == NO_HIT) {
         break;

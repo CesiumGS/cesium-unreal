@@ -6,10 +6,10 @@
 	CesiumShape.usf: An implicit shape that can be intersected by a ray.
 =============================================================================*/
 
-#include "CesiumShapeConstants.usf"
 #include "CesiumBox.usf"
 #include "CesiumCylinder.usf"
 #include "CesiumEllipsoidRegion.usf"
+#include "CesiumShapeConstants.usf"
 
 struct Shape
 {
@@ -35,8 +35,8 @@ struct Shape
         BoxShape.MaxBounds = 1;
         break;
       case CYLINDER:
-        CylinderShape.MinBounds = InMinBounds; // radius, angle, height
-        CylinderShape.MaxBounds = InMaxBounds; // radius, angle, height
+        CylinderShape.Initialize(InMinBounds, InMaxBounds, PackedData0, PackedData1, PackedData2);
+        break;
       case ELLIPSOID:
         RegionShape.Initialize(InMinBounds, InMaxBounds, PackedData0, PackedData1, PackedData2, PackedData3, PackedData4, PackedData5);
         break;
@@ -55,7 +55,7 @@ struct Shape
         BoxShape.Intersect(R, Intersections, ListState);
         break;
       case CYLINDER:
-        CylinderShape.IntersectCylinder(R, Intersections, ListState);
+        CylinderShape.Intersect(R, Intersections, ListState);
         break;
       case ELLIPSOID:
         RegionShape.Intersect(R, Intersections, ListState);
@@ -67,14 +67,12 @@ struct Shape
     RayIntersections result = ListState.GetFirstIntersections(Intersections);
     if (result.Entry.t == NO_HIT)
     {
+      // Don't bother with sorting if the positive shape was missed.
       return result;
     }
 
-    // Don't bother with sorting if the positive shape was missed.
     // Box intersection is straightforward and doesn't require sorting.
-    // Currently, cylinders do not require sorting, but they will once clipping / exaggeration
-    // is supported.
-    if (ShapeConstant == ELLIPSOID)
+    if (ShapeConstant != BOX)
     {
       ListState.Sort(Intersections);
       for (int i = 0; i < SHAPE_INTERSECTIONS; ++i)

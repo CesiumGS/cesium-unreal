@@ -2,11 +2,11 @@
 
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
-#include "CesiumRayIntersection.usf"
-
 /*===========================
   CesiumRayIntersectionList.usf: Utility for tracking ray intersections across a complex shape.
 =============================*/
+
+#include "CesiumRayIntersection.usf"
 
 // SHAPE_INTERSECTIONS is the number of ray-*shape* intersections (i.e., the volume intersection pairs),
 // INTERSECTIONS_LENGTH is the number of ray-*surface* intersections.

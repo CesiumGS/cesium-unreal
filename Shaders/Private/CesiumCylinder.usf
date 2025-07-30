@@ -119,18 +119,20 @@ struct Cylinder
   /**
    * Tests whether the input ray (Unit Space) intersects the cylinder. Outputs the intersections in Unit Space.
    */
-  void IntersectCylinder(in Ray R, out float4 Intersections[INTERSECTIONS_LENGTH], inout IntersectionListState ListState)
+  void Intersect(in Ray R, out float4 Intersections[INTERSECTIONS_LENGTH], inout IntersectionListState ListState)
   {
     ListState.Length = 2;
     
     RayIntersections OuterResult = IntersectBoundedCylinder(R, MaxBounds.x, float2(MinBounds.z, MaxBounds.z));
     setShapeIntersections(Intersections, ListState, 0, OuterResult);
+    
     if (OuterResult.Entry.t == NO_HIT)
     {
       return;
     }
-
+    
     ListState.Length += 2;
+    
     if (RadiusIsFlat)
     {
       // When the cylinder is perfectly thin it's necessary to sandwich the
@@ -160,6 +162,7 @@ struct Cylinder
       RayIntersections InnerResult = IntersectInfiniteCylinder(R, MinBounds.x, false);
       setShapeIntersections(Intersections, ListState, 1, InnerResult);
     }
+    return;
     
     float2 AngleBounds = float2(MinBounds.y, MaxBounds.y);
     if (AngleRangeFlag == ANGLE_UNDER_HALF)
@@ -205,7 +208,7 @@ struct Cylinder
     float angle = UV.y * CZM_TWO_PI;
     if (AngleRangeFlag > 0)
     {
-      angle /= AngleUVScale;
+    //  angle /= AngleUVScale;
     }
     
     return float3(radius, angle, UV.z);
@@ -247,23 +250,23 @@ struct Cylinder
     // Technically this should compare against min angle, but it has precision problems so compare against the middle of empty space.
     if (AngleIsReversed)
     {
-      angleUV += float(angleUV < AngleUVExtents.z);
+      //angleUV += float(angleUV < AngleUVExtents.z);
     }
 
     // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
     if (AngleMinHasDiscontinuity)
     {
-      angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
+      //angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
     }
 
     if (AngleMaxHasDiscontinuity)
     {
-      angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
+      //angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
     }
     
     if (AngleRangeFlag > 0)
     {
-      angleUV = angleUV * AngleUVScale + AngleUVOffset;
+      //angleUV = angleUV * AngleUVScale + AngleUVOffset;
     }
     
     return float3(radiusUV, angleUV, height);

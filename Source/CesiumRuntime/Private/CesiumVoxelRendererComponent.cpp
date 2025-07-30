@@ -196,13 +196,13 @@ void setVoxelCylinderProperties(
 
   // Radius
   {
-    double radiusRange = radialBounds.y - radialBounds.x;
+    double normalizedRadiusRange = 1.0 - normalizedMinimumRadius;
     bool hasNonzeroMinimumRadius = normalizedMinimumRadius > 0.0;
     bool hasFlatRadius = radialBounds.x == radialBounds.y;
 
-    if (hasNonzeroMinimumRadius && radiusRange > 0.0) {
-      radiusUVScale = 1.0 / radiusRange;
-      radiusUVOffset = -radialBounds.x / radiusRange;
+    if (hasNonzeroMinimumRadius && normalizedRadiusRange > 0.0) {
+      radiusUVScale = 1.0 / normalizedRadiusRange;
+      radiusUVOffset = -normalizedMinimumRadius / normalizedRadiusRange;
     }
 
     radiusFlags.X = hasNonzeroMinimumRadius;
