@@ -414,7 +414,7 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
   const ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (pGeoreference) {
     const CesiumGeospatial::Ellipsoid& ellipsoid =
-        georeference->GetEllipsoid()->GetNativeEllipsoid();
+        pGeoreference->GetEllipsoid()->GetNativeEllipsoid();
 
     anchor.setAnchorToLocalTransform(
         eastSouthUp,
