@@ -410,16 +410,20 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
           translation,
           VecMath::createQuaternion(EastSouthUpRotation),
           scale);
-
-  const CesiumGeospatial::Ellipsoid& ellipsoid =
-      this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
-
-  anchor.setAnchorToLocalTransform(
-      eastSouthUp,
-      newModelToEastSouthUp,
-      false,
-      ellipsoid);
-  this->_updateFromNativeGlobeAnchor(anchor);
+  
+  const ACesiumGeoreference* georeference = this->ResolveGeoreference();
+  if (georeference)
+  {
+    const CesiumGeospatial::Ellipsoid& ellipsoid =
+    georeference->GetEllipsoid()->GetNativeEllipsoid();
+    
+    anchor.setAnchorToLocalTransform(
+                                     eastSouthUp,
+                                     newModelToEastSouthUp,
+                                     false,
+                                     ellipsoid);
+    this->_updateFromNativeGlobeAnchor(anchor);
+  }
 }
 
 FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
