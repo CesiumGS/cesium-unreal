@@ -4,6 +4,7 @@
 
 ##### Breaking Changes :mega:
 
+- Removed support for Unreal Engine 5.3. Unreal Engine 5.4 or later is now required.
 - `FCesiumPrimitiveMetadata::GetPropertyAttributeIndices` is now deprecated. Use `GetPropertyAttributes` to directly get the `FCesiumPropertyAttribute`s instead.
 
 ##### Additions :tada:
