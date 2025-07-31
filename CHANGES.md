@@ -16,7 +16,8 @@
 ##### Fixes :wrench:
 
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
-- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin. 
+- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin.
+- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level. 
 
 ### v2.17.0 - 2025-07-01
 
