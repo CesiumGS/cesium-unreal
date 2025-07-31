@@ -9,6 +9,7 @@
 
 ##### Additions :tada:
 
+- Added `CesiumGeoJsonDocumentRasterOverlay`, allowing stylized GeoJSON to be rasterized and draped over terrain and other 3D Tiles.
 - Added `FCesiumPropertyAttributeProperty` to represent glTF property attribute properties and `UCesiumPropertyAttributePropertyBlueprintLibrary` to retrieve their values.
 - Added `FCesiumPropertyAttribute` to represent glTF property attributes and `UCesiumPropertyAttributeBlueprintLibrary` to act upon them with Blueprints.
 - Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
