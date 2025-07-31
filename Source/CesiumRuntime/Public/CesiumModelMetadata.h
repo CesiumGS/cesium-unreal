@@ -37,7 +37,6 @@ private:
   TArray<FCesiumPropertyTable> _propertyTables;
   TArray<FCesiumPropertyTexture> _propertyTextures;
   TSharedPtr<FCesiumMetadataEnumCollection> _enumDefinitions;
-  // TODO: property attributes
 
   friend class UCesiumModelMetadataBlueprintLibrary;
 };

@@ -1,20 +1,21 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTable.h"
-#include "CesiumGltf/PropertyTableView.h"
+
+#include <CesiumGltf/PropertyTableView.h>
 
 static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 
 FCesiumPropertyTable::FCesiumPropertyTable(
-    const CesiumGltf::Model& Model,
-    const CesiumGltf::PropertyTable& PropertyTable,
-    const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection)
+    const CesiumGltf::Model& model,
+    const CesiumGltf::PropertyTable& propertyTable,
+    const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
-      _name(PropertyTable.name.value_or("").c_str()),
-      _className(PropertyTable.classProperty.c_str()),
-      _count(PropertyTable.count),
+      _name(propertyTable.name.value_or("").c_str()),
+      _className(propertyTable.classProperty.c_str()),
+      _count(propertyTable.count),
       _properties() {
-  CesiumGltf::PropertyTableView propertyTableView{Model, PropertyTable};
+  CesiumGltf::PropertyTableView propertyTableView{model, propertyTable};
   switch (propertyTableView.status()) {
   case CesiumGltf::PropertyTableViewStatus::Valid:
     _status = ECesiumPropertyTableStatus::Valid;
@@ -25,7 +26,7 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   }
 
   const CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
-      Model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+      model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   // If there was no schema, we would've gotten ErrorMissingSchema for the
   // propertyTableView status.
   check(pExtension != nullptr && pExtension->schema != nullptr);
@@ -33,7 +34,7 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   propertyTableView.forEachProperty([&properties = _properties,
                                      &Schema = *pExtension->schema,
                                      &propertyTableView,
-                                     &EnumCollection](
+                                     &pEnumCollection](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
@@ -41,15 +42,15 @@ FCesiumPropertyTable::FCesiumPropertyTable(
         propertyTableView.getClassProperty(propertyName);
     check(pClassProperty);
 
-    TSharedPtr<FCesiumMetadataEnum> EnumDefinition(nullptr);
-    if (EnumCollection.IsValid() && pClassProperty->enumType.has_value()) {
-      EnumDefinition = EnumCollection->Get(
+    TSharedPtr<FCesiumMetadataEnum> pEnumDefinition(nullptr);
+    if (pEnumCollection.IsValid() && pClassProperty->enumType.has_value()) {
+      pEnumDefinition = pEnumCollection->Get(
           FString(UTF8_TO_TCHAR(pClassProperty->enumType.value().c_str())));
     }
 
     properties.Add(
         key,
-        FCesiumPropertyTableProperty(propertyValue, EnumDefinition));
+        FCesiumPropertyTableProperty(propertyValue, pEnumDefinition));
   });
 }
 

@@ -16,7 +16,7 @@
 #include "CesiumGeoJsonDocument.generated.h"
 
 /**
- * @brief A vector document containing a tree of `FCesiumGeoJsonObject` values.
+ * @brief A GeoJSON document containing a tree of `FCesiumGeoJsonObject` values.
  */
 USTRUCT(BlueprintType)
 struct FCesiumGeoJsonDocument {
@@ -65,7 +65,7 @@ public:
    * @brief Attempts to load a `FCesiumGeoJsonDocument` from a string containing
    * GeoJSON data.
    *
-   * If loading fails, this function will return false and `OutVectorDocument`
+   * If loading fails, this function will return false and `OutGeoJsonDocument`
    * will be empty.
    */
   UFUNCTION(
@@ -74,10 +74,10 @@ public:
       meta = (DisplayName = "Load GeoJSON Document From String"))
   static UPARAM(DisplayName = "Success") bool LoadGeoJsonFromString(
       const FString& InString,
-      FCesiumGeoJsonDocument& OutVectorDocument);
+      FCesiumGeoJsonDocument& OutGeoJsonDocument);
 
   /**
-   * @brief Obtains the root node of the provided vector document.
+   * @brief Obtains the root node of the provided GeoJSON document.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -85,23 +85,23 @@ public:
       Category = "Cesium|Vector|Document",
       meta = (DisplayName = "Get Root Node"))
   static FCesiumGeoJsonObject
-  GetRootObject(const FCesiumGeoJsonDocument& InVectorDocument);
+  GetRootObject(const FCesiumGeoJsonDocument& InGeoJsonDocument);
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-    FCesiumVectorDocumentAsyncLoadDelegate,
+    FCesiumGeoJsonDocumentAsyncLoadDelegate,
     bool,
     Success,
     FCesiumGeoJsonDocument,
     Document);
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumLoadVectorDocumentFromIonAsyncAction
+class CESIUMRUNTIME_API UCesiumLoadGeoJsonDocumentFromIonAsyncAction
     : public UBlueprintAsyncActionBase {
   GENERATED_BODY()
 public:
   /**
-   * @brief Attempts to load a vector document from a Cesium ion asset.
+   * @brief Attempts to load a GeoJSON document from a Cesium ion asset.
    *
    * If the provided `IonAccessToken` is an empty string, the
    * `DefaultIonAccessToken` from the provided `CesiumIonServer` will be used
@@ -115,14 +115,14 @@ public:
       Category = "Cesium|Vector|Document",
       meta =
           (BlueprintInternalUseOnly = true,
-           DisplayName = "Load Vector Document from Cesium ion"))
-  static UCesiumLoadVectorDocumentFromIonAsyncAction* LoadFromIon(
+           DisplayName = "Load GeoJSON Document from Cesium ion"))
+  static UCesiumLoadGeoJsonDocumentFromIonAsyncAction* LoadFromIon(
       int64 AssetId,
       const UCesiumIonServer* CesiumIonServer,
       const FString& IonAccessToken);
 
   UPROPERTY(BlueprintAssignable)
-  FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
+  FCesiumGeoJsonDocumentAsyncLoadDelegate OnLoadResult;
 
   virtual void Activate() override;
 
@@ -134,12 +134,12 @@ public:
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumLoadVectorDocumentFromUrlAsyncAction
+class CESIUMRUNTIME_API UCesiumLoadGeoJsonDocumentFromUrlAsyncAction
     : public UBlueprintAsyncActionBase {
   GENERATED_BODY()
 public:
   /**
-   * @brief Attempts to load a vector document from a URL.
+   * @brief Attempts to load a GeoJSON document from a URL.
    *
    * If successful, `Success` will be true and `Document` will contain the
    * loaded document.
@@ -149,12 +149,12 @@ public:
       Category = "Cesium|Vector|Document",
       meta =
           (BlueprintInternalUseOnly = true,
-           DisplayName = "Load Vector Document from URL"))
-  static UCesiumLoadVectorDocumentFromUrlAsyncAction*
+           DisplayName = "Load GeoJSON Document from URL"))
+  static UCesiumLoadGeoJsonDocumentFromUrlAsyncAction*
   LoadFromUrl(const FString& Url, const TMap<FString, FString>& Headers);
 
   UPROPERTY(BlueprintAssignable)
-  FCesiumVectorDocumentAsyncLoadDelegate OnLoadResult;
+  FCesiumGeoJsonDocumentAsyncLoadDelegate OnLoadResult;
 
   virtual void Activate() override;
 

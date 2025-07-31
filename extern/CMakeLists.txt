@@ -11,8 +11,8 @@ if (DEFINED ENV{UNREAL_ENGINE_ROOT} AND NOT UNREAL_ENGINE_ROOT)
 endif()
 
 if (NOT UNREAL_ENGINE_ROOT)
-  # On Windows, try to use the default UE 5.3 location
-  set(WINDOWS_DEFAULT_UNREAL_INSTALLATION "C:/Program Files/Epic Games/UE_5.3")
+  # On Windows, try to use the default UE 5.4 location
+  set(WINDOWS_DEFAULT_UNREAL_INSTALLATION "C:/Program Files/Epic Games/UE_5.4")
   if (WIN32 AND EXISTS "${WINDOWS_DEFAULT_UNREAL_INSTALLATION}")
     set(UNREAL_ENGINE_ROOT "${WINDOWS_DEFAULT_UNREAL_INSTALLATION}")
   else()

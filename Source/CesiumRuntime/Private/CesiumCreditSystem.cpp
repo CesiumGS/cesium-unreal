@@ -42,14 +42,9 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
         TEXT("No valid level for findValidDefaultCreditSystem"));
     return nullptr;
   }
-#if ENGINE_VERSION_5_4_OR_HIGHER
+
   TArray<TObjectPtr<AActor>>& Actors = Level->Actors;
-  using LevelActorPointer = TObjectPtr<AActor>*;
-#else
-  TArray<AActor*>& Actors = Level->Actors;
-  using LevelActorPointer = AActor**;
-#endif
-  LevelActorPointer DefaultCreditSystemPtr =
+  TObjectPtr<AActor>* DefaultCreditSystemPtr =
       Actors.FindByPredicate([](AActor* const& InItem) {
         if (!IsValid(InItem)) {
           return false;
