@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.18.0 - 2025-08-01
 
 ##### Breaking Changes :mega:
 
@@ -12,6 +12,8 @@
 - Added `FCesiumPropertyAttribute` to represent glTF property attributes and `UCesiumPropertyAttributeBlueprintLibrary` to act upon them with Blueprints.
 - Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
 - Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.49.0 to v0.50.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ##### Fixes :wrench:
 
