@@ -54,7 +54,7 @@ struct FCesiumVectorLineStyle {
    * The color to be used.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FColor Color = FColor(1.0f, 1.0f, 1.0f, 1.0f);
+  FColor Color = FColor(0xff, 0xff, 0xff);
   /**
    * The color mode to be used.
    */
@@ -87,7 +87,7 @@ struct FCesiumVectorPolygonFillStyle {
    * The color to be used.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FColor Color = FColor(1.0f, 1.0f, 1.0f, 1.0f);
+  FColor Color = FColor(0xff, 0xff, 0xff);
   /**
    * The color mode to be used.
    */
