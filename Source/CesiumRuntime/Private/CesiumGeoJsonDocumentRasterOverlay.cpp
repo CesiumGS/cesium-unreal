@@ -52,17 +52,8 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
     return nullptr;
   }
 
-  CesiumGeospatial::Projection projection;
-  if (this->Projection ==
-      ECesiumGeoJsonDocumentRasterOverlayProjection::Geographic) {
-    projection = CesiumGeospatial::GeographicProjection(options.ellipsoid);
-  } else {
-    projection = CesiumGeospatial::WebMercatorProjection(options.ellipsoid);
-  }
-
   CesiumRasterOverlays::GeoJsonDocumentRasterOverlayOptions vectorOptions{
       this->DefaultStyle.toNative(),
-      std::move(projection),
       options.ellipsoid,
       this->MipLevels};
 

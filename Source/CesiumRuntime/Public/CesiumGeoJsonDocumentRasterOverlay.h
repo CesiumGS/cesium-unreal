@@ -12,22 +12,6 @@
 #include "CesiumGeoJsonDocumentRasterOverlay.generated.h"
 
 /**
- * The projection used by a CesiumVectorDocumentRasterOverlay.
- */
-UENUM(BlueprintType)
-enum class ECesiumGeoJsonDocumentRasterOverlayProjection : uint8 {
-  /**
-   * The raster overlay is projected using Web Mercator.
-   */
-  WebMercator,
-
-  /**
-   * The raster overlay is projected using a geographic projection.
-   */
-  Geographic
-};
-
-/**
  * Configures where the CesiumVectorDocumentRasterOverlay should load its vector
  * data from.
  */
@@ -62,15 +46,6 @@ class CESIUMRUNTIME_API UCesiumGeoJsonDocumentRasterOverlay
   GENERATED_BODY()
 
 public:
-  /**
-   * The type of projection used to project the imagery onto the globe.
-   * For instance, EPSG:4326 uses geographic projection and EPSG:3857 uses Web
-   * Mercator.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  ECesiumGeoJsonDocumentRasterOverlayProjection Projection =
-      ECesiumGeoJsonDocumentRasterOverlayProjection::WebMercator;
-
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECesiumGeoJsonDocumentRasterOverlaySource Source =
       ECesiumGeoJsonDocumentRasterOverlaySource::FromCesiumIon;
