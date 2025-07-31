@@ -34,6 +34,17 @@ struct FCesiumGeoJsonDocument {
   FCesiumGeoJsonDocument(
       std::shared_ptr<CesiumVectorData::GeoJsonDocument>&& document);
 
+  /**
+   * @brief Checks if this FCesiumGeoJsonDocument is valid (document is not
+   * nullptr).
+   */
+  bool IsValid() const;
+
+  /**
+   * @brief Returns the `CesiumVectorData::GeoJsonDocument` this wraps.
+   */
+  const std::shared_ptr<CesiumVectorData::GeoJsonDocument>& GetDocument() const;
+
 private:
   std::shared_ptr<CesiumVectorData::GeoJsonDocument> _pDocument;
 
