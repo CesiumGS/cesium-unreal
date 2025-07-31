@@ -658,7 +658,7 @@ void FCesiumMetadataPickingSpec::Define() {
 
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.Metadata =
-          FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
+          FCesiumPrimitiveMetadata(model, *pPrimitive, *pPrimitiveMetadata);
 
       FHitResult Hit;
       Hit.FaceIndex = -1;
@@ -687,7 +687,7 @@ void FCesiumMetadataPickingSpec::Define() {
          CesiumPrimitiveData& primData =
              pPrimitiveComponent->getPrimitiveData();
          primData.Metadata =
-             FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
+             FCesiumPrimitiveMetadata(model, *pPrimitive, *pPrimitiveMetadata);
 
          FHitResult Hit;
          Hit.FaceIndex = 0;
@@ -724,7 +724,7 @@ void FCesiumMetadataPickingSpec::Define() {
          CesiumPrimitiveData& primData =
              pPrimitiveComponent->getPrimitiveData();
          primData.Metadata =
-             FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
+             FCesiumPrimitiveMetadata(model, *pPrimitive, *pPrimitiveMetadata);
 
          FHitResult Hit;
          Hit.FaceIndex = 0;
@@ -768,7 +768,7 @@ void FCesiumMetadataPickingSpec::Define() {
          CesiumPrimitiveData& primData =
              pPrimitiveComponent->getPrimitiveData();
          primData.Metadata =
-             FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
+             FCesiumPrimitiveMetadata(model, *pPrimitive, *pPrimitiveMetadata);
 
          FHitResult Hit;
          Hit.FaceIndex = 0;
@@ -857,7 +857,7 @@ void FCesiumMetadataPickingSpec::Define() {
       pPrimitiveMetadata->propertyTextures.push_back(1);
       CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
       primData.Metadata =
-          FCesiumPrimitiveMetadata(*pPrimitive, *pPrimitiveMetadata);
+          FCesiumPrimitiveMetadata(model, *pPrimitive, *pPrimitiveMetadata);
 
       FHitResult Hit;
       Hit.Component = pPrimitiveComponent;
