@@ -11,12 +11,15 @@ if (DEFINED ENV{UNREAL_ENGINE_ROOT} AND NOT UNREAL_ENGINE_ROOT)
 endif()
 
 if (NOT UNREAL_ENGINE_ROOT)
-  # On Windows, try to use the default UE 5.4 location
-  set(WINDOWS_DEFAULT_UNREAL_INSTALLATION "C:/Program Files/Epic Games/UE_5.4")
-  if (WIN32 AND EXISTS "${WINDOWS_DEFAULT_UNREAL_INSTALLATION}")
-    set(UNREAL_ENGINE_ROOT "${WINDOWS_DEFAULT_UNREAL_INSTALLATION}")
-  else()
-    message(FATAL_ERROR "Please specify the root of your Unreal Engine installation, either by setting the UNREAL_ENGINE_ROOT environment variable or with -DUNREAL_ENGINE_ROOT=path on the cmake command-line.")
+  # On Windows and Mac, try to use the default UE 5.4 location
+  if (WIN32)
+     set(UNREAL_ENGINE_ROOT "C:/Program Files/Epic Games/UE_5.4")
+  elseif(APPLE)
+    set(UNREAL_ENGINE_ROOT "/Users/Shared/Epic Games/UE_5.4")
+  endif()
+
+  if (NOT EXISTS ${UNREAL_ENGINE_ROOT})
+     message(FATAL_ERROR "Please specify the root of your Unreal Engine installation, either by setting the UNREAL_ENGINE_ROOT environment variable or with -DUNREAL_ENGINE_ROOT=path on the cmake command-line.")
   endif()
 endif()
 
