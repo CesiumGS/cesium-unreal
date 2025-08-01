@@ -26,6 +26,7 @@ void FCesiumGltfPointsSceneProxyTilesetData::UpdateFromComponent(
   UsesAdditiveRefinement = Component->UsesAdditiveRefinement;
   GeometricError = Component->GeometricError;
   Dimensions = Component->Dimensions;
+  bLinesList = Component->bLinesList;
 }
 
 SIZE_T FCesiumGltfPointsSceneProxy::GetTypeHash() const {
@@ -35,11 +36,12 @@ SIZE_T FCesiumGltfPointsSceneProxy::GetTypeHash() const {
 
 FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
     UCesiumGltfPointsComponent* InComponent,
-    ERHIFeatureLevel::Type InFeatureLevel)
+    ERHIFeatureLevel::Type InFeatureLevel,
+    bool bLinesList)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
       NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-      bAttenuationSupported(
+      bAttenuationSupported(!bLinesList &&
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
       TilesetData(),
       AttenuationVertexFactory(
@@ -116,6 +118,7 @@ uint32 FCesiumGltfPointsSceneProxy::GetMemoryFootprint(void) const {
 void FCesiumGltfPointsSceneProxy::UpdateTilesetData(
     const FCesiumGltfPointsSceneProxyTilesetData& InTilesetData) {
   TilesetData = InTilesetData;
+  ensure(!TilesetData.bLinesList || !bAttenuationSupported); // see ctor
 }
 
 float FCesiumGltfPointsSceneProxy::GetGeometricError() const {
@@ -208,17 +211,22 @@ void FCesiumGltfPointsSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   Mesh.VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;
   Mesh.MaterialRenderProxy = Material->GetRenderProxy();
   Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
-  Mesh.Type = PT_PointList;
+  Mesh.Type = TilesetData.bLinesList ? PT_LineList : PT_PointList;
   Mesh.DepthPriorityGroup = SDPG_World;
   Mesh.LODIndex = 0;
   Mesh.bCanApplyViewModeOverrides = false;
   Mesh.bUseAsOccluder = false;
-  Mesh.bWireframe = false;
+  Mesh.bWireframe = TilesetData.bLinesList;
 
   FMeshBatchElement& BatchElement = Mesh.Elements[0];
   BatchElement.IndexBuffer = &RenderData->LODResources[0].IndexBuffer;
-  BatchElement.NumPrimitives = NumPoints;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
-  BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;
+  BatchElement.MaxVertexIndex = NumPoints - 1;
+  if (TilesetData.bLinesList) {
+    ensure((NumPoints % 2) == 0);
+    BatchElement.NumPrimitives = NumPoints / 2;
+  } else {
+    BatchElement.NumPrimitives = NumPoints;
+  }
 }
