@@ -211,9 +211,9 @@ void setVoxelCylinderProperties(
     radiusFlags.Y = hasFlatRadius;
   }
 
-  // Defines the extents of the longitude in UV space. In other words, this
-  // expresses the minimum, maximum, and midpoint values of the longitude range
-  // in UV space.
+  // Defines the extents of the angle in UV space. In other words, this
+  // expresses the minimum and maximum values of the angle range, and the
+  // midpoint of the negative space (if it exists), all in UV space.
   FVector angleUVExtents = FVector::Zero();
 
   double angleUVScale = 1.0;
@@ -233,11 +233,11 @@ void setVoxelCylinderProperties(
         CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
     bool angleMinimumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         angularBounds.x,
-        CesiumUtility::Math::OnePi,
+        -CesiumUtility::Math::OnePi,
         discontinuityEpsilon);
     bool angleMaximumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         angularBounds.y,
-        -CesiumUtility::Math::OnePi,
+        CesiumUtility::Math::OnePi,
         discontinuityEpsilon);
 
     angleFlags.X = angleRangeIndicator;
@@ -302,11 +302,19 @@ void setVoxelCylinderProperties(
           0),
       FVector4(angleFlags));
 
-  // 2 = UV -> Shape UV Transforms (scale / offset)
-  // Radius (xy), Angle (zw)
+  // 2 = Angle UV extents (xyz)
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo(
           UTF8_TO_TCHAR("Shape Packed Data 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      angleUVExtents);
+
+  // 3 = UV -> Shape UV Transforms (scale / offset)
+  // Radius (xy), Angle (zw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 3"),
           EMaterialParameterAssociation::LayerParameter,
           0),
       FVector4(radiusUVScale, radiusUVOffset, angleUVScale, angleUVOffset));

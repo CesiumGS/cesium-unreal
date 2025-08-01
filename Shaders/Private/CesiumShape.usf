@@ -35,7 +35,7 @@ struct Shape
         BoxShape.MaxBounds = 1;
         break;
       case CYLINDER:
-        CylinderShape.Initialize(InMinBounds, InMaxBounds, PackedData0, PackedData1, PackedData2);
+        CylinderShape.Initialize(InMinBounds, InMaxBounds, PackedData0, PackedData1, PackedData2, PackedData3);
         break;
       case ELLIPSOID:
         RegionShape.Initialize(InMinBounds, InMaxBounds, PackedData0, PackedData1, PackedData2, PackedData3, PackedData4, PackedData5);

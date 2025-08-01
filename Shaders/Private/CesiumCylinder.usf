@@ -29,7 +29,7 @@ struct Cylinder
   bool AngleMaxHasDiscontinuity;
   bool AngleIsReversed;
 
-  void Initialize(float3 InMinBounds, float3 InMaxBounds, float4 PackedData0, float4 PackedData1, float4 PackedData2)
+  void Initialize(float3 InMinBounds, float3 InMaxBounds, float4 PackedData0, float4 PackedData1, float4 PackedData2, float4 PackedData3)
   {
     MinBounds = InMinBounds; // radius, angle, height
     MaxBounds = InMaxBounds; // radius, angle, height
@@ -42,11 +42,13 @@ struct Cylinder
     AngleMinHasDiscontinuity = bool(PackedData1.y);
     AngleMaxHasDiscontinuity = bool(PackedData1.z);
     AngleIsReversed = bool(PackedData1.w);
+
+    AngleUVExtents = PackedData2.xyz;
     
-    RadiusUVScale = PackedData2.x;
-    RadiusUVOffset = PackedData2.y;
-    AngleUVScale = PackedData2.z;
-    AngleUVOffset = PackedData2.w;
+    RadiusUVScale = PackedData3.x;
+    RadiusUVOffset = PackedData3.y;
+    AngleUVScale = PackedData3.z;
+    AngleUVOffset = PackedData3.w;
   }
   
   /**
@@ -245,27 +247,26 @@ struct Cylinder
     
     // Angle: shift and scale to [0, 1]
     float angleUV = (angle + CZM_PI) / CZM_TWO_PI;
-
-    // Correct the angle when max < min
-    // Technically this should compare against min angle, but it has precision problems so compare against the middle of empty space.
-    if (AngleIsReversed)
-    {
-      angleUV += float(angleUV < AngleUVExtents.z);
-    }
-
-    // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
-    if (AngleMinHasDiscontinuity)
-    {
-      angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
-    }
-
-    if (AngleMaxHasDiscontinuity)
-    {
-      angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
-    }
     
     if (AngleRangeFlag > 0)
     {
+      // Correct the angle when max < min
+      // Technically this should compare against min angle, but it has precision problems so compare against the middle of empty space.
+      if (AngleIsReversed)
+      {
+        angleUV += float(angleUV < AngleUVExtents.z);
+      }
+
+      // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
+      if (AngleMinHasDiscontinuity)
+      {
+        angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
+      }
+      else if (AngleMaxHasDiscontinuity)
+      {
+        angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
+      }
+      
       angleUV = angleUV * AngleUVScale + AngleUVOffset;
     }
     
