@@ -131,8 +131,6 @@ struct Cylinder
       return;
     }
     
-    ListState.Length += 2;
-    
     if (RadiusIsFlat)
     {
       // When the cylinder is perfectly thin it's necessary to sandwich the
@@ -156,23 +154,18 @@ struct Cylinder
       setSurfaceIntersection(Intersections, ListState, 1, InnerResult.Entry, false, true); // negative, entering
       setSurfaceIntersection(Intersections, ListState, 2, InnerResult.Exit, false, false); // negative, exiting
       setSurfaceIntersection(Intersections, ListState, 3, OuterResult.Exit, true, false); // positive, exiting
+      ListState.Length += 2;
+      
     }
     else if (RadiusHasMinimumBound)
     {
       RayIntersections InnerResult = IntersectInfiniteCylinder(R, MinBounds.x, false);
       setShapeIntersections(Intersections, ListState, 1, InnerResult);
+      ListState.Length += 2;
     }
-    return;
     
     float2 AngleBounds = float2(MinBounds.y, MaxBounds.y);
     if (AngleRangeFlag == ANGLE_UNDER_HALF)
-    {
-      // The shape's angle range is over half, so we intersect a NEGATIVE shape that is under half.
-      RayIntersections WedgeResult = IntersectRegularWedge(R, AngleBounds);
-      setShapeIntersections(Intersections, ListState, 2, WedgeResult);
-      ListState.Length += 2;
-    }
-    else if (AngleRangeFlag == ANGLE_OVER_HALF)
     {
       // The shape's angle range is under half, so we intersect a NEGATIVE shape that is over half.
       RayIntersections FirstResult = (RayIntersections) 0;
@@ -181,6 +174,13 @@ struct Cylinder
       setShapeIntersections(Intersections, ListState, 2, FirstResult);
       setShapeIntersections(Intersections, ListState, 3, SecondResult);
       ListState.Length += 4;
+    }
+    else if (AngleRangeFlag == ANGLE_OVER_HALF)
+    {
+      // The shape's angle range is over half, so we intersect a NEGATIVE shape that is under half.
+      RayIntersections WedgeResult = IntersectRegularWedge(R, AngleBounds);
+      setShapeIntersections(Intersections, ListState, 2, WedgeResult);
+      ListState.Length += 2;
     }
     else if (AngleRangeFlag == ANGLE_EQUAL_ZERO)
     {
@@ -208,7 +208,7 @@ struct Cylinder
     float angle = UV.y * CZM_TWO_PI;
     if (AngleRangeFlag > 0)
     {
-    //  angle /= AngleUVScale;
+      angle /= AngleUVScale;
     }
     
     return float3(radius, angle, UV.z);
@@ -250,23 +250,23 @@ struct Cylinder
     // Technically this should compare against min angle, but it has precision problems so compare against the middle of empty space.
     if (AngleIsReversed)
     {
-      //angleUV += float(angleUV < AngleUVExtents.z);
+      angleUV += float(angleUV < AngleUVExtents.z);
     }
 
     // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
     if (AngleMinHasDiscontinuity)
     {
-      //angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
+      angleUV = angleUV > AngleUVExtents.z ? AngleUVExtents.x : angleUV;
     }
 
     if (AngleMaxHasDiscontinuity)
     {
-      //angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
+      angleUV = angleUV < AngleUVExtents.z ? AngleUVExtents.y : angleUV;
     }
     
     if (AngleRangeFlag > 0)
     {
-      //angleUV = angleUV * AngleUVScale + AngleUVOffset;
+      angleUV = angleUV * AngleUVScale + AngleUVOffset;
     }
     
     return float3(radiusUV, angleUV, height);

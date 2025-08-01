@@ -142,7 +142,7 @@ R.Direction = RayDirection;
 //
 // Shape UV Space is the [0, 1] grid mapping that conforms to the actual voxel volume. Imagine 
 // the voxel grid curving concentrically around a unit cylinder, then being "smooshed" to fit in
-// the volume of the hollow cylinder. Shape UV Space must account for the angle bounds of a cylinder,
+// the volume of the hollow cylinder. Shape UV Space must account for the radial and angle bounds of a cylinder,
 // and the longitude / latitude / height bounds of an ellipsoid.
 //
 // Therefore, we must convert the unit space ray to the equivalent Shape UV Space ray to sample correctly.
@@ -239,19 +239,20 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
   if (CurrentT > EndT) {
     if (ShapeConstant != BOX) {
       Intersections = Octree.GridShape.ListState.GetNextIntersections(IntersectionList);
-      if (Intersections.Entry.t == NO_HIT) {
-        break;
-      } else {
+      if (Intersections.Entry.t != NO_HIT) {
         // Found another intersection. Resume raymarching there
         CurrentT = Intersections.Entry.t;
         EndT = Intersections.Exit.t;
+      } else {
+        break;
       } 
     } else {
         break;
     }
   }
 
-  PositionUV = R.Origin + CurrentT * R.Direction;
+  PositionUV = R.Origin + CurrentT * R.
+Direction;
   PositionShapeUVSpace = Octree.GridShape.ConvertUVToShapeUVSpace(PositionUV, JacobianT);
   Octree.ResumeTraversal(PositionShapeUVSpace, Traversal, Sample);
   NextIntersection = Octree.GetNextVoxelIntersection(Sample, RawDirection, Intersections, JacobianT, CurrentT);

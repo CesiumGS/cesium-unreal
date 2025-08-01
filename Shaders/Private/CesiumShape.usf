@@ -119,6 +119,7 @@ struct Shape
   */
   float3 ConvertUVToShapeUVSpace(in float3 UVPosition, out float3x3 JacobianT)
   {
+    [branch]
     switch (ShapeConstant)
     {
       case BOX:
