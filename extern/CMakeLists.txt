@@ -21,7 +21,7 @@ if (NOT UNREAL_ENGINE_ROOT)
   if (NOT EXISTS "${DEFAULT_UNREAL_INSTALLATION}")
      message(FATAL_ERROR "Please specify the root of your Unreal Engine installation, either by setting the UNREAL_ENGINE_ROOT environment variable or with -DUNREAL_ENGINE_ROOT=path on the cmake command-line.")
   else()
-    set(UNREAL_ENGINE_ROOT ${DEFAULT_UNREAL_INSTALLATION})
+    set(UNREAL_ENGINE_ROOT "${DEFAULT_UNREAL_INSTALLATION}")
   endif()
 endif()
 
