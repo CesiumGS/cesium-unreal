@@ -2,6 +2,7 @@
 
 #include "CesiumPropertyAttribute.h"
 #include <CesiumGltf/PropertyAttributeView.h>
+#include "CesiumRuntime.h"
 
 static FCesiumPropertyAttributeProperty EmptyPropertyAttributeProperty;
 
