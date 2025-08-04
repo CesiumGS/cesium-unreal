@@ -800,12 +800,12 @@ struct EllipsoidRegion
     }
 
     // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
-    if (LongitudeMinHasDiscontinuity)
+    if (LongitudeMinAtDiscontinuity)
     {
       longitudeUV = longitudeUV > LongitudeUVExtents.z ? LongitudeUVExtents.x : longitudeUV;
     }
 
-    if (LongitudeMaxHasDiscontinuity)
+    if (LongitudeMaxAtDiscontinuity)
     {
       longitudeUV = longitudeUV < LongitudeUVExtents.z ? LongitudeUVExtents.y : longitudeUV;
     }
