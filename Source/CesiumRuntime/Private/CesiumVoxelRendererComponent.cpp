@@ -231,18 +231,18 @@ void setVoxelCylinderProperties(
     // Refers to the discontinuity at angle -pi / pi.
     const double discontinuityEpsilon =
         CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
-    bool angleMinimumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+    bool angleMinimumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         angularBounds.x,
         -CesiumUtility::Math::OnePi,
         discontinuityEpsilon);
-    bool angleMaximumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+    bool angleMaximumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         angularBounds.y,
         CesiumUtility::Math::OnePi,
         discontinuityEpsilon);
 
     angleFlags.X = angleRangeIndicator;
-    angleFlags.Y = angleMinimumHasDiscontinuity;
-    angleFlags.Z = angleMaximumHasDiscontinuity;
+    angleFlags.Y = angleMinimumAtDiscontinuity;
+    angleFlags.Z = angleMaximumAtDiscontinuity;
     angleFlags.W = isAngleReversed;
 
     // Compute the extents of the angle range in UV Shape Space.
