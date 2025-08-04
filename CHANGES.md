@@ -1,5 +1,9 @@
 # Change Log {#changes}
 
+### ???
+
+- Add missing CesiumRuntime.h include in CesiumPropertyAttribute.cpp. Broke compilation of previous v2.18.0 release on Windows.
+
 ### v2.18.0 - 2025-08-01
 
 ##### Breaking Changes :mega:
