@@ -26,8 +26,8 @@ struct EllipsoidRegion
   float LatitudeUVOffset;
 
   uint LongitudeRangeFlag;
-  bool LongitudeMinHasDiscontinuity;
-  bool LongitudeMaxHasDiscontinuity;
+  bool LongitudeMinAtDiscontinuity;
+  bool LongitudeMaxAtDiscontinuity;
   bool LongitudeIsReversed;
   uint LatitudeMinFlag;
   uint LatitudeMaxFlag;
@@ -39,8 +39,8 @@ struct EllipsoidRegion
 
     // Flags are packed in CesiumVoxelRendererComponent.cpp
     LongitudeRangeFlag = round(PackedData0.x);
-    LongitudeMinHasDiscontinuity = bool(PackedData0.y);
-    LongitudeMaxHasDiscontinuity = bool(PackedData0.z);
+    LongitudeMinAtDiscontinuity = bool(PackedData0.y);
+    LongitudeMaxAtDiscontinuity = bool(PackedData0.z);
     LongitudeIsReversed = bool(PackedData0.w);
 
     LatitudeMinFlag = round(PackedData1.x);
