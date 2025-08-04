@@ -89,6 +89,7 @@ private:
   FString _name;
   FString _className;
 
+  int64 _elementCount;
   TMap<FString, FCesiumPropertyAttributeProperty> _properties;
 
   friend class UCesiumPropertyAttributeBlueprintLibrary;

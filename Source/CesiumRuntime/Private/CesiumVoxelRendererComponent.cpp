@@ -483,8 +483,8 @@ void setVoxelEllipsoidProperties(
   double maximumHeight = region.getMaximumHeight();
 
   // Defines the extents of the longitude in UV space. In other words, this
-  // expresses the minimum, maximum, and midpoint values of the longitude range
-  // in UV space.
+  // expresses the minimum and maximum values of the longitude range, as well as
+  // the midpoint of the negative space.
   FVector longitudeUVExtents = FVector::Zero();
   double longitudeUVScale = 1;
   double longitudeUVOffset = 0;
@@ -501,11 +501,11 @@ void setVoxelEllipsoidProperties(
     // Refers to the discontinuity at longitude 0 / 2pi.
     const double discontinuityEpsilon =
         CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
-    bool longitudeMinimumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+    bool longitudeMinimumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         minimumLongitude,
         0,
         discontinuityEpsilon);
-    bool longitudeMaximumHasDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+    bool longitudeMaximumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         maximumLongitude,
         CesiumUtility::Math::TwoPi,
         discontinuityEpsilon);
@@ -514,8 +514,8 @@ void setVoxelEllipsoidProperties(
         interpretLongitudeRange(longitudeRange);
 
     longitudeFlags.X = longitudeRangeIndicator;
-    longitudeFlags.Y = longitudeMinimumHasDiscontinuity;
-    longitudeFlags.Z = longitudeMaximumHasDiscontinuity;
+    longitudeFlags.Y = longitudeMinimumAtDiscontinuity;
+    longitudeFlags.Z = longitudeMaximumAtDiscontinuity;
     longitudeFlags.W = isLongitudeReversed;
 
     // Compute the extents of the longitude range in UV Shape Space.
@@ -523,10 +523,10 @@ void setVoxelEllipsoidProperties(
         (minimumLongitude - defaultMinimumBounds.X) / defaultRange;
     double maximumLongitudeUV =
         (maximumLongitude - defaultMinimumBounds.X) / defaultRange;
-    // Given a longitude range, represents the actual value where "0" would be
-    // in UV coordinates.
+    // Given the longitude range, describes the proportion of the ellipsoid
+    // that is excluded from that range.
     double longitudeRangeUVZero = 1.0 - longitudeRange / defaultRange;
-    // TODO: document this
+    // Describes the midpoint of the above excluded range.
     double longitudeRangeUVZeroMid =
         glm::fract(maximumLongitudeUV + 0.5 * longitudeRangeUVZero);
 
