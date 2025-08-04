@@ -18,7 +18,7 @@ if (NOT UNREAL_ENGINE_ROOT)
     set(DEFAULT_UNREAL_INSTALLATION "/Users/Shared/Epic Games/UE_5.4")
   endif()
 
-  if (NOT EXISTS ${DEFAULT_UNREAL_INSTALLATION})
+  if (NOT EXISTS "${DEFAULT_UNREAL_INSTALLATION}")
      message(FATAL_ERROR "Please specify the root of your Unreal Engine installation, either by setting the UNREAL_ENGINE_ROOT environment variable or with -DUNREAL_ENGINE_ROOT=path on the cmake command-line.")
   else()
     set(UNREAL_ENGINE_ROOT ${DEFAULT_UNREAL_INSTALLATION})
