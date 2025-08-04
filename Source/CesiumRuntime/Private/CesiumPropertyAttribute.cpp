@@ -14,6 +14,7 @@ FCesiumPropertyAttribute::FCesiumPropertyAttribute(
           ECesiumPropertyAttributeStatus::ErrorInvalidPropertyAttributeClass),
       _name(propertyAttribute.name.value_or("").c_str()),
       _className(propertyAttribute.classProperty.c_str()),
+      _elementCount(0),
       _properties() {
   CesiumGltf::PropertyAttributeView propertyAttributeView{
       model,
@@ -36,6 +37,7 @@ FCesiumPropertyAttribute::FCesiumPropertyAttribute(
   propertyAttributeView.forEachProperty(
       primitive,
       [&properties = _properties,
+       &elementCount = _elementCount,
        &Schema = *pExtension->schema,
        &propertyAttributeView,
        &pEnumCollection](
@@ -50,6 +52,20 @@ FCesiumPropertyAttribute::FCesiumPropertyAttribute(
         if (pEnumCollection.IsValid() && pClassProperty->enumType.has_value()) {
           pEnumDefinition = pEnumCollection->Get(
               FString(UTF8_TO_TCHAR(pClassProperty->enumType.value().c_str())));
+        }
+
+        if (elementCount == 0) {
+          // Use the first non-zero property size to compare against all the
+          // others.
+          elementCount = propertyValue.size();
+        }
+
+        if (propertyValue.size() > 0 && elementCount != propertyValue.size()) {
+          UE_LOG(
+              LogCesium,
+              Error,
+              TEXT(
+                  "The size of one or more property attribute properties does not match the others."));
         }
 
         properties.Add(
@@ -98,7 +114,7 @@ UCesiumPropertyAttributeBlueprintLibrary::GetMetadataValuesAtIndex(
     UPARAM(ref) const FCesiumPropertyAttribute& PropertyAttribute,
     int64 Index) {
   TMap<FString, FCesiumMetadataValue> values;
-  if (Index < 0) {
+  if (Index < 0 || Index >= PropertyAttribute._elementCount) {
     return values;
   }
 

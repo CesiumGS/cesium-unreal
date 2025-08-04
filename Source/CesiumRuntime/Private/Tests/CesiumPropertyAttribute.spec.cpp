@@ -358,7 +358,7 @@ void FCesiumPropertyAttributeSpec::Define() {
           ClassProperty::Type::SCALAR,
           ClassProperty::ComponentType::INT32, // Incorrect component type
           invalidPropertyValues,
-          {0});
+          "_BAD");
 
       FCesiumPropertyAttribute propertyAttribute(
           model,
@@ -500,7 +500,7 @@ void FCesiumPropertyAttributeSpec::Define() {
   Describe("GetMetadataValuesAtIndex", [this]() {
     BeforeEach([this]() { pPropertyAttribute->classProperty = "testClass"; });
 
-    It("returns empty map for invalid property Attribute", [this]() {
+    It("returns empty map for invalid property attribute", [this]() {
       FCesiumPropertyAttribute propertyAttribute;
 
       TestEqual(
@@ -518,6 +518,49 @@ void FCesiumPropertyAttributeSpec::Define() {
           UCesiumPropertyAttributeBlueprintLibrary::GetMetadataValuesAtIndex(
               propertyAttribute,
               0);
+      TestTrue("values map is empty", values.IsEmpty());
+    });
+
+    It("returns empty map for invalid index", [this]() {
+      std::string scalarPropertyName("scalarProperty");
+      std::vector<int8_t> scalarValues{-1, 2, -3, 4};
+      AddPropertyAttributePropertyToModel(
+          model,
+          *pPrimitive,
+          *pPropertyAttribute,
+          scalarPropertyName,
+          ClassProperty::Type::SCALAR,
+          ClassProperty::ComponentType::INT8,
+          scalarValues,
+          "_SCALAR");
+
+      FCesiumPropertyAttribute propertyAttribute(
+          model,
+          *pPrimitive,
+          *pPropertyAttribute);
+
+      TestEqual(
+          "PropertyAttributeStatus",
+          UCesiumPropertyAttributeBlueprintLibrary::GetPropertyAttributeStatus(
+              propertyAttribute),
+          ECesiumPropertyAttributeStatus::Valid);
+      TestEqual(
+          "Property Count",
+          UCesiumPropertyAttributeBlueprintLibrary::GetProperties(
+              propertyAttribute)
+              .Num(),
+          1);
+
+      auto values =
+          UCesiumPropertyAttributeBlueprintLibrary::GetMetadataValuesAtIndex(
+              propertyAttribute,
+              -1);
+      TestTrue("values map is empty", values.IsEmpty());
+
+      values =
+          UCesiumPropertyAttributeBlueprintLibrary::GetMetadataValuesAtIndex(
+              propertyAttribute,
+              100);
       TestTrue("values map is empty", values.IsEmpty());
     });
 
