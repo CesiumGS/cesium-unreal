@@ -38,6 +38,8 @@ struct VoxelMegatextures
 {
   %s
   int ShapeConstant;
+  bool WrapCylinderUV;
+  
   uint3 TileCount; // Number of tiles in the texture, in three dimensions.
 
   // NOTE: Unlike VoxelOctree, these dimensions are specified with respect to the voxel attributes
@@ -72,18 +74,13 @@ struct VoxelMegatextures
     {
       // Since glTFs are y-up (and 3D Tiles is z-up), the data must be accessed to reflect the transforms
       // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
-      // VoxelCoords = float3(VoxelCoords.x, (DataDimensions.y - 1u) - VoxelCoords.z, VoxelCoords.y);
       LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
     }
-    else if (ShapeConstant == CYLINDER)
+    else if (ShapeConstant == CYLINDER && WrapCylinderUV && Sample.Coords.w == 0)
     {
-       // For cylinders, the start of the angular bounds has to be adjusted for full cylinders
-      // (i.e., the root tile only).
-      // TODO: This assumes that the root tile is a whole cylinder, but the root tile may be
-      // a partial cylinder.
+      // For cylinders, the start of the angular bounds has to be adjusted for full cylinders
+      // (Root tile only).
       LocalUV = float3(LocalUV.x, frac(LocalUV.z + 0.5), LocalUV.y);
-      //float Angle = (Sample.Coords.w == 0) ? (VoxelCoords.y + (float)DataDimensions.z / 2.0) % DataDimensions.z : VoxelCoords.y;
-      //VoxelCoords = float3(VoxelCoords.x, VoxelCoords.z, Angle);
     } 
     
     float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
@@ -166,9 +163,11 @@ Octree.SetNodeData(OctreeData);
 Octree.GridDimensions = GridDimensions;
  
 // Initialize data textures
-VoxelMegatextures DataTextures;
-DataTextures.ShapeConstant = ShapeConstant;
+VoxelMegatexturesDataTextures = (VoxelMegatextures) 0;
+DataTextures.ShapeConstant =
+ShapeConstant;
 DataTextures.TileCount = TileCount;
+DataTextures.WrapCylinderUV = (ShapeConstant == CYLINDER) ? (Octree.GridShape.CylinderShape.AngleRangeFlag == 0) : false;
 
 // Account for y-up -> z-up conventions for certain shapes.
 switch (ShapeConstant) {

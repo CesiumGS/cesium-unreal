@@ -173,15 +173,34 @@ struct Cylinder
       RayIntersections FirstResult = (RayIntersections) 0;
       RayIntersections SecondResult = (RayIntersections) 0;
       IntersectFlippedWedge(R, AngleBounds, FirstResult, SecondResult);
-      setShapeIntersections(Intersections, ListState, 2, FirstResult);
-      setShapeIntersections(Intersections, ListState, 3, SecondResult);
+      switch (ListState.Length)
+      {
+        case 4: // outer cylinder + inner radius
+          setShapeIntersections(Intersections, ListState, 2, FirstResult);
+          setShapeIntersections(Intersections, ListState, 3, SecondResult);
+          break;
+        case 2: // outer cylinder
+        default:
+          setShapeIntersections(Intersections, ListState, 1, FirstResult);
+          setShapeIntersections(Intersections, ListState, 2, SecondResult);
+          break;
+      }
       ListState.Length += 4;
     }
     else if (AngleRangeFlag == ANGLE_OVER_HALF)
     {
       // The shape's angle range is over half, so we intersect a NEGATIVE shape that is under half.
       RayIntersections WedgeResult = IntersectRegularWedge(R, AngleBounds);
-      setShapeIntersections(Intersections, ListState, 2, WedgeResult);
+      switch (ListState.Length)
+      {
+        case 4: // outer cylinder + inner radius
+          setShapeIntersections(Intersections, ListState, 2, WedgeResult);
+          break;
+        case 2: // outer cylinder
+        default:
+          setShapeIntersections(Intersections, ListState, 1, WedgeResult);
+          break;
+      }
       ListState.Length += 2;
     }
     else if (AngleRangeFlag == ANGLE_EQUAL_ZERO)
@@ -189,8 +208,18 @@ struct Cylinder
       RayIntersections FirstResult = (RayIntersections) 0;
       RayIntersections SecondResult = (RayIntersections) 0;
       IntersectHalfPlane(R, AngleBounds.x, FirstResult, SecondResult);
-      setShapeIntersections(Intersections, ListState, 2, FirstResult);
-      setShapeIntersections(Intersections, ListState, 3, SecondResult);
+      switch (ListState.Length)
+      {
+        case 4: // outer cylinder + inner radius
+          setShapeIntersections(Intersections, ListState, 2, FirstResult);
+          setShapeIntersections(Intersections, ListState, 3, SecondResult);
+          break;
+        case 2: // outer cylinder
+        default:
+          setShapeIntersections(Intersections, ListState, 1, FirstResult);
+          setShapeIntersections(Intersections, ListState, 2, SecondResult);
+          break;
+      }
       ListState.Length += 4;
     }
   }
