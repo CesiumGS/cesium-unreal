@@ -194,7 +194,6 @@ public:
    */
   static FVector createVector(const glm::dvec3& v) noexcept;
 
-  
   /**
    * @brief Create an `FVector4` from the given `glm` 4D vector.
    *

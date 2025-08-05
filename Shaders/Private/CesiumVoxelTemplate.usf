@@ -78,8 +78,7 @@ struct VoxelMegatextures
     }
     else if (ShapeConstant == CYLINDER)
     {
-      // For cylinders, the start of the angular bounds has to be adjusted for full cylinders
-      // (Root tile only).
+      // The start of the angular bounds has to be adjusted for full cylinders (root tile only).
       float adjustedAngle = WrapCylinderUV && Sample.Coords.w == 0 ? frac(LocalUV.y + 0.5) : LocalUV.y;
       LocalUV = float3(LocalUV.x, LocalUV.z, adjustedAngle);
     } 
