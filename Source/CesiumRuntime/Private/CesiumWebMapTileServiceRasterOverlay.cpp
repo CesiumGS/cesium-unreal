@@ -119,3 +119,8 @@ UCesiumWebMapTileServiceRasterOverlay::CreateOverlay(
       wmtsOptions,
       options);
 }
+
+bool UCesiumWebMapTileServiceRasterOverlay::IsReadyForFinishDestroy() {
+  this->SetUrl(this->BaseUrl);
+  return Super::IsReadyForFinishDestroy();
+}
