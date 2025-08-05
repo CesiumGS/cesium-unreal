@@ -76,11 +76,12 @@ struct VoxelMegatextures
       // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
       LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
     }
-    else if (ShapeConstant == CYLINDER && WrapCylinderUV && Sample.Coords.w == 0)
+    else if (ShapeConstant == CYLINDER)
     {
       // For cylinders, the start of the angular bounds has to be adjusted for full cylinders
       // (Root tile only).
-      LocalUV = float3(LocalUV.x, frac(LocalUV.z + 0.5), LocalUV.y);
+      float adjustedAngle = WrapCylinderUV && Sample.Coords.w == 0 ? frac(LocalUV.y + 0.5) : LocalUV.y;
+      LocalUV = float3(LocalUV.x, LocalUV.z, adjustedAngle);
     } 
     
     float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
@@ -163,9 +164,8 @@ Octree.SetNodeData(OctreeData);
 Octree.GridDimensions = GridDimensions;
  
 // Initialize data textures
-VoxelMegatexturesDataTextures = (VoxelMegatextures) 0;
-DataTextures.ShapeConstant =
-ShapeConstant;
+VoxelMegatextures DataTextures;
+DataTextures.ShapeConstant = ShapeConstant;
 DataTextures.TileCount = TileCount;
 DataTextures.WrapCylinderUV = (ShapeConstant == CYLINDER) ? (Octree.GridShape.CylinderShape.AngleRangeFlag == 0) : false;
 
@@ -250,8 +250,7 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
     }
   }
 
-  PositionUV = R.Origin + CurrentT * R.
-Direction;
+  PositionUV = R.Origin + CurrentT * R.Direction;
   PositionShapeUVSpace = Octree.GridShape.ConvertUVToShapeUVSpace(PositionUV, JacobianT);
   Octree.ResumeTraversal(PositionShapeUVSpace, Traversal, Sample);
   NextIntersection = Octree.GetNextVoxelIntersection(Sample, RawDirection, Intersections, JacobianT, CurrentT);

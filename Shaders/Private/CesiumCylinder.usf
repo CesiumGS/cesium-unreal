@@ -31,8 +31,8 @@ struct Cylinder
 
   void Initialize(float3 InMinBounds, float3 InMaxBounds, float4 PackedData0, float4 PackedData1, float4 PackedData2, float4 PackedData3)
   {
-    MinBounds = InMinBounds; // radius, angle, height
-    MaxBounds = InMaxBounds; // radius, angle, height
+    MinBounds = InMinBounds; // normalized radius, angle, height
+    MaxBounds = InMaxBounds; // normalized radius, angle, height
 
     // Flags are packed in CesiumVoxelRendererComponent.cpp
     RadiusHasMinimumBound = bool(PackedData0.x);
@@ -156,8 +156,7 @@ struct Cylinder
       setSurfaceIntersection(Intersections, ListState, 1, InnerResult.Entry, false, true); // negative, entering
       setSurfaceIntersection(Intersections, ListState, 2, InnerResult.Exit, false, false); // negative, exiting
       setSurfaceIntersection(Intersections, ListState, 3, OuterResult.Exit, true, false); // positive, exiting
-      ListState.Length += 2;
-      
+      ListState.Length += 2; 
     }
     else if (RadiusHasMinimumBound)
     {
