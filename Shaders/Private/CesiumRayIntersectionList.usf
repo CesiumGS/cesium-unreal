@@ -124,6 +124,12 @@ struct IntersectionListState
         continue;
       }
 
+      if (i >= Length)
+      {
+        Index = INTERSECTIONS_LENGTH;
+        break;
+      }
+      
       Index = i + 1;
 
       surfaceIntersection = Data[i];
