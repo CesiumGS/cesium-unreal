@@ -107,10 +107,7 @@ struct IntersectionListState
   */
   RayIntersections GetNextIntersections(in float4 Data[INTERSECTIONS_LENGTH])
   {
-    RayIntersections result = (RayIntersections) 0;
-    result.Entry.t = NO_HIT;
-    result.Exit.t = NO_HIT;
-
+    RayIntersections result = NewRayIntersections(NewMissedIntersection(), NewMissedIntersection());
     if (Index >= Length)
     {
       return result;
@@ -139,7 +136,7 @@ struct IntersectionListState
       IsInsidePositiveShape = isCurrentShapePositive ? isEnteringShape : IsInsidePositiveShape;
 
       // True if entering positive shape or exiting negative shape
-      if (IsInsidePositiveShape && isEnteringShape == isCurrentShapePositive)
+      if (SurroundingShapeCount == 1 && IsInsidePositiveShape && isEnteringShape == isCurrentShapePositive)
       {
         result.Entry.t = surfaceIntersection.w;
         result.Entry.Normal = normalize(surfaceIntersection.xyz);
