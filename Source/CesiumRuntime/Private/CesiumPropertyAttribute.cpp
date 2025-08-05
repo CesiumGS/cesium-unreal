@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyAttribute.h"
+#include "CesiumRuntime.h"
 #include <CesiumGltf/PropertyAttributeView.h>
 
 static FCesiumPropertyAttributeProperty EmptyPropertyAttributeProperty;
