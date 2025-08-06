@@ -12,6 +12,7 @@
 #include "EncodedFeaturesMetadata.h"
 #include "EncodedMetadataConversions.h"
 #include "Engine/VolumeTexture.h"
+#include "RenderingThread.h"
 #include "Templates/UniquePtr.h"
 #include "UObject/Package.h"
 

@@ -4,6 +4,7 @@
 #include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
+#include "RenderingThread.h"
 
 #include <Cesium3DTilesContent/ImplicitTilingUtilities.h>
 #include <glm/glm.hpp>
