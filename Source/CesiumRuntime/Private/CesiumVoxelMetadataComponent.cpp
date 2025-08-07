@@ -739,7 +739,7 @@ static void GenerateMaterialNodes(
     auto* VectorParameterNode =
         Cast<UMaterialExpressionVectorParameter>(NewExpression);
     if (VectorParameterNode &&
-        VectorParameterNode->ParameterName.ToString() == "Tile Count") {
+        VectorParameterNode->ParameterName.ToString() == "Use Linear Interpolation") {
       DataSectionX = VectorParameterNode->MaterialExpressionEditorX;
       DataSectionY = VectorParameterNode->MaterialExpressionEditorY;
     }

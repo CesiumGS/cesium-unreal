@@ -212,7 +212,7 @@ VoxelMegatextures DataTextures;
 DataTextures.ShapeConstant = ShapeConstant;
 DataTextures.TileCount = TileCount;
 DataTextures.WrapCylinderUV = (ShapeConstant == CYLINDER) ? (Octree.GridShape.CylinderShape.AngleRangeFlag == 0) : false;
-DataTextures.UseLinearInterpolation = UseLinearInterpolation;
+DataTextures.UseLinearInterpolation = bool(UseLinearInterpolation);
 
 // Account for y-up -> z-up conventions for certain shapes.
 switch (ShapeConstant) {

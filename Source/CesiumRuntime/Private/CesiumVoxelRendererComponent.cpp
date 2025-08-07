@@ -1051,6 +1051,25 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   return pVoxelComponent;
 }
 
+void UCesiumVoxelRendererComponent::SetVoxelRenderingOptions(
+    const FCesiumVoxelRenderingOptions& Options) {
+  UMaterialInstanceDynamic* pMaterial = nullptr;
+  if (this->MeshComponent) {
+    UMaterialInterface* pMaterialInterface =
+        this->MeshComponent->GetMaterial(0);
+    pMaterial = Cast<UMaterialInstanceDynamic>(pMaterialInterface);
+  }
+
+  if (pMaterial) {
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            UTF8_TO_TCHAR("Use Linear Interpolation"),
+            EMaterialParameterAssociation::LayerParameter,
+            0),
+        float(Options.EnableLinearInterpolation));
+  }
+}
+
 namespace {
 template <typename Func>
 void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
@@ -1231,8 +1250,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
 
 namespace {
 /**
- * Updates the input voxel material to account for origin shifting or ellipsoid
- * changes from the tileset's georeference.
+ * Updates the input voxel material to account for origin shifting or
+ * ellipsoid changes from the tileset's georeference.
  */
 void updateEllipsoidVoxelParameters(
     UMaterialInstanceDynamic* pMaterial,

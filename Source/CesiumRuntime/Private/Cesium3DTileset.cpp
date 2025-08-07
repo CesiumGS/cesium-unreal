@@ -569,6 +569,17 @@ void ACesium3DTileset::SetPointCloudShading(
   }
 }
 
+void ACesium3DTileset::SetVoxelRenderingOptions(
+    FCesiumVoxelRenderingOptions InVoxelRenderingOptions) {
+  if (VoxelRenderingOptions != InVoxelRenderingOptions) {
+    VoxelRenderingOptions = InVoxelRenderingOptions;
+    if (this->_pVoxelRendererComponent) {
+      this->_pVoxelRendererComponent->SetVoxelRenderingOptions(
+          InVoxelRenderingOptions);
+    }
+  }
+}
+
 void ACesium3DTileset::SetRuntimeVirtualTextures(
     TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures) {
   if (this->RuntimeVirtualTextures != InRuntimeVirtualTextures) {
@@ -2308,6 +2319,12 @@ void ACesium3DTileset::PostEditChangeChainProperty(
   if (PropName ==
       GET_MEMBER_NAME_CHECKED(ACesium3DTileset, PointCloudShading)) {
     FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
+  } else if (
+      PropName ==
+      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, VoxelRenderingOptions)) {
+    if (this->_pVoxelRendererComponent) {
+      this->_pVoxelRendererComponent->SetVoxelRenderingOptions(VoxelRenderingOptions);
+    }
   }
 }
 
