@@ -48,17 +48,36 @@ struct VoxelMegatextures
   uint3 PaddingBefore;
   uint3 PaddingAfter;
 
+  bool UseLinearInterpolation;
+
   int3 TileIndexToCoords(in int Index)
   {
     if (TileCount.x == 0 || TileCount.y == 0 || TileCount.z == 0)
     {
       return 0;
     }
+    
     int ZSlice = TileCount.x * TileCount.y;
     int Z = Index / ZSlice;
     int Y = (Index % ZSlice) / TileCount.x;
     int X = Index % TileCount.x;
     return int3(X, Y, Z) * (GridDimensions + PaddingBefore + PaddingAfter);
+  }
+
+  CustomShaderProperties GetPropertiesAtCoords(int3 Coords)
+  {
+    CustomShaderProperties Properties = (CustomShaderProperties) 0;
+    %s
+
+    return Properties;
+  }
+  
+  CustomShaderProperties InterpolateProperties(CustomShaderProperties A, CustomShaderProperties B, float t)
+  {
+    CustomShaderProperties Result = (CustomShaderProperties) 0;
+    %s
+    
+    return Result;
   }
   
   CustomShaderProperties GetProperties(in TileSample Sample)
@@ -69,6 +88,7 @@ struct VoxelMegatextures
     // Compute int coordinates of the voxel within the tile.
     float3 LocalUV = Sample.LocalUV;
     uint3 DataDimensions = GridDimensions + PaddingBefore + PaddingAfter;
+    float3 MaxVoxelCoords = float3(DataDimensions - 1u);
 
     if (ShapeConstant == BOX)
     {
@@ -81,18 +101,43 @@ struct VoxelMegatextures
       // The start of the angular bounds has to be adjusted for full cylinders (root tile only).
       float adjustedAngle = WrapCylinderUV && Sample.Coords.w == 0 ? frac(LocalUV.y + 0.5) : LocalUV.y;
       LocalUV = float3(LocalUV.x, LocalUV.z, adjustedAngle);
-    } 
+    }
     
-    float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
-    // Account for padding
-    VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
-    
-    int3 Coords = TileCoords + VoxelCoords;
-    
-    CustomShaderProperties Properties = (CustomShaderProperties) 0;
- %s
+    float3 VoxelCoords = LocalUV * float3(GridDimensions) + float3(PaddingBefore);
+    VoxelCoords = clamp(VoxelCoords, 0, MaxVoxelCoords);
 
-    return Properties;
+    int3 Coords = TileCoords + floor(VoxelCoords);
+    
+    if (UseLinearInterpolation)
+    {
+      float3 t = frac(VoxelCoords);
+      float3 MaxCoords = TileCoords + MaxVoxelCoords;
+      
+      // Linear interpolation must be confined within a tile to avoid sampling data that is not physicall adjacent.
+      // That means we must manually interpolate instead of relying on a linear texture filter.
+      CustomShaderProperties x0y0z0 = GetPropertiesAtCoords(Coords);
+      CustomShaderProperties x1y0z0 = GetPropertiesAtCoords(min(Coords + int3(1, 0, 0), MaxCoords));
+      CustomShaderProperties x0y1z0 = GetPropertiesAtCoords(min(Coords + int3(0, 1, 0), MaxCoords));
+      CustomShaderProperties x1y1z0 = GetPropertiesAtCoords(min(Coords + int3(1, 1, 0), MaxCoords));
+      CustomShaderProperties x0y0z1 = GetPropertiesAtCoords(min(Coords + int3(0, 0, 1), MaxCoords));
+      CustomShaderProperties x1y0z1 = GetPropertiesAtCoords(min(Coords + int3(1, 0, 1), MaxCoords));
+      CustomShaderProperties x0y1z1 = GetPropertiesAtCoords(min(Coords + int3(0, 1, 1), MaxCoords));
+      CustomShaderProperties x1y1z1 = GetPropertiesAtCoords(min(Coords + int3(1, 1, 1), MaxCoords));
+
+      CustomShaderProperties y0z0 = InterpolateProperties(x0y0z0, x1y0z0, t.x);
+      CustomShaderProperties y1z0 = InterpolateProperties(x0y1z0, x1y1z0, t.x);
+      CustomShaderProperties y0z1 = InterpolateProperties(x0y0z1, x1y0z1, t.x);
+      CustomShaderProperties y1z1 = InterpolateProperties(x0y1z1, x1y1z1, t.x);
+
+      CustomShaderProperties z0 = InterpolateProperties(y0z0, y1z0, t.y);
+      CustomShaderProperties z1 = InterpolateProperties(y1z1, y1z1, t.y);
+
+      return InterpolateProperties(z0, z1, t.z);
+    }
+    else
+    {
+      return GetPropertiesAtCoords(Coords);
+    }
   }
 };
 
@@ -167,6 +212,7 @@ VoxelMegatextures DataTextures;
 DataTextures.ShapeConstant = ShapeConstant;
 DataTextures.TileCount = TileCount;
 DataTextures.WrapCylinderUV = (ShapeConstant == CYLINDER) ? (Octree.GridShape.CylinderShape.AngleRangeFlag == 0) : false;
+DataTextures.UseLinearInterpolation = UseLinearInterpolation;
 
 // Account for y-up -> z-up conventions for certain shapes.
 switch (ShapeConstant) {

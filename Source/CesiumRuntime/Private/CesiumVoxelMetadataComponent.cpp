@@ -256,6 +256,7 @@ struct MaterialResourceLibrary {
 struct CustomShaderBuilder {
   FString DeclareShaderProperties;
   FString SamplePropertiesFromTexture;
+  FString InterpolateProperties;
   FString DeclareDataTextureVariables;
   FString SetDataTextures;
 
@@ -430,6 +431,20 @@ struct CustomShaderBuilder {
   }
 
   /**
+   * Adds code for linearly interpolating the property in the corresponding
+   * shader function.
+   */
+  void AddPropertyInterpolation(const FString& PropertyName) {
+    if (!InterpolateProperties.IsEmpty()) {
+      InterpolateProperties += "\n\t\t";
+    }
+
+    // Example: Result.Property = lerp(A.Property, B.Property, t);
+    InterpolateProperties += "Result." + PropertyName + " = lerp(A." +
+                             PropertyName + ", B." + PropertyName + ", t);";
+  }
+
+  /**
    * Comprehensively adds the declaration for properties and data textures, as
    * well as the code to correctly retrieve the property values from the data
    * textures.
@@ -441,6 +456,7 @@ struct CustomShaderBuilder {
     AddPropertyDeclaration(PropertyName, Property);
     AddDataTexture(PropertyName, TextureParameterName);
     AddPropertyRetrieval(PropertyName, Property);
+    AddPropertyInterpolation(PropertyName);
   }
 };
 } // namespace
@@ -831,6 +847,7 @@ static void GenerateMaterialNodes(
   LazyPrintf.PushParam(*Component->CustomShader);
   LazyPrintf.PushParam(*Builder.DeclareDataTextureVariables);
   LazyPrintf.PushParam(*Builder.SamplePropertiesFromTexture);
+  LazyPrintf.PushParam(*Builder.InterpolateProperties);
   LazyPrintf.PushParam(*Builder.SetDataTextures);
 
   RaymarchNode->Code = LazyPrintf.GetResultString();
