@@ -2323,7 +2323,8 @@ void ACesium3DTileset::PostEditChangeChainProperty(
       PropName ==
       GET_MEMBER_NAME_CHECKED(ACesium3DTileset, VoxelRenderingOptions)) {
     if (this->_pVoxelRendererComponent) {
-      this->_pVoxelRendererComponent->SetVoxelRenderingOptions(VoxelRenderingOptions);
+      this->_pVoxelRendererComponent->SetVoxelRenderingOptions(
+          VoxelRenderingOptions);
     }
   }
 }
@@ -2437,5 +2438,8 @@ void ACesium3DTileset::createVoxelRenderer(
           Warning,
           TEXT("Voxel renderer could not be attached to root"));
     }
+
+    this->_pVoxelRendererComponent->SetVoxelRenderingOptions(
+        this->VoxelRenderingOptions);
   }
 }

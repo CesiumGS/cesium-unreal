@@ -103,26 +103,27 @@ struct VoxelMegatextures
       LocalUV = float3(LocalUV.x, LocalUV.z, adjustedAngle);
     }
     
-    float3 VoxelCoords = LocalUV * float3(GridDimensions) + float3(PaddingBefore);
-    VoxelCoords = clamp(VoxelCoords, 0, MaxVoxelCoords);
+    float3 VoxelCoords = LocalUV * float3(GridDimensions);
 
-    int3 Coords = TileCoords + floor(VoxelCoords);
-    
     if (UseLinearInterpolation)
     {
-      float3 t = frac(VoxelCoords);
-      float3 MaxCoords = TileCoords + MaxVoxelCoords;
+      // Account for padding
+      VoxelCoords += float3(PaddingBefore);
       
-      // Linear interpolation must be confined within a tile to avoid sampling data that is not physicall adjacent.
+      float3 t = frac(VoxelCoords + 0.5);
+      float3 Coords = TileCoords + VoxelCoords;
+      int3 MaxCoords = TileCoords + MaxVoxelCoords;
+      
+      // Linear interpolation must be confined within a tile to avoid sampling data that is not physically adjacent.
       // That means we must manually interpolate instead of relying on a linear texture filter.
-      CustomShaderProperties x0y0z0 = GetPropertiesAtCoords(Coords);
-      CustomShaderProperties x1y0z0 = GetPropertiesAtCoords(min(Coords + int3(1, 0, 0), MaxCoords));
-      CustomShaderProperties x0y1z0 = GetPropertiesAtCoords(min(Coords + int3(0, 1, 0), MaxCoords));
-      CustomShaderProperties x1y1z0 = GetPropertiesAtCoords(min(Coords + int3(1, 1, 0), MaxCoords));
-      CustomShaderProperties x0y0z1 = GetPropertiesAtCoords(min(Coords + int3(0, 0, 1), MaxCoords));
-      CustomShaderProperties x1y0z1 = GetPropertiesAtCoords(min(Coords + int3(1, 0, 1), MaxCoords));
-      CustomShaderProperties x0y1z1 = GetPropertiesAtCoords(min(Coords + int3(0, 1, 1), MaxCoords));
-      CustomShaderProperties x1y1z1 = GetPropertiesAtCoords(min(Coords + int3(1, 1, 1), MaxCoords));
+      CustomShaderProperties x0y0z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5, -0.5, -0.5)), 0, MaxCoords));
+      CustomShaderProperties x1y0z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3 (0.5, -0.5, -0.5)), 0, MaxCoords));
+      CustomShaderProperties x0y1z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5,  0.5, -0.5)), 0, MaxCoords));
+      CustomShaderProperties x1y1z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5,  0.5, -0.5)), 0, MaxCoords));
+      CustomShaderProperties x0y0z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5, -0.5,  0.5)), 0, MaxCoords));
+      CustomShaderProperties x1y0z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5, -0.5,  0.5)), 0, MaxCoords));
+      CustomShaderProperties x0y1z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5,  0.5,  0.5)), 0, MaxCoords));
+      CustomShaderProperties x1y1z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5,  0.5,  0.5)), 0, MaxCoords));
 
       CustomShaderProperties y0z0 = InterpolateProperties(x0y0z0, x1y0z0, t.x);
       CustomShaderProperties y1z0 = InterpolateProperties(x0y1z0, x1y1z0, t.x);
@@ -130,13 +131,15 @@ struct VoxelMegatextures
       CustomShaderProperties y1z1 = InterpolateProperties(x0y1z1, x1y1z1, t.x);
 
       CustomShaderProperties z0 = InterpolateProperties(y0z0, y1z0, t.y);
-      CustomShaderProperties z1 = InterpolateProperties(y1z1, y1z1, t.y);
+      CustomShaderProperties z1 = InterpolateProperties(y0z1, y1z1, t.y);
 
       return InterpolateProperties(z0, z1, t.z);
     }
     else
     {
-      return GetPropertiesAtCoords(Coords);
+      // Account for padding
+      VoxelCoords = clamp(floor(VoxelCoords) + float3(PaddingBefore), 0, MaxVoxelCoords);
+      return GetPropertiesAtCoords(TileCoords + VoxelCoords);
     }
   }
 };
