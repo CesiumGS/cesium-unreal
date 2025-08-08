@@ -116,14 +116,14 @@ struct VoxelMegatextures
       
       // Linear interpolation must be confined within a tile to avoid sampling data that is not physically adjacent.
       // That means we must manually interpolate instead of relying on a linear texture filter.
-      CustomShaderProperties x0y0z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5, -0.5, -0.5)), 0, MaxCoords));
-      CustomShaderProperties x1y0z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3 (0.5, -0.5, -0.5)), 0, MaxCoords));
-      CustomShaderProperties x0y1z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5,  0.5, -0.5)), 0, MaxCoords));
-      CustomShaderProperties x1y1z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5,  0.5, -0.5)), 0, MaxCoords));
-      CustomShaderProperties x0y0z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5, -0.5,  0.5)), 0, MaxCoords));
-      CustomShaderProperties x1y0z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5, -0.5,  0.5)), 0, MaxCoords));
-      CustomShaderProperties x0y1z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5,  0.5,  0.5)), 0, MaxCoords));
-      CustomShaderProperties x1y1z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5,  0.5,  0.5)), 0, MaxCoords));
+      CustomShaderProperties x0y0z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5, -0.5, -0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x1y0z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3 (0.5, -0.5, -0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x0y1z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5,  0.5, -0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x1y1z0 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5,  0.5, -0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x0y0z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5, -0.5,  0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x1y0z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5, -0.5,  0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x0y1z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3(-0.5,  0.5,  0.5)), TileCoords, MaxCoords));
+      CustomShaderProperties x1y1z1 = GetPropertiesAtCoords(clamp(floor(Coords + float3( 0.5,  0.5,  0.5)), TileCoords, MaxCoords));
 
       CustomShaderProperties y0z0 = InterpolateProperties(x0y0z0, x1y0z0, t.x);
       CustomShaderProperties y1z0 = InterpolateProperties(x0y1z0, x1y1z0, t.x);

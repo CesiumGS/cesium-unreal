@@ -434,14 +434,38 @@ struct CustomShaderBuilder {
    * Adds code for linearly interpolating the property in the corresponding
    * shader function.
    */
-  void AddPropertyInterpolation(const FString& PropertyName) {
+  void AddPropertyInterpolation(
+      const FString& PropertyName,
+      const FCesiumPropertyAttributePropertyDescription& Property) {
     if (!InterpolateProperties.IsEmpty()) {
       InterpolateProperties += "\n\t\t";
     }
 
     // Example: Result.Property = lerp(A.Property, B.Property, t);
-    InterpolateProperties += "Result." + PropertyName + " = lerp(A." +
-                             PropertyName + ", B." + PropertyName + ", t);";
+    FString lerp = "Result." + PropertyName + " = lerp(A." + PropertyName +
+                   ", B." + PropertyName + ", t);\n";
+
+    // Any "noData" values should be omitted from inteprolation. Otherwise, they
+    // may result in nonsensical data.
+    if (Property.PropertyDetails.bHasNoDataValue) {
+      FString NoDataName = PropertyName + MaterialPropertyNoDataSuffix;
+      // Example: if {A.Property == Property_NODATA) {
+      //   Result.Property = B.Property;
+      // }
+      // else if (B.Property == Property_NODATA) {
+      //   Result.Property = A.Property;
+      // } else {
+      //   Result.Property = lerp(A.Property, B.Property, t);
+      // }
+      InterpolateProperties +=
+          "if (A." + PropertyName + " == " + NoDataName + ") {\n\t\t" +
+          "Result." + PropertyName + " = B." + PropertyName + ";\n}\n\t" +
+          "else if (B." + PropertyName + " == " + NoDataName + ") {\n\t\t" +
+          "Result." + PropertyName + " = A." + PropertyName + ";\n}\n\t" +
+          "else {\n\t\t" + lerp + "}\n";
+    } else {
+      InterpolateProperties += lerp;
+    }
   }
 
   /**
@@ -456,7 +480,7 @@ struct CustomShaderBuilder {
     AddPropertyDeclaration(PropertyName, Property);
     AddDataTexture(PropertyName, TextureParameterName);
     AddPropertyRetrieval(PropertyName, Property);
-    AddPropertyInterpolation(PropertyName);
+    AddPropertyInterpolation(PropertyName, Property);
   }
 };
 } // namespace
@@ -736,12 +760,12 @@ static void GenerateMaterialNodes(
       continue;
     }
 
-    auto* VectorParameterNode =
-        Cast<UMaterialExpressionVectorParameter>(NewExpression);
-    if (VectorParameterNode &&
-        VectorParameterNode->ParameterName.ToString() == "Use Linear Interpolation") {
-      DataSectionX = VectorParameterNode->MaterialExpressionEditorX;
-      DataSectionY = VectorParameterNode->MaterialExpressionEditorY;
+    auto* ScalarParameterNode =
+        Cast<UMaterialExpressionScalarParameter>(NewExpression);
+    if (ScalarParameterNode && ScalarParameterNode->ParameterName.ToString() ==
+                                   "Use Linear Interpolation") {
+      DataSectionX = ScalarParameterNode->MaterialExpressionEditorX;
+      DataSectionY = ScalarParameterNode->MaterialExpressionEditorY;
     }
   }
 
