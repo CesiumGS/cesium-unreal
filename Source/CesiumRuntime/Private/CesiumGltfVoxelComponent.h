@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumPrimitiveMetadata.h"
+#include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 
 #include <CesiumGeometry/OctreeTileID.h>
