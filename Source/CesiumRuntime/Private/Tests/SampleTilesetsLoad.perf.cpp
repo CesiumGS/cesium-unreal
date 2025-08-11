@@ -192,22 +192,24 @@ bool FLoadTilesetMontrealPointCloud::RunTest(const FString& Parameters) {
         playContext.tilesets[0]->GetTileset();
     if (TestNotNull("Tileset", pTileset)) {
       int visibleTiles = 0;
-      pTileset->forEachLoadedTile([&](Cesium3DTilesSelection::Tile& tile) {
-        if (tile.getState() != Cesium3DTilesSelection::TileLoadState::Done)
-          return;
-        const Cesium3DTilesSelection::TileContent& content = tile.getContent();
-        const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-            content.getRenderContent();
-        if (!pRenderContent) {
-          return;
-        }
+      pTileset->forEachLoadedTile(
+          [&](const Cesium3DTilesSelection::Tile& tile) {
+            if (tile.getState() != Cesium3DTilesSelection::TileLoadState::Done)
+              return;
+            const Cesium3DTilesSelection::TileContent& content =
+                tile.getContent();
+            const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+                content.getRenderContent();
+            if (!pRenderContent) {
+              return;
+            }
 
-        UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
-            pRenderContent->getRenderResources());
-        if (Gltf && Gltf->IsVisible()) {
-          ++visibleTiles;
-        }
-      });
+            UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+                pRenderContent->getRenderResources());
+            if (Gltf && Gltf->IsVisible()) {
+              ++visibleTiles;
+            }
+          });
 
       TestEqual("visibleTiles", visibleTiles, 1);
     }

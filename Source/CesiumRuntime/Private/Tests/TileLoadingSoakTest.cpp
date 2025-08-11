@@ -58,7 +58,7 @@ FString& getLogFilePath() {
 }
 
 void countTree(
-    Cesium3DTilesSelection::Tile* tile,
+    const Cesium3DTilesSelection::Tile* tile,
     int depth,
     int& outCount,
     int& outUnloaded,
@@ -67,8 +67,8 @@ void countTree(
     int& outContentLoaded,
     int& outDone) {
   outCount++;
-  std::span<Cesium3DTilesSelection::Tile> tiles = tile->getChildren();
-  for (Cesium3DTilesSelection::Tile& child : tiles) {
+  std::span<const Cesium3DTilesSelection::Tile> tiles = tile->getChildren();
+  for (const Cesium3DTilesSelection::Tile& child : tiles) {
     switch (child.getState()) {
     case Cesium3DTilesSelection::TileLoadState::Unloaded:
       outUnloaded++;
