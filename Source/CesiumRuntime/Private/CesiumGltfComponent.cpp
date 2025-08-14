@@ -1095,7 +1095,7 @@ static void loadPrimitiveFeaturesMetadata(
       pFeatures ? FCesiumPrimitiveFeatures(model, primitive, *pFeatures)
                 : FCesiumPrimitiveFeatures();
   primitiveResult.Metadata =
-      pMetadata ? FCesiumPrimitiveMetadata(primitive, *pMetadata)
+      pMetadata ? FCesiumPrimitiveMetadata(model, primitive, *pMetadata)
                 : FCesiumPrimitiveMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
