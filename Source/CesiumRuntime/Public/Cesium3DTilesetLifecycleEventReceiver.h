@@ -64,16 +64,12 @@ public:
    * @param Material Unreal material created for the primitive
    * @param CesiumData List of material layer names
    * @param GlTFmaterial Parameters of the glTF material for the primitive
-   * @param GlTFmaterialPBR Parameters for this primitive's material defining
-   * the metallic-roughness material model from Physically-Based Rendering (PBR)
-   * methodology
    */
   virtual void CustomizeMaterial(
       ICesiumLoadedTilePrimitive& TilePrimitive,
       UMaterialInstanceDynamic& Material,
       const UCesiumMaterialUserData* CesiumData,
-      const CesiumGltf::Material& GlTFmaterial,
-      const CesiumGltf::MaterialPBRMetallicRoughness& GlTFmaterialPBR);
+      const CesiumGltf::Material& GlTFmaterial);
 
   /**
    * Called after a `MeshPrimitive` in a tile's glTF is loaded. This method is

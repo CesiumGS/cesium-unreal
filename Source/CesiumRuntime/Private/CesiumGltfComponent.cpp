@@ -2480,7 +2480,6 @@ static void SetGltfParameterValues(
     CesiumGltf::Model& model,
     LoadedPrimitiveResult& loadResult,
     const CesiumGltf::Material& material,
-    const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2492,7 +2491,9 @@ static void SetGltfParameterValues(
             index),
         static_cast<float>(textureCoordinateSet.second));
   }
-
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
   if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
@@ -3131,11 +3132,6 @@ static void loadPrimitiveGameThreadPart(
   const CesiumGltf::Material& material =
       loadResult.materialIndex != -1 ? model.materials[loadResult.materialIndex]
                                      : defaultMaterial;
-
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
-
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
@@ -3212,7 +3208,6 @@ static void loadPrimitiveGameThreadPart(
         model,
         loadResult,
         material,
-        pbr,
         pMaterialForGltfPrimitive,
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
@@ -3275,7 +3270,6 @@ static void loadPrimitiveGameThreadPart(
           model,
           loadResult,
           material,
-          pbr,
           pMaterialForGltfPrimitive,
           EMaterialParameterAssociation::LayerParameter,
           0);
@@ -3375,8 +3369,7 @@ static void loadPrimitiveGameThreadPart(
           *pCesiumPrimitive,
           *pMaterialForGltfPrimitive,
           pCesiumData,
-          material,
-          pbr);
+          material);
     }
   }
 
