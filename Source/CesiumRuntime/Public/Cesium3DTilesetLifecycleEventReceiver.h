@@ -57,7 +57,7 @@ public:
   virtual UMaterialInstanceDynamic* CreateMaterial(
       ICesiumLoadedTilePrimitive& TilePrim,
       UMaterialInterface* pDefaultBaseMaterial,
-      const FName& Name) = 0;
+      const FName& Name);
 
   /**
    * Customize the Unreal material instance, depending on the glTF material
@@ -82,14 +82,14 @@ public:
    * @param TilePrim Loaded tile primitive being constructed
    */
   virtual void
-  OnTileMeshPrimitiveConstructed(ICesiumLoadedTilePrimitive& TilePrim) = 0;
+  OnTileMeshPrimitiveConstructed(ICesiumLoadedTilePrimitive& TilePrim);
 
   /**
    * Called at the end of all static mesh components' construction for a given
    * tile.
    * @param LoadedTile The tile that has just been loaded
    */
-  virtual void OnTileConstructed(ICesiumLoadedTile& LoadedTile) = 0;
+  virtual void OnTileConstructed(ICesiumLoadedTile& LoadedTile);
 
   /**
    * Called when changing the visibility of any UCesiumGltfComponent, ie usually
@@ -99,11 +99,11 @@ public:
    * @param visible New visibility flag being applied
    */
   virtual void
-  OnVisibilityChanged(ICesiumLoadedTile& LoadedTile, bool visible) = 0;
+  OnVisibilityChanged(ICesiumLoadedTile& LoadedTile, bool visible);
 
   /**
    * Called before a tile is destroyed (when it is unloaded, typically).
    * @param LoadedTile The tile which is about to be unloaded
    */
-  virtual void BeforeTileDestruction(ICesiumLoadedTile& LoadedTile) = 0;
+  virtual void BeforeTileDestruction(ICesiumLoadedTile& LoadedTile);
 };

@@ -10,10 +10,7 @@ ICesium3DTilesetLifecycleEventReceiver::CreateMaterial(
     UMaterialInterface* pBaseMaterial,
     const FName& Name) {
   // Default implementation: just create a new instance
-  return UMaterialInstanceDynamic::Create(
-      pBaseMaterial,
-      nullptr,
-      Name);
+  return UMaterialInstanceDynamic::Create(pBaseMaterial, nullptr, Name);
 }
 
 void ICesium3DTilesetLifecycleEventReceiver::CustomizeMaterial(
@@ -22,3 +19,16 @@ void ICesium3DTilesetLifecycleEventReceiver::CustomizeMaterial(
     const UCesiumMaterialUserData*,
     const CesiumGltf::Material&,
     const CesiumGltf::MaterialPBRMetallicRoughness&) {}
+
+void ICesium3DTilesetLifecycleEventReceiver::OnTileMeshPrimitiveConstructed(
+    ICesiumLoadedTilePrimitive& TilePrim) {}
+
+void ICesium3DTilesetLifecycleEventReceiver::OnTileConstructed(
+    ICesiumLoadedTile& LoadedTile) {}
+
+void ICesium3DTilesetLifecycleEventReceiver::OnVisibilityChanged(
+    ICesiumLoadedTile& LoadedTile,
+    bool visible) {}
+
+void ICesium3DTilesetLifecycleEventReceiver::BeforeTileDestruction(
+    ICesiumLoadedTile& LoadedTile) {}
