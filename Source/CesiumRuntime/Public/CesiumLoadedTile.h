@@ -23,7 +23,7 @@ class ICesiumLoadedTile {
   GENERATED_BODY()
 public:
   /** Get the tile identifier: this is informational only, as there is no
-   * guarantee of unicity */
+   * guarantee of uniqueness */
   virtual const Cesium3DTilesSelection::TileID& GetTileID() const = 0;
   /** Scaling factor to be applied (component-wise multiplication) to glTF
    * vertices of this tile's model to obtain the values represented in their
