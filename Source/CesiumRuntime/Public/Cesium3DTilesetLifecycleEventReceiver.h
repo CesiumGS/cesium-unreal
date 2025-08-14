@@ -50,9 +50,7 @@ public:
    * material.
    * @param Name The name for the new material, as used by creation functions
    * like NewObject
-   * @return Material instance created. If null, a material will be created by
-   * the caller based on the pBaseMaterial passed, ie. as if this method had not
-   * been called.
+   * @return Material instance created: should not be nullptr.
    */
   virtual UMaterialInstanceDynamic* CreateMaterial(
       ICesiumLoadedTilePrimitive& TilePrimitive,

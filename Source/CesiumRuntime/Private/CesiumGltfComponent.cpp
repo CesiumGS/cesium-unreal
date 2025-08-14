@@ -3191,15 +3191,15 @@ static void loadPrimitiveGameThreadPart(
           *pCesiumPrimitive,
           pBaseMaterial,
           ImportedSlotName);
-      if (pMaterialForGltfPrimitive) {
-        // pMaterialForGltfPrimitive created above may not have used the
-        // suggested pBaseMaterial passed as input
-        pBaseMaterial = pMaterialForGltfPrimitive->Parent.Get();
-        // may have changed but we don't need it from now on:
-        pUserDesignatedMaterialAsDynamic = nullptr;
-      }
-    }
-    if (!pMaterialForGltfPrimitive) {
+      check(pMaterialForGltfPrimitive);
+      // pMaterialForGltfPrimitive created above may not have used the
+      // suggested pBaseMaterial passed as input
+      pBaseMaterial = pMaterialForGltfPrimitive->Parent.Get();
+      // may have changed but we don't need it from now on:
+      pUserDesignatedMaterialAsDynamic = nullptr;
+    } else {
+      // Same as ICesium3DTilesetLifecycleEventReceiver::CreateMaterial's
+      // default implementation
       pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
           pBaseMaterial,
           nullptr,
