@@ -50,5 +50,5 @@ public:
   virtual const FCesiumPrimitiveMetadata& GetPrimitiveMetadata() const = 0;
   virtual const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const = 0;
   virtual std::optional<uint32_t>
-  FindTexCoordIndexForGltfAttribute(int32_t accessorIndex) const = 0;
+  FindTextureCoordinateIndexForGltfAccessor(int32_t AccessorIndex) const = 0;
 };

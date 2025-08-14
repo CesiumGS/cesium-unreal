@@ -170,7 +170,7 @@ ICesiumLoadedTile& UCesiumGltfPrimitiveComponent::GetLoadedTile() {
 }
 
 std::optional<uint32_t>
-UCesiumGltfPrimitiveComponent::FindTexCoordIndexForGltfAttribute(
+UCesiumGltfPrimitiveComponent::FindTextureCoordinateIndexForGltfAccessor(
     int32_t accessorIndex) const {
   auto uvIndexIt =
       getPrimitiveData().GltfToUnrealTexCoordMap.find(accessorIndex);
@@ -200,7 +200,7 @@ ICesiumLoadedTile& UCesiumGltfInstancedComponent::GetLoadedTile() {
 }
 
 std::optional<uint32_t>
-UCesiumGltfInstancedComponent::FindTexCoordIndexForGltfAttribute(
+UCesiumGltfInstancedComponent::FindTextureCoordinateIndexForGltfAccessor(
     int32_t accessorIndex) const {
   auto uvIndexIt =
       getPrimitiveData().GltfToUnrealTexCoordMap.find(accessorIndex);
