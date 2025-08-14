@@ -104,7 +104,7 @@ void UnrealPrepareRendererResources::free(
     UCesiumGltfComponent* pGltf =
         reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
     if (auto* Receiver = this->_pActor->GetLifecycleEventReceiver()) {
-      Receiver->BeforeTileDestruction(*pGltf);
+      Receiver->OnTileUnloading(*pGltf);
     }
     CesiumLifetime::destroyComponentRecursively(pGltf);
   }

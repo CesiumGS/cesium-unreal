@@ -3454,7 +3454,7 @@ static void loadPrimitiveGameThreadPart(
 
   // Call the observer callback (if any) once all is done
   if (pLifecycleEventReceiver) {
-    pLifecycleEventReceiver->OnTileMeshPrimitiveConstructed(*pCesiumPrimitive);
+    pLifecycleEventReceiver->OnTileMeshPrimitiveLoaded(*pCesiumPrimitive);
   }
 }
 
@@ -3541,7 +3541,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
   if (auto* Receiver = pTilesetActor->GetLifecycleEventReceiver())
-    Receiver->OnTileConstructed(*Gltf);
+    Receiver->OnTileLoaded(*Gltf);
 
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -3552,7 +3552,7 @@ void UCesiumGltfComponent::OnVisibilityChanged() {
   USceneComponent::OnVisibilityChanged();
   auto* pLifecycleEventReceiver = GetTilesetActor().GetLifecycleEventReceiver();
   if (pLifecycleEventReceiver)
-    pLifecycleEventReceiver->OnVisibilityChanged(*this, GetVisibleFlag());
+    pLifecycleEventReceiver->OnTileVisibilityChanged(*this, GetVisibleFlag());
 }
 
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
