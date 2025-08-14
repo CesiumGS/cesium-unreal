@@ -25,11 +25,12 @@
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include <vector>
-#include "Cesium3DTileset.generated.h"
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
+
+#include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
@@ -37,6 +38,7 @@ class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
+class ICesium3DTilesetLifecycleEventReceiver;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -1257,6 +1259,17 @@ public:
    */
   void UpdateTransformFromCesium();
 
+  /** Gets the optional receiver of events related to tile components' lifecycle
+   */
+  ICesium3DTilesetLifecycleEventReceiver* GetLifecycleEventReceiver();
+
+  /** Sets a receiver of events related to tile components' lifecycle,
+   * like tile primitive and material creation, tile finishing its loading cycle
+   * or about to unload, etc. It must implement
+   * {@link ICesium3DTilesetLifecycleEventReceiver}, otherwise it will be as if
+   * nullptr were passed. */
+  void SetLifecycleEventReceiver(UObject* InEventReceiver);
+
 private:
   /**
    * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
@@ -1370,6 +1383,15 @@ private:
       _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  // Make this visible to the garbage collector, but don't save/load/copy it.
+  // Use UObject instead of TScriptInterface as suggested by
+  // https://www.stevestreeting.com/2020/11/02/ue4-c-interfaces-hints-n-tips/,
+  // even though this cannot be implemented through Blueprints for the moment
+  // (see comment over UCesium3DTilesetLifecycleEventReceiver for instructions),
+  // it's best being prepared for the future.
+  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
+  UObject* _pLifecycleEventReceiver;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
