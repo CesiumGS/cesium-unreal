@@ -138,6 +138,7 @@ public:
   virtual void OnVisibilityChanged() override;
 
   // from ICesiumLoadedTile
+  const CesiumGltf::Model* GetGltfModel() const override;
   const FCesiumModelMetadata& GetModelMetadata() const override;
   const Cesium3DTilesSelection::TileID& GetTileID() const override;
   ACesium3DTileset& GetTilesetActor() override;

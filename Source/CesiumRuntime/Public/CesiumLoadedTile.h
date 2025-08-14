@@ -25,6 +25,7 @@ public:
   /** Get the tile identifier: this is informational only, as there is no
    * guarantee of uniqueness */
   virtual const Cesium3DTilesSelection::TileID& GetTileID() const = 0;
+  virtual const CesiumGltf::Model* GetGltfModel() const = 0;
   /** Scaling factor to be applied (component-wise multiplication) to glTF
    * vertices of this tile's model to obtain the values represented in their
    * matching mesh component (see @{link
