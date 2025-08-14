@@ -20,7 +20,16 @@ struct Material;
 struct MaterialPBRMetallicRoughness;
 } // namespace CesiumGltf
 
-UINTERFACE()
+// Note: to allow implementation in Blueprints:
+// 1. remove this 'meta' flag, and make the interface methods below
+// compatible with a Blueprint implementation,
+// 2. remove the Cast<ICesium3DTilesetLifecycleEventReceiver> in
+// ACesium3DTileset::GetLifecycleEventReceiver, as it would return nullptr for a
+// BP implementation, and return the UObject pointer instead,
+// 3. use ICesium3DTilesetLifecycleEventReceiver::Execute_DoStuff wrappers
+// instead of DoStuff methods everywhere the event receiver is used in the
+// plugin's C++ code.
+UINTERFACE(meta = (CannotImplementInterfaceInBlueprint))
 class UCesium3DTilesetLifecycleEventReceiver : public UInterface {
   GENERATED_BODY()
 };
