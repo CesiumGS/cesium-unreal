@@ -252,16 +252,16 @@ void setVoxelEllipsoidProperties(
     double longitudeRange = maximumLongitude - minimumLongitude +
                             isLongitudeReversed * defaultRange;
 
-    // Refers to the discontinuity at longitude 0 / 2pi.
+    // Refers to the discontinuity at longitude -pi / pi.
     const double discontinuityEpsilon =
         CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
     bool longitudeMinimumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         minimumLongitude,
-        0,
+        -defaultMinimumBounds.X,
         discontinuityEpsilon);
     bool longitudeMaximumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
         maximumLongitude,
-        CesiumUtility::Math::TwoPi,
+        defaultMaximumBounds.X,
         discontinuityEpsilon);
 
     CartographicAngleDescription longitudeRangeIndicator =
