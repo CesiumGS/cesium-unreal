@@ -195,6 +195,15 @@ public:
   static FVector createVector(const glm::dvec3& v) noexcept;
 
   /**
+   * @brief Create an `FVector4` from the given `glm` 4D vector.
+   *
+   * @param v The `glm` vector.
+   * @return The `FVector4`.
+   *
+   */
+  static FVector4 createVector4(const glm::dvec4& v) noexcept;
+
+  /**
    * @brief Create a `FRotator` from the given `glm` matrix.
    *
    * The result will be an `FRotator`. Note that any translation and scaling

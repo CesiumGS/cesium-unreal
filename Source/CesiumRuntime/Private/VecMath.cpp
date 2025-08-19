@@ -167,6 +167,10 @@ FVector VecMath::createVector(const glm::dvec3& v) noexcept {
   return FVector(v.x, v.y, v.z);
 }
 
+FVector4 VecMath::createVector4(const glm::dvec4& v) noexcept {
+  return FVector4(v.x, v.y, v.z, v.w);
+}
+
 FRotator VecMath::createRotator(const glm::dmat4& m) noexcept {
   // Avoid converting to Unreal single-precision types until the very end, so
   // that all intermediate conversions are performed in double-precision.

@@ -38,6 +38,8 @@ struct VoxelMegatextures
 {
   %s
   int ShapeConstant;
+  bool WrapCylinderUV;
+  
   uint3 TileCount; // Number of tiles in the texture, in three dimensions.
 
   // NOTE: Unlike VoxelOctree, these dimensions are specified with respect to the voxel attributes
@@ -74,7 +76,13 @@ struct VoxelMegatextures
       // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
       LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
     }
-
+    else if (ShapeConstant == CYLINDER)
+    {
+      // The start of the angular bounds has to be adjusted for full cylinders (root tile only).
+      float adjustedAngle = WrapCylinderUV && Sample.Coords.w == 0 ? frac(LocalUV.y + 0.5) : LocalUV.y;
+      LocalUV = float3(LocalUV.x, LocalUV.z, adjustedAngle);
+    } 
+    
     float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
     // Account for padding
     VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
@@ -131,7 +139,7 @@ R.Direction = RayDirection;
 //
 // Shape UV Space is the [0, 1] grid mapping that conforms to the actual voxel volume. Imagine 
 // the voxel grid curving concentrically around a unit cylinder, then being "smooshed" to fit in
-// the volume of the hollow cylinder. Shape UV Space must account for the angle bounds of a cylinder,
+// the volume of the hollow cylinder. Shape UV Space must account for the radial and angle bounds of a cylinder,
 // and the longitude / latitude / height bounds of an ellipsoid.
 //
 // Therefore, we must convert the unit space ray to the equivalent Shape UV Space ray to sample correctly.
@@ -158,10 +166,12 @@ Octree.GridDimensions = GridDimensions;
 VoxelMegatextures DataTextures;
 DataTextures.ShapeConstant = ShapeConstant;
 DataTextures.TileCount = TileCount;
+DataTextures.WrapCylinderUV = (ShapeConstant == CYLINDER) ? (Octree.GridShape.CylinderShape.AngleRangeFlag == 0) : false;
 
 // Account for y-up -> z-up conventions for certain shapes.
 switch (ShapeConstant) {
   case BOX:
+  case CYLINDER:
     DataTextures.GridDimensions = round(GridDimensions.xzy);
     DataTextures.PaddingBefore = round(PaddingBefore.xzy);
     DataTextures.PaddingAfter = round(PaddingAfter.xzy);
@@ -225,15 +235,14 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
   // Keep raymarching
   CurrentT += NextIntersection.t;
   if (CurrentT > EndT) {
-    if (ShapeConstant == ELLIPSOID) {
-      // For CYLINDER: once clipping / exaggeration is supported, this must be done for cylinders too.
+    if (ShapeConstant != BOX) {
       Intersections = Octree.GridShape.ListState.GetNextIntersections(IntersectionList);
-      if (Intersections.Entry.t == NO_HIT) {
-        break;
-      } else {
+      if (Intersections.Entry.t != NO_HIT) {
         // Found another intersection. Resume raymarching there
         CurrentT = Intersections.Entry.t;
         EndT = Intersections.Exit.t;
+      } else {
+        break;
       } 
     } else {
         break;

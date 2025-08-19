@@ -7,6 +7,7 @@
 =============================================================================*/
 
 #include "CesiumRayIntersectionList.usf"
+#include "CesiumLongitudeWedge.usf"
 
 struct EllipsoidRegion
 {
@@ -101,139 +102,6 @@ struct EllipsoidRegion
     result.Entry.Normal = directionScale * normalize(position + result.Entry.t * direction);
     result.Exit.Normal = directionScale * normalize(position + result.Exit.t * direction);
     return result;
-  }
-
-  /**
-  * Intersects the plane at the specified longitude angle.
-  */
-  Intersection IntersectLongitudePlane(in Ray R, in float Angle, in bool PositiveNormal)
-  {
-    float normalSign = PositiveNormal ? 1.0 : -1.0;
-    float2 planeNormal = normalSign * float2(-sin(Angle), cos(Angle));
-
-    float approachRate = dot(R.Direction.xy, planeNormal);
-    float distance = -dot(R.Origin.xy, planeNormal);
-
-    float t = (approachRate == 0.0)
-        ? NO_HIT
-        : distance / approachRate;
-
-    return NewIntersection(t, float3(planeNormal, 0));
-  }
-
-  /**
-  * Intersects the space on one side of the specified longitude angle.
-  */
-  RayIntersections IntersectHalfSpace(in Ray R, in float Angle, in bool PositiveNormal)
-  {
-    Intersection intersection = IntersectLongitudePlane(R, Angle, PositiveNormal);
-    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
-
-    bool hitFront = (intersection.t > 0.0) == (dot(R.Origin.xy, intersection.Normal.xy) > 0.0);
-    if (!hitFront)
-    {
-      return NewRayIntersections(intersection, farSide);
-    }
-    else
-    {
-      return NewRayIntersections(Multiply(farSide, -1), intersection);
-    }
-  }
-
-  /**
-  * Intersects a "flipped" wedge formed by the negative space of the specified angle
-  * bounds and returns up to four intersections. The "flipped" wedge is the union of
-  * two half-spaces defined at the given angles and represents a *negative* volume
-  * of over > 180 degrees.
-  */
-  void IntersectFlippedWedge(in Ray R, in float2 AngleBounds, out RayIntersections FirstIntersection, out RayIntersections SecondIntersection)
-  {
-    FirstIntersection = IntersectHalfSpace(R, AngleBounds.x, false);
-    SecondIntersection = IntersectHalfSpace(R, AngleBounds.y, true);
-  }
-
-  /**
-  * Intersects the wedge formed by the negative space of the min/max longitude, where
-  * maxAngle > minAngle + pi. The wedge is represented by two planes at such angles.
-  * There is an opposite "shadow wedge", i.e. the wedge formed at the *opposite* side
-  * of the planes' intersection, that must be specially handled.
-  */
-  RayIntersections IntersectRegularWedge(in Ray R, in float2 AngleBounds)
-  {
-    // Normals will point toward the "outside" (into the negative space)
-    Intersection intersect1 = IntersectLongitudePlane(R, AngleBounds.x, false);
-    Intersection intersect2 = IntersectLongitudePlane(R, AngleBounds.y, true);
-
-    // Note: the intersections could be in the "shadow" wedge, beyond the tip of
-    // the actual wedge.
-    Intersection first = intersect1;
-    Intersection last = intersect2;
-    if (first.t > last.t)
-    {
-      first = intersect2;
-      last = intersect1;
-    }
-
-    bool firstIntersectionAheadOfRay = first.t >= 0.0;
-    bool startedInsideFirst = dot(R.Origin.xy, first.Normal.xy) < 0.0;
-    bool isExitingFromInside = firstIntersectionAheadOfRay == startedInsideFirst;
-    bool lastIntersectionAheadOfRay = last.t > 0.0;
-    bool startedOutsideLast = dot(R.Origin.xy, last.Normal.xy) >= 0.0;
-    bool isEnteringFromOutside = lastIntersectionAheadOfRay == startedOutsideLast;
-
-    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
-    Intersection miss = NewIntersection(NO_HIT, normalize(R.Direction));
-
-    if (isExitingFromInside && isEnteringFromOutside)
-    {
-      // Ray crosses both faces of negative wedge, exiting then entering the positive shape
-      return NewRayIntersections(first, last);
-    }
-    else if (!isExitingFromInside && isEnteringFromOutside)
-    {
-      // Ray starts inside wedge. last is in shadow wedge, and first is actually the entry
-      return NewRayIntersections(Multiply(farSide, -1), first);
-    }
-    else if (isExitingFromInside && !isEnteringFromOutside)
-    {
-      // First intersection was in the shadow wedge, so last is actually the exit
-      return NewRayIntersections(last, farSide);
-    }
-    else
-    { // !exitFromInside && !enterFromOutside
-      // Both intersections were in the shadow wedge
-      return NewRayIntersections(miss, miss);
-    }
-  }
-
-  bool HitsPositiveHalfPlane(in Ray R, in Intersection InputIntersection, in bool positiveNormal)
-  {
-    float normalSign = positiveNormal ? 1.0 : -1.0;
-    float2 planeDirection = float2(InputIntersection.Normal.y, -InputIntersection.Normal.x) * normalSign;
-    float2 hit = R.Origin.xy + InputIntersection.t * R.Direction.xy;
-    return dot(hit, planeDirection) > 0.0;
-  }
-
-  void IntersectHalfPlane(in Ray R, in float Angle, out RayIntersections FirstIntersection, out RayIntersections SecondIntersection)
-  {
-    Intersection intersection = IntersectLongitudePlane(R, Angle, true);
-    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
-
-    if (HitsPositiveHalfPlane(R, intersection, true))
-    {
-      FirstIntersection.Entry = Multiply(farSide, -1);
-      FirstIntersection.Exit = NewIntersection(intersection.t, float3(-1.0 * intersection.Normal.xy, 0.0));
-      SecondIntersection.Entry = intersection;
-      SecondIntersection.Exit = farSide;
-    }
-    else
-    {
-      Intersection miss = NewIntersection(NO_HIT, normalize(R.Direction));
-      FirstIntersection.Entry = Multiply(farSide, -1);
-      FirstIntersection.Exit = farSide;
-      SecondIntersection.Entry = miss;
-      SecondIntersection.Exit = miss;
-    }
   }
 
   /**
@@ -460,12 +328,6 @@ struct EllipsoidRegion
       return NewRayIntersections(Multiply(farSide, -1), intersect);
     }
   }
-  
-  
-#define ANGLE_EQUAL_ZERO 1
-#define ANGLE_UNDER_HALF 2
-#define ANGLE_HALF 3
-#define ANGLE_OVER_HALF 4
 
   /**
   * Tests whether the input ray (Unit Space) intersects the ellipsoid region. Outputs the intersections in Unit Space.
@@ -760,7 +622,7 @@ struct EllipsoidRegion
   }
   
   
- /**
+  /**
    * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
    * ellipsoid geometry. Also outputs the Jacobian transpose for future use.
    */
