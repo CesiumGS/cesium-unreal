@@ -131,7 +131,7 @@ struct IntersectionListState
       }
       
       Index = i + 1;
-
+      
       surfaceIntersection = Data[i];
       // Maps from [1-4] -> [0-3] (see EncodeIntersection for the types)
       int intersectionType = int(length(surfaceIntersection.xyz) - 0.5);
