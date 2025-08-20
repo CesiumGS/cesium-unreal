@@ -13,6 +13,7 @@
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "SceneInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 
