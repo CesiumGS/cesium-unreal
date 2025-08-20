@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumVoxelRenderingOptions.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -89,6 +90,8 @@ public:
   void UpdateTiles(
       const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
+
+  void SetVoxelRenderingOptions(const FCesiumVoxelRenderingOptions& Options);
 
 private:
   static UMaterialInstanceDynamic* CreateVoxelMaterial(
