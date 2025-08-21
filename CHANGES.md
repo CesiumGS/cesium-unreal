@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ???
+
+##### Fixes :wrench:
+
+- Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
+
 ### v2.18.0 - 2025-08-01
 
 ##### Breaking Changes :mega:
