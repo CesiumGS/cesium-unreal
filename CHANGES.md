@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
+- `CesiumGeoJsonDocumentRasterOverlay` now correctly uses the polygon fill style color mode instead of the line style color mode.
 
 ### v2.18.0 - 2025-08-01
 
