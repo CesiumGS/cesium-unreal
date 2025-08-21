@@ -1,0 +1,185 @@
+#pragma once
+
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
+#include "CesiumRayIntersection.usf"
+
+/*===========================
+  CesiumRayIntersectionList.usf: Utility for tracking ray intersections across a complex shape.
+=============================*/
+
+// SHAPE_INTERSECTIONS is the number of ray-*shape* intersections (i.e., the volume intersection pairs),
+// INTERSECTIONS_LENGTH is the number of ray-*surface* intersections.
+#define SHAPE_INTERSECTIONS 7
+#define INTERSECTIONS_LENGTH SHAPE_INTERSECTIONS * 2
+
+/**
+* Holds state while iterating through the top-level IntersectionList. Used to interact with an array of encoded ray-surface intersections.
+* (See EncodeIntersection).
+*/
+struct IntersectionListState
+{
+  int Length; // Set based on ShapeConstant
+  
+  // Don't access the other member variables directly - call the functions on this struct instead.
+  int Index; // Emulates dynamic indexing.
+  
+  // The variables below relate to the shapes that the intersection is inside (counting when it's on the surface itself)
+  // For example, given a hollow ellipsoid volume, count = 1 on the outer ellipsoid, 2 on the inner ellipsoid.
+  int SurroundingShapeCount;
+  bool IsInsidePositiveShape; // will be true as long as it is inside any positive shape.
+  
+  /**
+  * Intersections are encoded as float4s:
+  * - .xyz for the surface normal at the intersection point
+  * - .w for the T value
+  * The normal's scale encodes the shape intersection type: 
+  * length(intersection.xyz) = 1: positive shape entry  
+  * length(intersection.xyz) = 2: positive shape exit
+  * length(intersection.xyz) = 3: negative shape entry  
+  * length(intersection.xyz) = 4: negative shape exit
+  *
+  * When the voxel volume is hollow, the "positive" shape is the original volume.
+  * The "negative" shape is subtracted from the positive shape.
+  */
+  float4 EncodeIntersection(in Intersection Input, bool IsPositive, bool IsEntering)
+  {
+    float scale = float(!IsPositive) * 2.0 + float(!IsEntering) + 1.0;
+    return float4(Input.Normal * scale, Input.t);
+  }
+
+  /**
+  * Sort the intersections from min T to max T with bubble sort. Also prepares for iteration
+  * over the intersections.
+  *
+  * Note: If this sorting function changes, some of the intersection tests may need to be updated.
+  * Search for "Sort()" to find those areas.
+  */
+  void Sort(inout float4 Data[INTERSECTIONS_LENGTH])
+  {
+    const int sortPasses = INTERSECTIONS_LENGTH - 1;
+    for (int n = sortPasses; n > 0; --n)
+    {
+      // Skip to n = Length - 1
+      if (n >= Length)
+      {
+        continue;
+      }
+      
+      for (int i = 0; i < sortPasses; ++i)
+      {
+      // The loop should be: for (i = 0; i < n; ++i) {...} but since loops with
+      // non-constant conditions are not allowed, this breaks early instead.
+        if (i >= n)
+        {
+          break;
+        }
+
+        float4 first = Data[i + 0];
+        float4 second = Data[i + 1];
+
+        bool inOrder = first.w <= second.w;
+        Data[i + 0] = inOrder ? first : second;
+        Data[i + 1] = inOrder ? second : first;
+      }
+    }
+
+    // Prepare initial state for GetNextIntersections()
+    Index = 0;
+    SurroundingShapeCount = 0;
+    IsInsidePositiveShape = false;
+  }
+
+  RayIntersections GetFirstIntersections(in float4 Data[INTERSECTIONS_LENGTH])
+  {
+    RayIntersections result = (RayIntersections) 0;
+    result.Entry.t = Data[0].w;
+    result.Entry.Normal = normalize(Data[0].xyz);
+    result.Exit.t = Data[1].w;
+    result.Exit.Normal = normalize(Data[1].xyz);
+
+    return result;
+  }
+
+  /**
+  * Gets the intersection at the current value of Index, while managing the state of the ray's
+  * trajectory with respect to the intersected shapes.
+  */
+  RayIntersections GetNextIntersections(in float4 Data[INTERSECTIONS_LENGTH])
+  {
+    RayIntersections result = NewRayIntersections(NewMissedIntersection(), NewMissedIntersection());
+    if (Index >= Length)
+    {
+      return result;
+    }
+
+    float4 surfaceIntersection = float4(0, 0, 0, NO_HIT);
+
+    for (int i = 0; i < INTERSECTIONS_LENGTH; ++i)
+    {
+      // The loop should be: for (i = index; i < loopCount; ++i) {...} but it's not possible
+      // to loop with non-constant condition. Instead, continue until i = index.
+      if (i < Index)
+      {
+        continue;
+      }
+      
+      if (i >= Length)
+      {
+        Index = INTERSECTIONS_LENGTH;
+        break;
+      }
+      
+      Index = i + 1;
+      
+      surfaceIntersection = Data[i];
+      // Maps from [1-4] -> [0-3] (see EncodeIntersection for the types)
+      int intersectionType = int(length(surfaceIntersection.xyz) - 0.5);
+      bool isCurrentShapePositive = intersectionType < 2;
+      bool isEnteringShape = (intersectionType % 2) == 0;
+
+      SurroundingShapeCount += isEnteringShape ? +1 : -1;
+      IsInsidePositiveShape = isCurrentShapePositive ? isEnteringShape : IsInsidePositiveShape;
+
+      // True if entering positive shape or exiting negative shape
+      if (SurroundingShapeCount == 1 && IsInsidePositiveShape && isEnteringShape == isCurrentShapePositive)
+      {
+        result.Entry.t = surfaceIntersection.w;
+        result.Entry.Normal = normalize(surfaceIntersection.xyz);
+      }
+
+      // True if exiting the outermost positive shape
+      bool isExitingOutermostShape = !isEnteringShape && isCurrentShapePositive && SurroundingShapeCount == 0;
+      // True if entering negative shape while being inside a positive one
+      bool isEnteringNegativeFromPositive = isEnteringShape && !isCurrentShapePositive && SurroundingShapeCount == 2 && IsInsidePositiveShape;
+      
+      if (isExitingOutermostShape || isEnteringNegativeFromPositive)
+      {
+        result.Exit.t = surfaceIntersection.w;
+        result.Exit.Normal = normalize(surfaceIntersection.xyz);
+        // Entry and exit have been found, so the loop can stop
+        if (isExitingOutermostShape)
+        {
+          // After exiting the outermost positive shape, there is nothing left to intersect. Jump to the end.
+          Index = INTERSECTIONS_LENGTH;
+        }
+        break;
+      }
+      // Otherwise, keep searching for the correct exit.
+    }
+    
+    return result;
+  }
+};
+
+// Use defines instead of real functions to get array access with a non-constant index.
+
+/**
+* Encodes and stores a single intersection.
+*/
+#define setSurfaceIntersection(/*inout float4[]*/ list, /*in IntersectionListState*/ state, /*int*/ index, /*Intersection*/ intersection, /*bool*/ isPositive, /*bool*/ isEntering) (list)[(index)] = (state).EncodeIntersection((intersection), (isPositive), (isEntering))
+
+/**
+* Encodes and stores the given shape intersections, i.e., the intersections where a ray enters and exits a volume.
+*/
+#define setShapeIntersections(/*inout float4[]*/ list, /*in IntersectionListState*/ state, /*int*/ pairIndex, /*RayIntersection*/ intersections) (list)[(pairIndex) * 2 + 0] = (state).EncodeIntersection((intersections).Entry, (pairIndex) == 0, true); (list)[(pairIndex) * 2 + 1] = (state).EncodeIntersection((intersections).Exit, (pairIndex) == 0, false)
