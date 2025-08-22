@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
@@ -10,6 +11,7 @@
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesSelection/TilesetSharedAssetSystem.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
 #include "CesiumAsync/SharedAssetDepot.h"
@@ -48,12 +50,14 @@
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include "HAL/PlatformFileManager.h"
+
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
 
@@ -2315,3 +2319,16 @@ void ACesium3DTileset::RuntimeSettingsChanged(
   }
 }
 #endif
+
+ICesium3DTilesetLifecycleEventReceiver*
+ACesium3DTileset::GetLifecycleEventReceiver() {
+  return Cast<ICesium3DTilesetLifecycleEventReceiver>(
+      this->_pLifecycleEventReceiver);
+}
+
+void ACesium3DTileset::SetLifecycleEventReceiver(UObject* InEventReceiver) {
+  if (UKismetSystemLibrary::DoesImplementInterface(
+          InEventReceiver,
+          UCesium3DTilesetLifecycleEventReceiver::StaticClass()))
+    this->_pLifecycleEventReceiver = InEventReceiver;
+}
