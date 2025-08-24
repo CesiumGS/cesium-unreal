@@ -7,8 +7,12 @@
 #include "CesiumGlobeAnchorComponent.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
+#include "DetailWidgetRow.h"
+#include "Widgets/Text/STextBlock.h"
 #include "IDetailGroup.h"
 #include "Widgets/SToolTip.h"
+
+#define LOCTEXT_NAMESPACE "CesiumGlobeAnchorCustomization"
 
 FName FCesiumGlobeAnchorCustomization::RegisteredLayoutName;
 
@@ -36,6 +40,7 @@ FCesiumGlobeAnchorCustomization::MakeInstance() {
 void FCesiumGlobeAnchorCustomization::CustomizeDetails(
     IDetailLayoutBuilder& DetailBuilder) {
   DetailBuilder.GetObjectsBeingCustomized(this->SelectedObjects);
+  const bool bIsMultiSelect = this->SelectedObjects.Num() > 1;
 
   IDetailCategoryBuilder& CesiumCategory = DetailBuilder.EditCategory("Cesium");
 
@@ -67,11 +72,29 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
 
-  this->UpdateDerivedProperties();
+  if (!bIsMultiSelect) {
+    this->UpdateDerivedProperties();
+    this->CreatePositionLongitudeLatitudeHeight(DetailBuilder, CesiumCategory);
+    this->CreatePositionEarthCenteredEarthFixed(DetailBuilder, CesiumCategory);
+    this->CreateRotationEastSouthUp(DetailBuilder, CesiumCategory);
+  } else {
+    FDetailWidgetRow& Row =
+        CesiumCategory
+            .AddCustomRow(
+                LOCTEXT("MultipleSelectionFilter", "Multiple Selection"))
+            .FilterString(LOCTEXT(
+                "MultipleSelectionFilters",
+                "Latitude Longitude Height ECEF ESU"));
 
-  this->CreatePositionLongitudeLatitudeHeight(DetailBuilder, CesiumCategory);
-  this->CreatePositionEarthCenteredEarthFixed(DetailBuilder, CesiumCategory);
-  this->CreateRotationEastSouthUp(DetailBuilder, CesiumCategory);
+    Row.WholeRowContent()
+        [SNew(SBox).Padding(FMargin(0.f, 4.f))
+             [SNew(STextBlock)
+                  .Text(LOCTEXT(
+                      "MultiSelectInfo",
+                      "Multiple actors selected. Geodetic position (Latitude, Longitude, Height; ECEF) and "
+                      "ESU rotation cannot be edited in multi-select. Select a single actor to edit these values."))
+                  .AutoWrapText(true)]];
+  }
 }
 
 void FCesiumGlobeAnchorCustomization::CreatePositionEarthCenteredEarthFixed(
@@ -296,3 +319,5 @@ TStatId UCesiumGlobeAnchorDerivedProperties::GetStatId() const {
       UCesiumGlobeAnchorRotationEastSouthUp,
       STATGROUP_Tickables);
 }
+
+#undef LOCTEXT_NAMESPACE
