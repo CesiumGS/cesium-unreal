@@ -2,18 +2,17 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTablePropertyView.h"
-#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
+
+#include <CesiumGltf/PropertyTablePropertyView.h>
+#include <CesiumGltf/PropertyTypeTraits.h>
 #include <any>
-#include <glm/glm.hpp>
-#include <string_view>
-#include <variant>
+
 #include "CesiumPropertyTableProperty.generated.h"
 
 /**
@@ -58,31 +57,31 @@ public:
   /**
    * Construct a wrapper for the property table property view.
    *
-   * @param Property The PropertyTablePropertyView to be stored in this struct.
+   * @param property The PropertyTablePropertyView to be stored in this struct.
    */
   template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property)
+      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& property)
       : FCesiumPropertyTableProperty(
-            Property,
+            property,
             TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   /**
    * Construct a wrapper for the property table property view.
    *
-   * @param Property The PropertyTablePropertyView to be stored in this struct.
-   * @param EnumDefinition The enum definition to use, if any.
+   * @param property The PropertyTablePropertyView to be stored in this struct.
+   * @param pEnumDefinition The enum definition to use, if any.
    */
   template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property,
-      const TSharedPtr<FCesiumMetadataEnum>& EnumDefinition)
+      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& property,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
       : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(Property),
+        _property(property),
         _valueType(),
         _normalized(Normalized),
-        _pEnumDefinition(EnumDefinition) {
-    switch (Property.status()) {
+        _pEnumDefinition(pEnumDefinition) {
+    switch (property.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
       break;
@@ -111,7 +110,7 @@ public:
       return;
     }
 
-    _valueType = TypeToMetadataValueType<T>(EnumDefinition);
+    _valueType = TypeToMetadataValueType<T>(pEnumDefinition);
     _normalized = Normalized;
   }
 

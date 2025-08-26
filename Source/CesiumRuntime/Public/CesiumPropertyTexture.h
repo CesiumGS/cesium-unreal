@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTextureView.h"
 #include "CesiumMetadataEnum.h"
 #include "CesiumPropertyTextureProperty.h"
 #include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+
+#include <CesiumGltf/PropertyTextureView.h>
+
 #include "CesiumPropertyTexture.generated.h"
 
 namespace CesiumGltf {
@@ -22,8 +24,8 @@ enum class ECesiumPropertyTextureStatus : uint8 {
   /* The property texture instance was not initialized from an actual glTF
    property texture. */
   ErrorInvalidPropertyTexture,
-  /* The property texture's class could be found in the schema of the metadata
-   extension. */
+  /* The property texture's class could not be found in the schema of the
+   metadata extension. */
   ErrorInvalidPropertyTextureClass
 };
 
@@ -37,21 +39,37 @@ struct CESIUMRUNTIME_API FCesiumPropertyTexture {
   GENERATED_USTRUCT_BODY()
 
 public:
+  /**
+   * Construct an empty property texture instance.
+   */
   FCesiumPropertyTexture()
       : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTexture) {}
 
+  /**
+   * Constructs a property texture from the given glTF.
+   *
+   * @param model The model that stores EXT_structural_metadata.
+   * @param propertyTexture The target property texture.
+   */
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture& PropertyTexture)
+      const CesiumGltf::PropertyTexture& propertyTexture)
       : FCesiumPropertyTexture(
             model,
-            PropertyTexture,
+            propertyTexture,
             FCesiumMetadataEnumCollection::GetOrCreateFromModel(model)) {}
 
+  /**
+   * Constructs a property texture from the given glTF.
+   *
+   * @param model The model that stores EXT_structural_metadata.
+   * @param propertyTexture The target property texture.
+   * @param pEnumCollection The enum collection to use, if any.
+   */
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture& PropertyTexture,
-      const TSharedPtr<FCesiumMetadataEnumCollection>& EnumCollection);
+      const CesiumGltf::PropertyTexture& propertyTexture,
+      const TSharedPtr<FCesiumMetadataEnumCollection>& pEnumCollection);
 
   /**
    * Gets the name of the metadata class that this property table conforms to.

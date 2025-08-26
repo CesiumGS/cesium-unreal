@@ -1,5 +1,35 @@
 # Change Log {#changes}
 
+### ???
+
+##### Fixes :wrench:
+
+- Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
+- Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
+
+### v2.18.0 - 2025-08-01
+
+##### Breaking Changes :mega:
+
+- Removed support for Unreal Engine 5.3. Unreal Engine 5.4 or later is now required.
+- `FCesiumPrimitiveMetadata::GetPropertyAttributeIndices` is now deprecated. Use `GetPropertyAttributes` to directly get the `FCesiumPropertyAttribute`s instead.
+
+##### Additions :tada:
+
+- Added `CesiumGeoJsonDocumentRasterOverlay`, allowing stylized GeoJSON to be rasterized and draped over terrain and other 3D Tiles.
+- Added `FCesiumPropertyAttributeProperty` to represent glTF property attribute properties and `UCesiumPropertyAttributePropertyBlueprintLibrary` to retrieve their values.
+- Added `FCesiumPropertyAttribute` to represent glTF property attributes and `UCesiumPropertyAttributeBlueprintLibrary` to act upon them with Blueprints.
+- Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
+- Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
+
+##### Fixes :wrench:
+
+- Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
+- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin.
+- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level. 
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.49.0 to v0.50.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.17.0 - 2025-07-01
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.3. Future versions will require Unreal Engine v5.4+.

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "CesiumGltf/ExtensionExtMeshFeatures.h"
-#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumGltf/PropertyTypeTraits.h"
+#include <CesiumGltf/ExtensionExtMeshFeatures.h>
+#include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
+#include <CesiumGltf/Model.h>
+#include <CesiumGltf/PropertyTypeTraits.h>
 #include <glm/glm.hpp>
 #include <type_traits>
 #include <vector>
@@ -223,5 +223,67 @@ CesiumGltf::PropertyTextureProperty& AddPropertyTexturePropertyToModel(
       propertyTexture.properties[propertyName];
   property.channels = channels;
   property.index = static_cast<int32_t>(model.textures.size() - 1);
+  return property;
+}
+
+/**
+ * @brief Adds the given values to the given model and primitive as a property
+ * attribute property in EXT_structural_metadata. This also creates a class
+ * property definition for the new property in the schema. If the model doesn't
+ * already contain EXT_structural_metadata, this function adds it.
+ *
+ * This assumes the given values are not booleans, arrays, or strings.
+ *
+ * @returns The newly created property attribute property in the model
+ * extension.
+ */
+template <typename T>
+CesiumGltf::PropertyAttributeProperty& AddPropertyAttributePropertyToModel(
+    CesiumGltf::Model& model,
+    CesiumGltf::MeshPrimitive& primitive,
+    CesiumGltf::PropertyAttribute& propertyAttribute,
+    const std::string& propertyName,
+    const std::string& type,
+    const std::string& componentType,
+    const std::vector<T>& values,
+    const std::string& attributeName) {
+  CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
+      model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+  if (pExtension == nullptr) {
+    pExtension =
+        &model.addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
+  }
+
+  if (!pExtension->schema) {
+    pExtension->schema.emplace();
+  }
+  CesiumGltf::Schema& schema = *pExtension->schema;
+
+  const std::string& className = propertyAttribute.classProperty;
+  CesiumGltf::Class& theClass = schema.classes[className];
+
+  CesiumGltf::ClassProperty& classProperty = theClass.properties[propertyName];
+  classProperty.type = type;
+  classProperty.componentType = componentType;
+
+  std::vector<std::byte> data(values.size() * sizeof(T));
+  std::memcpy(data.data(), values.data(), data.size());
+
+  std::string accessorType = CesiumGltf::convertPropertyTypeToAccessorType(
+      CesiumGltf::convertStringToPropertyType(type));
+  int32_t accessorComponentType =
+      CesiumGltf::convertPropertyComponentTypeToAccessorComponentType(
+          CesiumGltf::convertStringToPropertyComponentType(componentType));
+
+  primitive.attributes[attributeName] = AddBufferToModel(
+      model,
+      accessorType,
+      accessorComponentType,
+      std::move(data));
+
+  CesiumGltf::PropertyAttributeProperty& property =
+      propertyAttribute.properties[propertyName];
+  property.attribute = attributeName;
+
   return property;
 }

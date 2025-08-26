@@ -451,6 +451,41 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsFeatureCollection(
   return Features;
 }
 
+FCesiumVectorStyle UCesiumGeoJsonObjectBlueprintLibrary::GetStyle(
+    const FCesiumGeoJsonObject& InObject,
+    EHasValue& Branches) {
+  if (!InObject._pDocument || !InObject._pObject) {
+    Branches = EHasValue::NoValue;
+    return FCesiumVectorStyle();
+  }
+
+  const std::optional<CesiumVectorData::VectorStyle> style =
+      InObject._pObject->getStyle();
+  Branches = style ? EHasValue::HasValue : EHasValue::NoValue;
+  return style ? FCesiumVectorStyle::fromNative(*style) : FCesiumVectorStyle();
+}
+
+void UCesiumGeoJsonObjectBlueprintLibrary::SetStyle(
+    UPARAM(Ref) FCesiumGeoJsonObject& InObject,
+    const FCesiumVectorStyle& InStyle) {
+  if (!InObject._pDocument || !InObject._pObject) {
+    return;
+  }
+
+  const_cast<CesiumVectorData::GeoJsonObject*>(InObject._pObject)->getStyle() =
+      InStyle.toNative();
+}
+
+void UCesiumGeoJsonObjectBlueprintLibrary::ClearStyle(
+    UPARAM(Ref) FCesiumGeoJsonObject& InObject) {
+  if (!InObject._pDocument || !InObject._pObject) {
+    return;
+  }
+
+  const_cast<CesiumVectorData::GeoJsonObject*>(InObject._pObject)->getStyle() =
+      std::nullopt;
+}
+
 FCesiumGeoJsonLineString::FCesiumGeoJsonLineString(TArray<FVector>&& InPoints)
     : Points(MoveTemp(InPoints)) {}
 
