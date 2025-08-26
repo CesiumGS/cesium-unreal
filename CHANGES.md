@@ -22,6 +22,10 @@
 - Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
 - Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
 
+##### Additions :tada:
+
+- Added the interface `ICesium3DTilesetLifecycleEventReceiver`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetLifecycleEventReceiver`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
+
 ##### Fixes :wrench:
 
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
