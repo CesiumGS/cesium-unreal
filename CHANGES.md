@@ -2,6 +2,10 @@
 
 ### ???
 
+##### Additions :tada:
+
+- Added assets for the IAU2000 Moon and Mars ellipsoids under `Content`.
+
 ##### Fixes :wrench:
 
 - Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
