@@ -168,6 +168,9 @@ void rejectPromiseOnUnsuccessfulConnection(
 
 } // namespace
 
+TSet<TSharedRef<IHttpRequest, ESPMode::ThreadSafe>> UnrealAssetAccessor::_pendingRequests;
+FCriticalSection UnrealAssetAccessor::_pendingRequestsLock;
+
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
 UnrealAssetAccessor::get(
     const CesiumAsync::AsyncSystem& asyncSystem,
@@ -203,6 +206,12 @@ UnrealAssetAccessor::get(
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
 
+        // Add to the pending list when initiating a request
+        {
+          FScopeLock lock(&UnrealAssetAccessor::_pendingRequestsLock);
+          UnrealAssetAccessor::_pendingRequests.Add(pRequest);
+        }
+
         pRequest->OnProcessRequestComplete().BindLambda(
             [promise, CESIUM_TRACE_LAMBDA_CAPTURE_TRACK()](
                 FHttpRequestPtr pRequest,
@@ -210,6 +219,17 @@ UnrealAssetAccessor::get(
                 bool connectedSuccessfully) mutable {
               CESIUM_TRACE_USE_CAPTURED_TRACK();
               CESIUM_TRACE_END_IN_TRACK("requestAsset");
+
+              // Request to end removal
+              {
+                FScopeLock lock(&UnrealAssetAccessor::_pendingRequestsLock);
+                for (auto It = UnrealAssetAccessor::_pendingRequests.CreateIterator(); It; ++It) {
+                  if (&(It->Get()) == pRequest.Get()) {
+                    It.RemoveCurrent();
+                    break;
+                  }
+                }
+              }
 
               if (connectedSuccessfully) {
                 promise.resolve(
@@ -260,6 +280,12 @@ UnrealAssetAccessor::request(
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
 
+        // Add to the pending list when initiating a request
+        {
+          FScopeLock lock(&UnrealAssetAccessor::_pendingRequestsLock);
+          UnrealAssetAccessor::_pendingRequests.Add(pRequest);
+        }
+
         pRequest->SetContent(TArray<uint8>(
             reinterpret_cast<const uint8*>(contentPayload.data()),
             contentPayload.size()));
@@ -269,6 +295,18 @@ UnrealAssetAccessor::request(
                 FHttpRequestPtr pRequest,
                 FHttpResponsePtr pResponse,
                 bool connectedSuccessfully) {
+
+              // Request to end removal
+              {
+                FScopeLock lock(&UnrealAssetAccessor::_pendingRequestsLock);
+                for (auto It = UnrealAssetAccessor::_pendingRequests.CreateIterator(); It; ++It) {
+                  if (&(It->Get()) == pRequest.Get()) {
+                    It.RemoveCurrent();
+                    break;
+                  }
+                }
+              }
+
               if (connectedSuccessfully) {
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
