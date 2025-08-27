@@ -10,6 +10,7 @@
 
 - Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
 - Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
+- Fixed a crash in `UCesiumLoadGeoJsonDocumentFromIonAsyncAction` that occurred when a Cesium ion server was not specified. The action will now fall back to the default ion server, similar to `ACesium3DTileset`.
 
 ### v2.18.0 - 2025-08-01
 
