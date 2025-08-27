@@ -101,11 +101,11 @@ class CESIUMRUNTIME_API UCesiumLoadGeoJsonDocumentFromIonAsyncAction
   GENERATED_BODY()
 public:
   /**
-   * @brief Attempts to load a GeoJSON document from a Cesium ion asset.
+   * @brief Attempts to load a GeoJSON document from Cesium ion.
    *
-   * If the provided `IonAccessToken` is an empty string, the
-   * `DefaultIonAccessToken` from the provided `CesiumIonServer` will be used
-   * instead.
+   * If `CesiumIonServer` is not assigned, then the default server for the project
+   * will be used instead. Likewise, the server's default ion access token will
+   * be used if `IonAccessToken` is empty.
    *
    * If successful, `Success` will be true and `Document` will contain the
    * loaded document.
@@ -118,8 +118,8 @@ public:
            DisplayName = "Load GeoJSON Document from Cesium ion"))
   static UCesiumLoadGeoJsonDocumentFromIonAsyncAction* LoadFromIon(
       int64 AssetId,
-      const UCesiumIonServer* CesiumIonServer,
-      const FString& IonAccessToken);
+      const FString& IonAccessToken,
+      const UCesiumIonServer* CesiumIonServer = nullptr);
 
   UPROPERTY(BlueprintAssignable)
   FCesiumGeoJsonDocumentAsyncLoadDelegate OnLoadResult;

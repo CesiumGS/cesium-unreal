@@ -68,8 +68,8 @@ FCesiumGeoJsonObject UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
 UCesiumLoadGeoJsonDocumentFromIonAsyncAction*
 UCesiumLoadGeoJsonDocumentFromIonAsyncAction::LoadFromIon(
     int64 AssetId,
-    const UCesiumIonServer* CesiumIonServer,
-    const FString& IonAccessToken) {
+    const FString& IonAccessToken,
+    const UCesiumIonServer* CesiumIonServer) {
   UCesiumLoadGeoJsonDocumentFromIonAsyncAction* pAction =
       NewObject<UCesiumLoadGeoJsonDocumentFromIonAsyncAction>();
   pAction->AssetId = AssetId;
@@ -79,6 +79,11 @@ UCesiumLoadGeoJsonDocumentFromIonAsyncAction::LoadFromIon(
 }
 
 void UCesiumLoadGeoJsonDocumentFromIonAsyncAction::Activate() {
+  // Make sure we have a valid Cesium ion server.
+  if (!IsValid(this->CesiumIonServer)) {
+    this->CesiumIonServer = UCesiumIonServer::GetServerForNewObjects();
+  }
+
   const std::string token(
       this->IonAccessToken.IsEmpty()
           ? TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken)
