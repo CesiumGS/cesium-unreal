@@ -101,10 +101,10 @@ void UCesiumLoadGeoJsonDocumentFromIonAsyncAction::Activate() {
             if (result.errors.hasErrors()) {
               result.errors.logError(
                   spdlog::default_logger(),
-                  "Errors loading GeoJSON:");
+                  "Errors loading GeoJSON");
               result.errors.logWarning(
                   spdlog::default_logger(),
-                  "Warnings loading GeoJSON:");
+                  "Warnings loading GeoJSON");
             }
 
             if (result.value) {
@@ -152,10 +152,10 @@ void UCesiumLoadGeoJsonDocumentFromUrlAsyncAction::Activate() {
             if (result.errors.hasErrors()) {
               result.errors.logError(
                   spdlog::default_logger(),
-                  "Errors loading GeoJSON:");
+                  "Errors loading GeoJSON");
               result.errors.logWarning(
                   spdlog::default_logger(),
-                  "Warnings loading GeoJSON:");
+                  "Warnings loading GeoJSON");
             }
 
             if (result.value) {
