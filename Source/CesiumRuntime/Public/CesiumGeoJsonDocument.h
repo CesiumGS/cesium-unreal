@@ -62,7 +62,7 @@ class UCesiumGeoJsonDocumentBlueprintLibrary
 
 public:
   /**
-   * @brief Attempts to load a `FCesiumGeoJsonDocument` from a string containing
+   * Attempts to load a `FCesiumGeoJsonDocument` from a string containing
    * GeoJSON data.
    *
    * If loading fails, this function will return false and `OutGeoJsonDocument`
@@ -77,7 +77,7 @@ public:
       FCesiumGeoJsonDocument& OutGeoJsonDocument);
 
   /**
-   * @brief Obtains the root node of the provided GeoJSON document.
+   * Obtains the root node of the provided GeoJSON document.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -101,11 +101,11 @@ class CESIUMRUNTIME_API UCesiumLoadGeoJsonDocumentFromIonAsyncAction
   GENERATED_BODY()
 public:
   /**
-   * @brief Attempts to load a GeoJSON document from Cesium ion.
+   * Attempts to load a GeoJSON document from Cesium ion.
    *
-   * If `CesiumIonServer` is not assigned, then the default server for the project
-   * will be used instead. Likewise, the server's default ion access token will
-   * be used if `IonAccessToken` is empty.
+   * If `CesiumIonServer` is not assigned, then the default server for the
+   * project will be used instead. Likewise, the server's default ion access
+   * token will be used if `IonAccessToken` is empty.
    *
    * If successful, `Success` will be true and `Document` will contain the
    * loaded document.
@@ -139,7 +139,7 @@ class CESIUMRUNTIME_API UCesiumLoadGeoJsonDocumentFromUrlAsyncAction
   GENERATED_BODY()
 public:
   /**
-   * @brief Attempts to load a GeoJSON document from a URL.
+   * Attempts to load a GeoJSON document from a URL.
    *
    * If successful, `Success` will be true and `Document` will contain the
    * loaded document.
