@@ -5,6 +5,7 @@
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfTextures.h"
@@ -44,6 +45,7 @@
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
+#include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
@@ -2367,7 +2369,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3040,7 +3042,22 @@ static void loadPrimitiveGameThreadPart(
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-  if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  if (meshPrimitive.hasExtension<CesiumGltf::ExtensionKhrGaussianSplatting>()) {
+    UCesiumGltfGaussianSplatComponent* pGaussianSplat =
+        NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
+    pGaussianSplat->UsesAdditiveRefinement =
+        tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
+    pGaussianSplat->GeometricError =
+        static_cast<float>(tile.getGeometricError());
+    pGaussianSplat->Dimensions = loadResult.dimensions;
+    // UCesiumGltfGaussianSplatComponent works differently to other primitives -
+    // it just acts as a source of data for UCesiumGaussianSplatSystem to
+    // accumulate and render. We do not need to create a mesh from it.
+    pGaussianSplat->SetData(model, meshPrimitive);
+    pGaussianSplat->SetupAttachment(pGltf);
+    pGaussianSplat->RegisterComponent();
+    return;
+  } else if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
