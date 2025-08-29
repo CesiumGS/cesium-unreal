@@ -31,9 +31,8 @@ public:
   // error.
   glm::vec3 Dimensions;
 
-  void SetData(
-      CesiumGltf::Model& model,
-      CesiumGltf::MeshPrimitive& meshPrimitive);
+  void
+  SetData(CesiumGltf::Model& model, CesiumGltf::MeshPrimitive& meshPrimitive);
 
 private:
   /**
