@@ -867,8 +867,7 @@ ACesiumGeoreference::ACesiumGeoreference() : AActor() {
 
     FConstructorStatics()
         : DefaultEllipsoid(TEXT(
-              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/WGS84.WGS84'")) {
-
+              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/Ellipsoids/WGS84.WGS84'")) {
     }
   };
 
