@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Added assets for the IAU2000 Moon and Mars ellipsoids under `Content`.
+- Added assets for the IAU2015 Moon and Mars ellipsoids under `Content`.
 
 ##### Fixes :wrench:
 
