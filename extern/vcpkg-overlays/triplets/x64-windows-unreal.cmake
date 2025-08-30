@@ -27,10 +27,10 @@ list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=M
 list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_CXX_FLAGS_DEBUG:STRING=/MD /Z7 /Ob0 /Od /RTC1")
 list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DCMAKE_C_FLAGS_DEBUG:STRING=/MD /Z7 /Ob0 /Od /RTC1")
 
-# Use the MSVC toolset version defined on the environment variable
+# Use the MSVC toolset version from the environment if provided.
 if(DEFINED ENV{VCPKG_PLATFORM_TOOLSET_VERSION} AND NOT "$ENV{VCPKG_PLATFORM_TOOLSET_VERSION}" STREQUAL "")
   set(VCPKG_PLATFORM_TOOLSET_VERSION "$ENV{VCPKG_PLATFORM_TOOLSET_VERSION}")
-#endif()
+endif()
 
 # When building official binaries on CI, use a very specific MSVC toolset version (which must be installed).
 # When building locally, use the default.
