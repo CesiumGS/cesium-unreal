@@ -6,6 +6,7 @@
 
 - Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
 - Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
+- Fixed a bug that could cause a crash when undoing and redoing deletion of a `CesiumRasterOverlay` component.
 
 ### v2.18.0 - 2025-08-01
 
