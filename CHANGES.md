@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ???
+### v2.19.0 - 2025-09-02
 
 ##### Additions :tada:
 
@@ -10,6 +10,8 @@
 
 - Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
 - Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.50.0 to v0.51.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.18.0 - 2025-08-01
 
