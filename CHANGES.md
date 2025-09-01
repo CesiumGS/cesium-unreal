@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ???
+### v2.19.0 - 2025-09-02
 
 ##### Additions :tada:
 
@@ -12,6 +12,8 @@
 - Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
 - Fixed a bug that could cause a crash when undoing and redoing deletion of a `CesiumRasterOverlay` component.
 - Fixed a crash in `UCesiumLoadGeoJsonDocumentFromIonAsyncAction` that occurred when a Cesium ion server was not specified. The action will now fall back to the default ion server, similar to `ACesium3DTileset`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.50.0 to v0.51.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.18.0 - 2025-08-01
 
