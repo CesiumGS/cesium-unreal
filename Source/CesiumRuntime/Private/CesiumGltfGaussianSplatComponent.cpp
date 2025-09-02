@@ -1,10 +1,17 @@
 // Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
+#include "CesiumGltfGaussianSplatComponent.h"
+
+#include "CesiumGaussianSplatSubsystem.h"
 #include "CesiumRuntime.h"
 
-#include "CesiumGltfGaussianSplatComponent.h"
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/MeshPrimitive.h>
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 #include <fmt/format.h>
 
@@ -139,6 +146,23 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     this->Data[i * stride] = positionView[i].x;
     this->Data[i * stride + 1] = positionView[i].y;
     this->Data[i * stride + 2] = positionView[i].z;
+
+    // Take this opportunity to update the bounds.
+    if (this->Bounds) {
+      this->Bounds->Min = FVector(
+          std::min(Bounds->Min.X, (double)positionView[i].x),
+          std::min(Bounds->Min.Y, (double)positionView[i].y),
+          std::min(Bounds->Min.Z, (double)positionView[i].z));
+      this->Bounds->Max = FVector(
+          std::max(Bounds->Max.X, (double)positionView[i].x),
+          std::max(Bounds->Max.Y, (double)positionView[i].y),
+          std::max(Bounds->Max.Z, (double)positionView[i].z));
+    } else {
+      this->Bounds = FBox();
+      this->Bounds->Min =
+          FVector(positionView[i].x, positionView[i].y, positionView[i].z);
+      this->Bounds->Max = Bounds->Min;
+    }
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator scaleIt =
@@ -310,4 +334,54 @@ void UCesiumGltfGaussianSplatComponent::SetData(
       return;
     }
   }
+}
+
+FBox UCesiumGltfGaussianSplatComponent::GetBounds() const {
+  return this->Bounds.Get(FBox());
+}
+
+glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
+  const FTransform& Transform = this->GetComponentTransform();
+  glm::quat quat(
+      Transform.GetRotation().W,
+      Transform.GetRotation().X,
+      Transform.GetRotation().Y,
+      Transform.GetRotation().Z);
+  glm::mat4x4 mat = glm::identity<glm::mat4x4>();
+  mat = glm::translate(
+      glm::mat4_cast(quat) * glm::scale(
+                                 mat,
+                                 glm::vec3(
+                                     Transform.GetScale3D().X,
+                                     Transform.GetScale3D().Y,
+                                     Transform.GetScale3D().Z)),
+      glm::vec3(
+          Transform.GetLocation().X,
+          Transform.GetLocation().Y,
+          Transform.GetLocation().Z));
+  return mat;
+}
+
+void UCesiumGltfGaussianSplatComponent::BeginPlay() {
+  Super::BeginPlay();
+  UWorld* World = GetWorld();
+  ensure(World);
+
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
+  ensure(SplatSubsystem);
+
+  SplatSubsystem->RegisterSplat(this);
+}
+
+void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
+  Super::BeginDestroy();
+  UWorld* World = GetWorld();
+  ensure(World);
+
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
+  ensure(SplatSubsystem);
+
+  SplatSubsystem->UnregisterSplat(this);
 }

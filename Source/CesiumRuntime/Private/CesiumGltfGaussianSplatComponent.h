@@ -6,6 +6,8 @@
 
 #include <CesiumGltf/MeshPrimitive.h>
 
+#include <glm/mat4x4.hpp>
+
 #include "CesiumGltfGaussianSplatComponent.generated.h"
 
 /**
@@ -34,6 +36,13 @@ public:
   void
   SetData(CesiumGltf::Model& model, CesiumGltf::MeshPrimitive& meshPrimitive);
 
+  FBox GetBounds() const;
+
+  glm::mat4x4 GetMatrix() const;
+
+  virtual void BeginPlay() override;
+  virtual void BeginDestroy() override;
+
 private:
   /**
    *  Every piece of data required to render this splat.
@@ -47,4 +56,6 @@ private:
    * - (and so on for rest of SH coeffs)
    */
   TArray<float> Data;
+
+  TOptional<FBox> Bounds;
 };
