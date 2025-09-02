@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### v2.19.1 - 2025-09-02
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause incorrect ellipsoid parameters to be used when loading a level.
+
 ### v2.19.0 - 2025-09-02
 
 ##### Additions :tada:
