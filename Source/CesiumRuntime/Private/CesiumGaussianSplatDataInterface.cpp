@@ -31,49 +31,9 @@ const FString GetOpacityFunctionName = TEXT("GetSplat_Opacity");
 const FString GetSHContributionFunctionName = TEXT("GetSplat_SHContribution");
 const FString GetNumSplatsFunctionName = TEXT("GetNumSplats");
 
-const float SH_0 = 0.28209479177387814f;
-
-FVector4f SRGBToLinear(const FVector4f& Color) {
-  return FVector4f(
-      (Color.X <= 0.04045f) ? Color.X / 12.92f
-                            : FMath::Pow((Color.X + 0.055f) / 1.055f, 2.4f),
-      (Color.Y <= 0.04045f) ? Color.Y / 12.92f
-                            : FMath::Pow((Color.Y + 0.055f) / 1.055f, 2.4f),
-      (Color.Z <= 0.04045f) ? Color.Z / 12.92f
-                            : FMath::Pow((Color.Z + 0.055f) / 1.055f, 2.4f),
-      Color.W);
-}
-
-FNDIGaussianSplatProxy::FNDIGaussianSplatProxy(
-    UCesiumGaussianSplatDataInterface* InOwner)
-    : Owner(InOwner) {}
-
-void UploadBuffer(
-    FRHICommandListImmediate& RHICmdList,
-    FReadBuffer& Buffer,
-    const TArray<AGaussianSplatActor*>& ActorArray,
-    int32 NumSplats,
-    std::function<const TArray<FVector4f>*(const FGaussianSplatData&)>
-        GetFieldFunc) {
-  const int32 ExpectedBytes = NumSplats * sizeof(FVector4f);
-  float* BufferData = static_cast<float*>(RHICmdList.LockBuffer(
-      Buffer.Buffer,
-      0,
-      ExpectedBytes,
-      EResourceLockMode::RLM_WriteOnly));
-  size_t Offset = 0;
-  for (int32 i = 0; i < ActorArray.Num(); i++) {
-    const TArray<FVector4f>* DataArray = GetFieldFunc(ActorArray[i]->SplatData);
-    const size_t Size = DataArray->Num() * sizeof(FVector4f);
-    FPlatformMemory::Memcpy(BufferData + Offset, DataArray->GetData(), Size);
-    Offset += DataArray->Num() * (sizeof(FVector4f) / sizeof(float));
-  }
-  RHICmdList.UnlockBuffer(Buffer.Buffer);
-}
-
 void UploadSplatMatrices(
     FRHICommandListImmediate& RHICmdList,
-    TArray<AGaussianSplatActor*>& Actors,
+    TArray<UCesiumGltfGaussianSplatComponent*>& Components,
     FReadBuffer& Buffer) {
   if (Buffer.NumBytes > 0) {
     Buffer.Release();
@@ -85,17 +45,17 @@ void UploadSplatMatrices(
       RHICmdList,
       TEXT("FNDIGaussianSplatProxy_SplatMatricesBuffer"),
       sizeof(FVector4f),
-      Actors.Num() * Stride,
+      Components.Num() * Stride,
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
   float* BufferData = static_cast<float*>(RHICmdList.LockBuffer(
       Buffer.Buffer,
       0,
-      Actors.Num() * sizeof(FVector4f) * Stride,
+      Components.Num() * sizeof(FVector4f) * Stride,
       EResourceLockMode::RLM_WriteOnly));
-  for (int32 i = 0; i < Actors.Num(); i++) {
-    glm::mat4x4 mat = Actors[i]->GetMatrix();
+  for (int32 i = 0; i < Components.Num(); i++) {
+    glm::mat4x4 mat = Components[i]->GetMatrix();
     const int32 Offset = i * (sizeof(FVector4f) / sizeof(float)) * Stride;
     BufferData[Offset] = (float)mat[0].x;
     BufferData[Offset + 1] = (float)mat[0].y;
@@ -113,17 +73,18 @@ void UploadSplatMatrices(
     BufferData[Offset + 13] = (float)mat[3].y;
     BufferData[Offset + 14] = (float)mat[3].z;
     BufferData[Offset + 15] = (float)mat[3].w;
-    FVector Location = Actors[i]->ActorToWorld().GetLocation();
+    const FTransform& ComponentToWorld = Components[i]->GetComponentToWorld();
+    FVector Location = ComponentToWorld.GetLocation();
     BufferData[Offset + 16] = (float)Location.X;
     BufferData[Offset + 17] = (float)Location.Y;
     BufferData[Offset + 18] = (float)Location.Z;
     BufferData[Offset + 19] = (float)1.0;
-    FVector Scale = Actors[i]->ActorToWorld().GetScale3D();
+    FVector Scale = ComponentToWorld.GetScale3D();
     BufferData[Offset + 20] = (float)Scale.X;
     BufferData[Offset + 21] = (float)Scale.Y;
     BufferData[Offset + 22] = (float)Scale.Z;
     BufferData[Offset + 23] = (float)1.0;
-    FQuat Rotation = Actors[i]->ActorToWorld().GetRotation();
+    FQuat Rotation = ComponentToWorld.GetRotation();
     BufferData[Offset + 24] = (float)Rotation.X;
     BufferData[Offset + 25] = (float)Rotation.Y;
     BufferData[Offset + 26] = (float)Rotation.Z;
@@ -133,8 +94,15 @@ void UploadSplatMatrices(
   RHICmdList.UnlockBuffer(Buffer.Buffer);
 }
 
-void FNDIGaussianSplatProxy::UploadToGPU() {
-  if (this->Owner == nullptr || this->Owner->SplatSystem == nullptr) {
+void FNDIGaussianSplatProxy::UploadToGPU(UWorld* World) {
+  if (this->Owner == nullptr || !IsValid(World)) {
+    return;
+  }
+
+  UCesiumGaussianSplatSubsystem* SplatSystem =
+      World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
+
+  if (!IsValid(SplatSystem)) {
     return;
   }
 
@@ -142,10 +110,10 @@ void FNDIGaussianSplatProxy::UploadToGPU() {
     this->bMatricesNeedUpdate = false;
 
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatMatrices)(
-        [this](FRHICommandListImmediate& RHICmdList) {
+        [this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
           UploadSplatMatrices(
               RHICmdList,
-              this->Owner->SplatSystem->SplatActors,
+              SplatSystem->SplatComponents,
               this->SplatMatricesBuffer);
         });
   }
@@ -156,219 +124,106 @@ void FNDIGaussianSplatProxy::UploadToGPU() {
 
   this->bNeedsUpdate = false;
 
-  const int32 NumSplats = this->Owner->SplatSystem->GetNumSplats();
+  const int32 NumSplats = SplatSystem->GetNumSplats();
 
-  // This is the only buffer that we're not just copying directly from the
-  // struct.
-  TArray<FVector4f> ZeroCoeffsAndOpacity;
-  ZeroCoeffsAndOpacity.Reserve(NumSplats);
-  for (int i = 0; i < this->Owner->SplatSystem->SplatActors.Num(); i++) {
-    const FGaussianSplatData& SplatData =
-        this->Owner->SplatSystem->SplatActors[i]->SplatData;
-    if (SplatData.HarmonicCoefficients.Num() > 0) {
-      for (int j = 0; j < SplatData.HarmonicCoefficients[0].Coefficients.Num();
-           j++) {
-        const FVector3f& Coeff =
-            SplatData.HarmonicCoefficients[0].Coefficients[j];
-        float Opacity = SplatData.Opacities[j];
-
-        ZeroCoeffsAndOpacity.Emplace(/*SRGBToLinear(*/ FVector4f(
-            SH_0 * Coeff.X + 0.5,
-            SH_0 * Coeff.Y + 0.5,
-            SH_0 * Coeff.Z + 0.5,
-            Opacity));
-      }
-    }
-  }
-
-  TArray<int> SplatCoeffCounts;
-  int32 NonZeroCoeffBufferCount = 0;
+  /*TArray<int> SplatCoeffCounts;
   for (int32 i = 0; i < this->Owner->SplatSystem->SplatActors.Num(); i++) {
     const FGaussianSplatData& SplatData =
         this->Owner->SplatSystem->SplatActors[i]->SplatData;
     int SplatCount = SplatData.HarmonicCoefficients.Num() - 1;
     SplatCoeffCounts.Emplace(SplatCount);
-    NonZeroCoeffBufferCount += SplatData.Positions.Num() * SplatCount;
-  }
+  }*/
 
-  ENQUEUE_RENDER_COMMAND(
-      FUpdateGaussianSplatBuffers)([this,
-                                    ZeroCoeffsAndOpacity,
-                                    NonZeroCoeffBufferCount,
-                                    NumSplats,
-                                    SplatCoeffCounts](
-                                       FRHICommandListImmediate& RHICmdList) {
-    const int32 ExpectedBytes = NumSplats * sizeof(FVector4f);
-    if (this->PositionsBuffer.NumBytes != ExpectedBytes) {
-      if (this->PositionsBuffer.NumBytes > 0) {
-        this->PositionsBuffer.Release();
-        this->ScalesBuffer.Release();
-        this->OrientationsBuffer.Release();
-        this->SHZeroCoeffsAndOpacity.Release();
-        this->SHNonZeroCoeffsBuffer.Release();
-        this->SplatSHDegreesBuffer.Release();
-        this->SplatIndicesBuffer.Release();
-      }
-
-      if (ExpectedBytes > 0) {
-        this->PositionsBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Positions"),
-            sizeof(FVector4f),
-            NumSplats,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
-        this->ScalesBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Scales"),
-            sizeof(FVector4f),
-            NumSplats,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
-        this->OrientationsBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Orientations"),
-            sizeof(FVector4f),
-            NumSplats,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
-        this->SHZeroCoeffsAndOpacity.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SHZeroCoeffsAndOpacity"),
-            sizeof(FVector4f),
-            ZeroCoeffsAndOpacity.Num(),
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
-        this->SHNonZeroCoeffsBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SHNonZeroCoeffsBuffer"),
-            sizeof(FVector4f),
-            NonZeroCoeffBufferCount,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
-        this->SplatIndicesBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
-            sizeof(int32),
-            NumSplats,
-            EPixelFormat::PF_R32_UINT,
-            BUF_Static);
-        this->SplatSHDegreesBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
-            sizeof(int32),
-            SplatCoeffCounts.Num() * 3,
-            EPixelFormat::PF_R32_UINT,
-            BUF_Static);
-      }
-    }
-
-    if (ExpectedBytes > 0) {
-      FScopeLock ScopeLock(&this->BufferLock);
-      UploadBuffer(
-          RHICmdList,
-          this->PositionsBuffer,
-          this->Owner->SplatSystem->SplatActors,
-          NumSplats,
-          [](const FGaussianSplatData& Data) { return &Data.Positions; });
-      UploadBuffer(
-          RHICmdList,
-          this->ScalesBuffer,
-          this->Owner->SplatSystem->SplatActors,
-          NumSplats,
-          [](const FGaussianSplatData& Data) { return &Data.Scales; });
-      UploadBuffer(
-          RHICmdList,
-          this->OrientationsBuffer,
-          this->Owner->SplatSystem->SplatActors,
-          NumSplats,
-          [](const FGaussianSplatData& Data) { return &Data.Orientations; });
-
-      {
-        const int32 BufferBytes = NumSplats * sizeof(FVector4f);
-        float* BufferData = static_cast<float*>(RHICmdList.LockBuffer(
-            this->SHZeroCoeffsAndOpacity.Buffer,
-            0,
-            BufferBytes,
-            EResourceLockMode::RLM_WriteOnly));
-        FPlatformMemory::Memcpy(
-            BufferData,
-            ZeroCoeffsAndOpacity.GetData(),
-            BufferBytes);
-        RHICmdList.UnlockBuffer(this->SHZeroCoeffsAndOpacity.Buffer);
-      }
-
-      {
-        int32* BufferData = static_cast<int32*>(RHICmdList.LockBuffer(
-            this->SplatSHDegreesBuffer.Buffer,
-            0,
-            SplatCoeffCounts.Num() * sizeof(int32) * 3,
-            EResourceLockMode::RLM_WriteOnly));
-        int32_t Offset = 0;
-        int32_t SplatUnoffset = 0;
-        for (int32 i = 0; i < SplatCoeffCounts.Num(); i++) {
-          BufferData[i * 3] = SplatCoeffCounts[i];
-          BufferData[i * 3 + 1] = Offset;
-          BufferData[i * 3 + 2] = SplatUnoffset;
-          SplatUnoffset += this->Owner->SplatSystem->SplatActors[i]
-                               ->SplatData.Positions.Num();
-          Offset +=
-              SplatCoeffCounts[i] * this->Owner->SplatSystem->SplatActors[i]
-                                        ->SplatData.Positions.Num();
+  ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)(
+      [this, SplatSystem, NumSplats](FRHICommandListImmediate& RHICmdList) {
+        int32 ExpectedBytes = 0;
+        for (UCesiumGltfGaussianSplatComponent* Component :
+             SplatSystem->SplatComponents) {
+          ExpectedBytes += Component->Data.Num() * sizeof(float);
         }
-        RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
-      }
 
-      {
-        const int32 BufferBytes = NonZeroCoeffBufferCount * sizeof(FVector4f);
-        float* BufferData = static_cast<float*>(RHICmdList.LockBuffer(
-            this->SHNonZeroCoeffsBuffer.Buffer,
-            0,
-            BufferBytes,
-            EResourceLockMode::RLM_WriteOnly));
-        size_t Offset = 0;
-        for (int32 i = 0; i < this->Owner->SplatSystem->SplatActors.Num();
-             i++) {
-          const FGaussianSplatData& SplatData =
-              this->Owner->SplatSystem->SplatActors[i]->SplatData;
-          for (int32 j = 0; j < SplatData.Positions.Num(); j++) {
-            for (int32 k = 0; k < SplatCoeffCounts[i]; k++) {
-              const FVector4f& Data =
-                  SplatData.HarmonicCoefficients[k + 1].Coefficients[j];
-              BufferData[Offset + k * 4] = Data.X;
-              BufferData[Offset + k * 4 + 1] = Data.Y;
-              BufferData[Offset + k * 4 + 2] = Data.Z;
-              BufferData[Offset + k * 4 + 3] = Data.W;
+        if (this->DataBuffer.NumBytes != ExpectedBytes) {
+          if (this->DataBuffer.NumBytes > 0) {
+            this->DataBuffer.Release();
+            this->SplatOffsetsBuffer.Release();
+            this->SplatIndicesBuffer.Release();
+          }
+
+          if (ExpectedBytes > 0) {
+            this->DataBuffer.Initialize(
+                RHICmdList,
+                TEXT("FNDIGaussianSplatProxy_Data"),
+                sizeof(FVector4f),
+                ExpectedBytes / 4,
+                EPixelFormat::PF_A32B32G32R32F,
+                BUF_Static);
+            this->SplatIndicesBuffer.Initialize(
+                RHICmdList,
+                TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
+                sizeof(int32),
+                NumSplats,
+                EPixelFormat::PF_R32_UINT,
+                BUF_Static);
+            this->SplatOffsetsBuffer.Initialize(
+                RHICmdList,
+                TEXT("FNDIGaussianSplatProxy_SplatOffsetsBuffer"),
+                sizeof(int32),
+                SplatSystem->SplatComponents.Num() * 3,
+                EPixelFormat::PF_R32_UINT,
+                BUF_Static);
+          }
+        }
+
+        if (ExpectedBytes > 0) {
+          FScopeLock ScopeLock(&this->BufferLock);
+          {
+            float* DataBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+                this->DataBuffer.Buffer,
+                0,
+                ExpectedBytes,
+                EResourceLockMode::RLM_WriteOnly));
+            int32* IndexBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
+                this->SplatIndicesBuffer.Buffer,
+                0,
+                NumSplats * sizeof(int32),
+                EResourceLockMode::RLM_WriteOnly));
+            int32* OffsetsBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
+                this->SplatOffsetsBuffer.Buffer,
+                0,
+                SplatSystem->SplatComponents.Num() * sizeof(int32) * 4,
+                EResourceLockMode::RLM_WriteOnly));
+
+            int32 Offset = 0;
+            int32 Unoffset = 0;
+            for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
+              UCesiumGltfGaussianSplatComponent* Component =
+                  SplatSystem->SplatComponents[i];
+              FPlatformMemory::Memcpy(
+                  reinterpret_cast<void*>(DataBuffer + Offset),
+                  Component->Data.GetData(),
+                  Component->Data.Num() * sizeof(float));
+              for (int32 j = 0; j < Component->NumSplats; j++) {
+                IndexBuffer[Offset + j] = i;
+              }
+
+              // OffsetsBuffer contains:
+              // - 0: Number of entries into Data to offset by before the first
+              // data from this splat component.
+              // - 1: Number to subtract from the particle index to get the
+              // index into this splat component's data.
+              // - 2: Stride between elements of this splat component.
+              // - 3: Number of spherical harmonic coefficients.
+              OffsetsBuffer[i * 4] = Offset / 4;
+              OffsetsBuffer[i * 4 + 1] = Unoffset;
+              OffsetsBuffer[i * 4 + 2] = Component->DataStride;
+              OffsetsBuffer[i * 4 + 3] = Component->NumCoefficients;
+
+              Offset += Component->Data.Num();
+              Unoffset += Component->NumSplats;
             }
-            Offset += SplatCoeffCounts[i] * (sizeof(FVector4f) / sizeof(float));
           }
         }
-
-        std::vector<float> copy(BufferData, BufferData + BufferBytes / 4);
-        RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
-      }
-
-      {
-        int32* BufferData = static_cast<int32*>(RHICmdList.LockBuffer(
-            this->SplatIndicesBuffer.Buffer,
-            0,
-            NumSplats * sizeof(int32),
-            EResourceLockMode::RLM_WriteOnly));
-        size_t Offset = 0;
-        for (int32 i = 0; i < this->Owner->SplatSystem->SplatActors.Num();
-             i++) {
-          const TArray<FVector4f>& Positions =
-              this->Owner->SplatSystem->SplatActors[i]->SplatData.Positions;
-          for (int32 j = 0; j < Positions.Num(); j++) {
-            BufferData[Offset + j] = i;
-          }
-
-          Offset += Positions.Num();
-        }
-        RHICmdList.UnlockBuffer(this->SplatIndicesBuffer.Buffer);
-      }
-    }
-  });
+      });
 }
 
 UCesiumGaussianSplatDataInterface::UCesiumGaussianSplatDataInterface(

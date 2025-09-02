@@ -43,7 +43,6 @@ public:
   virtual void BeginPlay() override;
   virtual void BeginDestroy() override;
 
-private:
   /**
    *  Every piece of data required to render this splat.
    *
@@ -54,8 +53,22 @@ private:
    * - 10, 11, 12, 13 - Color RGBA
    * - 14, 15, 16 - SH deg 1 coeff 0
    * - (and so on for rest of SH coeffs)
+   *
+   * This array should be padded to a multiple of 4 so it can be encoded as
+   * vec4s in the shader.
    */
   TArray<float> Data;
+
+  /**
+   * The number of elements between each splat in the Data array.
+   */
+  int32 DataStride = 0;
+
+  int32 NumCoefficients = 0;
+
+  int32 NumSplats = 0;
+
+private:
 
   TOptional<FBox> Bounds;
 };

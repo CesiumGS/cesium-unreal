@@ -56,6 +56,15 @@ UCesiumGaussianSplatSubsystem::UCesiumGaussianSplatSubsystem() {
   this->NiagaraSystemAsset = Statics.NiagaraSystem.Object;
 }
 
+int32 UCesiumGaussianSplatSubsystem::GetNumSplats() const {
+  int32 Num = 0;
+  for (UCesiumGltfGaussianSplatComponent* Component : this->SplatComponents) {
+    Num += Component->NumSplats;
+  }
+
+  return Num;
+}
+
 void UCesiumGaussianSplatSubsystem::OnWorldBeginPlay(UWorld& InWorld) {
   FFXSystemSpawnParameters SpawnParams;
   SpawnParams.WorldContextObject = &InWorld;

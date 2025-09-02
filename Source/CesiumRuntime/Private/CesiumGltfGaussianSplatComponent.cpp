@@ -118,7 +118,9 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& meshPrimitive) {
   const int32 numShCoeffs = countShCoeffsOnPrimitive(meshPrimitive);
-  const int32 stride = 14 + numShCoeffs * 3;
+  const int32 stride = std::ceil(static_cast<double>(14 + numShCoeffs * 3) / 4.0) * 4.0;
+  this->DataStride = stride;
+  this->NumCoefficients = numShCoeffs;
 
   const std::unordered_map<std::string, int32_t>::const_iterator positionIt =
       meshPrimitive.attributes.find("POSITION");
@@ -142,6 +144,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
   }
 
   this->Data.SetNum(stride * positionView.size(), true);
+  this->NumSplats = positionView.size();
   for (int32 i = 0; i < positionView.size(); i++) {
     this->Data[i * stride] = positionView[i].x;
     this->Data[i * stride + 1] = positionView[i].y;

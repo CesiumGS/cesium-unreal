@@ -20,8 +20,12 @@ public:
 
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+  int32 GetNumSplats() const;
 
   virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+
+  UPROPERTY()
+  TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
 private:
   void OnTransformUpdated(
@@ -30,9 +34,6 @@ private:
       ETeleportType Teleport);
 
   UCesiumGaussianSplatDataInterface* GetSplatInterface() const;
-
-  UPROPERTY()
-  TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
   TArray<FDelegateHandle> SplatDelegateHandles;
 
