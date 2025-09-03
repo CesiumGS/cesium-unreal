@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Subsystems/WorldSubsystem.h"
-#include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+#include "Subsystems/WorldSubsystem.h"
 
 #include "CesiumGaussianSplatDataInterface.h"
 #include "CesiumGltfGaussianSplatComponent.h"
@@ -16,8 +16,6 @@ class UCesiumGaussianSplatSubsystem : public UWorldSubsystem {
   GENERATED_BODY()
 
 public:
-  UCesiumGaussianSplatSubsystem();
-
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   int32 GetNumSplats() const;
@@ -37,8 +35,9 @@ private:
 
   TArray<FDelegateHandle> SplatDelegateHandles;
 
-  TObjectPtr<UNiagaraSystem> NiagaraSystemAsset;
-
   UPROPERTY()
   UNiagaraComponent* NiagaraComponent;
+
+  UPROPERTY()
+  AActor* NiagaraActor;
 };

@@ -1,9 +1,9 @@
 #include "CesiumGaussianSplatSubsystem.h"
 
 #include "NiagaraActor.h"
-#include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 
 namespace {
 FBox CalculateBounds(
@@ -43,19 +43,6 @@ FBox CalculateBounds(
 }
 } // namespace
 
-UCesiumGaussianSplatSubsystem::UCesiumGaussianSplatSubsystem() {
-  struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UNiagaraSystem> NiagaraSystem;
-    FConstructorStatics()
-        : NiagaraSystem(TEXT(
-              "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatSystem.GaussianSplatSystem'")) {
-    }
-  };
-
-  static FConstructorStatics Statics;
-  this->NiagaraSystemAsset = Statics.NiagaraSystem.Object;
-}
-
 int32 UCesiumGaussianSplatSubsystem::GetNumSplats() const {
   int32 Num = 0;
   for (UCesiumGltfGaussianSplatComponent* Component : this->SplatComponents) {
@@ -66,13 +53,35 @@ int32 UCesiumGaussianSplatSubsystem::GetNumSplats() const {
 }
 
 void UCesiumGaussianSplatSubsystem::OnWorldBeginPlay(UWorld& InWorld) {
+  FActorSpawnParameters ActorParams;
+  ActorParams.Name = FName(TEXT("GaussianSplatSystemActor"));
+  AActor* SplatActor = InWorld.SpawnActor<AActor>(ActorParams);
+
+  USceneComponent* SceneComponent =
+      CastChecked<USceneComponent>(SplatActor->AddComponentByClass(
+          USceneComponent::StaticClass(),
+          false,
+          FTransform(),
+          false));
+  SplatActor->AddInstanceComponent(SceneComponent);
+
+  UNiagaraSystem* SplatNiagaraSystem = CastChecked<
+      UNiagaraSystem>(StaticLoadObject(
+      UNiagaraSystem::StaticClass(),
+      nullptr,
+      TEXT(
+          "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatSystem.GaussianSplatSystem'")));
+
   FFXSystemSpawnParameters SpawnParams;
   SpawnParams.WorldContextObject = &InWorld;
-  SpawnParams.SystemTemplate = this->NiagaraSystemAsset;
+  SpawnParams.SystemTemplate = SplatNiagaraSystem;
   SpawnParams.bAutoDestroy = false;
+  SpawnParams.AttachToComponent = SceneComponent;
 
-
-  this->NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocationWithParams(SpawnParams);
+  this->NiagaraActor = SplatActor;
+  this->NiagaraComponent =
+      UNiagaraFunctionLibrary::SpawnSystemAttachedWithParams(SpawnParams);
+  SplatActor->AddInstanceComponent(this->NiagaraComponent);
 }
 
 void UCesiumGaussianSplatSubsystem::RegisterSplat(
@@ -82,8 +91,12 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
       this,
       &UCesiumGaussianSplatSubsystem::OnTransformUpdated));
 
+  this->NiagaraComponent->SetNiagaraVariableInt(
+      TEXT("GridSize"),
+      (int32)std::ceil(std::sqrt((double)this->GetNumSplats())));
   this->NiagaraComponent->SetSystemFixedBounds(
       CalculateBounds(this->SplatComponents));
+  GetSplatInterface()->Refresh();
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
@@ -95,6 +108,7 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
       this->SplatDelegateHandles[ComponentIndex]);
   this->SplatComponents.Remove(Component);
   this->SplatDelegateHandles.RemoveAt(ComponentIndex);
+  GetSplatInterface()->Refresh();
 }
 
 void UCesiumGaussianSplatSubsystem::OnTransformUpdated(
@@ -103,6 +117,7 @@ void UCesiumGaussianSplatSubsystem::OnTransformUpdated(
     ETeleportType Teleport) {
   this->NiagaraComponent->SetSystemFixedBounds(
       CalculateBounds(this->SplatComponents));
+  GetSplatInterface()->RefreshMatrices();
 }
 
 UCesiumGaussianSplatDataInterface*

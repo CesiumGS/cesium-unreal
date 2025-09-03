@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "NiagaraDataInterface.h"
 #include "NiagaraDataInterfaceBase.h"
+
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
 struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
@@ -25,7 +26,7 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
     return 0;
   }
 
-  void UploadToGPU(UWorld* World);
+  void UploadToGPU(class UCesiumGaussianSplatSubsystem* SplatSystem);
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
@@ -37,8 +38,7 @@ SHADER_PARAMETER_SRV(Buffer<float4>, Data)
 END_SHADER_PARAMETER_STRUCT()
 
 UCLASS()
-class UCesiumGaussianSplatDataInterface
-    : public UNiagaraDataInterface {
+class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
   GENERATED_BODY()
 
   UCesiumGaussianSplatDataInterface(const FObjectInitializer& Initializer);
@@ -79,12 +79,6 @@ class UCesiumGaussianSplatDataInterface
 #endif
 
 public:
-  void Refresh() {
-    this->GetProxyAs<FNDIGaussianSplatProxy>()->bNeedsUpdate = true;
-    this->GetProxyAs<FNDIGaussianSplatProxy>()->bMatricesNeedUpdate = true;
-  }
-
-  void RefreshMatrices() {
-    this->GetProxyAs<FNDIGaussianSplatProxy>()->bMatricesNeedUpdate = true;
-  }
+  void Refresh();
+  void RefreshMatrices();
 };

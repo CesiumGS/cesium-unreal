@@ -69,6 +69,5 @@ public:
   int32 NumSplats = 0;
 
 private:
-
   TOptional<FBox> Bounds;
 };

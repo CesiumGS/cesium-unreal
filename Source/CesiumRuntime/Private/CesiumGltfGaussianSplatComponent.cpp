@@ -118,7 +118,8 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& meshPrimitive) {
   const int32 numShCoeffs = countShCoeffsOnPrimitive(meshPrimitive);
-  const int32 stride = std::ceil(static_cast<double>(14 + numShCoeffs * 3) / 4.0) * 4.0;
+  const int32 stride =
+      std::ceil(static_cast<double>(14 + numShCoeffs * 3) / 4.0) * 4.0;
   this->DataStride = stride;
   this->NumCoefficients = numShCoeffs;
 
@@ -380,11 +381,11 @@ void UCesiumGltfGaussianSplatComponent::BeginPlay() {
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
   Super::BeginDestroy();
   UWorld* World = GetWorld();
-  ensure(World);
+  if (IsValid(World)) {
+    UCesiumGaussianSplatSubsystem* SplatSubsystem =
+        World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
+    ensure(SplatSubsystem);
 
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
-      World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
-
-  SplatSubsystem->UnregisterSplat(this);
+    SplatSubsystem->UnregisterSplat(this);
+  }
 }
