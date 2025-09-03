@@ -507,7 +507,7 @@ namespace {
 template <typename Func>
 void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
   for (size_t i = 0; i < tiles.size(); i++) {
-    const Cesium3DTilesSelection::Tile::Pointer& pTile = tiles[i];
+    const Cesium3DTilesSelection::Tile::ConstPointer& pTile = tiles[i];
     if (!pTile ||
         pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -545,7 +545,7 @@ void forEachRenderableVoxelTile(const auto& tiles, Func&& f) {
 } // namespace
 
 void UCesiumVoxelRendererComponent::UpdateTiles(
-    const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
+    const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& VisibleTiles,
     const std::vector<double>& VisibleTileScreenSpaceErrors) {
   forEachRenderableVoxelTile(
       VisibleTiles,
