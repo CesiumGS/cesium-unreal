@@ -40,7 +40,7 @@ CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
             this->PolygonStyle.FillStyle.Color.G,
             this->PolygonStyle.FillStyle.Color.B,
             this->PolygonStyle.FillStyle.Color.A},
-        (CesiumVectorData::ColorMode)this->LineStyle.ColorMode};
+        (CesiumVectorData::ColorMode)this->PolygonStyle.FillStyle.ColorMode};
   }
 
   return CesiumVectorData::VectorStyle{
