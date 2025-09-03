@@ -14,18 +14,21 @@
 #include "CesiumPointCloudShading.h"
 #include "CesiumSampleHeightResult.h"
 #include "CesiumVoxelMetadataComponent.h"
+#include "CesiumVoxelRenderingOptions.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
+
 #include <PhysicsEngine/BodyInstance.h>
 #include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include <vector>
+
 #include "Cesium3DTileset.generated.h"
 
 #ifdef CESIUM_DEBUG_TILE_STATES
@@ -957,6 +960,17 @@ private:
   FCesiumPointCloudShading PointCloudShading;
 
   /**
+   * If this tileset contains voxels, their appearance can be configured with
+   * these voxel rendering parameters.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetVoxelRenderingOptions,
+      BlueprintSetter = SetVoxelRenderingOptions,
+      Category = "Cesium|Rendering")
+  FCesiumVoxelRenderingOptions VoxelRenderingOptions;
+
+  /**
    * Array of runtime virtual textures into which we draw the mesh for this
    * actor. The material also needs to be set up to output to a virtual texture.
    */
@@ -1163,6 +1177,15 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetPointCloudShading(FCesiumPointCloudShading InPointCloudShading);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  FCesiumVoxelRenderingOptions GetVoxelRenderingOptions() const {
+    return VoxelRenderingOptions;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetVoxelRenderingOptions(
+      FCesiumVoxelRenderingOptions InVoxelRenderingOptions);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();

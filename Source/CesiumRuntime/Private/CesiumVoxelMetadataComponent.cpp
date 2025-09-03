@@ -256,6 +256,7 @@ struct MaterialResourceLibrary {
 struct CustomShaderBuilder {
   FString DeclareShaderProperties;
   FString SamplePropertiesFromTexture;
+  FString InterpolateProperties;
   FString DeclareDataTextureVariables;
   FString SetDataTextures;
 
@@ -430,6 +431,44 @@ struct CustomShaderBuilder {
   }
 
   /**
+   * Adds code for linearly interpolating the property in the corresponding
+   * shader function.
+   */
+  void AddPropertyInterpolation(
+      const FString& PropertyName,
+      const FCesiumPropertyAttributePropertyDescription& Property) {
+    if (!InterpolateProperties.IsEmpty()) {
+      InterpolateProperties += "\n\t\t";
+    }
+
+    // Example: Result.Property = lerp(A.Property, B.Property, t);
+    FString lerp = "Result." + PropertyName + " = lerp(A." + PropertyName +
+                   ", B." + PropertyName + ", t);\n";
+
+    // Any "noData" values should be omitted from inteprolation. Otherwise, they
+    // may result in nonsensical data.
+    if (Property.PropertyDetails.bHasNoDataValue) {
+      FString NoDataName = PropertyName + MaterialPropertyNoDataSuffix;
+      // Example: if {A.Property == Property_NODATA) {
+      //   Result.Property = B.Property;
+      // }
+      // else if (B.Property == Property_NODATA) {
+      //   Result.Property = A.Property;
+      // } else {
+      //   Result.Property = lerp(A.Property, B.Property, t);
+      // }
+      InterpolateProperties +=
+          "if (A." + PropertyName + " == " + NoDataName + ") {\n\t\t" +
+          "Result." + PropertyName + " = B." + PropertyName + ";\n}\n\t" +
+          "else if (B." + PropertyName + " == " + NoDataName + ") {\n\t\t" +
+          "Result." + PropertyName + " = A." + PropertyName + ";\n}\n\t" +
+          "else {\n\t\t" + lerp + "}\n";
+    } else {
+      InterpolateProperties += lerp;
+    }
+  }
+
+  /**
    * Comprehensively adds the declaration for properties and data textures, as
    * well as the code to correctly retrieve the property values from the data
    * textures.
@@ -441,6 +480,7 @@ struct CustomShaderBuilder {
     AddPropertyDeclaration(PropertyName, Property);
     AddDataTexture(PropertyName, TextureParameterName);
     AddPropertyRetrieval(PropertyName, Property);
+    AddPropertyInterpolation(PropertyName, Property);
   }
 };
 } // namespace
@@ -720,12 +760,12 @@ static void GenerateMaterialNodes(
       continue;
     }
 
-    auto* VectorParameterNode =
-        Cast<UMaterialExpressionVectorParameter>(NewExpression);
-    if (VectorParameterNode &&
-        VectorParameterNode->ParameterName.ToString() == "Tile Count") {
-      DataSectionX = VectorParameterNode->MaterialExpressionEditorX;
-      DataSectionY = VectorParameterNode->MaterialExpressionEditorY;
+    auto* ScalarParameterNode =
+        Cast<UMaterialExpressionScalarParameter>(NewExpression);
+    if (ScalarParameterNode && ScalarParameterNode->ParameterName.ToString() ==
+                                   "Use Linear Interpolation") {
+      DataSectionX = ScalarParameterNode->MaterialExpressionEditorX;
+      DataSectionY = ScalarParameterNode->MaterialExpressionEditorY;
     }
   }
 
@@ -831,6 +871,7 @@ static void GenerateMaterialNodes(
   LazyPrintf.PushParam(*Component->CustomShader);
   LazyPrintf.PushParam(*Builder.DeclareDataTextureVariables);
   LazyPrintf.PushParam(*Builder.SamplePropertiesFromTexture);
+  LazyPrintf.PushParam(*Builder.InterpolateProperties);
   LazyPrintf.PushParam(*Builder.SetDataTextures);
 
   RaymarchNode->Code = LazyPrintf.GetResultString();
