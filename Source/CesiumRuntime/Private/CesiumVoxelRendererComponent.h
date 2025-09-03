@@ -87,7 +87,7 @@ public:
    * rendering.
    */
   void UpdateTiles(
-      const std::vector<Cesium3DTilesSelection::Tile::Pointer>& VisibleTiles,
+      const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
 private:
