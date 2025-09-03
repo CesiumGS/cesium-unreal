@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "CesiumPointAttenuationVertexFactory.h"
+#include "CesiumPolylineVertexFactory.h"
+
 #include "PrimitiveSceneProxy.h"
 
 class UCesiumGltfLinesComponent;
@@ -12,7 +13,7 @@ private:
   // The original render data of the static mesh.
   const FStaticMeshRenderData* RenderData;
   int32_t NumLines;
-  int32_t LineMode;
+  float LineWidth;
 
 public:
   SIZE_T GetTypeHash() const override;
@@ -29,6 +30,8 @@ protected:
 
   virtual void DestroyRenderThreadResources() override;
 
+  virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
+
   virtual void GetDynamicMeshElements(
       const TArray<const FSceneView*>& Views,
       const FSceneViewFamily& ViewFamily,
@@ -42,21 +45,21 @@ protected:
 
 private:
   // The vertex factory and index buffer for thick line rendering.
-  //FCesiumPointAttenuationVertexFactory AttenuationVertexFactory;
-  //FCesiumPointAttenuationIndexBuffer AttenuationIndexBuffer;
+  FCesiumPolylineVertexFactory PolylineVertexFactory;
+  FCesiumPolylineIndexBuffer PolylineIndexBuffer;
 
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
 
- /* void CreatePointAttenuationUserData(
+  void CreatePolylineUserData(
       FMeshBatchElement& BatchElement,
       const FSceneView* View,
       FMeshElementCollector& Collector) const;
 
-  void CreateMeshWithAttenuation(
+  void CreatePolylineMesh(
       FMeshBatch& Mesh,
       const FSceneView* View,
-      FMeshElementCollector& Collector) const;*/
+      FMeshElementCollector& Collector) const;
 
   void CreateMesh(FMeshBatch& Mesh) const;
 };

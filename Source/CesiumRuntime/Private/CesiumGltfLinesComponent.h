@@ -17,8 +17,6 @@ public:
   UCesiumGltfLinesComponent();
   virtual ~UCesiumGltfLinesComponent();
 
-  int32_t LineMode;
-
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
 };

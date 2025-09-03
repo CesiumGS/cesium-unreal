@@ -20,12 +20,12 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
     ERHIFeatureLevel::Type InFeatureLevel)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
-      NumLines(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-      LineMode(InComponent->LineMode),/*
-      AttenuationVertexFactory(
+      NumLines(RenderData->LODResources[0].IndexBuffer.GetNumIndices() / 2),
+      PolylineVertexFactory(
           InFeatureLevel,
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
-      AttenuationIndexBuffer(NumLines, bAttenuationSupported),*/
+      PolylineIndexBuffer(NumLines, true),
+    //  LineMode(InComponent->getPrimitiveData().pMeshPrimitive->mode),
       Material(InComponent->GetMaterial(0)),
       MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
 
@@ -33,13 +33,22 @@ FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
 
 void FCesiumGltfLinesSceneProxy::CreateRenderThreadResources(
     FRHICommandListBase& RHICmdList) {
-  //AttenuationVertexFactory.InitResource(RHICmdList);
-  //AttenuationIndexBuffer.InitResource(RHICmdList);
+  PolylineVertexFactory.InitResource(RHICmdList);
+  PolylineIndexBuffer.InitResource(RHICmdList);
 }
 
 void FCesiumGltfLinesSceneProxy::DestroyRenderThreadResources() {
-  //AttenuationVertexFactory.ReleaseResource();
-  //AttenuationIndexBuffer.ReleaseResource();
+  PolylineVertexFactory.ReleaseResource();
+  PolylineIndexBuffer.ReleaseResource(); 
+}
+
+void FCesiumGltfLinesSceneProxy::DrawStaticElements(
+    FStaticPrimitiveDrawInterface* PDI) {
+  if (!HasViewDependentDPG()) {
+    FMeshBatch Mesh;
+    CreateMesh(Mesh);
+    PDI->DrawMesh(Mesh, FLT_MAX);
+  }
 }
 
 void FCesiumGltfLinesSceneProxy::GetDynamicMeshElements(
@@ -63,10 +72,12 @@ FPrimitiveViewRelevance
 FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
-  // Always render dynamically; the appearance of the Lines can change
-  // via point cloud shading.
-  Result.bDynamicRelevance = true;
-  Result.bStaticRelevance = false;
+
+  if (HasViewDependentDPG()) {
+    Result.bDynamicRelevance = true;
+  } else {
+    Result.bStaticRelevance = true;
+  }
 
   Result.bRenderCustomDepth = ShouldRenderCustomDepth();
   Result.bRenderInMainPass = ShouldRenderInMainPass();
@@ -85,8 +96,8 @@ FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
 uint32 FCesiumGltfLinesSceneProxy::GetMemoryFootprint(void) const {
   return (sizeof(*this) + GetAllocatedSize());
 }
-//
-//void FCesiumGltfLinesSceneProxy::CreatePointAttenuationUserData(
+
+// void FCesiumGltfLinesSceneProxy::CreatePointAttenuationUserData(
 //    FMeshBatchElement& BatchElement,
 //    const FSceneView* View,
 //    FMeshElementCollector& Collector) const {
@@ -120,9 +131,10 @@ uint32 FCesiumGltfLinesSceneProxy::GetMemoryFootprint(void) const {
 //  GeometricError *= PointCloudShading.GeometricErrorScale;
 //
 //  // Depth Multiplier
-//  float SSEDenominator = 2.0f * tanf(0.5f * FMath::DegreesToRadians(View->FOV));
-//  float DepthMultiplier =
-//      static_cast<float>(View->UnconstrainedViewRect.Height()) / SSEDenominator;
+//  float SSEDenominator = 2.0f * tanf(0.5f *
+//  FMath::DegreesToRadians(View->FOV)); float DepthMultiplier =
+//      static_cast<float>(View->UnconstrainedViewRect.Height()) /
+//      SSEDenominator;
 //
 //  UserData.AttenuationParameters =
 //      FVector3f(MaximumLinesize, GeometricError, DepthMultiplier);
