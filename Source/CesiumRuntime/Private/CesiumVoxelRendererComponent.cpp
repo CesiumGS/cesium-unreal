@@ -17,10 +17,12 @@
 #include "VecMath.h"
 
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
+#include <CesiumGeometry/Transforms.h>
 #include <CesiumGeospatial/Ellipsoid.h>
 #include <CesiumGltf/MeshPrimitive.h>
 #include <CesiumGltf/Model.h>
 #include <CesiumUtility/Math.h>
+#include <glm/gtc/matrix_access.hpp>
 #include <variant>
 
 // Sets default values for this component's properties
@@ -83,6 +85,9 @@ EVoxelGridShape getVoxelGridShape(
   if (std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume)) {
     return EVoxelGridShape::Box;
   }
+  if (std::get_if<CesiumGeometry::BoundingCylinderRegion>(&boundingVolume)) {
+    return EVoxelGridShape::Cylinder;
+  }
   if (std::get_if<CesiumGeospatial::BoundingRegion>(&boundingVolume)) {
     return EVoxelGridShape::Ellipsoid;
   }
@@ -134,7 +139,7 @@ void setVoxelBoxProperties(
  * defined in. This determines the math for the ray-intersection tested against
  * that value in the voxel shader.
  */
-enum CartographicAngleDescription : int8 {
+enum AngleDescription : int8 {
   None = 0,
   Zero = 1,
   UnderHalf = 2,
@@ -142,28 +147,269 @@ enum CartographicAngleDescription : int8 {
   OverHalf = 4
 };
 
-CartographicAngleDescription interpretLongitudeRange(double value) {
+AngleDescription interpretCylinderRange(double value) {
+  const double angleEpsilon = CesiumUtility::Math::Epsilon10;
+
+  if (value >= CesiumUtility::Math::OnePi - angleEpsilon &&
+      value < CesiumUtility::Math::TwoPi - angleEpsilon) {
+    // angle range >= PI
+    return AngleDescription::OverHalf;
+  }
+  if (value > angleEpsilon &&
+      value < CesiumUtility::Math::OnePi - angleEpsilon) {
+    // angle range < PI
+    return AngleDescription::UnderHalf;
+  }
+  if (value <= angleEpsilon) {
+    // angle range ~= 0
+    return AngleDescription::Zero;
+  }
+
+  return AngleDescription::None;
+}
+
+void setVoxelCylinderProperties(
+    UCesiumVoxelRendererComponent* pVoxelComponent,
+    UMaterialInstanceDynamic* pVoxelMaterial,
+    const CesiumGeometry::BoundingCylinderRegion& cylinder) {
+  // Approximate the cylinder region as a box.
+  const CesiumGeometry::OrientedBoundingBox& box =
+      cylinder.toOrientedBoundingBox();
+
+  glm::dmat3 halfAxes = box.getHalfAxes();
+  pVoxelComponent->HighPrecisionTransform = glm::dmat4(
+      glm::dvec4(halfAxes[0], 0) * 0.02,
+      glm::dvec4(halfAxes[1], 0) * 0.02,
+      glm::dvec4(halfAxes[2], 0) * 0.02,
+      glm::dvec4(box.getCenter(), 1));
+
+  // The default bounds define the minimum and maximum extents for the shape's
+  // actual bounds, in the order of (radius, angle, height).
+  const FVector defaultMinimumBounds(0, -CesiumUtility::Math::OnePi, -1);
+  const FVector defaultMaximumBounds(1, CesiumUtility::Math::OnePi, 1);
+
+  const glm::dvec2& radialBounds = cylinder.getRadialBounds();
+  const glm::dvec2& angularBounds = cylinder.getAngularBounds();
+
+  double normalizedMinimumRadius = radialBounds.x / radialBounds.y;
+  double radiusUVScale = 1;
+  double radiusUVOffset = 0;
+  FIntPoint radiusFlags(0);
+
+  // Radius
+  {
+    double normalizedRadiusRange = 1.0 - normalizedMinimumRadius;
+    bool hasNonzeroMinimumRadius = normalizedMinimumRadius > 0.0;
+    bool hasFlatRadius = radialBounds.x == radialBounds.y;
+
+    if (hasNonzeroMinimumRadius && normalizedRadiusRange > 0.0) {
+      radiusUVScale = 1.0 / normalizedRadiusRange;
+      radiusUVOffset = -normalizedMinimumRadius / normalizedRadiusRange;
+    }
+
+    radiusFlags.X = hasNonzeroMinimumRadius;
+    radiusFlags.Y = hasFlatRadius;
+  }
+
+  // Defines the extents of the angle in UV space. In other words, this
+  // expresses the minimum and maximum values of the angle range, and the
+  // midpoint of the negative space (if it exists), all in UV space.
+  FVector angleUVExtents = FVector::Zero();
+
+  double angleUVScale = 1.0;
+  double angleUVOffset = 0.0;
+  FIntVector4 angleFlags(0);
+
+  const double defaultAngleRange = CesiumUtility::Math::TwoPi;
+  bool isAngleReversed = angularBounds.y < angularBounds.x;
+  double angleRange =
+      angularBounds.y - angularBounds.x + isAngleReversed * defaultAngleRange;
+  // Angle
+  {
+    AngleDescription angleRangeIndicator = interpretCylinderRange(angleRange);
+
+    // Refers to the discontinuity at angle -pi / pi.
+    const double discontinuityEpsilon =
+        CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
+    bool angleMinimumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+        angularBounds.x,
+        -CesiumUtility::Math::OnePi,
+        discontinuityEpsilon);
+    bool angleMaximumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+        angularBounds.y,
+        CesiumUtility::Math::OnePi,
+        discontinuityEpsilon);
+
+    angleFlags.X = angleRangeIndicator;
+    angleFlags.Y = angleMinimumAtDiscontinuity;
+    angleFlags.Z = angleMaximumAtDiscontinuity;
+    angleFlags.W = isAngleReversed;
+
+    // Compute the extents of the angle range in UV Shape Space.
+    double minimumAngleUV =
+        (angularBounds.x - defaultMinimumBounds.Y) / defaultAngleRange;
+    double maximumAngleUV =
+        (angularBounds.y - defaultMinimumBounds.Y) / defaultAngleRange;
+    // Given the angle range, describes the proportion of the cylinder
+    // that is excluded from that range.
+    double angleRangeUVZero = 1.0 - angleRange / defaultAngleRange;
+    // Describes the midpoint of the above excluded range.
+    double angleRangeUVZeroMid =
+        glm::fract(maximumAngleUV + 0.5 * angleRangeUVZero);
+
+    angleUVExtents =
+        FVector(minimumAngleUV, maximumAngleUV, angleRangeUVZeroMid);
+
+    const double angleEpsilon = CesiumUtility::Math::Epsilon10;
+    if (angleRange > angleEpsilon) {
+      angleUVScale = defaultAngleRange / angleRange;
+      angleUVOffset = -(angularBounds.x - defaultMinimumBounds.Y) / angleRange;
+    }
+  }
+
+  // Shape Min Bounds = Cylinder Min (xyz)
+  // X = radius (normalized), Y = angle, Z = height (unused)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Min Bounds"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector(normalizedMinimumRadius, angularBounds.x, -1));
+
+  // Shape Max Bounds = Cylinder Max (xyz)
+  // X = radius (normalized), Y = angle, Z = height (unused)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Max Bounds"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector(1.0, angularBounds.y, 1));
+
+  // Data is packed across multiple vec4s to conserve space.
+  // 0 = Radius Range Flags (xy)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 0"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(radiusFlags.X, radiusFlags.Y));
+
+  // 1 = Angle Range Flags (xyzw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 1"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(angleFlags));
+
+  // 2 = Angle UV extents (xyz)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      angleUVExtents);
+
+  // 3 = UV -> Shape UV Transforms (scale / offset)
+  // Radius (xy), Angle (zw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 3"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(radiusUVScale, radiusUVOffset, angleUVScale, angleUVOffset));
+
+  // Distinct from the component's transform above, this scales from the
+  // engine-provided Cube's space ([-50, 50]) to a unit space of [-1, 1]. This
+  // is specifically used to fit the raymarched cube into the bounds of the
+  // explicit cube mesh. In other words, this scale must be applied in-shader
+  // to account for the actual mesh's bounds.
+  glm::dmat4 localToUnit(0.02);
+  localToUnit[3][3] = 1.0;
+
+  // With cylinder regions, the scale of tight-fitting bounding boxes will vary
+  // for partial cylinders.
+  if (angleRange < defaultAngleRange) {
+    glm::dvec3 scale;
+    CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+        glm::dmat4(
+            glm::dvec4(halfAxes[0], 0.0),
+            glm::dvec4(halfAxes[1], 0.0),
+            glm::dvec4(halfAxes[2], 0.0),
+            glm::dvec4(0.0, 0.0, 0.0, 1.0)),
+        nullptr,
+        nullptr,
+        &scale);
+
+    // If the cylinder was whole, the scale would have been the maximum radius
+    // along the xy-plane. The scale correction is thus the proportion to
+    // original scale.
+    glm::dvec3 scaleCorrection(
+        scale.x / radialBounds.y,
+        scale.y / radialBounds.y,
+        1.0);
+    const glm::dmat3& inverseHalfAxes = box.getInverseHalfAxes();
+    // The offset that occurs as a result of the smaller scale can be deduced
+    // from the box's inverse transform.
+    glm::dvec3 worldOffset = box.getCenter() - cylinder.getTranslation();
+    glm::dvec3 localOffset(
+        glm::dmat4(
+            glm::dvec4(inverseHalfAxes[0], 0.0),
+            glm::dvec4(inverseHalfAxes[1], 0.0),
+            glm::dvec4(inverseHalfAxes[2], 0.0),
+            glm::dvec4(0.0, 0.0, 0.0, 1.0)) *
+        glm::dvec4(worldOffset, 1.0));
+
+    localToUnit =
+        CesiumGeometry::Transforms::createTranslationRotationScaleMatrix(
+            scaleCorrection * localOffset,
+            glm::dquat(1.0, 0.0, 0.0, 0.0),
+            scaleCorrection) *
+        localToUnit;
+  }
+
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      VecMath::createVector4(glm::row(localToUnit, 0)));
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 1"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      VecMath::createVector4(glm::row(localToUnit, 1)));
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      VecMath::createVector4(glm::row(localToUnit, 2)));
+}
+
+AngleDescription interpretLongitudeRange(double value) {
   const double longitudeEpsilon = CesiumUtility::Math::Epsilon10;
 
   if (value >= CesiumUtility::Math::OnePi - longitudeEpsilon &&
       value < CesiumUtility::Math::TwoPi - longitudeEpsilon) {
     // longitude range > PI
-    return CartographicAngleDescription::OverHalf;
+    return AngleDescription::OverHalf;
   }
   if (value > longitudeEpsilon &&
       value < CesiumUtility::Math::OnePi - longitudeEpsilon) {
     // longitude range < PI
-    return CartographicAngleDescription::UnderHalf;
+    return AngleDescription::UnderHalf;
   }
   if (value < longitudeEpsilon) {
     // longitude range ~= 0
-    return CartographicAngleDescription::Zero;
+    return AngleDescription::Zero;
   }
 
-  return CartographicAngleDescription::None;
+  return AngleDescription::None;
 }
 
-CartographicAngleDescription interpretLatitudeValue(double value) {
+AngleDescription interpretLatitudeValue(double value) {
   const double latitudeEpsilon = CesiumUtility::Math::Epsilon10;
   const double zeroLatitudeEpsilon =
       CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
@@ -171,18 +417,18 @@ CartographicAngleDescription interpretLatitudeValue(double value) {
   if (value > -CesiumUtility::Math::OnePi + latitudeEpsilon &&
       value < -zeroLatitudeEpsilon) {
     // latitude between (-PI, 0)
-    return CartographicAngleDescription::UnderHalf;
+    return AngleDescription::UnderHalf;
   }
   if (value >= -zeroLatitudeEpsilon && value <= +zeroLatitudeEpsilon) {
     // latitude ~= 0
-    return CartographicAngleDescription::Half;
+    return AngleDescription::Half;
   }
   if (value > zeroLatitudeEpsilon) {
     // latitude between (0, PI)
-    return CartographicAngleDescription::OverHalf;
+    return AngleDescription::OverHalf;
   }
 
-  return CartographicAngleDescription::None;
+  return AngleDescription::None;
 }
 
 FVector getEllipsoidRadii(const ACesiumGeoreference* pGeoreference) {
@@ -264,7 +510,7 @@ void setVoxelEllipsoidProperties(
         defaultMaximumBounds.X,
         discontinuityEpsilon);
 
-    CartographicAngleDescription longitudeRangeIndicator =
+    AngleDescription longitudeRangeIndicator =
         interpretLongitudeRange(longitudeRange);
 
     longitudeFlags.X = longitudeRangeIndicator;
@@ -298,9 +544,9 @@ void setVoxelEllipsoidProperties(
   }
 
   // Latitude
-  CartographicAngleDescription latitudeMinValueFlag =
+  AngleDescription latitudeMinValueFlag =
       interpretLatitudeValue(minimumLatitude);
-  CartographicAngleDescription latitudeMaxValueFlag =
+  AngleDescription latitudeMaxValueFlag =
       interpretLatitudeValue(maximumLatitude);
   double latitudeUVScale = 1;
   double latitudeUVOffset = 0;
@@ -525,6 +771,11 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume);
     assert(pBox != nullptr);
     setVoxelBoxProperties(pVoxelComponent, pVoxelMaterial, *pBox);
+  } else if (shape == EVoxelGridShape::Cylinder) {
+    const CesiumGeometry::BoundingCylinderRegion* pCylinder =
+        std::get_if<CesiumGeometry::BoundingCylinderRegion>(&boundingVolume);
+    assert(pCylinder != nullptr);
+    setVoxelCylinderProperties(pVoxelComponent, pVoxelMaterial, *pCylinder);
   } else if (shape == EVoxelGridShape::Ellipsoid) {
     const CesiumGeospatial::BoundingRegion* pRegion =
         std::get_if<CesiumGeospatial::BoundingRegion>(&boundingVolume);

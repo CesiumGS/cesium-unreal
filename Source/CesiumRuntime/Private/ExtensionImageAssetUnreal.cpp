@@ -1,6 +1,8 @@
 #include "ExtensionImageAssetUnreal.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
+#include "RenderingThread.h"
+
 #include <CesiumGltf/ImageAsset.h>
 #include <CesiumGltfReader/GltfReader.h>
 
