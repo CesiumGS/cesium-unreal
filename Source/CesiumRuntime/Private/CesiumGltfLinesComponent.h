@@ -19,4 +19,7 @@ public:
 
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
+
+  bool IsPolyline;
+  int32 LineWidth;
 };

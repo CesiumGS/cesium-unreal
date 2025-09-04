@@ -310,7 +310,7 @@ float3 VertexFactoryGetPreviousInstanceSpacePosition(FVertexFactoryInput Input, 
   return Intermediates.Position;
 }
 
-float4 ExpandPolyline(float4 WorldPosition, uint CornerIndex) {
+float4 ExpandPolyline(float4 WorldPosition, float4 NextWorldPosition, float4 PreviousWorldPosition, uint PointIndex, uint CornerIndex) {
     // These offsets generate the quad like so:
    	// 1 --- 2
   	// |  /  |
@@ -321,8 +321,8 @@ float4 ExpandPolyline(float4 WorldPosition, uint CornerIndex) {
     // way.
 
   	// Results in -0.5 for 0, 1 and 0.5 for 2, 3
-  	float OffsetX = CornerIndex / 2 - 0.5;
-  	float OffsetY = -0.5f;
+    float OffsetX = (CornerIndex / 2 - 0.5) + 0.5;
+  	float OffsetY = 0.5f;
   	if (CornerIndex == 1 || CornerIndex == 2) {
   	  	OffsetY = 0.5;
   	}
@@ -330,14 +330,17 @@ float4 ExpandPolyline(float4 WorldPosition, uint CornerIndex) {
   	float4 PositionView = mul(WorldPosition, ResolvedView.TranslatedWorldToView);
   	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
 
-  	float2 PixelOffset = LineWidth * float2(OffsetX, OffsetY);
-  	float2 ScreenOffset = PixelOffset * ResolvedView.ViewSizeAndInvSize.zw;
-  	float2 ClipOffset = ScreenOffset * PositionClip.w;
-  	float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
-  	//ViewOffset /= ViewOffset.w;
+    float2 DirectionToPrevious = normalize(PreviousWorldPosition.xy - WorldPosition.xy);
+    float2 DirectionToNext = normalize(PreviousWorldPosition.xy - WorldPosition.xy);
 
-  	// Adjust x-component for the left-handed coordinate system.
-    float3 ExpandedPosition = WorldPosition.xyz + (-ViewOffset.x * ResolvedView.ViewRight + ViewOffset.y * ResolvedView.ViewUp);
+  // TODO use previous?
+  //  bool UsePrevious = (PointIndex - 2 < 0);
+    float2 SegmentForward = DirectionToNext;
+    float2 LeftWorldPosition = float2(-SegmentForward.y, SegmentForward.x);
+
+    float2 Offset = LeftWorldPosition * float2(OffsetX, OffsetY) * float(LineWidth);
+
+    float3 ExpandedPosition = WorldPosition.xyz + float3(Offset, 0.0);
   	return float4(ExpandedPosition, 1);
 }
 
@@ -346,7 +349,7 @@ float4 VertexFactoryGetRasterizedWorldPosition(
   	FVertexFactoryIntermediates Intermediates,
   	float4 InWorldPosition)
 {
-  	return ExpandPolyline(InWorldPosition, Intermediates.CornerIndex);
+  	return ExpandPolyline(InWorldPosition, Intermediates.NextWorldPosition, Intermediates.PreviousWorldPosition, Intermediates.PointIndex, Intermediates.CornerIndex);
 }
 
 float3 VertexFactoryGetPositionForVertexLighting(

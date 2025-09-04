@@ -1260,36 +1260,6 @@ std::string getPrimitiveName(
   return name;
 }
 
-/// Helper used to log only once per unsupported primitive mode.
-struct PrimitiveModeLogger {
-  std::array<
-      std::atomic_bool,
-      (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
-      alreadyLogged;
-
-  PrimitiveModeLogger()
-      : alreadyLogged{
-            {{false}, {false}, {false}, {false}, {false}, {false}, {false}}} {}
-
-  inline void OnUnsupportedMode(int32_t primMode) {
-    bool bPrintLog = false;
-    if (primMode < 0 || primMode >= (int32_t)alreadyLogged.size()) {
-      ensureMsgf(false, TEXT("Unknown primitive mode %d!"), primMode);
-      bPrintLog = true;
-    } else if (!alreadyLogged[(size_t)primMode].exchange(true)) {
-      bPrintLog = true;
-    }
-    if (bPrintLog) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("Primitive mode %d is not supported"),
-          primMode);
-    }
-  }
-};
-static PrimitiveModeLogger UnsupportedPrimitiveLogger;
-
 template <class TIndexAccessor>
 TArray<uint32>
 getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {

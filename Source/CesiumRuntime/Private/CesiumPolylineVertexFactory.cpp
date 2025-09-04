@@ -111,7 +111,7 @@ private:
 };
 
 /**
- * A dummy vertex buffer to bind when rendering polylines This prevents
+ * A dummy vertex buffer to bind when rendering polylines. This prevents
  * rendering pipeline errors that can occur with zero-stream input layouts.
  */
 class FCesiumPolylineDummyVertexBuffer : public FVertexBuffer {

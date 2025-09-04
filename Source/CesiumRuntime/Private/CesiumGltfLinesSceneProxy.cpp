@@ -15,17 +15,27 @@ SIZE_T FCesiumGltfLinesSceneProxy::GetTypeHash() const {
   return reinterpret_cast<size_t>(&UniquePointer);
 }
 
+namespace {
+int32 getLineCount(UCesiumGltfLinesComponent* InComponent) {
+  FStaticMeshRenderData* pRenderData =
+      InComponent->GetStaticMesh()->GetRenderData();
+  int32 indicesCount = pRenderData->LODResources[0].IndexBuffer.GetNumIndices();
+  return InComponent->IsPolyline ? indicesCount - 1 : indicesCount / 2;
+}
+} // namespace
+
 FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
     UCesiumGltfLinesComponent* InComponent,
     ERHIFeatureLevel::Type InFeatureLevel)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
-      NumLines(RenderData->LODResources[0].IndexBuffer.GetNumIndices() / 2),
+      NumLines(getLineCount(InComponent)),
+      IsPolyline(InComponent->IsPolyline),
+      LineWidth(InComponent->LineWidth),
       PolylineVertexFactory(
           InFeatureLevel,
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
       PolylineIndexBuffer(NumLines, true),
-    //  LineMode(InComponent->getPrimitiveData().pMeshPrimitive->mode),
       Material(InComponent->GetMaterial(0)),
       MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
 
@@ -39,7 +49,7 @@ void FCesiumGltfLinesSceneProxy::CreateRenderThreadResources(
 
 void FCesiumGltfLinesSceneProxy::DestroyRenderThreadResources() {
   PolylineVertexFactory.ReleaseResource();
-  PolylineIndexBuffer.ReleaseResource(); 
+  PolylineIndexBuffer.ReleaseResource();
 }
 
 void FCesiumGltfLinesSceneProxy::DrawStaticElements(
@@ -62,7 +72,10 @@ void FCesiumGltfLinesSceneProxy::GetDynamicMeshElements(
     if (VisibilityMap & (1 << ViewIndex)) {
       const FSceneView* View = Views[ViewIndex];
       FMeshBatch& Mesh = Collector.AllocateMesh();
-      CreateMesh(Mesh);
+      if (IsPolyline) {
+      } else {
+        CreateMesh(Mesh);
+      }
       Collector.AddMesh(ViewIndex, Mesh);
     }
   }
@@ -72,12 +85,14 @@ FPrimitiveViewRelevance
 FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
+  Result.bDynamicRelevance = true;
 
-  if (HasViewDependentDPG()) {
-    Result.bDynamicRelevance = true;
-  } else {
-    Result.bStaticRelevance = true;
-  }
+  // TODO can you do polyline rendering with static relevance?
+  //if (HasViewDependentDPG()) {
+  //  Result.bDynamicRelevance = true;
+  //} else {
+  //  Result.bStaticRelevance = true;
+  //}
 
   Result.bRenderCustomDepth = ShouldRenderCustomDepth();
   Result.bRenderInMainPass = ShouldRenderInMainPass();
@@ -97,75 +112,56 @@ uint32 FCesiumGltfLinesSceneProxy::GetMemoryFootprint(void) const {
   return (sizeof(*this) + GetAllocatedSize());
 }
 
-// void FCesiumGltfLinesSceneProxy::CreatePointAttenuationUserData(
-//    FMeshBatchElement& BatchElement,
-//    const FSceneView* View,
-//    FMeshElementCollector& Collector) const {
-//  FCesiumPointAttenuationBatchElementUserDataWrapper* UserDataWrapper =
-//      &Collector.AllocateOneFrameResource<
-//          FCesiumPointAttenuationBatchElementUserDataWrapper>();
-//
-//  FCesiumPointAttenuationBatchElementUserData& UserData = UserDataWrapper->Data;
-//  const FLocalVertexFactory& OriginalVertexFactory =
-//      RenderData->LODVertexFactories[0].VertexFactory;
-//
-//  UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
-//  UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
-//  UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
-//  UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
-//  UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
-//  UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
-//
-//  FCesiumPointCloudShading PointCloudShading = TilesetData.PointCloudShading;
-//
-//  float MaximumLinesize = TilesetData.UsesAdditiveRefinement
-//                               ? 5.0f
-//                               : TilesetData.MaximumScreenSpaceError;
-//
-//  if (PointCloudShading.MaximumAttenuation > 0.0f) {
-//    // Don't multiply by DPI scale; let Unreal handle scaling.
-//    MaximumLinesize = PointCloudShading.MaximumAttenuation;
-//  }
-//
-//  float GeometricError = GetGeometricError();
-//  GeometricError *= PointCloudShading.GeometricErrorScale;
-//
-//  // Depth Multiplier
-//  float SSEDenominator = 2.0f * tanf(0.5f *
-//  FMath::DegreesToRadians(View->FOV)); float DepthMultiplier =
-//      static_cast<float>(View->UnconstrainedViewRect.Height()) /
-//      SSEDenominator;
-//
-//  UserData.AttenuationParameters =
-//      FVector3f(MaximumLinesize, GeometricError, DepthMultiplier);
-//
-//  BatchElement.UserData = &UserDataWrapper->Data;
-//}
-//
-//void FCesiumGltfLinesSceneProxy::CreateMeshWithAttenuation(
-//    FMeshBatch& Mesh,
-//    const FSceneView* View,
-//    FMeshElementCollector& Collector) const {
-//  Mesh.VertexFactory = &AttenuationVertexFactory;
-//  Mesh.MaterialRenderProxy = Material->GetRenderProxy();
-//  Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
-//  Mesh.Type = PT_TriangleList;
-//  Mesh.DepthPriorityGroup = SDPG_World;
-//  Mesh.LODIndex = 0;
-//  Mesh.bCanApplyViewModeOverrides = false;
-//  Mesh.bUseAsOccluder = false;
-//  Mesh.bWireframe = false;
-//
-//  FMeshBatchElement& BatchElement = Mesh.Elements[0];
-//  BatchElement.IndexBuffer = &AttenuationIndexBuffer;
-//  BatchElement.NumPrimitives = NumLines * 2;
-//  BatchElement.FirstIndex = 0;
-//  BatchElement.MinVertexIndex = 0;
-//  BatchElement.MaxVertexIndex = NumLines * 4 - 1;
-//  BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
-//
-//  CreatePointAttenuationUserData(BatchElement, View, Collector);
-//}
+void FCesiumGltfLinesSceneProxy::CreatePolylineUserData(
+    FMeshBatchElement& BatchElement,
+    const FSceneView* View,
+    FMeshElementCollector& Collector) const {
+  FCesiumPolylineBatchElementUserDataWrapper* pUserDataWrapper =
+      &Collector.AllocateOneFrameResource<
+          FCesiumPolylineBatchElementUserDataWrapper>();
+
+  FCesiumPolylineBatchElementUserData& UserData = pUserDataWrapper->Data;
+  const FLocalVertexFactory& OriginalVertexFactory =
+      RenderData->LODVertexFactories[0].VertexFactory;
+
+  UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
+  UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
+  UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
+  UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
+  UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
+  // UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
+
+  UserData.NumPolylinePoints = 0; // TODO
+  UserData.LineWidth = 5.0;
+
+  BatchElement.UserData = &pUserDataWrapper->Data;
+}
+
+void FCesiumGltfLinesSceneProxy::CreatePolylineMesh(
+    FMeshBatch& Mesh,
+    const FSceneView* View,
+    FMeshElementCollector& Collector) const {
+  Mesh.VertexFactory = &PolylineVertexFactory;
+  Mesh.MaterialRenderProxy = Material->GetRenderProxy();
+  Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+  Mesh.Type = PT_TriangleList;
+  Mesh.DepthPriorityGroup = SDPG_World;
+  Mesh.LODIndex = 0;
+  Mesh.bCanApplyViewModeOverrides = false;
+  Mesh.bUseAsOccluder = false;
+  Mesh.bWireframe = false;
+
+  // TODO is this correct?
+  FMeshBatchElement& BatchElement = Mesh.Elements[0];
+  BatchElement.IndexBuffer = &PolylineIndexBuffer;
+  BatchElement.NumPrimitives = NumLines * 2;
+  BatchElement.FirstIndex = 0;
+  BatchElement.MinVertexIndex = 0;
+  BatchElement.MaxVertexIndex = NumLines * 4 - 1;
+  BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
+
+  CreatePolylineUserData(BatchElement, View, Collector);
+}
 
 void FCesiumGltfLinesSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   Mesh.VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;

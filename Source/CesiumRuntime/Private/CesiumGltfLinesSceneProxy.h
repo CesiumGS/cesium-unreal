@@ -13,7 +13,8 @@ private:
   // The original render data of the static mesh.
   const FStaticMeshRenderData* RenderData;
   int32_t NumLines;
-  float LineWidth;
+  bool IsPolyline;
+  int32 LineWidth;
 
 public:
   SIZE_T GetTypeHash() const override;
