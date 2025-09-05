@@ -1518,21 +1518,21 @@ static void loadPrimitive(
   // vertices shared by multiple triangles. If we don't have tangents, but
   // need them, we need to use a tangent space generation algorithm which
   // requires duplicated vertices.
-  bool normalsAreRequired = !primitiveResult.isUnlit;
+  bool normalsAreRequired = !primitiveResult.isUnlit && isTriangles;
   bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
   bool needToGenerateTangents = needsTangents && !hasTangents;
   bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
 
+  // Some primitive modes may require duplication of vertices anyways due to
+  // the lack of support in Unreal.
   switch (primitive.mode) {
-  // Only use duplicateVertices for the following primitive modes.
   case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
   case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+    duplicateVertices = true;
     break;
   default:
-    duplicateVertices = false;
     break;
   }
 
@@ -1701,7 +1701,7 @@ static void loadPrimitive(
       }
     }
   } else {
-    if (primitiveResult.isUnlit) {
+    if (primitiveResult.isUnlit || !isTriangles) {
       setUnlitNormals(
           LODResources.VertexBuffers,
           ellipsoid,
@@ -1776,7 +1776,7 @@ static void loadPrimitive(
   LODResources.bHasReversedDepthOnlyIndices = false;
 
 #if ENGINE_VERSION_5_5_OR_HIGHER
-  if (!isTriangles) {
+  if (isTriangles) {
     // UE 5.5 requires that we do this in order to avoid a crash when ray
     // tracing is enabled.
     RenderData->InitializeRayTracingRepresentationFromRenderingLODs();

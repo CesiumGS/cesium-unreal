@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CesiumPolylineVertexFactory.h"
-
 #include "PrimitiveSceneProxy.h"
 
 class UCesiumGltfLinesComponent;

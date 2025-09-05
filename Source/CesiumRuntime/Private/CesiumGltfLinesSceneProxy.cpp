@@ -41,6 +41,7 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
 
 FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
 
+<<<<<<< HEAD
 void FCesiumGltfLinesSceneProxy::CreateRenderThreadResources(
     FRHICommandListBase& RHICmdList) {
   PolylineVertexFactory.InitResource(RHICmdList);
@@ -52,6 +53,8 @@ void FCesiumGltfLinesSceneProxy::DestroyRenderThreadResources() {
   PolylineIndexBuffer.ReleaseResource();
 }
 
+=======
+>>>>>>> gltf-lines
 void FCesiumGltfLinesSceneProxy::DrawStaticElements(
     FStaticPrimitiveDrawInterface* PDI) {
   if (!HasViewDependentDPG()) {
