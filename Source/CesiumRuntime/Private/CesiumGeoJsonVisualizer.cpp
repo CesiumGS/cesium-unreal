@@ -1,10 +1,14 @@
 #include "CesiumGeoJsonVisualizer.h"
 #include "CesiumGeoreference.h"
+#include "CesiumGltfComponent.h"
 #include "CesiumGltfLinesComponent.h"
 #include "CesiumRuntime.h"
 #include "StaticMeshResources.h"
 
-ACesiumGeoJsonVisualizer::ACesiumGeoJsonVisualizer() : AActor() {}
+ACesiumGeoJsonVisualizer::ACesiumGeoJsonVisualizer() : AActor() {
+  this->Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+  this->RootComponent = this->Root;
+}
 
 ACesiumGeoJsonVisualizer::~ACesiumGeoJsonVisualizer() {}
 
@@ -26,7 +30,8 @@ ACesiumGeoreference* ACesiumGeoJsonVisualizer::ResolveGeoreference() {
 void ACesiumGeoJsonVisualizer::AddLineString(
     const FCesiumGeoJsonLineString& LineString) {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-  if (!pGeoreference || LineString.Points.Num() == 0) {
+  const int32 pointCount = LineString.Points.Num();
+  if (!pGeoreference || pointCount == 0) {
     return;
   }
 
@@ -36,7 +41,6 @@ void ACesiumGeoJsonVisualizer::AddLineString(
 
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-  const int32 pointCount = LineString.Points.Num();
   FPositionVertexBuffer& positionBuffer =
       LODResources.VertexBuffers.PositionVertexBuffer;
   FColorVertexBuffer& colorBuffer =
@@ -45,11 +49,15 @@ void ACesiumGeoJsonVisualizer::AddLineString(
       LODResources.VertexBuffers.StaticMeshVertexBuffer;
 
   TArray<uint32> indices;
-  indices.Reserve(pointCount);
+  // todo change for polyline
+  indices.Reserve(pointCount * 2 - 2);
 
   positionBuffer.Init(pointCount, false);
   colorBuffer.Init(pointCount, false);
-  normalBuffer.Init(pointCount, 0, false);
+  normalBuffer.Init(pointCount, 1, false);
+
+  FVector min(std::numeric_limits<double>::max()),
+      max(std::numeric_limits<double>::lowest());
 
   for (int32 i = 0; i < pointCount; i++) {
     FVector3f& resultPosition = positionBuffer.VertexPosition(i);
@@ -59,6 +67,9 @@ void ACesiumGeoJsonVisualizer::AddLineString(
     resultPosition.X = unrealPosition.X;
     resultPosition.Y = unrealPosition.Y;
     resultPosition.Z = unrealPosition.Z;
+
+    min = FVector::Min(min, unrealPosition);
+    max = FVector::Max(max, unrealPosition);
 
     FColor& resultColor = colorBuffer.VertexColor(i);
     resultColor.R = 1.0;
@@ -75,23 +86,52 @@ void ACesiumGeoJsonVisualizer::AddLineString(
         FVector3f(0.0),
         FVector3f(normal));
 
-    indices.Add(i);
+    if (i < pointCount - 1) {
+      indices.Add(i);
+      indices.Add(i + 1);
+    }
   }
 
+  LODResources.bHasColorVertexData = true;
   LODResources.IndexBuffer.SetIndices(
       indices,
       pointCount >= std::numeric_limits<uint16>::max()
           ? EIndexBufferStride::Type::Force32Bit
           : EIndexBufferStride::Type::Force16Bit);
 
+  FStaticMeshSectionArray& Sections = LODResources.Sections;
+  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+  // This will be ignored if the primitive contains points.
+  section.NumTriangles = pointCount - 1;
+  section.FirstIndex = 0;
+  section.MinVertexIndex = 0;
+  section.MaxVertexIndex = pointCount - 1;
+  section.bEnableCollision = false;
+  section.bCastShadow = false;
+  section.MaterialIndex = 0;
+
+  min *= 100;
+  max *= 100;
+
+  FBox aaBox(min, max);
+  aaBox.GetCenterAndExtents(
+      RenderData->Bounds.Origin,
+      RenderData->Bounds.BoxExtent);
+  RenderData->Bounds.SphereRadius = 200.0f;
+
+  UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(this);
+  pGltf->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+
   UCesiumGltfLinesComponent* pMesh =
-      NewObject<UCesiumGltfLinesComponent>(this, "");
+      NewObject<UCesiumGltfLinesComponent>(pGltf, "");
 
   // Temporary variable hacks just to get something showing
   // pMesh->IsPolyline = true;
-  // pMesh->LineWidth = 5;
+  pMesh->LineWidth = 5;
 
   pMesh->bUseDefaultCollision = false;
+  pMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
   pMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
@@ -100,10 +140,38 @@ void ACesiumGeoJsonVisualizer::AddLineString(
   UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, "");
   pStaticMesh->bSupportRayTracing = false;
 
+  pMesh->SetStaticMesh(pStaticMesh);
+
   pStaticMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pStaticMesh->NeverStream = true;
-
   pStaticMesh->SetRenderData(std::move(RenderData));
-  pMesh->SetStaticMesh(pStaticMesh);
+
+  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
+      Material ? Material : pGltf->BaseMaterial,
+      nullptr,
+      "");
+  pMaterial->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pMaterial->TwoSided = true;
+
+  pStaticMesh->AddMaterial(pMaterial);
+
+  pStaticMesh->SetLightingGuid();
+
+  pStaticMesh->InitResources();
+
+  pStaticMesh->CalculateExtendedBounds();
+  pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+
+  pStaticMesh->CreateBodySetup();
+
+  pMesh->SetupAttachment(pGltf);
+
+  pMesh->RegisterComponent();
+
+  pGltf->AttachToComponent(
+      RootComponent,
+      FAttachmentTransformRules::KeepRelativeTransform);
+  pGltf->SetVisibility(true, true);
 }

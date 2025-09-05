@@ -72,10 +72,7 @@ void FCesiumGltfLinesSceneProxy::GetDynamicMeshElements(
     if (VisibilityMap & (1 << ViewIndex)) {
       const FSceneView* View = Views[ViewIndex];
       FMeshBatch& Mesh = Collector.AllocateMesh();
-      if (IsPolyline) {
-      } else {
-        CreateMesh(Mesh);
-      }
+      CreateMesh(Mesh);
       Collector.AddMesh(ViewIndex, Mesh);
     }
   }
@@ -85,14 +82,13 @@ FPrimitiveViewRelevance
 FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
-  Result.bDynamicRelevance = true;
 
   // TODO can you do polyline rendering with static relevance?
-  //if (HasViewDependentDPG()) {
-  //  Result.bDynamicRelevance = true;
-  //} else {
-  //  Result.bStaticRelevance = true;
-  //}
+  if (HasViewDependentDPG()) {
+    Result.bDynamicRelevance = true;
+  } else {
+    Result.bStaticRelevance = true;
+  }
 
   Result.bRenderCustomDepth = ShouldRenderCustomDepth();
   Result.bRenderInMainPass = ShouldRenderInMainPass();
@@ -179,5 +175,5 @@ void FCesiumGltfLinesSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   BatchElement.NumPrimitives = NumLines;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
-  BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;
+  BatchElement.MaxVertexIndex = BatchElement.NumPrimitives;
 }

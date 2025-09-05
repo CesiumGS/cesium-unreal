@@ -55,4 +55,13 @@ public:
       Category = "Cesium|Vector|Render",
       meta = (DisplayName = "Add Line String"))
   void AddLineString(const FCesiumGeoJsonLineString& LineString);
+
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  UMaterialInterface* Material = nullptr;
+
+private:
+  // This property mirrors RootComponent, and exists only so that the root
+  // component's transform is editable in the Editor.
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
+  USceneComponent* Root;
 };
