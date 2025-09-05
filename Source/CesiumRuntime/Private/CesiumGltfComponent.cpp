@@ -1701,7 +1701,7 @@ static void loadPrimitive(
       }
     }
   } else {
-    if (primitiveResult.isUnlit) {
+    if (primitiveResult.isUnlit || !isTriangles) {
       setUnlitNormals(
           LODResources.VertexBuffers,
           ellipsoid,
