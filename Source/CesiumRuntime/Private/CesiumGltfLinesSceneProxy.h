@@ -62,4 +62,6 @@ private:
       FMeshElementCollector& Collector) const;
 
   void CreateMesh(FMeshBatch& Mesh) const;
+
+  bool bManualVertexFetchSupported;
 };

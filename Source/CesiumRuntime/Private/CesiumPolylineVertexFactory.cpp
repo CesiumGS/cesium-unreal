@@ -22,7 +22,7 @@ void FCesiumPolylineIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
 
   // Each line segment of the polyline is represented as a quad that is
   // stretches from one point to the next.
-  const uint32 NumIndices = NumLines * 4;
+  const uint32 NumIndices = NumLines * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
   IndexBufferRHI = RHICmdList.CreateBuffer(

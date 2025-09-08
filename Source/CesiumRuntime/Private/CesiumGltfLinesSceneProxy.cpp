@@ -37,7 +37,9 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
       PolylineIndexBuffer(NumLines, true),
       Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
+      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)),
+      bManualVertexFetchSupported(
+          RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())) {}
 
 FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
 
@@ -54,7 +56,7 @@ void FCesiumGltfLinesSceneProxy::DestroyRenderThreadResources() {
 
 void FCesiumGltfLinesSceneProxy::DrawStaticElements(
     FStaticPrimitiveDrawInterface* PDI) {
-  if (!HasViewDependentDPG()) {
+  if (!HasViewDependentDPG() && !IsPolyline) {
     FMeshBatch Mesh;
     CreateMesh(Mesh);
     PDI->DrawMesh(Mesh, FLT_MAX);
@@ -72,7 +74,11 @@ void FCesiumGltfLinesSceneProxy::GetDynamicMeshElements(
     if (VisibilityMap & (1 << ViewIndex)) {
       const FSceneView* View = Views[ViewIndex];
       FMeshBatch& Mesh = Collector.AllocateMesh();
-      CreateMesh(Mesh);
+      if (IsPolyline) {
+        CreatePolylineMesh(Mesh, View, Collector);
+      } else {
+        CreateMesh(Mesh);
+      }
       Collector.AddMesh(ViewIndex, Mesh);
     }
   }
@@ -83,11 +89,16 @@ FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
 
-  // TODO can you do polyline rendering with static relevance?
-  if (HasViewDependentDPG()) {
+  if (IsPolyline) {
+    // TODO can you do polyline rendering with static relevance?
+    Result.bStaticRelevance = false;
     Result.bDynamicRelevance = true;
   } else {
-    Result.bStaticRelevance = true;
+    if (HasViewDependentDPG()) {
+      Result.bDynamicRelevance = true;
+    } else {
+      Result.bStaticRelevance = true;
+    }
   }
 
   Result.bRenderCustomDepth = ShouldRenderCustomDepth();
@@ -125,10 +136,9 @@ void FCesiumGltfLinesSceneProxy::CreatePolylineUserData(
   UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
   UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
   UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
-  // UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
 
-  UserData.NumPolylinePoints = 0; // TODO
-  UserData.LineWidth = 5.0;
+  UserData.NumPolylinePoints = this->NumLines + 1;
+  UserData.LineWidth = LineWidth;
 
   BatchElement.UserData = &pUserDataWrapper->Data;
 }
@@ -147,10 +157,9 @@ void FCesiumGltfLinesSceneProxy::CreatePolylineMesh(
   Mesh.bUseAsOccluder = false;
   Mesh.bWireframe = false;
 
-  // TODO is this correct?
   FMeshBatchElement& BatchElement = Mesh.Elements[0];
   BatchElement.IndexBuffer = &PolylineIndexBuffer;
-  BatchElement.NumPrimitives = NumLines * 2;
+  BatchElement.NumPrimitives = NumLines * 2; // Two triangles per line.
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
   BatchElement.MaxVertexIndex = NumLines * 4 - 1;
@@ -175,5 +184,5 @@ void FCesiumGltfLinesSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   BatchElement.NumPrimitives = NumLines;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
-  BatchElement.MaxVertexIndex = BatchElement.NumPrimitives;
+  BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;
 }

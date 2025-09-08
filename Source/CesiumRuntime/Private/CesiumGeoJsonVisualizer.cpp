@@ -28,7 +28,8 @@ ACesiumGeoreference* ACesiumGeoJsonVisualizer::ResolveGeoreference() {
 }
 
 void ACesiumGeoJsonVisualizer::AddLineString(
-    const FCesiumGeoJsonLineString& LineString) {
+    const FCesiumGeoJsonLineString& LineString,
+    bool bDebugMode) {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   const int32 pointCount = LineString.Points.Num();
   if (!pGeoreference || pointCount == 0) {
@@ -47,10 +48,6 @@ void ACesiumGeoJsonVisualizer::AddLineString(
       LODResources.VertexBuffers.ColorVertexBuffer;
   FStaticMeshVertexBuffer& normalBuffer =
       LODResources.VertexBuffers.StaticMeshVertexBuffer;
-
-  TArray<uint32> indices;
-  // todo change for polyline
-  indices.Reserve(pointCount * 2 - 2);
 
   positionBuffer.Init(pointCount, false);
   colorBuffer.Init(pointCount, false);
@@ -85,14 +82,25 @@ void ACesiumGeoJsonVisualizer::AddLineString(
         FVector3f(0.0f),
         FVector3f(0.0),
         FVector3f(normal));
-
-    if (i < pointCount - 1) {
-      indices.Add(i);
-      indices.Add(i + 1);
-    }
   }
 
   LODResources.bHasColorVertexData = true;
+
+  TArray<uint32> indices;
+
+  if (bDebugMode) {
+    indices.Reserve(pointCount * 2 - 2);
+    for (int32 i = 0; i < pointCount - 1; i++) {
+      indices.Add(i);
+      indices.Add(i + 1);
+    }
+  } else {
+    indices.Reserve(pointCount);
+    for (int32 i = 0; i < pointCount; i++) {
+      indices.Add(i);
+    }
+  }
+
   LODResources.IndexBuffer.SetIndices(
       indices,
       pointCount >= std::numeric_limits<uint16>::max()
@@ -127,7 +135,7 @@ void ACesiumGeoJsonVisualizer::AddLineString(
       NewObject<UCesiumGltfLinesComponent>(pGltf, "");
 
   // Temporary variable hacks just to get something showing
-  // pMesh->IsPolyline = true;
+  pMesh->IsPolyline = !bDebugMode;
   pMesh->LineWidth = 5;
 
   pMesh->bUseDefaultCollision = false;
