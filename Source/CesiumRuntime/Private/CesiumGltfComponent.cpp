@@ -3056,6 +3056,7 @@ static void loadPrimitiveGameThreadPart(
     pGaussianSplat->SetData(model, meshPrimitive);
     pGaussianSplat->SetupAttachment(pGltf);
     pGaussianSplat->RegisterComponent();
+    pGaussianSplat->RegisterWithSubsystem();
     return;
   } else if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =

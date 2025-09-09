@@ -82,6 +82,11 @@ void UCesiumGaussianSplatSubsystem::OnWorldBeginPlay(UWorld& InWorld) {
   this->NiagaraComponent =
       UNiagaraFunctionLibrary::SpawnSystemAttachedWithParams(SpawnParams);
   SplatActor->AddInstanceComponent(this->NiagaraComponent);
+  this->NiagaraComponent->SetAutoActivate(true);
+
+  this->GetSplatInterface()->SetGaussianSplatSubsystem(this);
+
+  this->UpdateNiagaraComponent();
 }
 
 void UCesiumGaussianSplatSubsystem::RegisterSplat(
@@ -91,12 +96,7 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
       this,
       &UCesiumGaussianSplatSubsystem::OnTransformUpdated));
 
-  this->NiagaraComponent->SetNiagaraVariableInt(
-      TEXT("GridSize"),
-      (int32)std::ceil(std::sqrt((double)this->GetNumSplats())));
-  this->NiagaraComponent->SetSystemFixedBounds(
-      CalculateBounds(this->SplatComponents));
-  GetSplatInterface()->Refresh();
+  this->UpdateNiagaraComponent();
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
@@ -108,16 +108,30 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
       this->SplatDelegateHandles[ComponentIndex]);
   this->SplatComponents.Remove(Component);
   this->SplatDelegateHandles.RemoveAt(ComponentIndex);
-  GetSplatInterface()->Refresh();
+
+  this->UpdateNiagaraComponent();
 }
 
 void UCesiumGaussianSplatSubsystem::OnTransformUpdated(
     USceneComponent* UpdatedComponent,
     EUpdateTransformFlags UpdateTransformFlag,
     ETeleportType Teleport) {
-  this->NiagaraComponent->SetSystemFixedBounds(
-      CalculateBounds(this->SplatComponents));
-  GetSplatInterface()->RefreshMatrices();
+  if (IsValid(this->NiagaraComponent)) {
+    this->NiagaraComponent->SetSystemFixedBounds(
+        CalculateBounds(this->SplatComponents));
+    GetSplatInterface()->RefreshMatrices();
+  }
+}
+
+void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
+  if (IsValid(this->NiagaraComponent)) {
+    this->NiagaraComponent->SetSystemFixedBounds(
+        CalculateBounds(this->SplatComponents));
+    this->NiagaraComponent->SetNiagaraVariableInt(
+        TEXT("GridSize"),
+        (int32)std::ceil(std::sqrt((double)this->GetNumSplats())));
+    GetSplatInterface()->Refresh();
+  }
 }
 
 UCesiumGaussianSplatDataInterface*

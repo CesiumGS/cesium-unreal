@@ -39,6 +39,11 @@ void UploadSplatMatrices(
     Buffer.Release();
   }
 
+  if (Components.IsEmpty()) {
+    // Will crash if we try to allocate a buffer of size 0
+    return;
+  }
+
   const int32 Stride = 7;
 
   Buffer.Initialize(
@@ -140,6 +145,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         this->SplatIndicesBuffer.Release();
       }
 
+      if (SplatSystem->SplatComponents.IsEmpty()) {
+        return;
+      }
+
       if (ExpectedBytes > 0) {
         this->DataBuffer.Initialize(
             RHICmdList,
@@ -159,7 +168,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatOffsetsBuffer"),
             sizeof(int32),
-            SplatSystem->SplatComponents.Num() * 3,
+            SplatSystem->SplatComponents.Num() * 4,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
       }
@@ -184,6 +193,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             SplatSystem->SplatComponents.Num() * sizeof(int32) * 4,
             EResourceLockMode::RLM_WriteOnly));
 
+        int32 IndexOffset = 0;
         int32 Offset = 0;
         int32 Unoffset = 0;
         for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
@@ -194,8 +204,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               Component->Data.GetData(),
               Component->Data.Num() * sizeof(float));
           for (int32 j = 0; j < Component->NumSplats; j++) {
-            IndexBuffer[Offset + j] = i;
+            IndexBuffer[IndexOffset + j] = i;
           }
+
+          IndexOffset += Component->NumSplats;
 
           // OffsetsBuffer contains:
           // - 0: Number of entries into Data to offset by before the first
@@ -312,7 +324,7 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 		{
       {DataIndex}
 			{MatrixMath}
-			OutPosition = mul(SplatMatrix, float4({Data}[DataIndex].xyz, 1.0)).xyz;
+			OutPosition = {Data}[DataIndex].xyz;//mul(SplatMatrix, float4({Data}[DataIndex].xyz, 1.0)).xyz;
 		}
 		)");
 
@@ -334,7 +346,7 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 		{
       {DataIndex}
 			float4 SScale = {MatrixBuffer}[SplatIndex * 7 + 5];
-			OutScale = SScale * float3({Data}[DataIndex].w, {Data}[DataIndex + 1].x, {Data}[DataIndex + 1].y);
+			OutScale = float3(1.0, 1.0, 1.0);//SScale * float3({Data}[DataIndex].w, {Data}[DataIndex + 1].x, {Data}[DataIndex + 1].y);
 		}
 		)");
 
@@ -431,11 +443,11 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 		void {FunctionName}(int Index, out float4 OutColor)
 		{
       {DataIndex}
-			OutColor = float4(
+			OutColor = float4(1.0, 1.0, 1.0, 1.0);/*float4(
         {Data}[DataIndex + 2].z,
         {Data}[DataIndex + 2].w,
         {Data}[DataIndex + 3].x,
-        {Data}[DataIndex + 3].y);
+        {Data}[DataIndex + 3].y);*/
 		}
 		)");
 
@@ -729,7 +741,17 @@ void UCesiumGaussianSplatDataInterface::GetFunctions(
 
 bool UCesiumGaussianSplatDataInterface::CopyToInternal(
     UNiagaraDataInterface* Destination) const {
-  return UNiagaraDataInterface::CopyToInternal(Destination);
+  if (!UNiagaraDataInterface::CopyToInternal(Destination)) {
+    return false;
+  }
+
+  UCesiumGaussianSplatDataInterface* CastedDestination =
+      Cast<UCesiumGaussianSplatDataInterface>(Destination);
+  if (CastedDestination) {
+    CastedDestination->SplatSystem = this->SplatSystem;
+  }
+
+  return true;
 }
 #endif
 
@@ -744,17 +766,13 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
       Context.GetParameterNestedStruct<FGaussianSplatShaderParams>();
   FNDIGaussianSplatProxy& DIProxy = Context.GetProxy<FNDIGaussianSplatProxy>();
 
-  UCesiumGaussianSplatSubsystem* SplatSystem = nullptr;
-  UWorld* World = GetWorld();
-  if (World) {
-    SplatSystem = World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
-  }
-
   if (Params) {
-    DIProxy.UploadToGPU(SplatSystem);
+    if (IsValid(DIProxy.Owner)) {
+      DIProxy.UploadToGPU(DIProxy.Owner->SplatSystem);
+    }
 
     Params->SplatsCount =
-        IsValid(SplatSystem) ? SplatSystem->GetNumSplats() : 0;
+        IsValid(DIProxy.Owner) && IsValid(DIProxy.Owner->SplatSystem) ? DIProxy.Owner->SplatSystem->GetNumSplats() : 0;
     Params->SplatIndices =
         FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatIndicesBuffer.SRV);
     Params->SplatMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
@@ -782,20 +800,13 @@ bool UCesiumGaussianSplatDataInterface::Equals(
   bool bIsEqual = UNiagaraDataInterface::Equals(Other);
   const UCesiumGaussianSplatDataInterface* OtherSplatInterface =
       Cast<const UCesiumGaussianSplatDataInterface>(Other);
-  return bIsEqual;
+  return bIsEqual && OtherSplatInterface && OtherSplatInterface->SplatSystem == this->SplatSystem;
 }
 
 bool UCesiumGaussianSplatDataInterface::CanExecuteOnTarget(
     ENiagaraSimTarget target) const {
-  return true;
+  return target == ENiagaraSimTarget::GPUComputeSim;
 }
-
-#if WITH_EDITOR
-void UCesiumGaussianSplatDataInterface::PostEditChangeProperty(
-    FPropertyChangedEvent& PropertyChangedEvent) {
-  UNiagaraDataInterface::PostEditChangeProperty(PropertyChangedEvent);
-}
-#endif
 
 void UCesiumGaussianSplatDataInterface::Refresh() {
   this->GetProxyAs<FNDIGaussianSplatProxy>()->bNeedsUpdate = true;
@@ -805,3 +816,26 @@ void UCesiumGaussianSplatDataInterface::Refresh() {
 void UCesiumGaussianSplatDataInterface::RefreshMatrices() {
   this->GetProxyAs<FNDIGaussianSplatProxy>()->bMatricesNeedUpdate = true;
 }
+
+void UCesiumGaussianSplatDataInterface::SetGaussianSplatSubsystem(
+  UCesiumGaussianSplatSubsystem* SplatSystem) {
+  this->SplatSystem = SplatSystem;
+}
+
+#if WITH_EDITOR
+void UCesiumGaussianSplatDataInterface::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  UNiagaraDataInterface::PostEditChangeProperty(PropertyChangedEvent);
+
+  if (!HasAnyFlags(RF_ClassDefaultObject)) {
+    if (PropertyChangedEvent.GetMemberPropertyName() ==
+        GET_MEMBER_NAME_CHECKED(
+            UCesiumGaussianSplatDataInterface,
+            SplatSystem)) {
+      FNDIGaussianSplatProxy* ThisProxy =
+          this->GetProxyAs<FNDIGaussianSplatProxy>();
+      ThisProxy->bNeedsUpdate = true;
+    }
+  }
+}
+#endif

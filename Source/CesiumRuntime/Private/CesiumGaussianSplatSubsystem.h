@@ -26,6 +26,7 @@ public:
   TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
 private:
+  void UpdateNiagaraComponent();
   void OnTransformUpdated(
       USceneComponent* UpdatedComponent,
       EUpdateTransformFlags UpdateTransformFlag,

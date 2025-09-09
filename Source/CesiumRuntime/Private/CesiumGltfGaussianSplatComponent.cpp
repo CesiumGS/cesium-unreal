@@ -147,24 +147,26 @@ void UCesiumGltfGaussianSplatComponent::SetData(
   this->Data.SetNum(stride * positionView.size(), true);
   this->NumSplats = positionView.size();
   for (int32 i = 0; i < positionView.size(); i++) {
-    this->Data[i * stride] = positionView[i].x;
-    this->Data[i * stride + 1] = positionView[i].y;
-    this->Data[i * stride + 2] = positionView[i].z;
+    this->Data[i * stride] = positionView[i].x * 100.0;
+    this->Data[i * stride + 1] = positionView[i].y * 100.0;
+    this->Data[i * stride + 2] = positionView[i].z * 100.0;
 
     // Take this opportunity to update the bounds.
     if (this->Bounds) {
       this->Bounds->Min = FVector(
-          std::min(Bounds->Min.X, (double)positionView[i].x),
-          std::min(Bounds->Min.Y, (double)positionView[i].y),
-          std::min(Bounds->Min.Z, (double)positionView[i].z));
+          std::min(Bounds->Min.X, (double)positionView[i].x * 100.0),
+          std::min(Bounds->Min.Y, (double)positionView[i].y * 100.0),
+          std::min(Bounds->Min.Z, (double)positionView[i].z * 100.0));
       this->Bounds->Max = FVector(
-          std::max(Bounds->Max.X, (double)positionView[i].x),
-          std::max(Bounds->Max.Y, (double)positionView[i].y),
-          std::max(Bounds->Max.Z, (double)positionView[i].z));
+          std::max(Bounds->Max.X, (double)positionView[i].x * 100.0),
+          std::max(Bounds->Max.Y, (double)positionView[i].y * 100.0),
+          std::max(Bounds->Max.Z, (double)positionView[i].z * 100.0));
     } else {
       this->Bounds = FBox();
-      this->Bounds->Min =
-          FVector(positionView[i].x, positionView[i].y, positionView[i].z);
+      this->Bounds->Min = FVector(
+          positionView[i].x * 100.0,
+          positionView[i].y * 100.0,
+          positionView[i].z * 100.0);
       this->Bounds->Max = Bounds->Min;
     }
   }
@@ -366,8 +368,7 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
   return mat;
 }
 
-void UCesiumGltfGaussianSplatComponent::BeginPlay() {
-  Super::BeginPlay();
+void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
   UWorld* World = GetWorld();
   ensure(World);
 

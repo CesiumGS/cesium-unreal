@@ -8,6 +8,8 @@
 
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
+class UCesiumGaussianSplatSubsystem;
+
 struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
   FNDIGaussianSplatProxy(class UCesiumGaussianSplatDataInterface* InOwner);
 
@@ -26,7 +28,7 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
     return 0;
   }
 
-  void UploadToGPU(class UCesiumGaussianSplatSubsystem* SplatSystem);
+  void UploadToGPU(UCesiumGaussianSplatSubsystem* SplatSystem);
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
@@ -78,7 +80,11 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
       struct FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
+  UPROPERTY()
+  UCesiumGaussianSplatSubsystem* SplatSystem;
+
 public:
+  void SetGaussianSplatSubsystem(UCesiumGaussianSplatSubsystem* SplatSystem);
   void Refresh();
   void RefreshMatrices();
 };

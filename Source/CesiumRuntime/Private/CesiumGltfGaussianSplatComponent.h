@@ -36,11 +36,12 @@ public:
   void
   SetData(CesiumGltf::Model& model, CesiumGltf::MeshPrimitive& meshPrimitive);
 
+  void RegisterWithSubsystem();
+
   FBox GetBounds() const;
 
   glm::mat4x4 GetMatrix() const;
 
-  virtual void BeginPlay() override;
   virtual void BeginDestroy() override;
 
   /**
