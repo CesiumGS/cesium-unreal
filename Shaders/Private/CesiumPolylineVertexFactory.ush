@@ -369,7 +369,7 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
     float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
     ViewOffset /= ViewOffset.w;
   
-  	float3 ExpandedPosition = WorldPosition.xyz + float3(ExpandDirection * ViewOffse, 0);
+  	float3 ExpandedPosition = WorldPosition.xyz + float3(ExpandDirection * ViewOffset, 0);
     return float4(ExpandedPosition, 1);
 }
 
