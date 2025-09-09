@@ -21,7 +21,8 @@ void FCesiumPolylineIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
   FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPolylineIndexBuffer"));
 
   // Each line segment of the polyline is represented as a quad that is
-  // stretches from one point to the next.
+  // stretches from one point to the next. The midpoints of the polyline are
+  // shared by two quads.
   const uint32 NumIndices = NumLines * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 

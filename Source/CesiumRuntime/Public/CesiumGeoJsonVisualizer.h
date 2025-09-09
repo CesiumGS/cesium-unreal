@@ -54,7 +54,14 @@ public:
       BlueprintCallable,
       Category = "Cesium|Vector|Render",
       meta = (DisplayName = "Add Line String"))
-  void AddLineString(const FCesiumGeoJsonLineString& LineString, bool bDebugMode);
+  void
+  AddLineString(const FCesiumGeoJsonLineString& LineString, bool bDebugMode);
+
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium|Vector|Render",
+      meta = (DisplayName = "Clear"))
+  void Clear();
 
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   UMaterialInterface* Material = nullptr;

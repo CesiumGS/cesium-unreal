@@ -183,3 +183,12 @@ void ACesiumGeoJsonVisualizer::AddLineString(
       FAttachmentTransformRules::KeepRelativeTransform);
   pGltf->SetVisibility(true, true);
 }
+
+void ACesiumGeoJsonVisualizer::Clear() {
+  TArray<UCesiumGltfLinesComponent*> gltfComponents;
+  this->GetComponents<UCesiumGltfLinesComponent>(gltfComponents);
+
+  for (UCesiumGltfLinesComponent* pGltf : gltfComponents) {
+    pGltf->DestroyComponent();
+  }
+}

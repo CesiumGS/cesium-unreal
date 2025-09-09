@@ -16,11 +16,8 @@ SIZE_T FCesiumGltfLinesSceneProxy::GetTypeHash() const {
 }
 
 namespace {
-int32 getLineCount(UCesiumGltfLinesComponent* InComponent) {
-  FStaticMeshRenderData* pRenderData =
-      InComponent->GetStaticMesh()->GetRenderData();
-  int32 indicesCount = pRenderData->LODResources[0].IndexBuffer.GetNumIndices();
-  return InComponent->IsPolyline ? indicesCount - 1 : indicesCount / 2;
+int32 getLineCount(int32 numPoints, bool isPolyline) {
+  return isPolyline ? numPoints - 1 : numPoints / 2;
 }
 } // namespace
 
@@ -29,7 +26,9 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
     ERHIFeatureLevel::Type InFeatureLevel)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
-      NumLines(getLineCount(InComponent)),
+      NumLines(getLineCount(
+          RenderData->LODResources[0].IndexBuffer.GetNumIndices(),
+          InComponent->IsPolyline)),
       IsPolyline(InComponent->IsPolyline),
       LineWidth(InComponent->LineWidth),
       PolylineVertexFactory(
