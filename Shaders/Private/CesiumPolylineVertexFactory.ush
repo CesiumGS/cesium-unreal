@@ -107,10 +107,23 @@ struct FVertexFactoryInterpolantsVSToPS
 #endif
 };
 
+void GetPolylinePointAndCornerIndices(uint VertexId, out uint PointIndex, out uint CornerIndex)
+{
+  	PointIndex = VertexId / 4;
+  	CornerIndex = VertexId - (PointIndex * 4);
+  	if (CornerIndex >= 2u)
+  	{
+      	// Stretch the quad to the next point on the polyline.
+      	PointIndex = min(PointIndex + 1, NumPolylinePoints - 1);
+  	}
+}
+
 /** Helper function for position-only passes that don't require point index for other intermediates.*/
 float4 GetWorldPosition(uint VertexId)
 {
-  	uint PolylinePointIndex = VertexId / 4;
+  	uint PolylinePointIndex, CornerIndex;
+  	GetPolylinePointAndCornerIndices(VertexId, PolylinePointIndex, CornerIndex);
+  
   	float3 Position = float3(0, 0, 0);
   	Position.x = PositionBuffer[PolylinePointIndex * 3 + 0];
   	Position.y = PositionBuffer[PolylinePointIndex * 3 + 1];
@@ -155,7 +168,8 @@ half3x3 CalculateTangentToWorldNoScale(half3x3 TangentToLocal)
 
 /** Helper function for position and normal-only passes that don't require point index for other intermediates.*/
 float3 GetPointNormal(uint VertexId) {
-  	uint PolylinePointIndex = VertexId / 4;
+  	uint PolylinePointIndex, CornerIndex;
+  	GetPolylinePointAndCornerIndices(VertexId, PolylinePointIndex, CornerIndex);
   	return PackedTangentsBuffer[2 * PolylinePointIndex + 1].xyz;
 }
 
@@ -164,13 +178,8 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates)0;
   	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
 
-  	uint PolylinePointIndex = Input.VertexId / 4;
-  	uint CornerIndex = Input.VertexId - (PolylinePointIndex * 4);
-  	if (CornerIndex >= 2)
-  	{
-      	// Stretch the quad to the next point on the polyline.
-  	  	PolylinePointIndex = min(PolylinePointIndex + 1, NumPolylinePoints - 1);
-  	}
+  	uint PolylinePointIndex, CornerIndex;
+  	GetPolylinePointAndCornerIndices(Input.VertexId, PolylinePointIndex, CornerIndex);
     		  
   	Intermediates.PolylinePointIndex = PolylinePointIndex;
   	Intermediates.CornerIndex = CornerIndex;
@@ -179,7 +188,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	Intermediates.Position.y = PositionBuffer[PolylinePointIndex * 3 + 1];
   	Intermediates.Position.z = PositionBuffer[PolylinePointIndex * 3 + 2];
 
-    float3 ScratchPosition = 0;
+  	float3 ScratchPosition;
   
     float3 PreviousPosition = 0;
     if (PolylinePointIndex > 0) {
@@ -348,12 +357,10 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
   	  	OffsetY = 0.5;
   	}
 
-  	float4 PositionView = mul(WorldPosition, ResolvedView.TranslatedWorldToView);
-  	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
-
-  	float4 PreviousPositionView = mul(PreviousWorldPosition, ResolvedView.TranslatedWorldToView);
-  	float4 NextPositionView = mul(NextWorldPosition, ResolvedView.TranslatedWorldToView);
-
+  	float3 PositionView = mul(WorldPosition, ResolvedView.TranslatedWorldToView);
+  	float3 PreviousPositionView = mul(PreviousWorldPosition, ResolvedView.TranslatedWorldToView);
+  	float3 NextPositionView = mul(NextWorldPosition, ResolvedView.TranslatedWorldToView);
+  
   	float2 DirectionToPrevious = normalize(PreviousPositionView.xy - PositionView.xy);
   	float2 DirectionToNext = normalize(NextPositionView.xy - PositionView.xy);
   
@@ -361,16 +368,18 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
   	float2 SegmentForward = UsePreviousPosition ? -DirectionToPrevious : DirectionToNext;
 
     // Compute the perpendicular line (counter-clockwise) to the forward direction
-  	float2 ExpandDirection = float2(-SegmentForward.y, SegmentForward.x);
+  	float2 ExpandDirection = normalize(float2(-SegmentForward.y, SegmentForward.x));
 
-  	float2 PixelOffset = float(LineWidth * 2) * float2(OffsetX, OffsetY);
-    float2 ScreenOffset = PixelOffset * ResolvedView.ViewSizeAndInvSize.zw;
-    float2 ClipOffset = ScreenOffset * PositionClip.w;
-    float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
-    ViewOffset /= ViewOffset.w;
+  	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
+
+  	float2 PixelOffset = float(LineWidth * 5) * float2(OffsetX, OffsetY);
+  	float2 ScreenOffset = PixelOffset * ResolvedView.ViewSizeAndInvSize.zw;
+  	float2 ClipOffset = ScreenOffset * PositionClip.w;
+  	float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
+  	ViewOffset /= ViewOffset.w;
   
-  	float3 ExpandedPosition = WorldPosition.xyz + float3(ExpandDirection * ViewOffset, 0);
-    return float4(ExpandedPosition, 1);
+  	float3 ExpandedPosition = WorldPosition.xyz + mul(ExpandDirection * ViewOffset.xy, ResolvedView.ViewToTranslatedWorld);
+  	return float4(ExpandedPosition, 1);
 }
 
 float4 VertexFactoryGetRasterizedWorldPosition(
