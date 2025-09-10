@@ -365,17 +365,23 @@ float3 VertexFactoryGetPreviousInstanceSpacePosition(FVertexFactoryInput Input, 
 }
 
 float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4 NextWorldPosition, uint PolylinePointIndex, uint CornerIndex) {
-    // These offsets generate the quad like so:
-   	// 0 --- 3
-  	// |  \  |
-  	// 1 --- 2
-  	// Unreal uses counter-clockwise winding order.
-
-  	// Results in -0.5 for 0, 1 and 0.5 for 2, 3
-    float OffsetX = CornerIndex / 2 - 0.5;
-  	float OffsetY = -0.5f;
+    // Recall that each pair of quad corners corresponds to a point, such that the quad is stretched
+    // between two points on the polyline. Each corner must compute an offset from the original point
+    // position to form the quad. The offset direction depends on the angle of the line on the screen.
+    // Thus, we can't hardcode offsets from [-0.5, 0.5] like one typically would for a billboarded quad.
+    // 
+    // Instead, we compute an ExpandDirection later in the function. Starting from the original point
+    // position, we offset the two corners perpendicularly from both sides of the line. The side of the
+    // line is deduced from the corner index.
+    //
+    // Unreal uses counter-clockwise winding order, and a billboarded quad is typically generated like so:
+   	// 1 --- 2
+  	// |  /  |
+  	// 0 --- 3
+    // Thus, the Corner Direction should results in -1 for indices 0 and 3; and +1 for 1, 2.
+    float CornerDirection = -1;
   	if (CornerIndex == 0 || CornerIndex == 3) {
-  	  	OffsetY = 0.5;
+  	  	CornerDirection = 1;
   	}
 
   	float3 PositionView = mul(WorldPosition, ResolvedView.TranslatedWorldToView);
@@ -385,22 +391,22 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
   	float2 DirectionToPrevious = normalize(PreviousPositionView.xy - PositionView.xy);
   	float2 DirectionToNext = normalize(NextPositionView.xy - PositionView.xy);
 
-    // True for the last two corners of the quad that are stretched to the next polyline point.
+    // True for the last two corners of the quad that get stretched to the next polyline point.
   	bool IsSegmentEnd = CornerIndex >= 2;
   	float2 SegmentForward = IsSegmentEnd ? -DirectionToPrevious : DirectionToNext;
 
     // Compute the perpendicular line (counter-clockwise) to the forward direction
-  	float2 ExpandDirection = float2(-SegmentForward.y, SegmentForward.x);
+  	float2 ExpandDirection = float2(-SegmentForward.y, SegmentForward.x) * CornerDirection;
 
-  	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
+  	//float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
 
-  	float2 PixelOffset = float(LineWidth * 5) * float2(OffsetX, OffsetY);
-  	float2 ScreenOffset = PixelOffset * ResolvedView.ViewSizeAndInvSize.zw;
-  	float2 ClipOffset = ScreenOffset * PositionClip.w;
-  	float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
-  	ViewOffset /= ViewOffset.w;
+	//float2 PixelOffset = float(LineWidth * 5) * float2(OffsetX, OffsetY);
+	//float2 ScreenOffset = PixelOffset * ResolvedView.ViewSizeAndInvSize.zw;
+	//float2 ClipOffset = ScreenOffset * PositionClip.w;
+	//float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
+	//ViewOffset /= ViewOffset.w;
   
-  	float3 ExpandedPosition = WorldPosition.xyz + mul(ExpandDirection * ViewOffset.xy, ResolvedView.ViewToTranslatedWorld);
+  	float3 ExpandedPosition = WorldPosition.xyz + mul(ExpandDirection * LineWidth * 0.5, ResolvedView.ViewToTranslatedWorld);
   	return float4(ExpandedPosition, 1);
 }
 
