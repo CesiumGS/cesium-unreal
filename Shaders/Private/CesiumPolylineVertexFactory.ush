@@ -109,13 +109,12 @@ struct FVertexFactoryInterpolantsVSToPS
 
 void GetPolylinePointAndCornerIndices(uint VertexId, out uint PointIndex, out uint CornerIndex)
 {
-  	PointIndex = VertexId / 4;
-  	CornerIndex = VertexId - (PointIndex * 4);
-  	if (CornerIndex >= 2u)
-  	{
-      	// Stretch the quad to the next point on the polyline.
-      	PointIndex = min(PointIndex + 1, NumPolylinePoints - 1);
-  	}
+  	uint QuadIndex = VertexId / 4;
+  	CornerIndex = VertexId - (QuadIndex * 4);
+
+  	// Stretch the last two points of the quad to the next point on the polyline.
+  	// Results in Index + 0 for corners 0, 1, Index + 1 for corners 2, 3
+  	PointIndex = min(QuadIndex + (CornerIndex / 2), NumPolylinePoints - 1);
 }
 
 /** Helper function for position-only passes that don't require point index for other intermediates.*/
@@ -197,7 +196,8 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	  	PreviousPosition.y = PositionBuffer[PreviousPointIndex * 3 + 1];
   	  	PreviousPosition.z = PositionBuffer[PreviousPointIndex * 3 + 2];
     } else {
-  	  	// Compute a "ghost" previous position based on the first and second positions
+  	  	// Compute a "ghost" previous position based on the first and second positions.
+  	  	// ExpandPolyline() evaluates the direction to first - second.
   	  	ScratchPosition.x = PositionBuffer[1 * 3 + 0];
   	  	ScratchPosition.y = PositionBuffer[1 * 3 + 1];
   	  	ScratchPosition.z = PositionBuffer[1 * 3 + 2];
@@ -215,6 +215,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
     else
     {
   	  	// Compute a "ghost" next position based on the last and second-to-last positions
+  	  	// ExpandPolyline() evaluates the direction to last - second last.
   	  	ScratchPosition.x = PositionBuffer[(NumPolylinePoints - 2) * 3 + 0];
   	  	ScratchPosition.y = PositionBuffer[(NumPolylinePoints - 2) * 3 + 1];
   	  	ScratchPosition.z = PositionBuffer[(NumPolylinePoints - 2) * 3 + 2];
@@ -230,7 +231,27 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
   	Intermediates.TangentToWorldSign =  Intermediates.SceneData.InstanceData.DeterminantSign;
 
-    float4 Color = CornerIndex >= 2 ? float4(1.0, 0.0, 0.0, 1.0) : float4(0.0, 0.0, 1.0, 1.0);//ColorBuffer[PolylinePointIndex];
+    float4 Color = 0;
+  switch (PolylinePointIndex)
+  {
+    case 0:
+      Color = float4(0.0, 0.0, 0.0, 1.0);
+      break;
+    case 1:
+      Color = float4(1.0, 0.0, 0.0, 1.0);
+      break;
+    case 2:
+      Color = float4(0.0, 1.0, 0.0, 1.0);
+      break;
+    case 3:
+      Color = float4(0.0, 0.0, 1.0, 1.0);
+      break;
+    default:
+      Color = 1;
+      break;
+
+  }
+  //ColorBuffer[PolylinePointIndex];
   	Intermediates.Color = Color;// FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
 
   	return Intermediates;
@@ -363,12 +384,13 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
   
   	float2 DirectionToPrevious = normalize(PreviousPositionView.xy - PositionView.xy);
   	float2 DirectionToNext = normalize(NextPositionView.xy - PositionView.xy);
-  
-  	bool UsePreviousPosition = CornerIndex < 2;
-  	float2 SegmentForward = UsePreviousPosition ? -DirectionToPrevious : DirectionToNext;
+
+    // True for the last two corners of the quad that are stretched to the next polyline point.
+  	bool IsSegmentEnd = CornerIndex >= 2;
+  	float2 SegmentForward = IsSegmentEnd ? -DirectionToPrevious : DirectionToNext;
 
     // Compute the perpendicular line (counter-clockwise) to the forward direction
-  	float2 ExpandDirection = normalize(float2(-SegmentForward.y, SegmentForward.x));
+  	float2 ExpandDirection = float2(-SegmentForward.y, SegmentForward.x);
 
   	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
 
