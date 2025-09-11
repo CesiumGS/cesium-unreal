@@ -392,11 +392,11 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
   	// Connect adjacent line segments at clean angles where possible.
   	if (!EqualsEpsilon(PositionView, PreviousPositionView) && !EqualsEpsilon(PositionView, NextPositionView))
   	{
-  	  	// Find the direction of the other segment at the same polyline point.
+      // Find the direction of the other segment at the same polyline point.
 			float2 OtherSegmentForward = IsSegmentEnd ? DirectionToNext : -1.0 * DirectionToPrevious;
 			float2 OtherExpandDirection = float2(-OtherSegmentForward.y, OtherSegmentForward.x);
   	  	
-  	  	// Get the average of the expand directions (if valid).
+      // Get the average of the expand directions (if valid).
 			float2 DirectionSum = ExpandDirection + OtherExpandDirection;
 			float SumLength = length(DirectionSum);
 			if (SumLength > 0.000001)
@@ -404,16 +404,16 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
   	  	  ExpandDirection = DirectionSum / SumLength;
 			}
   	  	
-  	  	// The sine of the angle between the two vectors is given by the formula
-  	  	//         |a x b| = |a||b|sin(theta)
-  	  	// which is:
-  	  	// float sinAngle = length(cross(float3(ExpandDirection, 0.0), float3(-SegmentForward, 0.0)));
-  	  	// Because the z components of both vectors are zero, the x and y coordinate will be zero.
-  	  	// Therefore, the sine of the angle is just the z component of the cross product.
-  	  	float2 u = -1.0 * SegmentForward;
-  	  	float2 v = ExpandDirection;
-  	  	float SinAngle = abs(u.x * v.y - u.y * v.x);
-  	  	ExpandWidth = clamp(ExpandWidth / SinAngle, 0.0, LineWidth * 2.0);
+      // The sine of the angle between the two vectors is given by the formula
+      //         |a x b| = |a||b|sin(theta)
+      // which is:
+      // float sinAngle = length(cross(float3(ExpandDirection, 0.0), float3(-SegmentForward, 0.0)));
+      // Because the z components of both vectors are zero, the x and y coordinate will be zero.
+      // Therefore, the sine of the angle is just the z component of the cross product.
+      float2 u = -1.0 * SegmentForward;
+      float2 v = ExpandDirection;
+      float SinAngle = abs(u.x * v.y - u.y * v.x);
+      ExpandWidth = clamp(ExpandWidth / SinAngle, 0.0, LineWidth * 2.0);
   	}
 
   	// Convert the desired pixel line width into a view-space offset.
