@@ -89,15 +89,14 @@ FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   Result.bDrawRelevance = IsShown(View);
 
   if (IsPolyline) {
-    // TODO can you do polyline rendering with static relevance?
+    // Polyline rendering is not possible with DrawStaticElements because of the
+    // dependence on UserData.
+    Result.bDynamicRelevance = true;
     Result.bStaticRelevance = false;
+  } else if (HasViewDependentDPG()) {
     Result.bDynamicRelevance = true;
   } else {
-    if (HasViewDependentDPG()) {
-      Result.bDynamicRelevance = true;
-    } else {
-      Result.bStaticRelevance = true;
-    }
+    Result.bStaticRelevance = true;
   }
 
   Result.bRenderCustomDepth = ShouldRenderCustomDepth();

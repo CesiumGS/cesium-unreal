@@ -36,6 +36,7 @@ uint InstancedEyeIndex;
 struct FVertexFactoryInput
 {
   	uint    VertexId    : SV_VertexID;
+  
 #if USE_INSTANCING
   	uint    InstanceId  : SV_InstanceID;
 #else
@@ -114,7 +115,7 @@ void GetPolylinePointAndCornerIndices(uint VertexId, out uint PointIndex, out ui
 
   	// Stretch the last two points of the quad to the next point on the polyline.
   	// Results in Index + 0 for corners 0, 1, Index + 1 for corners 2, 3
-  	PointIndex = min(QuadIndex + (CornerIndex / 2), NumPolylinePoints - 1);
+  	PointIndex = min(QuadIndex + CornerIndex / 2u, NumPolylinePoints - 1);
 }
 
 /** Helper function for position-only passes that don't require point index for other intermediates.*/
@@ -188,13 +189,14 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	Intermediates.Position.z = PositionBuffer[PolylinePointIndex * 3 + 2];
 
   	float3 ScratchPosition;
-  
     float3 PreviousPosition = 0;
+    float3 NextPosition = 0;
+  
     if (PolylinePointIndex > 0) {
-  	  	uint PreviousPointIndex = PolylinePointIndex - 1;
-  	  	PreviousPosition.x = PositionBuffer[PreviousPointIndex * 3 + 0];
-  	  	PreviousPosition.y = PositionBuffer[PreviousPointIndex * 3 + 1];
-  	  	PreviousPosition.z = PositionBuffer[PreviousPointIndex * 3 + 2];
+  	  	uint PreviousIndex = PolylinePointIndex - 1;
+  	  	PreviousPosition.x = PositionBuffer[PreviousIndex * 3 + 0];
+  	  	PreviousPosition.y = PositionBuffer[PreviousIndex * 3 + 1];
+  	  	PreviousPosition.z = PositionBuffer[PreviousIndex * 3 + 2];
     } else {
   	  	// Compute a "ghost" previous position based on the first and second positions.
   	  	// ExpandPolyline() evaluates the direction to first - second.
@@ -204,13 +206,12 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	  	PreviousPosition = Intermediates.Position - ScratchPosition + Intermediates.Position; 
     }
   
-    float3 NextPosition = 0;
     if (PolylinePointIndex < NumPolylinePoints - 1)
     {
-  	  	uint NextPointIndex = PolylinePointIndex + 1;
-  	  	NextPosition.x = PositionBuffer[NextPointIndex * 3 + 0];
-  	  	NextPosition.y = PositionBuffer[NextPointIndex * 3 + 1];
-  	  	NextPosition.z = PositionBuffer[NextPointIndex * 3 + 2];
+  	  	uint NextIndex = PolylinePointIndex + 1;
+  	  	NextPosition.x = PositionBuffer[NextIndex * 3 + 0];
+  	  	NextPosition.y = PositionBuffer[NextIndex * 3 + 1];
+  	  	NextPosition.z = PositionBuffer[NextIndex * 3 + 2];
     }
     else
     {
@@ -231,28 +232,8 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
   	Intermediates.TangentToWorldSign =  Intermediates.SceneData.InstanceData.DeterminantSign;
 
-    float4 Color = 0;
-  switch (PolylinePointIndex)
-  {
-    case 0:
-      Color = float4(0.0, 0.0, 0.0, 1.0);
-      break;
-    case 1:
-      Color = float4(1.0, 0.0, 0.0, 1.0);
-      break;
-    case 2:
-      Color = float4(0.0, 1.0, 0.0, 1.0);
-      break;
-    case 3:
-      Color = float4(0.0, 0.0, 1.0, 1.0);
-      break;
-    default:
-      Color = 1;
-      break;
-
-  }
-  //ColorBuffer[PolylinePointIndex];
-  	Intermediates.Color = Color;// FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
+  	float4 Color = ColorBuffer[PolylinePointIndex];
+  	Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
 
   	return Intermediates;
 }
@@ -331,8 +312,8 @@ float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput In
 // local position relative to instance
 float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
-	// No support for instancing, so instance == primitive
-  return Intermediates.Position;
+  	// No support for instancing, so instance == primitive
+  	return Intermediates.Position;
 }
 
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)
@@ -360,8 +341,14 @@ float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexF
 // local position relative to instance
 float3 VertexFactoryGetPreviousInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
-	// No support for instancing, so instance == primitive
-  return Intermediates.Position;
+  	// No support for instancing, so instance == primitive
+  	return Intermediates.Position;
+}
+
+bool EqualsEpsilon(float3 A, float3 B)
+{
+  	float3 result = abs(A - B);
+  	return all(result < 0.00001);
 }
 
 float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4 NextWorldPosition, uint PolylinePointIndex, uint CornerIndex) {
@@ -375,38 +362,69 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
     // line is deduced from the corner index.
     //
     // Unreal uses counter-clockwise winding order, and a billboarded quad is typically generated like so:
-   	// 1 --- 2
-  	// |  /  |
-  	// 0 --- 3
+    // 1 --- 2
+    // |  /  |
+    // 0 --- 3
     // Thus, the Corner Direction should results in -1 for indices 0 and 3; and +1 for 1, 2.
-    float CornerDirection = -1;
-  	if (CornerIndex == 0 || CornerIndex == 3) {
+  	float CornerDirection = -1;
+  	if (CornerIndex == 0 || CornerIndex == 3)
+  	{
   	  	CornerDirection = 1;
   	}
 
   	float3 PositionView = mul(WorldPosition, ResolvedView.TranslatedWorldToView);
   	float3 PreviousPositionView = mul(PreviousWorldPosition, ResolvedView.TranslatedWorldToView);
   	float3 NextPositionView = mul(NextWorldPosition, ResolvedView.TranslatedWorldToView);
-  
+  	
   	float2 DirectionToPrevious = normalize(PreviousPositionView.xy - PositionView.xy);
   	float2 DirectionToNext = normalize(NextPositionView.xy - PositionView.xy);
 
-    // True for the last two corners of the quad that get stretched to the next polyline point.
+  	// Use the correct direction of the line segment for the last two corners of the quad.
   	bool IsSegmentEnd = CornerIndex >= 2;
-  	float2 SegmentForward = IsSegmentEnd ? -DirectionToPrevious : DirectionToNext;
+  	// Doing -DirectionToPrevious can result in weird compiler error, "Negate modifier not allowed".
+  	// Multiply explicitly by -1 to avoid this.
+  	float2 SegmentForward = IsSegmentEnd ? -1.0 * DirectionToPrevious : DirectionToNext;
 
-    // Compute the perpendicular line (counter-clockwise) to the forward direction
-  	float2 ExpandDirection = float2(-SegmentForward.y, SegmentForward.x) * CornerDirection;
+  	// Compute the line perpendicular to the forward direction
+  	float2 ExpandDirection = float2(-SegmentForward.y, SegmentForward.x);
+  	float ExpandWidth = LineWidth * 0.5;
 
-  	//float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
+  	// Connect adjacent line segments at clean angles where possible.
+  	if (!EqualsEpsilon(PositionView, PreviousPositionView) && !EqualsEpsilon(PositionView, NextPositionView))
+  	{
+  	  	// Find the direction of the other segment at the same polyline point.
+			float2 OtherSegmentForward = IsSegmentEnd ? DirectionToNext : -1.0 * DirectionToPrevious;
+			float2 OtherExpandDirection = float2(-OtherSegmentForward.y, OtherSegmentForward.x);
+  	  	
+  	  	// Get the average of the expand directions (if valid).
+			float2 DirectionSum = ExpandDirection + OtherExpandDirection;
+			float SumLength = length(DirectionSum);
+			if (SumLength > 0.000001)
+      {
+  	  	  ExpandDirection = DirectionSum / SumLength;
+			}
+  	  	
+  	  	// The sine of the angle between the two vectors is given by the formula
+  	  	//         |a x b| = |a||b|sin(theta)
+  	  	// which is:
+  	  	// float sinAngle = length(cross(float3(ExpandDirection, 0.0), float3(-SegmentForward, 0.0)));
+  	  	// Because the z components of both vectors are zero, the x and y coordinate will be zero.
+  	  	// Therefore, the sine of the angle is just the z component of the cross product.
+  	  	float2 u = -1.0 * SegmentForward;
+  	  	float2 v = ExpandDirection;
+  	  	float SinAngle = abs(u.x * v.y - u.y * v.x);
+  	  	ExpandWidth = clamp(ExpandWidth / SinAngle, 0.0, LineWidth * 2.0);
+  	}
 
-	//float2 PixelOffset = float(LineWidth * 5) * float2(OffsetX, OffsetY);
-	//float2 ScreenOffset = PixelOffset * ResolvedView.ViewSizeAndInvSize.zw;
-	//float2 ClipOffset = ScreenOffset * PositionClip.w;
-	//float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
-	//ViewOffset /= ViewOffset.w;
+  	// Convert the desired pixel line width into a view-space offset.
+  	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
   
-  	float3 ExpandedPosition = WorldPosition.xyz + mul(ExpandDirection * LineWidth * 0.5, ResolvedView.ViewToTranslatedWorld);
+  	float2 ScreenOffset = ExpandWidth * ResolvedView.ViewSizeAndInvSize.zw;
+  	float2 ClipOffset = ScreenOffset * PositionClip.w;
+  	float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
+  	ViewOffset /= ViewOffset.w;
+  
+  	float3 ExpandedPosition = WorldPosition.xyz + mul(ExpandDirection * CornerDirection * ViewOffset.xy, ResolvedView.ViewToTranslatedWorld);
   	return float4(ExpandedPosition, 1);
 }
 
