@@ -31,26 +31,26 @@ void ACesiumGeoJsonVisualizer::AddLineString(
     const FCesiumGeoJsonLineString& LineString,
     bool bDebugMode) {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-   int32 pointCount = LineString.Points.Num();
+  int32 pointCount = LineString.Points.Num();
 
   if (!pGeoreference || pointCount == 0) {
     return;
   }
 
   // hack to ignore duplicate points
-   TArray<FVector> uniquePoints;
-   uniquePoints.Reserve(pointCount);
-   uniquePoints.Add(LineString.Points[0]);
-   uniquePoints.Add(LineString.Points[1]);
-   for (int i = 2, u = 1; i < pointCount; i++) {
-    FVector pos = LineString.Points[i];
-    if (uniquePoints[u] != pos) {
-      uniquePoints.Add(pos);
-      u++;
-    }
-  }
+  // TArray<FVector> uniquePoints;
+  // uniquePoints.Reserve(pointCount);
+  // uniquePoints.Add(LineString.Points[0]);
+  // uniquePoints.Add(LineString.Points[1]);
+  // for (int i = 2, u = 1; i < pointCount; i++) {
+  //  FVector pos = LineString.Points[i];
+  //  if (uniquePoints[u] != pos) {
+  //    uniquePoints.Add(pos);
+  //    u++;
+  //  }
+  //}
 
-   pointCount = uniquePoints.Num();
+  // pointCount = uniquePoints.Num();
 
   TUniquePtr<FStaticMeshRenderData> RenderData =
       MakeUnique<FStaticMeshRenderData>();
@@ -76,7 +76,7 @@ void ACesiumGeoJsonVisualizer::AddLineString(
     FVector3f& resultPosition = positionBuffer.VertexPosition(i);
     FVector unrealPosition =
         pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
-            uniquePoints[i]);
+            LineString.Points[i]);
     resultPosition.X = unrealPosition.X;
     resultPosition.Y = unrealPosition.Y;
     resultPosition.Z = unrealPosition.Z;
@@ -85,7 +85,7 @@ void ACesiumGeoJsonVisualizer::AddLineString(
     max = FVector::Max(max, unrealPosition);
 
     FColor& resultColor = colorBuffer.VertexColor(i);
-    resultColor.R = 0.0;
+    resultColor.R = 1.0;
     resultColor.G = 1.0;
     resultColor.B = 1.0;
     resultColor.A = 1.0;
@@ -133,14 +133,21 @@ void ACesiumGeoJsonVisualizer::AddLineString(
   section.bCastShadow = false;
   section.MaterialIndex = 0;
 
-  min *= 100;
-  max *= 100;
+  FVector diff = max - min;
+  diff = diff.GetAbs();
+  const FVector minBounds(100.0);
+  diff = FVector::Max(diff, minBounds);
+
+  // Lines tend to be too thin on one axis so they get prematurely culled.
+  // Expand the box by at least one meter in each direction.
+  min -= 0.5 * minBounds;
+  max += 0.5 * minBounds;
 
   FBox aaBox(min, max);
   aaBox.GetCenterAndExtents(
       RenderData->Bounds.Origin,
       RenderData->Bounds.BoxExtent);
-  RenderData->Bounds.SphereRadius = 100.0f;
+  RenderData->Bounds.SphereRadius = RenderData->Bounds.BoxExtent.Length() / 2;
 
   UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(this);
   pGltf->SetFlags(
@@ -151,7 +158,7 @@ void ACesiumGeoJsonVisualizer::AddLineString(
 
   // Temporary variable hacks just to get something showing
   pMesh->IsPolyline = !bDebugMode;
-  pMesh->LineWidth = 20;
+  pMesh->LineWidth = 10;
 
   pMesh->bUseDefaultCollision = false;
   pMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
