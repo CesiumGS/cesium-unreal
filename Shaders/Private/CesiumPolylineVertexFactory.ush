@@ -393,10 +393,10 @@ float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4
 			// float sinAngle = length(cross(float3(ExpandDirection, 0.0), float3(-SegmentForward, 0.0)));
 			// Because the z components of both vectors are zero, the x and y coordinate will be zero.
 			// Therefore, the sine of the angle is just the z component of the cross product.
-			float2 u = -1.0 * SegmentForward;
+			float2 u = -1.0 * ProjectedSegmentForward;
 			float2 v = ExpandDirection;
 			float SinAngle = abs(u.x * v.y - u.y * v.x);
-			ExpandWidth = clamp(ExpandWidth / SinAngle, 0.5, LineWidth * 2.0);
+			ExpandWidth = clamp(ExpandWidth / SinAngle, 0.0, LineWidth * 2.0);
   	}
 
   	// Convert the desired pixel line width into a view-space offset.
