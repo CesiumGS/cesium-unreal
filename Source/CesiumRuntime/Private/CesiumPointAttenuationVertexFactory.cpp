@@ -2,6 +2,7 @@
 
 #include "CesiumPointAttenuationVertexFactory.h"
 
+#include "CesiumVertexFactoryCommon.h"
 #include "DataDrivenShaderPlatformInfo.h"
 #include "MaterialDomain.h"
 #include "MeshBatch.h"
@@ -9,44 +10,6 @@
 #include "MeshMaterialShader.h"
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
-
-void FCesiumPointAttenuationIndexBuffer::InitRHI(
-    FRHICommandListBase& RHICmdList) {
-  if (!bAttenuationSupported) {
-    return;
-  }
-
-  // This must be called from Rendering thread
-  check(IsInRenderingThread());
-
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPointAttenuationIndexBuffer"));
-  const uint32 NumIndices = NumPoints * 6;
-  const uint32 Size = NumIndices * sizeof(uint32);
-
-  IndexBufferRHI = RHICmdList.CreateBuffer(
-      Size,
-      BUF_Static | BUF_IndexBuffer,
-      sizeof(uint32),
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
-
-  uint32* Data =
-      (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
-
-  for (uint32 index = 0, bufferIndex = 0; bufferIndex < NumIndices;
-       index += 4) {
-    // Generate six indices per quad, each representing an attenuated point in
-    // the point cloud.
-    Data[bufferIndex++] = index;
-    Data[bufferIndex++] = index + 1;
-    Data[bufferIndex++] = index + 2;
-    Data[bufferIndex++] = index;
-    Data[bufferIndex++] = index + 2;
-    Data[bufferIndex++] = index + 3;
-  }
-
-  RHICmdList.UnlockBuffer(IndexBufferRHI);
-}
 
 class FCesiumPointAttenuationVertexFactoryShaderParameters
     : public FVertexFactoryShaderParameters {
@@ -113,41 +76,6 @@ private:
   LAYOUT_FIELD(FShaderParameter, AttenuationParameters);
 };
 
-/**
- * A dummy vertex buffer to bind when rendering attenuated point clouds. This
- * prevents rendering pipeline errors that can occur with zero-stream input
- * layouts.
- */
-class FCesiumPointAttenuationDummyVertexBuffer : public FVertexBuffer {
-public:
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-};
-
-void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
-    FRHICommandListBase& RHICmdList) {
-  FRHIResourceCreateInfo CreateInfo(
-      TEXT("FCesiumPointAttenuationDummyVertexBuffer"));
-  VertexBufferRHI = RHICmdList.CreateBuffer(
-      sizeof(FVector3f) * 4,
-      BUF_Static | BUF_VertexBuffer,
-      0,
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
-  FVector3f* DummyContents = (FVector3f*)RHICmdList.LockBuffer(
-      VertexBufferRHI,
-      0,
-      sizeof(FVector3f) * 4,
-      RLM_WriteOnly);
-  DummyContents[0] = FVector3f(0.0f, 0.0f, 0.0f);
-  DummyContents[1] = FVector3f(1.0f, 0.0f, 0.0f);
-  DummyContents[2] = FVector3f(0.0f, 1.0f, 0.0f);
-  DummyContents[3] = FVector3f(1.0f, 1.0f, 0.0f);
-  RHICmdList.UnlockBuffer(VertexBufferRHI);
-}
-
-TGlobalResource<FCesiumPointAttenuationDummyVertexBuffer>
-    GCesiumPointAttenuationDummyVertexBuffer;
-
 FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
     ERHIFeatureLevel::Type InFeatureLevel,
     const FPositionVertexBuffer* PositionVertexBuffer)
@@ -181,7 +109,7 @@ void FCesiumPointAttenuationVertexFactory::InitRHI(
   FVertexDeclarationElementList Elements;
   Elements.Add(AccessStreamComponent(
       FVertexStreamComponent(
-          &GCesiumPointAttenuationDummyVertexBuffer,
+          &GCesiumDummyVertexBuffer,
           0,
           sizeof(FVector3f),
           VET_Float3),

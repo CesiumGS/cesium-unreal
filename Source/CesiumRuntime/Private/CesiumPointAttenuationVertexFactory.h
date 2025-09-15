@@ -12,26 +12,6 @@
 #include "SceneManagement.h"
 
 /**
- * This generates the indices necessary for point attenuation in a
- * FCesiumGltfPointsComponent.
- */
-class FCesiumPointAttenuationIndexBuffer : public FIndexBuffer {
-public:
-  FCesiumPointAttenuationIndexBuffer(
-      const int32& NumPoints,
-      const bool bAttenuationSupported)
-      : NumPoints(NumPoints), bAttenuationSupported(bAttenuationSupported) {}
-
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-
-private:
-  // The number of points in the original point mesh. Not to be confused with
-  // the number of vertices in the attenuated point mesh.
-  const int32 NumPoints;
-  const bool bAttenuationSupported;
-};
-
-/**
  * The parameters to be passed as UserData to the
  * shader.
  */

@@ -2,6 +2,7 @@
 
 #include "CesiumPolylineVertexFactory.h"
 
+#include "CesiumVertexFactoryCommon.h"
 #include "DataDrivenShaderPlatformInfo.h"
 #include "MaterialDomain.h"
 #include "MeshBatch.h"
@@ -9,46 +10,6 @@
 #include "MeshMaterialShader.h"
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
-
-void FCesiumPolylineIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
-  // if (!bAttenuationSupported) {
-  //   return;
-  // }
-
-  // This must be called from Rendering thread
-  check(IsInRenderingThread());
-
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPolylineIndexBuffer"));
-
-  // Each line segment of the polyline is represented as a quad that is
-  // stretches from one point to the next. The midpoints of the polyline are
-  // shared by two quads.
-  const uint32 NumIndices = NumLines * 6;
-  const uint32 Size = NumIndices * sizeof(uint32);
-
-  IndexBufferRHI = RHICmdList.CreateBuffer(
-      Size,
-      BUF_Static | BUF_IndexBuffer,
-      sizeof(uint32),
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
-
-  uint32* Data =
-      (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
-
-  for (uint32 index = 0, bufferIndex = 0; bufferIndex < NumIndices;
-       index += 4) {
-    // Generate six indices per quad.
-    Data[bufferIndex++] = index;
-    Data[bufferIndex++] = index + 1;
-    Data[bufferIndex++] = index + 2;
-    Data[bufferIndex++] = index;
-    Data[bufferIndex++] = index + 2;
-    Data[bufferIndex++] = index + 3;
-  }
-
-  RHICmdList.UnlockBuffer(IndexBufferRHI);
-}
 
 class FCesiumPolylineVertexFactoryShaderParameters
     : public FVertexFactoryShaderParameters {
@@ -111,39 +72,6 @@ private:
   LAYOUT_FIELD(FShaderParameter, LineWidth);
 };
 
-/**
- * A dummy vertex buffer to bind when rendering polylines. This prevents
- * rendering pipeline errors that can occur with zero-stream input layouts.
- */
-class FCesiumPolylineDummyVertexBuffer : public FVertexBuffer {
-public:
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-};
-
-void FCesiumPolylineDummyVertexBuffer::InitRHI(
-    FRHICommandListBase& RHICmdList) {
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPolylineDummyVertexBuffer"));
-  VertexBufferRHI = RHICmdList.CreateBuffer(
-      sizeof(FVector3f) * 4,
-      BUF_Static | BUF_VertexBuffer,
-      0,
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
-  FVector3f* DummyContents = (FVector3f*)RHICmdList.LockBuffer(
-      VertexBufferRHI,
-      0,
-      sizeof(FVector3f) * 4,
-      RLM_WriteOnly);
-  DummyContents[0] = FVector3f(0.0f, 0.0f, 0.0f);
-  DummyContents[1] = FVector3f(1.0f, 0.0f, 0.0f);
-  DummyContents[2] = FVector3f(0.0f, 1.0f, 0.0f);
-  DummyContents[3] = FVector3f(1.0f, 1.0f, 0.0f);
-  RHICmdList.UnlockBuffer(VertexBufferRHI);
-}
-
-TGlobalResource<FCesiumPolylineDummyVertexBuffer>
-    GCesiumPolylineDummyVertexBuffer;
-
 FCesiumPolylineVertexFactory::FCesiumPolylineVertexFactory(
     ERHIFeatureLevel::Type InFeatureLevel,
     const FPositionVertexBuffer* PositionVertexBuffer)
@@ -174,7 +102,7 @@ void FCesiumPolylineVertexFactory::InitRHI(FRHICommandListBase& RHICmdList) {
   FVertexDeclarationElementList Elements;
   Elements.Add(AccessStreamComponent(
       FVertexStreamComponent(
-          &GCesiumPolylineDummyVertexBuffer,
+          &GCesiumDummyVertexBuffer,
           0,
           sizeof(FVector3f),
           VET_Float3),

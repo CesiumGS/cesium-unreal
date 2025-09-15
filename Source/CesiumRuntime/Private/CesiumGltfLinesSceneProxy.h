@@ -3,18 +3,12 @@
 #pragma once
 
 #include "CesiumPolylineVertexFactory.h"
+#include "CesiumVertexFactoryCommon.h"
 #include "PrimitiveSceneProxy.h"
 
 class UCesiumGltfLinesComponent;
 
 class FCesiumGltfLinesSceneProxy final : public FPrimitiveSceneProxy {
-private:
-  // The original render data of the static mesh.
-  const FStaticMeshRenderData* RenderData;
-  int32_t NumLines;
-  bool IsPolyline;
-  int32 LineWidth;
-
 public:
   SIZE_T GetTypeHash() const override;
 
@@ -44,9 +38,18 @@ protected:
   virtual uint32 GetMemoryFootprint(void) const override;
 
 private:
+  // The original render data of the static mesh.
+  const FStaticMeshRenderData* RenderData;
+  int32_t NumLines;
+
+  bool IsPolyline;
+  int32 LineWidth;
+
+  bool bManualVertexFetchSupported;
+
   // The vertex factory and index buffer for thick line rendering.
   FCesiumPolylineVertexFactory PolylineVertexFactory;
-  FCesiumPolylineIndexBuffer PolylineIndexBuffer;
+  FCesiumQuadIndexBuffer PolylineIndexBuffer;
 
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
@@ -63,5 +66,4 @@ private:
 
   void CreateMesh(FMeshBatch& Mesh) const;
 
-  bool bManualVertexFetchSupported;
 };

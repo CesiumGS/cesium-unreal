@@ -12,25 +12,6 @@
 #include "SceneManagement.h"
 
 /**
- * This generates the indices necessary for thick polyline rendering in a
- * FCesiumGltfLinesComponent.
- */
-class FCesiumPolylineIndexBuffer : public FIndexBuffer {
-public:
-  FCesiumPolylineIndexBuffer(
-      const int32& NumLines,
-      const bool bAttenuationSupported)
-      : NumLines(NumLines) {}
-
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
-
-private:
-  // The number of lines in the original line mesh. Not to be confused with
-  // the number of vertices in the expanded polyline mesh.
-  const int32 NumLines;
-};
-
-/**
  * The parameters to be passed as UserData to the
  * shader.
  */

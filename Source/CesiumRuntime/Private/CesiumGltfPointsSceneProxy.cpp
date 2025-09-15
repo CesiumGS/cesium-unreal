@@ -39,13 +39,13 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
       NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-      bAttenuationSupported(
+      bManualVertexFetchSupported(
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
       TilesetData(),
       AttenuationVertexFactory(
           InFeatureLevel,
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
-      AttenuationIndexBuffer(NumPoints, bAttenuationSupported),
+      AttenuationIndexBuffer(NumPoints, bManualVertexFetchSupported),
       Material(InComponent->GetMaterial(0)),
       MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
 
@@ -70,7 +70,7 @@ void FCesiumGltfPointsSceneProxy::GetDynamicMeshElements(
   QUICK_SCOPE_CYCLE_COUNTER(STAT_GltfPointsSceneProxy_GetDynamicMeshElements);
 
   const bool useAttenuation =
-      bAttenuationSupported && TilesetData.PointCloudShading.Attenuation;
+      bManualVertexFetchSupported && TilesetData.PointCloudShading.Attenuation;
 
   for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
     if (VisibilityMap & (1 << ViewIndex)) {

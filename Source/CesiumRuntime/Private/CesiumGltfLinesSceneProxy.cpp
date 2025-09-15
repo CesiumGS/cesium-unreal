@@ -31,14 +31,15 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
           InComponent->IsPolyline)),
       IsPolyline(InComponent->IsPolyline),
       LineWidth(InComponent->LineWidth),
+      bManualVertexFetchSupported(
+          RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
       PolylineVertexFactory(
           InFeatureLevel,
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
-      PolylineIndexBuffer(NumLines, true),
+      PolylineIndexBuffer(NumLines, bManualVertexFetchSupported),
       Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)),
-      bManualVertexFetchSupported(
-          RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())) {}
+      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel))
+{}
 
 FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
 
@@ -88,9 +89,7 @@ FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
 
-  if (IsPolyline) {
-    // Polyline rendering is not possible with DrawStaticElements because of the
-    // dependence on UserData.
+  if (IsPolyline && bManualVertexFetchSupported) {
     Result.bDynamicRelevance = true;
     Result.bStaticRelevance = false;
   } else if (HasViewDependentDPG()) {

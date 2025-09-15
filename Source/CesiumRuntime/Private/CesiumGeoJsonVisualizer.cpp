@@ -85,10 +85,7 @@ void ACesiumGeoJsonVisualizer::AddLineString(
     max = FVector::Max(max, unrealPosition);
 
     FColor& resultColor = colorBuffer.VertexColor(i);
-    resultColor.R = 1.0;
-    resultColor.G = 1.0;
-    resultColor.B = 1.0;
-    resultColor.A = 1.0;
+    resultColor = FColor(1.0);
 
     FVector normal =
         pGeoreference->GetEllipsoid()->GeodeticSurfaceNormal(unrealPosition);

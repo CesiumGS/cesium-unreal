@@ -4,6 +4,7 @@
 
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "CesiumPointCloudShading.h"
+#include "CesiumVertexFactoryCommon.h"
 #include "PrimitiveSceneProxy.h"
 #include <glm/vec3.hpp>
 
@@ -62,8 +63,9 @@ public:
       const FCesiumGltfPointsSceneProxyTilesetData& InTilesetData);
 
 private:
-  // Whether or not the shader platform supports attenuation.
-  bool bAttenuationSupported;
+  // Whether or not the shader platform supports manual vertex fetch, which is
+  // used to attenuate points.
+  bool bManualVertexFetchSupported;
 
   // Data from the UCesiumGltfComponent that owns this scene proxy, as well as
   // its ACesium3DTileset.
@@ -71,7 +73,7 @@ private:
 
   // The vertex factory and index buffer for point attenuation.
   FCesiumPointAttenuationVertexFactory AttenuationVertexFactory;
-  FCesiumPointAttenuationIndexBuffer AttenuationIndexBuffer;
+  FCesiumQuadIndexBuffer AttenuationIndexBuffer;
 
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
