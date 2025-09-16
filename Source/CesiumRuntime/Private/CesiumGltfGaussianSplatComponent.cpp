@@ -16,6 +16,12 @@
 #include <fmt/format.h>
 
 namespace {
+// We multiplied by 1024 because of the physics hack when building the glTF
+// primitive. This is the factor we use to reverse that operation.
+// This is 10.24, not 1024.0, because we *do* need to scale up by 100 units
+// because of glTF -> Unreal units conversions.
+const double RESCALE_FACTOR = 1024.0 / 100.0;
+
 int32 countShCoeffsOnPrimitive(CesiumGltf::MeshPrimitive& primitive) {
   if (primitive.attributes.contains(
           "KHR_gaussian_splatting:SH_DEGREE_3_COEF_6")) {
@@ -74,9 +80,10 @@ bool writeShCoeffs(
     }
 
     for (int32 j = 0; j < accessorView.size(); j++) {
-      data[j * stride + offset + i * 3] = accessorView[j].x;
-      data[j * stride + offset + i * 3 + 1] = accessorView[j].y;
-      data[j * stride + offset + i * 3 + 2] = accessorView[j].z;
+      data[j * stride + offset + i * 4] = accessorView[j].x;
+      data[j * stride + offset + i * 4 + 1] = accessorView[j].y;
+      data[j * stride + offset + i * 4 + 2] = accessorView[j].z;
+      data[j * stride + offset + i * 4 + 3] = 0.0;
     }
   }
 
@@ -87,19 +94,17 @@ template <typename T, typename ComponentT>
 void writeConvertedAccessor(
     CesiumGltf::AccessorView<T>& accessorView,
     TArray<float>& data,
-    int32 stride,
-    int32 offset) {
+    int32 stride) {
   for (int32 i = 0; i < accessorView.size(); i++) {
-    data[i * stride + offset] =
-        accessorView[i].x /
-        static_cast<float>(TNumericLimits<ComponentT>::Max());
-    data[i * stride + offset + 1] =
+    data[i * stride] = accessorView[i].x /
+                       static_cast<float>(TNumericLimits<ComponentT>::Max());
+    data[i * stride + 1] =
         accessorView[i].y /
         static_cast<float>(TNumericLimits<ComponentT>::Max());
-    data[i * stride + offset + 2] =
+    data[i * stride + 2] =
         accessorView[i].z /
         static_cast<float>(TNumericLimits<ComponentT>::Max());
-    data[i * stride + offset + 3] =
+    data[i * stride + 3] =
         accessorView[i].w /
         static_cast<float>(TNumericLimits<ComponentT>::Max());
   }
@@ -108,19 +113,28 @@ void writeConvertedAccessor(
 
 // Sets default values for this component's properties
 UCesiumGltfGaussianSplatComponent::UCesiumGltfGaussianSplatComponent()
-    : UsesAdditiveRefinement(false),
-      GeometricError(0),
-      Dimensions(glm::vec3(0)) {}
+    : Dimensions(glm::vec3(0)) {}
 
 UCesiumGltfGaussianSplatComponent::~UCesiumGltfGaussianSplatComponent() {}
+
+void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
+    const glm::dmat4& CesiumToUnrealTransform) {
+  UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
+      CesiumToUnrealTransform);
+  UWorld* World = GetWorld();
+  if (IsValid(World)) {
+    UCesiumGaussianSplatSubsystem* SplatSubsystem =
+        World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
+    ensure(SplatSubsystem);
+
+    SplatSubsystem->RecomputeBounds();
+  }
+}
 
 void UCesiumGltfGaussianSplatComponent::SetData(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& meshPrimitive) {
   const int32 numShCoeffs = countShCoeffsOnPrimitive(meshPrimitive);
-  const int32 stride =
-      std::ceil(static_cast<double>(14 + numShCoeffs * 3) / 4.0) * 4.0;
-  this->DataStride = stride;
   this->NumCoefficients = numShCoeffs;
 
   const std::unordered_map<std::string, int32_t>::const_iterator positionIt =
@@ -144,30 +158,37 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
-  this->Data.SetNum(stride * positionView.size(), true);
+  this->Positions.SetNum(positionView.size() * 4, true);
   this->NumSplats = positionView.size();
   for (int32 i = 0; i < positionView.size(); i++) {
-    this->Data[i * stride] = positionView[i].x * 100.0;
-    this->Data[i * stride + 1] = positionView[i].y * 100.0;
-    this->Data[i * stride + 2] = positionView[i].z * 100.0;
+    FVector Position(
+        positionView[i].x * CesiumPrimitiveData::positionScaleFactor,
+        positionView[i].y * -CesiumPrimitiveData::positionScaleFactor,
+        positionView[i].z * CesiumPrimitiveData::positionScaleFactor);
+    this->Positions[i * 4] = Position.X;
+    this->Positions[i * 4 + 1] = Position.Y;
+    this->Positions[i * 4 + 2] = Position.Z;
+    // We need a W component because Unreal can only upload float2s or float4s
+    // to the GPU, not float3s...
+    this->Positions[i * 4 + 3] = 0.0;
 
     // Take this opportunity to update the bounds.
     if (this->Bounds) {
       this->Bounds->Min = FVector(
-          std::min(Bounds->Min.X, (double)positionView[i].x * 100.0),
-          std::min(Bounds->Min.Y, (double)positionView[i].y * 100.0),
-          std::min(Bounds->Min.Z, (double)positionView[i].z * 100.0));
+          std::min(Bounds->Min.X, Position.X / RESCALE_FACTOR),
+          std::min(Bounds->Min.Y, Position.Y / RESCALE_FACTOR),
+          std::min(Bounds->Min.Z, Position.Z / RESCALE_FACTOR));
       this->Bounds->Max = FVector(
-          std::max(Bounds->Max.X, (double)positionView[i].x * 100.0),
-          std::max(Bounds->Max.Y, (double)positionView[i].y * 100.0),
-          std::max(Bounds->Max.Z, (double)positionView[i].z * 100.0));
+          std::max(Bounds->Max.X, Position.X / RESCALE_FACTOR),
+          std::max(Bounds->Max.Y, Position.Y / RESCALE_FACTOR),
+          std::max(Bounds->Max.Z, Position.Z / RESCALE_FACTOR));
     } else {
       this->Bounds = FBox();
       this->Bounds->Min = FVector(
-          positionView[i].x * 100.0,
-          positionView[i].y * 100.0,
-          positionView[i].z * 100.0);
-      this->Bounds->Max = Bounds->Min;
+          Position.X / RESCALE_FACTOR,
+          Position.Y / RESCALE_FACTOR,
+          Position.Z / RESCALE_FACTOR);
+      this->Bounds->Max = Bounds->Min; 
     }
   }
 
@@ -192,10 +213,15 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
+  this->Scales.SetNum(scaleView.size() * 4, true);
   for (int32 i = 0; i < scaleView.size(); i++) {
-    this->Data[i * stride + 3] = scaleView[i].x;
-    this->Data[i * stride + 4] = scaleView[i].y;
-    this->Data[i * stride + 5] = scaleView[i].z;
+    this->Scales[i * 4] =
+        scaleView[i].x * CesiumPrimitiveData::positionScaleFactor;
+    this->Scales[i * 4 + 1] =
+        scaleView[i].y * CesiumPrimitiveData::positionScaleFactor;
+    this->Scales[i * 4 + 2] =
+        scaleView[i].z * CesiumPrimitiveData::positionScaleFactor;
+    this->Scales[i * 4 + 3] = 0.0;
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator rotationIt =
@@ -220,11 +246,12 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
+  this->Orientations.SetNum(rotationView.size() * 4, true);
   for (int32 i = 0; i < rotationView.size(); i++) {
-    this->Data[i * stride + 6] = rotationView[i].x;
-    this->Data[i * stride + 7] = rotationView[i].y;
-    this->Data[i * stride + 8] = rotationView[i].z;
-    this->Data[i * stride + 9] = rotationView[i].w;
+    this->Orientations[i * 4] = rotationView[i].x;
+    this->Orientations[i * 4 + 1] = -rotationView[i].y;
+    this->Orientations[i * 4 + 2] = rotationView[i].z;
+    this->Orientations[i * 4 + 3] = rotationView[i].w;
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator colorIt =
@@ -259,11 +286,9 @@ void UCesiumGltfGaussianSplatComponent::SetData(
           accessorView.status());
       return;
     }
-    writeConvertedAccessor<glm::u8vec4, uint8>(
-        accessorView,
-        this->Data,
-        stride,
-        10);
+
+    this->Colors.SetNum(accessorView.size() * 4, true);
+    writeConvertedAccessor<glm::u8vec4, uint8>(accessorView, this->Colors, 4);
   } else if (
       colorAccessor.componentType ==
       CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_SHORT) {
@@ -277,11 +302,9 @@ void UCesiumGltfGaussianSplatComponent::SetData(
           accessorView.status());
       return;
     }
-    writeConvertedAccessor<glm::u16vec4, uint16>(
-        accessorView,
-        this->Data,
-        stride,
-        10);
+
+    this->Colors.SetNum(accessorView.size() * 4, true);
+    writeConvertedAccessor<glm::u16vec4, uint16>(accessorView, this->Colors, 4);
   } else if (
       colorAccessor.componentType ==
       CesiumGltf::AccessorSpec::ComponentType::FLOAT) {
@@ -296,11 +319,12 @@ void UCesiumGltfGaussianSplatComponent::SetData(
       return;
     }
 
+    this->Colors.SetNum(accessorView.size() * 4, true);
     for (int32 i = 0; i < accessorView.size(); i++) {
-      this->Data[i * stride + 10] = accessorView[i].x;
-      this->Data[i * stride + 11] = accessorView[i].y;
-      this->Data[i * stride + 12] = accessorView[i].z;
-      this->Data[i * stride + 13] = accessorView[i].w;
+      this->Colors[i * 4] = accessorView[i].x;
+      this->Colors[i * 4 + 1] = accessorView[i].y;
+      this->Colors[i * 4 + 2] = accessorView[i].z;
+      this->Colors[i * 4 + 3] = accessorView[i].w;
     }
   } else {
     UE_LOG(
@@ -311,8 +335,16 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
+  const int32 shStride = numShCoeffs * 4;
+  this->SphericalHarmonics.SetNum(shStride * this->NumSplats);
   if (numShCoeffs >= 3) {
-    if (!writeShCoeffs(model, meshPrimitive, this->Data, stride, 14, 1)) {
+    if (!writeShCoeffs(
+            model,
+            meshPrimitive,
+            this->SphericalHarmonics,
+            shStride,
+            0,
+            1)) {
       return;
     }
   }
@@ -321,9 +353,9 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     if (!writeShCoeffs(
             model,
             meshPrimitive,
-            this->Data,
-            stride,
-            14 + 3 * 3,
+            this->SphericalHarmonics,
+            shStride,
+            3 * 3,
             2)) {
       return;
     }
@@ -333,9 +365,9 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     if (!writeShCoeffs(
             model,
             meshPrimitive,
-            this->Data,
-            stride,
-            14 + 5 * 3 + 3 * 3,
+            this->SphericalHarmonics,
+            shStride,
+            5 * 3 + 3 * 3,
             3)) {
       return;
     }
@@ -362,9 +394,9 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
                                      Transform.GetScale3D().Y,
                                      Transform.GetScale3D().Z)),
       glm::vec3(
-          Transform.GetLocation().X,
-          Transform.GetLocation().Y,
-          Transform.GetLocation().Z));
+          Transform.GetLocation().X * RESCALE_FACTOR,
+          Transform.GetLocation().Y * RESCALE_FACTOR,
+          Transform.GetLocation().Z * RESCALE_FACTOR));
   return mat;
 }
 

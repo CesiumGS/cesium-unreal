@@ -22,16 +22,11 @@ public:
   UCesiumGltfGaussianSplatComponent();
   virtual ~UCesiumGltfGaussianSplatComponent();
 
-  // Whether the tile that contains this point component uses additive
-  // refinement.
-  bool UsesAdditiveRefinement;
-
-  // The geometric error of the tile containing this point component.
-  float GeometricError;
-
   // The dimensions of the point component. Used to estimate the geometric
   // error.
   glm::vec3 Dimensions;
+
+  virtual void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
   void
   SetData(CesiumGltf::Model& model, CesiumGltf::MeshPrimitive& meshPrimitive);
@@ -44,26 +39,11 @@ public:
 
   virtual void BeginDestroy() override;
 
-  /**
-   *  Every piece of data required to render this splat.
-   *
-   * Layout:
-   * - 0, 1, 2 - Position XYZ
-   * - 3, 4, 5 - Scale XYZ
-   * - 6, 7, 8, 9 - Orientation XYZW
-   * - 10, 11, 12, 13 - Color RGBA
-   * - 14, 15, 16 - SH deg 1 coeff 0
-   * - (and so on for rest of SH coeffs)
-   *
-   * This array should be padded to a multiple of 4 so it can be encoded as
-   * vec4s in the shader.
-   */
-  TArray<float> Data;
-
-  /**
-   * The number of elements between each splat in the Data array.
-   */
-  int32 DataStride = 0;
+  TArray<float> Positions;
+  TArray<float> Scales;
+  TArray<float> Orientations;
+  TArray<float> Colors;
+  TArray<float> SphericalHarmonics;
 
   int32 NumCoefficients = 0;
 

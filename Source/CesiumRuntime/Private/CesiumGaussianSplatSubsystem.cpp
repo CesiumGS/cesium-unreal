@@ -1,5 +1,7 @@
 #include "CesiumGaussianSplatSubsystem.h"
 
+#include "EngineUtils.h"
+
 #include "NiagaraActor.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -10,38 +12,38 @@ FBox CalculateBounds(
     const TArray<UCesiumGltfGaussianSplatComponent*>& Components) {
   std::optional<FBox> Bounds;
   for (UCesiumGltfGaussianSplatComponent* Component : Components) {
-    glm::mat4x4 Matrix = Component->GetMatrix();
+    const FTransform& ComponentTransform = Component->GetComponentTransform();
     FBox ActorBounds = Component->GetBounds();
-    glm::vec4 BoundsMin = glm::vec4(
-                              ActorBounds.Min.X,
-                              ActorBounds.Min.Y,
-                              ActorBounds.Min.Z,
-                              1.0) *
-                          Matrix;
-    glm::vec4 BoundsMax = glm::vec4(
-                              ActorBounds.Max.X,
-                              ActorBounds.Max.Y,
-                              ActorBounds.Max.Z,
-                              1.0) *
-                          Matrix;
+    FVector Center = ComponentTransform.GetTranslation();
+    FBox TransformedBounds{
+        ComponentTransform.TransformPositionNoScale(
+            ActorBounds.Min),
+        ComponentTransform.TransformPositionNoScale(
+            ActorBounds.Max)};
+    
+    FVector BoundsMin = TransformedBounds.Min;
+    FVector BoundsMax = TransformedBounds.Max;
     if (Bounds) {
       Bounds->Min = FVector(
-          std::min(Bounds->Min.X, (double)BoundsMin.x),
-          std::min(Bounds->Min.Y, (double)BoundsMin.y),
-          std::min(Bounds->Min.Z, (double)BoundsMin.z));
+          std::min(Bounds->Min.X, (double)BoundsMin.X),
+          std::min(Bounds->Min.Y, (double)BoundsMin.Y),
+          std::min(Bounds->Min.Z, (double)BoundsMin.Z));
       Bounds->Max = FVector(
-          std::max(Bounds->Max.X, (double)BoundsMax.x),
-          std::max(Bounds->Max.Y, (double)BoundsMax.y),
-          std::max(Bounds->Max.Z, (double)BoundsMax.z));
+          std::max(Bounds->Max.X, (double)BoundsMax.X),
+          std::max(Bounds->Max.Y, (double)BoundsMax.Y),
+          std::max(Bounds->Max.Z, (double)BoundsMax.Z));
     } else {
       Bounds = FBox(
-          FVector4(BoundsMin.x, BoundsMin.y, BoundsMin.z, BoundsMin.w),
-          FVector4(BoundsMax.x, BoundsMax.y, BoundsMax.z, BoundsMax.w));
+          FVector4(BoundsMin.X, BoundsMin.Y, BoundsMin.Z, 0.0),
+          FVector4(BoundsMax.X, BoundsMax.Z, BoundsMax.Z, 0.0));
     }
   }
   return Bounds.value_or(FBox());
 }
 } // namespace
+
+UCesiumGaussianSplatSubsystem::UCesiumGaussianSplatSubsystem()
+    : UWorldSubsystem() {}
 
 int32 UCesiumGaussianSplatSubsystem::GetNumSplats() const {
   int32 Num = 0;
@@ -77,12 +79,14 @@ void UCesiumGaussianSplatSubsystem::OnWorldBeginPlay(UWorld& InWorld) {
   SpawnParams.SystemTemplate = SplatNiagaraSystem;
   SpawnParams.bAutoDestroy = false;
   SpawnParams.AttachToComponent = SceneComponent;
+  SpawnParams.bAutoActivate = true;
 
   this->NiagaraActor = SplatActor;
   this->NiagaraComponent =
       UNiagaraFunctionLibrary::SpawnSystemAttachedWithParams(SpawnParams);
-  SplatActor->AddInstanceComponent(this->NiagaraComponent);
   this->NiagaraComponent->SetAutoActivate(true);
+  this->NiagaraComponent->Activate();
+  SplatActor->AddInstanceComponent(this->NiagaraComponent);
 
   this->GetSplatInterface()->SetGaussianSplatSubsystem(this);
 
@@ -91,7 +95,14 @@ void UCesiumGaussianSplatSubsystem::OnWorldBeginPlay(UWorld& InWorld) {
 
 void UCesiumGaussianSplatSubsystem::RegisterSplat(
     UCesiumGltfGaussianSplatComponent* Component) {
-  this->SplatComponents.Add(Component);
+  if (IsValid(this->NiagaraComponent)) {
+    // Lock buffers when adding components to avoid adding components while
+    // uploading previous components to GPU
+    FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
+    this->SplatComponents.Add(Component);
+  } else {
+    this->SplatComponents.Add(Component);
+  }
   this->SplatDelegateHandles.Emplace(Component->TransformUpdated.AddUObject(
       this,
       &UCesiumGaussianSplatSubsystem::OnTransformUpdated));
@@ -106,31 +117,43 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
 
   Component->TransformUpdated.Remove(
       this->SplatDelegateHandles[ComponentIndex]);
-  this->SplatComponents.Remove(Component);
+
+  if (IsValid(this->NiagaraComponent)) {
+    FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
+    this->SplatComponents.Remove(Component);
+  } else {
+    this->SplatComponents.Remove(Component);
+  }
   this->SplatDelegateHandles.RemoveAt(ComponentIndex);
 
   this->UpdateNiagaraComponent();
+}
+
+void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
+  if (IsValid(this->NiagaraComponent)) {
+    FBox Bounds = CalculateBounds(this->SplatComponents);
+    const FTransform& NiagaraToWorld =
+        this->NiagaraComponent->GetComponentTransform();
+    this->NiagaraComponent->SetSystemFixedBounds(Bounds);
+    UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
+    GetSplatInterface()->RefreshMatrices();
+  }
 }
 
 void UCesiumGaussianSplatSubsystem::OnTransformUpdated(
     USceneComponent* UpdatedComponent,
     EUpdateTransformFlags UpdateTransformFlag,
     ETeleportType Teleport) {
-  if (IsValid(this->NiagaraComponent)) {
-    this->NiagaraComponent->SetSystemFixedBounds(
-        CalculateBounds(this->SplatComponents));
-    GetSplatInterface()->RefreshMatrices();
-  }
+  this->RecomputeBounds();
 }
 
 void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
   if (IsValid(this->NiagaraComponent)) {
-    this->NiagaraComponent->SetSystemFixedBounds(
-        CalculateBounds(this->SplatComponents));
     this->NiagaraComponent->SetNiagaraVariableInt(
         TEXT("GridSize"),
         (int32)std::ceil(std::sqrt((double)this->GetNumSplats())));
     GetSplatInterface()->Refresh();
+    this->NiagaraComponent->ResetSystem();
   }
 }
 

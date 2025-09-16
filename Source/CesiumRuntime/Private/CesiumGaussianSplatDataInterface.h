@@ -17,9 +17,13 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
   FCriticalSection BufferLock;
 
   FReadBuffer SplatIndicesBuffer;
-  FReadBuffer SplatOffsetsBuffer;
   FReadBuffer SplatMatricesBuffer;
-  FReadBuffer DataBuffer;
+  FReadBuffer SplatSHDegreesBuffer;
+  FReadBuffer PositionsBuffer;
+  FReadBuffer ScalesBuffer;
+  FReadBuffer OrientationsBuffer;
+  FReadBuffer ColorsBuffer;
+  FReadBuffer SHNonZeroCoeffsBuffer;
 
   bool bNeedsUpdate = true;
   bool bMatricesNeedUpdate = true;
@@ -34,9 +38,13 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
 SHADER_PARAMETER(int, SplatsCount)
 SHADER_PARAMETER_SRV(Buffer<int>, SplatIndices)
-SHADER_PARAMETER_SRV(Buffer<int>, SplatOffsets)
 SHADER_PARAMETER_SRV(Buffer<float4>, SplatMatrices)
-SHADER_PARAMETER_SRV(Buffer<float4>, Data)
+SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
+SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
+SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)
+SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
+SHADER_PARAMETER_SRV(Buffer<int>, SplatSHDegrees)
+SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)
 END_SHADER_PARAMETER_STRUCT()
 
 UCLASS()
@@ -87,4 +95,6 @@ public:
   void SetGaussianSplatSubsystem(UCesiumGaussianSplatSubsystem* SplatSystem);
   void Refresh();
   void RefreshMatrices();
+
+  FScopeLock LockGaussianBuffers();
 };

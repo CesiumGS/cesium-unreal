@@ -140,7 +140,6 @@ class ICesiumPrimitive {
 public:
   virtual CesiumPrimitiveData& getPrimitiveData() = 0;
   virtual const CesiumPrimitiveData& getPrimitiveData() const = 0;
-
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
 };

@@ -16,8 +16,11 @@ class UCesiumGaussianSplatSubsystem : public UWorldSubsystem {
   GENERATED_BODY()
 
 public:
+  UCesiumGaussianSplatSubsystem();
+
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+  void RecomputeBounds();
   int32 GetNumSplats() const;
 
   virtual void OnWorldBeginPlay(UWorld& InWorld) override;

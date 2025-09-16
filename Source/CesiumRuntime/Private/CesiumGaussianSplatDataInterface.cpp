@@ -115,6 +115,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatMatrices)
     ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+      FScopeLock ScopeLock(&this->BufferLock);
       UploadSplatMatrices(
           RHICmdList,
           SplatSystem->SplatComponents,
@@ -132,16 +133,22 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
   ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
   ([this, SplatSystem, NumSplats](FRHICommandListImmediate& RHICmdList) {
-    int32 ExpectedBytes = 0;
-    for (UCesiumGltfGaussianSplatComponent* Component :
+    int32 TotalCoeffsCount = 0;
+    for (const UCesiumGltfGaussianSplatComponent* SplatComponent :
          SplatSystem->SplatComponents) {
-      ExpectedBytes += Component->Data.Num() * sizeof(float);
+      TotalCoeffsCount +=
+          SplatComponent->NumCoefficients * SplatComponent->NumSplats;
     }
 
-    if (this->DataBuffer.NumBytes != ExpectedBytes) {
-      if (this->DataBuffer.NumBytes > 0) {
-        this->DataBuffer.Release();
-        this->SplatOffsetsBuffer.Release();
+    const int32 ExpectedPosBytes = NumSplats * 4 * sizeof(float);
+    if (this->PositionsBuffer.NumBytes != ExpectedPosBytes) {
+      if (this->PositionsBuffer.NumBytes > 0) {
+        this->PositionsBuffer.Release();
+        this->ScalesBuffer.Release();
+        this->OrientationsBuffer.Release();
+        this->ColorsBuffer.Release();
+        this->SHNonZeroCoeffsBuffer.Release();
+        this->SplatSHDegreesBuffer.Release();
         this->SplatIndicesBuffer.Release();
       }
 
@@ -149,12 +156,40 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         return;
       }
 
-      if (ExpectedBytes > 0) {
-        this->DataBuffer.Initialize(
+      if (ExpectedPosBytes > 0) {
+        this->PositionsBuffer.Initialize(
             RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Data"),
+            TEXT("FNDIGaussianSplatProxy_Positions"),
             sizeof(FVector4f),
-            ExpectedBytes / 4,
+            NumSplats,
+            EPixelFormat::PF_A32B32G32R32F,
+            BUF_Static);
+        this->ScalesBuffer.Initialize(
+            RHICmdList,
+            TEXT("FNDIGaussianSplatProxy_Scales"),
+            sizeof(FVector4f),
+            NumSplats,
+            EPixelFormat::PF_A32B32G32R32F,
+            BUF_Static);
+        this->OrientationsBuffer.Initialize(
+            RHICmdList,
+            TEXT("FNDIGaussianSplatProxy_Orientations"),
+            sizeof(FVector4f),
+            NumSplats,
+            EPixelFormat::PF_A32B32G32R32F,
+            BUF_Static);
+        this->ColorsBuffer.Initialize(
+            RHICmdList,
+            TEXT("FNDIGaussianSplatProxy_Colors"),
+            sizeof(FVector4f),
+            NumSplats,
+            EPixelFormat::PF_A32B32G32R32F,
+            BUF_Static);
+        this->SHNonZeroCoeffsBuffer.Initialize(
+            RHICmdList,
+            TEXT("FNDIGaussianSplatProxy_SHNonZeroCoeffsBuffer"),
+            sizeof(FVector4f),
+            TotalCoeffsCount,
             EPixelFormat::PF_A32B32G32R32F,
             BUF_Static);
         this->SplatIndicesBuffer.Initialize(
@@ -164,71 +199,103 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             NumSplats,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
-        this->SplatOffsetsBuffer.Initialize(
+        this->SplatSHDegreesBuffer.Initialize(
             RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SplatOffsetsBuffer"),
+            TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
             sizeof(int32),
-            SplatSystem->SplatComponents.Num() * 4,
+            SplatSystem->SplatComponents.Num() * 3,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
       }
     }
 
-    if (ExpectedBytes > 0) {
+    if (ExpectedPosBytes > 0) {
       FScopeLock ScopeLock(&this->BufferLock);
       {
-        float* DataBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-            this->DataBuffer.Buffer,
+        float* PositionsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+            this->PositionsBuffer.Buffer,
             0,
-            ExpectedBytes,
+            ExpectedPosBytes,
             EResourceLockMode::RLM_WriteOnly));
+        float* ScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+            this->ScalesBuffer.Buffer,
+            0,
+            ExpectedPosBytes,
+            EResourceLockMode::RLM_WriteOnly));
+        float* OrientationsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+            this->OrientationsBuffer.Buffer,
+            0,
+            NumSplats * 4 * sizeof(float),
+            EResourceLockMode::RLM_WriteOnly));
+        float* ColorsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+            this->ColorsBuffer.Buffer,
+            0,
+            NumSplats * 4 * sizeof(float),
+            EResourceLockMode::RLM_WriteOnly));
+        float* SHNonZeroCoeffsBuffer =
+            static_cast<float*>(RHICmdList.LockBuffer(
+                this->SHNonZeroCoeffsBuffer.Buffer,
+                0,
+                TotalCoeffsCount * 4 * sizeof(float),
+                EResourceLockMode::RLM_WriteOnly));
         int32* IndexBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
             this->SplatIndicesBuffer.Buffer,
             0,
             NumSplats * sizeof(int32),
             EResourceLockMode::RLM_WriteOnly));
-        int32* OffsetsBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
-            this->SplatOffsetsBuffer.Buffer,
+        int32* SHDegreesBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
+            this->SplatSHDegreesBuffer.Buffer,
             0,
-            SplatSystem->SplatComponents.Num() * sizeof(int32) * 4,
+            SplatSystem->SplatComponents.Num() * sizeof(int32) * 3,
             EResourceLockMode::RLM_WriteOnly));
 
-        int32 IndexOffset = 0;
-        int32 Offset = 0;
-        int32 Unoffset = 0;
+        int32 CoeffCountWritten = 0;
+        int32 SplatCountWritten = 0;
         for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
           UCesiumGltfGaussianSplatComponent* Component =
               SplatSystem->SplatComponents[i];
           FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(DataBuffer + Offset),
-              Component->Data.GetData(),
-              Component->Data.Num() * sizeof(float));
+              reinterpret_cast<void*>(PositionsBuffer + SplatCountWritten * 4),
+              Component->Positions.GetData(),
+              Component->Positions.Num() * sizeof(float));
+          FPlatformMemory::Memcpy(
+              reinterpret_cast<void*>(ScalesBuffer + SplatCountWritten * 4),
+              Component->Scales.GetData(),
+              Component->Scales.Num() * sizeof(float));
+          FPlatformMemory::Memcpy(
+              reinterpret_cast<void*>(
+                  OrientationsBuffer + SplatCountWritten * 4),
+              Component->Orientations.GetData(),
+              Component->Orientations.Num() * sizeof(float));
+          FPlatformMemory::Memcpy(
+              reinterpret_cast<void*>(ColorsBuffer + SplatCountWritten * 4),
+              Component->Colors.GetData(),
+              Component->Colors.Num() * sizeof(float));
+          FPlatformMemory::Memcpy(
+              reinterpret_cast<void*>(
+                  SHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
+              Component->SphericalHarmonics.GetData(),
+              Component->SphericalHarmonics.Num() * sizeof(float));
           for (int32 j = 0; j < Component->NumSplats; j++) {
-            IndexBuffer[IndexOffset + j] = i;
+            IndexBuffer[SplatCountWritten + j] = i;
           }
 
-          IndexOffset += Component->NumSplats;
+          SHDegreesBuffer[i * 3] = Component->NumCoefficients;
+          SHDegreesBuffer[i * 3 + 1] = CoeffCountWritten;
+          SHDegreesBuffer[i * 3 + 2] = SplatCountWritten;
 
-          // OffsetsBuffer contains:
-          // - 0: Number of entries into Data to offset by before the first
-          // data from this splat component.
-          // - 1: Number to subtract from the particle index to get the
-          // index into this splat component's data.
-          // - 2: Stride between elements of this splat component.
-          // - 3: Number of spherical harmonic coefficients.
-          //
-          // This means the data of a given gaussian splat can be found by:
-          //   int SplatIndex = _SplatIndices[Index];
-          //   int DataIndex = _Offsets[SplatIndex * 4] + _Offsets[i * 4 +
-          //   2] * (Index - _Offsets[i * 4 + 1]); _Data[DataIndex];
-          OffsetsBuffer[i * 4] = Offset / 4;
-          OffsetsBuffer[i * 4 + 1] = Unoffset;
-          OffsetsBuffer[i * 4 + 2] = Component->DataStride / 4;
-          OffsetsBuffer[i * 4 + 3] = Component->NumCoefficients;
-
-          Offset += Component->Data.Num();
-          Unoffset += Component->NumSplats;
+          SplatCountWritten += Component->NumSplats;
+          CoeffCountWritten +=
+              Component->NumSplats * Component->NumCoefficients;
         }
+
+        RHICmdList.UnlockBuffer(this->PositionsBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->OrientationsBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->SplatIndicesBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
       }
     }
   });
@@ -255,17 +322,33 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_SplatIndices"));
   OutHLSL.Appendf(
-      TEXT("Buffer<int> %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatOffsets"));
-  OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_SplatMatrices"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_Data"));
+      TEXT("_Positions"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<float4> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_Scales"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<float4> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_Orientations"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<float4> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_Colors"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<int> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_SplatSHDegrees"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<float4> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_SHNonZeroCoeffs"));
 }
 
 bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
@@ -281,23 +364,8 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
     return true;
   }
 
-  static const TCHAR* DataIndexFormatBounds = TEXT(R"(
-     int SplatIndex = {IndicesBuffer}[Index];
-     int DataIndex =
-       {OffsetsBuffer}[SplatIndex * 4] +
-       {OffsetsBuffer}[SplatIndex * 4 + 2] *
-       (Index - {OffsetsBuffer}[SplatIndex * 4 + 1]);
-  )");
-
-  const TMap<FString, FStringFormatArg> DataIndexArgsBounds = {
-      {TEXT("IndicesBuffer"),
-       FStringFormatArg(
-           ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-      {TEXT("OffsetsBuffer"),
-       FStringFormatArg(
-           ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatOffsets"))}};
-
   static const TCHAR* MatrixMathFormatBounds = TEXT(R"(
+		int SplatIndex = {IndicesBuffer}[Index];
 		float4 c0 = {MatrixBuffer}[SplatIndex * 7];
 		float4 c1 = {MatrixBuffer}[SplatIndex * 7 + 1];
 		float4 c2 = {MatrixBuffer}[SplatIndex * 7 + 2];
@@ -322,9 +390,8 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
     static const TCHAR* FormatBounds = TEXT(R"(
 		void {FunctionName}(int Index, out float3 OutPosition)
 		{
-      {DataIndex}
 			{MatrixMath}
-			OutPosition = {Data}[DataIndex].xyz;//mul(SplatMatrix, float4({Data}[DataIndex].xyz, 1.0)).xyz;
+			OutPosition = mul(SplatMatrix, float4({Buffer}[Index].xyz, 1.0)).xyz;
 		}
 		)");
 
@@ -333,30 +400,25 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
         {TEXT("MatrixMath"),
          FStringFormatArg(
              FString::Format(MatrixMathFormatBounds, MatrixMathArgsBounds))},
-        {TEXT("DataIndex"),
+        {TEXT("Buffer"),
          FStringFormatArg(
-             FString::Format(DataIndexFormatBounds, DataIndexArgsBounds))},
-        {TEXT("Data"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Data"))}};
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
 
     OutHLSL += FString::Format(FormatBounds, ArgsBounds);
   } else if (FunctionInfo.DefinitionName == *GetScaleFunctionName) {
     static const TCHAR* FormatBounds = TEXT(R"(
 		void {FunctionName}(int Index, out float3 OutScale)
 		{
-      {DataIndex}
+			int SplatIndex = {IndicesBuffer}[Index];
 			float4 SScale = {MatrixBuffer}[SplatIndex * 7 + 5];
-			OutScale = float3(1.0, 1.0, 1.0);//SScale * float3({Data}[DataIndex].w, {Data}[DataIndex + 1].x, {Data}[DataIndex + 1].y);
+			OutScale = SScale * {Buffer}[Index].xyz;
 		}
 		)");
 
     const TMap<FString, FStringFormatArg> ArgsBounds = {
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("DataIndex"),
-         FStringFormatArg(
-             FString::Format(DataIndexFormatBounds, DataIndexArgsBounds))},
-        {TEXT("Data"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Data"))},
+        {TEXT("Buffer"),
+         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Scales"))},
         {TEXT("IndicesBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
@@ -369,12 +431,8 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
     static const TCHAR* FormatBounds = TEXT(R"(
 		void {FunctionName}(int Index, out float4 OutOrientation)
 		{
-      {DataIndex}
-			float4 q2 = float4(
-        {Data}[DataIndex + 1].z,
-        {Data}[DataIndex + 1].w,
-        {Data}[DataIndex + 2].x,
-        {Data}[DataIndex + 2].y);
+			int SplatIndex = {IndicesBuffer}[Index];
+			float4 q2 = {Buffer}[Index];
 			float4 q1 = {MatrixBuffer}[SplatIndex * 7 + 6];
 			// Multiply the two quaternions
 			OutOrientation = q2;/*float4(
@@ -386,11 +444,9 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 
     const TMap<FString, FStringFormatArg> ArgsBounds = {
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("DataIndex"),
+        {TEXT("Buffer"),
          FStringFormatArg(
-             FString::Format(DataIndexFormatBounds, DataIndexArgsBounds))},
-        {TEXT("Data"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Data"))},
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Orientations"))},
         {TEXT("IndicesBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
@@ -442,22 +498,15 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
     static const TCHAR* FormatBounds = TEXT(R"(
 		void {FunctionName}(int Index, out float4 OutColor)
 		{
-      {DataIndex}
-			OutColor = float4(1.0, 1.0, 1.0, 1.0);/*float4(
-        {Data}[DataIndex + 2].z,
-        {Data}[DataIndex + 2].w,
-        {Data}[DataIndex + 3].x,
-        {Data}[DataIndex + 3].y);*/
+			OutColor = {Buffer}[Index];
 		}
 		)");
 
     const TMap<FString, FStringFormatArg> ArgsBounds = {
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("DataIndex"),
+        {TEXT("Buffer"),
          FStringFormatArg(
-             FString::Format(DataIndexFormatBounds, DataIndexArgsBounds))},
-        {TEXT("Data"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Data"))}};
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Colors"))}};
 
     OutHLSL += FString::Format(FormatBounds, ArgsBounds);
   } else if (FunctionInfo.DefinitionName == *GetSHContributionFunctionName) {
@@ -469,8 +518,9 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 			const float SH_C3[] = {-0.5900435899266435f, 2.890611442640554f, -0.4570457994644658f, 0.3731763325901154f,
 														-0.4570457994644658f, 1.445305721320277f, -0.5900435899266435f};
 
-			{DataIndex}
-			int SHCount = {OffsetsBuffer}[SplatIndex * 4 + 3];
+			int SplatIndex = {SplatIndices}[Index];
+			int SHCount = {SHDegrees}[SplatIndex * 3];
+			int SHOffset = {SHDegrees}[SplatIndex * 3 + 1] + (Index - {SHDegrees}[SplatIndex * 3 + 2]) * SHCount;
 
 			const float x = WorldViewDir.x;
 			const float y = WorldViewDir.y;
@@ -485,75 +535,30 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 
 			float3 Color = float3(0.0, 0.0, 0.0);
 			if(SHCount >= 3) {
-				float3 shd1_0 = float3(
-          {Data}[DataIndex + 3].z,
-          {Data}[DataIndex + 3].w,
-          {Data}[DataIndex + 4].x);
-				float3 shd1_1 = float3(
-          {Data}[DataIndex + 4].y,
-          {Data}[DataIndex + 4].z,
-          {Data}[DataIndex + 4].w);
-				float3 shd1_2 = float3(
-          {Data}[DataIndex + 5].x,
-          {Data}[DataIndex + 5].y,
-          {Data}[DataIndex + 5].z);
+				float3 shd1_0 = {Buffer}[SHOffset].xyz;
+				float3 shd1_1 = {Buffer}[SHOffset + 1].xyz;
+				float3 shd1_2 = {Buffer}[SHOffset + 2].xyz;
 				Color += SH_C1 * (-shd1_0 * y + shd1_1 * z - shd1_2 * x);
 			}
 
 			if(SHCount >= 8) {
-				float3 shd2_0 = float3(
-          {Data}[DataIndex + 5].w,
-          {Data}[DataIndex + 6].x,
-          {Data}[DataIndex + 6].y);
-				float3 shd2_1 = float3(
-          {Data}[DataIndex + 6].z,
-          {Data}[DataIndex + 6].w,
-          {Data}[DataIndex + 7].x);
-				float3 shd2_2 = float3(
-          {Data}[DataIndex + 7].y,
-          {Data}[DataIndex + 7].z,
-          {Data}[DataIndex + 7].w);
-				float3 shd2_3 = float3(
-          {Data}[DataIndex + 8].x,
-          {Data}[DataIndex + 8].y,
-          {Data}[DataIndex + 8].z);
-				float3 shd2_4 = float3(
-          {Data}[DataIndex + 8].w,
-          {Data}[DataIndex + 9].x,
-          {Data}[DataIndex + 9].y);
+				float3 shd2_0 = {Buffer}[SHOffset + 3];
+				float3 shd2_1 = {Buffer}[SHOffset + 4];
+				float3 shd2_2 = {Buffer}[SHOffset + 5];
+				float3 shd2_3 = {Buffer}[SHOffset + 6];
+				float3 shd2_4 = {Buffer}[SHOffset + 7];
 				Color += (SH_C2[0] * xy) * shd2_0 + (SH_C2[1] * yz) * shd2_1 + (SH_C2[2] * (2.0 * zz - xx - yy)) * shd2_2
 					   + (SH_C2[3] * xz) * shd2_3 + (SH_C2[4] * (xx - yy)) * shd2_4;
 			}
 
 			if(SHCount >= 15) {
-				float3 shd3_0 = float3(
-          {Data}[DataIndex + 9].z,
-          {Data}[DataIndex + 9].w,
-          {Data}[DataIndex + 10].x);
-				float3 shd3_1 = float3(
-          {Data}[DataIndex + 10].y,
-          {Data}[DataIndex + 10].z,
-          {Data}[DataIndex + 10].w);
-				float3 shd3_2 = float3(
-          {Data}[DataIndex + 11].x,
-          {Data}[DataIndex + 11].y,
-          {Data}[DataIndex + 11].z);
-				float3 shd3_3 = float3(
-          {Data}[DataIndex + 11].w,
-          {Data}[DataIndex + 12].x,
-          {Data}[DataIndex + 12].y);
-				float3 shd3_4 = float3(
-          {Data}[DataIndex + 12].z,
-          {Data}[DataIndex + 12].w,
-          {Data}[DataIndex + 13].x);
-				float3 shd3_5 = float3(
-          {Data}[DataIndex + 13].y,
-          {Data}[DataIndex + 13].z,
-          {Data}[DataIndex + 13].w);
-				float3 shd3_6 = float3(
-          {Data}[DataIndex + 14].x,
-          {Data}[DataIndex + 14].y,
-          {Data}[DataIndex + 14].z);
+				float3 shd3_0 = {Buffer}[SHOffset + 8];
+				float3 shd3_1 = {Buffer}[SHOffset + 9];
+				float3 shd3_2 = {Buffer}[SHOffset + 10];
+				float3 shd3_3 = {Buffer}[SHOffset + 11];
+				float3 shd3_4 = {Buffer}[SHOffset + 12];
+				float3 shd3_5 = {Buffer}[SHOffset + 13];
+				float3 shd3_6 = {Buffer}[SHOffset + 14];
 
 				Color += SH_C3[0] * shd3_0 * (3.0 * xx - yy) * y + SH_C3[1] * shd3_1 * xyz
 									 + SH_C3[2] * shd3_2 * (4.0 * zz - xx - yy) * y
@@ -568,17 +573,18 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 
     const TMap<FString, FStringFormatArg> ArgsBounds = {
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
+        {TEXT("Buffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
+        {TEXT("SHDegrees"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
         {TEXT("SplatIndices"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("OffsetsBuffer"),
+        {TEXT("PosBuffer"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatOffsets"))},
-        {TEXT("DataIndex"),
-         FStringFormatArg(
-             FString::Format(DataIndexFormatBounds, DataIndexArgsBounds))},
-        {TEXT("Data"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Data"))}};
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
 
     OutHLSL += FString::Format(FormatBounds, ArgsBounds);
   } else if (FunctionInfo.DefinitionName == *GetNumSplatsFunctionName) {
@@ -772,15 +778,25 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
     }
 
     Params->SplatsCount =
-        IsValid(DIProxy.Owner) && IsValid(DIProxy.Owner->SplatSystem) ? DIProxy.Owner->SplatSystem->GetNumSplats() : 0;
+        IsValid(DIProxy.Owner) && IsValid(DIProxy.Owner->SplatSystem)
+            ? DIProxy.Owner->SplatSystem->GetNumSplats()
+            : 0;
     Params->SplatIndices =
         FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatIndicesBuffer.SRV);
     Params->SplatMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
         DIProxy.SplatMatricesBuffer.SRV);
-    Params->SplatOffsets =
-        FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatOffsetsBuffer.SRV);
-    Params->Data =
-        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.DataBuffer.SRV);
+    Params->Positions =
+        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.PositionsBuffer.SRV);
+    Params->Scales =
+        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ScalesBuffer.SRV);
+    Params->Orientations =
+        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.OrientationsBuffer.SRV);
+    Params->Colors =
+        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ColorsBuffer.SRV);
+    Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(
+        DIProxy.SHNonZeroCoeffsBuffer.SRV);
+    Params->SplatSHDegrees =
+        FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatSHDegreesBuffer.SRV);
   }
 }
 
@@ -800,7 +816,8 @@ bool UCesiumGaussianSplatDataInterface::Equals(
   bool bIsEqual = UNiagaraDataInterface::Equals(Other);
   const UCesiumGaussianSplatDataInterface* OtherSplatInterface =
       Cast<const UCesiumGaussianSplatDataInterface>(Other);
-  return bIsEqual && OtherSplatInterface && OtherSplatInterface->SplatSystem == this->SplatSystem;
+  return bIsEqual && OtherSplatInterface &&
+         OtherSplatInterface->SplatSystem == this->SplatSystem;
 }
 
 bool UCesiumGaussianSplatDataInterface::CanExecuteOnTarget(
@@ -817,8 +834,12 @@ void UCesiumGaussianSplatDataInterface::RefreshMatrices() {
   this->GetProxyAs<FNDIGaussianSplatProxy>()->bMatricesNeedUpdate = true;
 }
 
+FScopeLock UCesiumGaussianSplatDataInterface::LockGaussianBuffers() {
+  return FScopeLock(&this->GetProxyAs<FNDIGaussianSplatProxy>()->BufferLock);
+}
+
 void UCesiumGaussianSplatDataInterface::SetGaussianSplatSubsystem(
-  UCesiumGaussianSplatSubsystem* SplatSystem) {
+    UCesiumGaussianSplatSubsystem* SplatSystem) {
   this->SplatSystem = SplatSystem;
 }
 
