@@ -26,7 +26,8 @@ public:
   // error.
   glm::vec3 Dimensions;
 
-  virtual void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
+  virtual void
+  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
   void
   SetData(CesiumGltf::Model& model, CesiumGltf::MeshPrimitive& meshPrimitive);

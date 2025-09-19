@@ -744,21 +744,6 @@ void UCesiumGaussianSplatDataInterface::GetFunctions(
     OutFunctions.Add(Sig);
   }
 }
-
-bool UCesiumGaussianSplatDataInterface::CopyToInternal(
-    UNiagaraDataInterface* Destination) const {
-  if (!UNiagaraDataInterface::CopyToInternal(Destination)) {
-    return false;
-  }
-
-  UCesiumGaussianSplatDataInterface* CastedDestination =
-      Cast<UCesiumGaussianSplatDataInterface>(Destination);
-  if (CastedDestination) {
-    CastedDestination->SplatSystem = this->SplatSystem;
-  }
-
-  return true;
-}
 #endif
 
 void UCesiumGaussianSplatDataInterface::BuildShaderParameters(
@@ -773,14 +758,12 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
   FNDIGaussianSplatProxy& DIProxy = Context.GetProxy<FNDIGaussianSplatProxy>();
 
   if (Params) {
-    if (IsValid(DIProxy.Owner)) {
-      DIProxy.UploadToGPU(DIProxy.Owner->SplatSystem);
-    }
+    UCesiumGaussianSplatSubsystem* SplatSystem = this->GetSubsystem();
+
+    DIProxy.UploadToGPU(SplatSystem);
 
     Params->SplatsCount =
-        IsValid(DIProxy.Owner) && IsValid(DIProxy.Owner->SplatSystem)
-            ? DIProxy.Owner->SplatSystem->GetNumSplats()
-            : 0;
+        IsValid(SplatSystem) ? SplatSystem->GetNumSplats() : 0;
     Params->SplatIndices =
         FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatIndicesBuffer.SRV);
     Params->SplatMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
@@ -811,15 +794,6 @@ void UCesiumGaussianSplatDataInterface::PostInitProperties() {
   }
 }
 
-bool UCesiumGaussianSplatDataInterface::Equals(
-    const UNiagaraDataInterface* Other) const {
-  bool bIsEqual = UNiagaraDataInterface::Equals(Other);
-  const UCesiumGaussianSplatDataInterface* OtherSplatInterface =
-      Cast<const UCesiumGaussianSplatDataInterface>(Other);
-  return bIsEqual && OtherSplatInterface &&
-         OtherSplatInterface->SplatSystem == this->SplatSystem;
-}
-
 bool UCesiumGaussianSplatDataInterface::CanExecuteOnTarget(
     ENiagaraSimTarget target) const {
   return target == ENiagaraSimTarget::GPUComputeSim;
@@ -838,25 +812,11 @@ FScopeLock UCesiumGaussianSplatDataInterface::LockGaussianBuffers() {
   return FScopeLock(&this->GetProxyAs<FNDIGaussianSplatProxy>()->BufferLock);
 }
 
-void UCesiumGaussianSplatDataInterface::SetGaussianSplatSubsystem(
-    UCesiumGaussianSplatSubsystem* SplatSystem) {
-  this->SplatSystem = SplatSystem;
-}
-
-#if WITH_EDITOR
-void UCesiumGaussianSplatDataInterface::PostEditChangeProperty(
-    FPropertyChangedEvent& PropertyChangedEvent) {
-  UNiagaraDataInterface::PostEditChangeProperty(PropertyChangedEvent);
-
-  if (!HasAnyFlags(RF_ClassDefaultObject)) {
-    if (PropertyChangedEvent.GetMemberPropertyName() ==
-        GET_MEMBER_NAME_CHECKED(
-            UCesiumGaussianSplatDataInterface,
-            SplatSystem)) {
-      FNDIGaussianSplatProxy* ThisProxy =
-          this->GetProxyAs<FNDIGaussianSplatProxy>();
-      ThisProxy->bNeedsUpdate = true;
-    }
+UCesiumGaussianSplatSubsystem*
+UCesiumGaussianSplatDataInterface::GetSubsystem() const {
+  if (!IsValid(GEngine)) {
+    return nullptr;
   }
+
+  return GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
 }
-#endif

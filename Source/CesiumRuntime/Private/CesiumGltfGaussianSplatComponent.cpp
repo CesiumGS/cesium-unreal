@@ -121,14 +121,13 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
   UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       CesiumToUnrealTransform);
-  UWorld* World = GetWorld();
-  if (IsValid(World)) {
-    UCesiumGaussianSplatSubsystem* SplatSubsystem =
-        World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
-    ensure(SplatSubsystem);
 
-    SplatSubsystem->RecomputeBounds();
-  }
+  check(GEngine);
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+  ensure(SplatSubsystem);
+
+  SplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::SetData(
@@ -188,7 +187,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
           Position.X / RESCALE_FACTOR,
           Position.Y / RESCALE_FACTOR,
           Position.Z / RESCALE_FACTOR);
-      this->Bounds->Max = Bounds->Min; 
+      this->Bounds->Max = Bounds->Min;
     }
   }
 
@@ -401,11 +400,9 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
-  UWorld* World = GetWorld();
-  ensure(World);
-
+  check(GEngine);
   UCesiumGaussianSplatSubsystem* SplatSubsystem =
-      World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
   ensure(SplatSubsystem);
 
   SplatSubsystem->RegisterSplat(this);
@@ -413,12 +410,17 @@ void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
   Super::BeginDestroy();
-  UWorld* World = GetWorld();
-  if (IsValid(World)) {
-    UCesiumGaussianSplatSubsystem* SplatSubsystem =
-        World->GetSubsystem<UCesiumGaussianSplatSubsystem>();
-    ensure(SplatSubsystem);
 
-    SplatSubsystem->UnregisterSplat(this);
+  if (!IsValid(GEngine)) {
+    return;
   }
+
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+
+  if (!IsValid(SplatSubsystem)) {
+    return;
+  }
+
+  SplatSubsystem->UnregisterSplat(this);
 }

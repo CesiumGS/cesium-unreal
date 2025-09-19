@@ -2,46 +2,66 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "UObject/Interface.h"
+
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
-#include "Subsystems/WorldSubsystem.h"
+
+#include "Subsystems/EngineSubsystem.h"
 
 #include "CesiumGaussianSplatDataInterface.h"
 #include "CesiumGltfGaussianSplatComponent.h"
 
 #include "CesiumGaussianSplatSubsystem.generated.h"
 
+/**
+ * A blank actor type just to signify the splat singleton actor.
+ */
 UCLASS()
-class UCesiumGaussianSplatSubsystem : public UWorldSubsystem {
+class ACesiumGaussianSplatActor : public AActor {
+  GENERATED_BODY()
+};
+
+UCLASS()
+class UCesiumGaussianSplatSubsystem : public UEngineSubsystem,
+                                      public FTickableGameObject {
   GENERATED_BODY()
 
 public:
-  UCesiumGaussianSplatSubsystem();
+  // static UCesiumGaussianSplatSubsystem* Get(UWorld* InWorld);
+  virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+  virtual void Deinitialize() override;
 
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   void RecomputeBounds();
   int32 GetNumSplats() const;
 
-  virtual void OnWorldBeginPlay(UWorld& InWorld) override;
-
   UPROPERTY()
   TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
-private:
-  void UpdateNiagaraComponent();
-  void OnTransformUpdated(
-      USceneComponent* UpdatedComponent,
-      EUpdateTransformFlags UpdateTransformFlag,
-      ETeleportType Teleport);
+  virtual void Tick(float DeltaTime) override;
+  virtual ETickableTickType GetTickableTickType() const override;
+  virtual TStatId GetStatId() const override;
+  virtual bool IsTickableWhenPaused() const override;
+  virtual bool IsTickableInEditor() const override;
+  virtual bool IsTickable() const override;
 
+private:
+  void InitializeForWorld(UWorld& InWorld);
+
+  void UpdateNiagaraComponent();
   UCesiumGaussianSplatDataInterface* GetSplatInterface() const;
 
-  TArray<FDelegateHandle> SplatDelegateHandles;
+  UPROPERTY()
+  UWorld* LastCreatedWorld = nullptr;
 
   UPROPERTY()
-  UNiagaraComponent* NiagaraComponent;
+  UNiagaraComponent* NiagaraComponent = nullptr;
 
   UPROPERTY()
-  AActor* NiagaraActor;
+  ACesiumGaussianSplatActor* NiagaraActor = nullptr;
+
+  bool bIsTickEnabled = false;
 };

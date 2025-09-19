@@ -69,8 +69,6 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 
   virtual void
   GetFunctions(TArray<FNiagaraFunctionSignature>& OutFunctions) override;
-  virtual bool
-  CopyToInternal(UNiagaraDataInterface* Destination) const override;
 #endif
 
   virtual void BuildShaderParameters(
@@ -81,18 +79,9 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 
   virtual void PostInitProperties() override;
 
-  virtual bool Equals(const UNiagaraDataInterface* Other) const override;
-
-#if WITH_EDITOR
-  virtual void PostEditChangeProperty(
-      struct FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
-
-  UPROPERTY()
-  UCesiumGaussianSplatSubsystem* SplatSystem;
+  UCesiumGaussianSplatSubsystem* GetSubsystem() const;
 
 public:
-  void SetGaussianSplatSubsystem(UCesiumGaussianSplatSubsystem* SplatSystem);
   void Refresh();
   void RefreshMatrices();
 
