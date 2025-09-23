@@ -683,14 +683,21 @@ static void setUnlitNormals(
         glm::dvec4(
             VecMath::createVector3D(FVector(positionBuffer.VertexPosition(i))),
             1.0));
-    glm::dvec3 normal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+
+    glm::dvec3 surfaceNormal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+
+    if (surfaceNormal == glm::dvec3(0.0)) {
+      // This can happen for tilesets georeferenced at the center of the earth,
+      // resulting in NaN normals. Manually assign a normal aligned with Z-up.
+      surfaceNormal = glm::dvec3(0.0, 0.0, 1.0);
+    }
 
     normalBuffer.SetVertexTangents(
         i,
         FVector3f(0.0f),
         FVector3f(0.0),
-        FVector3f(VecMath::createVector(
-            glm::normalize(ellipsoidFixedToVertex * glm::dvec4(normal, 0.0)))));
+        FVector3f(VecMath::createVector(glm::normalize(
+            ellipsoidFixedToVertex * glm::dvec4(surfaceNormal, 0.0)))));
   }
 }
 
@@ -1408,14 +1415,14 @@ static void loadPrimitive(
       !options.pMeshOptions->pNodeOptions->pModelOptions
            ->ignoreKhrMaterialsUnlit;
 
-  // We can't calculate flat normals for points or lines, so we have to force
-  // them to be unlit if no normals are specified. Otherwise this causes a
-  // crash when attempting to calculate flat normals.
   bool isTriangles =
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN ||
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP;
 
+  // We can't calculate flat normals for points or lines, so we have to force
+  // them to be unlit if no normals are specified. Otherwise this causes a
+  // crash when attempting to calculate flat normals.
   if (!isTriangles && !hasNormals) {
     primitiveResult.isUnlit = true;
   }
@@ -1700,16 +1707,14 @@ static void loadPrimitive(
             FVector3f(normal.X, -normal.Y, normal.Z));
       }
     }
+  } else if (primitiveResult.isUnlit || !isTriangles) {
+    setUnlitNormals(
+        LODResources.VertexBuffers,
+        ellipsoid,
+        transform * yInvertMatrix * scaleMatrix);
   } else {
-    if (primitiveResult.isUnlit || !isTriangles) {
-      setUnlitNormals(
-          LODResources.VertexBuffers,
-          ellipsoid,
-          transform * yInvertMatrix * scaleMatrix);
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-      computeFlatNormals(LODResources.VertexBuffers);
-    }
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
+    computeFlatNormals(LODResources.VertexBuffers);
   }
 
   if (hasTangents) {
@@ -1746,7 +1751,7 @@ static void loadPrimitive(
 
   FStaticMeshSectionArray& Sections = LODResources.Sections;
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  // This will be ignored if the primitive contains points.
+  // This will be ignored if the primitive contains lines or points.
   section.NumTriangles = indices.Num() / 3;
   section.FirstIndex = 0;
   section.MinVertexIndex = 0;
