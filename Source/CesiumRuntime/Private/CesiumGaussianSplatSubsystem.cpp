@@ -110,6 +110,8 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
 #endif
   ACesiumGaussianSplatActor* SplatActor =
       InWorld.SpawnActor<ACesiumGaussianSplatActor>(ActorParams);
+  SplatActor->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   USceneComponent* SceneComponent =
       CastChecked<USceneComponent>(SplatActor->AddComponentByClass(
@@ -239,7 +241,7 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     return;
   }
 
-  if (World == this->LastCreatedWorld) {
+  if (IsValid(this->NiagaraActor) && World == this->LastCreatedWorld) {
     return;
   }
 
