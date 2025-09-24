@@ -180,6 +180,7 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
   }
 
   this->UpdateNiagaraComponent();
+  this->RecomputeBounds();
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
@@ -192,6 +193,7 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
   }
 
   this->UpdateNiagaraComponent();
+  this->RecomputeBounds();
 }
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
