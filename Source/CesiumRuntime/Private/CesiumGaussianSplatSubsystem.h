@@ -64,4 +64,5 @@ private:
   ACesiumGaussianSplatActor* NiagaraActor = nullptr;
 
   bool bIsTickEnabled = false;
+  bool bSystemNeedsReset = false;
 };

@@ -204,6 +204,7 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
     this->NiagaraComponent->SetSystemFixedBounds(Bounds);
     UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
     GetSplatInterface()->RefreshMatrices();
+    this->bSystemNeedsReset = true;
   }
 }
 
@@ -213,7 +214,7 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
         FName(TEXT("GridSize")),
         (int32)std::ceil(std::sqrt((double)this->GetNumSplats())));
     GetSplatInterface()->Refresh();
-    this->NiagaraComponent->ResetSystem();
+    this->bSystemNeedsReset = true;
   }
 }
 
@@ -241,6 +242,15 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     this->NiagaraComponent = nullptr;
     this->LastCreatedWorld = nullptr;
     return;
+  }
+
+  if (IsValid(this->NiagaraActor)) {
+    if (this->bSystemNeedsReset) {
+      // We want to avoid calling ResetSystem multiple times a frame, so we
+      // combine the calls into one.
+      this->bSystemNeedsReset = false;
+      this->NiagaraComponent->ResetSystem();
+    }
   }
 
   if (IsValid(this->NiagaraActor) && World == this->LastCreatedWorld) {
