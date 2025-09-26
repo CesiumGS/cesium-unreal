@@ -171,9 +171,6 @@ public:
      is complete, passing this tileset actor and the array of polygon points (or
      empty on failure).
   */
-  void GenerateSilhouettePolygonAsync(
-      float SpacingMeters,
-      FOnSilhouetteGenerated OnComplete);
   UFUNCTION(BlueprintCallable, Category = "Cesium|Silhouette")
   void GenerateSilhouettePolygonAsync(
       float SpacingMeters,
