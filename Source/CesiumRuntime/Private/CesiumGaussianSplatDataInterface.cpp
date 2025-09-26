@@ -4,6 +4,7 @@
 
 #include "CesiumGaussianSplatSubsystem.h"
 #include "CesiumGltfGaussianSplatComponent.h"
+#include "CesiumRuntime.h"
 #include "Containers/Map.h"
 #include "NiagaraCompileHashVisitor.h"
 #include "NiagaraComponent.h"
@@ -129,10 +130,11 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
   this->bNeedsUpdate = false;
 
-  const int32 NumSplats = SplatSystem->GetNumSplats();
-
   ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
-  ([this, SplatSystem, NumSplats](FRHICommandListImmediate& RHICmdList) {
+  ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+    FScopeLock ScopeLock(&this->BufferLock);
+    const int32 NumSplats = SplatSystem->GetNumSplats();
+
     int32 TotalCoeffsCount = 0;
     for (const UCesiumGltfGaussianSplatComponent* SplatComponent :
          SplatSystem->SplatComponents) {
@@ -210,7 +212,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     }
 
     if (ExpectedPosBytes > 0) {
-      FScopeLock ScopeLock(&this->BufferLock);
       {
         float* PositionsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->PositionsBuffer.Buffer,
@@ -431,14 +432,8 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
     static const TCHAR* FormatBounds = TEXT(R"(
 		void {FunctionName}(int Index, out float4 OutOrientation)
 		{
-			int SplatIndex = {IndicesBuffer}[Index];
 			float4 q2 = {Buffer}[Index];
-			float4 q1 = {MatrixBuffer}[SplatIndex * 7 + 6];
-			// Multiply the two quaternions
-			OutOrientation = q2;/*float4(
-				q2.xyz * q1.w + q1.xyz * q2.w + cross(q1.xyz, q2.xyz),
-				q1.w * q2.w - dot(q1.xyz, q2.xyz)
-			);*/
+			OutOrientation = q2;
 		}
 		)");
 

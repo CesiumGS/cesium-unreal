@@ -35,7 +35,7 @@ FBox CalculateBounds(
     } else {
       Bounds = FBox(
           FVector4(BoundsMin.X, BoundsMin.Y, BoundsMin.Z, 0.0),
-          FVector4(BoundsMax.X, BoundsMax.Z, BoundsMax.Z, 0.0));
+          FVector4(BoundsMax.X, BoundsMax.Y, BoundsMax.Z, 0.0));
     }
   }
   return Bounds.value_or(FBox());
@@ -80,12 +80,7 @@ UWorld* GetPrimaryWorld() {
 } // namespace
 
 int32 UCesiumGaussianSplatSubsystem::GetNumSplats() const {
-  int32 Num = 0;
-  for (UCesiumGltfGaussianSplatComponent* Component : this->SplatComponents) {
-    Num += Component->NumSplats;
-  }
-
-  return Num;
+  return this->NumSplats;
 }
 
 void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
@@ -170,30 +165,36 @@ void UCesiumGaussianSplatSubsystem::Deinitialize() {
 
 void UCesiumGaussianSplatSubsystem::RegisterSplat(
     UCesiumGltfGaussianSplatComponent* Component) {
+  check(Component);
+
   if (IsValid(this->NiagaraComponent)) {
     // Lock buffers when adding components to avoid adding components while
     // uploading previous components to GPU
     FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
     this->SplatComponents.Add(Component);
+    this->NumSplats += Component->NumSplats;
   } else {
     this->SplatComponents.Add(Component);
+    this->NumSplats += Component->NumSplats;
   }
 
   this->UpdateNiagaraComponent();
-  this->RecomputeBounds();
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
     UCesiumGltfGaussianSplatComponent* Component) {
+  check(Component);
+
   if (IsValid(this->NiagaraComponent)) {
     FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
     this->SplatComponents.Remove(Component);
+    this->NumSplats -= Component->NumSplats;
   } else {
     this->SplatComponents.Remove(Component);
+    this->NumSplats -= Component->NumSplats;
   }
 
   this->UpdateNiagaraComponent();
-  this->RecomputeBounds();
 }
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
@@ -205,6 +206,7 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
     UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
     GetSplatInterface()->RefreshMatrices();
     this->bSystemNeedsReset = true;
+    // this->NiagaraComponent->ResetSystem();
   }
 }
 
@@ -212,8 +214,9 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
   if (IsValid(this->NiagaraComponent)) {
     this->NiagaraComponent->SetVariableInt(
         FName(TEXT("GridSize")),
-        (int32)std::ceil(std::sqrt((double)this->GetNumSplats())));
+        (int32)std::ceil(std::cbrt((double)this->GetNumSplats())));
     GetSplatInterface()->Refresh();
+    this->NiagaraComponent->ResetSystem();
     this->bSystemNeedsReset = true;
   }
 }
@@ -249,7 +252,7 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
       // We want to avoid calling ResetSystem multiple times a frame, so we
       // combine the calls into one.
       this->bSystemNeedsReset = false;
-      this->NiagaraComponent->ResetSystem();
+      // this->NiagaraComponent->ResetSystem();
     }
   }
 

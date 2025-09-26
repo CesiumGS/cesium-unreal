@@ -65,4 +65,5 @@ private:
 
   bool bIsTickEnabled = false;
   bool bSystemNeedsReset = false;
+  int32 NumSplats = 0;
 };

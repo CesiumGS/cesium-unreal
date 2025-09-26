@@ -122,6 +122,20 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
   UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       CesiumToUnrealTransform);
 
+  const FTransform& Transform = this->GetComponentTransform();
+
+  check(GEngine);
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+  ensure(SplatSubsystem);
+
+  SplatSubsystem->RecomputeBounds();
+}
+
+void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
+    EUpdateTransformFlags /*UpdateTransformFlags*/,
+    ETeleportType /*Teleport*/) {
+  const FTransform& Transform = this->GetComponentTransform();
   check(GEngine);
   UCesiumGaussianSplatSubsystem* SplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
@@ -384,18 +398,19 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
       Transform.GetRotation().X,
       Transform.GetRotation().Y,
       Transform.GetRotation().Z);
-  glm::mat4x4 mat = glm::identity<glm::mat4x4>();
-  mat = glm::translate(
-      glm::mat4_cast(quat) * glm::scale(
-                                 mat,
-                                 glm::vec3(
-                                     Transform.GetScale3D().X,
-                                     Transform.GetScale3D().Y,
-                                     Transform.GetScale3D().Z)),
-      glm::vec3(
-          Transform.GetLocation().X * RESCALE_FACTOR,
-          Transform.GetLocation().Y * RESCALE_FACTOR,
-          Transform.GetLocation().Z * RESCALE_FACTOR));
+  const glm::mat4x4 mat = glm::translate(
+                              glm::identity<glm::mat4x4>(),
+                              glm::vec3(
+                                  Transform.GetLocation().X,
+                                  Transform.GetLocation().Y,
+                                  Transform.GetLocation().Z)) *
+                          glm::mat4_cast(quat) *
+                          glm::scale(
+                              glm::identity<glm::mat4x4>(),
+                              glm::vec3(
+                                  Transform.GetScale3D().X,
+                                  Transform.GetScale3D().Y,
+                                  Transform.GetScale3D().Z));
   return mat;
 }
 
