@@ -64,6 +64,13 @@ DECLARE_DELEGATE_ThreeParams(
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedLoadTrigger);
 
+DECLARE_DYNAMIC_DELEGATE_TwoParams(
+    FOnSilhouetteGenerated,
+    class ACesium3DTileset*,
+    Tileset,
+    const TArray<FVector>&,
+    Polygon);
+
 CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
     OnCesium3DTilesetLoadFailure;
 
@@ -137,6 +144,37 @@ public:
   void SampleHeightMostDetailed(
       const TArray<FVector>& LongitudeLatitudeHeightArray,
       FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
+
+  /**
+        @brief Initiates an asynchronous computation of a top-down silhouette
+     polygon for this tileset, representing the 2D convex hull of its geometry
+     projected onto the ground plane.
+
+        This function generates a grid of sampling points over the tileset's
+     bounding volume, using the specified spacing or an automatically computed
+     value if zero. It then queries the tileset for height at each point to
+     identify occupied areas (where sampling succeeds), computes the convex hull
+     of those points, ensures counter-clockwise orientation, and closes the
+     polygon by duplicating the first point at the end. The result is provided
+     in Unreal world coordinates with Z=0.
+
+        If the bounds are invalid, sampling fails entirely, or too few points
+     are occupied, an empty array is returned. For large tilesets, auto-spacing
+     (when SpacingMeters=0) adapts to maintain performance by targeting a
+     reasonable number of grid points.
+
+        @param SpacingMeters The desired grid spacing in meters. If greater than
+     zero, used directly (converted to Unreal units). If zero, automatically
+     computed based on the tileset's bounds to target approximately 10,000
+     points. If negative, immediately returns an empty polygon.
+        @param OnComplete A callback invoked on the game thread when computation
+     is complete, passing this tileset actor and the array of polygon points (or
+     empty on failure).
+  */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Silhouette")
+  void GenerateSilhouettePolygonAsync(
+      float SpacingMeters,
+      FOnSilhouetteGenerated OnComplete);
 
 private:
   /**

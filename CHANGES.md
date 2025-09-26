@@ -1,5 +1,7 @@
 # Change Log {#changes}
 
+Added a newAsync function to Cesium3DTileset actor that enables a call to automatically generate a top down silhouette of the tileset geometry.
+
 ### v2.19.1 - 2025-09-02
 
 ##### Fixes :wrench:
