@@ -9,10 +9,8 @@ UCesiumGoogleMapTilesRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
   return std::make_unique<CesiumRasterOverlays::GoogleMapTilesRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
-      TCHAR_TO_UTF8(*this->Key),
-      "satellite",
-      "en-US",
-      "US",
-      CesiumRasterOverlays::GoogleMapTilesOptions{},
+      CesiumRasterOverlays::GoogleMapTilesNewSessionParameters{
+          .key = TCHAR_TO_UTF8(*this->Key),
+      },
       options);
 }
