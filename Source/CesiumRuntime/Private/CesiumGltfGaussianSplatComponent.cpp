@@ -368,7 +368,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
             meshPrimitive,
             this->SphericalHarmonics,
             shStride,
-            3 * 3,
+            3 * 4,
             2)) {
       return;
     }
@@ -380,7 +380,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
             meshPrimitive,
             this->SphericalHarmonics,
             shStride,
-            5 * 3 + 3 * 3,
+            5 * 4 + 3 * 4,
             3)) {
       return;
     }
