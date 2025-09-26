@@ -4,6 +4,7 @@
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTilesSelection/EllipsoidTilesetLoader.h"
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
@@ -18,6 +19,11 @@
 #include "CesiumCameraManager.h"
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
+#include "CesiumGeometry/BoundingSphere.h"
+#include "CesiumGeometry/OrientedBoundingBox.h"
+#include "CesiumGeospatial/BoundingRegion.h"
+#include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumGltf/ImageAsset.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
@@ -41,16 +47,23 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
 #include "Math/UnrealMathUtility.h"
+#include "Math/UnrealMathUtility.h" // for FMath, KINDA_SMALL_NUMBER
+#include "Math/Vector2D.h"
 #include "PixelFormat.h"
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+#include <algorithm>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <limits> // for FLT_MAX
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <variant>
+#include <vector>
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include "HAL/PlatformFileManager.h"
@@ -146,10 +159,11 @@ void ACesium3DTileset::SampleHeightMostDetailed(
   positions.reserve(LongitudeLatitudeHeightArray.Num());
 
   for (const FVector& position : LongitudeLatitudeHeightArray) {
-    positions.emplace_back(CesiumGeospatial::Cartographic::fromDegrees(
-        position.X,
-        position.Y,
-        position.Z));
+    positions.emplace_back(
+        CesiumGeospatial::Cartographic::fromDegrees(
+            position.X,
+            position.Y,
+            position.Z));
   }
 
   auto sampleHeights = [this, &positions]() mutable {
@@ -176,7 +190,7 @@ void ACesium3DTileset::SampleHeightMostDetailed(
 
   sampleHeights().thenImmediately(
       [this, OnHeightsSampled = std::move(OnHeightsSampled)](
-          Cesium3DTilesSelection::SampleHeightResult&& result) {
+          Cesium3DTilesSelection::SampleHeightResult&& result) mutable {
         if (!IsValid(this))
           return;
 
@@ -209,7 +223,22 @@ void ACesium3DTileset::SampleHeightMostDetailed(
           warnings.Emplace(UTF8_TO_TCHAR(warning.c_str()));
         }
 
-        OnHeightsSampled.ExecuteIfBound(this, sampleHeightResults, warnings);
+        // Schedule the callback on the game thread with data preserved in
+        // closure
+        AsyncTask(
+            ENamedThreads::GameThread,
+            [this,
+             OnHeightsSampled = std::move(OnHeightsSampled),
+             sampleHeightResults = std::move(sampleHeightResults),
+             warnings = std::move(warnings)]() mutable {
+              if (!IsValid(this))
+                return;
+
+              OnHeightsSampled.ExecuteIfBound(
+                  this,
+                  sampleHeightResults,
+                  warnings);
+            });
       });
 }
 
@@ -399,6 +428,61 @@ bool MapsAreEqual(
   return true;
 }
 
+} // namespace
+
+namespace {
+// Helper function for cross product in 2D
+static float
+CrossProduct(const FVector2D& O, const FVector2D& A, const FVector2D& B) {
+  return (A.X - O.X) * (B.Y - O.Y) - (A.Y - O.Y) * (B.X - O.X);
+}
+
+// Compute 2D convex hull using monotone chain algorithm
+static TArray<FVector2D>
+ComputeConvexHull(const TArray<FVector2D>& InputPoints) {
+  if (InputPoints.Num() < 3) {
+    TArray<FVector2D> Hull = InputPoints;
+    Hull.Sort([](const FVector2D& A, const FVector2D& B) {
+      return A.X < B.X || (A.X == B.X && A.Y < B.Y);
+    });
+    return Hull;
+  }
+
+  TArray<FVector2D> Points = InputPoints;
+  Points.Sort([](const FVector2D& A, const FVector2D& B) {
+    return A.X < B.X || (A.X == B.X && A.Y < B.Y);
+  });
+
+  TArray<FVector2D> Lower;
+  for (const FVector2D& P : Points) {
+    while (Lower.Num() >= 2 &&
+           CrossProduct(Lower[Lower.Num() - 2], Lower[Lower.Num() - 1], P) <=
+               0.0f) {
+      Lower.Pop();
+    }
+    Lower.Add(P);
+  }
+
+  TArray<FVector2D> Upper;
+  for (int i = Points.Num() - 1; i >= 0; --i) {
+    const FVector2D& P = Points[i];
+    while (Upper.Num() >= 2 &&
+           CrossProduct(Upper[Upper.Num() - 2], Upper[Upper.Num() - 1], P) <=
+               0.0f) {
+      Upper.Pop();
+    }
+    Upper.Add(P);
+  }
+
+  // Remove last point of each hull to avoid duplication
+  Lower.Pop();
+  Upper.Pop();
+
+  TArray<FVector2D> Hull;
+  Hull.Append(Lower);
+  Hull.Append(Upper);
+  return Hull;
+}
 } // namespace
 
 void ACesium3DTileset::SetRequestHeaders(
@@ -1083,9 +1167,10 @@ void ACesium3DTileset::LoadTileset() {
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
   for (const auto& [Key, Value] : this->RequestHeaders) {
-    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
-        TCHAR_TO_UTF8(*Key),
-        TCHAR_TO_UTF8(*Value)});
+    options.requestHeaders.emplace_back(
+        CesiumAsync::IAssetAccessor::THeader{
+            TCHAR_TO_UTF8(*Key),
+            TCHAR_TO_UTF8(*Value)});
   }
 
   switch (this->TilesetSource) {
@@ -1559,9 +1644,10 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
       glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
-  glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
-      unrealWorldToTileset *
-      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
+  glm::dvec3 tilesetCameraFront = glm::normalize(
+      glm::dvec3(
+          unrealWorldToTileset *
+          glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
@@ -2315,3 +2401,357 @@ void ACesium3DTileset::RuntimeSettingsChanged(
   }
 }
 #endif
+
+void ACesium3DTileset::GenerateSilhouettePolygonAsync(
+    float SpacingMeters,
+    FOnSilhouetteGenerated OnComplete) {
+  if (SpacingMeters < 0.0f) // Treat negative as invalid, return empty
+  {
+    OnComplete.ExecuteIfBound(this, TArray<FVector>());
+    return;
+  }
+
+  this->ResolveGeoreference();
+
+  ACesiumGeoreference* Georeference = this->ResolveGeoreference();
+  if (!IsValid(Georeference)) {
+    OnComplete.ExecuteIfBound(this, TArray<FVector>());
+    return;
+  }
+
+  if (this->_pTileset == nullptr) {
+    this->LoadTileset();
+  }
+
+  Cesium3DTilesSelection::Tileset* pTileset = this->_pTileset.Get();
+  if (!pTileset) {
+    OnComplete.ExecuteIfBound(this, TArray<FVector>());
+    return;
+  }
+
+  const Cesium3DTilesSelection::Tile* pRootTile = pTileset->getRootTile();
+  if (!pRootTile) {
+    OnComplete.ExecuteIfBound(this, TArray<FVector>());
+    return;
+  }
+
+  const Cesium3DTilesSelection::BoundingVolume& BoundingVolume =
+      pRootTile->getBoundingVolume();
+
+  // Get ellipsoid for conversions
+  const CesiumGeospatial::Ellipsoid& ellipsoid =
+      Georeference->GetEllipsoid()->GetNativeEllipsoid();
+
+  // Get min/max longitude and latitude from the bounding volume
+  double MinLongitude = 361.0;
+  double MaxLongitude = -361.0;
+  double MinLatitude = 91.0;
+  double MaxLatitude = -91.0;
+
+  // Handle different bounding volume types
+  if (std::holds_alternative<CesiumGeospatial::BoundingRegion>(
+          BoundingVolume)) {
+    const auto& Region =
+        std::get<CesiumGeospatial::BoundingRegion>(BoundingVolume);
+    const auto& Rectangle = Region.getRectangle();
+    MinLongitude = CesiumUtility::Math::radiansToDegrees(Rectangle.getWest());
+    MaxLongitude = CesiumUtility::Math::radiansToDegrees(Rectangle.getEast());
+    MinLatitude = CesiumUtility::Math::radiansToDegrees(Rectangle.getSouth());
+    MaxLatitude = CesiumUtility::Math::radiansToDegrees(Rectangle.getNorth());
+  } else if (std::holds_alternative<CesiumGeometry::OrientedBoundingBox>(
+                 BoundingVolume)) {
+    const auto& OBB =
+        std::get<CesiumGeometry::OrientedBoundingBox>(BoundingVolume);
+    glm::dvec3 Center = OBB.getCenter();
+    const glm::dmat3& HalfAxes = OBB.getHalfAxes();
+
+    // Compute 8 corners
+    for (int i = 0; i < 8; ++i) {
+      double sx = (i & 1) ? 1.0 : -1.0;
+      double sy = (i & 2) ? 1.0 : -1.0;
+      double sz = (i & 4) ? 1.0 : -1.0;
+
+      glm::dvec3 Offset =
+          HalfAxes[0] * sx + HalfAxes[1] * sy + HalfAxes[2] * sz;
+      glm::dvec3 Corner = Center + Offset;
+
+      auto cartoOpt = ellipsoid.cartesianToCartographic(Corner);
+      if (cartoOpt) {
+        const CesiumGeospatial::Cartographic& Cartographic = *cartoOpt;
+        double Longitude =
+            CesiumUtility::Math::radiansToDegrees(Cartographic.longitude);
+        double Latitude =
+            CesiumUtility::Math::radiansToDegrees(Cartographic.latitude);
+
+        MinLongitude = FMath::Min((double)MinLongitude, Longitude);
+        MaxLongitude = FMath::Max((double)MaxLongitude, Longitude);
+        MinLatitude = FMath::Min((double)MinLatitude, Latitude);
+        MaxLatitude = FMath::Max((double)MaxLatitude, Latitude);
+      }
+    }
+  } else if (std::holds_alternative<CesiumGeometry::BoundingSphere>(
+                 BoundingVolume)) {
+    const auto& Sphere =
+        std::get<CesiumGeometry::BoundingSphere>(BoundingVolume);
+    glm::dvec3 Center = Sphere.getCenter();
+    double Radius = Sphere.getRadius();
+
+    auto cartoOpt = ellipsoid.cartesianToCartographic(Center);
+    if (cartoOpt) {
+      const CesiumGeospatial::Cartographic& CenterCartographic = *cartoOpt;
+      double CenterLongitude =
+          CesiumUtility::Math::radiansToDegrees(CenterCartographic.longitude);
+      double CenterLatitude =
+          CesiumUtility::Math::radiansToDegrees(CenterCartographic.latitude);
+
+      // Approximate delta for lon/lat using Earth's radius
+      constexpr double EarthRadius = 6371000.0;
+      double DeltaLongitudeRad =
+          Radius / (EarthRadius * std::cos(CenterCartographic.latitude));
+      double DeltaLatitudeRad = Radius / EarthRadius;
+      double DeltaLongitude =
+          CesiumUtility::Math::radiansToDegrees(DeltaLongitudeRad);
+      double DeltaLatitude =
+          CesiumUtility::Math::radiansToDegrees(DeltaLatitudeRad);
+
+      MinLongitude = CenterLongitude - DeltaLongitude;
+      MaxLongitude = CenterLongitude + DeltaLongitude;
+      MinLatitude = CenterLatitude - DeltaLatitude;
+      MaxLatitude = CenterLatitude + DeltaLatitude;
+    }
+  } else {
+    // Unsupported type
+    OnComplete.ExecuteIfBound(this, TArray<FVector>());
+    return;
+  }
+
+  // Now generate the 4 corner points in lon/lat/height (height = 0 for ground
+  // silhouette)
+  TArray<FVector> CornersLLH;
+  CornersLLH.Add(FVector((float)MinLongitude, (float)MinLatitude, 0.0f));
+  CornersLLH.Add(FVector((float)MaxLongitude, (float)MinLatitude, 0.0f));
+  CornersLLH.Add(FVector((float)MaxLongitude, (float)MaxLatitude, 0.0f));
+  CornersLLH.Add(FVector((float)MinLongitude, (float)MaxLatitude, 0.0f));
+
+  // Convert corners to world positions to get bounds in world space
+  float MinX = FLT_MAX, MaxX = -FLT_MAX, MinY = FLT_MAX, MaxY = -FLT_MAX;
+  for (const FVector& LLH : CornersLLH) {
+    FVector WorldPos =
+        Georeference->TransformLongitudeLatitudeHeightPositionToUnreal(LLH);
+    MinX = FMath::Min(MinX, WorldPos.X);
+    MaxX = FMath::Max(MaxX, WorldPos.X);
+    MinY = FMath::Min(MinY, WorldPos.Y);
+    MaxY = FMath::Max(MaxY, WorldPos.Y);
+  }
+
+  // Auto-compute spacing if SpacingMeters == 0
+  float SpacingCm;
+  if (SpacingMeters > 0.0f) {
+    SpacingCm = SpacingMeters * 100.0f; // Convert meters to cm (Unreal units)
+  } else {
+    float WidthCm = MaxX - MinX;
+    float HeightCm = MaxY - MinY;
+    float AreaCm2 = WidthCm * HeightCm;
+    if (AreaCm2 <= 0.0f) {
+      OnComplete.ExecuteIfBound(this, TArray<FVector>());
+      return;
+    }
+    constexpr float TargetGridPoints =
+        10000.0f; // Adjust based on perf (higher = denser/more accurate but
+                  // slower)
+    SpacingCm = FMath::Max(
+        100.0f,
+        FMath::Sqrt(
+            AreaCm2 /
+            TargetGridPoints)); // Min 1m (100cm) to avoid tiny spacings
+  }
+
+  // Capture weak pointer to self for thread safety
+  TWeakObjectPtr<ACesium3DTileset> WeakThis = this;
+
+  // Offload grid generation to background thread
+  AsyncTask(
+      ENamedThreads::AnyBackgroundThreadNormalTask,
+      [WeakThis,
+       MinX,
+       MaxX,
+       MinY,
+       MaxY,
+       SpacingCm,
+       Georeference = TWeakObjectPtr<ACesiumGeoreference>(Georeference),
+       OnComplete = std::move(OnComplete)]() mutable {
+        if (!WeakThis.IsValid() || !Georeference.IsValid()) {
+          return;
+        }
+
+        // Generate grid points in world XY
+        TArray<FVector2D> GridPoints2D;
+        float StartX = FMath::FloorToFloat(MinX / SpacingCm) * SpacingCm;
+        float StartY = FMath::FloorToFloat(MinY / SpacingCm) * SpacingCm;
+        for (float X = StartX; X <= MaxX + KINDA_SMALL_NUMBER; X += SpacingCm) {
+          for (float Y = StartY; Y <= MaxY + KINDA_SMALL_NUMBER;
+               Y += SpacingCm) {
+            GridPoints2D.Emplace(X, Y);
+          }
+        }
+
+        constexpr int32 MaxGridPoints = 25000; // Safety cap; adjust as needed
+        if (GridPoints2D.Num() > MaxGridPoints) {
+          // Too many points: abort with empty result (alternatively, increase
+          // SpacingCm and retry)
+          AsyncTask(
+              ENamedThreads::GameThread,
+              [WeakThis, OnComplete = std::move(OnComplete)]() {
+                if (WeakThis.IsValid()) {
+                  OnComplete.ExecuteIfBound(WeakThis.Get(), TArray<FVector>());
+                }
+              });
+          return;
+        }
+
+        if (GridPoints2D.Num() == 0) {
+          AsyncTask(
+              ENamedThreads::GameThread,
+              [WeakThis, OnComplete = std::move(OnComplete)]() {
+                if (WeakThis.IsValid()) {
+                  OnComplete.ExecuteIfBound(WeakThis.Get(), TArray<FVector>());
+                }
+              });
+          return;
+        }
+
+        // Convert grid to LLH for sampling (height=0)
+        TArray<FVector> SamplePositionsLLH;
+        SamplePositionsLLH.Reserve(GridPoints2D.Num());
+        for (const FVector2D& GridPoint : GridPoints2D) {
+          FVector WorldPos(
+              GridPoint.X,
+              GridPoint.Y,
+              0.0f); // Z=0 for ground level
+          FVector LLH =
+              Georeference->TransformUnrealPositionToLongitudeLatitudeHeight(
+                  WorldPos);
+          SamplePositionsLLH.Emplace(LLH.X, LLH.Y, 0.0f); // Input height=0
+        }
+
+        // Switch back to game thread to call SampleHeightMostDetailed
+        AsyncTask(
+            ENamedThreads::GameThread,
+            [WeakThis,
+             GridPoints2D = std::move(GridPoints2D),
+             SamplePositionsLLH = std::move(SamplePositionsLLH),
+             OnComplete = std::move(OnComplete)]() mutable {
+              if (!WeakThis.IsValid()) {
+                return;
+              }
+              ACesium3DTileset* This = WeakThis.Get();
+
+              // Define the lambda
+              auto SamplingLambda = [WeakThis,
+                                     OnComplete = std::move(OnComplete),
+                                     GridPoints2D = std::move(GridPoints2D)](
+                                        ACesium3DTileset* Tileset,
+                                        const TArray<FCesiumSampleHeightResult>&
+                                            SampleResults,
+                                        const TArray<FString>& Warnings) {
+                if (!WeakThis.IsValid() ||
+                    SampleResults.Num() != GridPoints2D.Num()) {
+                  OnComplete.ExecuteIfBound(WeakThis.Get(), TArray<FVector>());
+                  return;
+                }
+
+                // Copy GridPoints2D to local for safety
+                TArray<FVector2D> LocalGridPoints = GridPoints2D;
+
+                TArray<bool> Successes;
+                Successes.SetNumUninitialized(SampleResults.Num());
+
+                // Use indexed access instead of raw pointer to avoid debug
+                // assertion on stale pointers
+                for (int32 i = 0; i < SampleResults.Num(); ++i) {
+                  Successes[i] = SampleResults[i].SampleSuccess;
+                }
+
+                TArray<FVector2D> OccupiedPoints;
+                OccupiedPoints.Reserve(Successes.Num());
+
+                for (int32 i = 0; i < Successes.Num(); ++i) {
+                  if (Successes[i]) {
+                    OccupiedPoints.Emplace(LocalGridPoints[i]);
+                  }
+                }
+
+                if (OccupiedPoints.Num() < 3) {
+                  OnComplete.ExecuteIfBound(WeakThis.Get(), TArray<FVector>());
+                  return;
+                }
+
+                // Offload convex hull computation to background thread
+                AsyncTask(
+                    ENamedThreads::AnyBackgroundThreadNormalTask,
+                    [WeakThis,
+                     OccupiedPoints = std::move(OccupiedPoints),
+                     OnComplete = std::move(OnComplete)]() mutable {
+                      if (!WeakThis.IsValid()) {
+                        return;
+                      }
+
+                      TArray<FVector2D> Hull2D =
+                          ComputeConvexHull(OccupiedPoints);
+
+                      // Compute signed area to check orientation (positive =
+                      // CCW)
+                      auto IsCCW = [](const TArray<FVector2D>& Points) -> bool {
+                        if (Points.Num() < 3)
+                          return true; // Degenerate, assume ok
+                        float Area = 0.0f;
+                        for (int32 i = 0; i < Points.Num(); ++i) {
+                          int32 j = (i + 1) % Points.Num();
+                          Area += Points[i].X * Points[j].Y -
+                                  Points[j].X * Points[i].Y;
+                        }
+                        return Area > 0.0f;
+                      };
+
+                      if (!IsCCW(Hull2D)) {
+                        Algo::Reverse(Hull2D);
+                      }
+
+                      TArray<FVector> Polygon;
+                      Polygon.Reserve(Hull2D.Num());
+                      for (const FVector2D& Point2D : Hull2D) {
+                        Polygon.Emplace(Point2D.X, Point2D.Y, 0.0f);
+                      }
+
+                      // Close the polygon by adding the first point at the end
+                      if (Polygon.Num() > 0) {
+                        FVector FirstPoint = Polygon[0];
+                        Polygon.Add(FirstPoint);
+                      }
+
+                      // Switch back to game thread to invoke OnComplete
+                      AsyncTask(
+                          ENamedThreads::GameThread,
+                          [WeakThis,
+                           Polygon = std::move(Polygon),
+                           OnComplete = std::move(OnComplete)]() {
+                            if (WeakThis.IsValid()) {
+                              OnComplete.ExecuteIfBound(
+                                  WeakThis.Get(),
+                                  Polygon);
+                            }
+                          });
+                    });
+              };
+
+              // Bind the lambda to the delegate
+              FCesiumSampleHeightMostDetailedCallback SamplingCallback;
+              SamplingCallback.BindLambda(SamplingLambda);
+
+              // Call the async sampler
+              This->SampleHeightMostDetailed(
+                  SamplePositionsLLH,
+                  SamplingCallback);
+            });
+      });
+}

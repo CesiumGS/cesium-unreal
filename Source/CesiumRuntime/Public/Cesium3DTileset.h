@@ -64,6 +64,13 @@ DECLARE_DELEGATE_ThreeParams(
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedLoadTrigger);
 
+DECLARE_DYNAMIC_DELEGATE_TwoParams(
+    FOnSilhouetteGenerated,
+    class ACesium3DTileset*,
+    Tileset,
+    const TArray<FVector>&,
+    Polygon);
+
 CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
     OnCesium3DTilesetLoadFailure;
 
@@ -137,6 +144,11 @@ public:
   void SampleHeightMostDetailed(
       const TArray<FVector>& LongitudeLatitudeHeightArray,
       FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Silhouette")
+  void GenerateSilhouettePolygonAsync(
+      float SpacingMeters,
+      FOnSilhouetteGenerated OnComplete);
 
 private:
   /**
