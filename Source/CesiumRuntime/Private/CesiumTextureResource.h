@@ -72,6 +72,36 @@ public:
       bool useMipMapsIfAvailable);
 
   /**
+   * Create a new empty FCesiumTextureResource with the given parameters. Useful
+   * for textures that are procedurally generated or updated at runtime.
+   *
+   * @param textureGroup The texture group in which to create this texture.
+   * @param width The width of the texture.
+   * @param height The height of the texture.
+   * @param depth The depth of the texture.
+   * @param format The pixel format of the texture.
+   * @param filter The texture filtering to use when sampling this texture.
+   * @param addressX The X texture addressing mode to use when sampling this
+   * texture.
+   * @param addressY The Y texture addressing mode to use when sampling this
+   * texture.
+   * @param sRGB True if the image data stored in this texture should be treated
+   * as sRGB.
+   * @return The created texture resource, or nullptr if a texture could not be
+   * created.
+   */
+  static FCesiumTextureResourceUniquePtr CreateEmpty(
+      TextureGroup textureGroup,
+      uint32 width,
+      uint32 height,
+      uint32 depth,
+      EPixelFormat format,
+      TextureFilter filter,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      bool sRGB);
+
+  /**
    * Destroys an FCesiumTextureResource. Unreal TextureResources must be
    * destroyed on the render thread, so it is important not to call `delete`
    * directly.

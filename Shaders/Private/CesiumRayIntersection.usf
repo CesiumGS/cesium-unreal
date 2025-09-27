@@ -1,0 +1,103 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*===========================
+  CesiumRayIntersection.usf: Ray-intersection definitions and utility.
+=============================*/
+
+#include "CesiumShaderConstants.usf"
+#include "CesiumVectorUtility.usf"
+
+#define NO_HIT -CZM_INFINITY
+#define INF_HIT (CZM_INFINITY * 0.5)
+
+struct Ray
+{
+  float3 Origin;
+  float3 Direction;
+};
+
+struct Intersection
+{
+  float t;
+  float3 Normal;
+};
+
+// Represents where a ray enters and leaves a volume.
+struct RayIntersections
+{
+  Intersection Entry;
+  Intersection Exit;
+};
+
+Intersection NewMissedIntersection()
+{
+  Intersection result = (Intersection) 0;
+  result.t = NO_HIT;
+  return result;
+}
+
+Intersection NewIntersection(float t, float3 Normal)
+{
+  Intersection result = (Intersection) 0;
+  result.t = t;
+  result.Normal = Normal;
+  return result;
+}
+
+RayIntersections NewRayIntersections(Intersection Entry, Intersection Exit)
+{
+  RayIntersections result = (RayIntersections) 0;
+  result.Entry = Entry;
+  result.Exit = Exit;
+  return result;
+}
+
+Intersection Min(in Intersection A, in Intersection B)
+{
+  if (A.t <= B.t)
+  {
+    return A;
+  }
+  return B;
+}
+
+Intersection Max(in Intersection A, in Intersection B)
+{
+  if (A.t >= B.t)
+  {
+    return A;
+  }
+  return B;
+}
+
+Intersection Multiply(in Intersection intersection, in float scalar)
+{
+  return NewIntersection(intersection.t * scalar, intersection.Normal * scalar);
+}
+
+/*
+ * Resolves two intersection ranges of the ray by computing their overlap.
+ * For example:
+ *         A   |---------|
+ *         B         |-------------|
+ * Ray:    O =========================>
+ * Output:           |---|
+ */
+RayIntersections ResolveIntersections(in RayIntersections A, in RayIntersections B)
+{
+  bool missed = (A.Entry.t == NO_HIT) || (B.Entry.t == NO_HIT) ||
+    (A.Exit.t < B.Entry.t) || (A.Entry.t > B.Exit.t);
+
+  if (missed)
+  {
+    Intersection miss = NewMissedIntersection();
+    return NewRayIntersections(miss, miss);
+  }
+
+  Intersection entry = Max(A.Entry, B.Entry);
+  Intersection exit = Min(A.Exit, B.Exit);
+
+  return NewRayIntersections(entry, exit);
+}

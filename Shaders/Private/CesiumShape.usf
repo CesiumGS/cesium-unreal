@@ -1,0 +1,98 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumShape.usf: An implicit shape that can be intersected by a ray.
+=============================================================================*/
+
+#include "CesiumShapeConstants.usf"
+#include "CesiumBox.usf"
+
+/**
+* Converts a position from Unit Shape Space coordinates to UV Space.
+* [-1, -1] => [0, 1]
+*/
+float3 UnitToUV(float3 UnitPosition)
+{
+  return 0.5 * UnitPosition + 0.5;
+}
+
+/**
+* Converts a position from UV Space coordinates to Unit Shape Space.
+* [0, 1] => [-1, -1]
+*/
+float3 UVToUnit(float3 UVPosition)
+{
+  return 2.0 * UVPosition - 1.0;
+}
+
+struct Shape
+{
+  int ShapeConstant;
+  Box BoxShape;
+  
+  /**
+  * Interpret the input parameters according to the voxel grid shape.
+  */
+  void Initialize(in int InShapeConstant)
+  {
+    ShapeConstant = InShapeConstant;
+    
+    if (ShapeConstant == BOX)
+    {
+      // Initialize with default unit box bounds.
+      BoxShape.MinBounds = -1;
+      BoxShape.MaxBounds = 1;
+    }
+  }
+    
+  /**
+  * Tests whether the input ray (Unit Space) intersects the shape.
+  */
+  RayIntersections Intersect(in Ray R)
+  {
+    RayIntersections result;
+    
+    [branch]
+    switch (ShapeConstant)
+    {
+      case BOX:
+        result = BoxShape.Intersect(R);
+        break;
+      default:
+        return NewRayIntersections(NewMissedIntersection(), NewMissedIntersection());
+    }
+    
+    // Set start to 0.0 when ray is inside the shape.
+    result.Entry.t = max(result.Entry.t, 0.0);
+
+    return result;
+  }
+  
+  /**
+  * Scales the input UV coordinates from [0, 1] to their values in UV Shape Space.  
+  */
+  float3 ScaleUVToShapeUVSpace(in float3 UV)
+  {
+    // This is trivial for boxes, but will become relevant for more complex shapes.
+    return UV;
+  }
+  
+  /**
+  * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
+  * voxel grid geometry. Also outputs the Jacobian transpose for future use.
+  */
+  float3 ConvertUVToShapeUVSpace(in float3 UVPosition, out float3x3 JacobianT)
+  {
+    switch (ShapeConstant)
+    {
+      case BOX:
+        return BoxShape.ConvertUVToShapeUVSpace(UVPosition, JacobianT);
+      default:
+        // Default return
+        JacobianT = float3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+        return UVPosition;
+    }
+  }
+};
