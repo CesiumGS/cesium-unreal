@@ -93,7 +93,7 @@ JsonValue::Array getStyles(const TArray<FString>& styles) {
     errorList.warnings = std::move(response.warnings);
     errorList.log(
         spdlog::default_logger(),
-        std::format("Problems parsing JSON in element {} of Styles:", i));
+        fmt::format("Problems parsing JSON in element {} of Styles:", i));
 
     if (response.value) {
       result.emplace_back(std::move(*response.value));
