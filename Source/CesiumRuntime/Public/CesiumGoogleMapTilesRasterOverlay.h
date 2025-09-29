@@ -6,6 +6,13 @@
 #include "CoreMinimal.h"
 #include "CesiumGoogleMapTilesRasterOverlay.generated.h"
 
+UENUM(BlueprintType)
+enum class EGoogleMapTilesMapType : uint8 {
+  Satellite,
+  Roadmap,
+  Terrain
+};
+
 /**
  * A raster overlay that directly accesses Google Map Tiles (2D). If you're
  * using Google Map Tiles via Cesium ion, use the "Cesium ion Raster Overlay"
@@ -22,6 +29,9 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString Key;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  EGoogleMapTilesMapType MapType = EGoogleMapTilesMapType::Satellite;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
