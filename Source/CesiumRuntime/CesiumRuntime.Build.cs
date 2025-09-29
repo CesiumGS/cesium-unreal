@@ -79,7 +79,7 @@ public class CesiumRuntime : ModuleRules
 
         if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            PublicAdditionalLibraries.Add("anl");
+            PublicSystemLibraryPaths.Add("anl");
         }
 
         PublicDependencyModuleNames.AddRange(
