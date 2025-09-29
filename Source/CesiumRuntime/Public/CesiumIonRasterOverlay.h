@@ -55,6 +55,17 @@ public:
   UCesiumIonServer* CesiumIonServer;
 
   /**
+   * Extra options to pass to the Cesium ion when accessing the asset. This
+   * should be a JSON string.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      AdvancedDisplay)
+  FString AssetOptions;
+
+  /**
    * Check if the Cesium ion token used to access this raster overlay is working
    * correctly, and fix it if necessary.
    */
