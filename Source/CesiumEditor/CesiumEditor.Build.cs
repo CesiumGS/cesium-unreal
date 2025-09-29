@@ -78,7 +78,7 @@ public class CesiumEditor : ModuleRules
         // On Linux, cpp-httplib uses getaddrinfo_a, which is in the anl library.
         if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            PublicAdditionalLibraries.Add("anl");
+            PublicSystemLibraryPaths.Add("anl");
         }
 
         PublicDependencyModuleNames.AddRange(
