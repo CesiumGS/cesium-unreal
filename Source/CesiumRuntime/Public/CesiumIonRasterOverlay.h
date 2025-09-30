@@ -55,7 +55,7 @@ public:
   UCesiumIonServer* CesiumIonServer;
 
   /**
-   * Extra options to pass to the Cesium ion when accessing the asset. This
+   * Extra options to pass to Cesium ion when accessing the asset. This
    * should be a JSON string.
    */
   UPROPERTY(
