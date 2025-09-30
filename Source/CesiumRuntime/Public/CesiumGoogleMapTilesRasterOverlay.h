@@ -23,7 +23,7 @@ enum class EGoogleMapTilesMapType : uint8 {
 
   /**
    * Terrain imagery. When selecting terrain as the map type, you must
-   * also set the `LayerTypes` property to "Roadmap".
+   * also add "Roadmap" to the `LayerTypes` property.
    */
   Terrain
 };
