@@ -67,7 +67,7 @@ std::optional<std::vector<std::string>> getLayerTypes(
         LogCesium,
         Warning,
         TEXT(
-            "When the MapType is set to Terrain, the LayerType must contain Roadmap."));
+            "When the MapType is set to Terrain, LayerTypes must contain Roadmap."));
   }
 
   return result;
