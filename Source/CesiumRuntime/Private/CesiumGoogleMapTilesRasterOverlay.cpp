@@ -108,6 +108,11 @@ JsonValue::Array getStyles(const TArray<FString>& styles) {
 std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumGoogleMapTilesRasterOverlay::CreateOverlay(
     const CesiumRasterOverlays::RasterOverlayOptions& options) {
+  if (this->Key.IsEmpty()) {
+    // We must have a key to create this overlay.
+    return nullptr;
+  }
+
   return std::make_unique<CesiumRasterOverlays::GoogleMapTilesRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       CesiumRasterOverlays::GoogleMapTilesNewSessionParameters{
