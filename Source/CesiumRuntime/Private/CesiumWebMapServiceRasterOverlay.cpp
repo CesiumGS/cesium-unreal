@@ -37,3 +37,8 @@ UCesiumWebMapServiceRasterOverlay::CreateOverlay(
       wmsOptions,
       options);
 }
+
+bool UCesiumWebMapServiceRasterOverlay::IsReadyForFinishDestroy() {
+  this->SetUrl(this->BaseUrl);
+  return Super::IsReadyForFinishDestroy();
+}

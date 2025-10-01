@@ -275,6 +275,7 @@ public:
 
   virtual void Serialize(FArchive& Ar) override;
 
+  virtual bool IsReadyForFinishDestroy() override;
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
       const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;

@@ -70,3 +70,8 @@ UCesiumUrlTemplateRasterOverlay::CreateOverlay(
       urlTemplateOptions,
       options);
 }
+
+bool UCesiumUrlTemplateRasterOverlay::IsReadyForFinishDestroy() {
+  this->SetUrl(this->TemplateUrl);
+  return Super::IsReadyForFinishDestroy();
+}

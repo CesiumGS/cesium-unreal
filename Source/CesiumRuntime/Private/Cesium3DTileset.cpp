@@ -48,6 +48,7 @@
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+#include "UnrealAssetAccessor.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
@@ -2286,6 +2287,27 @@ void ACesium3DTileset::BeginDestroy() {
 
 bool ACesium3DTileset::IsReadyForFinishDestroy() {
   bool ready = AActor::IsReadyForFinishDestroy();
+
+  	//If the request has not ended yet, actively cancel the request
+	{
+		FScopeLock lock(&UnrealAssetAccessor::_pendingRequestsLock);
+		for (const TSharedRef<IHttpRequest, ESPMode::ThreadSafe>& pRequest : UnrealAssetAccessor::_pendingRequests) {
+			EHttpRequestStatus::Type status = pRequest->GetStatus();
+			if (status == EHttpRequestStatus::NotStarted || status == EHttpRequestStatus::Processing) {
+				const FString& requestUrl = pRequest->GetURL();
+				UE_LOG(LogTemp, Log, TEXT("3DTiles URL = %s, Request URL = %s"), *this->Url, *requestUrl);
+				if (this->TilesetSource == ETilesetSource::FromCesiumIon && requestUrl.Contains("CesiumWorldTerrain"))
+					pRequest->CancelRequest();
+				else if (this->TilesetSource == ETilesetSource::FromUrl) {
+					FString originUrl = this->Url;
+					originUrl.RemoveFromEnd(TEXT("tileset.json"));
+					if (requestUrl.Contains(UCesiumRasterOverlay::ExtractCleanBaseUrl(originUrl)))
+						pRequest->CancelRequest();
+				}
+			}
+		}
+	}
+
   ready &= this->_tilesetsBeingDestroyed == 0;
 
   if (!ready) {
