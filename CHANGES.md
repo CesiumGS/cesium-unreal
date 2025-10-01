@@ -1,5 +1,9 @@
 # Change Log {#changes}
 
+### v2.21.0 - ???
+
+- Add option on ACesium3DTileset to disable automatic detection of ASceneCapture2D actors to update the visible area.
+
 ### v2.20.0 - 2025-10-01
 
 ##### Additions :tada:
