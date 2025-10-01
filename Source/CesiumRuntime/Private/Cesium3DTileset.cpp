@@ -1289,11 +1289,13 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
   std::vector<FCesiumCamera> cameras = this->GetPlayerCameras();
 
-  std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
-  cameras.insert(
-      cameras.end(),
-      std::make_move_iterator(sceneCaptures.begin()),
-      std::make_move_iterator(sceneCaptures.end()));
+  if (AutoDetectSceneCaptureActors) {
+    std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
+    cameras.insert(
+        cameras.end(),
+        std::make_move_iterator(sceneCaptures.begin()),
+        std::make_move_iterator(sceneCaptures.end()));
+  }
 
 #if WITH_EDITOR
   std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();

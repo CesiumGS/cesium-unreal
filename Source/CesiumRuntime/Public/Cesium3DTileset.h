@@ -323,6 +323,13 @@ public:
   void SetCameraManager(TSoftObjectPtr<ACesiumCameraManager> NewCameraManager);
 
   /**
+   * Whether or not to automatically detect and use all ASceneCapture2D actors
+   * in the scene to update the tileset visible area.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool AutoDetectSceneCaptureActors = true;
+
+  /**
    * Resolves the Cesium Camera Manager to use with this Actor. Returns
    * the value of the CameraManager property if it is set. Otherwise, finds a
    * Camera Manager in the World and returns it, creating it if necessary. The
