@@ -1,5 +1,7 @@
 # Change Log {#changes}
 
+- adding a function to change the collision response of a Cesium3DTileset by collision channel.
+
 ### v2.20.0 - 2025-10-01
 
 ##### Additions :tada:

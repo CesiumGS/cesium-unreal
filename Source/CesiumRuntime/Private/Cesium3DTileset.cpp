@@ -146,10 +146,11 @@ void ACesium3DTileset::SampleHeightMostDetailed(
   positions.reserve(LongitudeLatitudeHeightArray.Num());
 
   for (const FVector& position : LongitudeLatitudeHeightArray) {
-    positions.emplace_back(CesiumGeospatial::Cartographic::fromDegrees(
-        position.X,
-        position.Y,
-        position.Z));
+    positions.emplace_back(
+        CesiumGeospatial::Cartographic::fromDegrees(
+            position.X,
+            position.Y,
+            position.Z));
   }
 
   auto sampleHeights = [this, &positions]() mutable {
@@ -1083,9 +1084,10 @@ void ACesium3DTileset::LoadTileset() {
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
   for (const auto& [Key, Value] : this->RequestHeaders) {
-    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
-        TCHAR_TO_UTF8(*Key),
-        TCHAR_TO_UTF8(*Value)});
+    options.requestHeaders.emplace_back(
+        CesiumAsync::IAssetAccessor::THeader{
+            TCHAR_TO_UTF8(*Key),
+            TCHAR_TO_UTF8(*Value)});
   }
 
   switch (this->TilesetSource) {
@@ -1559,9 +1561,10 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
       glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
-  glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
-      unrealWorldToTileset *
-      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
+  glm::dvec3 tilesetCameraFront = glm::normalize(
+      glm::dvec3(
+          unrealWorldToTileset *
+          glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
@@ -2315,3 +2318,49 @@ void ACesium3DTileset::RuntimeSettingsChanged(
   }
 }
 #endif
+
+void ACesium3DTileset::SetCollisionResponseToChannel(
+    ECollisionChannel Channel,
+    ECollisionResponse NewResponse) {
+  // Update the tileset's BodyInstance for future tiles
+  BodyInstance.SetResponseToChannel(Channel, NewResponse);
+
+  // Get all loaded glTF components
+  TArray<UCesiumGltfComponent*> GltfComponents;
+  GetComponents<UCesiumGltfComponent>(GltfComponents);
+
+  // Apply settings to existing tiles
+  for (UCesiumGltfComponent* Gltf : GltfComponents) {
+    if (Gltf && IsValid(Gltf)) {
+      applyActorCollisionSettings(BodyInstance, Gltf);
+    }
+  }
+
+  // Force refresh on each primitive component
+  for (UCesiumGltfComponent* Gltf : GltfComponents) {
+    if (Gltf && IsValid(Gltf)) {
+      const TArray<USceneComponent*>& Children = Gltf->GetAttachChildren();
+      for (USceneComponent* Child : Children) {
+        UCesiumGltfPrimitiveComponent* Prim =
+            Cast<UCesiumGltfPrimitiveComponent>(Child);
+        if (Prim && IsValid(Prim)) {
+          // Set to Custom profile if not already, to allow per-channel changes
+          Prim->SetCollisionProfileName("Custom");
+
+          // Set the specific channel response
+          Prim->SetCollisionResponseToChannel(Channel, NewResponse);
+
+          // Update collision profile to apply changes
+          Prim->UpdateCollisionProfile();
+
+          // Toggle collision enabled to force refresh
+          Prim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+          Prim->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+          // Recreate physics state for final application
+          Prim->RecreatePhysicsState();
+        }
+      }
+    }
+  }
+}

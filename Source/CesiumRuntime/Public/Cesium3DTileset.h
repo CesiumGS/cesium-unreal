@@ -138,6 +138,30 @@ public:
       const TArray<FVector>& LongitudeLatitudeHeightArray,
       FCesiumSampleHeightMostDetailedCallback OnHeightsSampled);
 
+  /**
+   * @brief Sets the collision response of this tileset to a specific collision
+   * channel at runtime. This updates the actor's BodyInstance for future-loaded
+   * tiles and propagates the change to all currently loaded tiles by refreshing
+   * their primitive components, ensuring consistent collision behavior for both
+   * queries and physics interactions.
+   *
+   * The change takes effect immediately after propagation, including recreation
+   * of physics states on existing primitives. This function is
+   * blueprint-callable and suitable for dynamic adjustments, such as toggling
+   * interactions with pawns or projectiles during gameplay. Note that tiles
+   * must have physics meshes enabled (via CreatePhysicsMeshes) for physical
+   * collisions to apply.
+   *
+   * @param Channel The collision channel to modify (e.g., ECC_Pawn,
+   * ECC_Visibility).
+   * @param NewResponse The new response for the channel (e.g., ECR_Block,
+   * ECR_Ignore).
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Collision")
+  void SetCollisionResponseToChannel(
+      ECollisionChannel Channel,
+      ECollisionResponse NewResponse);
+
 private:
   /**
    * The designated georeference actor controlling how the actor's
