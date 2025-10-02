@@ -46,13 +46,30 @@ With that, all builds invoked by Unreal Build Tool should use the chosen compile
 
 If you've followed the instructions above, and Unreal Build Tool is now building Cesium for Unreal with v14.38 of the compiler, then you will likely get linker errors because the cesium-native and third-party dependencies are both still built with the newer version of the compiler.
 
-vcpkg has hard-coded logic to choose the very latest version of the compiler that you have installed. It completely ignores all the usual ways that different compiler versions can be selected, such as setting the defaults file (`"C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.props"`), setting environment variables or running the `vcvarsall` script. The _only_ way to choose a compiler for vcpkg to use, as far as we know, is by explicitly specifying it in a vcpkg triplet file. So, to build with 14.38, edit the `extern/vcpkg-overlays/triplets/x64-windows-unreal.cmake` file in the `cesium-unreal` repo and add this line to the end of it:
+vcpkg has hard-coded logic to choose the very latest version of the compiler that you have installed. It completely ignores all the usual ways that different compiler versions can be selected, such as setting the defaults file (`"C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.props"`), setting environment variables or running the `vcvarsall` script.
+
+The easiest way to select a compiler for vcpkg to use is to set the `VCPKG_PLATFORM_TOOLSET_VERSION` environment variable. Despite the name, this is not built-in vcpkg functionality, but is instead something that our `x64-windows-unreal.cmake` triplet file looks for explicitly. To set it, run the following in a PowerShell window:
+
+```powershell
+$env:VCPKG_PLATFORM_TOOLSET_VERSION = "14.38"
+```
+
+Or in a CMD prompt, run:
+
+```bat
+set VCPKG_PLATFORM_TOOLSET_VERSION=14.38
+```
+
+This environment variable must be set before running CMake to configure the `cesium-native` project.
+
+Alternatively, you can explicitly specify the toolset version in the vcpkg triplet file. To build with 14.38, edit the `extern/vcpkg-overlays/triplets/x64-windows-unreal.cmake` file in the `cesium-unreal` repo and add this line to the end of it:
 
 ```
 set(VCPKG_PLATFORM_TOOLSET_VERSION "14.38")
 ```
 
-Be careful not to commit this change!
+> [!warning]
+> Be careful not to commit this change if you edit the triplet file directly! Using the environment variable is safer.
 
 vcpkg won't always automatically rebuild everything it needs to rebuild after making this change. To force a rebuild, delete the following:
 
@@ -105,7 +122,8 @@ It should look like this (though your names and `visualStudio` properties may be
       "toolset": "host=x64,version=14.38"
     },
     "environmentVariables": {
-      "VCToolsVersion": "14.38.33130"
+      "VCToolsVersion": "14.38.33130",
+      "VCPKG_PLATFORM_TOOLSET_VERSION": "14.38"
     }
   },
   {
@@ -119,7 +137,8 @@ It should look like this (though your names and `visualStudio` properties may be
       "toolset": "host=x64,version=14.44"
     },
     "environmentVariables": {
-      "VCToolsVersion": "14.44.35207"
+      "VCToolsVersion": "14.44.35207",
+      "VCPKG_PLATFORM_TOOLSET_VERSION": "14.44"
     }
   },
   ...

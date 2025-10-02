@@ -1,10 +1,14 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.20.0 - 2025-10-01
 
 ##### Additions :tada:
 
 - Added support for rendering glTFs with line primitives.
+- Added `UCesiumGoogleMapTilesRasterOverlay`.
+- Added `AssetOptions` property to `UCesiumIonRasterOverlay`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.51.0 to v0.52.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.19.1 - 2025-09-02
 
