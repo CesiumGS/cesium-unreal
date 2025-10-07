@@ -3053,6 +3053,7 @@ static void loadPrimitiveGameThreadPart(
     pGaussianSplat->SetData(model, meshPrimitive);
     pGaussianSplat->SetupAttachment(pGltf);
     pGaussianSplat->RegisterComponent();
+    pGaussianSplat->SetMobility(pGltf->Mobility);
     pGaussianSplat->RegisterWithSubsystem();
     pCesiumPrimitive = pGaussianSplat;
     createMesh = false;

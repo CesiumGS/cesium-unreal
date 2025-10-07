@@ -144,6 +144,21 @@ void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
   SplatSubsystem->RecomputeBounds();
 }
 
+void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
+  const FTransform& Transform = this->GetComponentTransform();
+  check(GEngine);
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+  ensure(SplatSubsystem);
+
+  SplatSubsystem->RecomputeBounds();
+  UE_LOG(
+      LogCesium,
+      Log,
+      TEXT("Transform visible: %s"),
+      this->IsVisible() ? TEXT("true") : TEXT("false"));
+}
+
 void UCesiumGltfGaussianSplatComponent::SetData(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& meshPrimitive) {

@@ -29,6 +29,8 @@ public:
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
+  virtual void OnVisibilityChanged() override;
+
   virtual void OnUpdateTransform(
       EUpdateTransformFlags UpdateTransformFlags,
       ETeleportType Teleport) override;

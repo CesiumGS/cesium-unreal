@@ -23,8 +23,7 @@
 const FString GetPositionFunctionName = TEXT("GetSplat_Position");
 const FString GetScaleFunctionName = TEXT("GetSplat_Scale");
 const FString GetOrientationFunctionName = TEXT("GetSplat_Orientation");
-const FString GetTransformTranslationFunctionName =
-    TEXT("GetSplat_Transform_Translation");
+const FString GetVisibilityFunctionName = TEXT("GetSplat_Visibility");
 const FString GetTransformRotationFunctionName =
     TEXT("GetSplat_Transform_Rotation");
 const FString GetColorFunctionName = TEXT("GetSplat_Color");
@@ -61,6 +60,7 @@ void UploadSplatMatrices(
       Components.Num() * sizeof(FVector4f) * Stride,
       EResourceLockMode::RLM_WriteOnly));
   for (int32 i = 0; i < Components.Num(); i++) {
+    check(Components[i]);
     glm::mat4x4 mat = Components[i]->GetMatrix();
     const int32 Offset = i * (sizeof(FVector4f) / sizeof(float)) * Stride;
     BufferData[Offset] = (float)mat[0].x;
@@ -80,11 +80,13 @@ void UploadSplatMatrices(
     BufferData[Offset + 14] = (float)mat[3].z;
     BufferData[Offset + 15] = (float)mat[3].w;
     const FTransform& ComponentToWorld = Components[i]->GetComponentToWorld();
-    FVector Location = ComponentToWorld.GetLocation();
-    BufferData[Offset + 16] = (float)Location.X;
-    BufferData[Offset + 17] = (float)Location.Y;
-    BufferData[Offset + 18] = (float)Location.Z;
-    BufferData[Offset + 19] = (float)1.0;
+    // Previously these four held location information, but we don't use it (we
+    // just use the matrix for that). So, instead, the first component holds
+    // visibility and the other three are currently unused.
+    BufferData[Offset + 16] = Components[i]->IsVisible() ? 1.0f : 0.0f;
+    BufferData[Offset + 17] = 0.0f;
+    BufferData[Offset + 18] = 0.0f;
+    BufferData[Offset + 19] = 0.0f;
     FVector Scale = ComponentToWorld.GetScale3D();
     BufferData[Offset + 20] = (float)Scale.X;
     BufferData[Offset + 21] = (float)Scale.Y;
@@ -138,6 +140,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     int32 TotalCoeffsCount = 0;
     for (const UCesiumGltfGaussianSplatComponent* SplatComponent :
          SplatSystem->SplatComponents) {
+      check(SplatComponent);
       TotalCoeffsCount +=
           SplatComponent->NumCoefficients * SplatComponent->NumSplats;
     }
@@ -187,13 +190,15 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             NumSplats,
             EPixelFormat::PF_A32B32G32R32F,
             BUF_Static);
-        this->SHNonZeroCoeffsBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SHNonZeroCoeffsBuffer"),
-            sizeof(FVector4f),
-            TotalCoeffsCount,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
+        if (TotalCoeffsCount > 0) {
+          this->SHNonZeroCoeffsBuffer.Initialize(
+              RHICmdList,
+              TEXT("FNDIGaussianSplatProxy_SHNonZeroCoeffsBuffer"),
+              sizeof(FVector4f),
+              TotalCoeffsCount,
+              EPixelFormat::PF_A32B32G32R32F,
+              BUF_Static);
+        }
         this->SplatIndicesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
@@ -234,11 +239,12 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             NumSplats * 4 * sizeof(float),
             EResourceLockMode::RLM_WriteOnly));
         float* SHNonZeroCoeffsBuffer =
-            static_cast<float*>(RHICmdList.LockBuffer(
-                this->SHNonZeroCoeffsBuffer.Buffer,
-                0,
-                TotalCoeffsCount * 4 * sizeof(float),
-                EResourceLockMode::RLM_WriteOnly));
+            TotalCoeffsCount > 0 ? static_cast<float*>(RHICmdList.LockBuffer(
+                                       this->SHNonZeroCoeffsBuffer.Buffer,
+                                       0,
+                                       TotalCoeffsCount * 4 * sizeof(float),
+                                       EResourceLockMode::RLM_WriteOnly))
+                                 : nullptr;
         int32* IndexBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
             this->SplatIndicesBuffer.Buffer,
             0,
@@ -255,6 +261,8 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
           UCesiumGltfGaussianSplatComponent* Component =
               SplatSystem->SplatComponents[i];
+          check(Component);
+
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(PositionsBuffer + SplatCountWritten * 4),
               Component->Positions.GetData(),
@@ -272,11 +280,13 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               reinterpret_cast<void*>(ColorsBuffer + SplatCountWritten * 4),
               Component->Colors.GetData(),
               Component->Colors.Num() * sizeof(float));
-          FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(
-                  SHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
-              Component->SphericalHarmonics.GetData(),
-              Component->SphericalHarmonics.Num() * sizeof(float));
+          if (TotalCoeffsCount > 0) {
+            FPlatformMemory::Memcpy(
+                reinterpret_cast<void*>(
+                    SHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
+                Component->SphericalHarmonics.GetData(),
+                Component->SphericalHarmonics.Num() * sizeof(float));
+          }
           for (int32 j = 0; j < Component->NumSplats; j++) {
             IndexBuffer[SplatCountWritten + j] = i;
           }
@@ -294,7 +304,9 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->OrientationsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
-        RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
+        if (TotalCoeffsCount > 0) {
+          RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
+        }
         RHICmdList.UnlockBuffer(this->SplatIndicesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
       }
@@ -450,13 +462,12 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))}};
 
     OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (
-      FunctionInfo.DefinitionName == *GetTransformTranslationFunctionName) {
+  } else if (FunctionInfo.DefinitionName == *GetVisibilityFunctionName) {
     static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float4 OutTranslation)
+		void {FunctionName}(int Index, out float OutVisibility)
 		{
 			int SplatIndex = {IndicesBuffer}[Index];
-			OutTranslation = {MatrixBuffer}[SplatIndex * 7 + 4];
+			OutVisibility = {MatrixBuffer}[SplatIndex * 7 + 4].x;
 		}
 		)");
 
@@ -662,6 +673,22 @@ void UCesiumGaussianSplatDataInterface::GetFunctions(
 
   {
     FNiagaraFunctionSignature Sig;
+    Sig.Name = *GetVisibilityFunctionName;
+    Sig.Inputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition(GetClass()),
+        TEXT("GaussianSplatNDI")));
+    Sig.Inputs.Add(
+        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
+    Sig.Outputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetFloatDef(),
+        TEXT("Visibility")));
+    Sig.bMemberFunction = true;
+    Sig.bRequiresContext = false;
+    OutFunctions.Add(Sig);
+  }
+
+  {
+    FNiagaraFunctionSignature Sig;
     Sig.Name = *GetTransformRotationFunctionName;
     Sig.Inputs.Add(FNiagaraVariable(
         FNiagaraTypeDefinition(GetClass()),
@@ -671,22 +698,6 @@ void UCesiumGaussianSplatDataInterface::GetFunctions(
     Sig.Outputs.Add(FNiagaraVariable(
         FNiagaraTypeDefinition::GetVec4Def(),
         TEXT("Rotation")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetTransformTranslationFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec4Def(),
-        TEXT("Translation")));
     Sig.bMemberFunction = true;
     Sig.bRequiresContext = false;
     OutFunctions.Add(Sig);

@@ -18,9 +18,12 @@
 /**
  * A blank actor type just to signify the splat singleton actor.
  */
-UCLASS()
+UCLASS(Transient)
 class ACesiumGaussianSplatActor : public AActor {
   GENERATED_BODY()
+
+public:
+  int32 NumSplatsSpawned = 0;
 };
 
 UCLASS()
@@ -38,7 +41,6 @@ public:
   void RecomputeBounds();
   int32 GetNumSplats() const;
 
-  UPROPERTY()
   TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
   virtual void Tick(float DeltaTime) override;
@@ -54,15 +56,11 @@ private:
   void UpdateNiagaraComponent();
   UCesiumGaussianSplatDataInterface* GetSplatInterface() const;
 
-  UPROPERTY()
-  UWorld* LastCreatedWorld = nullptr;
-
-  UPROPERTY()
   UNiagaraComponent* NiagaraComponent = nullptr;
 
-  UPROPERTY()
   ACesiumGaussianSplatActor* NiagaraActor = nullptr;
 
+  UWorld* LastCreatedWorld = nullptr;
   bool bIsTickEnabled = false;
   bool bSystemNeedsReset = false;
   int32 NumSplats = 0;

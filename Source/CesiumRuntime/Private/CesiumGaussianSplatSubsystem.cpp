@@ -3,6 +3,7 @@
 #include "CesiumRuntime.h"
 
 #include "EngineUtils.h"
+#include "RHIGlobals.h"
 
 #include "NiagaraActor.h"
 #include "NiagaraComponent.h"
@@ -14,6 +15,7 @@ FBox CalculateBounds(
     const TArray<UCesiumGltfGaussianSplatComponent*>& Components) {
   std::optional<FBox> Bounds;
   for (UCesiumGltfGaussianSplatComponent* Component : Components) {
+    check(Component);
     const FTransform& ComponentTransform = Component->GetComponentTransform();
     FBox ActorBounds = Component->GetBounds();
     FVector Center = ComponentTransform.GetTranslation();
@@ -214,7 +216,7 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
   if (IsValid(this->NiagaraComponent)) {
     this->NiagaraComponent->SetVariableInt(
         FName(TEXT("GridSize")),
-        (int32)std::ceil(std::cbrt((double)this->GetNumSplats())));
+        (int32)std::ceil(std::cbrt((double)this->NumSplats)));
     GetSplatInterface()->Refresh();
     this->NiagaraComponent->ResetSystem();
     this->bSystemNeedsReset = true;
@@ -254,6 +256,10 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
       this->bSystemNeedsReset = false;
       // this->NiagaraComponent->ResetSystem();
     }
+
+    /*if (this->NiagaraActor->NumSplatsSpawned < this->NumSplats) {
+      const int32 NumSplatsToSpawn = FMath::Min(this->NumSplats - this->NiagaraActor->NumSplatsSpawned, )
+    }*/
   }
 
   if (IsValid(this->NiagaraActor) && World == this->LastCreatedWorld) {
