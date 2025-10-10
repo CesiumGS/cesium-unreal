@@ -136,7 +136,6 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   this->NiagaraActor = SplatActor;
   this->NiagaraComponent =
       UNiagaraFunctionLibrary::SpawnSystemAttachedWithParams(SpawnParams);
-  this->NiagaraComponent->SetAutoActivate(true);
   this->NiagaraComponent->Activate();
   SplatActor->AddInstanceComponent(this->NiagaraComponent);
 
@@ -258,7 +257,8 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     }
 
     /*if (this->NiagaraActor->NumSplatsSpawned < this->NumSplats) {
-      const int32 NumSplatsToSpawn = FMath::Min(this->NumSplats - this->NiagaraActor->NumSplatsSpawned, )
+      const int32 NumSplatsToSpawn = FMath::Min(this->NumSplats -
+    this->NiagaraActor->NumSplatsSpawned, )
     }*/
   }
 
