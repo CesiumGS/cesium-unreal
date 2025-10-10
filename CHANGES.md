@@ -1,12 +1,35 @@
 # Change Log {#changes}
 
-### ???
+### v2.20.0 - 2025-10-01
+
+##### Additions :tada:
+
+- Added support for rendering glTFs with line primitives.
+- Added `UCesiumGoogleMapTilesRasterOverlay`.
+- Added `AssetOptions` property to `UCesiumIonRasterOverlay`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.51.0 to v0.52.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.19.1 - 2025-09-02
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause incorrect ellipsoid parameters to be used when loading a level.
+
+### v2.19.0 - 2025-09-02
+
+##### Additions :tada:
+
+- Added assets for the IAU2015 Moon and Mars ellipsoids under `Content`.
 
 ##### Fixes :wrench:
 
 - Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
 - Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
+- Fixed a bug that could cause a crash when undoing and redoing deletion of a `CesiumRasterOverlay` component.
 - Fixed a crash in `UCesiumLoadGeoJsonDocumentFromIonAsyncAction` that occurred when a Cesium ion server was not specified. The action will now fall back to the default ion server, similar to `ACesium3DTileset`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.50.0 to v0.51.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.18.0 - 2025-08-01
 

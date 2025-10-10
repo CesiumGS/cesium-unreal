@@ -6,6 +6,7 @@
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
 #include "CesiumGltfGaussianSplatComponent.h"
+#include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfTextures.h"
@@ -684,14 +685,21 @@ static void setUnlitNormals(
         glm::dvec4(
             VecMath::createVector3D(FVector(positionBuffer.VertexPosition(i))),
             1.0));
-    glm::dvec3 normal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+
+    glm::dvec3 surfaceNormal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+
+    if (surfaceNormal == glm::dvec3(0.0)) {
+      // This can happen for tilesets georeferenced at the center of the earth,
+      // resulting in NaN normals. Manually assign a normal aligned with Z-up.
+      surfaceNormal = glm::dvec3(0.0, 0.0, 1.0);
+    }
 
     normalBuffer.SetVertexTangents(
         i,
         FVector3f(0.0f),
         FVector3f(0.0),
-        FVector3f(VecMath::createVector(
-            glm::normalize(ellipsoidFixedToVertex * glm::dvec4(normal, 0.0)))));
+        FVector3f(VecMath::createVector(glm::normalize(
+            ellipsoidFixedToVertex * glm::dvec4(surfaceNormal, 0.0)))));
   }
 }
 
@@ -1261,36 +1269,6 @@ std::string getPrimitiveName(
   return name;
 }
 
-/// Helper used to log only once per unsupported primitive mode.
-struct PrimitiveModeLogger {
-  std::array<
-      std::atomic_bool,
-      (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
-      alreadyLogged;
-
-  PrimitiveModeLogger()
-      : alreadyLogged{
-            {{false}, {false}, {false}, {false}, {false}, {false}, {false}}} {}
-
-  inline void OnUnsupportedMode(int32_t primMode) {
-    bool bPrintLog = false;
-    if (primMode < 0 || primMode >= (int32_t)alreadyLogged.size()) {
-      ensureMsgf(false, TEXT("Unknown primitive mode %d!"), primMode);
-      bPrintLog = true;
-    } else if (!alreadyLogged[(size_t)primMode].exchange(true)) {
-      bPrintLog = true;
-    }
-    if (bPrintLog) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("Primitive mode %d is not supported"),
-          primMode);
-    }
-  }
-};
-static PrimitiveModeLogger UnsupportedPrimitiveLogger;
-
 template <class TIndexAccessor>
 TArray<uint32>
 getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
@@ -1317,9 +1295,8 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
     }
     break;
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-    // The TRIANGLE_FAN primitive mode cannot be enabled without creating a
-    // custom render proxy, so the geometry must be emulated through separate
-    // triangles.
+    // The TRIANGLE_FAN primitive mode is not supported in Unreal, so geometry
+    // must be emulated through separate triangles.
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 2, j = 0; i < indicesView.size(); ++i, j += 3) {
@@ -1328,7 +1305,31 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
       indices[j + 2] = indicesView[i];
     }
     break;
+  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
+    // The LINE_LOOP primitive mode is not supported in Unreal, so geometry must
+    // be emulated through separate lines.
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(2 * indicesView.size()));
+    for (int32 i = 0, j = 0; i < indicesView.size(); ++i, j += 2) {
+      // Loop to the first index once we reach the last line segment.
+      size_t nextIndex = (i < indicesView.size() - 1) ? i + 1 : 0;
+
+      indices[j] = indicesView[i];
+      indices[j + 1] = indicesView[nextIndex];
+    }
+    break;
+  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
+    // The LINE_STRIP primitive mode is not supported in Unreal, so geometry
+    // must be emulated through separate lines.
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(2 * (indicesView.size() - 1)));
+    for (int32 i = 0, j = 0; i < indicesView.size() - 1; ++i, j += 2) {
+      indices[j] = indicesView[i];
+      indices[j + 1] = indicesView[i + 1];
+    }
+    break;
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+  case CesiumGltf::MeshPrimitive::Mode::LINES:
   case CesiumGltf::MeshPrimitive::Mode::POINTS:
   default:
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
@@ -1359,18 +1360,6 @@ static void loadPrimitive(
   CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
   CesiumGltf::MeshPrimitive& primitive =
       mesh.primitives[options.primitiveIndex];
-
-  switch (primitive.mode) {
-  case CesiumGltf::MeshPrimitive::Mode::POINTS:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-    break;
-  default:
-    // TODO: add support for other primitive types.
-    UnsupportedPrimitiveLogger.OnUnsupportedMode(primitive.mode);
-    return;
-  }
 
   const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
@@ -1428,14 +1417,14 @@ static void loadPrimitive(
       !options.pMeshOptions->pNodeOptions->pModelOptions
            ->ignoreKhrMaterialsUnlit;
 
-  // We can't calculate flat normals for points or lines, so we have to force
-  // them to be unlit if no normals are specified. Otherwise this causes a
-  // crash when attempting to calculate flat normals.
   bool isTriangles =
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN ||
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP;
 
+  // We can't calculate flat normals for points or lines, so we have to force
+  // them to be unlit if no normals are specified. Otherwise this causes a
+  // crash when attempting to calculate flat normals.
   if (!isTriangles && !hasNormals) {
     primitiveResult.isUnlit = true;
   }
@@ -1538,12 +1527,23 @@ static void loadPrimitive(
   // vertices shared by multiple triangles. If we don't have tangents, but
   // need them, we need to use a tangent space generation algorithm which
   // requires duplicated vertices.
-  bool normalsAreRequired = !primitiveResult.isUnlit;
+  bool normalsAreRequired = !primitiveResult.isUnlit && isTriangles;
   bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
   bool needToGenerateTangents = needsTangents && !hasTangents;
   bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
-  duplicateVertices = duplicateVertices &&
-                      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+
+  // Some primitive modes may require duplication of vertices anyways due to
+  // the lack of support in Unreal.
+  switch (primitive.mode) {
+  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
+  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+    duplicateVertices = true;
+    break;
+  default:
+    break;
+  }
 
   uint32 numVertices =
       duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
@@ -1709,16 +1709,14 @@ static void loadPrimitive(
             FVector3f(normal.X, -normal.Y, normal.Z));
       }
     }
+  } else if (primitiveResult.isUnlit || !isTriangles) {
+    setUnlitNormals(
+        LODResources.VertexBuffers,
+        ellipsoid,
+        transform * yInvertMatrix * scaleMatrix);
   } else {
-    if (primitiveResult.isUnlit) {
-      setUnlitNormals(
-          LODResources.VertexBuffers,
-          ellipsoid,
-          transform * yInvertMatrix * scaleMatrix);
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-      computeFlatNormals(LODResources.VertexBuffers);
-    }
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
+    computeFlatNormals(LODResources.VertexBuffers);
   }
 
   if (hasTangents) {
@@ -1755,13 +1753,12 @@ static void loadPrimitive(
 
   FStaticMeshSectionArray& Sections = LODResources.Sections;
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  // This will be ignored if the primitive contains points.
+  // This will be ignored if the primitive contains lines or points.
   section.NumTriangles = indices.Num() / 3;
   section.FirstIndex = 0;
   section.MinVertexIndex = 0;
   section.MaxVertexIndex = numVertices - 1;
-  section.bEnableCollision =
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+  section.bEnableCollision = isTriangles;
   section.bCastShadow = true;
   section.MaterialIndex = 0;
 
@@ -1786,9 +1783,7 @@ static void loadPrimitive(
   LODResources.bHasReversedDepthOnlyIndices = false;
 
 #if ENGINE_VERSION_5_5_OR_HIGHER
-  // UE 5.5 requires that we do this in order to avoid a crash when ray
-  // tracing is enabled.
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  if (isTriangles) {
     // UE 5.5 requires that we do this in order to avoid a crash when ray
     // tracing is enabled.
     RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
@@ -1802,7 +1797,7 @@ static void loadPrimitive(
 
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+  if (isTriangles &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
     if (numVertices != 0 && indices.Num() != 0) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
@@ -3066,6 +3061,14 @@ static void loadPrimitiveGameThreadPart(
     pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
     pCesiumPrimitive = pPointMesh;
+  } else if (
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINES ||
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINE_LOOP ||
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINE_STRIP) {
+    UCesiumGltfLinesComponent* pLineMesh =
+        NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
+    pMesh = pLineMesh;
+    pCesiumPrimitive = pLineMesh;
   } else if (!instanceTransforms.empty()) {
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
@@ -3133,11 +3136,18 @@ static void loadPrimitiveGameThreadPart(
         primData.pTilesetActor->GetTranslucencySortPriority();
 
     pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
-    // Not only does the concept of ray tracing a point cloud not make much
-    // sense, but if Unreal will crash trying to generate ray tracing
-    // information for a static mesh without triangles.
-    pStaticMesh->bSupportRayTracing =
-        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+    // Unreal will crash trying to generate ray tracing information for a static
+    // mesh without triangles (and it doesn't make sense anyways!)
+    switch (meshPrimitive.mode) {
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+      pStaticMesh->bSupportRayTracing = true;
+      break;
+    default:
+      pStaticMesh->bSupportRayTracing = false;
+      break;
+    }
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(

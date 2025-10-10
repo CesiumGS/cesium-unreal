@@ -4,6 +4,7 @@
 
 #include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "CesiumRasterOverlays/RasterOverlay.h"
+#include "CesiumUtility/IntrusivePointer.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/Texture.h"
@@ -255,6 +256,7 @@ protected:
       CesiumRasterOverlays::RasterOverlay* pOverlay) {}
 
 private:
-  CesiumRasterOverlays::RasterOverlay* _pOverlay;
+  CesiumUtility::IntrusivePointer<CesiumRasterOverlays::RasterOverlay>
+      _pOverlay;
   int32 _overlaysBeingDestroyed;
 };
