@@ -8,9 +8,9 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-#include "Widgets/Text/STextBlock.h"
 #include "IDetailGroup.h"
 #include "Widgets/SToolTip.h"
+#include "Widgets/Text/STextBlock.h"
 
 #define LOCTEXT_NAMESPACE "CesiumGlobeAnchorCustomization"
 
@@ -86,9 +86,9 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
                 "MultipleSelectionFilters",
                 "Latitude Longitude Height ECEF ESU"));
 
-    Row.WholeRowContent()
-        [SNew(SBox).Padding(FMargin(0.f, 4.f))
-             [SNew(STextBlock)
+    Row.WholeRowContent()[SNew(SBox).Padding(FMargin(
+        0.f,
+        4.f))[SNew(STextBlock)
                   .Text(LOCTEXT(
                       "MultiSelectInfo",
                       "Multiple actors selected. Geodetic position (Latitude, Longitude, Height; ECEF) and "
