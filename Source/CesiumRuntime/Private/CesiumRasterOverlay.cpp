@@ -126,7 +126,7 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
 
   this->OnRemove(pTileset, this->_pOverlay);
   pTileset->getOverlays().remove(this->_pOverlay);
-  this->_pOverlay = nullptr;
+  this->_pOverlay.reset();
 }
 
 void UCesiumRasterOverlay::Refresh() {

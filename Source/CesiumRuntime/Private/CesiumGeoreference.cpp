@@ -564,11 +564,6 @@ void ACesiumGeoreference::Serialize(FArchive& Ar) {
   Super::Serialize(Ar);
 
   Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
-
-  // Recompute derived values on load.
-  if (Ar.IsLoading()) {
-    this->_updateCoordinateSystem();
-  }
 }
 
 void ACesiumGeoreference::BeginPlay() {
@@ -604,6 +599,8 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 
 void ACesiumGeoreference::PostLoad() {
   Super::PostLoad();
+
+  this->_updateCoordinateSystem();
 
 #if WITH_EDITOR
   if (GEditor && IsValid(this->GetWorld()) &&
@@ -867,8 +864,7 @@ ACesiumGeoreference::ACesiumGeoreference() : AActor() {
 
     FConstructorStatics()
         : DefaultEllipsoid(TEXT(
-              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/WGS84.WGS84'")) {
-
+              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/Ellipsoids/WGS84.WGS84'")) {
     }
   };
 
