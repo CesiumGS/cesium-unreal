@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2020-2025 Bentley Systems, Inc. and Contributors
 
 #include "CesiumGaussianSplatDataInterface.h"
 
@@ -6,15 +6,15 @@
 #include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumRuntime.h"
 #include "Containers/Map.h"
+#include "Engine/Engine.h"
+#include "HLSLTypeAliases.h"
+#include "NiagaraCommon.h"
 #include "NiagaraCompileHashVisitor.h"
 #include "NiagaraComponent.h"
 #include "NiagaraDataInterface.h"
 #include "NiagaraRenderer.h"
 #include "NiagaraShaderParametersBuilder.h"
 #include "RHICommandList.h"
-#include <HLSLTypeAliases.h>
-#include <NiagaraCommon.h>
-#include <NiagaraDataInterfaceSpline.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>

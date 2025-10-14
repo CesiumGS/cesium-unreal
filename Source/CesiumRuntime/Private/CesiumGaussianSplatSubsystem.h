@@ -1,4 +1,4 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 Bentley Systems, Inc. and Contributors
 
 #pragma once
 
