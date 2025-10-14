@@ -12,30 +12,30 @@
 UENUM(BlueprintType)
 enum class EAzureMapsTilesetId : uint8 {
   /**
-   * @brief All layers with Azure Maps' main style.
+   * All roadmap layers with Azure Maps' main style.
    */
-  BaseRoad UMETA(DisplayName = "Base"),
+  BaseRoad UMETA(DisplayName = "Roadmap"),
   /**
-   * @brief All layers with Azure Maps' dark grey style.
+   * @brief All roadmap layers with Azure Maps' dark grey style.
    */
-  BaseDarkGrey,
+  BaseDarkGrey UMETA(DisplayName = "Roadmap (Dark Grey)"),
   /**
    * @brief Label data in Azure Maps' main style.
    */
-  BaseLabelsRoad,
+  BaseLabelsRoad UMETA(DisplayName = "Labels"),
   /**
    * @brief Label data in Azure Maps' dark grey style.
    */
-  BaseLabelsDarkGrey,
+  BaseLabelsDarkGrey UMETA(DisplayName = "Labels (Dark Grey)"),
   /**
    * @brief A combination of satellite or aerial imagery. Only available in S1
    * and G2 pricing SKU.
    */
   Imagery,
   /**
-   * @brief Shaded relief and terra layers.
+   * Shaded relief and terra layers.
    */
-  Terra,
+  Terra
 };
 
 /**
@@ -64,7 +64,7 @@ public:
    * The tileset ID to use.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  EAzureMapsTilesetId TilesetId = EAzureMapsTilesetId::Imagery;
+  EAzureMapsTilesetId TilesetId = EAzureMapsTilesetId::BaseRoad;
 
   /**
    * The language in which search results should be returned. This should be one
