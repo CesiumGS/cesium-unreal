@@ -10,6 +10,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 
+const int32 RESET_FRAME_COUNT = 5;
+
 namespace {
 FBox CalculateBounds(
     const TArray<UCesiumGltfGaussianSplatComponent*>& Components) {
@@ -206,8 +208,6 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
     this->NiagaraComponent->SetSystemFixedBounds(Bounds);
     UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
     GetSplatInterface()->RefreshMatrices();
-    this->bSystemNeedsReset = true;
-    // this->NiagaraComponent->ResetSystem();
   }
 }
 
@@ -217,8 +217,8 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
         FName(TEXT("GridSize")),
         (int32)std::ceil(std::cbrt((double)this->NumSplats)));
     GetSplatInterface()->Refresh();
-    this->NiagaraComponent->ResetSystem();
-    this->bSystemNeedsReset = true;
+    this->bNeedsReset = true;
+    this->ResetFrameCounter = RESET_FRAME_COUNT;
   }
 }
 
@@ -235,6 +235,10 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     return;
   }
 
+  if (this->bNeedsReset) {
+    this->ResetFrameCounter -= 1;
+  }
+
   UWorld* World = GetPrimaryWorld();
 
   if (!IsValid(World)) {
@@ -249,17 +253,12 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
   }
 
   if (IsValid(this->NiagaraActor)) {
-    if (this->bSystemNeedsReset) {
+    if (this->bNeedsReset && this->ResetFrameCounter <= 0) {
       // We want to avoid calling ResetSystem multiple times a frame, so we
       // combine the calls into one.
-      this->bSystemNeedsReset = false;
-      // this->NiagaraComponent->ResetSystem();
+      this->bNeedsReset = false;
+      this->NiagaraComponent->ResetSystem();
     }
-
-    /*if (this->NiagaraActor->NumSplatsSpawned < this->NumSplats) {
-      const int32 NumSplatsToSpawn = FMath::Min(this->NumSplats -
-    this->NiagaraActor->NumSplatsSpawned, )
-    }*/
   }
 
   if (IsValid(this->NiagaraActor) && World == this->LastCreatedWorld) {

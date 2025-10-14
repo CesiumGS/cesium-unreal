@@ -62,6 +62,9 @@ private:
 
   UWorld* LastCreatedWorld = nullptr;
   bool bIsTickEnabled = false;
-  bool bSystemNeedsReset = false;
   int32 NumSplats = 0;
+
+  // Dirty way to avoid running too many resets too quickly.
+  int32 ResetFrameCounter = 0;
+  bool bNeedsReset = false;
 };
