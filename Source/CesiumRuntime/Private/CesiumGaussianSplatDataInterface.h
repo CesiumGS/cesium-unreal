@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "NiagaraDataInterface.h"
 #include "NiagaraDataInterfaceBase.h"
+#include "RHIUtilities.h"
 
 #include "CesiumGaussianSplatDataInterface.generated.h"
 

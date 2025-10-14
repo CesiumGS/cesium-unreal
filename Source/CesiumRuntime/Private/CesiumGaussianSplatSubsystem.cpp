@@ -2,6 +2,7 @@
 
 #include "CesiumRuntime.h"
 
+#include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "RHIGlobals.h"
 
