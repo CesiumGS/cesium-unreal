@@ -75,9 +75,9 @@ enum class EAzureMapsTilesetId : uint8 {
    */
   TrafficDelay UMETA(DisplayName = "Traffic (Delay)"),
   /**
-   * Reduced traffic tiles in Azure Maps' dark style. This only shows the
-   * traffic routes without the delay points that are otherwise included in
-   * TrafficAbsolute.
+   * Reduced traffic tiles in Azure Maps' dark style. This shows the traffic
+   * routes and major delay points, but filters out some data that is otherwise
+   * included in TrafficAbsolute.
    */
   TrafficReduced UMETA(DisplayName = "Traffic (Reduced)"),
 };
