@@ -202,14 +202,14 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         this->SplatIndicesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
-            sizeof(int32),
+            sizeof(uint32),
             NumSplats,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
         this->SplatSHDegreesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
-            sizeof(int32),
+            sizeof(uint32),
             SplatSystem->SplatComponents.Num() * 3,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
@@ -245,15 +245,15 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                                        TotalCoeffsCount * 4 * sizeof(float),
                                        EResourceLockMode::RLM_WriteOnly))
                                  : nullptr;
-        int32* IndexBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
+        uint32* IndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatIndicesBuffer.Buffer,
             0,
-            NumSplats * sizeof(int32),
+            NumSplats * sizeof(uint32),
             EResourceLockMode::RLM_WriteOnly));
-        int32* SHDegreesBuffer = static_cast<int32*>(RHICmdList.LockBuffer(
+        uint32* SHDegreesBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatSHDegreesBuffer.Buffer,
             0,
-            SplatSystem->SplatComponents.Num() * sizeof(int32) * 3,
+            SplatSystem->SplatComponents.Num() * sizeof(uint32) * 3,
             EResourceLockMode::RLM_WriteOnly));
 
         int32 CoeffCountWritten = 0;
@@ -288,12 +288,13 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                 Component->SphericalHarmonics.Num() * sizeof(float));
           }
           for (int32 j = 0; j < Component->NumSplats; j++) {
-            IndexBuffer[SplatCountWritten + j] = i;
+            IndexBuffer[SplatCountWritten + j] = static_cast<uint32>(i);
           }
 
-          SHDegreesBuffer[i * 3] = Component->NumCoefficients;
-          SHDegreesBuffer[i * 3 + 1] = CoeffCountWritten;
-          SHDegreesBuffer[i * 3 + 2] = SplatCountWritten;
+          SHDegreesBuffer[i * 3] =
+              static_cast<uint32>(Component->NumCoefficients);
+          SHDegreesBuffer[i * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
+          SHDegreesBuffer[i * 3 + 2] = static_cast<uint32>(SplatCountWritten);
 
           SplatCountWritten += Component->NumSplats;
           CoeffCountWritten +=
@@ -331,7 +332,7 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_SplatsCount"));
   OutHLSL.Appendf(
-      TEXT("Buffer<int> %s%s;\n"),
+      TEXT("Buffer<uint> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_SplatIndices"));
   OutHLSL.Appendf(
@@ -355,7 +356,7 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_Colors"));
   OutHLSL.Appendf(
-      TEXT("Buffer<int> %s%s;\n"),
+      TEXT("Buffer<uint> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_SplatSHDegrees"));
   OutHLSL.Appendf(
@@ -771,7 +772,7 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
     Params->SplatsCount =
         IsValid(SplatSystem) ? SplatSystem->GetNumSplats() : 0;
     Params->SplatIndices =
-        FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatIndicesBuffer.SRV);
+        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatIndicesBuffer.SRV);
     Params->SplatMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
         DIProxy.SplatMatricesBuffer.SRV);
     Params->Positions =
@@ -785,7 +786,7 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
     Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(
         DIProxy.SHNonZeroCoeffsBuffer.SRV);
     Params->SplatSHDegrees =
-        FNiagaraRenderer::GetSrvOrDefaultInt(DIProxy.SplatSHDegreesBuffer.SRV);
+        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatSHDegreesBuffer.SRV);
   }
 }
 
