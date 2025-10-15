@@ -15,10 +15,28 @@ std::string getTilesetId(EAzureMapsTilesetId tilesetId) {
     return AzureMapsTilesetId::baseLabelsRoad;
   case EAzureMapsTilesetId::BaseLabelsDarkGrey:
     return AzureMapsTilesetId::baseLabelsDarkGrey;
+  case EAzureMapsTilesetId::BaseHybridRoad:
+    return AzureMapsTilesetId::baseHybridRoad;
+  case EAzureMapsTilesetId::BaseHybridDarkGrey:
+    return AzureMapsTilesetId::baseHybridDarkGrey;
   case EAzureMapsTilesetId::Imagery:
     return AzureMapsTilesetId::imagery;
   case EAzureMapsTilesetId::Terra:
     return AzureMapsTilesetId::terra;
+  case EAzureMapsTilesetId::WeatherRadar:
+    return AzureMapsTilesetId::weatherRadar;
+  case EAzureMapsTilesetId::WeatherInfrared:
+    return AzureMapsTilesetId::weatherInfrared;
+  case EAzureMapsTilesetId::TrafficAbsolute:
+    return AzureMapsTilesetId::trafficAbsolute;
+  case EAzureMapsTilesetId::TrafficRelativeMain:
+    return AzureMapsTilesetId::trafficRelativeMain;
+  case EAzureMapsTilesetId::TrafficRelativeDark:
+    return AzureMapsTilesetId::trafficRelativeDark;
+  case EAzureMapsTilesetId::TrafficDelay:
+    return AzureMapsTilesetId::trafficDelay;
+  case EAzureMapsTilesetId::TrafficReduced:
+    return AzureMapsTilesetId::trafficReduced;
   case EAzureMapsTilesetId::BaseRoad:
   default:
     return AzureMapsTilesetId::baseRoad;

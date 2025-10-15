@@ -1,5 +1,15 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added `CesiumAzureMapsRasterOverlay`.
+
+##### Fixes :wrench:
+
+- Fixed a bug where `CesiumCreditSystem` would not filter out empty credits, resulting in duplicate on-screen delimiters.
+
 ### v2.20.0 - 2025-10-01
 
 ##### Additions :tada:

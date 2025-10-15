@@ -14,28 +14,72 @@ enum class EAzureMapsTilesetId : uint8 {
   /**
    * All roadmap layers with Azure Maps' main style.
    */
-  BaseRoad UMETA(DisplayName = "Roadmap"),
+  BaseRoad UMETA(DisplayName = "Base"),
   /**
-   * @brief All roadmap layers with Azure Maps' dark grey style.
+   * All roadmap layers with Azure Maps' dark grey style.
    */
-  BaseDarkGrey UMETA(DisplayName = "Roadmap (Dark Grey)"),
+  BaseDarkGrey UMETA(DisplayName = "Base (Dark Grey)"),
   /**
-   * @brief Label data in Azure Maps' main style.
+   * Label data in Azure Maps' main style.
    */
   BaseLabelsRoad UMETA(DisplayName = "Labels"),
   /**
-   * @brief Label data in Azure Maps' dark grey style.
+   * Label data in Azure Maps' dark grey style.
    */
   BaseLabelsDarkGrey UMETA(DisplayName = "Labels (Dark Grey)"),
   /**
-   * @brief A combination of satellite or aerial imagery. Only available in S1
-   * and G2 pricing SKU.
+   * Road, boundary, and label data in Azure Maps' main style.
+   */
+  BaseHybridRoad UMETA(DisplayName = "Hybrid"),
+  /**
+   * Road, boundary, and label data in Azure Maps' dark grey style.
+   */
+  BaseHybridDarkGrey UMETA(DisplayName = "Hybrid (Dark Grey)"),
+  /**
+   * A combination of satellite or aerial imagery. Only available for accounts
+   * under S1 and G2 pricing SKU.
    */
   Imagery,
   /**
    * Shaded relief and terra layers.
    */
-  Terra
+  Terra,
+  /**
+   * Weather radar tiles. Latest weather radar images including areas of rain,
+   * snow, ice and mixed conditions.
+   */
+  WeatherRadar UMETA(DisplayName = "Weather (Radar)"),
+  /**
+   * Weather infrared tiles. Latest infrared satellite images showing clouds by
+   * their temperature.
+   */
+  WeatherInfrared UMETA(DisplayName = "Weather (Infrared)"),
+  /**
+   * Absolute traffic tiles in Azure Maps' main style.
+   */
+  TrafficAbsolute UMETA(DisplayName = "Traffic (Absolute)"),
+  /**
+   * Relative traffic tiles in Azure Maps' main style. This filters out traffic
+   * data from smaller streets that are otherwise included in TrafficAbsolute.
+   */
+  TrafficRelativeMain UMETA(DisplayName = "Traffic (Relative)"),
+  /**
+   * Relative traffic tiles in Azure Maps' dark style. This filters out traffic
+   * data from smaller streets that are otherwise included in TrafficAbsolute.
+   */
+  TrafficRelativeDark UMETA(DisplayName = "Traffic (Relative, Dark)"),
+  /**
+   * Delay traffic tiles in Azure Maps' dark style. This only shows the points
+   * of delay along traffic routes that are otherwise included in
+   * TrafficAbsolute.
+   */
+  TrafficDelay UMETA(DisplayName = "Traffic (Delay)"),
+  /**
+   * Reduced traffic tiles in Azure Maps' dark style. This only shows the
+   * traffic routes without the delay points that are otherwise included in
+   * TrafficAbsolute.
+   */
+  TrafficReduced UMETA(DisplayName = "Traffic (Reduced)"),
 };
 
 /**
