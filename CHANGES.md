@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug where `CesiumCreditSystem` would not filter out empty credits, resulting in duplicate on-screen delimiters.
+- Fixed a problem where multi-selecting `UCesiumGlobeAnchorComponent` could cause the selected components to teleport to 0 degrees longitude and 0 degrees latitude. Now, the geospatial position and orientation fields are hidden while multi-selecting.
 
 ### v2.20.0 - 2025-10-01
 
