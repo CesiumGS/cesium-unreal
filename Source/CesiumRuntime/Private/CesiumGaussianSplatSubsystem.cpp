@@ -128,7 +128,7 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
       UNiagaraSystem::StaticClass(),
       nullptr,
       TEXT(
-          "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatSystem.GaussianSplatSystem'")));
+          "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'")));
 
   FFXSystemSpawnParameters SpawnParams;
   SpawnParams.WorldContextObject = &InWorld;
