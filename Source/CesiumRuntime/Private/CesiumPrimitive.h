@@ -143,15 +143,9 @@ public:
   virtual const CesiumPrimitiveData& getPrimitiveData() const = 0;
 
   // from ICesiumLoadedTilePrimitive:
-  const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const override {
-    return getPrimitiveData().pMeshPrimitive;
-  }
-  const FCesiumPrimitiveFeatures& GetPrimitiveFeatures() const override {
-    return getPrimitiveData().Features;
-  }
-  const FCesiumPrimitiveMetadata& GetPrimitiveMetadata() const override {
-    return getPrimitiveData().Metadata;
-  }
+  const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const override;
+  const FCesiumPrimitiveFeatures& GetPrimitiveFeatures() const override;
+  const FCesiumPrimitiveMetadata& GetPrimitiveMetadata() const override;
 
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
