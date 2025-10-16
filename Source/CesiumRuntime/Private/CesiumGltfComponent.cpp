@@ -1,7 +1,9 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfComponent.h"
+
 #include "Async/Async.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
@@ -1551,6 +1553,8 @@ static void loadPrimitive(
   positionBuffer.Init(numVertices, false);
 
   {
+    // Note: scaling from glTF vertices to Unreal's must match
+    // UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor
     if (duplicateVertices) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (uint32 i = 0; i < numVertices; ++i) {
@@ -2471,7 +2475,6 @@ static void SetGltfParameterValues(
     CesiumGltf::Model& model,
     LoadedPrimitiveResult& loadResult,
     const CesiumGltf::Material& material,
-    const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2483,7 +2486,9 @@ static void SetGltfParameterValues(
             index),
         static_cast<float>(textureCoordinateSet.second));
   }
-
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
   if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
@@ -3138,11 +3143,6 @@ static void loadPrimitiveGameThreadPart(
   const CesiumGltf::Material& material =
       loadResult.materialIndex != -1 ? model.materials[loadResult.materialIndex]
                                      : defaultMaterial;
-
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
-
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
@@ -3168,13 +3168,22 @@ static void loadPrimitiveGameThreadPart(
   }
 #endif
 
-  UMaterialInstanceDynamic* pMaterialForGltfPrimitive;
+  // Move this right now: CreateMaterial may need them!
+  // "Safe" even though loadResult is still used later, because the methods used
+  // during material setup (SetGltfParameterValues, etc.) below do not use these
+  // members.
+  primData.Features = std::move(loadResult.Features);
+  primData.Metadata = std::move(loadResult.Metadata);
+
+  UMaterialInstanceDynamic* pMaterialForGltfPrimitive = nullptr;
+  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+      pTilesetActor->GetLifecycleEventReceiver();
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
+    ensure(pUserDesignatedMaterial);
 
     UMaterialInstanceDynamic* pUserDesignatedMaterialAsDynamic =
         Cast<UMaterialInstanceDynamic>(pUserDesignatedMaterial);
-
     // If the user-designated material is a UMaterialInstanceDynamic, Create()
     // will reject it as a valid instance parent.  Defer to its non-dynamic
     // parent instead.
@@ -3183,10 +3192,26 @@ static void loadPrimitiveGameThreadPart(
             ? pUserDesignatedMaterialAsDynamic->Parent.Get()
             : pUserDesignatedMaterial;
 
-    pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
-        pBaseMaterial,
-        nullptr,
-        ImportedSlotName);
+    if (pLifecycleEventReceiver) {
+      // Possibility to override the material for this primitive
+      pMaterialForGltfPrimitive = pLifecycleEventReceiver->CreateMaterial(
+          *pCesiumPrimitive,
+          pBaseMaterial,
+          ImportedSlotName);
+      check(pMaterialForGltfPrimitive);
+      // pMaterialForGltfPrimitive created above may not have used the
+      // suggested pBaseMaterial passed as input
+      pBaseMaterial = pMaterialForGltfPrimitive->Parent.Get();
+      // may have changed but we don't need it from now on:
+      pUserDesignatedMaterialAsDynamic = nullptr;
+    } else {
+      // Same as ICesium3DTilesetLifecycleEventReceiver::CreateMaterial's
+      // default implementation
+      pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
+          pBaseMaterial,
+          nullptr,
+          ImportedSlotName);
+    }
 
     pMaterialForGltfPrimitive->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
@@ -3194,7 +3219,6 @@ static void loadPrimitiveGameThreadPart(
         model,
         loadResult,
         material,
-        pbr,
         pMaterialForGltfPrimitive,
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
@@ -3257,7 +3281,6 @@ static void loadPrimitiveGameThreadPart(
           model,
           loadResult,
           material,
-          pbr,
           pMaterialForGltfPrimitive,
           EMaterialParameterAssociation::LayerParameter,
           0);
@@ -3350,10 +3373,16 @@ static void loadPrimitiveGameThreadPart(
             it.FontPage);
       }
     }
-  }
 
-  primData.Features = std::move(loadResult.Features);
-  primData.Metadata = std::move(loadResult.Metadata);
+    // Extra material customizations
+    if (pLifecycleEventReceiver) {
+      pLifecycleEventReceiver->CustomizeMaterial(
+          *pCesiumPrimitive,
+          *pMaterialForGltfPrimitive,
+          pCesiumData,
+          material);
+    }
+  }
 
   primData.EncodedFeatures = std::move(loadResult.EncodedFeatures);
   primData.EncodedMetadata = std::move(loadResult.EncodedMetadata);
@@ -3426,6 +3455,11 @@ static void loadPrimitiveGameThreadPart(
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
     pMesh->RegisterComponent();
   }
+
+  // Call the observer callback (if any) once all is done
+  if (pLifecycleEventReceiver) {
+    pLifecycleEventReceiver->OnTileMeshPrimitiveLoaded(*pCesiumPrimitive);
+  }
 }
 
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
@@ -3464,6 +3498,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   // }
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  Gltf->pTile = &tile;
   Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
@@ -3510,9 +3545,22 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
 
+  if (ICesium3DTilesetLifecycleEventReceiver* Receiver =
+          pTilesetActor->GetLifecycleEventReceiver()) {
+    Receiver->OnTileLoaded(*Gltf);
+  }
+
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
+}
+
+void UCesiumGltfComponent::OnVisibilityChanged() {
+  USceneComponent::OnVisibilityChanged();
+  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+      GetTilesetActor().GetLifecycleEventReceiver();
+  if (pLifecycleEventReceiver)
+    pLifecycleEventReceiver->OnTileVisibilityChanged(*this, GetVisibleFlag());
 }
 
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
@@ -3543,6 +3591,35 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
+}
+
+const CesiumGltf::Model* UCesiumGltfComponent::GetGltfModel() const {
+  if (pTile) {
+    if (auto RenderContent = pTile->getContent().getRenderContent())
+      return &RenderContent->getModel();
+  }
+  return nullptr;
+}
+
+const FCesiumModelMetadata& UCesiumGltfComponent::GetModelMetadata() const {
+  return Metadata;
+}
+
+const Cesium3DTilesSelection::TileID& UCesiumGltfComponent::GetTileID() const {
+  return pTile->getTileID();
+}
+
+ACesium3DTileset& UCesiumGltfComponent::GetTilesetActor() {
+  return *Cast<ACesium3DTileset>(GetOuter());
+}
+
+FVector
+UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor() const {
+  // Note: replicates logic from (static) loadPrimitive
+  return FVector(
+      CesiumPrimitiveData::positionScaleFactor,
+      -CesiumPrimitiveData::positionScaleFactor,
+      CesiumPrimitiveData::positionScaleFactor);
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(
