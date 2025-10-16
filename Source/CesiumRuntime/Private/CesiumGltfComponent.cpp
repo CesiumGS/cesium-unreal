@@ -3544,8 +3544,11 @@ UCesiumGltfComponent::CreateOffGameThread(
       }
     }
   }
-  if (auto* Receiver = pTilesetActor->GetLifecycleEventReceiver())
+
+  if (ICesium3DTilesetLifecycleEventReceiver* Receiver =
+          pTilesetActor->GetLifecycleEventReceiver()) {
     Receiver->OnTileLoaded(*Gltf);
+  }
 
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -3554,7 +3557,8 @@ UCesiumGltfComponent::CreateOffGameThread(
 
 void UCesiumGltfComponent::OnVisibilityChanged() {
   USceneComponent::OnVisibilityChanged();
-  auto* pLifecycleEventReceiver = GetTilesetActor().GetLifecycleEventReceiver();
+  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+      GetTilesetActor().GetLifecycleEventReceiver();
   if (pLifecycleEventReceiver)
     pLifecycleEventReceiver->OnTileVisibilityChanged(*this, GetVisibleFlag());
 }
@@ -3590,9 +3594,10 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
 }
 
 const CesiumGltf::Model* UCesiumGltfComponent::GetGltfModel() const {
-  if (pTile)
+  if (pTile) {
     if (auto RenderContent = pTile->getContent().getRenderContent())
       return &RenderContent->getModel();
+  }
   return nullptr;
 }
 
