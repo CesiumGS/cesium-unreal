@@ -142,7 +142,7 @@ public:
   virtual CesiumPrimitiveData& getPrimitiveData() = 0;
   virtual const CesiumPrimitiveData& getPrimitiveData() const = 0;
 
-// from ICesiumLoadedTilePrimitive:
+  // from ICesiumLoadedTilePrimitive:
   const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const override {
     return getPrimitiveData().pMeshPrimitive;
   }

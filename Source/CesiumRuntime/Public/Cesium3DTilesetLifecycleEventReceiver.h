@@ -96,8 +96,7 @@ public:
    * @param Tile The tile for which visibility is being toggled
    * @param bVisible New visibility flag being applied
    */
-  virtual void
-  OnTileVisibilityChanged(ICesiumLoadedTile& Tile, bool bVisible);
+  virtual void OnTileVisibilityChanged(ICesiumLoadedTile& Tile, bool bVisible);
 
   /**
    * Called before a tile is unloaded.

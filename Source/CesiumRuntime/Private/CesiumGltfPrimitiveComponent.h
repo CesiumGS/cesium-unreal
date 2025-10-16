@@ -47,8 +47,8 @@ public:
   // from ICesiumLoadedTilePrimitive
   ICesiumLoadedTile& GetLoadedTile() override;
   UStaticMeshComponent& GetMeshComponent() override;
-  std::optional<uint32_t>
-  FindTextureCoordinateIndexForGltfAccessor(int32_t accessorIndex) const override;
+  std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
+      int32_t accessorIndex) const override;
 
   virtual void OnCreatePhysicsState() override;
 
@@ -82,8 +82,8 @@ public:
   // from ICesiumLoadedTilePrimitive
   ICesiumLoadedTile& GetLoadedTile() override;
   UStaticMeshComponent& GetMeshComponent() override;
-  std::optional<uint32_t>
-  FindTextureCoordinateIndexForGltfAccessor(int32_t accessorIndex) const override;
+  std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
+      int32_t accessorIndex) const override;
 
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
