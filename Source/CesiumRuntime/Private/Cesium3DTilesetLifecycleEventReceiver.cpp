@@ -17,7 +17,7 @@ void ICesium3DTilesetLifecycleEventReceiver::CustomizeMaterial(
     ICesiumLoadedTilePrimitive& TilePrimitive,
     UMaterialInstanceDynamic& Material,
     const UCesiumMaterialUserData* CesiumData,
-    const CesiumGltf::Material& GlTFmaterial) {}
+    const CesiumGltf::Material& GltfMaterial) {}
 
 void ICesium3DTilesetLifecycleEventReceiver::OnTileMeshPrimitiveLoaded(
     ICesiumLoadedTilePrimitive& TilePrimitive) {}
