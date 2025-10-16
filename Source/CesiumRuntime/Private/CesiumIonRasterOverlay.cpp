@@ -46,12 +46,18 @@ UCesiumIonRasterOverlay::CreateOverlay(
   if (*apiUrl.rbegin() != '/')
     apiUrl += '/';
 
-  return std::make_unique<CesiumRasterOverlays::IonRasterOverlay>(
+  auto pOverlay = std::make_unique<CesiumRasterOverlays::IonRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->IonAssetID,
       TCHAR_TO_UTF8(*token),
       options,
       apiUrl);
+
+  if (!this->AssetOptions.IsEmpty()) {
+    pOverlay->setAssetOptions(TCHAR_TO_UTF8(*this->AssetOptions));
+  }
+
+  return pOverlay;
 }
 
 void UCesiumIonRasterOverlay::PostLoad() {

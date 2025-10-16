@@ -117,10 +117,10 @@ void CesiumIonSession::connect() {
         }
 
         if (!ionApiUrl) {
-          promise.reject(std::runtime_error(fmt::format(
+          promise.reject(std::runtime_error(
               "Failed to retrieve API URL from the config.json file at the "
-              "specified Ion server URL: {}",
-              ionServerUrl)));
+              "specified Ion server URL: " +
+              ionServerUrl));
           return promise.getFuture();
         }
 
