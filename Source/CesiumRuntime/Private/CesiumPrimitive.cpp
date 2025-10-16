@@ -25,17 +25,14 @@ void CesiumPrimitiveData::destroy() {
   this->TexCoordAccessorMap.swap(emptyAccessorMap);
 }
 
-const CesiumGltf::MeshPrimitive*
-ICesiumPrimitive::GetMeshPrimitive() const {
+const CesiumGltf::MeshPrimitive* ICesiumPrimitive::GetMeshPrimitive() const {
   return getPrimitiveData().pMeshPrimitive;
 }
 
-const FCesiumPrimitiveFeatures&
-ICesiumPrimitive::GetPrimitiveFeatures() const {
+const FCesiumPrimitiveFeatures& ICesiumPrimitive::GetPrimitiveFeatures() const {
   return getPrimitiveData().Features;
 }
 
-const FCesiumPrimitiveMetadata&
-ICesiumPrimitive::GetPrimitiveMetadata() const {
+const FCesiumPrimitiveMetadata& ICesiumPrimitive::GetPrimitiveMetadata() const {
   return getPrimitiveData().Metadata;
 }
