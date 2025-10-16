@@ -1259,15 +1259,21 @@ public:
    */
   void UpdateTransformFromCesium();
 
-  /** Gets the optional receiver of events related to tile components' lifecycle
+  /**
+   * Gets the optional receiver of events related to the lifecycle of tiles
+   * created by this tileset.
    */
   ICesium3DTilesetLifecycleEventReceiver* GetLifecycleEventReceiver();
 
-  /** Sets a receiver of events related to tile components' lifecycle,
-   * like tile primitive and material creation, tile finishing its loading cycle
-   * or about to unload, etc. It must implement
-   * {@link ICesium3DTilesetLifecycleEventReceiver}, otherwise it will be as if
-   * nullptr were passed. */
+  /**
+   * Sets a receiver of events related to the lifecycle of tiles
+   * created by this tileset.
+   *
+   * The receiver will be notified of events such as tile load, unload, show,
+   * and hide. The provided instance _must_ implement @ref
+   * ICesium3DTilesetLifecycleEventReceiver, otherwise it will be as if nullptr
+   * were passed.
+   */
   void SetLifecycleEventReceiver(UObject* InEventReceiver);
 
 private:
