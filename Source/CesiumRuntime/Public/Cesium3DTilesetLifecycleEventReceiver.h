@@ -75,8 +75,8 @@ public:
    *
    * @param TilePrimitive Loaded tile primitive to which the material applies.
    * @param Material The Unreal material created for the primitive.
-   * @param CesiumData The list of the material's layer names. This can be used to map
-   * Unreal material layers to specific behavior.
+   * @param CesiumData The list of the material's layer names. This can be used
+   * to map Unreal material layers to specific behavior.
    * @param GltfMaterial The glTF material definition.
    */
   virtual void CustomizeMaterial(
@@ -107,7 +107,7 @@ public:
   /**
    * Called when a tile is shown or hidden. This may be called zero or more
    * times per tile.
-   * 
+   *
    * @param Tile The tile for which visibility is being toggled.
    * @param bVisible New visibility flag being applied.
    */
@@ -115,7 +115,7 @@ public:
 
   /**
    * Called before a tile is unloaded.
-   * 
+   *
    * @param Tile The tile that is about to be unloaded.
    */
   virtual void OnTileUnloading(ICesiumLoadedTile& Tile);
