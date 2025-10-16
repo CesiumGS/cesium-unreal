@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added the interface `ICesium3DTilesetLifecycleEventReceiver`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetLifecycleEventReceiver`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
+
 ##### Fixes :wrench:
 
 - Fixed a problem where multi-selecting `UCesiumGlobeAnchorComponent` could cause the selected components to teleport to 0 degrees longitude and 0 degrees latitude. Now, the geospatial position and orientation fields are hidden while multi-selecting.
@@ -51,10 +55,6 @@ In addition to the above, this release updates [cesium-native](https://github.co
 - Added `FCesiumPropertyAttribute` to represent glTF property attributes and `UCesiumPropertyAttributeBlueprintLibrary` to act upon them with Blueprints.
 - Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
 - Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
-
-##### Additions :tada:
-
-- Added the interface `ICesium3DTilesetLifecycleEventReceiver`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetLifecycleEventReceiver`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
 
 ##### Fixes :wrench:
 
