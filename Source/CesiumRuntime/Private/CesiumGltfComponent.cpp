@@ -3484,7 +3484,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    Cesium3DTilesSelection::Tile& tile,
+    const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 

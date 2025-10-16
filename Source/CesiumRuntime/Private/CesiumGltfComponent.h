@@ -89,7 +89,7 @@ public:
       UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
-      Cesium3DTilesSelection::Tile& tile,
+      const Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision);
 
   UCesiumGltfComponent();
@@ -106,7 +106,7 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
-  Cesium3DTilesSelection::Tile* pTile = nullptr;
+  const Cesium3DTilesSelection::Tile* pTile = nullptr;
 
   FCesiumModelMetadata Metadata{};
   EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
