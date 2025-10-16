@@ -7,8 +7,10 @@
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumVoxelRendererComponent.h"
 #include "CreateGltfOptions.h"
 #include "ExtensionImageAssetUnreal.h"
+
 #include <Cesium3DTilesSelection/Tile.h>
 #include <Cesium3DTilesSelection/TileLoadResult.h>
 #include <CesiumAsync/AsyncSystem.h>
@@ -44,6 +46,10 @@ UnrealPrepareRendererResources::prepareInLoadThread(
   } else if (this->_pActor->_metadataDescription_DEPRECATED) {
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);
+  }
+
+  if (this->_pActor->_pVoxelRendererComponent) {
+    options.pVoxelOptions = &this->_pActor->_pVoxelRendererComponent->Options;
   }
 
   const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
