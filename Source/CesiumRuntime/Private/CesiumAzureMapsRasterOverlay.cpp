@@ -1,8 +1,8 @@
 // Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumAzureMapsRasterOverlay.h"
-#include "Cesium3DTilesSelection/Tileset.h"
-#include "CesiumRasterOverlays/AzureMapsRasterOverlay.h"
+#include <Cesium3DTilesSelection/Tileset.h>
+#include <CesiumRasterOverlays/AzureMapsRasterOverlay.h>
 
 using namespace CesiumRasterOverlays;
 
