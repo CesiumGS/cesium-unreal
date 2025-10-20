@@ -340,15 +340,19 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
       const CesiumUtility::Credit& credit = creditsToShowThisFrame[i];
 
-      FString CreditRtf;
+      FString creditRtf;
       const std::string& html = _pCreditSystem->getHtml(credit);
 
       auto htmlFind = _htmlToRtf.find(html);
       if (htmlFind != _htmlToRtf.end()) {
-        CreditRtf = htmlFind->second;
+        creditRtf = htmlFind->second;
       } else {
-        CreditRtf = ConvertHtmlToRtf(html);
-        _htmlToRtf.insert({html, CreditRtf});
+        creditRtf = ConvertHtmlToRtf(html);
+        _htmlToRtf.insert({html, creditRtf});
+      }
+
+      if (creditRtf.IsEmpty()) {
+        continue;
       }
 
       if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
@@ -358,13 +362,13 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
           OnScreenCredits += TEXT(" \u2022 ");
         }
 
-        OnScreenCredits += CreditRtf;
+        OnScreenCredits += creditRtf;
       } else {
         if (i != 0) {
           Credits += "\n";
         }
 
-        Credits += CreditRtf;
+        Credits += creditRtf;
       }
     }
 

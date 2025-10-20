@@ -111,7 +111,7 @@ public:
    * overlay will be removed from the Cesium3DTileset if already present but not
    * re-added.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
   void Refresh();
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
