@@ -1,6 +1,8 @@
 // Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumGoogleMapTilesRasterOverlay.h"
+#include "CesiumRuntime.h"
+
 #include <Cesium3DTilesSelection/Tileset.h>
 #include <CesiumJsonReader/JsonObjectJsonHandler.h>
 #include <CesiumJsonReader/JsonReader.h>

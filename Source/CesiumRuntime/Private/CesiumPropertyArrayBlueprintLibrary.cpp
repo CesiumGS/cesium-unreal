@@ -6,54 +6,67 @@
 
 ECesiumMetadataBlueprintType
 UCesiumPropertyArrayBlueprintLibrary::GetElementBlueprintType(
-    UPARAM(ref) const FCesiumPropertyArray& array) {
-  return CesiumMetadataValueTypeToBlueprintType(array._elementType);
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  return CesiumMetadataValueTypeToBlueprintType(Array._elementType);
 }
 
 ECesiumMetadataBlueprintType
 UCesiumPropertyArrayBlueprintLibrary::GetBlueprintComponentType(
-    UPARAM(ref) const FCesiumPropertyArray& array) {
-  return CesiumMetadataValueTypeToBlueprintType(array._elementType);
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  return CesiumMetadataValueTypeToBlueprintType(Array._elementType);
 }
 
 FCesiumMetadataValueType
 UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(
-    UPARAM(ref) const FCesiumPropertyArray& array) {
-  return array._elementType;
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  return Array._elementType;
 }
 
 int64 UCesiumPropertyArrayBlueprintLibrary::GetArraySize(
-    UPARAM(ref) const FCesiumPropertyArray& array) {
-  return swl::visit([](const auto& view) { return view.size(); }, array._value);
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  if (Array._valueArray.IsSet()) {
+    return Array._valueArray->Num();
+  }
+
+  return swl::visit(
+      [](const auto& view) { return view.size(); },
+      Array._valueView);
 }
 
 int64 UCesiumPropertyArrayBlueprintLibrary::GetSize(
-    UPARAM(ref) const FCesiumPropertyArray& array) {
-  return swl::visit([](const auto& view) { return view.size(); }, array._value);
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  return UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
 }
 
 FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
-    UPARAM(ref) const FCesiumPropertyArray& array,
-    int64 index) {
+    UPARAM(ref) const FCesiumPropertyArray& Array,
+    int64 Index) {
+  int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
+  if (Index < 0 || Index >= arraySize) {
+    FFrame::KismetExecutionMessage(
+        *FString::Printf(
+            TEXT(
+                "Attempted to access index %d from CesiumPropertyArray of length %d!"),
+            Index,
+            arraySize),
+        ELogVerbosity::Warning,
+        FName("CesiumPropertyArrayOutOfBoundsWarning"));
+    return FCesiumMetadataValue();
+  }
+
+  if (Array._valueArray.IsSet()) {
+    return (*Array._valueArray)[Index];
+  }
+
   return swl::visit(
-      [index, &pEnumDefinition = array._pEnumDefinition](
+      [Index, &pEnumDefinition = Array._pEnumDefinition](
           const auto& v) -> FCesiumMetadataValue {
-        if (index < 0 || index >= v.size()) {
-          FFrame::KismetExecutionMessage(
-              *FString::Printf(
-                  TEXT(
-                      "Attempted to access index %d from CesiumPropertyArray of length %d!"),
-                  index,
-                  v.size()),
-              ELogVerbosity::Warning,
-              FName("CesiumPropertyArrayOutOfBoundsWarning"));
-          return FCesiumMetadataValue();
-        }
-        return FCesiumMetadataValue(v[index], pEnumDefinition);
+        return FCesiumMetadataValue(v[Index], pEnumDefinition);
       },
-      array._value);
+      Array._valueView);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 ECesiumMetadataTrueType_DEPRECATED
 UCesiumPropertyArrayBlueprintLibrary::GetTrueComponentType(
     UPARAM(ref) const FCesiumPropertyArray& array) {
@@ -64,130 +77,64 @@ bool UCesiumPropertyArrayBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     bool defaultValue) {
-  return swl::visit(
-      [index, defaultValue](const auto& v) -> bool {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        return CesiumGltf::MetadataConversions<bool, decltype(value)>::convert(
-                   value)
-            .value_or(defaultValue);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, defaultValue);
 }
 
 uint8 UCesiumPropertyArrayBlueprintLibrary::GetByte(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     uint8 defaultValue) {
-  return swl::visit(
-      [index, defaultValue](const auto& v) -> uint8 {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        return CesiumGltf::MetadataConversions<uint8, decltype(value)>::convert(
-                   value)
-            .value_or(defaultValue);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetByte(value, defaultValue);
 }
 
 int32 UCesiumPropertyArrayBlueprintLibrary::GetInteger(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     int32 defaultValue) {
-  return swl::visit(
-      [index, defaultValue](const auto& v) -> int32 {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        return CesiumGltf::MetadataConversions<int32, decltype(value)>::convert(
-                   value)
-            .value_or(defaultValue);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetInteger(value, defaultValue);
 }
 
 int64 UCesiumPropertyArrayBlueprintLibrary::GetInteger64(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     int64 defaultValue) {
-  return swl::visit(
-      [index, defaultValue](const auto& v) -> int64 {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        return CesiumGltf::MetadataConversions<int64_t, decltype(value)>::
-            convert(value)
-                .value_or(defaultValue);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+      value,
+      defaultValue);
 }
 
 float UCesiumPropertyArrayBlueprintLibrary::GetFloat(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     float defaultValue) {
-  return swl::visit(
-      [index, defaultValue](const auto& v) -> float {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        return CesiumGltf::MetadataConversions<float, decltype(value)>::convert(
-                   value)
-            .value_or(defaultValue);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetFloat(value, defaultValue);
 }
 
 double UCesiumPropertyArrayBlueprintLibrary::GetFloat64(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     double defaultValue) {
-  return swl::visit(
-      [index, defaultValue](const auto& v) -> double {
-        auto value = v[index];
-        return CesiumGltf::MetadataConversions<double, decltype(value)>::
-            convert(value)
-                .value_or(defaultValue);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, defaultValue);
 }
 
 FString UCesiumPropertyArrayBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     const FString& defaultValue) {
-  return swl::visit(
-      [index, defaultValue, &EnumDefinition = array._pEnumDefinition](
-          const auto& v) -> FString {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        using ValueType = decltype(value);
-
-        if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
-          if (EnumDefinition.IsValid()) {
-            TOptional<FString> MaybeName = EnumDefinition->GetName(value);
-            if (MaybeName.IsSet()) {
-              return MaybeName.GetValue();
-            }
-          }
-        }
-
-        auto maybeString =
-            CesiumGltf::MetadataConversions<std::string, ValueType>::convert(
-                value);
-        if (!maybeString) {
-          return defaultValue;
-        }
-        return UnrealMetadataConversions::toString(*maybeString);
-      },
-      array._value);
+  FCesiumMetadataValue value =
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index);
+  return UCesiumMetadataValueBlueprintLibrary::GetString(value, defaultValue);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

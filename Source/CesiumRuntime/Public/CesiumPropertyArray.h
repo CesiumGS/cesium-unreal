@@ -4,12 +4,15 @@
 
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
+#include "Misc/Optional.h"
 #include "UObject/ObjectMacros.h"
 
 #include <CesiumGltf/PropertyArrayView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 #include <swl/variant.hpp>
 #include "CesiumPropertyArray.generated.h"
+
+struct FCesiumMetadataValue;
 
 /**
  * A Blueprint-accessible wrapper for an array property in glTF metadata.
@@ -102,7 +105,7 @@ public:
   /**
    * Constructs an empty array instance with an unknown element type.
    */
-  FCesiumPropertyArray() : _value(), _elementType() {}
+  FCesiumPropertyArray() : _valueView(), _valueArray(), _elementType() {}
 
   /**
    * Constructs an array instance.
@@ -113,11 +116,12 @@ public:
   FCesiumPropertyArray(
       CesiumGltf::PropertyArrayCopy<T>&& value,
       TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
-      : _value(),
+      : _valueView(),
+        _valueArray(),
         _elementType(TypeToMetadataValueType<T>(pEnumDefinition)),
         _storage(),
         _pEnumDefinition(pEnumDefinition) {
-    this->_value = std::move(value).toViewAndExternalBuffer(this->_storage);
+    this->_valueView = std::move(value).toViewAndExternalBuffer(this->_storage);
   }
 
   template <typename T>
@@ -132,9 +136,21 @@ public:
   FCesiumPropertyArray(
       const CesiumGltf::PropertyArrayView<T>& value,
       TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr)
-      : _value(value),
+      : _valueView(value),
+        _valueArray(),
         _elementType(TypeToMetadataValueType<T>(pEnumDefinition)),
         _pEnumDefinition(pEnumDefinition) {}
+
+  /**
+   * Constructs an array instance from an array of existing
+   * FCesiumMetadataValues.
+   *
+   * @param values The array that will be moved into this struct.
+   * @param pEnumDefinition The enum definition this property uses, if any.
+   */
+  FCesiumPropertyArray(
+      const TArray<FCesiumMetadataValue>&& values,
+      TSharedPtr<FCesiumMetadataEnum> pEnumDefinition = nullptr);
 
   FCesiumPropertyArray(FCesiumPropertyArray&& rhs);
   FCesiumPropertyArray& operator=(FCesiumPropertyArray&& rhs);
@@ -148,7 +164,8 @@ private:
     return swl::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
   }
 
-  ArrayType _value;
+  ArrayType _valueView;
+  TOptional<TArray<FCesiumMetadataValue>> _valueArray;
   FCesiumMetadataValueType _elementType;
   std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;

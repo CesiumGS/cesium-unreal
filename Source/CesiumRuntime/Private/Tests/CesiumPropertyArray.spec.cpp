@@ -58,14 +58,14 @@ void FCesiumPropertyArraySpec::Define() {
           ECesiumMetadataBlueprintType::Byte);
     });
 
-    It("constructs non-empty array", [this]() {
+    It("constructs non-empty array from view", [this]() {
       std::vector<uint8_t> values{1, 2, 3, 4};
       CesiumGltf::PropertyArrayCopy<uint8_t> arrayView = std::vector(values);
       FCesiumPropertyArray array(arrayView);
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64>(values.size()));
+          int64(values.size()));
 
       FCesiumMetadataValueType valueType =
           UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array);
@@ -80,6 +80,57 @@ void FCesiumPropertyArraySpec::Define() {
           UCesiumPropertyArrayBlueprintLibrary::GetElementBlueprintType(array),
           ECesiumMetadataBlueprintType::Byte);
     });
+
+    It("constructs empty array from invalid TArray", [this]() {
+      TArray<FCesiumMetadataValue> values{
+          FCesiumMetadataValue(10),
+          FCesiumMetadataValue(false)};
+      FCesiumPropertyArray array(std::move(values));
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          0);
+
+      FCesiumMetadataValueType valueType =
+          UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array);
+      TestEqual("type", valueType.Type, ECesiumMetadataType::Invalid);
+      TestEqual(
+          "componentType",
+          valueType.ComponentType,
+          ECesiumMetadataComponentType::None);
+
+      TestEqual(
+          "blueprint type",
+          UCesiumPropertyArrayBlueprintLibrary::GetElementBlueprintType(array),
+          ECesiumMetadataBlueprintType::None);
+    });
+
+    It("constructs non-empty array from valid TArray", [this]() {
+      TArray<FCesiumMetadataValue> values{
+          FCesiumMetadataValue(11.50),
+          FCesiumMetadataValue(-0.1),
+          FCesiumMetadataValue(-20.8)};
+      int64 expectedSize = values.Num();
+
+      FCesiumPropertyArray array(std::move(values));
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          expectedSize);
+
+      FCesiumMetadataValueType valueType =
+          UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array);
+      TestEqual("type", valueType.Type, ECesiumMetadataType::Scalar);
+      TestEqual(
+          "componentType",
+          valueType.ComponentType,
+          ECesiumMetadataComponentType::Float64);
+
+      TestEqual(
+          "blueprint type",
+          UCesiumPropertyArrayBlueprintLibrary::GetElementBlueprintType(array),
+          ECesiumMetadataBlueprintType::Float64);
+    });
   });
 
   Describe("GetValue", [this]() {
@@ -90,7 +141,7 @@ void FCesiumPropertyArraySpec::Define() {
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64>(values.size()));
+          int64(values.size()));
 
       FCesiumMetadataValue value =
           UCesiumPropertyArrayBlueprintLibrary::GetValue(array, -1);
@@ -112,20 +163,51 @@ void FCesiumPropertyArraySpec::Define() {
           ECesiumMetadataComponentType::None);
     });
 
-    It("gets value for valid index", [this]() {
+    It("gets value for valid index with view array", [this]() {
       std::vector<uint8_t> values{1, 2, 3, 4};
       CesiumGltf::PropertyArrayCopy<uint8_t> arrayView = std::vector(values);
       FCesiumPropertyArray array(arrayView);
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64>(values.size()));
+          int64(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         FCesiumMetadataValue value =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(
-                array,
-                static_cast<int64>(i));
+            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, int64(i));
+
+        FCesiumMetadataValueType valueType =
+            UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
+        TestEqual("type", valueType.Type, ECesiumMetadataType::Scalar);
+        TestEqual(
+            "componentType",
+            valueType.ComponentType,
+            ECesiumMetadataComponentType::Uint8);
+
+        TestEqual(
+            "byte value",
+            UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+            values[i]);
+      }
+    });
+
+    It("gets value for valid index with TArray", [this]() {
+      std::vector<uint8> values{1, 2, 3, 4};
+      TArray<FCesiumMetadataValue> valuesArray{
+          FCesiumMetadataValue(values[0]),
+          FCesiumMetadataValue(values[1]),
+          FCesiumMetadataValue(values[2]),
+          FCesiumMetadataValue(values[3])};
+
+      FCesiumPropertyArray array(std::move(valuesArray));
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          int64(values.size()));
+
+      for (size_t i = 0; i < values.size(); i++) {
+        FCesiumMetadataValue value =
+            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, int64(i));
 
         FCesiumMetadataValueType valueType =
             UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
@@ -151,7 +233,7 @@ void FCesiumPropertyArraySpec::Define() {
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64>(values.size()));
+          int64(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
@@ -179,7 +261,7 @@ void FCesiumPropertyArraySpec::Define() {
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
-          static_cast<int64>(values.size()));
+          int64(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
