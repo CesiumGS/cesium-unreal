@@ -66,6 +66,21 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
       Array._valueView);
 }
 
+FString UCesiumPropertyArrayBlueprintLibrary::ToString(
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  TArray<FString> results;
+
+  const int64 size = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
+  for (int64 i = 0; i < size; i++) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyArrayBlueprintLibrary::GetValue(Array, i);
+    results.Add(
+        UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")));
+  }
+
+  return "[" + FString::Join(results, TEXT(", ")) + "]";
+}
+
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 ECesiumMetadataTrueType_DEPRECATED
 UCesiumPropertyArrayBlueprintLibrary::GetTrueComponentType(

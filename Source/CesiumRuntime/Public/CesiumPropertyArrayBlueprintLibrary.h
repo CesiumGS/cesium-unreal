@@ -73,6 +73,18 @@ public:
   static FCesiumMetadataValue
   GetValue(UPARAM(ref) const FCesiumPropertyArray& Array, int64 Index);
 
+  /**
+   * Prints the contents of the array to a human-readable string in the format
+   * "[A, B, C, ... Z]".
+   * @param Array The array.
+   * @return A string capturing the contents of the array.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyArray")
+  static FString ToString(UPARAM(ref) const FCesiumPropertyArray& Array);
+
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the best-fitting Blueprints type for the elements of this array.

@@ -225,8 +225,32 @@ void FCesiumPropertyArraySpec::Define() {
     });
   });
 
-  Describe("UCesiumPropertyArrayBlueprintLibrary::GetString", [this]() {
-    It("handles an int array correctly", [this]() {
+  Describe("ToString", [this]() {
+    It("handles bool elements", [this]() {
+      std::vector<bool> values{true, false, false, true, true};
+      // Extraneous bool constructor is needed to avoid implicit conversion
+      // under the hood.
+      TArray<FCesiumMetadataValue> valuesArray{
+          FCesiumMetadataValue(bool(values[0])),
+          FCesiumMetadataValue(bool(values[1])),
+          FCesiumMetadataValue(bool(values[2])),
+          FCesiumMetadataValue(bool(values[3])),
+          FCesiumMetadataValue(bool(values[4]))};
+
+      FCesiumPropertyArray array(std::move(valuesArray));
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          int64(values.size()));
+
+      FString expected("[true, false, false, true, true]");
+      TestEqual(
+          "ToString",
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          expected);
+    });
+
+    It("handles int elements", [this]() {
       std::vector<int32> values{1, 2, 3, -1};
       CesiumGltf::PropertyArrayCopy<int32> arrayView = std::vector(values);
       FCesiumPropertyArray array(arrayView);
@@ -235,15 +259,14 @@ void FCesiumPropertyArraySpec::Define() {
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           int64(values.size()));
 
-      for (size_t i = 0; i < values.size(); i++) {
-        TestEqual(
-            "GetString",
-            UCesiumPropertyArrayBlueprintLibrary::GetString(array, i),
-            FString(UTF8_TO_TCHAR(std::to_string(values[i]).c_str())));
-      }
+      FString expected("[1, 2, 3, -1]");
+      TestEqual(
+          "ToString",
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          expected);
     });
 
-    It("handles an enum array correctly", [this]() {
+    It("handles enum elements", [this]() {
       TSharedPtr<FCesiumMetadataEnum> enumDef = MakeShared<FCesiumMetadataEnum>(
           StaticEnum<ECesiumMetadataBlueprintType>());
       std::vector<int32> values{
@@ -263,12 +286,31 @@ void FCesiumPropertyArraySpec::Define() {
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           int64(values.size()));
 
-      for (size_t i = 0; i < values.size(); i++) {
-        TestEqual(
-            "GetString",
-            UCesiumPropertyArrayBlueprintLibrary::GetString(array, i),
-            FString(UTF8_TO_TCHAR(valueNames[i].c_str())));
-      }
+      FString expected("[Boolean, Byte, Integer, Integer64]");
+      TestEqual(
+          "ToString",
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          expected);
+    });
+
+    It("handles string elements", [this]() {
+      std::vector<std::string_view> values{"Test", "These", "Strings"};
+      TArray<FCesiumMetadataValue> valuesArray{
+          FCesiumMetadataValue(values[0]),
+          FCesiumMetadataValue(values[1]),
+          FCesiumMetadataValue(values[2])};
+
+      FCesiumPropertyArray array(std::move(valuesArray));
+      TestEqual(
+          "size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          int64(values.size()));
+
+      FString expected("[Test, These, Strings]");
+      TestEqual(
+          "ToString",
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          expected);
     });
   });
 }
