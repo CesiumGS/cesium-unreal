@@ -355,6 +355,20 @@ void AutoFillPropertyTextureNames(
 
 } // namespace
 
+void UCesiumFeaturesMetadataComponent::ViewProperties() {
+  ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  Cesium3DTilesSelection::Tileset* pTileset =
+      pOwner ? pOwner->GetTileset() : nullptr;
+  if (!pTileset) {
+    return;
+  }
+
+  pTileset->loadMetadata().thenInMainThread(
+      [pOwner](const Cesium3DTilesSelection::TilesetMetadata* /*pMetadata*/) {
+        OnCesiumFeaturesMetadataViewProperties.Broadcast(pOwner);
+      });
+}
+
 void UCesiumFeaturesMetadataComponent::AutoFill() {
   const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
   if (!pOwner) {

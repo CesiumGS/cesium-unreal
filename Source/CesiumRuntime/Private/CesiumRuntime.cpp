@@ -1,12 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumRuntime.h"
-#include "Cesium3DTilesContent/registerAllTileContentTypes.h"
-#include "CesiumAsync/CachingAssetAccessor.h"
-#include "CesiumAsync/GunzipAssetAccessor.h"
-#include "CesiumAsync/SqliteCache.h"
 #include "CesiumRuntimeSettings.h"
-#include "CesiumUtility/Tracing.h"
 #include "HAL/FileManager.h"
 #include "HttpModule.h"
 #include "Interfaces/IPluginManager.h"
@@ -15,8 +10,14 @@
 #include "SpdlogUnrealLoggerSink.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
+
+#include <Cesium3DTilesContent/registerAllTileContentTypes.h>
 #include <CesiumAsync/AsyncSystem.h>
+#include <CesiumAsync/CachingAssetAccessor.h>
+#include <CesiumAsync/GunzipAssetAccessor.h>
 #include <CesiumAsync/IAssetAccessor.h>
+#include <CesiumAsync/SqliteCache.h>
+#include <CesiumUtility/Tracing.h>
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
 
@@ -61,6 +62,7 @@ IMPLEMENT_MODULE(FCesiumRuntimeModule, CesiumRuntime)
 FCesium3DTilesetIonTroubleshooting OnCesium3DTilesetIonTroubleshooting{};
 FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting{};
+FCesiumFeaturesMetadataViewProperties OnCesiumFeaturesMetadataViewProperties{};
 
 CesiumAsync::AsyncSystem& getAsyncSystem() noexcept {
   static CesiumAsync::AsyncSystem asyncSystem(

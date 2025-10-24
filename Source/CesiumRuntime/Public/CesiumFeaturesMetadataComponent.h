@@ -27,6 +27,12 @@ class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
 public:
 #if WITH_EDITOR
   /**
+  * 
+  */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void ViewProperties();
+
+  /**
    * Populate the description of metadata and feature IDs using the current view
    * of the tileset. This determines what to encode to the GPU based on the
    * existing metadata.
@@ -34,7 +40,7 @@ public:
    * Warning: Using Auto Fill may populate the description with a large amount
    * of metadata. Make sure to delete the properties that aren't relevant.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(Category = "Cesium")
   void AutoFill();
 
   /**

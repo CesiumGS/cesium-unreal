@@ -3,8 +3,13 @@
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyArray.h"
 #include "UnrealMetadataConversions.h"
+
 #include <CesiumGltf/MetadataConversions.h>
+#include <CesiumGltf/PropertyArrayView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
+#include <CesiumUtility/JsonValue.h>
+
+static FCesiumMetadataValue EmptyMetadataValue;
 
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumMetadataValue&& rhs) =
     default;
@@ -36,6 +41,68 @@ FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(const FCesiumMetadataValue& rhs) {
   *this = FCesiumMetadataValue(rhs);
   return *this;
+}
+
+namespace {
+
+// FCesiumPropertyArray
+// fromJsonArray(const CesiumUtility::JsonValue::Array& array) {
+//   if (array.size() == 0) {
+//     return FCesiumPropertyArray();
+//   }
+//
+//   TArray<FCesiumMetadataValue> values;
+//   values.Reserve(array.size());
+//
+//   for (size_t i = 0; i < array.size(); i++) {
+//     FCesiumMetadataValue::fromJsonValue(array[i]);
+//   }
+//
+//   switch (values.Num()) {
+//   case 1:
+//     return FCesiumMetadataValue(values[0]);
+//   case 2:
+//     return FCesiumMetadataValue(glm::vec2(values[0], values[1]));
+//   case 3:
+//     return FCesiumMetadataValue(glm::vec3(values[0], values[1], values[2]));
+//   case 4:
+//     return FCesiumMetadataValue(
+//         glm::vec4(values[0], values[1], values[2], values[3]));
+//   default:
+//     return FCesiumMetadataValue();
+//   }
+// }
+} // namespace
+
+/*static*/ FCesiumMetadataValue FCesiumMetadataValue::fromJsonValue(
+    const FCesiumMetadataValueType& targetType,
+    const CesiumUtility::JsonValue& jsonValue) {
+  if (jsonValue.isArray()) {
+    return EmptyMetadataValue;
+    // return FCesiumMetadataValue(fromJsonArray(jsonValue.getArray()));
+  }
+
+  if (jsonValue.isBool()) {
+    return FCesiumMetadataValue(jsonValue.getBool());
+  }
+
+  if (jsonValue.isString()) {
+    return FCesiumMetadataValue(std::string_view(jsonValue.getString()));
+  }
+
+  if (jsonValue.isInt64()) {
+    return FCesiumMetadataValue(jsonValue.getInt64OrDefault(0));
+  }
+
+  if (jsonValue.isUint64()) {
+    return FCesiumMetadataValue(jsonValue.getUint64OrDefault(0));
+  }
+
+  if (jsonValue.isDouble()) {
+    return FCesiumMetadataValue(jsonValue.getDoubleOrDefault(0.0));
+  }
+
+  return EmptyMetadataValue;
 }
 
 ECesiumMetadataBlueprintType

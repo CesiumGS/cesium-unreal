@@ -5,6 +5,7 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
+#include "CesiumMetadataValue.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
 #include "Misc/Guid.h"
@@ -276,6 +277,41 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
 
 #pragma endregion
 
+#if WITH_EDITORONLY_DATA
+USTRUCT()
+struct FCesiumMetadataPropertyStatisticsDescription {
+  GENERATED_USTRUCT_BODY()
+  /**
+   * The ID of this property.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata|Statistics",
+      Meta = (TitleProperty = "Name"))
+  FString Id;
+
+  /**
+   * The statistics, keyed by name to value.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata|Statistics",
+      Meta = (TitleProperty = "Name"))
+  TMap<FString, FCesiumMetadataValue> Values;
+};
+
+USTRUCT()
+struct FCesiumMetadataClassStatisticsDescription {
+  GENERATED_USTRUCT_BODY()
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata",
+      Meta = (TitleProperty = "Name"))
+  TArray<FCesiumMetadataPropertyStatisticsDescription> Properties;
+};
+
+#endif
+
 /**
  * @brief Description of both feature IDs and metadata from a glTF via the
  * EXT_mesh_Features and EXT_structural_metadata extensions. Indicates what
@@ -287,6 +323,15 @@ struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
 public:
+#if WITH_EDITORONLY_DATA
+  /**
+   * @brief Description of the statistics reported by the tileset. Maps the ID
+   * of each class to its cumulative statistics.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  TMap<FString, FCesiumMetadataClassStatisticsDescription> Statistics;
+#endif
+
   /**
    * @brief Description of the feature ID sets available from the
    * EXT_mesh_features or EXT_instance_features extensions in a glTF.

@@ -37,3 +37,19 @@ FString FCesiumMetadataValueType::ToString() const {
 
   return FString::Join(strings, TEXT(" "));
 }
+
+/*static*/ FCesiumMetadataValueType FCesiumMetadataValueType::fromClassProperty(
+    const Cesium3DTiles::ClassProperty& property) {
+  CesiumGltf::PropertyType propertyType =
+      convertStringToPropertyType(property.type);
+
+  CesiumGltf::PropertyComponentType propertyComponentType =
+      property.componentType
+          ? convertStringToPropertyComponentType(*property.componentType)
+          : CesiumGltf::PropertyComponentType::None;
+
+  return FCesiumMetadataValueType{
+      ECesiumMetadataType(propertyType),
+      ECesiumMetadataComponentType(propertyComponentType),
+      property.array};
+}

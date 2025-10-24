@@ -15,6 +15,10 @@
 
 #include "CesiumMetadataValue.generated.h"
 
+namespace CesiumUtility {
+class JsonValue;
+}
+
 /**
  * A Blueprint-accessible wrapper for a glTF metadata value.
  */
@@ -257,6 +261,10 @@ public:
   FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs);
   FCesiumMetadataValue(const FCesiumMetadataValue& rhs);
   FCesiumMetadataValue& operator=(const FCesiumMetadataValue& rhs);
+
+  static FCesiumMetadataValue fromJsonValue(
+      const FCesiumMetadataValueType& targetType,
+      const CesiumUtility::JsonValue& jsonValue);
 
 private:
   ValueType _value;

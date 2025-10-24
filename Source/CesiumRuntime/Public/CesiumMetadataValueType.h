@@ -193,6 +193,9 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
    * For example, "Int16 Scalar", "Float32 Mat4 Array", "String Array".
    */
   FString ToString() const;
+
+  static FCesiumMetadataValueType
+  fromClassProperty(const Cesium3DTiles::ClassProperty& property);
 };
 
 template <typename T>

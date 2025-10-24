@@ -9,6 +9,10 @@
 class ACesium3DTileset;
 class UCesiumRasterOverlay;
 
+namespace Cesium3DTilesSelection {
+class TilesetMetadata;
+}
+
 namespace CesiumAsync {
 class AsyncSystem;
 class IAssetAccessor;
@@ -45,6 +49,18 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 
 CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting;
+
+/**
+ * The delegate for the OnCesiumFeaturesMetadataViewProperties, which is
+ * triggered when "View Properties" is clicked on
+ * UCesiumFeaturesMetadataComponent.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesiumFeaturesMetadataViewProperties,
+    ACesium3DTileset*);
+
+CESIUMRUNTIME_API extern FCesiumFeaturesMetadataViewProperties
+    OnCesiumFeaturesMetadataViewProperties;
 
 CESIUMRUNTIME_API CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
 CESIUMRUNTIME_API const std::shared_ptr<CesiumAsync::IAssetAccessor>&
