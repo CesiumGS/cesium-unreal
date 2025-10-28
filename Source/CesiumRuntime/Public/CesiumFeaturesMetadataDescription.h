@@ -178,21 +178,21 @@ struct CESIUMRUNTIME_API FCesiumPropertyTexturePropertyDescription {
    * The name of this property. This will be how it is referenced in the
    * material.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
   FString Name;
 
   /**
    * Describes the underlying type of this property and other relevant
    * information from its EXT_structural_metadata definition.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
   FCesiumMetadataPropertyDetails PropertyDetails;
 
   /**
    * Whether this property texture property contains a KHR_texture_transform
    * glTF extension.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
   bool bHasKhrTextureTransform = false;
 };
 
@@ -207,13 +207,16 @@ struct CESIUMRUNTIME_API FCesiumPropertyTextureDescription {
   /**
    * @brief The name of this property texture.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
   FString Name;
 
   /**
    * @brief Descriptions of the properties to upload to the GPU.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Metadata",
+      Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTexturePropertyDescription> Properties;
 };
 
@@ -241,7 +244,7 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveMetadataDescription {
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Metadata",
       Meta = (TitleProperty = "Name"))
   TSet<FString> PropertyTextureNames;
 };
@@ -260,7 +263,7 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Metadata",
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTableDescription> PropertyTables;
 
@@ -270,47 +273,81 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Metadata",
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
 };
 
 #pragma endregion
 
+#pragma region Tileset Statistics
+
 #if WITH_EDITORONLY_DATA
+
+UENUM()
+enum class ECesiumMetadataStatisticSemantic {
+  None = 0 UMETA(Hidden),
+  Min,
+  Max
+};
+
+USTRUCT()
+struct FCesiumMetadataPropertyStatisticValue {
+  GENERATED_USTRUCT_BODY()
+  /**
+   * The semantic of this statistic.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  ECesiumMetadataStatisticSemantic Semantic;
+  /**
+   * The value associated with this statistic.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  FCesiumMetadataValue Value;
+};
+
 USTRUCT()
 struct FCesiumMetadataPropertyStatisticsDescription {
   GENERATED_USTRUCT_BODY()
   /**
    * The ID of this property.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Metadata|Statistics",
-      Meta = (TitleProperty = "Name"))
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
   FString Id;
 
   /**
-   * The statistics, keyed by name to value.
+   * The available statistics for this property.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata|Statistics",
-      Meta = (TitleProperty = "Name"))
-  TMap<FString, FCesiumMetadataValue> Values;
+      Category = "Cesium|Metadata|Statistics",
+      Meta = (TitleProperty = "Semantic"))
+  TArray<FCesiumMetadataPropertyStatisticValue> Values;
 };
 
 USTRUCT()
 struct FCesiumMetadataClassStatisticsDescription {
   GENERATED_USTRUCT_BODY()
+
+  /**
+   * The ID of this class.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  FString Id;
+
+  /**
+   * The properties belonging to this class.
+   */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
-      Meta = (TitleProperty = "Name"))
+      Category = "Cesium|Metadata|Statistics",
+      Meta = (TitleProperty = "Id"))
   TArray<FCesiumMetadataPropertyStatisticsDescription> Properties;
 };
 
 #endif
+
+#pragma endregion
 
 /**
  * @brief Description of both feature IDs and metadata from a glTF via the
@@ -325,11 +362,11 @@ struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
 public:
 #if WITH_EDITORONLY_DATA
   /**
-   * @brief Description of the statistics reported by the tileset. Maps the ID
-   * of each class to its cumulative statistics.
+   * @brief Description of the statistics reported by the tileset. Each entry
+   * represents a class and its cumulative statistics.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
-  TMap<FString, FCesiumMetadataClassStatisticsDescription> Statistics;
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Id"))
+  TArray<FCesiumMetadataClassStatisticsDescription> Statistics;
 #endif
 
   /**

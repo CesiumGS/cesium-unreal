@@ -18,11 +18,12 @@
 
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
+struct FCesiumModelMetadata;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
   /**
-   * The target tileset.
+   * The tileset that is being queried for features and metadata.
    */
   SLATE_ARGUMENT(TWeakObjectPtr<ACesium3DTileset>, Tileset)
   SLATE_END_ARGS()
@@ -37,15 +38,10 @@ private:
   static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
   TSharedPtr<SVerticalBox> _pContent;
 
-  typedef swl::variant<
-      FCesiumPropertyTablePropertyDescription,
-      FCesiumPropertyTexturePropertyDescription>
-      PropertyDescription;
-
   struct StatisticView {
     TSharedRef<FString> pClassId;
     TSharedRef<FString> pPropertyId;
-    FString id;
+    ECesiumMetadataStatisticSemantic semantic;
     FCesiumMetadataValue value;
   };
 
@@ -60,27 +56,66 @@ private:
     TArray<TSharedRef<PropertyStatisticsView>> properties;
   };
 
+  enum class EPropertyQualifiers : uint8 {
+    None = 0,
+    Offset = 1,
+    Scale = 2,
+    NoData = 3,
+    Default = 4
+  };
+
+  enum EPropertySource { PropertyTable = 0, PropertyTexture = 1 };
+
+  struct PropertyInstanceView {
+    TSharedRef<FString> pPropertyId;
+    FCesiumMetadataValueType type;
+    int64 arraySize;
+    bool isNormalized;
+    EPropertySource source;
+    TSharedRef<FString> sourceName;
+    uint8 qualifiers; // Bitmask
+
+    bool operator==(const PropertyInstanceView& property) const;
+    bool operator!=(const PropertyInstanceView& property) const;
+  };
+
+  struct PropertyView {
+    TSharedRef<FString> pId;
+    TArray<TSharedRef<PropertyInstanceView>> instances;
+  };
+
   void gatherTilesetStatistics();
   void gatherGltfMetadata();
+  void gatherGltfPropertyTables(const FCesiumModelMetadata& modelMetadata);
 
   TSharedRef<ITableRow> createStatisticRow(
-      TSharedRef<StatisticView> item,
+      TSharedRef<StatisticView> pItem,
       const TSharedRef<STableViewBase>& list);
-  // TSharedRef<ITableRow>
-  // createPropertyRow(TSharedPtr<PropertyDescription> property);
-
   TSharedRef<ITableRow> createPropertyStatisticsDropdown(
       TSharedRef<PropertyStatisticsView> pItem,
       const TSharedRef<STableViewBase>& list);
   void createClassStatisticsDropdown(
       TSharedRef<SVerticalBox>& pVertical,
       const ClassStatisticsView& classStatistics);
-  void createGltfClassDropdown(TSharedRef<SVerticalBox>& pVertical);
 
-  void registerStatistic(TSharedRef<StatisticView> item);
-  // template <typename PropertyType>
-  // void registerProperty(TSharedPtr<PropertyType>& property);
+  TSharedRef<ITableRow> createPropertyInstanceRow(
+      TSharedRef<PropertyInstanceView> pItem,
+      const TSharedRef<STableViewBase>& list);
+  void createGltfPropertyDropdown(
+      TSharedRef<SVerticalBox>& pVertical,
+      const PropertyView& property);
+
+  void registerStatistic(TSharedRef<StatisticView> pItem);
+  void registerPropertyInstance(TSharedRef<PropertyInstanceView> pItem);
 
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
+  TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
+
   TArray<ClassStatisticsView> _statisticsClasses;
+
+  // The current Features / Metadata implementation folds the class / property
+  // schemas into each implementation of PropertyTable, PropertyTableProperty,
+  // etc., so this functions as a property-centric view instead of a class-based
+  // one.
+  TArray<PropertyView> _metadataProperties;
 };

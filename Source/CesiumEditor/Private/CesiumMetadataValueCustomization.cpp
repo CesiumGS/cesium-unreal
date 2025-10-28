@@ -31,15 +31,25 @@ void FCesiumMetadataValueCustomization::Unregister(
 }
 
 namespace {
-const FCesiumMetadataValue*
-getValue(const TSharedRef<IPropertyHandle>& PropertyHandle) {
+FString getValueAsString(const TSharedRef<IPropertyHandle>& PropertyHandle) {
+  const FString defaultReturn = FString("(no value)");
+
   TArray<void*> rawDataPointers;
   PropertyHandle->AccessRawData(rawDataPointers);
 
   if (rawDataPointers.Num() != 1)
-    return nullptr;
+    return defaultReturn;
 
-  return (FCesiumMetadataValue*)rawDataPointers[0];
+  const FCesiumMetadataPropertyStatisticValue* pValue =
+      (FCesiumMetadataPropertyStatisticValue*)rawDataPointers[0];
+
+  if (pValue) {
+    return UCesiumMetadataValueBlueprintLibrary::GetString(
+        pValue->Value,
+        defaultReturn);
+  }
+
+  return defaultReturn;
 }
 } // namespace
 
@@ -47,16 +57,14 @@ void FCesiumMetadataValueCustomization::CustomizeHeader(
     TSharedRef<IPropertyHandle> PropertyHandle,
     class FDetailWidgetRow& HeaderRow,
     IPropertyTypeCustomizationUtils& CustomizationUtils) {
-  const FCesiumMetadataValue* pValue = getValue(PropertyHandle);
-  if (!pValue) {
-    HeaderRow.ValueContent()[SNew(SBox).Padding(FMargin(
-        5.f,
-        5.f,
-        0.f,
-        5.f))[SNew(STextBlock)
-                  .Text(FText::FromString(UCesiumMetadataValueBlueprintLibrary::
-                                              GetString(*pValue, FString())))]];
-  }
+  HeaderRow
+      .NameContent()[SNew(STextBlock)
+                         .Text(FText::FromString("Value"))
+                         .Font(CustomizationUtils.GetRegularFont())]
+      .ValueContent()[SNew(STextBlock)
+                          .Text(FText::FromString(
+                              getValueAsString(PropertyHandle)))
+                          .Font(CustomizationUtils.GetRegularFont())];
 }
 
 void FCesiumMetadataValueCustomization::CustomizeChildren(
