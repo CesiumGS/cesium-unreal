@@ -40,12 +40,12 @@ FString getValueAsString(const TSharedRef<IPropertyHandle>& PropertyHandle) {
   if (rawDataPointers.Num() != 1)
     return defaultReturn;
 
-  const FCesiumMetadataPropertyStatisticValue* pValue =
-      (FCesiumMetadataPropertyStatisticValue*)rawDataPointers[0];
+  const FCesiumMetadataValue* pValue =
+      reinterpret_cast<FCesiumMetadataValue*>(rawDataPointers[0]);
 
   if (pValue) {
     return UCesiumMetadataValueBlueprintLibrary::GetString(
-        pValue->Value,
+        *pValue,
         defaultReturn);
   }
 
@@ -57,13 +57,14 @@ void FCesiumMetadataValueCustomization::CustomizeHeader(
     TSharedRef<IPropertyHandle> PropertyHandle,
     class FDetailWidgetRow& HeaderRow,
     IPropertyTypeCustomizationUtils& CustomizationUtils) {
+  FString valueAsString = getValueAsString(PropertyHandle);
+
   HeaderRow
       .NameContent()[SNew(STextBlock)
                          .Text(FText::FromString("Value"))
                          .Font(CustomizationUtils.GetRegularFont())]
       .ValueContent()[SNew(STextBlock)
-                          .Text(FText::FromString(
-                              getValueAsString(PropertyHandle)))
+                          .Text(FText::FromString(valueAsString))
                           .Font(CustomizationUtils.GetRegularFont())];
 }
 

@@ -45,12 +45,18 @@ private:
     FCesiumMetadataValue value;
   };
 
+  /**
+   * A view of an instance of Cesium3DTileset::PropertyStatistics.
+   */
   struct PropertyStatisticsView {
     TSharedRef<FString> pClassId;
     TSharedRef<FString> pId;
     TArray<TSharedRef<StatisticView>> statistics;
   };
 
+  /**
+   * A view of an instance of Cesium3DTileset::ClassStatistics.
+   */
   struct ClassStatisticsView {
     TSharedRef<FString> pId;
     TArray<TSharedRef<PropertyStatisticsView>> properties;
@@ -66,19 +72,29 @@ private:
 
   enum EPropertySource { PropertyTable = 0, PropertyTexture = 1 };
 
+  /**
+   * A view of an instance of a CesiumGltf::Property for a particular model in a
+   * tileset. It is technically possible for a tileset to have models with the
+   * same property, but different schema definitions. This attempts to capture
+   * each different instance so the user can make an informed choice about the
+   * behavior.
+   */
   struct PropertyInstanceView {
     TSharedRef<FString> pPropertyId;
     FCesiumMetadataValueType type;
     int64 arraySize;
     bool isNormalized;
     EPropertySource source;
-    TSharedRef<FString> sourceName;
+    TSharedRef<FString> pSourceName;
     uint8 qualifiers; // Bitmask
 
     bool operator==(const PropertyInstanceView& property) const;
     bool operator!=(const PropertyInstanceView& property) const;
   };
 
+  /**
+   * A view of an instance of a CesiumGltf::Property.
+   */
   struct PropertyView {
     TSharedRef<FString> pId;
     TArray<TSharedRef<PropertyInstanceView>> instances;
@@ -95,15 +111,17 @@ private:
       TSharedRef<PropertyStatisticsView> pItem,
       const TSharedRef<STableViewBase>& list);
   void createClassStatisticsDropdown(
-      TSharedRef<SVerticalBox>& pVertical,
+      TSharedRef<SScrollBox>& pContent,
       const ClassStatisticsView& classStatistics);
 
   TSharedRef<ITableRow> createPropertyInstanceRow(
       TSharedRef<PropertyInstanceView> pItem,
       const TSharedRef<STableViewBase>& list);
   void createGltfPropertyDropdown(
-      TSharedRef<SVerticalBox>& pVertical,
+      TSharedRef<SScrollBox>& pContent,
       const PropertyView& property);
+
+  bool canBeRegistered(TSharedRef<StatisticView> pItem);
 
   void registerStatistic(TSharedRef<StatisticView> pItem);
   void registerPropertyInstance(TSharedRef<PropertyInstanceView> pItem);

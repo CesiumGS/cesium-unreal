@@ -299,10 +299,12 @@ struct FCesiumMetadataPropertyStatisticValue {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
   ECesiumMetadataStatisticSemantic Semantic;
+
   /**
-   * The value associated with this statistic.
+   * The value associated with this statistic. Reflects the values on the
+   * tileset it is attached to. Should not be edited by users.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  UPROPERTY(Transient, VisibleAnywhere, Category = "Cesium|Metadata|Statistics")
   FCesiumMetadataValue Value;
 };
 
