@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CesiumFeaturesMetadataDescription.h"
+#include "CesiumMetadataEncodingDetails.h"
+#include "CesiumMetadataPropertyDetails.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
 #include "Containers/Array.h"
@@ -11,6 +13,7 @@
 #include "Templates/UniquePtr.h"
 #include "UObject/WeakObjectPtr.h"
 #include "Widgets/SWindow.h"
+#include "Widgets/Input/SComboBox.h"
 
 #include <optional>
 #include <swl/variant.hpp>
@@ -62,14 +65,6 @@ private:
     TArray<TSharedRef<PropertyStatisticsView>> properties;
   };
 
-  enum class EPropertyQualifiers : uint8 {
-    None = 0,
-    Offset = 1,
-    Scale = 2,
-    NoData = 3,
-    Default = 4
-  };
-
   enum EPropertySource { PropertyTable = 0, PropertyTexture = 1 };
 
   /**
@@ -81,12 +76,11 @@ private:
    */
   struct PropertyInstanceView {
     TSharedRef<FString> pPropertyId;
-    FCesiumMetadataValueType type;
-    int64 arraySize;
-    bool isNormalized;
+    FCesiumMetadataPropertyDetails propertyDetails;
     EPropertySource source;
     TSharedRef<FString> pSourceName;
-    uint8 qualifiers; // Bitmask
+    // TODO fill a combo box + dropdowns if needed
+    TArray<ECesiumEncodedMetadataConversion> conversionMethods;
 
     bool operator==(const PropertyInstanceView& property) const;
     bool operator!=(const PropertyInstanceView& property) const;
@@ -122,6 +116,7 @@ private:
       const PropertyView& property);
 
   bool canBeRegistered(TSharedRef<StatisticView> pItem);
+  bool canBeRegistered(TSharedRef<PropertyInstanceView> pItem);
 
   void registerStatistic(TSharedRef<StatisticView> pItem);
   void registerPropertyInstance(TSharedRef<PropertyInstanceView> pItem);
@@ -136,4 +131,6 @@ private:
   // etc., so this functions as a property-centric view instead of a class-based
   // one.
   TArray<PropertyView> _metadataProperties;
+
+  TArray<ECesiumEncodedMetadataConversion> _conversionOptions;
 };

@@ -142,16 +142,16 @@ void CesiumFeaturesMetadataViewer::createClassStatisticsDropdown(
 TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
     TSharedRef<PropertyInstanceView> pItem,
     const TSharedRef<STableViewBase>& list) {
-  FString typeString = pItem->type.ToString();
-  if (pItem->isNormalized) {
+  FString typeString = pItem->propertyDetails.GetValueType().ToString();
+  if (pItem->propertyDetails.bIsNormalized) {
     typeString += TEXT(" (Normalized)");
   }
 
-  if (pItem->type.bIsArray) {
-    typeString +=
-        pItem->arraySize > 0
-            ? FString::Printf(TEXT(" with %d elements"), pItem->arraySize)
-            : TEXT(" of variable size");
+  if (pItem->propertyDetails.bIsArray) {
+    int64 arraySize = pItem->propertyDetails.ArraySize;
+    typeString += arraySize > 0
+                      ? FString::Printf(TEXT(" with %d elements"), arraySize)
+                      : TEXT(" of variable size");
   }
 
   FString sourceString;
@@ -166,13 +166,32 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
 
   sourceString += FString::Printf(TEXT(" (%s)"), **pItem->pSourceName);
 
+  TArray<FString> qualifierList;
+  if (pItem->propertyDetails.bHasOffset) {
+    qualifierList.Add("Offset");
+  }
+  if (pItem->propertyDetails.bHasScale) {
+    qualifierList.Add("Scale");
+  }
+  if (pItem->propertyDetails.bHasNoDataValue) {
+    qualifierList.Add("'No Data' Value");
+  }
+  if (pItem->propertyDetails.bHasDefaultValue) {
+    qualifierList.Add("Default Value");
+  }
+
+  FString qualifierString =
+      qualifierList.IsEmpty()
+          ? FString()
+          : "Contains " + FString::Join(qualifierList, TEXT(", "));
+
   return SNew(STableRow<TSharedRef<StatisticView>>, list)
       .Content()
           [SNew(SBox)
                .HAlign(EHorizontalAlignment::HAlign_Fill)
                .Content()
                    [SNew(SHorizontalBox) +
-                    SHorizontalBox::Slot().FillWidth(0.5f).Padding(5.0f).VAlign(
+                    SHorizontalBox::Slot().FillWidth(0.4f).Padding(5.0f).VAlign(
                         EVerticalAlignment::VAlign_Center)
                         [SNew(STextBlock)
                              .AutoWrapText(true)
@@ -182,6 +201,11 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                         [SNew(STextBlock)
                              .AutoWrapText(true)
                              .Text(FText::FromString(sourceString))] +
+                    SHorizontalBox::Slot().AutoWidth().Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(qualifierString))] +
                     SHorizontalBox::Slot()
                         .AutoWidth()
                         .HAlign(EHorizontalAlignment::HAlign_Right)
@@ -192,7 +216,9 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                                 }),
                                 FText::FromString(TEXT(
                                     "Add this property to the tileset's CesiumFeaturesMetadataComponent")),
-                                true)]]];
+                                TAttribute<bool>::Create([this, pItem]() {
+                                  return this->canBeRegistered(pItem);
+                                }))]]];
 }
 
 void CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
@@ -259,7 +285,6 @@ void CesiumFeaturesMetadataViewer::Sync() {
     pContent->AddSlot().AutoHeight()
         [SNew(STextBlock)
              .AutoWrapText(true)
-             .Margin(FMargin(0.0f, 15.0f))
              .Text(FText::FromString(TEXT(
                  "This tileset does not contain any pre-computed statistics.")))];
   } else {
@@ -281,7 +306,6 @@ void CesiumFeaturesMetadataViewer::Sync() {
     pContent->AddSlot().AutoHeight()
         [SNew(STextBlock)
              .AutoWrapText(true)
-             .Margin(FMargin(0.0f, 15.0f))
              .Text(FText::FromString(
                  TEXT("This tileset does not contain any glTF metadata.")))];
   } else {
@@ -424,14 +448,11 @@ void CesiumFeaturesMetadataViewer::gatherGltfMetadata() {
     this->gatherGltfPropertyTables(modelMetadata);
   }
 }
-
 bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator==(
     const PropertyInstanceView& property) const {
-  return *pPropertyId == *property.pPropertyId && type == property.type &&
-         arraySize == property.arraySize &&
-         isNormalized == property.isNormalized && source == property.source &&
-         *pSourceName == *property.pSourceName &&
-         qualifiers == property.qualifiers;
+  return *pPropertyId == *property.pPropertyId &&
+         propertyDetails == property.propertyDetails &&
+         source == property.source && *pSourceName == *property.pSourceName;
 }
 
 bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator!=(
@@ -480,54 +501,50 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertyTables(
 
       PropertyView& property = *pProperty;
 
+      FCesiumMetadataPropertyDetails propertyDetails;
+
       const FCesiumMetadataValueType valueType =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
               propertyIt.Value);
-      int64 arraySize =
+      propertyDetails.Type = valueType.Type;
+      propertyDetails.ComponentType = valueType.ComponentType;
+      propertyDetails.bIsArray = valueType.bIsArray;
+      propertyDetails.ArraySize =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
               propertyIt.Value);
-      bool isNormalized =
+      propertyDetails.bIsNormalized =
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(
               propertyIt.Value);
-
-      uint8 propertyQualifiers = 0;
 
       FCesiumMetadataValue offset =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
               propertyIt.Value);
-      propertyQualifiers |=
-          uint8(!UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset))
-          << uint8(EPropertyQualifiers::Offset);
+      propertyDetails.bHasOffset =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
 
       FCesiumMetadataValue scale =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(
               propertyIt.Value);
-      propertyQualifiers |=
-          uint8(!UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale))
-          << uint8(EPropertyQualifiers::Scale);
+      propertyDetails.bHasScale =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
 
       FCesiumMetadataValue noData =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
               propertyIt.Value);
-      propertyQualifiers |=
-          uint8(!UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale))
-          << uint8(EPropertyQualifiers::NoData);
+      propertyDetails.bHasNoDataValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
 
       FCesiumMetadataValue defaultValue =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
               propertyIt.Value);
-      propertyQualifiers |=
-          uint8(!UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale))
-          << uint8(EPropertyQualifiers::Default);
+      propertyDetails.bHasDefaultValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
 
       PropertyInstanceView instance{
           .pPropertyId = MakeShared<FString>(propertyIt.Key),
-          .type = valueType,
-          .arraySize = arraySize,
-          .isNormalized = isNormalized,
+          .propertyDetails = std::move(propertyDetails),
           .source = EPropertySource::PropertyTable,
-          .pSourceName = MakeShared<FString>(propertyTableName),
-          .qualifiers = propertyQualifiers};
+          .pSourceName = MakeShared<FString>(propertyTableName)};
 
       bool instanceExists = false;
       for (const TSharedRef<PropertyInstanceView>& propertyInstance :
@@ -545,6 +562,42 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertyTables(
     }
   }
 }
+
+namespace {
+template <typename TPropertySource, typename TProperty>
+TProperty* findProperty(
+    TArray<TPropertySource>& sources,
+    const FString& sourceName,
+    const FString& propertyName,
+    bool createIfMissing) {
+  TPropertySource* pPropertySource = sources.FindByPredicate(
+      [&sourceName](const TPropertySource& existingSource) {
+        return sourceName == existingSource.Name;
+      });
+
+  if (!pPropertySource && !createIfMissing) {
+    return nullptr;
+  }
+
+  if (!pPropertySource) {
+    int32 index = sources.Emplace(sourceName, TArray<TProperty>());
+    pPropertySource = &sources[index];
+  }
+
+  TProperty* pProperty = pPropertySource->Properties.FindByPredicate(
+      [&propertyName](const TProperty& existingProperty) {
+        return propertyName == existingProperty.Name;
+      });
+
+  if (!pProperty && createIfMissing) {
+    int32 index = pPropertySource->Properties.Emplace();
+    pProperty = &pPropertySource->Properties[index];
+    pProperty->Name = propertyName;
+  }
+
+  return pProperty;
+}
+} // namespace
 
 bool CesiumFeaturesMetadataViewer::canBeRegistered(
     TSharedRef<StatisticView> pItem) {
@@ -586,6 +639,49 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
                  const FCesiumMetadataPropertyStatisticValue& existingValue) {
                return existingValue.Semantic == semantic;
              }) == nullptr;
+}
+
+bool CesiumFeaturesMetadataViewer::canBeRegistered(
+    TSharedRef<PropertyInstanceView> pItem) {
+  if (pItem->propertyDetails.Type == ECesiumMetadataType::Invalid) {
+    return false;
+  }
+
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    return false;
+  }
+  UCesiumFeaturesMetadataComponent& featuresMetadata =
+      *this->_pFeaturesMetadataComponent;
+
+  if (pItem->source == EPropertySource::PropertyTable) {
+    FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
+        FCesiumPropertyTableDescription,
+        FCesiumPropertyTablePropertyDescription>(
+        featuresMetadata.Description.ModelMetadata.PropertyTables,
+        *pItem->pSourceName,
+        *pItem->pPropertyId,
+        false);
+    if (!pProperty)
+      return true;
+
+    return pProperty->PropertyDetails != pItem->propertyDetails;
+  }
+
+  if (pItem->source == EPropertySource::PropertyTexture) {
+    FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
+        FCesiumPropertyTextureDescription,
+        FCesiumPropertyTexturePropertyDescription>(
+        featuresMetadata.Description.ModelMetadata.PropertyTextures,
+        *pItem->pSourceName,
+        *pItem->pPropertyId,
+        false);
+    if (!pProperty)
+      return true;
+
+    return pProperty->PropertyDetails != pItem->propertyDetails;
+  }
+
+  return false;
 }
 
 void CesiumFeaturesMetadataViewer::registerStatistic(
@@ -687,18 +783,6 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     }
 
     FCesiumPropertyTablePropertyDescription& property = *pProperty;
-    property.PropertyDetails.Type = pItem->type.Type;
-    property.PropertyDetails.ComponentType = pItem->type.ComponentType;
-    property.PropertyDetails.bIsArray = pItem->type.bIsArray;
-    property.PropertyDetails.ArraySize = pItem->arraySize;
-    property.PropertyDetails.bIsNormalized = pItem->isNormalized;
-    property.PropertyDetails.bHasOffset =
-        pItem->qualifiers & 1u << uint8(EPropertyQualifiers::Offset);
-    property.PropertyDetails.bHasScale =
-        pItem->qualifiers & 1u << uint8(EPropertyQualifiers::Scale);
-    property.PropertyDetails.bHasNoDataValue =
-        pItem->qualifiers & 1u << uint8(EPropertyQualifiers::NoData);
-    property.PropertyDetails.bHasDefaultValue =
-        pItem->qualifiers & 1u << uint8(EPropertyQualifiers::Default);
+    property.PropertyDetails = pItem->propertyDetails;
   }
 }
