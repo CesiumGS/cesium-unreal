@@ -83,6 +83,9 @@ EVoxelGridShape getVoxelGridShape(
   if (std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume)) {
     return EVoxelGridShape::Box;
   }
+  if (std::get_if<CesiumGeospatial::BoundingRegion>(&boundingVolume)) {
+    return EVoxelGridShape::Ellipsoid;
+  }
 
   return EVoxelGridShape::Invalid;
 }
@@ -124,6 +127,290 @@ void setVoxelBoxProperties(
           EMaterialParameterAssociation::LayerParameter,
           0),
       FVector4(0, 0, 0.02, 0));
+}
+
+/**
+ * @brief Describes the quality of a radian value relative to the axis it is
+ * defined in. This determines the math for the ray-intersection tested against
+ * that value in the voxel shader.
+ */
+enum CartographicAngleDescription : int8 {
+  None = 0,
+  Zero = 1,
+  UnderHalf = 2,
+  Half = 3,
+  OverHalf = 4
+};
+
+CartographicAngleDescription interpretLongitudeRange(double value) {
+  const double longitudeEpsilon = CesiumUtility::Math::Epsilon10;
+
+  if (value >= CesiumUtility::Math::OnePi - longitudeEpsilon &&
+      value < CesiumUtility::Math::TwoPi - longitudeEpsilon) {
+    // longitude range > PI
+    return CartographicAngleDescription::OverHalf;
+  }
+  if (value > longitudeEpsilon &&
+      value < CesiumUtility::Math::OnePi - longitudeEpsilon) {
+    // longitude range < PI
+    return CartographicAngleDescription::UnderHalf;
+  }
+  if (value < longitudeEpsilon) {
+    // longitude range ~= 0
+    return CartographicAngleDescription::Zero;
+  }
+
+  return CartographicAngleDescription::None;
+}
+
+CartographicAngleDescription interpretLatitudeValue(double value) {
+  const double latitudeEpsilon = CesiumUtility::Math::Epsilon10;
+  const double zeroLatitudeEpsilon =
+      CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
+
+  if (value > -CesiumUtility::Math::OnePi + latitudeEpsilon &&
+      value < -zeroLatitudeEpsilon) {
+    // latitude between (-PI, 0)
+    return CartographicAngleDescription::UnderHalf;
+  }
+  if (value >= -zeroLatitudeEpsilon && value <= +zeroLatitudeEpsilon) {
+    // latitude ~= 0
+    return CartographicAngleDescription::Half;
+  }
+  if (value > zeroLatitudeEpsilon) {
+    // latitude between (0, PI)
+    return CartographicAngleDescription::OverHalf;
+  }
+
+  return CartographicAngleDescription::None;
+}
+
+FVector getEllipsoidRadii(const ACesiumGeoreference* pGeoreference) {
+  FVector radii =
+      VecMath::createVector(CesiumGeospatial::Ellipsoid::WGS84.getRadii());
+  if (pGeoreference) {
+    UCesiumEllipsoid* pEllipsoid = pGeoreference->GetEllipsoid();
+    radii = pEllipsoid ? pEllipsoid->GetRadii() : radii;
+  }
+
+  return radii;
+}
+
+void setVoxelEllipsoidProperties(
+    UCesiumVoxelRendererComponent* pVoxelComponent,
+    UMaterialInstanceDynamic* pVoxelMaterial,
+    const CesiumGeospatial::BoundingRegion& region,
+    ACesium3DTileset* pTileset) {
+  // Although the ellipsoid corresponds to the size & location of the Earth, the
+  // cube is scaled to fit the region, which may be much smaller. This prevents
+  // unnecessary pixels from running the voxel raymarching shader.
+  const CesiumGeometry::OrientedBoundingBox box = region.getBoundingBox();
+  glm::dmat3 halfAxes = box.getHalfAxes();
+  pVoxelComponent->HighPrecisionTransform = glm::dmat4(
+      glm::dvec4(halfAxes[0], 0) * 0.02,
+      glm::dvec4(halfAxes[1], 0) * 0.02,
+      glm::dvec4(halfAxes[2], 0) * 0.02,
+      glm::dvec4(box.getCenter(), 1));
+
+  FVector radii = getEllipsoidRadii(pTileset->ResolveGeoreference());
+  // The default bounds define the minimum and maximum extents for the shape's
+  // actual bounds, in the order of (longitude, latitude, height). The longitude
+  // and latitude bounds describe the angular range of the full ellipsoid.
+  const FVector defaultMinimumBounds(
+      -CesiumUtility::Math::OnePi,
+      -CesiumUtility::Math::PiOverTwo,
+      -radii.GetMin());
+  const FVector defaultMaximumBounds(
+      CesiumUtility::Math::OnePi,
+      CesiumUtility::Math::PiOverTwo,
+      10 * radii.GetMin());
+
+  const CesiumGeospatial::GlobeRectangle& rectangle = region.getRectangle();
+  double minimumLongitude = rectangle.getWest();
+  double maximumLongitude = rectangle.getEast();
+  double minimumLatitude = rectangle.getSouth();
+  double maximumLatitude = rectangle.getNorth();
+
+  // Don't let the minimum height extend past the center of the Earth.
+  double minimumHeight =
+      glm::max(region.getMinimumHeight(), defaultMinimumBounds.Z);
+  double maximumHeight = region.getMaximumHeight();
+
+  // Defines the extents of the longitude in UV space. In other words, this
+  // expresses the minimum and maximum values of the longitude range, as well as
+  // the midpoint of the negative space.
+  FVector longitudeUVExtents = FVector::Zero();
+  double longitudeUVScale = 1;
+  double longitudeUVOffset = 0;
+
+  FIntVector4 longitudeFlags(0);
+
+  // Longitude
+  {
+    const double defaultRange = CesiumUtility::Math::TwoPi;
+    bool isLongitudeReversed = maximumLongitude < minimumLongitude;
+    double longitudeRange = maximumLongitude - minimumLongitude +
+                            isLongitudeReversed * defaultRange;
+
+    // Refers to the discontinuity at longitude -pi / pi.
+    const double discontinuityEpsilon =
+        CesiumUtility::Math::Epsilon3; // 0.001 radians = 0.05729578 degrees
+    bool longitudeMinimumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+        minimumLongitude,
+        -defaultMinimumBounds.X,
+        discontinuityEpsilon);
+    bool longitudeMaximumAtDiscontinuity = CesiumUtility::Math::equalsEpsilon(
+        maximumLongitude,
+        defaultMaximumBounds.X,
+        discontinuityEpsilon);
+
+    CartographicAngleDescription longitudeRangeIndicator =
+        interpretLongitudeRange(longitudeRange);
+
+    longitudeFlags.X = longitudeRangeIndicator;
+    longitudeFlags.Y = longitudeMinimumAtDiscontinuity;
+    longitudeFlags.Z = longitudeMaximumAtDiscontinuity;
+    longitudeFlags.W = isLongitudeReversed;
+
+    // Compute the extents of the longitude range in UV Shape Space.
+    double minimumLongitudeUV =
+        (minimumLongitude - defaultMinimumBounds.X) / defaultRange;
+    double maximumLongitudeUV =
+        (maximumLongitude - defaultMinimumBounds.X) / defaultRange;
+    // Given the longitude range, describes the proportion of the ellipsoid
+    // that is excluded from that range.
+    double longitudeRangeUVZero = 1.0 - longitudeRange / defaultRange;
+    // Describes the midpoint of the above excluded range.
+    double longitudeRangeUVZeroMid =
+        glm::fract(maximumLongitudeUV + 0.5 * longitudeRangeUVZero);
+
+    longitudeUVExtents = FVector(
+        minimumLongitudeUV,
+        maximumLongitudeUV,
+        longitudeRangeUVZeroMid);
+
+    const double longitudeEpsilon = CesiumUtility::Math::Epsilon10;
+    if (longitudeRange > longitudeEpsilon) {
+      longitudeUVScale = defaultRange / longitudeRange;
+      longitudeUVOffset =
+          -(minimumLongitude - defaultMinimumBounds.X) / longitudeRange;
+    }
+  }
+
+  // Latitude
+  CartographicAngleDescription latitudeMinValueFlag =
+      interpretLatitudeValue(minimumLatitude);
+  CartographicAngleDescription latitudeMaxValueFlag =
+      interpretLatitudeValue(maximumLatitude);
+  double latitudeUVScale = 1;
+  double latitudeUVOffset = 0;
+
+  {
+    const double latitudeEpsilon = CesiumUtility::Math::Epsilon10;
+    const double defaultRange = CesiumUtility::Math::OnePi;
+    double latitudeRange = maximumLatitude - minimumLatitude;
+    if (latitudeRange >= latitudeEpsilon) {
+      latitudeUVScale = defaultRange / latitudeRange;
+      latitudeUVOffset =
+          (defaultMinimumBounds.Y - minimumLatitude) / latitudeRange;
+    }
+  }
+
+  // Compute the farthest a point can be from the center of the ellipsoid.
+  const FVector outerExtent = radii + maximumHeight;
+  const double maximumExtent = outerExtent.GetMax();
+
+  const FVector radiiUV = outerExtent / maximumExtent;
+  const double axisRatio = radiiUV.Z / radiiUV.X;
+  const double eccentricitySquared = 1.0 - axisRatio * axisRatio;
+  const FVector2D evoluteScale(
+      (radiiUV.X * radiiUV.X - radiiUV.Z * radiiUV.Z) / radiiUV.X,
+      (radiiUV.Z * radiiUV.Z - radiiUV.X * radiiUV.X) / radiiUV.Z);
+
+  // Used to compute geodetic surface normal.
+  const FVector inverseRadiiSquaredUV = FVector::One() / (radiiUV * radiiUV);
+  // The percent of space that is between the inner and outer ellipsoid.
+  const double thickness = (maximumHeight - minimumHeight) / maximumExtent;
+  const double inverseHeightDifferenceUV =
+      maximumHeight != minimumHeight ? 1.0 / thickness : 0;
+
+  // Ray-intersection math for latitude requires sin(latitude).
+  // The actual latitude values aren't used by other parts of the shader, so
+  // passing sin(latitude) here saves space.
+  // Shape Min Bounds = Region Min (xyz)
+  // X = longitude, Y = sin(latitude), Z = height relative to the maximum extent
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Min Bounds"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector(
+          minimumLongitude,
+          FMath::Sin(minimumLatitude),
+          (minimumHeight - maximumHeight) / maximumExtent));
+
+  // Shape Max Bounds = Region Max (xyz)
+  // X = longitude, Y = sin(latitude), Z = height relative to the maximum extent
+  // Since clipping isn't supported, Z resolves to 0.
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Max Bounds"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector(maximumLongitude, FMath::Sin(maximumLatitude), 0));
+
+  // Data is packed across multiple vec4s to conserve space.
+  // 0 = Longitude Range Flags (xyzw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 0"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(longitudeFlags));
+  // 1 = Min Latitude Flag (x), Max Latitude Flag (y), Evolute Scale (zw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 1"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(
+          latitudeMinValueFlag,
+          latitudeMaxValueFlag,
+          evoluteScale.X,
+          evoluteScale.Y));
+  // 2 = Radii UV (xyz)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(radiiUV, 0));
+  // 3 = Inverse Radii UV Squared (xyz), Inverse Height Difference UV (w)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 3"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(inverseRadiiSquaredUV, inverseHeightDifferenceUV));
+  // 4 = Longitude UV extents (xyz), Eccentricity Squared (w)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 4"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(longitudeUVExtents, eccentricitySquared));
+  // 5 = UV -> Shape UV Transforms (scale / offset)
+  // Longitude (xy), Latitude (zw)
+  pVoxelMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape Packed Data 5"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(
+          longitudeUVScale,
+          longitudeUVOffset,
+          latitudeUVScale,
+          latitudeUVOffset));
 }
 
 FCesiumMetadataValue
@@ -197,6 +484,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
       FName("VoxelMaterial"));
   pVoxelMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pVoxelComponent->_pTileset = pTilesetActor;
 
   EVoxelGridShape shape = pVoxelComponent->Options.gridShape;
 
@@ -237,6 +525,15 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume);
     assert(pBox != nullptr);
     setVoxelBoxProperties(pVoxelComponent, pVoxelMaterial, *pBox);
+  } else if (shape == EVoxelGridShape::Ellipsoid) {
+    const CesiumGeospatial::BoundingRegion* pRegion =
+        std::get_if<CesiumGeospatial::BoundingRegion>(&boundingVolume);
+    assert(pRegion != nullptr);
+    setVoxelEllipsoidProperties(
+        pVoxelComponent,
+        pVoxelMaterial,
+        *pRegion,
+        pTilesetActor);
   }
 
   if (pDescription && pVoxelClass) {
@@ -562,7 +859,7 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
 
         // Don't create the missing node just yet? It may not be added to the
         // tree depending on the priority of other nodes.
-        priorityQueue.push({pVoxel, sse, computePriority(sse)});
+        priorityQueue.push({pVoxel, sse, computePriority(pVoxel->TileId, sse)});
       });
 
   if (this->_visibleTileQueue.empty()) {
@@ -584,8 +881,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
         if (!pRight) {
           return true;
         }
-        return computePriority(pLeft->lastKnownScreenSpaceError) >
-               computePriority(pRight->lastKnownScreenSpaceError);
+        return computePriority(lhs, pLeft->lastKnownScreenSpaceError) >
+               computePriority(rhs, pRight->lastKnownScreenSpaceError);
       });
 
   size_t existingNodeCount = this->_loadedNodeIds.size();
@@ -681,6 +978,60 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
   }
 }
 
+namespace {
+/**
+ * Updates the input voxel material to account for origin shifting or ellipsoid
+ * changes from the tileset's georeference.
+ */
+void updateEllipsoidVoxelParameters(
+    UMaterialInstanceDynamic* pMaterial,
+    const ACesiumGeoreference* pGeoreference) {
+  if (!pMaterial || !pGeoreference) {
+    return;
+  }
+  FVector radii = getEllipsoidRadii(pGeoreference);
+  FMatrix unrealToEcef =
+      pGeoreference->ComputeUnrealToEarthCenteredEarthFixedTransformation();
+  glm::dmat4 transformToUnit = glm::dmat4(
+                                   glm::dvec4(1.0 / (radii.X), 0, 0, 0),
+                                   glm::dvec4(0, 1.0 / (radii.Y), 0, 0),
+                                   glm::dvec4(0, 0, 1.0 / (radii.Z), 0),
+                                   glm::dvec4(0, 0, 0, 1)) *
+                               VecMath::createMatrix4D(unrealToEcef);
+
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(
+          transformToUnit[0][0],
+          transformToUnit[1][0],
+          transformToUnit[2][0],
+          transformToUnit[3][0]));
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 1"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(
+          transformToUnit[0][1],
+          transformToUnit[1][1],
+          transformToUnit[2][1],
+          transformToUnit[3][1]));
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo(
+          UTF8_TO_TCHAR("Shape TransformToUnit Row 2"),
+          EMaterialParameterAssociation::LayerParameter,
+          0),
+      FVector4(
+          transformToUnit[0][2],
+          transformToUnit[1][2],
+          transformToUnit[2][2],
+          transformToUnit[3][2]));
+}
+} // namespace
+
 void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
   FTransform transform = FTransform(VecMath::createMatrix(
@@ -706,8 +1057,24 @@ void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
     this->MeshComponent->UpdateComponentToWorld();
     this->MeshComponent->MarkRenderTransformDirty();
   }
+
+  if (this->Options.gridShape == EVoxelGridShape::Ellipsoid) {
+    // Ellipsoid voxels are rendered specially due to the ellipsoid radii and
+    // georeference, so the material must be updated here.
+    UMaterialInstanceDynamic* pMaterial =
+        Cast<UMaterialInstanceDynamic>(this->MeshComponent->GetMaterial(0));
+    ACesiumGeoreference* pGeoreference = this->_pTileset->ResolveGeoreference();
+
+    updateEllipsoidVoxelParameters(pMaterial, pGeoreference);
+  }
 }
 
-double UCesiumVoxelRendererComponent::computePriority(double sse) {
-  return 10.0 * sse / (sse + 1.0);
+double UCesiumVoxelRendererComponent::computePriority(
+    const CesiumGeometry::OctreeTileID& tileId,
+    double sse) {
+  // This heuristic is intentionally biased towards tiles with lower levels.
+  // Without this, tilesets with many leaf tiles will kick all of the lower
+  // level detail tiles from the megatexture, resulting in holes or other
+  // artifacts.
+  return sse / (sse + 1.0 + tileId.level);
 }

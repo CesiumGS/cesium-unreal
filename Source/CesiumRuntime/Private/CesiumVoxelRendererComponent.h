@@ -102,7 +102,8 @@ private:
       const FCesiumVoxelClassDescription* pDescription,
       const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
-  static double computePriority(double sse);
+  static double
+  computePriority(const CesiumGeometry::OctreeTileID& tileId, double sse);
 
   struct VoxelTileUpdateInfo {
     const UCesiumGltfVoxelComponent* pComponent;
@@ -127,4 +128,9 @@ private:
   std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;
   MaxPriorityQueue _visibleTileQueue;
   bool _needsOctreeUpdate;
+
+  /**
+   * The tileset that owns this voxel renderer.
+   */
+  ACesium3DTileset* _pTileset = nullptr;
 };
