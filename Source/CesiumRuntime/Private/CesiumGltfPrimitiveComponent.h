@@ -41,8 +41,14 @@ public:
   void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
+  // from ICesiumPrimitive
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
+  // from ICesiumLoadedTilePrimitive
+  ICesiumLoadedTile& GetLoadedTile() override;
+  UStaticMeshComponent& GetMeshComponent() override;
+  std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
+      int32_t accessorIndex) const override;
 
   virtual void OnCreatePhysicsState() override;
 
@@ -70,8 +76,14 @@ public:
   void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
+  // from ICesiumPrimitive
   CesiumPrimitiveData& getPrimitiveData() override;
   const CesiumPrimitiveData& getPrimitiveData() const override;
+  // from ICesiumLoadedTilePrimitive
+  ICesiumLoadedTile& GetLoadedTile() override;
+  UStaticMeshComponent& GetMeshComponent() override;
+  std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
+      int32_t accessorIndex) const override;
 
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
