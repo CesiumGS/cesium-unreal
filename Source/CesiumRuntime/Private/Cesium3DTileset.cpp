@@ -146,11 +146,10 @@ void ACesium3DTileset::SampleHeightMostDetailed(
   positions.reserve(LongitudeLatitudeHeightArray.Num());
 
   for (const FVector& position : LongitudeLatitudeHeightArray) {
-    positions.emplace_back(
-        CesiumGeospatial::Cartographic::fromDegrees(
-            position.X,
-            position.Y,
-            position.Z));
+    positions.emplace_back(CesiumGeospatial::Cartographic::fromDegrees(
+        position.X,
+        position.Y,
+        position.Z));
   }
 
   auto sampleHeights = [this, &positions]() mutable {
@@ -1084,10 +1083,9 @@ void ACesium3DTileset::LoadTileset() {
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
   for (const auto& [Key, Value] : this->RequestHeaders) {
-    options.requestHeaders.emplace_back(
-        CesiumAsync::IAssetAccessor::THeader{
-            TCHAR_TO_UTF8(*Key),
-            TCHAR_TO_UTF8(*Value)});
+    options.requestHeaders.emplace_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
   }
 
   switch (this->TilesetSource) {
@@ -1561,10 +1559,9 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
       glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
-  glm::dvec3 tilesetCameraFront = glm::normalize(
-      glm::dvec3(
-          unrealWorldToTileset *
-          glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
+  glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
+      unrealWorldToTileset *
+      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
