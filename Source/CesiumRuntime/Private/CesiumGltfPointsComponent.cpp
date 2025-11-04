@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPointsComponent.h"
+#include "CesiumCompat.h"
 #include "CesiumGltfPointsSceneProxy.h"
 #include "SceneInterface.h"
 
@@ -17,10 +18,8 @@ FPrimitiveSceneProxy* UCesiumGltfPointsComponent::CreateSceneProxy() {
     return nullptr;
   }
 
-  FCesiumGltfPointsSceneProxy* Proxy = new FCesiumGltfPointsSceneProxy(
-      this,
-      GetScene()->GetFeatureLevel(),
-      GetScene()->GetShaderPlatform());
+  FCesiumGltfPointsSceneProxy* Proxy =
+      new FCesiumGltfPointsSceneProxy(this FSceneInterfaceWrapper(GetScene()));
 
   FCesiumGltfPointsSceneProxyTilesetData TilesetData;
   TilesetData.UpdateFromComponent(this);
