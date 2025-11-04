@@ -17,12 +17,13 @@ SIZE_T FCesiumGltfLinesSceneProxy::GetTypeHash() const {
 
 FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
     UCesiumGltfLinesComponent* InComponent,
-    EShaderPlatform InShaderPlatform)
+    FSceneInterfaceWrapper InSceneInterfaceParams)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
       NumLines(RenderData->LODResources[0].IndexBuffer.GetNumIndices() / 2),
       Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(InComponent->GetMaterialRelevance(InShaderPlatform)) {}
+      MaterialRelevance(
+          InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
 
 FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
 

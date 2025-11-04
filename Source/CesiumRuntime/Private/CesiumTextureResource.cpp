@@ -9,13 +9,6 @@
 
 namespace {
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 7
-// Methods that previously returned FTexture2DRHIRef now return FTextureRHIRef
-typedef FTextureRHIRef Texture2DRef;
-#else
-typedef FTexture2DRHIRef Texture2DRef;
-#endif
-
 /**
  * A Cesium texture resource that uses an already-created `FRHITexture`. This is
  * used when `GRHISupportsAsyncTextureCreation` is true and so we were already
@@ -199,7 +192,7 @@ void CopyMip(
   }
 }
 
-Texture2DRef createAsyncTextureAndWait(
+FTextureRHIRef createAsyncTextureAndWait(
     uint32 SizeX,
     uint32 SizeY,
     uint8 Format,
@@ -209,7 +202,7 @@ Texture2DRef createAsyncTextureAndWait(
     uint32 NumInitialMips) {
   FGraphEventRef CompletionEvent;
 
-  Texture2DRef result = RHIAsyncCreateTexture2D(
+  FTextureRHIRef result = RHIAsyncCreateTexture2D(
       SizeX,
       SizeY,
       Format,
@@ -237,7 +230,7 @@ Texture2DRef createAsyncTextureAndWait(
  * @param Whether to use a sRGB color-space.
  * @return The RHI texture reference.
  */
-Texture2DRef CreateRHITexture2D_Async(
+FTextureRHIRef CreateRHITexture2D_Async(
     const CesiumGltf::ImageAsset& image,
     EPixelFormat format,
     bool sRGB) {
@@ -346,7 +339,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
     // thread.
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
 
-    Texture2DRef textureReference =
+    FTextureRHIRef textureReference =
         CreateRHITexture2D_Async(imageCesium, *maybePixelFormat, sRGB);
     // textureReference->SetName(
     //     FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
@@ -506,7 +499,7 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
       textureFlags |= TexCreate_SRGB;
     }
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 7
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
     FRHITextureCreateDesc Desc;
     if (this->_depth > 1) {
       uint32 MipExtentX, MipExtentY, MipExtentZ;
@@ -763,7 +756,7 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   // RHICreateTexture2D can actually copy over all the mips in one shot,
   // but it expects a particular memory layout. Might be worth configuring
   // Cesium Native's mip-map generation to obey a standard memory layout.
-  Texture2DRef rhiTexture = RHICreateTexture(createDesc);
+  FTextureRHIRef rhiTexture = RHICreateTexture(createDesc);
 
   // Copy over all image data (including mip levels)
   for (uint32 i = 0; i < mipCount; ++i) {

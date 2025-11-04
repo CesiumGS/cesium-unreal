@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumCompat.h"
 #include "PrimitiveSceneProxy.h"
 
 class UCesiumGltfLinesComponent;
@@ -17,7 +18,7 @@ public:
 
   FCesiumGltfLinesSceneProxy(
       UCesiumGltfLinesComponent* InComponent,
-      EShaderPlatform InShaderPlatform);
+      FSceneInterfaceWrapper InSceneInterfaceParams);
 
   virtual ~FCesiumGltfLinesSceneProxy();
 

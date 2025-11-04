@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumCompat.h"
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "CesiumPointCloudShading.h"
 #include "PrimitiveSceneProxy.h"
@@ -36,8 +37,7 @@ public:
 
   FCesiumGltfPointsSceneProxy(
       UCesiumGltfPointsComponent* InComponent,
-      ERHIFeatureLevel::Type InFeatureLevel,
-      EShaderPlatform InShaderPlatform);
+      FSceneInterfaceWrapper InSceneInterfaceParams);
 
   virtual ~FCesiumGltfPointsSceneProxy();
 
