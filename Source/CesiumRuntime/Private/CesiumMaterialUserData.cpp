@@ -4,12 +4,20 @@
 #include "Materials/MaterialInstance.h"
 #include "Runtime/Launch/Resources/Version.h"
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 6
 void UCesiumMaterialUserData::PostEditChangeOwner(
     const FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeOwner(PropertyChangedEvent);
 
   this->UpdateLayerNames();
 }
+#else
+void UCesiumMaterialUserData::PostEditChangeOwner() {
+  Super::PostEditChangeOwner();
+
+  this->UpdateLayerNames();
+}
+#endif
 
 void UCesiumMaterialUserData::UpdateLayerNames() {
 #if WITH_EDITORONLY_DATA

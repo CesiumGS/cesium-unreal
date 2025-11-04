@@ -10,6 +10,29 @@
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
 
+namespace {
+FBufferRHIRef CreatePointAttenuationBuffer(
+    FRHICommandListBase& RHICmdList,
+    const TCHAR* Name,
+    int32 Size,
+    int32 Stride,
+    EBufferUsageFlags Flags) {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 6
+  FRHIBufferCreateDesc CreateDesc(Name, Size, Stride, Flags);
+  CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
+  return RHICmdList.CreateBuffer(CreateDesc);
+#else
+  FRHIResourceCreateInfo CreateInfo(Name);
+  return RHICmdList.CreateBuffer(
+      Size,
+      Flags,
+      Stride,
+      ERHIAccess::VertexOrIndexBuffer,
+      CreateInfo);
+#endif
+}
+} // namespace
+
 void FCesiumPointAttenuationIndexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
   if (!bAttenuationSupported) {
@@ -22,14 +45,12 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI(
   const uint32 NumIndices = NumPoints * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
-  FRHIBufferCreateDesc CreateDesc(
+  IndexBufferRHI = CreatePointAttenuationBuffer(
+      RHICmdList,
       TEXT("FCesiumPointAttenuationIndexBuffer"),
       Size,
       sizeof(uint32),
       BUF_Static | BUF_IndexBuffer);
-  CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
-
-  IndexBufferRHI = RHICmdList.CreateBuffer(CreateDesc);
 
   uint32* Data =
       (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
@@ -126,13 +147,12 @@ public:
 
 void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
-  FRHIBufferCreateDesc CreateInfo(
+  VertexBufferRHI = CreatePointAttenuationBuffer(
+      RHICmdList,
       TEXT("FCesiumPointAttenuationDummyVertexBuffer"),
       sizeof(FVector3f) * 4,
       0,
       BUF_Static | BUF_VertexBuffer);
-  CreateInfo.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
-  VertexBufferRHI = RHICmdList.CreateBuffer(CreateInfo);
   FVector3f* DummyContents = (FVector3f*)RHICmdList.LockBuffer(
       VertexBufferRHI,
       0,
