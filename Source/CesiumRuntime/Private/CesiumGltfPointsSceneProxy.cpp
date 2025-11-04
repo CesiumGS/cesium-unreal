@@ -35,7 +35,8 @@ SIZE_T FCesiumGltfPointsSceneProxy::GetTypeHash() const {
 
 FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
     UCesiumGltfPointsComponent* InComponent,
-    ERHIFeatureLevel::Type InFeatureLevel)
+    ERHIFeatureLevel::Type InFeatureLevel,
+    EShaderPlatform InShaderPlatform)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
       NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
@@ -47,7 +48,7 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
       AttenuationIndexBuffer(NumPoints, bAttenuationSupported),
       Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
+      MaterialRelevance(InComponent->GetMaterialRelevance(InShaderPlatform)) {}
 
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 

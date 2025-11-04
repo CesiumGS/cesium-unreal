@@ -22,7 +22,10 @@ class UCesiumMaterialUserData : public UAssetUserData {
   GENERATED_BODY()
 
 public:
-  virtual void PostEditChangeOwner() override;
+  virtual void PostEditChangeOwner(
+      const FPropertyChangedEvent& PropertyChangedEvent) override;
+
+  void UpdateLayerNames();
 
   UPROPERTY()
   TArray<FString> LayerNames;

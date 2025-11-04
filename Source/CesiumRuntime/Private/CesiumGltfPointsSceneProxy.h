@@ -36,7 +36,8 @@ public:
 
   FCesiumGltfPointsSceneProxy(
       UCesiumGltfPointsComponent* InComponent,
-      ERHIFeatureLevel::Type InFeatureLevel);
+      ERHIFeatureLevel::Type InFeatureLevel,
+      EShaderPlatform InShaderPlatform);
 
   virtual ~FCesiumGltfPointsSceneProxy();
 

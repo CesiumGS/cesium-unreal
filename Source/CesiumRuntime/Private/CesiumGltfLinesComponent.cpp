@@ -14,5 +14,5 @@ FPrimitiveSceneProxy* UCesiumGltfLinesComponent::CreateSceneProxy() {
     return nullptr;
   }
 
-  return new FCesiumGltfLinesSceneProxy(this, GetScene()->GetFeatureLevel());
+  return new FCesiumGltfLinesSceneProxy(this, GetScene()->GetShaderPlatform());
 }

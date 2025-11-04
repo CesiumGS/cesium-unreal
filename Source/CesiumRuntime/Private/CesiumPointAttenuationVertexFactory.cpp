@@ -19,16 +19,17 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI(
   // This must be called from Rendering thread
   check(IsInRenderingThread());
 
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPointAttenuationIndexBuffer"));
   const uint32 NumIndices = NumPoints * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
-  IndexBufferRHI = RHICmdList.CreateBuffer(
+  FRHIBufferCreateDesc CreateDesc(
+      TEXT("FCesiumPointAttenuationIndexBuffer"),
       Size,
-      BUF_Static | BUF_IndexBuffer,
       sizeof(uint32),
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
+      BUF_Static | BUF_IndexBuffer);
+  CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
+
+  IndexBufferRHI = RHICmdList.CreateBuffer(CreateDesc);
 
   uint32* Data =
       (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
@@ -125,14 +126,13 @@ public:
 
 void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
-  FRHIResourceCreateInfo CreateInfo(
-      TEXT("FCesiumPointAttenuationDummyVertexBuffer"));
-  VertexBufferRHI = RHICmdList.CreateBuffer(
+  FRHIBufferCreateDesc CreateInfo(
+      TEXT("FCesiumPointAttenuationDummyVertexBuffer"),
       sizeof(FVector3f) * 4,
-      BUF_Static | BUF_VertexBuffer,
       0,
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
+      BUF_Static | BUF_VertexBuffer);
+  CreateInfo.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
+  VertexBufferRHI = RHICmdList.CreateBuffer(CreateInfo);
   FVector3f* DummyContents = (FVector3f*)RHICmdList.LockBuffer(
       VertexBufferRHI,
       0,

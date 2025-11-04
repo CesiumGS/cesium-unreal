@@ -17,7 +17,7 @@ public:
 
   FCesiumGltfLinesSceneProxy(
       UCesiumGltfLinesComponent* InComponent,
-      ERHIFeatureLevel::Type InFeatureLevel);
+      EShaderPlatform InShaderPlatform);
 
   virtual ~FCesiumGltfLinesSceneProxy();
 

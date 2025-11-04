@@ -781,8 +781,8 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
         FRotator::ZeroRotator,
         spawnParameters);
     pLevelInstance->SetIsSpatiallyLoaded(false);
-    pLevelInstance->DesiredRuntimeBehavior =
-        ELevelInstanceRuntimeBehavior::LevelStreaming;
+    pLevelInstance->SetDesiredRuntimeBehavior(
+        ELevelInstanceRuntimeBehavior::LevelStreaming);
     pLevelInstance->SetActorLabel(pFound->LevelName);
 
     FString levelPath = level.PackageName.ToString() + "." +

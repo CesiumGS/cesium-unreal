@@ -4,9 +4,14 @@
 #include "Materials/MaterialInstance.h"
 #include "Runtime/Launch/Resources/Version.h"
 
-void UCesiumMaterialUserData::PostEditChangeOwner() {
-  Super::PostEditChangeOwner();
+void UCesiumMaterialUserData::PostEditChangeOwner(
+    const FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeOwner(PropertyChangedEvent);
 
+  this->UpdateLayerNames();
+}
+
+void UCesiumMaterialUserData::UpdateLayerNames() {
 #if WITH_EDITORONLY_DATA
   this->LayerNames.Empty();
 
