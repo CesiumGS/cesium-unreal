@@ -1503,6 +1503,22 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
       continue;
     }
 
+    // Take the show-only / hidden list of actors into consideration
+    bool bDoesSceneCaptureRenderTileset = false;
+    if (pSceneCaptureComponent->PrimitiveRenderMode ==
+        ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList) {
+      bDoesSceneCaptureRenderTileset =
+          pSceneCaptureComponent->ShowOnlyActors.ContainsByPredicate(
+              [this](auto const& ActorPtr) { return this == ActorPtr; });
+    } else {
+      bDoesSceneCaptureRenderTileset =
+          !pSceneCaptureComponent->HiddenActors.ContainsByPredicate(
+              [this](auto const& ActorPtr) { return this == ActorPtr; });
+    }
+    if (!bDoesSceneCaptureRenderTileset) {
+      continue;
+    }
+
     FVector2D renderTargetSize(pRenderTarget->SizeX, pRenderTarget->SizeY);
     if (renderTargetSize.X < 1.0 || renderTargetSize.Y < 1.0) {
       continue;
