@@ -22,8 +22,8 @@ void ALevelInstance_SetDesiredRuntimeBehavior(
     ELevelInstanceRuntimeBehavior RuntimeBehavior) {
 #if WITH_EDITORONLY_DATA && ENGINE_MAJOR_VERSION >= 5 &&                       \
     ENGINE_MINOR_VERSION >= 7
-  return Instance->SetDesiredRuntimeBehavior(RuntimeBehavior);
+  Instance->SetDesiredRuntimeBehavior(RuntimeBehavior);
 #elif WITH_EDITORONLY_DATA
-  return Instance->DesiredRuntimeBehavior = RuntimeBehavior;
+  Instance->DesiredRuntimeBehavior = RuntimeBehavior;
 #endif
 }
