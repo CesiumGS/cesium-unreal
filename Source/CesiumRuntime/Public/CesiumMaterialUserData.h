@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumCommon.h"
 #include "Engine/AssetUserData.h"
 #include "CesiumMaterialUserData.generated.h"
 
@@ -22,7 +23,7 @@ class UCesiumMaterialUserData : public UAssetUserData {
   GENERATED_BODY()
 
 public:
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 6
+#if ENGINE_VERSION_5_6_OR_HIGHER
   virtual void PostEditChangeOwner(
       const FPropertyChangedEvent& PropertyChangedEvent) override;
 #else

@@ -1,10 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumMaterialUserData.h"
+#include "CesiumCommon.h"
 #include "Materials/MaterialInstance.h"
 #include "Runtime/Launch/Resources/Version.h"
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 6
+#if ENGINE_VERSION_5_6_OR_HIGHER
 void UCesiumMaterialUserData::PostEditChangeOwner(
     const FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeOwner(PropertyChangedEvent);

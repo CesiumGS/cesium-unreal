@@ -2,6 +2,7 @@
 
 #include "CesiumPointAttenuationVertexFactory.h"
 
+#include "CesiumCommon.h"
 #include "DataDrivenShaderPlatformInfo.h"
 #include "MaterialDomain.h"
 #include "MeshBatch.h"
@@ -17,7 +18,7 @@ FBufferRHIRef CreatePointAttenuationBuffer(
     int32 Size,
     int32 Stride,
     EBufferUsageFlags Flags) {
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 6
+#if ENGINE_VERSION_5_6_OR_HIGHER
   FRHIBufferCreateDesc CreateDesc(Name, Size, Stride, Flags);
   CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
   return RHICmdList.CreateBuffer(CreateDesc);

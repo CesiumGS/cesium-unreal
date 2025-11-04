@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumCommon.h"
 #include "Components/MeshComponent.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "RHIFeatureLevel.h"
@@ -20,7 +21,7 @@ struct FSceneInterfaceWrapper {
 
   ERHIFeatureLevel::Type RHIFeatureLevelType;
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 7
+#if ENGINE_VERSION_5_7_OR_HIGHER
 private:
   EShaderPlatform ShaderPlatform;
 #endif

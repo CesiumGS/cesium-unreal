@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureResource.h"
+#include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "Misc/CoreStats.h"
@@ -499,7 +500,7 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
       textureFlags |= TexCreate_SRGB;
     }
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+#if ENGINE_VERSION_5_5_OR_HIGHER
     FRHITextureCreateDesc Desc;
     if (this->_depth > 1) {
       uint32 MipExtentX, MipExtentY, MipExtentZ;
