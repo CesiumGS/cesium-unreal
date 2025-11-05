@@ -12,11 +12,10 @@
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
 #include "UObject/WeakObjectPtr.h"
-#include "Widgets/SWindow.h"
 #include "Widgets/Input/SComboBox.h"
+#include "Widgets/SWindow.h"
 
 #include <optional>
-#include <swl/variant.hpp>
 #include <vector>
 
 class ACesium3DTileset;
@@ -79,8 +78,13 @@ private:
     FCesiumMetadataPropertyDetails propertyDetails;
     EPropertySource source;
     TSharedRef<FString> pSourceName;
-    // TODO fill a combo box + dropdowns if needed
-    TArray<ECesiumEncodedMetadataConversion> conversionMethods;
+    TArray<TSharedRef<ECesiumEncodedMetadataConversion>> conversionMethods;
+    TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>
+        pConversionCombo;
+    TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>
+        pEncodedTypeCombo;
+    TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>
+        pEncodedComponentTypeCombo;
 
     bool operator==(const PropertyInstanceView& property) const;
     bool operator!=(const PropertyInstanceView& property) const;
@@ -96,7 +100,13 @@ private:
 
   void gatherTilesetStatistics();
   void gatherGltfMetadata();
-  void gatherGltfPropertyTables(const FCesiumModelMetadata& modelMetadata);
+
+  template <
+      typename TSource,
+      typename TSourceBlueprintLibrary,
+      typename TSourceProperty,
+      typename TSourcePropertyBlueprintLibrary>
+  void gatherGltfPropertySources(const TArray<TSource>& sources);
 
   TSharedRef<ITableRow> createStatisticRow(
       TSharedRef<StatisticView> pItem,
@@ -114,6 +124,13 @@ private:
   void createGltfPropertyDropdown(
       TSharedRef<SScrollBox>& pContent,
       const PropertyView& property);
+  template <typename TEnum>
+  TSharedRef<SWidget> createEnumDropdownOption(TSharedRef<TEnum> pOption);
+
+  template <typename TEnum>
+  void createEnumComboBox(
+      TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
+      const TArray<TSharedRef<TEnum>>& options);
 
   bool canBeRegistered(TSharedRef<StatisticView> pItem);
   bool canBeRegistered(TSharedRef<PropertyInstanceView> pItem);
@@ -125,12 +142,16 @@ private:
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
 
   TArray<ClassStatisticsView> _statisticsClasses;
-
   // The current Features / Metadata implementation folds the class / property
   // schemas into each implementation of PropertyTable, PropertyTableProperty,
   // etc., so this functions as a property-centric view instead of a class-based
   // one.
   TArray<PropertyView> _metadataProperties;
 
-  TArray<ECesiumEncodedMetadataConversion> _conversionOptions;
+  // Avoid allocating numerous instances of simple enum values (pointers / refs
+  // are required for SComboBox).
+  TArray<TSharedRef<ECesiumEncodedMetadataConversion>> _conversionOptions;
+  TArray<TSharedRef<ECesiumEncodedMetadataType>> _encodedTypeOptions;
+  TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
+      _encodedComponentTypeOptions;
 };
