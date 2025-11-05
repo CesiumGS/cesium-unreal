@@ -46,227 +46,6 @@ using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
 
 namespace {
-void AutoFillPropertyTableDescriptions(
-    TArray<FCesiumPropertyTableDescription>& Descriptions,
-    const FCesiumModelMetadata& ModelMetadata) {
-  const TArray<FCesiumPropertyTable>& propertyTables =
-      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(ModelMetadata);
-
-  for (const auto& propertyTable : propertyTables) {
-    FString propertyTableName = getNameForPropertyTable(propertyTable);
-
-    FCesiumPropertyTableDescription* pDescription =
-        Descriptions.FindByPredicate(
-            [&name = propertyTableName](
-                const FCesiumPropertyTableDescription& existingPropertyTable) {
-              return existingPropertyTable.Name == name;
-            });
-
-    if (!pDescription) {
-      pDescription = &Descriptions.Emplace_GetRef();
-      pDescription->Name = propertyTableName;
-    }
-
-    const TMap<FString, FCesiumPropertyTableProperty>& properties =
-        UCesiumPropertyTableBlueprintLibrary::GetProperties(propertyTable);
-    for (const auto& propertyIt : properties) {
-      auto pExistingProperty = pDescription->Properties.FindByPredicate(
-          [&propertyName = propertyIt.Key](
-              const FCesiumPropertyTablePropertyDescription& existingProperty) {
-            return existingProperty.Name == propertyName;
-          });
-
-      if (pExistingProperty) {
-        // We have already accounted for this property, but we may need to check
-        // for its offset / scale, since they can differ from the class
-        // property's definition.
-        ECesiumMetadataType type = pExistingProperty->PropertyDetails.Type;
-        switch (type) {
-        case ECesiumMetadataType::Scalar:
-        case ECesiumMetadataType::Vec2:
-        case ECesiumMetadataType::Vec3:
-        case ECesiumMetadataType::Vec4:
-        case ECesiumMetadataType::Mat2:
-        case ECesiumMetadataType::Mat3:
-        case ECesiumMetadataType::Mat4:
-          break;
-        default:
-          continue;
-        }
-
-        FCesiumMetadataValue offset =
-            UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasOffset |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-        FCesiumMetadataValue scale =
-            UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasScale |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-        continue;
-      }
-
-      FCesiumPropertyTablePropertyDescription& property =
-          pDescription->Properties.Emplace_GetRef();
-      property.Name = propertyIt.Key;
-
-      const FCesiumMetadataValueType ValueType =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
-              propertyIt.Value);
-      property.PropertyDetails.SetValueType(ValueType);
-      property.PropertyDetails.ArraySize =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
-              propertyIt.Value);
-      property.PropertyDetails.bIsNormalized =
-          UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(
-              propertyIt.Value);
-
-      FCesiumMetadataValue offset =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasOffset =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-      FCesiumMetadataValue scale =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasScale =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-      FCesiumMetadataValue noData =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasNoDataValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(noData);
-
-      FCesiumMetadataValue defaultValue =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasDefaultValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(defaultValue);
-
-      property.EncodingDetails = CesiumMetadataPropertyDetailsToEncodingDetails(
-          property.PropertyDetails);
-    }
-  }
-}
-
-void AutoFillPropertyTextureDescriptions(
-    TArray<FCesiumPropertyTextureDescription>& Descriptions,
-    const FCesiumModelMetadata& ModelMetadata) {
-  const TArray<FCesiumPropertyTexture>& propertyTextures =
-      UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(ModelMetadata);
-
-  for (const auto& propertyTexture : propertyTextures) {
-    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-    FCesiumPropertyTextureDescription* pDescription =
-        Descriptions.FindByPredicate(
-            [&propertyTextureName =
-                 propertyTextureName](const FCesiumPropertyTextureDescription&
-                                          existingPropertyTexture) {
-              return existingPropertyTexture.Name == propertyTextureName;
-            });
-
-    if (!pDescription) {
-      pDescription = &Descriptions.Emplace_GetRef();
-      pDescription->Name = propertyTextureName;
-    }
-
-    const TMap<FString, FCesiumPropertyTextureProperty>& properties =
-        UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture);
-    for (const auto& propertyIt : properties) {
-      auto pExistingProperty = pDescription->Properties.FindByPredicate(
-          [&propertyName =
-               propertyIt.Key](const FCesiumPropertyTexturePropertyDescription&
-                                   existingProperty) {
-            return propertyName == existingProperty.Name;
-          });
-
-      if (pExistingProperty) {
-        // We have already accounted for this property, but we may need to check
-        // for its offset / scale, since they can differ from the class
-        // property's definition.
-        ECesiumMetadataType type = pExistingProperty->PropertyDetails.Type;
-        switch (type) {
-        case ECesiumMetadataType::Scalar:
-        case ECesiumMetadataType::Vec2:
-        case ECesiumMetadataType::Vec3:
-        case ECesiumMetadataType::Vec4:
-        case ECesiumMetadataType::Mat2:
-        case ECesiumMetadataType::Mat3:
-        case ECesiumMetadataType::Mat4:
-          break;
-        default:
-          continue;
-        }
-
-        FCesiumMetadataValue offset =
-            UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasOffset |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-        FCesiumMetadataValue scale =
-            UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasScale |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-        continue;
-      }
-
-      FCesiumPropertyTexturePropertyDescription& property =
-          pDescription->Properties.Emplace_GetRef();
-      property.Name = propertyIt.Key;
-
-      const FCesiumMetadataValueType ValueType =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetValueType(
-              propertyIt.Value);
-      property.PropertyDetails.SetValueType(ValueType);
-      property.PropertyDetails.ArraySize =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
-              propertyIt.Value);
-      property.PropertyDetails.bIsNormalized =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
-              propertyIt.Value);
-
-      FCesiumMetadataValue offset =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasOffset =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-      FCesiumMetadataValue scale =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasScale =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-      FCesiumMetadataValue noData =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetNoDataValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasNoDataValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(noData);
-
-      FCesiumMetadataValue defaultValue =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasDefaultValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(defaultValue);
-
-      auto maybeTextureTransform = propertyIt.Value.getTextureTransform();
-      if (maybeTextureTransform) {
-        property.bHasKhrTextureTransform =
-            (maybeTextureTransform->status() ==
-             CesiumGltf::KhrTextureTransformStatus::Valid);
-      }
-    }
-  }
-}
-
 void AutoFillFeatureIdSetDescriptions(
     TArray<FCesiumFeatureIdSetDescription>& Descriptions,
     const FCesiumPrimitiveFeatures& Features,
@@ -368,70 +147,69 @@ void UCesiumFeaturesMetadataComponent::ViewProperties() {
         OnCesiumFeaturesMetadataViewProperties.Broadcast(pOwner);
       });
 }
-
-void UCesiumFeaturesMetadataComponent::AutoFill() {
-  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
-  if (!pOwner) {
-    return;
-  }
-
-  Super::PreEditChange(NULL);
-
-  // This assumes that the property tables are the same across all models in the
-  // tileset, and that they all have the same schema.
-  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
-    const UCesiumGltfComponent* pGltf = Cast<UCesiumGltfComponent>(pComponent);
-    if (!pGltf) {
-      continue;
-    }
-
-    const FCesiumModelMetadata& modelMetadata = pGltf->Metadata;
-    AutoFillPropertyTableDescriptions(
-        this->Description.ModelMetadata.PropertyTables,
-        modelMetadata);
-    AutoFillPropertyTextureDescriptions(
-        this->Description.ModelMetadata.PropertyTextures,
-        modelMetadata);
-
-    TArray<USceneComponent*> childComponents;
-    pGltf->GetChildrenComponents(false, childComponents);
-
-    for (const USceneComponent* pChildComponent : childComponents) {
-      const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pChildComponent);
-      if (!pCesiumPrimitive) {
-        continue;
-      }
-      const CesiumPrimitiveData& primData =
-          pCesiumPrimitive->getPrimitiveData();
-      const FCesiumPrimitiveFeatures& primitiveFeatures = primData.Features;
-      const TArray<FCesiumPropertyTable>& propertyTables =
-          UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(
-              modelMetadata);
-      const FCesiumPrimitiveFeatures* pInstanceFeatures = nullptr;
-      const auto* pInstancedComponent =
-          Cast<UCesiumGltfInstancedComponent>(pChildComponent);
-      if (pInstancedComponent) {
-        pInstanceFeatures = pInstancedComponent->pInstanceFeatures.Get();
-      }
-      AutoFillFeatureIdSetDescriptions(
-          this->Description.PrimitiveFeatures.FeatureIdSets,
-          primitiveFeatures,
-          pInstanceFeatures,
-          propertyTables);
-
-      const FCesiumPrimitiveMetadata& primitiveMetadata = primData.Metadata;
-      const TArray<FCesiumPropertyTexture>& propertyTextures =
-          UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
-              modelMetadata);
-      AutoFillPropertyTextureNames(
-          this->Description.PrimitiveMetadata.PropertyTextureNames,
-          primitiveMetadata,
-          propertyTextures);
-    }
-  }
-
-  Super::PostEditChange();
-}
+//
+//void UCesiumFeaturesMetadataComponent::AutoFill() {
+//  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+//  if (!pOwner) {
+//    return;
+//  }
+//
+//
+//  // This assumes that the property tables are the same across all models in the
+//  // tileset, and that they all have the same schema.
+//  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
+//    const UCesiumGltfComponent* pGltf = Cast<UCesiumGltfComponent>(pComponent);
+//    if (!pGltf) {
+//      continue;
+//    }
+//
+//    const FCesiumModelMetadata& modelMetadata = pGltf->Metadata;
+//    // AutoFillPropertyTableDescriptions(
+//    //     this->Description.ModelMetadata.PropertyTables,
+//    //     modelMetadata);
+//    AutoFillPropertyTextureDescriptions(
+//        this->Description.ModelMetadata.PropertyTextures,
+//        modelMetadata);
+//
+//    TArray<USceneComponent*> childComponents;
+//    pGltf->GetChildrenComponents(false, childComponents);
+//
+//    for (const USceneComponent* pChildComponent : childComponents) {
+//      const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pChildComponent);
+//      if (!pCesiumPrimitive) {
+//        continue;
+//      }
+//      const CesiumPrimitiveData& primData =
+//          pCesiumPrimitive->getPrimitiveData();
+//      const FCesiumPrimitiveFeatures& primitiveFeatures = primData.Features;
+//      const TArray<FCesiumPropertyTable>& propertyTables =
+//          UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(
+//              modelMetadata);
+//      const FCesiumPrimitiveFeatures* pInstanceFeatures = nullptr;
+//      const auto* pInstancedComponent =
+//          Cast<UCesiumGltfInstancedComponent>(pChildComponent);
+//      if (pInstancedComponent) {
+//        pInstanceFeatures = pInstancedComponent->pInstanceFeatures.Get();
+//      }
+//      AutoFillFeatureIdSetDescriptions(
+//          this->Description.PrimitiveFeatures.FeatureIdSets,
+//          primitiveFeatures,
+//          pInstanceFeatures,
+//          propertyTables);
+//
+//      const FCesiumPrimitiveMetadata& primitiveMetadata = primData.Metadata;
+//      const TArray<FCesiumPropertyTexture>& propertyTextures =
+//          UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
+//              modelMetadata);
+//      AutoFillPropertyTextureNames(
+//          this->Description.PrimitiveMetadata.PropertyTextureNames,
+//          primitiveMetadata,
+//          propertyTextures);
+//    }
+//  }
+//
+//  Super::PostEditChange();
+//}
 
 static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {
   return LoadObjFromPath<UMaterialFunction>(Path);
@@ -1990,7 +1768,8 @@ void GenerateNodesForPropertyTexture(
         PropertyTextureName,
         PropertyName);
     ECesiumEncodedMetadataType Type =
-        CesiumMetadataPropertyDetailsToEncodingDetails(Property.PropertyDetails)
+        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
+            Property.PropertyDetails)
             .Type;
 
     if (!foundFirstProperty) {
@@ -2657,4 +2436,74 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   Super::PostLoad();
+}
+
+void UCesiumFeaturesMetadataComponent::OnRegister() {
+  Super::OnRegister();
+
+  ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  Cesium3DTilesSelection::Tileset* pTileset =
+      pOwner ? pOwner->GetTileset() : nullptr;
+  if (!pTileset) {
+    return;
+  }
+
+  pTileset->loadMetadata().thenInMainThread(
+      [this](const Cesium3DTilesSelection::TilesetMetadata* pMetadata) {
+        this->syncTilesetStatistics(pMetadata);
+      });
+}
+
+void UCesiumFeaturesMetadataComponent::syncTilesetStatistics(
+    const Cesium3DTilesSelection::TilesetMetadata* pMetadata) {
+  // Statistics should accurately reflect the contents of what tileset they are
+  // attached to.
+  TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
+      this->Description.Statistics;
+
+  for (const FCesiumMetadataClassStatisticsDescription& classStatistics :
+       statistics) {
+    // Attempt to find the class in the tileset's statistics.
+    const Cesium3DTiles::ClassStatistics* pClass = nullptr;
+    if (pMetadata->statistics) {
+      for (const auto& it : pMetadata->statistics->classes) {
+        if (it.first.c_str() == classStatistics.Id) {
+          pClass = &it.second;
+          break;
+        }
+      }
+    }
+
+    for (const FCesiumMetadataPropertyStatisticsDescription&
+             propertyStatistics : classStatistics.Properties) {
+      // Attempt to find the property in the tileset's statistics.
+      const Cesium3DTiles::PropertyStatistics* pProperty = nullptr;
+      if (pClass) {
+        for (const auto& it : pClass->properties) {
+          if (it.first.c_str() == propertyStatistics.Id) {
+            pProperty = &it.second;
+            break;
+          }
+        }
+      }
+
+      for (const FCesiumMetadataPropertyStatisticValue& value :
+           propertyStatistics.Values) {
+        const CesiumUtility::JsonValue* pValue = nullptr;
+        if (pProperty) {
+          // Attempt to find the statistic value in the corresponding property.
+          switch (value.Semantic) {
+          case ECesiumMetadataStatisticSemantic::Min:
+            pValue = pProperty->min ? &(*pProperty->min) : nullptr;
+            break;
+          case ECesiumMetadataStatisticSemantic::Max:
+            pValue = pProperty->max ? &(*pProperty->max) : nullptr;
+            break;
+          default:
+            break;
+          }
+        }
+      }
+    }
+  }
 }

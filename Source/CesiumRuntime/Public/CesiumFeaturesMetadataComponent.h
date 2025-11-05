@@ -11,6 +11,10 @@
 
 #include "CesiumFeaturesMetadataComponent.generated.h"
 
+namespace Cesium3DTilesSelection {
+class TilesetMetadata;
+}
+
 /**
  * @brief A component that can be added to Cesium3DTileset actors to
  * dictate what metadata to encode for access on the GPU. The selection can be
@@ -27,21 +31,11 @@ class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
 public:
 #if WITH_EDITOR
   /**
-  * 
-  */
-  UFUNCTION(CallInEditor, Category = "Cesium")
-  void ViewProperties();
-
-  /**
-   * Populate the description of metadata and feature IDs using the current view
-   * of the tileset. This determines what to encode to the GPU based on the
-   * existing metadata.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
+   * Opens a window containing the description of metadata and feature IDs
+   * using the current view of the tileset.
    */
-  UFUNCTION(Category = "Cesium")
-  void AutoFill();
+  UFUNCTION(CallInEditor, Category = "Cesium", Meta = (DisplayPriority = 1))
+  void ViewProperties();
 
   /**
    * This button can be used to create a boiler-plate material layer that
@@ -50,7 +44,7 @@ public:
    * exists. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(CallInEditor, Category = "Cesium", Meta = (DisplayPriority = 2))
   void GenerateMaterial();
 #endif
 
@@ -138,4 +132,10 @@ public:
 protected:
   /** PostLoad override. */
   virtual void PostLoad() override;
+  virtual void OnRegister() override;
+  // virtual void OnUnregister() override;
+
+private:
+  void syncTilesetStatistics(
+      const Cesium3DTilesSelection::TilesetMetadata* pMetadata);
 };
