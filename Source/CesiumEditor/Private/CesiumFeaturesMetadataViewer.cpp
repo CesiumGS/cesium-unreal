@@ -8,6 +8,7 @@
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "CesiumRuntimeSettings.h"
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
@@ -57,248 +58,8 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
   }
 }
 
-namespace {
-FString statisticSemanticToString(ECesiumMetadataStatisticSemantic semantic) {
-  const UEnum* pEnum = StaticEnum<ECesiumMetadataStatisticSemantic>();
-  return pEnum ? pEnum->GetNameStringByValue((int64)semantic) : FString();
-}
-} // namespace
-
-TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createStatisticRow(
-    TSharedRef<StatisticView> pItem,
-    const TSharedRef<STableViewBase>& list) {
-  return SNew(STableRow<TSharedRef<StatisticView>>, list)
-      .Content()
-          [SNew(SBox)
-               .HAlign(EHorizontalAlignment::HAlign_Fill)
-               .Content()
-                   [SNew(SHorizontalBox) +
-                    SHorizontalBox::Slot().FillWidth(0.5f).Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [SNew(STextBlock)
-                             .AutoWrapText(true)
-                             .Text(FText::FromString(
-                                 statisticSemanticToString(pItem->semantic)))] +
-                    SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [SNew(STextBlock)
-                             .AutoWrapText(true)
-                             .Text(FText::FromString(
-                                 UCesiumMetadataValueBlueprintLibrary::
-                                     GetString(pItem->value, FString())))] +
-                    SHorizontalBox::Slot()
-                        .AutoWidth()
-                        .HAlign(EHorizontalAlignment::HAlign_Right)
-                        .VAlign(EVerticalAlignment::VAlign_Center)
-                            [PropertyCustomizationHelpers::MakeNewBlueprintButton(
-                                FSimpleDelegate::CreateLambda([this, pItem]() {
-                                  this->registerStatistic(pItem);
-                                }),
-                                FText::FromString(TEXT(
-                                    "Add this property statistic to the tileset's CesiumFeaturesMetadataComponent.")),
-                                TAttribute<bool>::Create([this, pItem]() {
-                                  return this->canBeRegistered(pItem);
-                                }))]]];
-}
-
-TSharedRef<ITableRow>
-CesiumFeaturesMetadataViewer::createPropertyStatisticsDropdown(
-    TSharedRef<PropertyStatisticsView> pItem,
-    const TSharedRef<STableViewBase>& list) {
-  return SNew(STableRow<TSharedRef<PropertyStatisticsView>>, list)
-      .Content()[SNew(SExpandableArea)
-                     .InitiallyCollapsed(true)
-                     .HeaderContent()[SNew(STextBlock)
-                                          .Text(FText::FromString(*pItem->pId))]
-                     .BodyContent()[SNew(SListView<TSharedRef<StatisticView>>)
-                                        .ListItemsSource(&pItem->statistics)
-                                        .SelectionMode(ESelectionMode::None)
-                                        .OnGenerateRow(
-                                            this,
-                                            &CesiumFeaturesMetadataViewer::
-                                                createStatisticRow)]];
-}
-
-void CesiumFeaturesMetadataViewer::createClassStatisticsDropdown(
-    TSharedRef<SScrollBox>& pContent,
-    const ClassStatisticsView& classStatistics) {
-
-  pContent->AddSlot()
-      [SNew(SExpandableArea)
-           .InitiallyCollapsed(true)
-           .HeaderContent()[SNew(STextBlock)
-                                .Text(FText::FromString(*classStatistics.pId))]
-           .BodyContent()
-               [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
-                SHorizontalBox::Slot()
-                    [SNew(SListView<TSharedRef<PropertyStatisticsView>>)
-                         .ListItemsSource(&classStatistics.properties)
-                         .SelectionMode(ESelectionMode::None)
-                         .OnGenerateRow(
-                             this,
-                             &CesiumFeaturesMetadataViewer::
-                                 createPropertyStatisticsDropdown)]]];
-}
-
-namespace {
-template <typename TEnum> FText getEnumDisplayNameText(TEnum value) {
-  UEnum* pEnum = StaticEnum<TEnum>();
-  if (pEnum) {
-    return pEnum->GetDisplayNameTextByValue(int64(value));
-  }
-
-  return FText::FromString(FString());
-}
-} // namespace
-
-TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
-    TSharedRef<PropertyInstanceView> pItem,
-    const TSharedRef<STableViewBase>& list) {
-  FString typeString = pItem->propertyDetails.GetValueType().ToString();
-  if (pItem->propertyDetails.bIsNormalized) {
-    typeString += TEXT(" (Normalized)");
-  }
-
-  if (pItem->propertyDetails.bIsArray) {
-    int64 arraySize = pItem->propertyDetails.ArraySize;
-    typeString += arraySize > 0
-                      ? FString::Printf(TEXT(" with %d elements"), arraySize)
-                      : TEXT(" of variable size");
-  }
-
-  FString sourceString;
-  switch (pItem->source) {
-  case EPropertySource::PropertyTable:
-    sourceString = TEXT("Property Table");
-    break;
-  case EPropertySource::PropertyTexture:
-    sourceString = TEXT("Property Texture");
-    break;
-  }
-
-  sourceString += FString::Printf(TEXT(" (%s)"), **pItem->pSourceName);
-
-  TArray<FString> qualifierList;
-  if (pItem->propertyDetails.bHasOffset) {
-    qualifierList.Add("Offset");
-  }
-  if (pItem->propertyDetails.bHasScale) {
-    qualifierList.Add("Scale");
-  }
-  if (pItem->propertyDetails.bHasNoDataValue) {
-    qualifierList.Add("'No Data' Value");
-  }
-  if (pItem->propertyDetails.bHasDefaultValue) {
-    qualifierList.Add("Default Value");
-  }
-
-  FString qualifierString =
-      qualifierList.IsEmpty()
-          ? FString()
-          : "Contains " + FString::Join(qualifierList, TEXT(", "));
-
-  createEnumComboBox<ECesiumEncodedMetadataConversion>(
-      pItem->pConversionCombo,
-      pItem->conversionMethods);
-  createEnumComboBox<ECesiumEncodedMetadataType>(
-      pItem->pEncodedTypeCombo,
-      this->_encodedTypeOptions);
-  createEnumComboBox<ECesiumEncodedMetadataComponentType>(
-      pItem->pEncodedComponentTypeCombo,
-      this->_encodedComponentTypeOptions);
-
-  return SNew(STableRow<TSharedRef<StatisticView>>, list)
-      .Content()
-          [SNew(SBox)
-               .HAlign(EHorizontalAlignment::HAlign_Fill)
-               .Content()
-                   [SNew(SHorizontalBox) +
-                    SHorizontalBox::Slot().FillWidth(0.4f).Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [SNew(STextBlock)
-                             .AutoWrapText(true)
-                             .Text(FText::FromString(typeString))] +
-                    SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [SNew(STextBlock)
-                             .AutoWrapText(true)
-                             .Text(FText::FromString(sourceString))] +
-                    SHorizontalBox::Slot().AutoWidth().Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [SNew(STextBlock)
-                             .AutoWrapText(true)
-                             .Text(FText::FromString(qualifierString))] +
-                    SHorizontalBox::Slot().AutoWidth().Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [pItem->pConversionCombo->AsShared()] +
-                    SHorizontalBox::Slot().AutoWidth().Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [pItem->pEncodedTypeCombo->AsShared()] +
-                    SHorizontalBox::Slot().AutoWidth().Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [pItem->pEncodedComponentTypeCombo->AsShared()] +
-                    SHorizontalBox::Slot()
-                        .AutoWidth()
-                        .HAlign(EHorizontalAlignment::HAlign_Right)
-                        .VAlign(EVerticalAlignment::VAlign_Center)
-                            [PropertyCustomizationHelpers::MakeNewBlueprintButton(
-                                FSimpleDelegate::CreateLambda([this, pItem]() {
-                                  this->registerPropertyInstance(pItem);
-                                }),
-                                FText::FromString(TEXT(
-                                    "Add this property to the tileset's CesiumFeaturesMetadataComponent.")),
-                                TAttribute<bool>::Create([this, pItem]() {
-                                  return this->canBeRegistered(pItem);
-                                }))]]];
-}
-
-void CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
-    TSharedRef<SScrollBox>& pContent,
-    const PropertyView& property) {
-  pContent->AddSlot()
-      [SNew(SExpandableArea)
-           .InitiallyCollapsed(true)
-           .HeaderContent()[SNew(STextBlock)
-                                .Text(FText::FromString(*property.pId))]
-           .BodyContent()[SNew(SListView<TSharedRef<PropertyInstanceView>>)
-                              .ListItemsSource(&property.instances)
-                              .SelectionMode(ESelectionMode::None)
-                              .OnGenerateRow(
-                                  this,
-                                  &CesiumFeaturesMetadataViewer::
-                                      createPropertyInstanceRow)]];
-}
-
-template <typename TEnum>
-TSharedRef<SWidget> CesiumFeaturesMetadataViewer::createEnumDropdownOption(
-    TSharedRef<TEnum> pOption) {
-  return SNew(STextBlock).Text(getEnumDisplayNameText(*pOption));
-}
-
-template <typename TEnum>
-void CesiumFeaturesMetadataViewer::createEnumComboBox(
-    TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
-    const TArray<TSharedRef<TEnum>>& options) {
-  CESIUM_ASSERT(options.Num() > 0);
-
-  SAssignNew(pComboBox, SComboBox<TSharedRef<TEnum>>)
-      .OptionsSource(&options)
-      .InitiallySelectedItem(options[0])
-      .OnGenerateWidget(
-          this,
-          &CesiumFeaturesMetadataViewer::createEnumDropdownOption<TEnum>)
-      .Content()
-          [SNew(STextBlock).MinDesiredWidth(50.0f).Text_Lambda([&pComboBox]() {
-            return pComboBox->GetSelectedItem().IsValid()
-                       ? getEnumDisplayNameText<TEnum>(
-                             *pComboBox->GetSelectedItem())
-                       : FText::FromString(FString());
-          })];
-}
-
 void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
-  TSharedRef<SVerticalBox> pVertical = SNew(SVerticalBox);
-  this->_pContent = pVertical.ToSharedPtr();
+  SAssignNew(this->_pContent, SVerticalBox);
 
   const TWeakObjectPtr<ACesium3DTileset>& pTileset = InArgs._Tileset;
   FString label =
@@ -319,7 +80,7 @@ void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
               600))[SNew(SBorder)
                         .Visibility(EVisibility::Visible)
                         .BorderImage(FAppStyle::GetBrush("Menu.Background"))
-                        .Padding(FMargin(10.0f))[pVertical]]);
+                        .Padding(FMargin(10.0f))[this->_pContent->AsShared()]]);
 }
 
 namespace {
@@ -522,8 +283,6 @@ void CesiumFeaturesMetadataViewer::gatherGltfMetadata() {
 
   ACesium3DTileset& tileset = *this->_pTileset;
 
-  // This assumes that the property tables are the same across all models in
-  // the tileset, and that they all have the same schema.
   for (const UActorComponent* pComponent : tileset.GetComponents()) {
     const auto* pPrimitive = Cast<UPrimitiveComponent>(pComponent);
     if (!pPrimitive) {
@@ -552,11 +311,64 @@ void CesiumFeaturesMetadataViewer::gatherGltfMetadata() {
   }
 }
 
+void CesiumFeaturesMetadataViewer::gatherGltfFeatures() {
+  if (!this->_pTileset.IsValid()) {
+    return;
+  }
+
+  ACesium3DTileset& tileset = *this->_pTileset;
+
+  for (const UActorComponent* pComponent : tileset.GetComponents()) {
+    const auto* pPrimitive = Cast<UPrimitiveComponent>(pComponent);
+    if (!pPrimitive) {
+      continue;
+    }
+
+    const FCesiumPrimitiveFeatures& primitiveFeatures =
+        UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
+            pPrimitive);
+    const TArray<FCesiumFeatureIdSet>& featureIdSets =
+        UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+            primitiveFeatures);
+
+    for (const FCesiumFeatureIdSet& featureIdSet : featureIdSets) {
+      ECesiumFeatureIdSetType type =
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIdSet);
+      int64 count =
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIdSet);
+      if (type == ECesiumFeatureIdSetType::None || count == 0) {
+        // Empty or invalid feature ID set. Skip.
+        continue;
+      }
+    }
+  }
+}
+
 bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator==(
-    const PropertyInstanceView& property) const {
-  return *pPropertyId == *property.pPropertyId &&
-         propertyDetails == property.propertyDetails &&
-         source == property.source && *pSourceName == *property.pSourceName;
+    const PropertyInstanceView& rhs) const {
+  if (*pPropertyId != *rhs.pPropertyId ||
+      propertyDetails != rhs.propertyDetails ||
+      *pSourceName != *rhs.pSourceName) {
+    return false;
+  }
+
+  if (sourceDetails.index() != rhs.sourceDetails.index()) {
+    // Properties are different if they come from differently-typed sources.
+    return false;
+  }
+
+  if (std::holds_alternative<TexturePropertyInstanceDetails>(sourceDetails)) {
+    CESIUM_ASSERT(std::holds_alternative<TexturePropertyInstanceDetails>(
+        rhs.sourceDetails));
+
+    return std::get<TexturePropertyInstanceDetails>(sourceDetails)
+               .hasKhrTextureTransform ==
+           std::get<TexturePropertyInstanceDetails>(rhs.sourceDetails)
+               .hasKhrTextureTransform;
+  }
+
+  return true;
 }
 
 bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator!=(
@@ -640,7 +452,7 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
     const TArray<TSource>& sources) {
 
   for (const TSource& source : sources) {
-    FString propertyTableName = getNameForPropertySource(source);
+    FString propertySourceName = getNameForPropertySource(source);
 
     const TMap<FString, TSourceProperty>& properties =
         TSourceBlueprintLibrary::GetProperties(source);
@@ -696,23 +508,32 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
       propertyDetails.bHasDefaultValue =
           !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
 
-      FCesiumMetadataEncodingDetails bestFitEncoding =
-          FCesiumMetadataEncodingDetails::GetBestFitForProperty(
-              propertyDetails);
-
-      // Do some silly TSharedRef lookup since it's required by SComboBox.
-      TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
-          supportedConversions = getSharedRefs(
-              this->_conversionOptions,
-              getSupportedConversionsForProperty(propertyDetails));
-
       PropertyInstanceView instance{
           .pPropertyId = MakeShared<FString>(propertyIt.Key),
           .propertyDetails = std::move(propertyDetails),
-          .source = EPropertySource::PropertyTable,
-          .pSourceName = MakeShared<FString>(propertyTableName),
-          .conversionMethods = std::move(supportedConversions),
-          .pConversionCombo = nullptr};
+          .pSourceName = MakeShared<FString>(propertySourceName)};
+
+      if constexpr (std::is_same_v<
+                        TSourceProperty,
+                        FCesiumPropertyTableProperty>) {
+        // Do some silly TSharedRef lookup since it's required by SComboBox.
+        TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
+            supportedConversions = getSharedRefs(
+                this->_conversionOptions,
+                getSupportedConversionsForProperty(propertyDetails));
+        instance.sourceDetails = TablePropertyInstanceDetails{
+            .conversionMethods = std::move(supportedConversions)};
+      } else if constexpr (std::is_same_v<
+                               TSourceProperty,
+                               FCesiumPropertyTextureProperty>) {
+        auto maybeTextureTransform = propertyIt.Value.getTextureTransform();
+        bool hasKhrTextureTransform =
+            maybeTextureTransform &&
+            (maybeTextureTransform->status() ==
+             CesiumGltf::KhrTextureTransformStatus::Valid);
+        instance.sourceDetails = TexturePropertyInstanceDetails{
+            .hasKhrTextureTransform = hasKhrTextureTransform};
+      }
 
       TSharedRef<PropertyInstanceView>* pExistingInstance =
           property.instances.FindByPredicate(
@@ -726,6 +547,316 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
       }
     }
   }
+}
+
+namespace {
+FString statisticSemanticToString(ECesiumMetadataStatisticSemantic semantic) {
+  const UEnum* pEnum = StaticEnum<ECesiumMetadataStatisticSemantic>();
+  return pEnum ? pEnum->GetNameStringByValue((int64)semantic) : FString();
+}
+} // namespace
+
+TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createStatisticRow(
+    TSharedRef<StatisticView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  return SNew(STableRow<TSharedRef<StatisticView>>, list)
+      .Content()
+          [SNew(SBox)
+               .HAlign(EHorizontalAlignment::HAlign_Fill)
+               .Content()
+                   [SNew(SHorizontalBox) +
+                    SHorizontalBox::Slot().FillWidth(0.5f).Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(
+                                 statisticSemanticToString(pItem->semantic)))] +
+                    SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(
+                                 UCesiumMetadataValueBlueprintLibrary::
+                                     GetString(pItem->value, FString())))] +
+                    SHorizontalBox::Slot()
+                        .AutoWidth()
+                        .HAlign(EHorizontalAlignment::HAlign_Right)
+                        .VAlign(EVerticalAlignment::VAlign_Center)
+                            [PropertyCustomizationHelpers::MakeNewBlueprintButton(
+                                FSimpleDelegate::CreateLambda([this, pItem]() {
+                                  this->registerStatistic(pItem);
+                                }),
+                                FText::FromString(TEXT(
+                                    "Add this property statistic to the tileset's CesiumFeaturesMetadataComponent.")),
+                                TAttribute<bool>::Create([this, pItem]() {
+                                  return this->canBeRegistered(pItem);
+                                }))]]];
+}
+
+TSharedRef<ITableRow>
+CesiumFeaturesMetadataViewer::createPropertyStatisticsDropdown(
+    TSharedRef<PropertyStatisticsView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  return SNew(STableRow<TSharedRef<PropertyStatisticsView>>, list)
+      .Content()[SNew(SExpandableArea)
+                     .InitiallyCollapsed(true)
+                     .HeaderContent()[SNew(STextBlock)
+                                          .Text(FText::FromString(*pItem->pId))]
+                     .BodyContent()[SNew(SListView<TSharedRef<StatisticView>>)
+                                        .ListItemsSource(&pItem->statistics)
+                                        .SelectionMode(ESelectionMode::None)
+                                        .OnGenerateRow(
+                                            this,
+                                            &CesiumFeaturesMetadataViewer::
+                                                createStatisticRow)]];
+}
+
+void CesiumFeaturesMetadataViewer::createClassStatisticsDropdown(
+    TSharedRef<SScrollBox>& pContent,
+    const ClassStatisticsView& classStatistics) {
+
+  pContent->AddSlot()
+      [SNew(SExpandableArea)
+           .InitiallyCollapsed(true)
+           .HeaderContent()[SNew(STextBlock)
+                                .Text(FText::FromString(*classStatistics.pId))]
+           .BodyContent()
+               [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+                SHorizontalBox::Slot()
+                    [SNew(SListView<TSharedRef<PropertyStatisticsView>>)
+                         .ListItemsSource(&classStatistics.properties)
+                         .SelectionMode(ESelectionMode::None)
+                         .OnGenerateRow(
+                             this,
+                             &CesiumFeaturesMetadataViewer::
+                                 createPropertyStatisticsDropdown)]]];
+}
+
+namespace {
+template <typename TEnum> FText getEnumDisplayNameText(TEnum value) {
+  UEnum* pEnum = StaticEnum<TEnum>();
+  if (pEnum) {
+    return pEnum->GetDisplayNameTextByValue(int64(value));
+  }
+
+  return FText::FromString(FString());
+}
+} // namespace
+
+TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
+    TSharedRef<PropertyInstanceView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  FString typeString = pItem->propertyDetails.GetValueType().ToString();
+  if (pItem->propertyDetails.bIsNormalized) {
+    typeString += TEXT(" (Normalized)");
+  }
+
+  if (pItem->propertyDetails.bIsArray) {
+    int64 arraySize = pItem->propertyDetails.ArraySize;
+    typeString += arraySize > 0
+                      ? FString::Printf(TEXT(" with %d elements"), arraySize)
+                      : TEXT(" of variable size");
+  }
+
+  auto* pTableSourceDetails =
+      std::get_if<TablePropertyInstanceDetails>(&pItem->sourceDetails);
+  auto* pTextureSourceDetails =
+      std::get_if<TexturePropertyInstanceDetails>(&pItem->sourceDetails);
+
+  FString sourceString;
+  if (pTableSourceDetails) {
+    sourceString = TEXT("Property Table");
+  } else if (pTextureSourceDetails) {
+    sourceString = TEXT("Property Texture");
+  }
+  sourceString += FString::Printf(TEXT(" (\"%s\")"), **pItem->pSourceName);
+
+  TArray<FString> qualifierList;
+  if (pItem->propertyDetails.bHasOffset) {
+    qualifierList.Add("Offset");
+  }
+  if (pItem->propertyDetails.bHasScale) {
+    qualifierList.Add("Scale");
+  }
+  if (pItem->propertyDetails.bHasNoDataValue) {
+    qualifierList.Add("'No Data' Value");
+  }
+  if (pItem->propertyDetails.bHasDefaultValue) {
+    qualifierList.Add("Default Value");
+  }
+
+  if (pTextureSourceDetails && pTextureSourceDetails->hasKhrTextureTransform) {
+    qualifierList.Add("KHR_texture_transform");
+  }
+
+  FString qualifierString =
+      qualifierList.IsEmpty()
+          ? FString()
+          : "Contains " + FString::Join(qualifierList, TEXT(", "));
+
+  TSharedRef<SHorizontalBox> content =
+      SNew(SHorizontalBox) +
+      SHorizontalBox::Slot().FillWidth(0.45f).Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [SNew(STextBlock)
+               .AutoWrapText(true)
+               .Text(FText::FromString(typeString))
+               .ToolTipText(FText::FromString(FString(
+                   "The type of the property as defined in the EXT_structural_metadata extension.")))] +
+      SHorizontalBox::Slot().FillWidth(0.75f).Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [SNew(STextBlock)
+               .AutoWrapText(true)
+               .Text(FText::FromString(sourceString))
+               .ToolTipText(FText::FromString(
+                   "The source of the property's data. Property attributes are currently unsupported."))] +
+      SHorizontalBox::Slot()
+          .AutoWidth()
+          .MaxWidth(1.0f)
+          .Padding(5.0f)
+          .HAlign(EHorizontalAlignment::HAlign_Left)
+          .VAlign(EVerticalAlignment::VAlign_Center)
+              [SNew(STextBlock)
+                   .AutoWrapText(true)
+                   .Text(FText::FromString(qualifierString))
+                   .ToolTipText(FText::FromString(
+                       "Notable qualities of the property that require additional nodes to be generated for the material."))];
+
+  if (pTableSourceDetails) {
+    FCesiumMetadataEncodingDetails bestFitEncodingDetails =
+        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
+            pItem->propertyDetails);
+
+    createEnumComboBox<ECesiumEncodedMetadataConversion>(
+        pTableSourceDetails->pConversionCombo,
+        pTableSourceDetails->conversionMethods,
+        bestFitEncodingDetails.Conversion,
+        TEXT(
+            "The conversion method used to encode and send the property's data to the material."));
+    createEnumComboBox<ECesiumEncodedMetadataType>(
+        pTableSourceDetails->pEncodedTypeCombo,
+        this->_encodedTypeOptions,
+        bestFitEncodingDetails.Type,
+        TEXT(
+            "The type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
+    createEnumComboBox<ECesiumEncodedMetadataComponentType>(
+        pTableSourceDetails->pEncodedComponentTypeCombo,
+        this->_encodedComponentTypeOptions,
+        bestFitEncodingDetails.ComponentType,
+        TEXT(
+            "The component type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
+
+    if (pTableSourceDetails->pConversionCombo.IsValid()) {
+      content->AddSlot().FillWidth(0.65).Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [pTableSourceDetails->pConversionCombo->AsShared()];
+    }
+
+    auto visibilityLambda = TAttribute<EVisibility>::Create([pItem]() {
+      const auto* pTableSourceDetails =
+          std::get_if<TablePropertyInstanceDetails>(&pItem->sourceDetails);
+      if (!pTableSourceDetails) {
+        return EVisibility::Hidden;
+      }
+
+      bool show = false;
+      if (pTableSourceDetails->pConversionCombo.IsValid()) {
+        TSharedPtr<ECesiumEncodedMetadataConversion> pSelected =
+            pTableSourceDetails->pConversionCombo->GetSelectedItem();
+        show = pSelected.IsValid() &&
+               *pSelected == ECesiumEncodedMetadataConversion::Coerce;
+      }
+      return show ? EVisibility::Visible : EVisibility::Hidden;
+    });
+
+    if (pTableSourceDetails->pEncodedTypeCombo.IsValid()) {
+      pTableSourceDetails->pEncodedTypeCombo->SetVisibility(visibilityLambda);
+      content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [pTableSourceDetails->pEncodedTypeCombo->AsShared()];
+    }
+
+    if (pTableSourceDetails->pEncodedComponentTypeCombo.IsValid()) {
+      pTableSourceDetails->pEncodedComponentTypeCombo->SetVisibility(
+          visibilityLambda);
+      content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [pTableSourceDetails->pEncodedComponentTypeCombo->AsShared()];
+    }
+  }
+
+  content->AddSlot()
+      .AutoWidth()
+      .HAlign(EHorizontalAlignment::HAlign_Right)
+      .VAlign(
+          EVerticalAlignment::
+              VAlign_Center)[PropertyCustomizationHelpers::MakeNewBlueprintButton(
+          FSimpleDelegate::CreateLambda(
+              [this, pItem]() { this->registerPropertyInstance(pItem); }),
+          FText::FromString(TEXT(
+              "Add this property to the tileset's CesiumFeaturesMetadataComponent.")),
+          TAttribute<bool>::Create(
+              [this, pItem]() { return this->canBeRegistered(pItem); }))];
+
+  return SNew(STableRow<TSharedRef<StatisticView>>, list)
+      .Content()[SNew(SBox)
+                     .HAlign(EHorizontalAlignment::HAlign_Fill)
+                     .Content()[content]];
+}
+
+void CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
+    TSharedRef<SScrollBox>& pContent,
+    const PropertyView& property) {
+  pContent->AddSlot()
+      [SNew(SExpandableArea)
+           .InitiallyCollapsed(true)
+           .HeaderContent()[SNew(STextBlock)
+                                .Text(FText::FromString(*property.pId))]
+           .BodyContent()[SNew(SListView<TSharedRef<PropertyInstanceView>>)
+                              .ListItemsSource(&property.instances)
+                              .SelectionMode(ESelectionMode::None)
+                              .OnGenerateRow(
+                                  this,
+                                  &CesiumFeaturesMetadataViewer::
+                                      createPropertyInstanceRow)]];
+}
+
+template <typename TEnum>
+TSharedRef<SWidget> CesiumFeaturesMetadataViewer::createEnumDropdownOption(
+    TSharedRef<TEnum> pOption) {
+  return SNew(STextBlock).Text(getEnumDisplayNameText(*pOption));
+}
+
+template <typename TEnum>
+void CesiumFeaturesMetadataViewer::createEnumComboBox(
+    TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
+    const TArray<TSharedRef<TEnum>>& options,
+    TEnum initialValue,
+    const FString& tooltip) {
+  CESIUM_ASSERT(options.Num() > 0);
+
+  int32 initialIndex = 0;
+  for (int32 i = 0; i < options.Num(); i++) {
+    if (initialValue == *options[i]) {
+      initialIndex = i;
+      break;
+    }
+  }
+
+  SAssignNew(pComboBox, SComboBox<TSharedRef<TEnum>>)
+      .OptionsSource(&options)
+      .InitiallySelectedItem(options[initialIndex])
+      .OnGenerateWidget(
+          this,
+          &CesiumFeaturesMetadataViewer::createEnumDropdownOption<TEnum>)
+      .Content()
+          [SNew(STextBlock).MinDesiredWidth(50.0f).Text_Lambda([&pComboBox]() {
+            return pComboBox->GetSelectedItem().IsValid()
+                       ? getEnumDisplayNameText<TEnum>(
+                             *pComboBox->GetSelectedItem())
+                       : FText::FromString(FString());
+          })]
+      .ToolTipText(FText::FromString(tooltip));
 }
 
 namespace {
@@ -871,18 +1002,31 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
   UCesiumFeaturesMetadataComponent& featuresMetadata =
       *this->_pFeaturesMetadataComponent;
 
-  if (pItem->source == EPropertySource::PropertyTable) {
+  if (std::holds_alternative<TablePropertyInstanceDetails>(
+          pItem->sourceDetails)) {
+    const auto& sourceDetails =
+        std::get<TablePropertyInstanceDetails>(pItem->sourceDetails);
+
     // Validate encoding details first.
     FCesiumMetadataEncodingDetails selectedEncodingDetails =
         getSelectedEncodingDetails(
-            pItem->pConversionCombo,
-            pItem->pEncodedTypeCombo,
-            pItem->pEncodedComponentTypeCombo);
+            sourceDetails.pConversionCombo,
+            sourceDetails.pEncodedTypeCombo,
+            sourceDetails.pEncodedComponentTypeCombo);
 
-    if (!selectedEncodingDetails.HasValidType() ||
-        selectedEncodingDetails.Conversion ==
-            ECesiumEncodedMetadataConversion::None)
+    switch (selectedEncodingDetails.Conversion) {
+    case ECesiumEncodedMetadataConversion::Coerce:
+      // Ensure that we're coercing to a valid type.
+      if (!selectedEncodingDetails.HasValidType())
+        return false;
+      else
+        break;
+    case ECesiumEncodedMetadataConversion::ParseColorFromString:
+      break;
+    case ECesiumEncodedMetadataConversion::None:
+    default:
       return false;
+    }
 
     // Then, check whether the property already exists with the same
     // information.
@@ -898,7 +1042,11 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
            pProperty->EncodingDetails != selectedEncodingDetails;
   }
 
-  if (pItem->source == EPropertySource::PropertyTexture) {
+  if (std::holds_alternative<TexturePropertyInstanceDetails>(
+          pItem->sourceDetails)) {
+    const auto& sourceDetails =
+        std::get<TexturePropertyInstanceDetails>(pItem->sourceDetails);
+
     FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTextureDescription,
         FCesiumPropertyTexturePropertyDescription>(
@@ -907,8 +1055,9 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
         *pItem->pPropertyId,
         false);
 
-    if (!pProperty || pProperty->PropertyDetails != pItem->propertyDetails)
-      return true;
+    return !pProperty || pProperty->PropertyDetails != pItem->propertyDetails ||
+           pProperty->bHasKhrTextureTransform !=
+               sourceDetails.hasKhrTextureTransform;
   }
 
   return false;
@@ -917,6 +1066,11 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
 void CesiumFeaturesMetadataViewer::registerStatistic(
     TSharedRef<StatisticView> pItem) {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumFeaturesMetadataComponent."))
     return;
   }
 
@@ -934,6 +1088,8 @@ void CesiumFeaturesMetadataViewer::registerStatistic(
           true);
   CESIUM_ASSERT(pProperty != nullptr);
 
+  featuresMetadata.PreEditChange(NULL);
+
   if (FCesiumMetadataPropertyStatisticValue* pValue =
           pProperty->Values.FindByPredicate(
               [semantic = pItem->semantic](
@@ -945,12 +1101,13 @@ void CesiumFeaturesMetadataViewer::registerStatistic(
   } else {
     pProperty->Values.Emplace(pItem->semantic, pItem->value);
   }
+
+  featuresMetadata.PostEditChange();
 }
 
 void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     TSharedRef<PropertyInstanceView> pItem) {
-  if (!this->_pTileset.IsValid() ||
-      !this->_pFeaturesMetadataComponent.IsValid()) {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
     UE_LOG(
         LogCesiumEditor,
         Error,
@@ -959,13 +1116,13 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     return;
   }
 
-  ACesium3DTileset& tileset = *this->_pTileset;
   UCesiumFeaturesMetadataComponent& featuresMetadata =
       *this->_pFeaturesMetadataComponent;
 
   featuresMetadata.PreEditChange(NULL);
 
-  if (pItem->source == EPropertySource::PropertyTable) {
+  if (std::holds_alternative<TablePropertyInstanceDetails>(
+          pItem->sourceDetails)) {
     CESIUM_ASSERT(
         pItem->pConversionCombo && pItem->pEncodedTypeCombo &&
         pItem->pEncodedComponentTypeCombo);
@@ -980,25 +1137,33 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
 
     CESIUM_ASSERT(pProperty != nullptr);
 
+    const auto& sourceDetails =
+        std::get<TablePropertyInstanceDetails>(pItem->sourceDetails);
+
     FCesiumPropertyTablePropertyDescription& property = *pProperty;
     property.PropertyDetails = pItem->propertyDetails;
     property.EncodingDetails = getSelectedEncodingDetails(
-        pItem->pConversionCombo,
-        pItem->pEncodedTypeCombo,
-        pItem->pEncodedComponentTypeCombo);
-  } else if (pItem->source == EPropertySource::PropertyTexture) {
+        sourceDetails.pConversionCombo,
+        sourceDetails.pEncodedTypeCombo,
+        sourceDetails.pEncodedComponentTypeCombo);
+  } else if (std::holds_alternative<TexturePropertyInstanceDetails>(
+                 pItem->sourceDetails)) {
     FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTextureDescription,
         FCesiumPropertyTexturePropertyDescription>(
         featuresMetadata.Description.ModelMetadata.PropertyTextures,
         *pItem->pSourceName,
         *pItem->pPropertyId,
-        false);
+        true);
 
     CESIUM_ASSERT(pProperty != nullptr);
 
+    const auto& sourceDetails =
+        std::get<TexturePropertyInstanceDetails>(pItem->sourceDetails);
+
     FCesiumPropertyTexturePropertyDescription& property = *pProperty;
     property.PropertyDetails = pItem->propertyDetails;
+    property.bHasKhrTextureTransform = sourceDetails.hasKhrTextureTransform;
   }
 
   featuresMetadata.PostEditChange();

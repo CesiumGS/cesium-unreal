@@ -33,7 +33,6 @@ class CesiumFeaturesMetadataViewer : public SWindow {
 public:
   static void Open(TWeakObjectPtr<ACesium3DTileset> pTileset);
   void Construct(const FArguments& InArgs);
-
   void Sync();
 
 private:
@@ -64,20 +63,7 @@ private:
     TArray<TSharedRef<PropertyStatisticsView>> properties;
   };
 
-  enum EPropertySource { PropertyTable = 0, PropertyTexture = 1 };
-
-  /**
-   * A view of an instance of a CesiumGltf::Property for a particular model in a
-   * tileset. It is technically possible for a tileset to have models with the
-   * same property, but different schema definitions. This attempts to capture
-   * each different instance so the user can make an informed choice about the
-   * behavior.
-   */
-  struct PropertyInstanceView {
-    TSharedRef<FString> pPropertyId;
-    FCesiumMetadataPropertyDetails propertyDetails;
-    EPropertySource source;
-    TSharedRef<FString> pSourceName;
+  struct TablePropertyInstanceDetails {
     TArray<TSharedRef<ECesiumEncodedMetadataConversion>> conversionMethods;
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>
         pConversionCombo;
@@ -85,9 +71,28 @@ private:
         pEncodedTypeCombo;
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>
         pEncodedComponentTypeCombo;
+  };
 
-    bool operator==(const PropertyInstanceView& property) const;
-    bool operator!=(const PropertyInstanceView& property) const;
+  struct TexturePropertyInstanceDetails {
+    bool hasKhrTextureTransform;
+  };
+
+  /**
+   * A view of an instance of a CesiumGltf::Property for a particular glTF in
+   * the tileset. It is technically possible for a tileset to have models with
+   * the same property, but different schema definitions. This attempts to
+   * capture each different instance so the user can make an informed choice
+   * about the behavior.
+   */
+  struct PropertyInstanceView {
+    TSharedRef<FString> pPropertyId;
+    FCesiumMetadataPropertyDetails propertyDetails;
+    TSharedRef<FString> pSourceName;
+    std::variant<TablePropertyInstanceDetails, TexturePropertyInstanceDetails>
+        sourceDetails;
+
+    bool operator==(const PropertyInstanceView& rhs) const;
+    bool operator!=(const PropertyInstanceView& rhs) const;
   };
 
   /**
@@ -100,6 +105,7 @@ private:
 
   void gatherTilesetStatistics();
   void gatherGltfMetadata();
+  void gatherGltfFeatures();
 
   template <
       typename TSource,
@@ -130,7 +136,9 @@ private:
   template <typename TEnum>
   void createEnumComboBox(
       TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
-      const TArray<TSharedRef<TEnum>>& options);
+      const TArray<TSharedRef<TEnum>>& options,
+      TEnum initialValue,
+      const FString& tooltip);
 
   bool canBeRegistered(TSharedRef<StatisticView> pItem);
   bool canBeRegistered(TSharedRef<PropertyInstanceView> pItem);
