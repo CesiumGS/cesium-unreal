@@ -34,8 +34,8 @@ public:
   /**
    * Constructs a primitive features instance.
    *
-   * @param Model The model that contains the EXT_mesh_features extension
-   * @param Primitive The mesh primitive that stores EXT_mesh_features
+   * @param Model The model that contains the EXT_mesh_features extension.
+   * @param Primitive The mesh primitive that stores the EXT_mesh_features
    * extension
    * @param Features The EXT_mesh_features of the glTF mesh primitive
    */
@@ -48,9 +48,9 @@ public:
    * Constructs an instance feature object.
    *
    * @param Model The model that contains the EXT_instance_features extension
-   * @param Node The node that stores EXT_instance_features
+   * @param Node The node that stores the EXT_instance_features
    * extension
-   * @param InstanceFeatures The EXT_Instance_features of the glTF mesh
+   * @param InstanceFeatures The EXT_instance_features of the glTF mesh
    * primitive
    */
   FCesiumPrimitiveFeatures(
