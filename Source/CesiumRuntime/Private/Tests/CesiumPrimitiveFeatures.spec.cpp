@@ -1,7 +1,9 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveFeatures.h"
+#include "CesiumGltf/ExtensionExtInstanceFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
 
@@ -113,6 +115,59 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
                 featureIDSet),
             expectedTypes[i]);
       }
+    });
+  });
+
+  Describe("GetPrimitiveFeatures", [this]() {
+    It("returns for instanced glTF component", [this]() {
+      model = CesiumGltf::Model();
+      model.meshes.emplace_back();
+      CesiumGltf::Node& node = model.nodes.emplace_back();
+      node.mesh = 0;
+
+      CesiumGltf::ExtensionExtInstanceFeatures& instanceFeatures =
+          node.addExtension<CesiumGltf::ExtensionExtInstanceFeatures>();
+      CesiumGltf::ExtensionExtInstanceFeaturesFeatureId& featureId =
+          instanceFeatures.featureIds.emplace_back();
+      featureId.featureCount = 10;
+
+      UCesiumGltfInstancedComponent* pComponent =
+          NewObject<UCesiumGltfInstancedComponent>();
+      pComponent->getPrimitiveData().Features =
+          FCesiumPrimitiveFeatures(model, node, instanceFeatures);
+
+      const FCesiumPrimitiveFeatures& primitiveFeatures =
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
+              pComponent);
+
+      const TArray<FCesiumFeatureIdSet> featureIDSets =
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+              primitiveFeatures);
+      TestEqual("Number of FeatureIDSets", featureIDSets.Num(), 1);
+    });
+
+    It("gets implicit feature ID", [this]() {
+      model = CesiumGltf::Model();
+      CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
+      pPrimitive = &mesh.primitives.emplace_back();
+      pExtension =
+          &pPrimitive->addExtension<CesiumGltf::ExtensionExtMeshFeatures>();
+      CesiumGltf::FeatureId& featureId = pExtension->featureIds.emplace_back();
+      featureId.featureCount = 10;
+
+      UCesiumGltfPrimitiveComponent* pComponent =
+          NewObject<UCesiumGltfPrimitiveComponent>();
+      pComponent->getPrimitiveData().Features =
+          FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
+
+      const FCesiumPrimitiveFeatures& primitiveFeatures =
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
+              pComponent);
+
+      const TArray<FCesiumFeatureIdSet> featureIDSets =
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+              primitiveFeatures);
+      TestEqual("Number of FeatureIDSets", featureIDSets.Num(), 1);
     });
   });
 
