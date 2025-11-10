@@ -1,11 +1,12 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveFeatures.h"
-#include "CesiumGltf/ExtensionExtInstanceFeatures.h"
-#include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
+
+#include <CesiumGltf/ExtensionExtInstanceFeatures.h>
+#include <CesiumGltf/ExtensionExtMeshFeatures.>
 
 BEGIN_DEFINE_SPEC(
     FCesiumPrimitiveFeaturesSpec,
