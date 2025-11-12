@@ -6,7 +6,7 @@
 #include "Misc/AutomationTest.h"
 
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
-#include <CesiumGltf/ExtensionExtMeshFeatures.>
+#include <CesiumGltf/ExtensionExtMeshFeatures.h>
 
 BEGIN_DEFINE_SPEC(
     FCesiumPrimitiveFeaturesSpec,
