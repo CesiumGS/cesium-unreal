@@ -33,50 +33,117 @@ class CesiumFeaturesMetadataViewer : public SWindow {
 public:
   static void Open(TWeakObjectPtr<ACesium3DTileset> pTileset);
   void Construct(const FArguments& InArgs);
+
+  /**
+   * Syncs the window's UI with the current view of the tileset.
+   */
   void Sync();
 
 private:
-  static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
-  TSharedPtr<SVerticalBox> _pContent;
-
+  /**
+   * Additional details for a `CesiumGltf::PropertyTableProperty` instance.
+   */
   struct TablePropertyInstanceDetails {
+    /**
+     * The possible conversion methods for this property. Contains a subset of
+     * the values in ECesiumEncodedMetadataConversion.
+     */
     TArray<TSharedRef<ECesiumEncodedMetadataConversion>> conversionMethods;
+    /**
+     * The combo box widget for selecting the conversion method.
+     */
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>
         pConversionCombo;
+    /**
+     * The combo box widget for selecting the encoded type.
+     */
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>
         pEncodedTypeCombo;
+    /**
+     * The combo box widget for selecting the encoded component type.
+     */
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>
         pEncodedComponentTypeCombo;
   };
 
+  /**
+   * Additional details to describe a `CesiumGltf::PropertyTextureProperty`
+   * instance.
+   */
   struct TexturePropertyInstanceDetails {
+    /**
+     * Whether the texture used by this property has the `KHR_texture_transform`
+     * extension. This is necessary to track because it requires additional
+     * nodes in the Unreal material.
+     */
     bool hasKhrTextureTransform;
   };
 
   /**
-   * A view of an instance of a CesiumGltf::Property for a particular glTF in
-   * the tileset. It is technically possible for a tileset to have models with
-   * the same property, but different schema definitions. This attempts to
-   * capture each different instance so the user can make an informed choice
-   * about the behavior.
+   * An instance of a CesiumGltf::PropertyTableProperty for a particular glTF in
+   * the tileset.
+   *
+   * It is technically possible for a tileset to have models with the same
+   * property, but different schema definitions. This attempts to capture each
+   * different instance so the user can make an informed choice about the
+   * behavior.
    */
-  struct PropertyInstanceView {
+  struct PropertyInstance {
+    /**
+     * The ID of the property of which this is an instance.
+     */
     TSharedRef<FString> pPropertyId;
+    /**
+     * The type and other details of this property instance.
+     */
     FCesiumMetadataPropertyDetails propertyDetails;
+    /**
+     * The name of the source with which this property is associated.
+     */
     TSharedRef<FString> pSourceName;
+    /**
+     * Additional details for this property instance, dependent on its source.
+     */
     std::variant<TablePropertyInstanceDetails, TexturePropertyInstanceDetails>
         sourceDetails;
 
-    bool operator==(const PropertyInstanceView& rhs) const;
-    bool operator!=(const PropertyInstanceView& rhs) const;
+    bool operator==(const PropertyInstance& rhs) const;
+    bool operator!=(const PropertyInstance& rhs) const;
   };
 
   /**
-   * A view of a CesiumGltf::Property.
+   * A view of a class property in EXT_structural_metadata.
    */
   struct PropertyView {
+    /**
+     * The ID of the property.
+     */
     TSharedRef<FString> pId;
-    TArray<TSharedRef<PropertyInstanceView>> instances;
+    /**
+     * The instances of this property.
+     */
+    TArray<TSharedRef<PropertyInstance>> instances;
+  };
+
+  enum EPropertySource { PropertyTable, PropertyTexture };
+
+  /**
+   * A view of either a CesiumGltf::PropertyTable or
+   * CesiumGltf::PropertyTexture.
+   */
+  struct PropertySourceView {
+    /**
+     * The name generated for this property source.
+     */
+    TSharedRef<FString> pName;
+    /**
+     * The type of this source.
+     */
+    EPropertySource type;
+    /**
+     * The properties belonging to this source.
+     */
+    TArray<TSharedRef<PropertyView>> properties;
   };
 
   /**
@@ -87,22 +154,41 @@ private:
    * tables. This attempts to capture each different instance so the user can
    * make an informed choice about the behavior.
    */
-  struct FeatureIdSetInstanceView {
+  struct FeatureIdSetInstance {
+    /**
+     * The name of the feature ID set for which this is an instance.
+     */
     TSharedRef<FString> pFeatureIdSetName;
+    /**
+     * The type of this instance.
+     */
     ECesiumFeatureIdSetType type;
+    /**
+     * For feature ID textures, indicates whether the texture contains
+     * KHR_texture_transform.
+     */
     bool hasKhrTextureTransform;
+    /**
+     * The name of the property table that this instance references.
+     */
     TSharedRef<FString> pPropertyTableName;
 
-    bool operator==(const FeatureIdSetInstanceView& rhs) const;
-    bool operator!=(const FeatureIdSetInstanceView& rhs) const;
+    bool operator==(const FeatureIdSetInstance& rhs) const;
+    bool operator!=(const FeatureIdSetInstance& rhs) const;
   };
 
   /**
    * A view of a CesiumGltf::FeatureId.
    */
   struct FeatureIdSetView {
+    /**
+     * The name generated for this feature ID set.
+     */
     TSharedRef<FString> pName;
-    TArray<TSharedRef<FeatureIdSetInstanceView>> instances;
+    /**
+     * The instances of this feature ID set.
+     */
+    TArray<TSharedRef<FeatureIdSetInstance>> instances;
   };
 
   template <
@@ -113,13 +199,15 @@ private:
   void gatherGltfPropertySources(const TArray<TSource>& sources);
   void gatherGltfFeaturesMetadata();
 
-
   TSharedRef<ITableRow> createPropertyInstanceRow(
-      TSharedRef<PropertyInstanceView> pItem,
+      TSharedRef<PropertyInstance> pItem,
       const TSharedRef<STableViewBase>& list);
-  void createGltfPropertyDropdown(
+  TSharedRef<ITableRow> createGltfPropertyDropdown(
+      TSharedRef<PropertyView> pItem,
+      const TSharedRef<STableViewBase>& list);
+  void createGltfPropertySourceDropdown(
       TSharedRef<SScrollBox>& pContent,
-      const PropertyView& property);
+      const PropertySourceView& source);
 
   template <typename TEnum>
   TSharedRef<SWidget> createEnumDropdownOption(TSharedRef<TEnum> pOption);
@@ -131,31 +219,36 @@ private:
       const FString& tooltip);
 
   TSharedRef<ITableRow> createFeatureIdSetInstanceRow(
-      TSharedRef<FeatureIdSetInstanceView> pItem,
+      TSharedRef<FeatureIdSetInstance> pItem,
       const TSharedRef<STableViewBase>& list);
   void createGltfFeatureIdSetDropdown(
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
 
-  bool canBeRegistered(TSharedRef<PropertyInstanceView> pItem);
-  bool canBeRegistered(TSharedRef<FeatureIdSetInstanceView> pItem);
+  bool canBeRegistered(TSharedRef<PropertyInstance> pItem);
+  bool canBeRegistered(TSharedRef<FeatureIdSetInstance> pItem);
 
-  void registerPropertyInstance(TSharedRef<PropertyInstanceView> pItem);
-  void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstanceView> pItem);
+  void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
+  void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
+
+  TSharedRef<FString> getSharedRef(const FString& string);
+
+  static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
+  TSharedPtr<SVerticalBox> _pContent;
 
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
 
   // The current Features / Metadata implementation folds the class / property
   // schemas into each implementation of PropertyTable, PropertyTableProperty,
-  // etc., so this functions as a property-centric view instead of a class-based
-  // one.
-  TArray<PropertyView> _metadataProperties;
+  // etc. So this functions as a property source-centric view instead of a
+  // class-based one.
+  TArray<PropertySourceView> _metadataSources;
   TArray<FeatureIdSetView> _featureIdSets;
   TSet<FString> _propertyTextureNames;
 
-  // Avoid allocating numerous instances of simple enum values (pointers / refs
-  // are required for SComboBox).
+  // Avoid allocating numerous instances of simple enum values (because shared
+  // pointers /refs are required for SComboBox).
   TArray<TSharedRef<ECesiumEncodedMetadataConversion>> _conversionOptions;
   TArray<TSharedRef<ECesiumEncodedMetadataType>> _encodedTypeOptions;
   TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
@@ -164,6 +257,4 @@ private:
   // Lookup map to reduce the number of strings allocated for duplicate property
   // names.
   TMap<FString, TSharedRef<FString>> _stringMap;
-
-  TSharedRef<FString> getSharedRef(const FString& string);
 };

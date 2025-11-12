@@ -115,7 +115,7 @@ void CesiumFeaturesMetadataViewer::Sync() {
         this->_encodedComponentTypeOptions);
   }
 
-  this->_metadataProperties.Empty();
+  this->_metadataSources.Empty();
   this->_featureIdSets.Empty();
   this->_stringMap.Empty();
 
@@ -131,12 +131,12 @@ void CesiumFeaturesMetadataViewer::Sync() {
                           .Text(FText::FromString(TEXT("glTF Metadata")))
                           .Margin(FMargin(0.f, 10.f))]];
 
-  if (!this->_metadataProperties.IsEmpty()) {
+  if (!this->_metadataSources.IsEmpty()) {
     TSharedRef<SScrollBox> pGltfContent = SNew(SScrollBox);
-    for (const PropertyView& property : this->_metadataProperties) {
-      this->createGltfPropertyDropdown(pGltfContent, property);
+    for (const PropertySourceView& source : this->_metadataSources) {
+      this->createGltfPropertySourceDropdown(pGltfContent, source);
     }
-    pContent->AddSlot().FillHeight(1.5)[pGltfContent];
+    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
   } else {
     pContent->AddSlot().AutoHeight()
         [SNew(STextBlock)
@@ -157,7 +157,7 @@ void CesiumFeaturesMetadataViewer::Sync() {
     for (const FeatureIdSetView& featureIdSet : this->_featureIdSets) {
       this->createGltfFeatureIdSetDropdown(pGltfFeatures, featureIdSet);
     }
-    pContent->AddSlot().FillHeight(1.0)[pGltfFeatures];
+    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
   } else {
     pContent->AddSlot().AutoHeight()
         [SNew(STextBlock)
@@ -366,31 +366,29 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
         }
       }
 
-      FeatureIdSetInstanceView instanceView{
+      FeatureIdSetInstance Instance{
           .pFeatureIdSetName = pFeatureIdSetView->pName,
           .type = type,
           .hasKhrTextureTransform = hasKhrTextureTransform,
           .pPropertyTableName = getSharedRef(propertyTableName)};
 
-      TSharedRef<FeatureIdSetInstanceView>* pExistingInstance =
+      TSharedRef<FeatureIdSetInstance>* pExistingInstance =
           pFeatureIdSetView->instances.FindByPredicate(
-              [&instanceView](
-                  const TSharedRef<FeatureIdSetInstanceView>& pExisting) {
-                return instanceView == *pExisting;
+              [&Instance](const TSharedRef<FeatureIdSetInstance>& pExisting) {
+                return Instance == *pExisting;
               });
       if (!pExistingInstance) {
         pFeatureIdSetView->instances.Emplace(
-            MakeShared<FeatureIdSetInstanceView>(std::move(instanceView)));
+            MakeShared<FeatureIdSetInstance>(std::move(Instance)));
       }
     }
   }
 }
 
-bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator==(
-    const PropertyInstanceView& rhs) const {
+bool CesiumFeaturesMetadataViewer::PropertyInstance::operator==(
+    const PropertyInstance& rhs) const {
   if (*pPropertyId != *rhs.pPropertyId ||
-      propertyDetails != rhs.propertyDetails ||
-      *pSourceName != *rhs.pSourceName) {
+      propertyDetails != rhs.propertyDetails) {
     return false;
   }
 
@@ -412,13 +410,13 @@ bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator==(
   return true;
 }
 
-bool CesiumFeaturesMetadataViewer::PropertyInstanceView::operator!=(
-    const PropertyInstanceView& property) const {
+bool CesiumFeaturesMetadataViewer::PropertyInstance::operator!=(
+    const PropertyInstance& property) const {
   return !operator==(property);
 }
 
-bool CesiumFeaturesMetadataViewer::FeatureIdSetInstanceView::operator==(
-    const FeatureIdSetInstanceView& rhs) const {
+bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator==(
+    const FeatureIdSetInstance& rhs) const {
   if (*pFeatureIdSetName != *rhs.pFeatureIdSetName || type != rhs.type ||
       *pPropertyTableName != *rhs.pPropertyTableName) {
     return false;
@@ -431,8 +429,8 @@ bool CesiumFeaturesMetadataViewer::FeatureIdSetInstanceView::operator==(
   return true;
 }
 
-bool CesiumFeaturesMetadataViewer::FeatureIdSetInstanceView::operator!=(
-    const FeatureIdSetInstanceView& property) const {
+bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator!=(
+    const FeatureIdSetInstance& property) const {
   return !operator==(property);
 }
 
@@ -485,24 +483,43 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
     const TArray<TSource>& sources) {
 
   for (const TSource& source : sources) {
-    FString propertySourceName = getNameForPropertySource(source);
+    FString sourceName = getNameForPropertySource(source);
+    TSharedRef<FString> pSourceName = this->getSharedRef(sourceName);
+
+    constexpr EPropertySource sourceType =
+        std::is_same_v<TSource, FCesiumPropertyTable>
+            ? EPropertySource::PropertyTable
+            : EPropertySource::PropertyTexture;
+
+    PropertySourceView* pSource = this->_metadataSources.FindByPredicate(
+        [&sourceName, sourceType](const PropertySourceView& existingSource) {
+          return *existingSource.pName == sourceName &&
+                 existingSource.type == sourceType;
+        });
+
+    if (!pSource) {
+      int32 index = this->_metadataSources.Emplace(
+          PropertySourceView{.pName = pSourceName, .type = sourceType});
+      pSource = &this->_metadataSources[index];
+    }
 
     const TMap<FString, TSourceProperty>& properties =
         TSourceBlueprintLibrary::GetProperties(source);
     for (const auto& propertyIt : properties) {
-      PropertyView* pProperty = this->_metadataProperties.FindByPredicate(
-          [&propertyId = propertyIt.Key](const PropertyView& existingProperty) {
-            return *existingProperty.pId == propertyId;
+      TSharedRef<FString> pPropertyId = this->getSharedRef(propertyIt.Key);
+      TSharedRef<PropertyView>* pProperty = pSource->properties.FindByPredicate(
+          [&pPropertyId](const TSharedRef<PropertyView>& pExistingProperty) {
+            return **pExistingProperty->pId == *pPropertyId;
           });
 
       if (!pProperty) {
-        int32 index = this->_metadataProperties.Emplace(
-            this->getSharedRef(propertyIt.Key),
-            TArray<TSharedRef<PropertyInstanceView>>());
-        pProperty = &this->_metadataProperties[index];
+        int32 index = pSource->properties.Emplace(MakeShared<PropertyView>(
+            pPropertyId,
+            TArray<TSharedRef<PropertyInstance>>()));
+        pProperty = &pSource->properties[index];
       }
 
-      PropertyView& property = *pProperty;
+      PropertyView& property = **pProperty;
 
       FCesiumMetadataPropertyDetails propertyDetails;
 
@@ -541,10 +558,10 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
       propertyDetails.bHasDefaultValue =
           !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
 
-      PropertyInstanceView instance{
-          .pPropertyId = this->getSharedRef(propertyIt.Key),
+      PropertyInstance instance{
+          .pPropertyId = pPropertyId,
           .propertyDetails = std::move(propertyDetails),
-          .pSourceName = this->getSharedRef(propertySourceName)};
+          .pSourceName = pSourceName};
 
       if constexpr (std::is_same_v<
                         TSourceProperty,
@@ -568,15 +585,15 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
             .hasKhrTextureTransform = hasKhrTextureTransform};
       }
 
-      TSharedRef<PropertyInstanceView>* pExistingInstance =
+      TSharedRef<PropertyInstance>* pExistingInstance =
           property.instances.FindByPredicate(
               [&instance](
-                  const TSharedRef<PropertyInstanceView>& existingInstance) {
+                  const TSharedRef<PropertyInstance>& existingInstance) {
                 return instance == *existingInstance;
               });
       if (!pExistingInstance) {
         property.instances.Emplace(
-            MakeShared<PropertyInstanceView>(std::move(instance)));
+            MakeShared<PropertyInstance>(std::move(instance)));
       }
     }
   }
@@ -601,7 +618,7 @@ template <typename TEnum> FText getEnumDisplayNameText(TEnum value) {
 } // namespace
 
 TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
-    TSharedRef<PropertyInstanceView> pItem,
+    TSharedRef<PropertyInstance> pItem,
     const TSharedRef<STableViewBase>& list) {
   FString typeString = pItem->propertyDetails.GetValueType().ToString();
   if (pItem->propertyDetails.bIsNormalized) {
@@ -619,14 +636,6 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
       std::get_if<TablePropertyInstanceDetails>(&pItem->sourceDetails);
   auto* pTextureSourceDetails =
       std::get_if<TexturePropertyInstanceDetails>(&pItem->sourceDetails);
-
-  FString sourceString;
-  if (pTableSourceDetails) {
-    sourceString = TEXT("Property Table");
-  } else if (pTextureSourceDetails) {
-    sourceString = TEXT("Property Texture");
-  }
-  sourceString += FString::Printf(TEXT(" (\"%s\")"), **pItem->pSourceName);
 
   TArray<FString> qualifierList;
   if (pItem->propertyDetails.bHasOffset) {
@@ -660,13 +669,6 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                .Text(FText::FromString(typeString))
                .ToolTipText(FText::FromString(FString(
                    "The type of the property as defined in the EXT_structural_metadata extension.")))] +
-      SHorizontalBox::Slot().FillWidth(0.75f).Padding(5.0f).VAlign(
-          EVerticalAlignment::VAlign_Center)
-          [SNew(STextBlock)
-               .AutoWrapText(true)
-               .Text(FText::FromString(sourceString))
-               .ToolTipText(FText::FromString(
-                   "The source of the property's data. Property attributes are currently unsupported."))] +
       SHorizontalBox::Slot()
           .AutoWidth()
           .MaxWidth(1.0f)
@@ -753,27 +755,55 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
           TAttribute<bool>::Create(
               [this, pItem]() { return this->canBeRegistered(pItem); }))];
 
-  return SNew(STableRow<TSharedRef<PropertyInstanceView>>, list)
+  return SNew(STableRow<TSharedRef<PropertyInstance>>, list)
       .Content()[SNew(SBox)
                      .HAlign(EHorizontalAlignment::HAlign_Fill)
                      .Content()[content]];
 }
 
-void CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
+TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
+    TSharedRef<PropertyView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  return SNew(STableRow<TSharedRef<PropertyView>>, list)
+      .Content()[SNew(SExpandableArea)
+                     .InitiallyCollapsed(true)
+                     .HeaderContent()[SNew(STextBlock)
+                                          .Text(FText::FromString(*pItem->pId))]
+                     .BodyContent()[SNew(
+                                        SListView<TSharedRef<PropertyInstance>>)
+                                        .ListItemsSource(&pItem->instances)
+                                        .SelectionMode(ESelectionMode::None)
+                                        .OnGenerateRow(
+                                            this,
+                                            &CesiumFeaturesMetadataViewer::
+                                                createPropertyInstanceRow)]];
+}
+
+void CesiumFeaturesMetadataViewer::createGltfPropertySourceDropdown(
     TSharedRef<SScrollBox>& pContent,
-    const PropertyView& property) {
+    const PropertySourceView& source) {
+  FString sourceDisplayName = FString::Printf(TEXT("\"%s\""), **source.pName);
+  switch (source.type) {
+  case EPropertySource::PropertyTable:
+    sourceDisplayName += " (Property Table)";
+    break;
+  case EPropertySource::PropertyTexture:
+    sourceDisplayName += " (Property Texture)";
+    break;
+  }
+
   pContent->AddSlot()
       [SNew(SExpandableArea)
            .InitiallyCollapsed(true)
            .HeaderContent()[SNew(STextBlock)
-                                .Text(FText::FromString(*property.pId))]
-           .BodyContent()[SNew(SListView<TSharedRef<PropertyInstanceView>>)
-                              .ListItemsSource(&property.instances)
+                                .Text(FText::FromString(sourceDisplayName))]
+           .BodyContent()[SNew(SListView<TSharedRef<PropertyView>>)
+                              .ListItemsSource(&source.properties)
                               .SelectionMode(ESelectionMode::None)
                               .OnGenerateRow(
                                   this,
                                   &CesiumFeaturesMetadataViewer::
-                                      createPropertyInstanceRow)]];
+                                      createGltfPropertyDropdown)]];
 }
 
 template <typename TEnum>
@@ -816,13 +846,13 @@ void CesiumFeaturesMetadataViewer::createEnumComboBox(
 
 TSharedRef<ITableRow>
 CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
-    TSharedRef<FeatureIdSetInstanceView> pItem,
+    TSharedRef<FeatureIdSetInstance> pItem,
     const TSharedRef<STableViewBase>& list) {
   FString sourceString = FString::Printf(
       TEXT("\"%s\" (Property Table)"),
       **pItem->pPropertyTableName);
 
-  return SNew(STableRow<TSharedRef<FeatureIdSetInstanceView>>, list)
+  return SNew(STableRow<TSharedRef<FeatureIdSetInstance>>, list)
       .Content()
           [SNew(SBox)
                .HAlign(EHorizontalAlignment::HAlign_Fill)
@@ -862,7 +892,7 @@ void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
            .InitiallyCollapsed(true)
            .HeaderContent()[SNew(STextBlock)
                                 .Text(FText::FromString(*featureIdSet.pName))]
-           .BodyContent()[SNew(SListView<TSharedRef<FeatureIdSetInstanceView>>)
+           .BodyContent()[SNew(SListView<TSharedRef<FeatureIdSetInstance>>)
                               .ListItemsSource(&featureIdSet.instances)
                               .SelectionMode(ESelectionMode::None)
                               .OnGenerateRow(
@@ -954,7 +984,7 @@ FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
 } // namespace
 
 bool CesiumFeaturesMetadataViewer::canBeRegistered(
-    TSharedRef<PropertyInstanceView> pItem) {
+    TSharedRef<PropertyInstance> pItem) {
   if (pItem->propertyDetails.Type == ECesiumMetadataType::Invalid) {
     return false;
   }
@@ -1027,7 +1057,7 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
 }
 
 bool CesiumFeaturesMetadataViewer::canBeRegistered(
-    TSharedRef<FeatureIdSetInstanceView> pItem) {
+    TSharedRef<FeatureIdSetInstance> pItem) {
   if (pItem->type == ECesiumFeatureIdSetType::None) {
     return false;
   }
@@ -1048,7 +1078,7 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
 }
 
 void CesiumFeaturesMetadataViewer::registerPropertyInstance(
-    TSharedRef<PropertyInstanceView> pItem) {
+    TSharedRef<PropertyInstance> pItem) {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     UE_LOG(
         LogCesiumEditor,
@@ -1112,7 +1142,7 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
 }
 
 void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
-    TSharedRef<FeatureIdSetInstanceView> pItem) {
+    TSharedRef<FeatureIdSetInstance> pItem) {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     UE_LOG(
         LogCesiumEditor,
