@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that prevented `UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures` from retrieving the features of instanced meshes.
+
 ### v2.21.0 - 2025-11-03
 
 ##### Additions :tada:
