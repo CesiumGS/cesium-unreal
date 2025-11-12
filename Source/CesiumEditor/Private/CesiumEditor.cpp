@@ -1,11 +1,11 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumEditor.h"
-#include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "Cesium3DTilesetCustomization.h"
 #include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
+#include "CesiumFeaturesMetadataViewer.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
@@ -28,6 +28,8 @@
 #include "Selection.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
+
+#include <Cesium3DTilesSelection/Tileset.h>
 
 constexpr int MaximumOverlaysWithDefaultMaterial = 3;
 
@@ -364,6 +366,11 @@ void FCesiumEditorModule::StartupModule() {
       OnCesiumRasterOverlayIonTroubleshooting.AddRaw(
           this,
           &FCesiumEditorModule::OnRasterOverlayIonTroubleshooting);
+
+  this->_featuresMetadataViewPropertiesSubscription =
+      OnCesiumFeaturesMetadataViewProperties.AddRaw(
+          this,
+          &FCesiumEditorModule::OnFeaturesMetadataViewProperties);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
@@ -386,6 +393,12 @@ void FCesiumEditorModule::ShutdownModule() {
         this->_rasterOverlayIonTroubleshootingSubscription);
     this->_rasterOverlayIonTroubleshootingSubscription.Reset();
   }
+  if (this->_featuresMetadataViewPropertiesSubscription.IsValid()) {
+    OnCesiumFeaturesMetadataViewProperties.Remove(
+        this->_featuresMetadataViewPropertiesSubscription);
+    this->_featuresMetadataViewPropertiesSubscription.Reset();
+  }
+
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
@@ -475,6 +488,11 @@ void FCesiumEditorModule::OnTilesetIonTroubleshooting(
 void FCesiumEditorModule::OnRasterOverlayIonTroubleshooting(
     UCesiumRasterOverlay* pOverlay) {
   CesiumIonTokenTroubleshooting::Open(pOverlay, false);
+}
+
+void FCesiumEditorModule::OnFeaturesMetadataViewProperties(
+    ACesium3DTileset* pTileset) {
+  CesiumFeaturesMetadataViewer::Open(pTileset);
 }
 
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }
