@@ -17,6 +17,13 @@ FCesiumMetadataValueType::FCesiumMetadataValueType(
     bool IsArray)
     : Type(InType), ComponentType(InComponentType), bIsArray(IsArray) {}
 
+namespace {
+template <typename TEnum> FString enumToNameString(TEnum value) {
+  const UEnum* pEnum = StaticEnum<TEnum>();
+  return pEnum ? pEnum->GetNameStringByValue((int64)value) : FString();
+}
+} // namespace
+
 FString FCesiumMetadataValueType::ToString() const {
   if (Type == ECesiumMetadataType::Invalid) {
     return TEXT("Invalid Type");
@@ -26,10 +33,10 @@ FString FCesiumMetadataValueType::ToString() const {
   strings.Reserve(3);
 
   if (ComponentType != ECesiumMetadataComponentType::None) {
-    strings.Emplace(MetadataComponentTypeToString(ComponentType));
+    strings.Emplace(enumToNameString(ComponentType));
   }
 
-  strings.Emplace(MetadataTypeToString(Type));
+  strings.Emplace(enumToNameString(Type));
 
   if (bIsArray) {
     strings.Emplace("Array");

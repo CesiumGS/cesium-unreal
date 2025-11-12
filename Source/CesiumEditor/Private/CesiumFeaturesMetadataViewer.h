@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumFeaturesMetadataDescription.h"
+#include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
 #include "CesiumMetadataValue.h"
@@ -96,16 +96,41 @@ private:
   };
 
   /**
-   * A view of an instance of a CesiumGltf::Property.
+   * A view of a CesiumGltf::Property.
    */
   struct PropertyView {
     TSharedRef<FString> pId;
     TArray<TSharedRef<PropertyInstanceView>> instances;
   };
 
+  /**
+   * A view of an instance of a CesiumGltf::FeatureId for a particular glTF in
+   * the tileset. Feature IDs in EXT_mesh_features are referenced by index, not
+   * by name, so it is technically possible for two feature ID sets with the
+   * same index to be differently typed, or to reference different property
+   * tables. This attempts to capture each different instance so the user can
+   * make an informed choice about the behavior.
+   */
+  struct FeatureIdSetInstanceView {
+    TSharedRef<FString> pFeatureIdSetName;
+    ECesiumFeatureIdSetType type;
+    bool hasKhrTextureTransform;
+    TSharedRef<FString> pPropertyTableName;
+
+    bool operator==(const FeatureIdSetInstanceView& rhs) const;
+    bool operator!=(const FeatureIdSetInstanceView& rhs) const;
+  };
+
+  /**
+   * A view of a CesiumGltf::FeatureId.
+   */
+  struct FeatureIdSetView {
+    TSharedRef<FString> pName;
+    TArray<TSharedRef<FeatureIdSetInstanceView>> instances;
+  };
+
   void gatherTilesetStatistics();
-  void gatherGltfMetadata();
-  void gatherGltfFeatures();
+  void gatherGltfFeaturesMetadata();
 
   template <
       typename TSource,
@@ -130,9 +155,9 @@ private:
   void createGltfPropertyDropdown(
       TSharedRef<SScrollBox>& pContent,
       const PropertyView& property);
+
   template <typename TEnum>
   TSharedRef<SWidget> createEnumDropdownOption(TSharedRef<TEnum> pOption);
-
   template <typename TEnum>
   void createEnumComboBox(
       TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
@@ -140,11 +165,20 @@ private:
       TEnum initialValue,
       const FString& tooltip);
 
+  TSharedRef<ITableRow> createFeatureIdSetInstanceRow(
+      TSharedRef<FeatureIdSetInstanceView> pItem,
+      const TSharedRef<STableViewBase>& list);
+  void createGltfFeatureIdSetDropdown(
+      TSharedRef<SScrollBox>& pContent,
+      const FeatureIdSetView& property);
+
   bool canBeRegistered(TSharedRef<StatisticView> pItem);
   bool canBeRegistered(TSharedRef<PropertyInstanceView> pItem);
+  bool canBeRegistered(TSharedRef<FeatureIdSetInstanceView> pItem);
 
   void registerStatistic(TSharedRef<StatisticView> pItem);
   void registerPropertyInstance(TSharedRef<PropertyInstanceView> pItem);
+  void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstanceView> pItem);
 
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
@@ -155,6 +189,8 @@ private:
   // etc., so this functions as a property-centric view instead of a class-based
   // one.
   TArray<PropertyView> _metadataProperties;
+  TArray<FeatureIdSetView> _featureIdSets;
+  TSet<FString> _propertyTextureNames;
 
   // Avoid allocating numerous instances of simple enum values (pointers / refs
   // are required for SComboBox).
@@ -162,4 +198,10 @@ private:
   TArray<TSharedRef<ECesiumEncodedMetadataType>> _encodedTypeOptions;
   TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
       _encodedComponentTypeOptions;
+
+  // Lookup map to reduce the number of strings allocated for duplicate property
+  // names.
+  TMap<FString, TSharedRef<FString>> _stringMap;
+
+  TSharedRef<FString> getSharedRef(const FString& string);
 };

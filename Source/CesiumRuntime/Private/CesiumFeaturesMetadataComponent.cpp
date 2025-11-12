@@ -46,70 +46,6 @@ using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
 
 namespace {
-void AutoFillFeatureIdSetDescriptions(
-    TArray<FCesiumFeatureIdSetDescription>& Descriptions,
-    const FCesiumPrimitiveFeatures& Features,
-    const FCesiumPrimitiveFeatures* InstanceFeatures,
-    const TArray<FCesiumPropertyTable>& PropertyTables) {
-  TArray<FCesiumFeatureIdSet> featureIDSets =
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(Features);
-  if (InstanceFeatures) {
-    featureIDSets.Append(
-        UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-            *InstanceFeatures));
-  }
-  int32 featureIDTextureCounter = 0;
-
-  for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
-    ECesiumFeatureIdSetType type =
-        UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet);
-    int64 count =
-        UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet);
-    if (type == ECesiumFeatureIdSetType::None || count == 0) {
-      // Empty or invalid feature ID set. Skip.
-      continue;
-    }
-
-    FString featureIDSetName =
-        getNameForFeatureIDSet(featureIDSet, featureIDTextureCounter);
-    FCesiumFeatureIdSetDescription* pDescription = Descriptions.FindByPredicate(
-        [&name = featureIDSetName](
-            const FCesiumFeatureIdSetDescription& existingFeatureIDSet) {
-          return existingFeatureIDSet.Name == name;
-        });
-
-    if (pDescription) {
-      // We have already accounted for a feature ID set of this name; skip.
-      continue;
-    }
-
-    pDescription = &Descriptions.Emplace_GetRef();
-    pDescription->Name = featureIDSetName;
-    pDescription->Type = type;
-
-    const int64 propertyTableIndex =
-        UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
-            featureIDSet);
-    if (propertyTableIndex >= 0 && propertyTableIndex < PropertyTables.Num()) {
-      const FCesiumPropertyTable& propertyTable =
-          PropertyTables[propertyTableIndex];
-      pDescription->PropertyTableName = getNameForPropertyTable(propertyTable);
-    }
-
-    if (type == ECesiumFeatureIdSetType::Texture) {
-      FCesiumFeatureIdTexture featureIdTexture =
-          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
-              featureIDSet);
-      auto maybeTextureTransform =
-          featureIdTexture.getFeatureIdTextureView().getTextureTransform();
-      if (maybeTextureTransform) {
-        pDescription->bHasKhrTextureTransform =
-            (maybeTextureTransform->status() ==
-             CesiumGltf::KhrTextureTransformStatus::Valid);
-      }
-    }
-  }
-}
 
 void AutoFillPropertyTextureNames(
     TSet<FString>& Names,
@@ -147,7 +83,7 @@ void UCesiumFeaturesMetadataComponent::ViewProperties() {
         OnCesiumFeaturesMetadataViewProperties.Broadcast(pOwner);
       });
 }
-//
+
 //void UCesiumFeaturesMetadataComponent::AutoFill() {
 //  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
 //  if (!pOwner) {
