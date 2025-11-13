@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.21.0 - 2025-11-03
 
 ##### Additions :tada:
 
@@ -11,6 +11,8 @@
 
 - Fixed a bug where `CesiumCreditSystem` would not filter out empty credits, resulting in duplicate on-screen delimiters.
 - Fixed a problem where multi-selecting `UCesiumGlobeAnchorComponent` could cause the selected components to teleport to 0 degrees longitude and 0 degrees latitude. Now, the geospatial position and orientation fields are hidden while multi-selecting.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.52.0 to v0.53.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.20.0 - 2025-10-01
 
