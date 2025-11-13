@@ -30,12 +30,12 @@ runs:
         7z x -mmt=8 "D:/Program Files/Epic Games/UE.zip" "-oD:/Program Files/Epic Games/"
         del "D:/Program Files/Epic Games/UE.zip"
     - name: Install Unreal Engine (older versions)
-      if: ${{ inputs.unreal-program-name != 'UE_5.6' }}
+      if: ${{ inputs.unreal-program-name == 'UE_5.4' || inputs.unreal-program-name == 'UE_5.5' }}
       shell: pwsh
       run: |
         Start-Process "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe" -Args "-q" -Wait
     - name: Install Unreal Engine (5.6+)
-      if: ${{ inputs.unreal-program-name == 'UE_5.6' }}
+      if: ${{ inputs.unreal-program-name != 'UE_5.4' && inputs.unreal-program-name != 'UE_5.5' }}
       shell: pwsh
       run: |
         Start-Process "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Extras/Redist/en-us/vc_redist.x64.exe" -Args "-q" -Wait
