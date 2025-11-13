@@ -13,7 +13,7 @@ SET(CMAKE_POSITION_INDEPENDENT_CODE on)
 # plus also under the regular sysroot. In 5.7, it's only available under the regular sysroot.
 # Rather than try to figure out what version of UE we're targeting, just always add the legacy location
 # resolution after the modern one.
-set(LEGACY_LIBCXX_ROOT "${UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/Unix/LibCxx")
+set(LEGACY_LIBCXX_ROOT "$ENV{UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/Unix/LibCxx")
 
 # These were deduced by scouring Unreal's LinuxToolChain.cs.
 SET(CMAKE_C_FLAGS "-fvisibility-ms-compat -fvisibility-inlines-hidden")
