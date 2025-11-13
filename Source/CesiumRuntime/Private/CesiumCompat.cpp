@@ -21,7 +21,7 @@ FMaterialRelevance FSceneInterfaceWrapper::GetMaterialRelevance(
 void ALevelInstance_SetDesiredRuntimeBehavior(
     ALevelInstance* Instance,
     ELevelInstanceRuntimeBehavior RuntimeBehavior) {
-#if WITH_EDITORONLY_DATA && ENGINE_VERSION_5_6_OR_HIGHER
+#if WITH_EDITORONLY_DATA && ENGINE_VERSION_5_7_OR_HIGHER
   Instance->SetDesiredRuntimeBehavior(RuntimeBehavior);
 #elif WITH_EDITORONLY_DATA
   Instance->DesiredRuntimeBehavior = RuntimeBehavior;
