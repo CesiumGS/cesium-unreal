@@ -45,31 +45,6 @@ extern UNREALED_API class UEditorEngine* GEditor;
 using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
 
-namespace {
-
-void AutoFillPropertyTextureNames(
-    TSet<FString>& Names,
-    const FCesiumPrimitiveMetadata& PrimitiveMetadata,
-    const TArray<FCesiumPropertyTexture>& PropertyTextures) {
-  const TArray<int64> propertyTextureIndices =
-      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
-          PrimitiveMetadata);
-
-  for (const int64& propertyTextureIndex : propertyTextureIndices) {
-    if (propertyTextureIndex < 0 ||
-        propertyTextureIndex >= PropertyTextures.Num()) {
-      continue;
-    }
-
-    const FCesiumPropertyTexture& propertyTexture =
-        PropertyTextures[propertyTextureIndex];
-    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-    Names.Emplace(propertyTextureName);
-  }
-}
-
-} // namespace
-
 void UCesiumFeaturesMetadataComponent::ViewProperties() {
   ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
   OnCesiumFeaturesMetadataViewProperties.Broadcast(pOwner);

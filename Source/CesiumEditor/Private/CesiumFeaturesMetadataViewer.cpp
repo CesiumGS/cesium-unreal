@@ -38,8 +38,7 @@ THIRD_PARTY_INCLUDES_END
 CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
   if (_pExistingWindow.IsValid()) {
     _pExistingWindow->_pTileset = pTileset;
-    _pExistingWindow->BringToFront();
-    _pExistingWindow->Sync();
+    _pExistingWindow->SyncAndRebuildUI();
   } else {
     // Open a new panel
     TSharedRef<CesiumFeaturesMetadataViewer> viewer =
@@ -57,6 +56,8 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
     _pExistingWindow->_pFeaturesMetadataComponent =
         pTileset->GetComponentByClass<UCesiumFeaturesMetadataComponent>();
   }
+
+  _pExistingWindow->BringToFront();
 }
 
 void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
@@ -67,7 +68,7 @@ void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
       pTileset.IsValid() ? pTileset->GetActorLabel() : TEXT("Unknown");
 
   this->_pTileset = pTileset;
-  this->Sync();
+  this->SyncAndRebuildUI();
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -102,7 +103,7 @@ void populateEnumOptions(TArray<TSharedRef<TEnum>>& options) {
 }
 } // namespace
 
-void CesiumFeaturesMetadataViewer::Sync() {
+void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   if (this->_conversionOptions.IsEmpty()) {
     populateEnumOptions<ECesiumEncodedMetadataConversion>(
         this->_conversionOptions);
@@ -118,11 +119,26 @@ void CesiumFeaturesMetadataViewer::Sync() {
   this->_metadataSources.Empty();
   this->_featureIdSets.Empty();
   this->_stringMap.Empty();
+  this->_propertyTextureNames.Empty();
 
   this->gatherGltfFeaturesMetadata();
 
   TSharedRef<SVerticalBox> pContent = this->_pContent.ToSharedRef();
   pContent->ClearChildren();
+
+  pContent->AddSlot().AutoHeight().HAlign(HAlign_Center)
+      [SNew(SButton)
+           .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+           .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+           .ContentPadding(FMargin(1.0, 1.0))
+           .HAlign(EHorizontalAlignment::HAlign_Center)
+           .Text(FText::FromString(TEXT("Sync")))
+           .ToolTipText(FText::FromString(TEXT(
+               "Syncs the feature ID sets and metadata from currently-loaded tiles in the ACesium3DTileset.")))
+           .OnClicked_Lambda([this]() {
+             this->SyncAndRebuildUI();
+             return FReply::Handled();
+           })];
 
   pContent->AddSlot().AutoHeight()
       [SNew(SHeader)
@@ -297,8 +313,7 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
         UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
             primitiveMetadata);
     for (int64 propertyTextureIndex : propertyTextureIndices) {
-      if (propertyTextureIndex < 0 ||
-          propertyTextureIndex >= propertyTextures.Num()) {
+      if (!propertyTextures.IsValidIndex(propertyTextureIndex)) {
         continue;
       }
 
@@ -794,16 +809,19 @@ void CesiumFeaturesMetadataViewer::createGltfPropertySourceDropdown(
 
   pContent->AddSlot()
       [SNew(SExpandableArea)
-           .InitiallyCollapsed(true)
+           .InitiallyCollapsed(false)
            .HeaderContent()[SNew(STextBlock)
                                 .Text(FText::FromString(sourceDisplayName))]
-           .BodyContent()[SNew(SListView<TSharedRef<PropertyView>>)
-                              .ListItemsSource(&source.properties)
-                              .SelectionMode(ESelectionMode::None)
-                              .OnGenerateRow(
-                                  this,
-                                  &CesiumFeaturesMetadataViewer::
-                                      createGltfPropertyDropdown)]];
+           .BodyContent()
+               [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+                SHorizontalBox::Slot()
+                    [SNew(SListView<TSharedRef<PropertyView>>)
+                         .ListItemsSource(&source.properties)
+                         .SelectionMode(ESelectionMode::None)
+                         .OnGenerateRow(
+                             this,
+                             &CesiumFeaturesMetadataViewer::
+                                 createGltfPropertyDropdown)]]];
 }
 
 template <typename TEnum>
@@ -889,7 +907,7 @@ void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
     const FeatureIdSetView& featureIdSet) {
   pContent->AddSlot()
       [SNew(SExpandableArea)
-           .InitiallyCollapsed(true)
+           .InitiallyCollapsed(false)
            .HeaderContent()[SNew(STextBlock)
                                 .Text(FText::FromString(*featureIdSet.pName))]
            .BodyContent()[SNew(SListView<TSharedRef<FeatureIdSetInstance>>)
@@ -1088,10 +1106,15 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     return;
   }
 
-  UCesiumFeaturesMetadataComponent& featuresMetadata =
-      *this->_pFeaturesMetadataComponent;
+  UKismetSystemLibrary::BeginTransaction(
+      TEXT("Cesium Features / Metadata Viewer"),
+      FText::FromString(
+          FString("Register property instance with ACesium3DTileset")),
+      this->_pFeaturesMetadataComponent.Get());
+  this->_pFeaturesMetadataComponent->PreEditChange(NULL);
 
-  featuresMetadata.PreEditChange(NULL);
+  FCesiumFeaturesMetadataDescription& description =
+      this->_pFeaturesMetadataComponent->Description;
 
   if (std::holds_alternative<TablePropertyInstanceDetails>(
           pItem->sourceDetails)) {
@@ -1102,7 +1125,7 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTableDescription,
         FCesiumPropertyTablePropertyDescription>(
-        featuresMetadata.Description.ModelMetadata.PropertyTables,
+        description.ModelMetadata.PropertyTables,
         *pItem->pSourceName,
         *pItem->pPropertyId,
         true);
@@ -1123,7 +1146,7 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTextureDescription,
         FCesiumPropertyTexturePropertyDescription>(
-        featuresMetadata.Description.ModelMetadata.PropertyTextures,
+        description.ModelMetadata.PropertyTextures,
         *pItem->pSourceName,
         *pItem->pPropertyId,
         true);
@@ -1136,9 +1159,15 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     FCesiumPropertyTexturePropertyDescription& property = *pProperty;
     property.PropertyDetails = pItem->propertyDetails;
     property.bHasKhrTextureTransform = sourceDetails.hasKhrTextureTransform;
+
+    if (this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
+      description.PrimitiveMetadata.PropertyTextureNames.Add(
+          *pItem->pSourceName);
+    }
   }
 
-  featuresMetadata.PostEditChange();
+  this->_pFeaturesMetadataComponent->PostEditChange();
+  UKismetSystemLibrary::EndTransaction();
 }
 
 void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
@@ -1152,13 +1181,18 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
     return;
   }
 
-  UCesiumFeaturesMetadataComponent& featuresMetadata =
-      *this->_pFeaturesMetadataComponent;
+  UKismetSystemLibrary::BeginTransaction(
+      TEXT("Cesium Features / Metadata Viewer"),
+      FText::FromString(
+          FString("Register feature ID set instance with ACesium3DTileset")),
+      this->_pFeaturesMetadataComponent.Get());
+  this->_pFeaturesMetadataComponent->PreEditChange(NULL);
 
-  featuresMetadata.PreEditChange(NULL);
+  FCesiumFeaturesMetadataDescription& description =
+      this->_pFeaturesMetadataComponent->Description;
 
   FCesiumFeatureIdSetDescription* pFeatureIdSet = findFeatureIdSet(
-      featuresMetadata.Description.PrimitiveFeatures.FeatureIdSets,
+      description.PrimitiveFeatures.FeatureIdSets,
       *pItem->pFeatureIdSetName,
       true);
   CESIUM_ASSERT(pFeatureIdSet != nullptr);
@@ -1167,7 +1201,8 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
   pFeatureIdSet->bHasKhrTextureTransform = pItem->hasKhrTextureTransform;
   pFeatureIdSet->PropertyTableName = *pItem->pPropertyTableName;
 
-  featuresMetadata.PostEditChange();
+  this->_pFeaturesMetadataComponent->PostEditChange();
+  UKismetSystemLibrary::EndTransaction();
 }
 
 TSharedRef<FString>

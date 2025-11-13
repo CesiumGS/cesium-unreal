@@ -37,7 +37,7 @@ public:
   /**
    * Syncs the window's UI with the current view of the tileset.
    */
-  void Sync();
+  void SyncAndRebuildUI();
 
 private:
   /**
