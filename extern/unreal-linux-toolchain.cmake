@@ -11,8 +11,8 @@ SET(CMAKE_POSITION_INDEPENDENT_CODE on)
 
 # These were deduced by scouring Unreal's LinuxToolChain.cs.
 SET(CMAKE_C_FLAGS "-fvisibility-ms-compat -fvisibility-inlines-hidden")
-SET(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -nostdinc++ -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include/c++/v1 -target x86_64-unknown-linux-gnu")
-SET(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld -target x86_64-unknown-linux-gnu --sysroot=$ENV{UNREAL_ENGINE_COMPILER_DIR} -B$ENV{UNREAL_ENGINE_COMPILER_DIR}/usr/lib -B$ENV{UNREAL_ENGINE_COMPILER_DIR}/usr/lib64 -L$ENV{UNREAL_ENGINE_COMPILER_DIR}/usr/lib -L$ENV{UNREAL_ENGINE_COMPILER_DIR}/usr/lib64 -nodefaultlibs -L$ENV{UNREAL_ENGINE_LIBCXX_DIR}/lib/Unix/x86_64-unknown-linux-gnu/ $ENV{UNREAL_ENGINE_LIBCXX_DIR}/lib/Unix/x86_64-unknown-linux-gnu/libc++.a $ENV{UNREAL_ENGINE_LIBCXX_DIR}/lib/Unix/x86_64-unknown-linux-gnu/libc++abi.a -lm -lc -lpthread -lgcc_s -lgcc")
+SET(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -nostdinc++ -I${CMAKE_SYSROOT}/include -I${CMAKE_SYSROOT}/include/c++/v1 -target x86_64-unknown-linux-gnu")
+SET(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld -target x86_64-unknown-linux-gnu --sysroot=${CMAKE_SYSROOT} -B${CMAKE_SYSROOT}/usr/lib -B${CMAKE_SYSROOT}/usr/lib64 -L${CMAKE_SYSROOT}/usr/lib -L${CMAKE_SYSROOT}/usr/lib64 -nodefaultlibs ${CMAKE_SYSROOT}/lib64/libc++.a ${CMAKE_SYSROOT}/lib64/libc++abi.a -lm -lc -lpthread -lgcc_s -lgcc")
 
 # search for programs in the build host directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
