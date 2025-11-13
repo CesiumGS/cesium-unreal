@@ -424,7 +424,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.7.0/UE_5.7.zip"
       unreal-program-name: "UE_5.7"
       upload-package-base-name: "CesiumForUnreal-57-android"
-      android-ndk-version: "r25b"
+      android-ndk-version: "r27c"
   Linux57:
     uses: ./.github/workflows/buildLinux.yml
     secrets: inherit
