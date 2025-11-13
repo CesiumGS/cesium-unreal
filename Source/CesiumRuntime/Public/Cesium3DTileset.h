@@ -800,6 +800,17 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
+   * Whether to enable doubled-sided collisions (both "front" and "back" faces)
+   * on the physics meshes created when CreatePhysicsMeshes is true.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetDoubleSidedCollisions,
+      BlueprintSetter = SetDoubleSidedCollisions,
+      Category = "Cesium|Physics")
+  bool DoubleSidedCollisions = false;
+
+  /**
    * Whether to generate navigation collisions for this tileset.
    *
    * Enabling this option creates collisions for navigation when a 3D Tiles
@@ -1094,6 +1105,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
+  bool GetDoubleSidedCollisions() const { return DoubleSidedCollisions; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
+  void SetDoubleSidedCollisions(bool bCreatePhysicsMeshes);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Navigation")
   bool GetCreateNavCollision() const { return CreateNavCollision; }

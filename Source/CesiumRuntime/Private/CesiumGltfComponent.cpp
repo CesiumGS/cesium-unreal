@@ -3021,6 +3021,7 @@ static void loadPrimitiveGameThreadPart(
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
+    bool doubleSidedCollisions,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
@@ -3431,6 +3432,7 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
+      pBodySetup->bDoubleSidedGeometry = doubleSidedCollisions;
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
@@ -3485,7 +3487,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision) {
+    bool createNavCollision,
+    bool doubleSidedCollisions) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3538,6 +3541,7 @@ UCesiumGltfComponent::CreateOffGameThread(
             cesiumToUnrealTransform,
             tile,
             createNavCollision,
+            doubleSidedCollisions,
             pTilesetActor,
             node.InstanceTransforms,
             node.pInstanceFeatures);
@@ -3883,5 +3887,11 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
       MoveTemp(materials),
       MoveTemp(pFaceRemap),
       nullptr,
-      false);
+      // Not sure what this is for: in my experience, whatever you pass here is
+      // overridden later on by a call to SetCullsBackFaceRaycast (from
+      // RegisterComponent) which will reset the property depending on the value
+      // of UBodySetup::bDoubleSidedGeometry.
+      // See ACesium3DTileset::DoubleSidedCollisions to effectively enable
+      // backface hits.
+      /*bInCullsBackFaceRaycast*/false);
 }

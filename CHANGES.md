@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### v?.??.? - ????-??-??
+
+##### Additions :tada:
+
+- Added the `DoubleSidedCollisions` boolean property to the `ACesium3DTileset` actor, allowing intersections and collisions with geometry to also work when hitting "back" faces.
+
 ### v2.21.0 - 2025-11-03
 
 ##### Additions :tada:
