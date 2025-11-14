@@ -4,6 +4,16 @@
 
 ##### Additions :tada:
 
+- Replaced the "Auto Fill" button on `CesiumFeaturesMetadataComponent` with "View Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
+
+##### Fixes :wrench:
+
+- Fixed a bug that prevented `UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures` from retrieving the features of instanced meshes.
+
+### v2.21.0 - 2025-11-03
+
+##### Additions :tada:
+
 - Added `CesiumAzureMapsRasterOverlay`.
 - Added the interface `ICesium3DTilesetLifecycleEventReceiver`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetLifecycleEventReceiver`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
 

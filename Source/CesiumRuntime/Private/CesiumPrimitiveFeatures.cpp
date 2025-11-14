@@ -44,13 +44,19 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
 const FCesiumPrimitiveFeatures&
 UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
     const UPrimitiveComponent* component) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-  if (!IsValid(pGltfComponent)) {
-    return EmptyPrimitiveFeatures;
+  const UCesiumGltfInstancedComponent* pGltfInstancedComponent =
+      Cast<UCesiumGltfInstancedComponent>(component);
+  if (IsValid(pGltfInstancedComponent)) {
+    return pGltfInstancedComponent->getPrimitiveData().Features;
   }
 
-  return pGltfComponent->getPrimitiveData().Features;
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (IsValid(pGltfComponent)) {
+    return pGltfComponent->getPrimitiveData().Features;
+  }
+
+  return EmptyPrimitiveFeatures;
 }
 
 const TArray<FCesiumFeatureIdSet>&
