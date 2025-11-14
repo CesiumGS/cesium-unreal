@@ -231,7 +231,8 @@ private:
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
-  TSharedRef<FString> getSharedRef(const FString& string);
+  static TSharedRef<FString> getSharedRef(const FString& string);
+  static void initializeStaticVariables();
 
   static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
   TSharedPtr<SVerticalBox> _pContent;
@@ -249,12 +250,12 @@ private:
 
   // Avoid allocating numerous instances of simple enum values (because shared
   // pointers /refs are required for SComboBox).
-  TArray<TSharedRef<ECesiumEncodedMetadataConversion>> _conversionOptions;
-  TArray<TSharedRef<ECesiumEncodedMetadataType>> _encodedTypeOptions;
-  TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
+  static TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
+      _conversionOptions;
+  static TArray<TSharedRef<ECesiumEncodedMetadataType>> _encodedTypeOptions;
+  static TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
       _encodedComponentTypeOptions;
-
   // Lookup map to reduce the number of strings allocated for duplicate property
   // names.
-  TMap<FString, TSharedRef<FString>> _stringMap;
+  static TMap<FString, TSharedRef<FString>> _stringMap;
 };
