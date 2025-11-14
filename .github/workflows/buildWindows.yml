@@ -45,6 +45,10 @@ on:
         required: false
         type: string
         default: "x64"
+      unreal-unity-build:
+        required: false
+        type: boolean
+        default: true
 jobs:
   build:
     runs-on: ${{ inputs.runner-label }}
@@ -122,6 +126,7 @@ jobs:
             <Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">
               <BuildConfiguration>
                 <MaxParallelActions>2</MaxParallelActions>
+                <bUseUnityBuild>${{ inputs.unreal-unity-build }}</bUseUnityBuild>
               </BuildConfiguration>
               <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>
             </Configuration>'
