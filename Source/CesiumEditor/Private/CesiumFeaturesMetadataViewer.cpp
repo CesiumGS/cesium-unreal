@@ -124,20 +124,6 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   TSharedRef<SVerticalBox> pContent = this->_pContent.ToSharedRef();
   pContent->ClearChildren();
 
-  pContent->AddSlot().AutoHeight().HAlign(HAlign_Center)
-      [SNew(SButton)
-           .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
-           .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
-           .ContentPadding(FMargin(1.0, 1.0))
-           .HAlign(EHorizontalAlignment::HAlign_Center)
-           .Text(FText::FromString(TEXT("Sync")))
-           .ToolTipText(FText::FromString(TEXT(
-               "Syncs the feature ID sets and metadata from currently-loaded tiles in the ACesium3DTileset.")))
-           .OnClicked_Lambda([this]() {
-             this->SyncAndRebuildUI();
-             return FReply::Handled();
-           })];
-
   pContent->AddSlot().AutoHeight()
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
@@ -155,8 +141,8 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     pContent->AddSlot().AutoHeight()
         [SNew(STextBlock)
              .AutoWrapText(true)
-             .Text(FText::FromString(
-                 TEXT("This tileset does not contain any glTF metadata.")))];
+             .Text(FText::FromString(TEXT(
+                 "This tileset does not contain any glTF metadata in its current view.")))];
   }
 
   pContent->AddSlot().AutoHeight()
@@ -176,9 +162,27 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     pContent->AddSlot().AutoHeight()
         [SNew(STextBlock)
              .AutoWrapText(true)
-             .Text(FText::FromString(
-                 TEXT("This tileset does not contain any glTF features.")))];
+             .Text(FText::FromString(TEXT(
+                 "This tileset does not contain any glTF features in its current view.")))];
   }
+
+  pContent->AddSlot()
+      .AutoHeight()
+      .Padding(0.0f, 10.0f)
+      .VAlign(VAlign_Bottom)
+      .HAlign(HAlign_Center)
+          [SNew(SButton)
+               .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+               .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+               .ContentPadding(FMargin(1.0, 1.0))
+               .HAlign(EHorizontalAlignment::HAlign_Center)
+               .Text(FText::FromString(TEXT("Sync with Current View")))
+               .ToolTipText(FText::FromString(TEXT(
+                   "Syncs the feature ID sets and metadata from currently-loaded tiles in the ACesium3DTileset.")))
+               .OnClicked_Lambda([this]() {
+                 this->SyncAndRebuildUI();
+                 return FReply::Handled();
+               })];
 }
 
 namespace {
@@ -966,7 +970,8 @@ TProperty* findProperty(
   }
 
   if (!pPropertySource) {
-    int32 index = sources.Emplace(sourceName, TArray<TProperty>());
+    int32 index =
+        sources.Emplace(TPropertySource{sourceName, TArray<TProperty>()});
     pPropertySource = &sources[index];
   }
 
