@@ -123,16 +123,23 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
           false));
   SplatActor->AddInstanceComponent(SceneComponent);
 
-  UNiagaraSystem* SplatNiagaraSystem = CastChecked<
-      UNiagaraSystem>(StaticLoadObject(
+  UObject* MaybeSplatNiagaraSystem = StaticLoadObject(
       UNiagaraSystem::StaticClass(),
       nullptr,
       TEXT(
-          "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'")));
+          "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'"));
+  if (!IsValid(MaybeSplatNiagaraSystem)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Unable to initialize gaussian splat Niagara system."));
+    return;
+  }
 
   FFXSystemSpawnParameters SpawnParams;
   SpawnParams.WorldContextObject = &InWorld;
-  SpawnParams.SystemTemplate = SplatNiagaraSystem;
+  SpawnParams.SystemTemplate =
+      CastChecked<UNiagaraSystem>(MaybeSplatNiagaraSystem);
   SpawnParams.bAutoDestroy = false;
   SpawnParams.AttachToComponent = SceneComponent;
   SpawnParams.bAutoActivate = true;
