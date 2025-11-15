@@ -103,7 +103,8 @@ public class CesiumRuntime : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "Slate",
-                "SlateCore"
+                "SlateCore",
+                "ChaosCore"
             }
         );
 
@@ -156,8 +157,13 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        ShadowVariableWarningLevel = WarningLevel.Off;
+#if UE_5_7_OR_LATER
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
+        CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Off;
+#else
         IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
+        ShadowVariableWarningLevel = WarningLevel.Off;
+#endif
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         CppStandard = CppStandardVersion.Cpp20;

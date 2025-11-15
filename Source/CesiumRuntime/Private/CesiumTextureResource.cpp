@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureResource.h"
+#include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "Misc/CoreStats.h"
@@ -192,7 +193,7 @@ void CopyMip(
   }
 }
 
-FTexture2DRHIRef createAsyncTextureAndWait(
+FTextureRHIRef createAsyncTextureAndWait(
     uint32 SizeX,
     uint32 SizeY,
     uint8 Format,
@@ -202,7 +203,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
     uint32 NumInitialMips) {
   FGraphEventRef CompletionEvent;
 
-  FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
+  FTextureRHIRef result = RHIAsyncCreateTexture2D(
       SizeX,
       SizeY,
       Format,
@@ -230,7 +231,7 @@ FTexture2DRHIRef createAsyncTextureAndWait(
  * @param Whether to use a sRGB color-space.
  * @return The RHI texture reference.
  */
-FTexture2DRHIRef CreateRHITexture2D_Async(
+FTextureRHIRef CreateRHITexture2D_Async(
     const CesiumGltf::ImageAsset& image,
     EPixelFormat format,
     bool sRGB) {
@@ -339,7 +340,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
     // thread.
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
 
-    FTexture2DRHIRef textureReference =
+    FTextureRHIRef textureReference =
         CreateRHITexture2D_Async(imageCesium, *maybePixelFormat, sRGB);
     // textureReference->SetName(
     //     FName(UTF8_TO_TCHAR(imageCesium.getUniqueAssetId().c_str())));
@@ -488,7 +489,9 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
 
   this->TextureRHI = this->InitializeTextureRHI();
 
-  RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
+  FRHICommandListImmediate::Get().UpdateTextureReference(
+      TextureReferenceRHI,
+      this->TextureRHI);
 
 #if STATS
   if (this->_isPrimary) {
@@ -497,6 +500,38 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
       textureFlags |= TexCreate_SRGB;
     }
 
+#if ENGINE_VERSION_5_5_OR_HIGHER
+    FRHITextureCreateDesc Desc;
+    if (this->_depth > 1) {
+      uint32 MipExtentX, MipExtentY, MipExtentZ;
+      CalcMipMapExtent3D(
+          this->_width,
+          this->_height,
+          this->_depth,
+          this->_format,
+          0,
+          MipExtentX,
+          MipExtentY,
+          MipExtentZ);
+
+      Desc = FRHITextureCreateDesc::Create3D(
+          TEXT("CesiumTextureUtility"),
+          MipExtentX,
+          MipExtentY,
+          MipExtentZ,
+          this->_format);
+    } else {
+      Desc = FRHITextureCreateDesc::Create2D(
+          TEXT("CesiumTextureUtility"),
+          CalcMipMapExtent(this->_width, this->_height, this->_format, 0),
+          this->_format);
+    }
+
+    Desc.SetNumMips(this->GetCurrentMipCount())
+        .SetFlags(textureFlags)
+        .SetInitialState(ERHIAccess::Unknown);
+    this->_textureSize = RHICalcTexturePlatformSize(Desc).Size;
+#else
     const FRHIResourceCreateInfo createInfo(this->_platformExtData);
     uint32 alignment;
 
@@ -535,6 +570,7 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
           createInfo,
           alignment);
     }
+#endif
 
     INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
     INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
@@ -550,7 +586,9 @@ void FCesiumTextureResource::ReleaseRHI() {
   }
 #endif
 
-  RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
+  FRHICommandListImmediate::Get().UpdateTextureReference(
+      TextureReferenceRHI,
+      nullptr);
 
   FTextureResource::ReleaseRHI();
 }
@@ -683,10 +721,6 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   //   debugName = UTF8_TO_TCHAR(this->_image.getUniqueAssetId().c_str());
   // }
 
-  FRHIResourceCreateInfo createInfo{*debugName};
-  createInfo.BulkData = nullptr;
-  createInfo.ExtData = _platformExtData;
-
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
 
   // What if a texture is treated as sRGB in one context but not another?
@@ -708,22 +742,22 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   uint32 mipCount =
       FMath::Max(1, static_cast<int32>(this->_mipPositions.size()));
 
+  FRHITextureCreateDesc createDesc =
+      FRHITextureCreateDesc::Create2D(*debugName)
+          .SetExtent(int32(this->_width), int32(this->_height))
+          .SetFormat(this->_format)
+          .SetNumMips(uint8(mipCount))
+          .SetNumSamples(1)
+          .SetFlags(textureFlags)
+          .SetInitialState(ERHIAccess::Unknown)
+          .SetExtData(this->_platformExtData);
+
   // Create a new RHI texture, initially empty.
 
   // RHICreateTexture2D can actually copy over all the mips in one shot,
   // but it expects a particular memory layout. Might be worth configuring
   // Cesium Native's mip-map generation to obey a standard memory layout.
-  FTexture2DRHIRef rhiTexture =
-      RHICreateTexture(FRHITextureCreateDesc::Create2D(createInfo.DebugName)
-                           .SetExtent(int32(this->_width), int32(this->_height))
-                           .SetFormat(this->_format)
-                           .SetNumMips(uint8(mipCount))
-                           .SetNumSamples(1)
-                           .SetFlags(textureFlags)
-                           .SetInitialState(ERHIAccess::Unknown)
-                           .SetExtData(createInfo.ExtData)
-                           .SetGPUMask(createInfo.GPUMask)
-                           .SetClearValue(createInfo.ClearValueBinding));
+  FTextureRHIRef rhiTexture = RHICreateTexture(createDesc);
 
   // Copy over all image data (including mip levels)
   for (uint32 i = 0; i < mipCount; ++i) {

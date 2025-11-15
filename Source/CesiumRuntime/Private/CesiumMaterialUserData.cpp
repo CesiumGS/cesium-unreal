@@ -1,12 +1,26 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumMaterialUserData.h"
+#include "CesiumCommon.h"
 #include "Materials/MaterialInstance.h"
 #include "Runtime/Launch/Resources/Version.h"
 
+#if ENGINE_VERSION_5_6_OR_HIGHER
+void UCesiumMaterialUserData::PostEditChangeOwner(
+    const FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeOwner(PropertyChangedEvent);
+
+  this->UpdateLayerNames();
+}
+#else
 void UCesiumMaterialUserData::PostEditChangeOwner() {
   Super::PostEditChangeOwner();
 
+  this->UpdateLayerNames();
+}
+#endif
+
+void UCesiumMaterialUserData::UpdateLayerNames() {
 #if WITH_EDITORONLY_DATA
   this->LayerNames.Empty();
 
