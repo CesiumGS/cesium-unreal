@@ -18,6 +18,7 @@
 #include "CesiumTransforms.h"
 #include "Chaos/AABBTree.h"
 #include "Chaos/CollisionConvexMesh.h"
+#include "Chaos/Core.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "CreateGltfOptions.h"
 #include "EncodedFeaturesMetadata.h"
@@ -3259,7 +3260,7 @@ static void loadPrimitiveGameThreadPart(
             NAME_None,
             RF_Transactional);
         pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
-        pCesiumData->PostEditChangeOwner();
+        pCesiumData->UpdateLayerNames();
       }
     }
 #endif
@@ -3853,7 +3854,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
   for (uint32 i = 0; i < vertexCount; ++i) {
-    vertices.X(int32(i)) = positionBuffer.VertexPosition(i);
+    vertices.SetX(int32(i), positionBuffer.VertexPosition(i));
   }
 
   int32 triangleCount = indices.Num() / 3;

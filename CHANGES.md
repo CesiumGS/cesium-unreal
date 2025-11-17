@@ -1,6 +1,12 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.21.0 Preview for Unreal Engine 5.7 - 2025-11-17
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.7.
+
+### v2.21.0 - 2025-11-03
 
 ##### Additions :tada:
 
