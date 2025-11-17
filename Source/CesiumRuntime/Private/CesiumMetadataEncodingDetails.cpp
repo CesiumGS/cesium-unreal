@@ -130,7 +130,6 @@ getBestFittingEncodedType(FCesiumMetadataPropertyDetails PropertyDetails) {
 }
 } // namespace
 
-
 /*static*/
 FCesiumMetadataEncodingDetails
 FCesiumMetadataEncodingDetails::GetBestFitForProperty(
