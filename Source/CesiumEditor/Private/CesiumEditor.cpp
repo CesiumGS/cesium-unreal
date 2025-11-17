@@ -367,10 +367,10 @@ void FCesiumEditorModule::StartupModule() {
           this,
           &FCesiumEditorModule::OnRasterOverlayIonTroubleshooting);
 
-  this->_featuresMetadataViewPropertiesSubscription =
-      OnCesiumFeaturesMetadataViewProperties.AddRaw(
+  this->_featuresMetadataAddPropertiesSubscription =
+      OnCesiumFeaturesMetadataAddProperties.AddRaw(
           this,
-          &FCesiumEditorModule::OnFeaturesMetadataViewProperties);
+          &FCesiumEditorModule::OnFeaturesMetadataAddProperties);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
@@ -393,10 +393,10 @@ void FCesiumEditorModule::ShutdownModule() {
         this->_rasterOverlayIonTroubleshootingSubscription);
     this->_rasterOverlayIonTroubleshootingSubscription.Reset();
   }
-  if (this->_featuresMetadataViewPropertiesSubscription.IsValid()) {
-    OnCesiumFeaturesMetadataViewProperties.Remove(
-        this->_featuresMetadataViewPropertiesSubscription);
-    this->_featuresMetadataViewPropertiesSubscription.Reset();
+  if (this->_featuresMetadataAddPropertiesSubscription.IsValid()) {
+    OnCesiumFeaturesMetadataAddProperties.Remove(
+        this->_featuresMetadataAddPropertiesSubscription);
+    this->_featuresMetadataAddPropertiesSubscription.Reset();
   }
 
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
@@ -490,7 +490,7 @@ void FCesiumEditorModule::OnRasterOverlayIonTroubleshooting(
   CesiumIonTokenTroubleshooting::Open(pOverlay, false);
 }
 
-void FCesiumEditorModule::OnFeaturesMetadataViewProperties(
+void FCesiumEditorModule::OnFeaturesMetadataAddProperties(
     ACesium3DTileset* pTileset) {
   CesiumFeaturesMetadataViewer::Open(pTileset);
 }

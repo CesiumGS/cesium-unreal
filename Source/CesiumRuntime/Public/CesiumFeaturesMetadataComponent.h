@@ -27,11 +27,11 @@ class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
 public:
 #if WITH_EDITOR
   /**
-   * Opens a window to view all metadata and feature IDs in the current view of
-   * the tileset.
+   * Opens a window to add metadata properties and feature ID sets from the
+   * current view of the tileset.
    */
   UFUNCTION(CallInEditor, Category = "Cesium", Meta = (DisplayPriority = 1))
-  void ViewProperties();
+  void AddProperties();
 
   /**
    * This button can be used to create a boiler-plate material layer that

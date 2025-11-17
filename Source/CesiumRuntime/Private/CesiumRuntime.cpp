@@ -62,7 +62,7 @@ IMPLEMENT_MODULE(FCesiumRuntimeModule, CesiumRuntime)
 FCesium3DTilesetIonTroubleshooting OnCesium3DTilesetIonTroubleshooting{};
 FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting{};
-FCesiumFeaturesMetadataViewProperties OnCesiumFeaturesMetadataViewProperties{};
+FCesiumFeaturesMetadataAddProperties OnCesiumFeaturesMetadataAddProperties{};
 
 CesiumAsync::AsyncSystem& getAsyncSystem() noexcept {
   static CesiumAsync::AsyncSystem asyncSystem(

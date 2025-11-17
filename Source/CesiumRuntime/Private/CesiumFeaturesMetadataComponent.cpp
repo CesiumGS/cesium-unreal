@@ -45,9 +45,9 @@ extern UNREALED_API class UEditorEngine* GEditor;
 using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
 
-void UCesiumFeaturesMetadataComponent::ViewProperties() {
+void UCesiumFeaturesMetadataComponent::AddProperties() {
   ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
-  OnCesiumFeaturesMetadataViewProperties.Broadcast(pOwner);
+  OnCesiumFeaturesMetadataAddProperties.Broadcast(pOwner);
 }
 
 static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {

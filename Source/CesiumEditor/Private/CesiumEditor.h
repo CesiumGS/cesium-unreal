@@ -110,14 +110,14 @@ private:
       const FCesiumRasterOverlayLoadFailureDetails& details);
   void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
-  void OnFeaturesMetadataViewProperties(ACesium3DTileset* pTileset);
+  void OnFeaturesMetadataAddProperties(ACesium3DTileset* pTileset);
 
   CesiumIonServerManager _serverManager;
   FDelegateHandle _tilesetLoadFailureSubscription;
   FDelegateHandle _rasterOverlayLoadFailureSubscription;
   FDelegateHandle _tilesetIonTroubleshootingSubscription;
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
-  FDelegateHandle _featuresMetadataViewPropertiesSubscription;
+  FDelegateHandle _featuresMetadataAddPropertiesSubscription;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
   CesiumEditorReparentHandler _reparentHandler;

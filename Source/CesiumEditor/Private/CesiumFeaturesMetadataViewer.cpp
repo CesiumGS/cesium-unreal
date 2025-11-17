@@ -531,9 +531,9 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
           });
 
       if (!pProperty) {
-        int32 index = pSource->properties.Emplace(MakeShared<PropertyView>(
-            pPropertyId,
-            TArray<TSharedRef<PropertyInstance>>()));
+        PropertyView newProperty{.pId = pPropertyId, .instances = {}};
+        int32 index = pSource->properties.Emplace(
+            MakeShared<PropertyView>(std::move(newProperty)));
         pProperty = &pSource->properties[index];
       }
 
@@ -812,7 +812,7 @@ void CesiumFeaturesMetadataViewer::createGltfPropertySourceDropdown(
 
   pContent->AddSlot()
       [SNew(SExpandableArea)
-           .InitiallyCollapsed(true)
+           .InitiallyCollapsed(false)
            .HeaderContent()[SNew(STextBlock)
                                 .Text(FText::FromString(sourceDisplayName))]
            .BodyContent()
