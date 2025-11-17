@@ -128,27 +128,6 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                          .Text(FText::FromString(TEXT("glTF Metadata")))
-                          .Margin(FMargin(0.f, 10.f))]];
-
-  if (!this->_metadataSources.IsEmpty()) {
-    TSharedRef<SScrollBox> pGltfContent = SNew(SScrollBox);
-    for (const PropertySourceView& source : this->_metadataSources) {
-      this->createGltfPropertySourceDropdown(pGltfContent, source);
-    }
-    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
-  } else {
-    pContent->AddSlot().AutoHeight()
-        [SNew(STextBlock)
-             .AutoWrapText(true)
-             .Text(FText::FromString(TEXT(
-                 "This tileset does not contain any glTF metadata in its current view.")))];
-  }
-
-  pContent->AddSlot().AutoHeight()
-      [SNew(SHeader)
-           .Content()[SNew(STextBlock)
-                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                           .Text(FText::FromString(TEXT("glTF Features")))
                           .Margin(FMargin(0.f, 10.f))]];
 
@@ -160,10 +139,35 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
   } else {
     pContent->AddSlot().AutoHeight()
-        [SNew(STextBlock)
-             .AutoWrapText(true)
-             .Text(FText::FromString(TEXT(
-                 "This tileset does not contain any glTF features in its current view.")))];
+        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+         SHorizontalBox::Slot()
+             [SNew(STextBlock)
+                  .AutoWrapText(true)
+                  .Text(FText::FromString(TEXT(
+                      "This tileset does not contain any glTF features in its current view.")))]];
+  }
+
+  pContent->AddSlot().AutoHeight()
+      [SNew(SHeader)
+           .Content()[SNew(STextBlock)
+                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                          .Text(FText::FromString(TEXT("glTF Metadata")))
+                          .Margin(FMargin(0.f, 10.f))]];
+
+  if (!this->_metadataSources.IsEmpty()) {
+    TSharedRef<SScrollBox> pGltfContent = SNew(SScrollBox);
+    for (const PropertySourceView& source : this->_metadataSources) {
+      this->createGltfPropertySourceDropdown(pGltfContent, source);
+    }
+    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
+  } else {
+    pContent->AddSlot().AutoHeight()
+        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+         SHorizontalBox::Slot()
+             [SNew(STextBlock)
+                  .AutoWrapText(true)
+                  .Text(FText::FromString(TEXT(
+                      "This tileset does not contain any glTF metadata in its current view.")))]];
   }
 
   pContent->AddSlot()
@@ -908,14 +912,17 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
     FString sourceString = FString::Printf(
         TEXT("Used with \"%s\" (Property Table)"),
         **pItem->pPropertyTableName);
-    pBox->AddSlot().FillWidth(1.0f).Padding(5.0f).VAlign(
-        EVerticalAlignment::VAlign_Center)
-        [SNew(STextBlock)
-             .AutoWrapText(true)
-             .Text(FText::FromString(sourceString))
-             .ToolTipText(FText::FromString(
-                 "The property table with which this feature ID set should be used. "
-                 "Add properties from the corresponding property table under \"glTF Metadata\"."))];
+    pBox->AddSlot()
+        .FillWidth(1.0f)
+        .Padding(5.0f)
+        .HAlign(HAlign_Fill)
+        .VAlign(EVerticalAlignment::VAlign_Center)
+            [SNew(STextBlock)
+                 .AutoWrapText(true)
+                 .Text(FText::FromString(sourceString))
+                 .ToolTipText(FText::FromString(
+                     "The property table with which this feature ID set should be used. "
+                     "Add properties from the corresponding property table under \"glTF Metadata\"."))];
   }
 
   pBox->AddSlot()
