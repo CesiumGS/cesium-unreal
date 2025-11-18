@@ -54,16 +54,6 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
   ECesiumFeatureIdSetType Type = ECesiumFeatureIdSetType::None;
 
   /**
-   * Whether this feature ID set contains a KHR_texture_transform glTF
-   * extension. Only applicable if the feature ID set is a feature ID texture.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Features",
-      Meta = (EditCondition = "Type == ECesiumFeatureIdSetType::Texture"))
-  bool bHasKhrTextureTransform = false;
-
-  /**
    * The name of the property table that this feature ID set corresponds to.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Features")
@@ -189,13 +179,6 @@ struct CESIUMRUNTIME_API FCesiumPropertyTexturePropertyDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
   FCesiumMetadataPropertyDetails PropertyDetails;
-
-  /**
-   * Whether this property texture property contains a KHR_texture_transform
-   * glTF extension.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
-  bool bHasKhrTextureTransform = false;
 };
 
 /**
