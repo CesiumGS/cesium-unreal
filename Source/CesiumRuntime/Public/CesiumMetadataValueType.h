@@ -10,6 +10,10 @@
 
 #include "CesiumMetadataValueType.generated.h"
 
+namespace Cesium3DTiles {
+struct ClassProperty;
+}
+
 /**
  * The Blueprint type that can losslessly represent values of a given property.
  */
@@ -189,6 +193,13 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
    * For example, "Int16 Scalar", "Float32 Mat4 Array", "String Array".
    */
   FString ToString() const;
+
+  /**
+   * Deduces the corresponding value type for a given
+   * Cesium3DTiles::ClassProperty.
+   */
+  static FCesiumMetadataValueType
+  fromClassProperty(const Cesium3DTiles::ClassProperty& property);
 };
 
 template <typename T>
