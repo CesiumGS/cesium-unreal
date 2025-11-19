@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumEditor.h"
 #include "Cesium3DTileset.h"
@@ -29,7 +29,9 @@
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <Cesium3DTilesSelection/Tileset.h>
+THIRD_PARTY_INCLUDES_END
 
 constexpr int MaximumOverlaysWithDefaultMaterial = 3;
 
