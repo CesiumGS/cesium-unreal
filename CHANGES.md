@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Replaced the "Auto Fill" button on `CesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
+
 ##### Fixes :wrench:
 
 - Fixed a bug that prevented `UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures` from retrieving the features of instanced meshes.
@@ -12,16 +16,6 @@
 ##### Additions :tada:
 
 - Added support for Unreal Engine 5.7.
-
-### v2.21.0 - 2025-11-03
-
-##### Additions :tada:
-
-- Replaced the "Auto Fill" button on `CesiumFeaturesMetadataComponent` with "View Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
-
-##### Fixes :wrench:
-
-- Fixed a bug that prevented `UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures` from retrieving the features of instanced meshes.
 
 ### v2.21.0 - 2025-11-03
 
