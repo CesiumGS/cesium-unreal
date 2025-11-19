@@ -9,8 +9,8 @@
 #include "Containers/UnrealString.h"
 #include "Misc/Guid.h"
 
-#if WITH_EDITOR
-#include "Materials/MaterialFunctionMaterialLayer.h"
+#if WITH_EDITORONLY_DATA
+#include "CesiumMetadataValue.h"
 #endif
 
 #include "CesiumFeaturesMetadataDescription.generated.h"
@@ -265,9 +265,97 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
 
 #pragma endregion
 
+#pragma region Tileset Statistics
+
+#if WITH_EDITORONLY_DATA
+
+/**
+ * @brief Supported statistic semantics from the 3D Tiles specification.
+ */
+UENUM()
+enum class ECesiumMetadataStatisticSemantic {
+  None = 0 UMETA(Hidden),
+  /**
+   * The minimum property value occurring in the tileset.
+   */
+  Min,
+  /**
+   * The maximum property value occurring in the tileset.
+   */
+  Max
+};
+
+/**
+ * @brief A statistic for a metadata property's values.
+ */
+USTRUCT()
+struct FCesiumMetadataPropertyStatisticValue {
+  GENERATED_USTRUCT_BODY()
+  /**
+   * @brief The semantic of this statistic.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  ECesiumMetadataStatisticSemantic Semantic;
+
+  /**
+   * @brief The value of this statistic. This reflects the value on the tileset
+   * it is attached to and should not be edited by users.
+   */
+  UPROPERTY(Transient, VisibleAnywhere, Category = "Cesium|Metadata|Statistics")
+  FCesiumMetadataValue Value;
+};
+
+/**
+ * @brief The statistics for a given metadata property.
+ */
+USTRUCT()
+struct FCesiumMetadataPropertyStatisticsDescription {
+  GENERATED_USTRUCT_BODY()
+  /**
+   * @brief The identifier of this property.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  FString Id;
+
+  /**
+   * @brief The available statistics for this property.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Metadata|Statistics",
+      Meta = (TitleProperty = "Semantic"))
+  TArray<FCesiumMetadataPropertyStatisticValue> Values;
+};
+
+/**
+ * @brief The statistics for a given metadata class.
+ */
+USTRUCT()
+struct FCesiumMetadataClassStatisticsDescription {
+  GENERATED_USTRUCT_BODY()
+  /**
+   * @brief The identifier of this class.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata|Statistics")
+  FString Id;
+
+  /**
+   * @brief The properties belonging to this class.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Metadata|Statistics",
+      Meta = (TitleProperty = "Id"))
+  TArray<FCesiumMetadataPropertyStatisticsDescription> Properties;
+};
+
+#endif
+
+#pragma endregion
+
 /**
  * @brief Description of both feature IDs and metadata from a glTF via the
- * EXT_mesh_Features and EXT_structural_metadata extensions. Indicates what
+ * EXT_mesh_features and EXT_structural_metadata extensions. Indicates what
  * parts of the extension should be uploaded to the GPU for access in Unreal
  * materials.
  */
@@ -276,6 +364,15 @@ struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
 public:
+#if WITH_EDITORONLY_DATA
+  /**
+   * @brief Description of the statistics reported by the tileset. Each entry
+   * represents a class and its cumulative statistics.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Id"))
+  TArray<FCesiumMetadataClassStatisticsDescription> Statistics;
+#endif
+
   /**
    * @brief Description of the feature ID sets available from the
    * EXT_mesh_features or EXT_instance_features extensions in a glTF.
