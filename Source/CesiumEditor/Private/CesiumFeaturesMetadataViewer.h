@@ -1,12 +1,10 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
-#include "CesiumMetadataValue.h"
-#include "CesiumMetadataValueType.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
 #include "Templates/SharedPointer.h"
@@ -16,7 +14,6 @@
 #include "Widgets/SWindow.h"
 
 #include <optional>
-#include <vector>
 
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;

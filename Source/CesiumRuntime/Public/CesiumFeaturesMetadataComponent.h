@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -14,7 +14,7 @@
 /**
  * @brief A component that can be added to Cesium3DTileset actors to
  * dictate what feature ID sets or metadata to encode for access on the GPU.
- * "View Properties" allows users to find and select desired feature ID sets and
+ * "Add Properties" allows users to find and select desired feature ID sets and
  * metadata properties. Once a selection is made, "Generate Material" can be
  * used to auto-generated the boiler-plate code to access the selected
  * properties in the Unreal material.
@@ -27,10 +27,10 @@ class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
 public:
 #if WITH_EDITOR
   /**
-   * Opens a window to add metadata properties and feature ID sets from the
+   * Opens a window to add feature ID sets and metadata properties from the
    * current view of the tileset.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium", Meta = (DisplayPriority = 1))
+  UFUNCTION(CallInEditor, Category = "Cesium")
   void AddProperties();
 
   /**
@@ -40,7 +40,7 @@ public:
    * exists. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium", Meta = (DisplayPriority = 2))
+  UFUNCTION(CallInEditor, Category = "Cesium")
   void GenerateMaterial();
 #endif
 

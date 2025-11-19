@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Replaced the "Auto Fill" button on `CesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
+- Replaced the "Auto Fill" button on `UCesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
 
 ##### Fixes :wrench:
 

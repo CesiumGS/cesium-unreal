@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeaturesMetadataViewer.h"
 
@@ -53,10 +53,10 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
         SNew(CesiumFeaturesMetadataViewer).Tileset(pTileset);
 
     _pExistingWindow = viewer;
-
     _pExistingWindow->GetOnWindowClosedEvent().AddLambda(
         [&pExistingWindow = CesiumFeaturesMetadataViewer::_pExistingWindow](
             const TSharedRef<SWindow>& pWindow) { pExistingWindow = nullptr; });
+
     FSlateApplication::Get().AddWindow(viewer);
   }
 
