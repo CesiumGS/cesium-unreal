@@ -41,9 +41,9 @@ public:
 
 private:
   /**
-   * Additional details for a `CesiumGltf::PropertyTableProperty` instance.
+   * Encoding details for a `CesiumGltf::PropertyTableProperty` instance.
    */
-  struct TablePropertyInstanceDetails {
+  struct PropertyInstanceEncodingDetails {
     /**
      * The possible conversion methods for this property. Contains a subset of
      * the values in ECesiumEncodedMetadataConversion.
@@ -64,19 +64,6 @@ private:
      */
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>
         pEncodedComponentTypeCombo;
-  };
-
-  /**
-   * Additional details to describe a `CesiumGltf::PropertyTextureProperty`
-   * instance.
-   */
-  struct TexturePropertyInstanceDetails {
-    /**
-     * Whether the texture used by this property has the `KHR_texture_transform`
-     * extension. This is necessary to track because it requires additional
-     * nodes in the Unreal material.
-     */
-    bool hasKhrTextureTransform;
   };
 
   /**
@@ -102,10 +89,10 @@ private:
      */
     TSharedRef<FString> pSourceName;
     /**
-     * Additional details for this property instance, dependent on its source.
+     * Additional details encoding this property instance. Only used for
+     * `CesiumGltf::PropertyTableProperty`.
      */
-    std::variant<TablePropertyInstanceDetails, TexturePropertyInstanceDetails>
-        sourceDetails;
+    std::optional<PropertyInstanceEncodingDetails> encodingDetails;
 
     bool operator==(const PropertyInstance& rhs) const;
     bool operator!=(const PropertyInstance& rhs) const;
@@ -163,11 +150,6 @@ private:
      * The type of this instance.
      */
     ECesiumFeatureIdSetType type;
-    /**
-     * For feature ID textures, indicates whether the texture contains
-     * KHR_texture_transform.
-     */
-    bool hasKhrTextureTransform;
     /**
      * The name of the property table that this instance references.
      */

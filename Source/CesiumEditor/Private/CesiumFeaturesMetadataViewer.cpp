@@ -144,7 +144,7 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
              [SNew(STextBlock)
                   .AutoWrapText(true)
                   .Text(FText::FromString(TEXT(
-                      "This tileset does not contain any glTF features in its current view.")))]];
+                      "This tileset does not contain any glTF features in this view.")))]];
   }
 
   pContent->AddSlot().AutoHeight()
@@ -167,7 +167,7 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
              [SNew(STextBlock)
                   .AutoWrapText(true)
                   .Text(FText::FromString(TEXT(
-                      "This tileset does not contain any glTF metadata in its current view.")))]];
+                      "This tileset does not contain any glTF metadata in this view.")))]];
   }
 
   pContent->AddSlot()
@@ -180,9 +180,9 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
                .ContentPadding(FMargin(1.0, 1.0))
                .HAlign(EHorizontalAlignment::HAlign_Center)
-               .Text(FText::FromString(TEXT("Sync with Current View")))
+               .Text(FText::FromString(TEXT("Sync with View")))
                .ToolTipText(FText::FromString(TEXT(
-                   "Syncs the feature ID sets and metadata from currently-loaded tiles in the ACesium3DTileset.")))
+                   "Syncs the feature ID sets and metadata from currently loaded tiles in the ACesium3DTileset.")))
                .OnClicked_Lambda([this]() {
                  this->SyncAndRebuildUI();
                  return FReply::Handled();
@@ -374,24 +374,9 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
             getNameForPropertySource(propertyTables[propertyTableIndex]);
       }
 
-      bool hasKhrTextureTransform = false;
-      if (type == ECesiumFeatureIdSetType::Texture) {
-        FCesiumFeatureIdTexture featureIdTexture =
-            UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
-                featureIdSet);
-        auto maybeTextureTransform =
-            featureIdTexture.getFeatureIdTextureView().getTextureTransform();
-        if (maybeTextureTransform) {
-          hasKhrTextureTransform =
-              (maybeTextureTransform->status() ==
-               CesiumGltf::KhrTextureTransformStatus::Valid);
-        }
-      }
-
       FeatureIdSetInstance Instance{
           .pFeatureIdSetName = pFeatureIdSetView->pName,
           .type = type,
-          .hasKhrTextureTransform = hasKhrTextureTransform,
           .pPropertyTableName = getSharedRef(propertyTableName)};
 
       TSharedRef<FeatureIdSetInstance>* pExistingInstance =
@@ -414,19 +399,11 @@ bool CesiumFeaturesMetadataViewer::PropertyInstance::operator==(
     return false;
   }
 
-  if (sourceDetails.index() != rhs.sourceDetails.index()) {
-    // Properties are different if they come from differently-typed sources.
+  if (encodingDetails.has_value() != rhs.encodingDetails.has_value()) {
     return false;
-  }
-
-  if (std::holds_alternative<TexturePropertyInstanceDetails>(sourceDetails)) {
-    CESIUM_ASSERT(std::holds_alternative<TexturePropertyInstanceDetails>(
-        rhs.sourceDetails));
-
-    return std::get<TexturePropertyInstanceDetails>(sourceDetails)
-               .hasKhrTextureTransform ==
-           std::get<TexturePropertyInstanceDetails>(rhs.sourceDetails)
-               .hasKhrTextureTransform;
+  } else if (encodingDetails) {
+    return encodingDetails->conversionMethods ==
+           rhs.encodingDetails->conversionMethods;
   }
 
   return true;
@@ -439,16 +416,8 @@ bool CesiumFeaturesMetadataViewer::PropertyInstance::operator!=(
 
 bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator==(
     const FeatureIdSetInstance& rhs) const {
-  if (*pFeatureIdSetName != *rhs.pFeatureIdSetName || type != rhs.type ||
-      *pPropertyTableName != *rhs.pPropertyTableName) {
-    return false;
-  }
-
-  if (type == ECesiumFeatureIdSetType::Texture) {
-    return hasKhrTextureTransform == rhs.hasKhrTextureTransform;
-  }
-
-  return true;
+  return *pFeatureIdSetName == *rhs.pFeatureIdSetName && type == rhs.type &&
+         *pPropertyTableName == *rhs.pPropertyTableName;
 }
 
 bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator!=(
@@ -593,18 +562,8 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
             supportedConversions = getSharedRefs(
                 this->_conversionOptions,
                 getSupportedConversionsForProperty(propertyDetails));
-        instance.sourceDetails = TablePropertyInstanceDetails{
+        instance.encodingDetails = PropertyInstanceEncodingDetails{
             .conversionMethods = std::move(supportedConversions)};
-      } else if constexpr (std::is_same_v<
-                               TSourceProperty,
-                               FCesiumPropertyTextureProperty>) {
-        auto maybeTextureTransform = propertyIt.Value.getTextureTransform();
-        bool hasKhrTextureTransform =
-            maybeTextureTransform &&
-            (maybeTextureTransform->status() ==
-             CesiumGltf::KhrTextureTransformStatus::Valid);
-        instance.sourceDetails = TexturePropertyInstanceDetails{
-            .hasKhrTextureTransform = hasKhrTextureTransform};
       }
 
       TSharedRef<PropertyInstance>* pExistingInstance =
@@ -654,11 +613,6 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                       : TEXT(" of variable size");
   }
 
-  auto* pTableSourceDetails =
-      std::get_if<TablePropertyInstanceDetails>(&pItem->sourceDetails);
-  auto* pTextureSourceDetails =
-      std::get_if<TexturePropertyInstanceDetails>(&pItem->sourceDetails);
-
   TArray<FString> qualifierList;
   if (pItem->propertyDetails.bHasOffset) {
     qualifierList.Add("Offset");
@@ -671,10 +625,6 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
   }
   if (pItem->propertyDetails.bHasDefaultValue) {
     qualifierList.Add("Default Value");
-  }
-
-  if (pTextureSourceDetails && pTextureSourceDetails->hasKhrTextureTransform) {
-    qualifierList.Add("KHR_texture_transform");
   }
 
   FString qualifierString =
@@ -703,64 +653,63 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                    .ToolTipText(FText::FromString(
                        "Notable qualities of the property that require additional nodes to be generated for the material."))];
 
-  if (pTableSourceDetails) {
+  if (pItem->encodingDetails) {
     FCesiumMetadataEncodingDetails bestFitEncodingDetails =
         FCesiumMetadataEncodingDetails::GetBestFitForProperty(
             pItem->propertyDetails);
 
     createEnumComboBox<ECesiumEncodedMetadataConversion>(
-        pTableSourceDetails->pConversionCombo,
-        pTableSourceDetails->conversionMethods,
+        pItem->encodingDetails->pConversionCombo,
+        pItem->encodingDetails->conversionMethods,
         bestFitEncodingDetails.Conversion,
         FString());
 
     createEnumComboBox<ECesiumEncodedMetadataType>(
-        pTableSourceDetails->pEncodedTypeCombo,
+        pItem->encodingDetails->pEncodedTypeCombo,
         this->_encodedTypeOptions,
         bestFitEncodingDetails.Type,
         TEXT(
             "The type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
     createEnumComboBox<ECesiumEncodedMetadataComponentType>(
-        pTableSourceDetails->pEncodedComponentTypeCombo,
+        pItem->encodingDetails->pEncodedComponentTypeCombo,
         this->_encodedComponentTypeOptions,
         bestFitEncodingDetails.ComponentType,
         TEXT(
             "The component type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
 
-    if (pTableSourceDetails->pConversionCombo.IsValid()) {
+    if (pItem->encodingDetails->pConversionCombo.IsValid()) {
       content->AddSlot().FillWidth(0.65).Padding(5.0f).VAlign(
           EVerticalAlignment::VAlign_Center)
-          [pTableSourceDetails->pConversionCombo->AsShared()];
+          [pItem->encodingDetails->pConversionCombo->AsShared()];
     }
 
     auto visibilityLambda = TAttribute<EVisibility>::Create([pItem]() {
-      const auto* pTableSourceDetails =
-          std::get_if<TablePropertyInstanceDetails>(&pItem->sourceDetails);
-      if (!pTableSourceDetails) {
+      if (!pItem->encodingDetails) {
         return EVisibility::Hidden;
       }
 
       bool show = false;
-      if (pTableSourceDetails->pConversionCombo.IsValid()) {
-        show =
-            pTableSourceDetails->pConversionCombo->GetSelectedItem().IsValid();
+      if (pItem->encodingDetails->pConversionCombo.IsValid()) {
+        show = pItem->encodingDetails->pConversionCombo->GetSelectedItem()
+                   .IsValid();
       }
       return show ? EVisibility::Visible : EVisibility::Hidden;
     });
 
-    if (pTableSourceDetails->pEncodedTypeCombo.IsValid()) {
-      pTableSourceDetails->pEncodedTypeCombo->SetVisibility(visibilityLambda);
-      content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
-          EVerticalAlignment::VAlign_Center)
-          [pTableSourceDetails->pEncodedTypeCombo->AsShared()];
-    }
-
-    if (pTableSourceDetails->pEncodedComponentTypeCombo.IsValid()) {
-      pTableSourceDetails->pEncodedComponentTypeCombo->SetVisibility(
+    if (pItem->encodingDetails->pEncodedTypeCombo.IsValid()) {
+      pItem->encodingDetails->pEncodedTypeCombo->SetVisibility(
           visibilityLambda);
       content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
           EVerticalAlignment::VAlign_Center)
-          [pTableSourceDetails->pEncodedComponentTypeCombo->AsShared()];
+          [pItem->encodingDetails->pEncodedTypeCombo->AsShared()];
+    }
+
+    if (pItem->encodingDetails->pEncodedComponentTypeCombo.IsValid()) {
+      pItem->encodingDetails->pEncodedComponentTypeCombo->SetVisibility(
+          visibilityLambda);
+      content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [pItem->encodingDetails->pEncodedComponentTypeCombo->AsShared()];
     }
   }
 
@@ -895,18 +844,6 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
           [SNew(STextBlock)
                .AutoWrapText(true)
                .Text(FText::FromString(enumToNameString(pItem->type)))];
-
-  if (pItem->type == ECesiumFeatureIdSetType::Texture &&
-      pItem->hasKhrTextureTransform) {
-    pBox->AddSlot().AutoWidth().Padding(5.0f).VAlign(
-        EVerticalAlignment::VAlign_Center)
-        [SNew(STextBlock)
-             .AutoWrapText(true)
-             .Text(FText::FromString(TEXT("Contains KHR_texture_transform")))
-             .ToolTipText(FText::FromString(TEXT(
-                 "Whether the feature ID texture contains the KHR_texture_transform extension. "
-                 "This will require additional nodes to be generated in the Unreal material.")))];
-  }
 
   if (!pItem->pPropertyTableName->IsEmpty()) {
     FString sourceString = FString::Printf(
@@ -1057,17 +994,13 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
   UCesiumFeaturesMetadataComponent& featuresMetadata =
       *this->_pFeaturesMetadataComponent;
 
-  if (std::holds_alternative<TablePropertyInstanceDetails>(
-          pItem->sourceDetails)) {
-    const auto& sourceDetails =
-        std::get<TablePropertyInstanceDetails>(pItem->sourceDetails);
-
+  if (pItem->encodingDetails) {
     // Validate encoding details first.
     FCesiumMetadataEncodingDetails selectedEncodingDetails =
         getSelectedEncodingDetails(
-            sourceDetails.pConversionCombo,
-            sourceDetails.pEncodedTypeCombo,
-            sourceDetails.pEncodedComponentTypeCombo);
+            pItem->encodingDetails->pConversionCombo,
+            pItem->encodingDetails->pEncodedTypeCombo,
+            pItem->encodingDetails->pEncodedComponentTypeCombo);
 
     switch (selectedEncodingDetails.Conversion) {
     case ECesiumEncodedMetadataConversion::Coerce:
@@ -1094,13 +1027,7 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
 
     return !pProperty || pProperty->PropertyDetails != pItem->propertyDetails ||
            pProperty->EncodingDetails != selectedEncodingDetails;
-  }
-
-  if (std::holds_alternative<TexturePropertyInstanceDetails>(
-          pItem->sourceDetails)) {
-    const auto& sourceDetails =
-        std::get<TexturePropertyInstanceDetails>(pItem->sourceDetails);
-
+  } else {
     FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTextureDescription,
         FCesiumPropertyTexturePropertyDescription>(
@@ -1109,9 +1036,7 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
         *pItem->pPropertyId,
         false);
 
-    return !pProperty || pProperty->PropertyDetails != pItem->propertyDetails ||
-           pProperty->bHasKhrTextureTransform !=
-               sourceDetails.hasKhrTextureTransform;
+    return !pProperty || pProperty->PropertyDetails != pItem->propertyDetails;
   }
 
   return false;
@@ -1159,11 +1084,11 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
   FCesiumFeaturesMetadataDescription& description =
       this->_pFeaturesMetadataComponent->Description;
 
-  if (std::holds_alternative<TablePropertyInstanceDetails>(
-          pItem->sourceDetails)) {
+  if (pItem->encodingDetails) {
     CESIUM_ASSERT(
-        pItem->pConversionCombo && pItem->pEncodedTypeCombo &&
-        pItem->pEncodedComponentTypeCombo);
+        pItem->encodingDetails->pConversionCombo &&
+        pItem->encodingDetails->pEncodedTypeCombo &&
+        pItem->encodingDetails->pEncodedComponentTypeCombo);
 
     FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTableDescription,
@@ -1175,17 +1100,13 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
 
     CESIUM_ASSERT(pProperty != nullptr);
 
-    const auto& sourceDetails =
-        std::get<TablePropertyInstanceDetails>(pItem->sourceDetails);
-
     FCesiumPropertyTablePropertyDescription& property = *pProperty;
     property.PropertyDetails = pItem->propertyDetails;
     property.EncodingDetails = getSelectedEncodingDetails(
-        sourceDetails.pConversionCombo,
-        sourceDetails.pEncodedTypeCombo,
-        sourceDetails.pEncodedComponentTypeCombo);
-  } else if (std::holds_alternative<TexturePropertyInstanceDetails>(
-                 pItem->sourceDetails)) {
+        pItem->encodingDetails->pConversionCombo,
+        pItem->encodingDetails->pEncodedTypeCombo,
+        pItem->encodingDetails->pEncodedComponentTypeCombo);
+  } else {
     FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTextureDescription,
         FCesiumPropertyTexturePropertyDescription>(
@@ -1196,12 +1117,8 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
 
     CESIUM_ASSERT(pProperty != nullptr);
 
-    const auto& sourceDetails =
-        std::get<TexturePropertyInstanceDetails>(pItem->sourceDetails);
-
     FCesiumPropertyTexturePropertyDescription& property = *pProperty;
     property.PropertyDetails = pItem->propertyDetails;
-    property.bHasKhrTextureTransform = sourceDetails.hasKhrTextureTransform;
 
     if (this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
       description.PrimitiveMetadata.PropertyTextureNames.Add(
@@ -1241,7 +1158,6 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
   CESIUM_ASSERT(pFeatureIdSet != nullptr);
 
   pFeatureIdSet->Type = pItem->type;
-  pFeatureIdSet->bHasKhrTextureTransform = pItem->hasKhrTextureTransform;
   pFeatureIdSet->PropertyTableName = *pItem->pPropertyTableName;
 
   this->_pFeaturesMetadataComponent->PostEditChange();
