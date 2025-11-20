@@ -116,6 +116,21 @@ void FCesiumMetadataValueSpec::Define() {
           ECesiumMetadataComponentType::Uint8);
       TestTrue("IsArray", valueType.bIsArray);
     });
+
+    It("constructs from existing array value", [this]() {
+      CesiumGltf::PropertyArrayCopy<uint8_t> arrayView;
+      FCesiumPropertyArray array(arrayView);
+
+      FCesiumMetadataValue value(std::move(array));
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
+      TestEqual("Type", valueType.Type, ECesiumMetadataType::Scalar);
+      TestEqual(
+          "ComponentType",
+          valueType.ComponentType,
+          ECesiumMetadataComponentType::Uint8);
+      TestTrue("IsArray", valueType.bIsArray);
+    });
   });
 
   Describe("GetBoolean", [this]() {

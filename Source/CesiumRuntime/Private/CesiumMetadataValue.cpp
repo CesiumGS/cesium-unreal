@@ -2,34 +2,33 @@
 
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyArray.h"
+#include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "UnrealMetadataConversions.h"
 #include <CesiumGltf/MetadataConversions.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 
+FCesiumMetadataValue::FCesiumMetadataValue()
+    : _value(swl::monostate{}), _valueType(), _pEnumDefinition(nullptr) {}
+
+FCesiumMetadataValue::FCesiumMetadataValue(FCesiumPropertyArray&& Array)
+    : _value(), _valueType(), _pEnumDefinition(nullptr) {
+  this->_pEnumDefinition = Array._pEnumDefinition;
+  this->_value = std::move(Array);
+  FCesiumMetadataValueType elementType =
+      UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(Array);
+  _valueType = {elementType.Type, elementType.ComponentType, true};
+}
+
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumMetadataValue&& rhs) =
     default;
-
 FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
     : _value(),
       _valueType(rhs._valueType),
-      _storage(rhs._storage),
       _pEnumDefinition(rhs._pEnumDefinition) {
-  swl::visit(
-      [this](const auto& value) {
-        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          if (!this->_storage.empty()) {
-            this->_value = decltype(value)(this->_storage);
-          } else {
-            this->_value = value;
-          }
-        } else {
-          this->_value = value;
-        }
-      },
-      rhs._value);
+  swl::visit([this](const auto& value) { this->_value = value; }, rhs._value);
 }
 
 FCesiumMetadataValue&
@@ -307,8 +306,8 @@ FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
   return swl::visit(
       [&EnumDefinition =
            Value._pEnumDefinition](auto value) -> FCesiumPropertyArray {
-        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          return FCesiumPropertyArray(value, EnumDefinition);
+        if constexpr (std::is_same_v<decltype(value), FCesiumPropertyArray>) {
+          return FCesiumPropertyArray(value);
         }
         return FCesiumPropertyArray();
       },

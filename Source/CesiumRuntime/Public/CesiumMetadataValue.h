@@ -24,7 +24,6 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 
 private:
 #pragma region ValueType declaration
-  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
   using ValueType = swl::variant<
       swl::monostate,
       int8_t,
@@ -99,89 +98,15 @@ private:
       glm::mat<4, 4, uint64_t>,
       glm::mat<4, 4, float>,
       glm::mat<4, 4, double>,
-      ArrayView<int8_t>,
-      ArrayView<uint8_t>,
-      ArrayView<int16_t>,
-      ArrayView<uint16_t>,
-      ArrayView<int32_t>,
-      ArrayView<uint32_t>,
-      ArrayView<int64_t>,
-      ArrayView<uint64_t>,
-      ArrayView<float>,
-      ArrayView<double>,
-      ArrayView<bool>,
-      ArrayView<std::string_view>,
-      ArrayView<glm::vec<2, int8_t>>,
-      ArrayView<glm::vec<2, uint8_t>>,
-      ArrayView<glm::vec<2, int16_t>>,
-      ArrayView<glm::vec<2, uint16_t>>,
-      ArrayView<glm::vec<2, int32_t>>,
-      ArrayView<glm::vec<2, uint32_t>>,
-      ArrayView<glm::vec<2, int64_t>>,
-      ArrayView<glm::vec<2, uint64_t>>,
-      ArrayView<glm::vec<2, float>>,
-      ArrayView<glm::vec<2, double>>,
-      ArrayView<glm::vec<3, int8_t>>,
-      ArrayView<glm::vec<3, uint8_t>>,
-      ArrayView<glm::vec<3, int16_t>>,
-      ArrayView<glm::vec<3, uint16_t>>,
-      ArrayView<glm::vec<3, int32_t>>,
-      ArrayView<glm::vec<3, uint32_t>>,
-      ArrayView<glm::vec<3, int64_t>>,
-      ArrayView<glm::vec<3, uint64_t>>,
-      ArrayView<glm::vec<3, float>>,
-      ArrayView<glm::vec<3, double>>,
-      ArrayView<glm::vec<4, int8_t>>,
-      ArrayView<glm::vec<4, uint8_t>>,
-      ArrayView<glm::vec<4, int16_t>>,
-      ArrayView<glm::vec<4, uint16_t>>,
-      ArrayView<glm::vec<4, int32_t>>,
-      ArrayView<glm::vec<4, uint32_t>>,
-      ArrayView<glm::vec<4, int64_t>>,
-      ArrayView<glm::vec<4, uint64_t>>,
-      ArrayView<glm::vec<4, float>>,
-      ArrayView<glm::vec<4, double>>,
-      ArrayView<glm::mat<2, 2, int8_t>>,
-      ArrayView<glm::mat<2, 2, uint8_t>>,
-      ArrayView<glm::mat<2, 2, int16_t>>,
-      ArrayView<glm::mat<2, 2, uint16_t>>,
-      ArrayView<glm::mat<2, 2, int32_t>>,
-      ArrayView<glm::mat<2, 2, uint32_t>>,
-      ArrayView<glm::mat<2, 2, int64_t>>,
-      ArrayView<glm::mat<2, 2, uint64_t>>,
-      ArrayView<glm::mat<2, 2, float>>,
-      ArrayView<glm::mat<2, 2, double>>,
-      ArrayView<glm::mat<3, 3, int8_t>>,
-      ArrayView<glm::mat<3, 3, uint8_t>>,
-      ArrayView<glm::mat<3, 3, int16_t>>,
-      ArrayView<glm::mat<3, 3, uint16_t>>,
-      ArrayView<glm::mat<3, 3, int32_t>>,
-      ArrayView<glm::mat<3, 3, uint32_t>>,
-      ArrayView<glm::mat<3, 3, int64_t>>,
-      ArrayView<glm::mat<3, 3, uint64_t>>,
-      ArrayView<glm::mat<3, 3, float>>,
-      ArrayView<glm::mat<3, 3, double>>,
-      ArrayView<glm::mat<4, 4, int8_t>>,
-      ArrayView<glm::mat<4, 4, uint8_t>>,
-      ArrayView<glm::mat<4, 4, int16_t>>,
-      ArrayView<glm::mat<4, 4, uint16_t>>,
-      ArrayView<glm::mat<4, 4, int32_t>>,
-      ArrayView<glm::mat<4, 4, uint32_t>>,
-      ArrayView<glm::mat<4, 4, int64_t>>,
-      ArrayView<glm::mat<4, 4, uint64_t>>,
-      ArrayView<glm::mat<4, 4, float>>,
-      ArrayView<glm::mat<4, 4, double>>>;
+      FCesiumPropertyArray>;
+  ;
 #pragma endregion
 
 public:
   /**
    * Constructs an empty metadata value with unknown type.
    */
-  FCesiumMetadataValue()
-      : _value(swl::monostate{}),
-        _valueType(),
-        _storage(),
-        _pEnumDefinition() {}
+  FCesiumMetadataValue();
 
   /**
    * Constructs a metadata value with the given input.
@@ -196,7 +121,6 @@ public:
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
       : _value(Value),
         _valueType(TypeToMetadataValueType<T>(pEnumDefinition)),
-        _storage(),
         _pEnumDefinition(pEnumDefinition) {}
 
   /**
@@ -222,14 +146,13 @@ public:
   explicit FCesiumMetadataValue(
       CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(),
+      : _value(FCesiumPropertyArray(std::move(Copy))),
         _valueType(
             TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
                 pEnumDefinition)),
-        _storage(),
-        _pEnumDefinition(pEnumDefinition) {
-    this->_value = std::move(Copy).toViewAndExternalBuffer(this->_storage);
-  }
+        _pEnumDefinition(pEnumDefinition) {}
+
+  FCesiumMetadataValue(FCesiumPropertyArray&& Array);
 
   /**
    * Constructs a metadata value with the given optional input.
@@ -242,7 +165,7 @@ public:
   explicit FCesiumMetadataValue(
       const std::optional<T>& MaybeValue,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(), _valueType(), _storage(), _pEnumDefinition(pEnumDefinition) {
+      : _value(), _valueType(), _pEnumDefinition(pEnumDefinition) {
     if (!MaybeValue) {
       return;
     }
@@ -250,7 +173,6 @@ public:
     FCesiumMetadataValue temp(*MaybeValue);
     this->_value = std::move(temp._value);
     this->_valueType = std::move(temp._valueType);
-    this->_storage = std::move(temp._storage);
   }
 
   FCesiumMetadataValue(FCesiumMetadataValue&& rhs);
@@ -261,7 +183,6 @@ public:
 private:
   ValueType _value;
   FCesiumMetadataValueType _valueType;
-  std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;

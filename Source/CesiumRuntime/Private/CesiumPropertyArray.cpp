@@ -3,6 +3,8 @@
 #include "CesiumPropertyArray.h"
 #include <CesiumGltf/PropertyTypeTraits.h>
 
+FCesiumPropertyArray::FCesiumPropertyArray() : _value(), _elementType() {}
+
 FCesiumPropertyArray::FCesiumPropertyArray(FCesiumPropertyArray&& rhs) =
     default;
 
