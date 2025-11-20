@@ -1,9 +1,10 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyArray.h"
 #include <CesiumGltf/PropertyTypeTraits.h>
 
-FCesiumPropertyArray::FCesiumPropertyArray() : _value(), _elementType() {}
+FCesiumPropertyArray::FCesiumPropertyArray()
+    : _value(), _elementType(), _storage(), _pEnumDefinition(nullptr) {}
 
 FCesiumPropertyArray::FCesiumPropertyArray(FCesiumPropertyArray&& rhs) =
     default;
@@ -12,7 +13,10 @@ FCesiumPropertyArray&
 FCesiumPropertyArray::operator=(FCesiumPropertyArray&& rhs) = default;
 
 FCesiumPropertyArray::FCesiumPropertyArray(const FCesiumPropertyArray& rhs)
-    : _value(), _elementType(rhs._elementType), _storage(rhs._storage) {
+    : _value(),
+      _elementType(rhs._elementType),
+      _storage(rhs._storage),
+      _pEnumDefinition(nullptr) {
   swl::visit(
       [this](const auto& value) {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {

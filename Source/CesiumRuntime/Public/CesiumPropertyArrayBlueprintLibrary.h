@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -7,7 +7,7 @@
 #include "CesiumPropertyArrayBlueprintLibrary.generated.h"
 
 /**
- * Blueprint library functions for acting on an array property in
+ * Blueprint library functions for acting on an array value from a property in
  * EXT_structural_metadata.
  */
 UCLASS()
