@@ -104,7 +104,7 @@ public class CesiumRuntime : ModuleRules
                 "JsonUtilities",
                 "Slate",
                 "SlateCore",
-                "Niagara"
+                "Niagara",
                 "ChaosCore"
             }
         );
