@@ -5,6 +5,7 @@
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
+#include "CesiumLoadedTile.h"
 #include "CesiumModelMetadata.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
@@ -12,6 +13,7 @@
 #include "CustomDepthParameters.h"
 #include "EncodedFeaturesMetadata.h"
 #include "Interfaces/IHttpRequest.h"
+#include "Templates/Function.h"
 #include <CesiumAsync/SharedFuture.h>
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -56,7 +58,7 @@ struct FRasterOverlayTile {
 };
 
 UCLASS()
-class UCesiumGltfComponent : public USceneComponent {
+class UCesiumGltfComponent : public USceneComponent, public ICesiumLoadedTile {
   GENERATED_BODY()
 
 public:
@@ -104,6 +106,8 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
+  const Cesium3DTilesSelection::Tile* pTile = nullptr;
+
   FCesiumModelMetadata Metadata{};
   EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
@@ -131,6 +135,14 @@ public:
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
   virtual void BeginDestroy() override;
+  virtual void OnVisibilityChanged() override;
+
+  // from ICesiumLoadedTile
+  const CesiumGltf::Model* GetGltfModel() const override;
+  const FCesiumModelMetadata& GetModelMetadata() const override;
+  const Cesium3DTilesSelection::TileID& GetTileID() const override;
+  ACesium3DTileset& GetTilesetActor() override;
+  FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const override;
 
   void UpdateFade(float fadePercentage, bool fadingIn);
 
