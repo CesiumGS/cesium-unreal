@@ -154,10 +154,20 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   SpawnParams.bAutoActivate = true;
 
   this->LastCreatedWorld = &InWorld;
-  this->NiagaraActor = SplatActor;
   this->NiagaraComponent =
       UNiagaraFunctionLibrary::SpawnSystemAttachedWithParams(SpawnParams);
+  if (!IsValid(this->NiagaraComponent)) {
+    // Failed to create niagara component - make sure it's null and we'll try
+    // again next time.
+    this->NiagaraComponent = nullptr;
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Unable to create gaussian splat Niagara component"));
+    return;
+  }
   this->NiagaraComponent->Activate();
+  this->NiagaraActor = SplatActor;
   SplatActor->AddInstanceComponent(this->NiagaraComponent);
 
   this->UpdateNiagaraComponent();
@@ -268,6 +278,14 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     this->NiagaraActor = nullptr;
     this->NiagaraComponent = nullptr;
     this->LastCreatedWorld = nullptr;
+    return;
+  }
+
+  // Gaussian splats are purely visual, so we don't need to initialize them if
+  // we can't render anything. Besides, even if we'd *want* to, we will fail to
+  // spawn the Niagara component if either of these conditions are false (they
+  // are checked in UNiagaraFunctionLibrary::CreateNiagaraSystem).
+  if (!FApp::CanEverRender() || World->IsNetMode(NM_DedicatedServer)) {
     return;
   }
 
