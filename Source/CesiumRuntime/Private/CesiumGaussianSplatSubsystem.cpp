@@ -41,11 +41,20 @@ FBox CalculateBounds(
           std::max(Bounds->Max.Z, (double)BoundsMax.Z));
     } else {
       Bounds = FBox(
-          FVector4(BoundsMin.X - 1.0, BoundsMin.Y - 1.0, BoundsMin.Z - 1.0, 0.0),
-          FVector4(BoundsMax.X + 1.0, BoundsMax.Y + 1.0, BoundsMax.Z + 1.0, 0.0));
+          FVector4(
+              BoundsMin.X - 1.0,
+              BoundsMin.Y - 1.0,
+              BoundsMin.Z - 1.0,
+              0.0),
+          FVector4(
+              BoundsMax.X + 1.0,
+              BoundsMax.Y + 1.0,
+              BoundsMax.Z + 1.0,
+              0.0));
     }
   }
-  return Bounds.value_or(FBox(FVector4(-1.0, -1.0, -1.0, 0.0), FVector4(1.0, 1.0, 1.0, 0.0)));
+  return Bounds.value_or(
+      FBox(FVector4(-1.0, -1.0, -1.0, 0.0), FVector4(1.0, 1.0, 1.0, 0.0)));
 }
 
 // Running in a build, there is only one world context at a time. However, in
