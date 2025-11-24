@@ -2,6 +2,7 @@
 
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "UnrealMetadataConversions.h"
+
 #include <CesiumGltf/MetadataConversions.h>
 
 ECesiumMetadataBlueprintType
@@ -41,6 +42,21 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
         return FCesiumMetadataValue(v[index], pEnumDefinition);
       },
       array._value);
+}
+
+FString UCesiumPropertyArrayBlueprintLibrary::ToString(
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  TArray<FString> results;
+
+  const int64 size = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
+  for (int64 i = 0; i < size; i++) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyArrayBlueprintLibrary::GetValue(Array, i);
+    results.Add(
+        UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
+  }
+
+  return "[" + FString::Join(results, TEXT(", ")) + "]";
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -120,32 +136,8 @@ FString UCesiumPropertyArrayBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index,
     const FString& defaultValue) {
-  return swl::visit(
-      [index, defaultValue, &pEnumDefinition = array._pEnumDefinition](
-          const auto& v) -> FString {
-        if (index < 0 || index >= v.size()) {
-          return defaultValue;
-        }
-        auto value = v[index];
-        using ValueType = decltype(value);
-
-        if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
-          if (pEnumDefinition.IsValid()) {
-            TOptional<FString> maybeName = pEnumDefinition->GetName(value);
-            if (maybeName.IsSet()) {
-              return maybeName.GetValue();
-            }
-          }
-        }
-
-        auto maybeString =
-            CesiumGltf::MetadataConversions<std::string, ValueType>::convert(
-                value);
-        if (!maybeString) {
-          return defaultValue;
-        }
-        return UnrealMetadataConversions::toString(*maybeString);
-      },
-      array._value);
+  return UCesiumMetadataValueBlueprintLibrary::GetString(
+      UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index),
+      defaultValue);
 }
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
