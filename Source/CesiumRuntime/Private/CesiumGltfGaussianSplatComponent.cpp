@@ -4,6 +4,7 @@
 
 #include "CesiumGaussianSplatSubsystem.h"
 #include "CesiumRuntime.h"
+#include "Engine.h"
 
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/MeshPrimitive.h>
@@ -186,7 +187,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
-  this->Positions.SetNum(positionView.size() * 4, true);
+  this->Positions.SetNum(positionView.size() * 4, EAllowShrinking::Yes);
   this->NumSplats = positionView.size();
   for (int32 i = 0; i < positionView.size(); i++) {
     FVector Position(
@@ -241,7 +242,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
-  this->Scales.SetNum(scaleView.size() * 4, true);
+  this->Scales.SetNum(scaleView.size() * 4, EAllowShrinking::Yes);
   for (int32 i = 0; i < scaleView.size(); i++) {
     this->Scales[i * 4] =
         scaleView[i].x * CesiumPrimitiveData::positionScaleFactor;
@@ -274,7 +275,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
-  this->Orientations.SetNum(rotationView.size() * 4, true);
+  this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
   for (int32 i = 0; i < rotationView.size(); i++) {
     this->Orientations[i * 4] = rotationView[i].x;
     this->Orientations[i * 4 + 1] = -rotationView[i].y;
@@ -315,7 +316,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
       return;
     }
 
-    this->Colors.SetNum(accessorView.size() * 4, true);
+    this->Colors.SetNum(accessorView.size() * 4, EAllowShrinking::Yes);
     writeConvertedAccessor<glm::u8vec4, uint8>(accessorView, this->Colors, 4);
   } else if (
       colorAccessor.componentType ==
@@ -331,7 +332,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
       return;
     }
 
-    this->Colors.SetNum(accessorView.size() * 4, true);
+    this->Colors.SetNum(accessorView.size() * 4, EAllowShrinking::Yes);
     writeConvertedAccessor<glm::u16vec4, uint16>(accessorView, this->Colors, 4);
   } else if (
       colorAccessor.componentType ==
@@ -347,7 +348,7 @@ void UCesiumGltfGaussianSplatComponent::SetData(
       return;
     }
 
-    this->Colors.SetNum(accessorView.size() * 4, true);
+    this->Colors.SetNum(accessorView.size() * 4, EAllowShrinking::Yes);
     for (int32 i = 0; i < accessorView.size(); i++) {
       this->Colors[i * 4] = accessorView[i].x;
       this->Colors[i * 4 + 1] = accessorView[i].y;
@@ -364,7 +365,9 @@ void UCesiumGltfGaussianSplatComponent::SetData(
   }
 
   const int32 shStride = numShCoeffs * 4;
-  this->SphericalHarmonics.SetNum(shStride * this->NumSplats);
+  this->SphericalHarmonics.SetNum(
+      shStride * this->NumSplats,
+      EAllowShrinking::Yes);
   if (numShCoeffs >= 3) {
     if (!writeShCoeffs(
             model,
