@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"

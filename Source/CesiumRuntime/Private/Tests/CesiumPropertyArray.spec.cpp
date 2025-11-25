@@ -148,14 +148,8 @@ void FCesiumPropertyArraySpec::Define() {
       std::vector<bool> values{true, false, false, true, true};
       // Extraneous bool constructor is needed to avoid implicit conversion
       // under the hood.
-      TArray<FCesiumMetadataValue> valuesArray{
-          FCesiumMetadataValue(bool(values[0])),
-          FCesiumMetadataValue(bool(values[1])),
-          FCesiumMetadataValue(bool(values[2])),
-          FCesiumMetadataValue(bool(values[3])),
-          FCesiumMetadataValue(bool(values[4]))};
-
-      FCesiumPropertyArray array(std::move(valuesArray));
+      CesiumGltf::PropertyArrayCopy<bool> copy(values);
+      FCesiumPropertyArray array(std::move(copy));
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
@@ -187,8 +181,6 @@ void FCesiumPropertyArraySpec::Define() {
     It("handles enum elements", [this]() {
       TSharedPtr<FCesiumMetadataEnum> enumDef = MakeShared<FCesiumMetadataEnum>(
           StaticEnum<ECesiumMetadataBlueprintType>());
-      TSharedPtr<FCesiumMetadataEnum> enumDef = MakeShared<FCesiumMetadataEnum>(
-          StaticEnum<ECesiumMetadataBlueprintType>());
       std::vector<int32> values{
           static_cast<int32>(ECesiumMetadataBlueprintType::Boolean),
           static_cast<int32>(ECesiumMetadataBlueprintType::Byte),
@@ -214,13 +206,10 @@ void FCesiumPropertyArraySpec::Define() {
     });
 
     It("handles string elements", [this]() {
-      std::vector<std::string_view> values{"Test", "These", "Strings"};
-      TArray<FCesiumMetadataValue> valuesArray{
-          FCesiumMetadataValue(values[0]),
-          FCesiumMetadataValue(values[1]),
-          FCesiumMetadataValue(values[2])};
+      std::vector<std::string> values{"Test", "These", "Strings"};
+      CesiumGltf::PropertyArrayCopy<std::string_view> copy(values);
 
-      FCesiumPropertyArray array(std::move(valuesArray));
+      FCesiumPropertyArray array(std::move(copy));
       TestEqual(
           "size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),

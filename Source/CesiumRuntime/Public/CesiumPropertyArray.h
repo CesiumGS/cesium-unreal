@@ -9,10 +9,14 @@
 #include <CesiumGltf/PropertyArrayView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 #include <swl/variant.hpp>
+
 #include "CesiumPropertyArray.generated.h"
 
+struct FCesiumMetadataValue;
+
 /**
- * A Blueprint-accessible wrapper for an array property in glTF metadata.
+ * A Blueprint-accessible wrapper for an array value from 3D Tiles or glTF
+ * metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPropertyArray {
@@ -99,7 +103,7 @@ private:
 
 public:
   /**
-   * Constructs an empty array instance with an unknown element type.
+   * Constructs an empty instance with an unknown element type.
    */
   FCesiumPropertyArray();
 
@@ -141,12 +145,6 @@ public:
   FCesiumPropertyArray& operator=(const FCesiumPropertyArray& rhs);
 
 private:
-  template <typename T, typename... VariantType>
-  static bool
-  holdsArrayAlternative(const swl::variant<VariantType...>& variant) {
-    return swl::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
-  }
-
   ArrayType _value;
   FCesiumMetadataValueType _elementType;
   std::vector<std::byte> _storage;
