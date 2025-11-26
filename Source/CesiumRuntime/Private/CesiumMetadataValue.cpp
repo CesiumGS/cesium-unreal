@@ -345,6 +345,8 @@ FCesiumMetadataValue convertToMatN(
     const FCesiumMetadataValueType& targetType) {
   if (jsonValue.isArray()) {
     return fromJsonArray(jsonValue.getArray(), targetType);
+  } else if (targetType.bIsArray) {
+    return EmptyMetadataValue;
   }
 
   if (jsonValue.isBool()) {
