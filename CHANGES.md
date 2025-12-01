@@ -1,10 +1,28 @@
 # Change Log {#changes}
 
-### v?.??.? - ????-??-??
+### ? - ?
 
 ##### Additions :tada:
 
 - Added the `DoubleSidedCollisions` boolean property to the `ACesium3DTileset` actor, allowing intersections and collisions with geometry to also work when hitting "back" faces.
+
+### v2.21.1 - 2025-12-01
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.4. Future versions will require Unreal Engine v5.5+.
+
+##### Fixes :wrench:
+
+- Fixed a bug that prevented `UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures` from retrieving the features of instanced meshes.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.54.0 to v0.55.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.21.0 Preview for Unreal Engine 5.7 - 2025-11-17
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.7.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.53.0 to v0.54.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.21.0 - 2025-11-03
 

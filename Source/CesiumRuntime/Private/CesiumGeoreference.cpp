@@ -5,6 +5,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
+#include "CesiumCompat.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGlobeAnchorComponent.h"
@@ -781,8 +782,9 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
         FRotator::ZeroRotator,
         spawnParameters);
     pLevelInstance->SetIsSpatiallyLoaded(false);
-    pLevelInstance->DesiredRuntimeBehavior =
-        ELevelInstanceRuntimeBehavior::LevelStreaming;
+    ALevelInstance_SetDesiredRuntimeBehavior(
+        pLevelInstance,
+        ELevelInstanceRuntimeBehavior::LevelStreaming);
     pLevelInstance->SetActorLabel(pFound->LevelName);
 
     FString levelPath = level.PackageName.ToString() + "." +
