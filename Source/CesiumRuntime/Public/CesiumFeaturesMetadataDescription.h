@@ -5,13 +5,10 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
+#include "CesiumMetadataValue.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
 #include "Misc/Guid.h"
-
-#if WITH_EDITORONLY_DATA
-#include "CesiumMetadataValue.h"
-#endif
 
 #include "CesiumFeaturesMetadataDescription.generated.h"
 
@@ -267,8 +264,6 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
 
 #pragma region Tileset Statistics
 
-#if WITH_EDITORONLY_DATA
-
 /**
  * @brief Supported statistic semantics from the 3D Tiles specification.
  */
@@ -348,8 +343,6 @@ struct FCesiumMetadataClassStatisticsDescription {
       Meta = (TitleProperty = "Id"))
   TArray<FCesiumMetadataPropertyStatisticsDescription> Properties;
 };
-
-#endif
 
 #pragma endregion
 
