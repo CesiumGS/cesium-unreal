@@ -2320,6 +2320,52 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 }
 #endif
 
+void ACesium3DTileset::SetCollisionResponseToChannel(
+    ECollisionChannel Channel,
+    ECollisionResponse NewResponse) {
+  // Update the tileset's BodyInstance for future tiles
+  BodyInstance.SetResponseToChannel(Channel, NewResponse);
+
+  // Get all loaded glTF components
+  TArray<UCesiumGltfComponent*> GltfComponents;
+  GetComponents<UCesiumGltfComponent>(GltfComponents);
+
+  // Apply settings to existing tiles
+  for (UCesiumGltfComponent* Gltf : GltfComponents) {
+    if (Gltf && IsValid(Gltf)) {
+      applyActorCollisionSettings(BodyInstance, Gltf);
+    }
+  }
+
+  // Force refresh on each primitive component
+  for (UCesiumGltfComponent* Gltf : GltfComponents) {
+    if (Gltf && IsValid(Gltf)) {
+      const TArray<USceneComponent*>& Children = Gltf->GetAttachChildren();
+      for (USceneComponent* Child : Children) {
+        UCesiumGltfPrimitiveComponent* Prim =
+            Cast<UCesiumGltfPrimitiveComponent>(Child);
+        if (Prim && IsValid(Prim)) {
+          // Set to Custom profile if not already, to allow per-channel changes
+          Prim->SetCollisionProfileName("Custom");
+
+          // Set the specific channel response
+          Prim->SetCollisionResponseToChannel(Channel, NewResponse);
+
+          // Update collision profile to apply changes
+          Prim->UpdateCollisionProfile();
+
+          // Toggle collision enabled to force refresh
+          Prim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+          Prim->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+          // Recreate physics state for final application
+          Prim->RecreatePhysicsState();
+        }
+      }
+    }
+  }
+}
+
 ICesium3DTilesetLifecycleEventReceiver*
 ACesium3DTileset::GetLifecycleEventReceiver() {
   return Cast<ICesium3DTilesetLifecycleEventReceiver>(
