@@ -144,9 +144,6 @@ public:
   ACesium3DTileset& GetTilesetActor() override;
   FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const override;
 
-  // from ICesiumLoadedTile
-  const CesiumGltf::Model* GetGltfModel() const override;
-
   void UpdateFade(float fadePercentage, bool fadingIn);
 
 private:
