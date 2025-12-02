@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
+
 ### v2.21.1 - 2025-12-01
 
 This is the last release of Cesium for Unreal that will support Unreal Engine v5.4. Future versions will require Unreal Engine v5.5+.
