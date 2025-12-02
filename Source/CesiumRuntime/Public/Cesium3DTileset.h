@@ -1261,10 +1261,19 @@ public:
   void UpdateTransformFromCesium();
 
   /**
+   * Gets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   */
+  const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>&
+  GetGltfModifier() const;
+
+  /**
    * Sets the glTF modifier, an optional extension class that can edit
    * each tile's glTF model after it has been loaded, before it can be
-   * displayed. Can only be called in the same engine tick after the tileset
-   * actor was spawned, or {@link RefreshTileset} was called.
+   * displayed.
+   *
+   * Setting this property will call @ref RefreshTileset.
    */
   void SetGltfModifier(
       const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
@@ -1284,7 +1293,7 @@ public:
    * ICesium3DTilesetLifecycleEventReceiver, otherwise it will be as if nullptr
    * were passed.
    */
-  void SetLifecycleEventReceiver(UObject* InEventReceiver);
+  void SetLifecycleEventReceiver(UObject* EventReceiver);
 
 private:
   /**
@@ -1399,7 +1408,7 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
-  std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _gltfModifier;
+  std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _pGltfModifier;
 
   // Make this visible to the garbage collector, but don't save/load/copy it.
   // Use UObject instead of TScriptInterface as suggested by
