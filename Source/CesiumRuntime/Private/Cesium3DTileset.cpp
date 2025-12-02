@@ -1007,7 +1007,7 @@ void ACesium3DTileset::LoadTileset() {
        this->EnableOcclusionCulling && this->BoundingVolumePoolComponent)
           ? this->BoundingVolumePoolComponent->getPool()
           : nullptr,
-      {},
+      Cesium3DTilesSelection::TilesetSharedAssetSystem::getDefault(),
       this->_pGltfModifier};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
