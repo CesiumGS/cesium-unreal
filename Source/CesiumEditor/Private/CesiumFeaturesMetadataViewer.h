@@ -41,6 +41,9 @@ private:
    * A view of a statistic value.
    */
   struct StatisticView {
+    /**
+     * The ID of the class to which the property for this statistic belongs.
+     */
     TSharedRef<FString> pClassId;
     /**
      * The ID of the property to which this statistic applies.

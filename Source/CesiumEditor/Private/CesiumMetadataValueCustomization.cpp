@@ -57,14 +57,15 @@ void FCesiumMetadataValueCustomization::CustomizeHeader(
     TSharedRef<IPropertyHandle> PropertyHandle,
     class FDetailWidgetRow& HeaderRow,
     IPropertyTypeCustomizationUtils& CustomizationUtils) {
-  FString valueAsString = getValueAsString(PropertyHandle);
-
   HeaderRow
       .NameContent()[SNew(STextBlock)
                          .Text(FText::FromString("Value"))
                          .Font(CustomizationUtils.GetRegularFont())]
       .ValueContent()[SNew(STextBlock)
-                          .Text(FText::FromString(valueAsString))
+                          .Text_Lambda([PropertyHandle]() {
+                            return FText::FromString(
+                                getValueAsString(PropertyHandle));
+                          })
                           .Font(CustomizationUtils.GetRegularFont())];
 }
 

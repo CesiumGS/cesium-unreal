@@ -125,7 +125,17 @@ public:
                "Use PropertyTextures on the CesiumFeaturesMetadataDescription's ModelMetadata instead."))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
 
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditChangeChainProperty(
+      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
+#endif
+
 protected:
   /** PostLoad override. */
   virtual void PostLoad() override;
+
+private:
+  void syncTilesetStatistics();
 };
