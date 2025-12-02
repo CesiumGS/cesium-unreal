@@ -25,11 +25,12 @@
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include <vector>
-#include "Cesium3DTileset.generated.h"
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
+
+#include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
@@ -37,6 +38,7 @@ class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
+class ICesium3DTilesetLifecycleEventReceiver;
 
 namespace Cesium3DTilesSelection {
 class GltfModifier;
@@ -1267,6 +1269,23 @@ public:
   void SetGltfModifier(
       const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& InModifier);
 
+  /**
+   * Gets the optional receiver of events related to the lifecycle of tiles
+   * created by this tileset.
+   */
+  ICesium3DTilesetLifecycleEventReceiver* GetLifecycleEventReceiver();
+
+  /**
+   * Sets a receiver of events related to the lifecycle of tiles
+   * created by this tileset.
+   *
+   * The receiver will be notified of events such as tile load, unload, show,
+   * and hide. The provided instance _must_ implement @ref
+   * ICesium3DTilesetLifecycleEventReceiver, otherwise it will be as if nullptr
+   * were passed.
+   */
+  void SetLifecycleEventReceiver(UObject* InEventReceiver);
+
 private:
   /**
    * The event handler for ACesiumGeoreference::OnEllipsoidChanged.
@@ -1299,8 +1318,8 @@ private:
    *
    * @param tiles The tiles
    */
-  void showTilesToRender(const std::vector<CesiumUtility::IntrusivePointer<
-                             Cesium3DTilesSelection::Tile>>& tiles);
+  void showTilesToRender(
+      const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -1376,12 +1395,20 @@ private:
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
   // tilesToHideThisFrame may be hidden immediately.
-  std::vector<CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>
-      _tilesToHideNextFrame;
+  std::vector<Cesium3DTilesSelection::Tile::ConstPointer> _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
 
   std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _gltfModifier;
+
+  // Make this visible to the garbage collector, but don't save/load/copy it.
+  // Use UObject instead of TScriptInterface as suggested by
+  // https://www.stevestreeting.com/2020/11/02/ue4-c-interfaces-hints-n-tips/,
+  // even though this cannot be implemented through Blueprints for the moment
+  // (see comment over UCesium3DTilesetLifecycleEventReceiver for instructions),
+  // it's best being prepared for the future.
+  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
+  UObject* _pLifecycleEventReceiver;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

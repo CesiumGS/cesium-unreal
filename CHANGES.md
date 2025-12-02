@@ -1,6 +1,108 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.21.1 - 2025-12-01
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.4. Future versions will require Unreal Engine v5.5+.
+
+##### Fixes :wrench:
+
+- Fixed a bug that prevented `UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures` from retrieving the features of instanced meshes.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.54.0 to v0.55.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.21.0 Preview for Unreal Engine 5.7 - 2025-11-17
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.7.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.53.0 to v0.54.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.21.0 - 2025-11-03
+
+##### Additions :tada:
+
+- Added `CesiumAzureMapsRasterOverlay`.
+- Added the interface `ICesium3DTilesetLifecycleEventReceiver`: when an implementation is registered on a tileset (with `ACesium3DTileset::SetLifecycleEventReceiver`), its functions will be called at various points in a tile's lifecycle, like when a mesh component is created, when a material is instanced, when the tile changes visibility, when it is unloaded, etc.
+
+##### Fixes :wrench:
+
+- Fixed a bug where `CesiumCreditSystem` would not filter out empty credits, resulting in duplicate on-screen delimiters.
+- Fixed a problem where multi-selecting `UCesiumGlobeAnchorComponent` could cause the selected components to teleport to 0 degrees longitude and 0 degrees latitude. Now, the geospatial position and orientation fields are hidden while multi-selecting.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.52.0 to v0.53.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.20.0 - 2025-10-01
+
+##### Additions :tada:
+
+- Added support for rendering glTFs with line primitives.
+- Added `UCesiumGoogleMapTilesRasterOverlay`.
+- Added `AssetOptions` property to `UCesiumIonRasterOverlay`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.51.0 to v0.52.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.19.1 - 2025-09-02
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause incorrect ellipsoid parameters to be used when loading a level.
+
+### v2.19.0 - 2025-09-02
+
+##### Additions :tada:
+
+- Added assets for the IAU2015 Moon and Mars ellipsoids under `Content`.
+
+##### Fixes :wrench:
+
+- Added a missing `CesiumRuntime.h` include in `CesiumPropertyAttribute.cpp` that broke compilation in v2.18.0 on Windows.
+- Fixed a bug in `FCesiumVectorStyle` that made polygons use the color mode from `LineStyle` instead of `PolygonStyle`.
+- Fixed a bug that could cause a crash when undoing and redoing deletion of a `CesiumRasterOverlay` component.
+- Fixed a crash in `UCesiumLoadGeoJsonDocumentFromIonAsyncAction` that occurred when a Cesium ion server was not specified. The action will now fall back to the default ion server, similar to `ACesium3DTileset`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.50.0 to v0.51.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.18.0 - 2025-08-01
+
+##### Breaking Changes :mega:
+
+- Removed support for Unreal Engine 5.3. Unreal Engine 5.4 or later is now required.
+- `FCesiumPrimitiveMetadata::GetPropertyAttributeIndices` is now deprecated. Use `GetPropertyAttributes` to directly get the `FCesiumPropertyAttribute`s instead.
+
+##### Additions :tada:
+
+- Added `CesiumGeoJsonDocumentRasterOverlay`, allowing stylized GeoJSON to be rasterized and draped over terrain and other 3D Tiles.
+- Added `FCesiumPropertyAttributeProperty` to represent glTF property attribute properties and `UCesiumPropertyAttributePropertyBlueprintLibrary` to retrieve their values.
+- Added `FCesiumPropertyAttribute` to represent glTF property attributes and `UCesiumPropertyAttributeBlueprintLibrary` to act upon them with Blueprints.
+- Added `UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyAttributes` to retrieve the property attributes from a `FCesiumPrimitiveMetadata`.
+- Added `UCesiumPropertyTexturePropertyBlueprintLibrary::GetInteger64`. Although 64-bit integers aren't directly supported by property textures, this enables the lossless retrieval of 32-bit unsigned integers.
+
+##### Fixes :wrench:
+
+- Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
+- Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin.
+- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level. 
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.49.0 to v0.50.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.17.0 - 2025-07-01
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.3. Future versions will require Unreal Engine v5.4+.
+
+##### Breaking Changes :mega:
+
+- Feature IDs that are encoded by `UCesiumFeaturesMetadataComponent` will now use a default null feature ID of `-1` instead of `0`.
+- Materials generated by `UCesiumFeaturesMetadataComponent` now always check for null feature IDs, assuming a default value of `-1`.
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.6.
+- Added a C++ and Blueprint API for loading and accessing GeoJSON data.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.48.0 to v0.49.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v2.16.1 - 2025-06-02
 
 ##### Additions :tada:
 
@@ -10,11 +112,13 @@
 ##### Fixes :wrench:
 
 - Worked around an Unreal Engine limitation that prevented collisions and line traces from working correctly for tilesets with a very small scale factor.
-- Add a missing include for `GEngine` when packaging from source, introduced in *v2.16.0*.
+- Add a missing include for `GEngine` when packaging from source, introduced in `v2.16.0`.
 - Fixed a bug in `UCesiumFeaturesMetadataComponent` where multiple references to same feature ID set would cause improper encoding of its feature IDs.
 - Fixed a crash that would occur when duplicating an `ACesiumGeoreference`.
 - Fixed a bug that caused tilesets to render incorrectly when Dynamic Material Instances were used for their material settings.
 - Removed an unnecessary copy operation that happened while constructing tile meshes.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.47.0 to v0.48.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.16.0 - 2025-05-01
 

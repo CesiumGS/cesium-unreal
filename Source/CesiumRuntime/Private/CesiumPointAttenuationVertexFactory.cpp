@@ -2,6 +2,7 @@
 
 #include "CesiumPointAttenuationVertexFactory.h"
 
+#include "CesiumCommon.h"
 #include "DataDrivenShaderPlatformInfo.h"
 #include "MaterialDomain.h"
 #include "MeshBatch.h"
@@ -9,6 +10,29 @@
 #include "MeshMaterialShader.h"
 #include "RenderCommandFence.h"
 #include "Runtime/Launch/Resources/Version.h"
+
+namespace {
+FBufferRHIRef CreatePointAttenuationBuffer(
+    FRHICommandListBase& RHICmdList,
+    const TCHAR* Name,
+    int32 Size,
+    int32 Stride,
+    EBufferUsageFlags Flags) {
+#if ENGINE_VERSION_5_6_OR_HIGHER
+  FRHIBufferCreateDesc CreateDesc(Name, Size, Stride, Flags);
+  CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
+  return RHICmdList.CreateBuffer(CreateDesc);
+#else
+  FRHIResourceCreateInfo CreateInfo(Name);
+  return RHICmdList.CreateBuffer(
+      Size,
+      Flags,
+      Stride,
+      ERHIAccess::VertexOrIndexBuffer,
+      CreateInfo);
+#endif
+}
+} // namespace
 
 void FCesiumPointAttenuationIndexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
@@ -19,16 +43,15 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI(
   // This must be called from Rendering thread
   check(IsInRenderingThread());
 
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPointAttenuationIndexBuffer"));
   const uint32 NumIndices = NumPoints * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
-  IndexBufferRHI = RHICmdList.CreateBuffer(
+  IndexBufferRHI = CreatePointAttenuationBuffer(
+      RHICmdList,
+      TEXT("FCesiumPointAttenuationIndexBuffer"),
       Size,
-      BUF_Static | BUF_IndexBuffer,
       sizeof(uint32),
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
+      BUF_Static | BUF_IndexBuffer);
 
   uint32* Data =
       (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
@@ -125,14 +148,12 @@ public:
 
 void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
-  FRHIResourceCreateInfo CreateInfo(
-      TEXT("FCesiumPointAttenuationDummyVertexBuffer"));
-  VertexBufferRHI = RHICmdList.CreateBuffer(
+  VertexBufferRHI = CreatePointAttenuationBuffer(
+      RHICmdList,
+      TEXT("FCesiumPointAttenuationDummyVertexBuffer"),
       sizeof(FVector3f) * 4,
-      BUF_Static | BUF_VertexBuffer,
       0,
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
+      BUF_Static | BUF_VertexBuffer);
   FVector3f* DummyContents = (FVector3f*)RHICmdList.LockBuffer(
       VertexBufferRHI,
       0,
@@ -170,9 +191,6 @@ void FCesiumPointAttenuationVertexFactory::ModifyCompilationEnvironment(
     const FVertexFactoryShaderPermutationParameters& Parameters,
     FShaderCompilerEnvironment& OutEnvironment) {
   FLocalVertexFactory::ModifyCompilationEnvironment(Parameters, OutEnvironment);
-#if ENGINE_VERSION_5_4_OR_HIGHER
-  OutEnvironment.SetDefine(TEXT("ENGINE_VERSION_5_4_OR_HIGHER"), TEXT("1"));
-#endif
 
 #if ENGINE_VERSION_5_5_OR_HIGHER
   OutEnvironment.SetDefine(TEXT("ENGINE_VERSION_5_5_OR_HIGHER"), TEXT("1"));

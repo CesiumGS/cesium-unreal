@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+
 #include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
@@ -10,6 +11,7 @@
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesSelection/TilesetSharedAssetSystem.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumActors.h"
@@ -49,12 +51,14 @@
 #include "StereoRendering.h"
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
+
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include "HAL/PlatformFileManager.h"
+
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
 
@@ -995,8 +999,7 @@ void ACesium3DTileset::LoadTileset() {
           ? this->BoundingVolumePoolComponent->getPool()
           : nullptr,
       {},
-      _gltfModifier
-  };
+      _gltfModifier};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -1661,8 +1664,7 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 namespace {
 template <typename Func>
 void forEachRenderableTile(const auto& tiles, Func&& f) {
-  for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
-           pTile : tiles) {
+  for (const auto& pTile : tiles) {
     if (!pTile ||
         pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1690,17 +1692,14 @@ void forEachRenderableTile(const auto& tiles, Func&& f) {
 }
 
 void removeVisibleTilesFromList(
-    std::vector<CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>&
-        list,
-    const std::vector<
-        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>&
+    std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& list,
+    const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>&
         visibleTiles) {
   if (list.empty()) {
     return;
   }
 
-  for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
-           pTile : visibleTiles) {
+  for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile : visibleTiles) {
     auto it = std::find(list.begin(), list.end(), pTile);
     if (it != list.end()) {
       list.erase(it);
@@ -1718,13 +1717,11 @@ void removeVisibleTilesFromList(
  * @param tiles The tiles to hide
  */
 void hideTiles(
-    const std::vector<
-        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>& tiles) {
+    const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
   forEachRenderableTile(
       tiles,
-      [](const CesiumUtility::IntrusivePointer<
-             Cesium3DTilesSelection::Tile>& /*pTile*/,
+      [](const Cesium3DTilesSelection::Tile::ConstPointer& /*pTile*/,
          UCesiumGltfComponent* pGltf) {
         if (pGltf->IsVisible()) {
           TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
@@ -1744,13 +1741,12 @@ void hideTiles(
  * list. This includes tiles that are fading out.
  */
 void removeCollisionForTiles(
-    const std::unordered_set<
-        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>& tiles) {
+    const std::unordered_set<Cesium3DTilesSelection::Tile::ConstPointer>&
+        tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RemoveCollisionForTiles)
   forEachRenderableTile(
       tiles,
-      [](const CesiumUtility::IntrusivePointer<
-             Cesium3DTilesSelection::Tile>& /*pTile*/,
+      [](const Cesium3DTilesSelection::Tile::ConstPointer& /*pTile*/,
          UCesiumGltfComponent* pGltf) {
         TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
         pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -1833,8 +1829,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         ResolveGeoreference();
     check(Georeference);
 
-    for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
-             pTile : result.tilesToRenderThisFrame) {
+    for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile :
+         result.tilesToRenderThisFrame) {
       CesiumGeometry::OrientedBoundingBox obb =
           Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
               pTile->getBoundingVolume(),
@@ -1934,15 +1930,13 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 }
 
 void ACesium3DTileset::showTilesToRender(
-    const std::vector<
-        CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>>& tiles) {
+    const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& tiles) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
   forEachRenderableTile(
       tiles,
       [&RootComponent = this->RootComponent,
        &BodyInstance = this->BodyInstance](
-          const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
-              pTile,
+          const Cesium3DTilesSelection::Tile::ConstPointer& pTile,
           UCesiumGltfComponent* pGltf) {
         applyActorCollisionSettings(BodyInstance, pGltf);
 
@@ -1981,8 +1975,7 @@ static void updateTileFades(const auto& tiles, bool fadingIn) {
   forEachRenderableTile(
       tiles,
       [fadingIn](
-          const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
-              pTile,
+          const Cesium3DTilesSelection::Tile::ConstPointer& pTile,
           UCesiumGltfComponent* pGltf) {
         float percentage = pTile->getContent()
                                .getRenderContent()
@@ -2095,9 +2088,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   hideTiles(this->_tilesToHideNextFrame);
 
   _tilesToHideNextFrame.clear();
-  for (const CesiumUtility::IntrusivePointer<Cesium3DTilesSelection::Tile>&
-           pTile : pResult->tilesFadingOut) {
-    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+  for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile :
+       pResult->tilesFadingOut) {
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         pTile->getContent().getRenderContent();
     if (!this->UseLodTransitions ||
         (pRenderContent &&
@@ -2333,4 +2326,17 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 void ACesium3DTileset::SetGltfModifier(
     const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& InModifier) {
   _gltfModifier = InModifier;
+}
+
+ICesium3DTilesetLifecycleEventReceiver*
+ACesium3DTileset::GetLifecycleEventReceiver() {
+  return Cast<ICesium3DTilesetLifecycleEventReceiver>(
+      this->_pLifecycleEventReceiver);
+}
+
+void ACesium3DTileset::SetLifecycleEventReceiver(UObject* InEventReceiver) {
+  if (UKismetSystemLibrary::DoesImplementInterface(
+          InEventReceiver,
+          UCesium3DTilesetLifecycleEventReceiver::StaticClass()))
+    this->_pLifecycleEventReceiver = InEventReceiver;
 }

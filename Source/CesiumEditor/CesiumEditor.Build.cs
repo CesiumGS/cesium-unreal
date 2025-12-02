@@ -75,6 +75,12 @@ public class CesiumEditor : ModuleRules
 
         PublicAdditionalLibraries.AddRange(allLibs);
 
+        // On Linux, cpp-httplib uses getaddrinfo_a, which is in the anl library.
+        if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            PublicSystemLibraries.Add("anl");
+        }
+
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
@@ -120,7 +126,11 @@ public class CesiumEditor : ModuleRules
             }
         );
 
+#if UE_5_7_OR_LATER
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
+#else
         IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
+#endif
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         CppStandard = CppStandardVersion.Cpp20;
     }

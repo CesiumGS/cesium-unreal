@@ -19,7 +19,8 @@ public class CesiumRuntime : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-              Path.Combine(GetModuleDirectory("Renderer"), "Private")
+              Path.Combine(GetModuleDirectory("Renderer"), "Private"),
+              Path.Combine(GetModuleDirectory("Renderer"), "Internal")
             }
         );
 
@@ -34,6 +35,8 @@ public class CesiumRuntime : ModuleRules
         {
             platform = "Darwin-universal-";
             libSearchPattern = "lib*.a";
+
+            PublicFrameworks.Add("SystemConfiguration");
         }
         else if (Target.Platform == UnrealTargetPlatform.Android)
         {
@@ -45,7 +48,7 @@ public class CesiumRuntime : ModuleRules
             platform = "Linux-x86_64-";
             libSearchPattern = "lib*.a";
         }
-        else if(Target.Platform == UnrealTargetPlatform.IOS)
+        else if (Target.Platform == UnrealTargetPlatform.IOS)
         {
             platform = "iOS-ARM64-";
             libSearchPattern = "lib*.a";
@@ -73,6 +76,11 @@ public class CesiumRuntime : ModuleRules
         string[] allLibs = Directory.Exists(libPath) ? Directory.GetFiles(libPath, libSearchPattern) : new string[0];
 
         PublicAdditionalLibraries.AddRange(allLibs);
+        // On Linux, cpp-httplib uses getaddrinfo_a, which is in the anl library.
+        if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            PublicSystemLibraries.Add("anl");
+        }
 
         PublicDependencyModuleNames.AddRange(
             new string[]
@@ -91,7 +99,12 @@ public class CesiumRuntime : ModuleRules
                 "DeveloperSettings",
                 "UMG",
                 "Renderer",
-                "OpenSSL"
+                "OpenSSL",
+                "Json",
+                "JsonUtilities",
+                "Slate",
+                "SlateCore",
+                "ChaosCore"
             }
         );
 
@@ -130,8 +143,6 @@ public class CesiumRuntime : ModuleRules
             PublicDependencyModuleNames.AddRange(
                 new string[] {
                     "UnrealEd",
-                    "Slate",
-                    "SlateCore",
                     "WorldBrowser",
                     "ContentBrowser",
                     "MaterialEditor"
@@ -146,8 +157,13 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
+#if UE_5_7_OR_LATER
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
+        CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Off;
+#else
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
         ShadowVariableWarningLevel = WarningLevel.Off;
-        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
+#endif
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         CppStandard = CppStandardVersion.Cpp20;

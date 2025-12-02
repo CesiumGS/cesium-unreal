@@ -42,14 +42,9 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
         TEXT("No valid level for findValidDefaultCreditSystem"));
     return nullptr;
   }
-#if ENGINE_VERSION_5_4_OR_HIGHER
+
   TArray<TObjectPtr<AActor>>& Actors = Level->Actors;
-  using LevelActorPointer = TObjectPtr<AActor>*;
-#else
-  TArray<AActor*>& Actors = Level->Actors;
-  using LevelActorPointer = AActor**;
-#endif
-  LevelActorPointer DefaultCreditSystemPtr =
+  TObjectPtr<AActor>* DefaultCreditSystemPtr =
       Actors.FindByPredicate([](AActor* const& InItem) {
         if (!IsValid(InItem)) {
           return false;
@@ -345,15 +340,19 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
       const CesiumUtility::Credit& credit = creditsToShowThisFrame[i];
 
-      FString CreditRtf;
+      FString creditRtf;
       const std::string& html = _pCreditSystem->getHtml(credit);
 
       auto htmlFind = _htmlToRtf.find(html);
       if (htmlFind != _htmlToRtf.end()) {
-        CreditRtf = htmlFind->second;
+        creditRtf = htmlFind->second;
       } else {
-        CreditRtf = ConvertHtmlToRtf(html);
-        _htmlToRtf.insert({html, CreditRtf});
+        creditRtf = ConvertHtmlToRtf(html);
+        _htmlToRtf.insert({html, creditRtf});
+      }
+
+      if (creditRtf.IsEmpty()) {
+        continue;
       }
 
       if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
@@ -363,13 +362,13 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
           OnScreenCredits += TEXT(" \u2022 ");
         }
 
-        OnScreenCredits += CreditRtf;
+        OnScreenCredits += creditRtf;
       } else {
         if (i != 0) {
           Credits += "\n";
         }
 
-        Credits += CreditRtf;
+        Credits += creditRtf;
       }
     }
 

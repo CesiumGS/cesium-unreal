@@ -13,6 +13,7 @@
 #include "CustomDepthParameters.h"
 #include "EncodedFeaturesMetadata.h"
 #include "Interfaces/IHttpRequest.h"
+#include "Templates/Function.h"
 #include <CesiumAsync/SharedFuture.h>
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -105,7 +106,7 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
-  Cesium3DTilesSelection::Tile* pTile = nullptr;
+  const Cesium3DTilesSelection::Tile* pTile = nullptr;
 
   FCesiumModelMetadata Metadata{};
   EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
@@ -134,6 +135,14 @@ public:
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
   virtual void BeginDestroy() override;
+  virtual void OnVisibilityChanged() override;
+
+  // from ICesiumLoadedTile
+  const CesiumGltf::Model* GetGltfModel() const override;
+  const FCesiumModelMetadata& GetModelMetadata() const override;
+  const Cesium3DTilesSelection::TileID& GetTileID() const override;
+  ACesium3DTileset& GetTilesetActor() override;
+  FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const override;
 
   // from ICesiumLoadedTile
   const CesiumGltf::Model* GetGltfModel() const override;

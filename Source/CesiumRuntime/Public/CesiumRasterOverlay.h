@@ -4,6 +4,7 @@
 
 #include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "CesiumRasterOverlays/RasterOverlay.h"
+#include "CesiumUtility/IntrusivePointer.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/Texture.h"
@@ -110,7 +111,7 @@ public:
    * overlay will be removed from the Cesium3DTileset if already present but not
    * re-added.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
   void Refresh();
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
@@ -255,6 +256,7 @@ protected:
       CesiumRasterOverlays::RasterOverlay* pOverlay) {}
 
 private:
-  CesiumRasterOverlays::RasterOverlay* _pOverlay;
+  CesiumUtility::IntrusivePointer<CesiumRasterOverlays::RasterOverlay>
+      _pOverlay;
   int32 _overlaysBeingDestroyed;
 };

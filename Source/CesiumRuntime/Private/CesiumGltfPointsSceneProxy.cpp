@@ -7,6 +7,7 @@
 #include "RHIResources.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneInterface.h"
+#include "SceneView.h"
 #include "StaticMeshResources.h"
 
 FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
@@ -34,7 +35,7 @@ SIZE_T FCesiumGltfPointsSceneProxy::GetTypeHash() const {
 
 FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
     UCesiumGltfPointsComponent* InComponent,
-    ERHIFeatureLevel::Type InFeatureLevel)
+    FSceneInterfaceWrapper InSceneInterfaceParams)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
       NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
@@ -42,27 +43,20 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
       TilesetData(),
       AttenuationVertexFactory(
-          InFeatureLevel,
+          InSceneInterfaceParams.RHIFeatureLevelType,
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
       AttenuationIndexBuffer(NumPoints, bAttenuationSupported),
       Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
+      MaterialRelevance(
+          InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
 
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 
-#if ENGINE_VERSION_5_4_OR_HIGHER
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
     FRHICommandListBase& RHICmdList) {
   AttenuationVertexFactory.InitResource(RHICmdList);
   AttenuationIndexBuffer.InitResource(RHICmdList);
 }
-#else
-void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
-  FRHICommandListBase& RHICmdList = FRHICommandListImmediate::Get();
-  AttenuationVertexFactory.InitResource(RHICmdList);
-  AttenuationIndexBuffer.InitResource(RHICmdList);
-}
-#endif
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {
   AttenuationVertexFactory.ReleaseResource();
