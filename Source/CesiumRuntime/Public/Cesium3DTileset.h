@@ -1267,7 +1267,7 @@ public:
    * actor was spawned, or {@link RefreshTileset} was called.
    */
   void SetGltfModifier(
-      const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& InModifier);
+      const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
 
   /**
    * Gets the optional receiver of events related to the lifecycle of tiles

@@ -999,7 +999,7 @@ void ACesium3DTileset::LoadTileset() {
           ? this->BoundingVolumePoolComponent->getPool()
           : nullptr,
       {},
-      _gltfModifier};
+      this->_gltfModifier};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -2324,8 +2324,8 @@ void ACesium3DTileset::RuntimeSettingsChanged(
 #endif
 
 void ACesium3DTileset::SetGltfModifier(
-    const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& InModifier) {
-  _gltfModifier = InModifier;
+    const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier) {
+  this->_gltfModifier = Modifier;
 }
 
 ICesium3DTilesetLifecycleEventReceiver*
