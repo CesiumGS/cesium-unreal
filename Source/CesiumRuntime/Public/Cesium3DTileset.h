@@ -41,6 +41,7 @@ struct FCesiumCamera;
 class ICesium3DTilesetLifecycleEventReceiver;
 
 namespace Cesium3DTilesSelection {
+class GltfModifier;
 class Tileset;
 class TilesetView;
 class TileOcclusionRendererProxyPool;
@@ -1260,6 +1261,24 @@ public:
   void UpdateTransformFromCesium();
 
   /**
+   * Gets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   */
+  const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>&
+  GetGltfModifier() const;
+
+  /**
+   * Sets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   *
+   * Setting this property will call @ref RefreshTileset.
+   */
+  void SetGltfModifier(
+      const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
+
+  /**
    * Gets the optional receiver of events related to the lifecycle of tiles
    * created by this tileset.
    */
@@ -1274,7 +1293,7 @@ public:
    * ICesium3DTilesetLifecycleEventReceiver, otherwise it will be as if nullptr
    * were passed.
    */
-  void SetLifecycleEventReceiver(UObject* InEventReceiver);
+  void SetLifecycleEventReceiver(UObject* EventReceiver);
 
 private:
   /**
@@ -1388,6 +1407,8 @@ private:
   std::vector<Cesium3DTilesSelection::Tile::ConstPointer> _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _pGltfModifier;
 
   // Make this visible to the garbage collector, but don't save/load/copy it.
   // Use UObject instead of TScriptInterface as suggested by
