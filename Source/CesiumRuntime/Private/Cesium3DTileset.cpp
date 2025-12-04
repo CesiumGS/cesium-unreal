@@ -933,7 +933,7 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumTileExcluder*> tileExcluders;
   this->GetComponents<UCesiumTileExcluder>(tileExcluders);
 
-  const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+  UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
       this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
 
   // Check if this component exists for backwards compatibility.
@@ -942,12 +942,11 @@ void ACesium3DTileset::LoadTileset() {
   const UDEPRECATED_CesiumEncodedMetadataComponent* pEncodedMetadataComponent =
       this->FindComponentByClass<UDEPRECATED_CesiumEncodedMetadataComponent>();
 
-  this->_featuresMetadataDescription = std::nullopt;
   this->_metadataDescription_DEPRECATED = std::nullopt;
 
-  if (pFeaturesMetadataComponent) {
-    this->_featuresMetadataDescription =
-        pFeaturesMetadataComponent->Description;
+  if (pFeaturesMetadataComponent &&
+      !pFeaturesMetadataComponent->Description.Statistics.IsEmpty()) {
+    pFeaturesMetadataComponent->SyncStatistics();
   } else if (pEncodedMetadataComponent) {
     UE_LOG(
         LogCesium,
@@ -2043,6 +2042,16 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       glm::isnan(unrealWorldToCesiumTileset[3].y) ||
       glm::isnan(unrealWorldToCesiumTileset[3].z)) {
     // Probably caused by a zero scale.
+    return;
+  }
+
+  if (!this->_pTileset->getMetadata()) {
+    // Styling may require the tileset's metadata to be loaded first (for schema
+    // and/or statistics) before streaming tiles. But continue to dispatch tasks
+    // so that the metadata future resolves.
+    // This will not add much overhead since tilesets will have no metadata or
+    // otherwise embed in the tileset.json anyway.
+    getAsyncSystem().dispatchMainThreadTasks();
     return;
   }
 

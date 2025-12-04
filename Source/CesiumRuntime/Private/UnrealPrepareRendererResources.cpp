@@ -38,9 +38,11 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
-  if (this->_pActor->_featuresMetadataDescription) {
-    options.pFeaturesMetadataDescription =
-        &(*this->_pActor->_featuresMetadataDescription);
+  UCesiumFeaturesMetadataComponent* pFeaturesMetadata =
+      this->_pActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+
+  if (pFeaturesMetadata) {
+    options.pFeaturesMetadataDescription = &pFeaturesMetadata->Description;
   } else if (this->_pActor->_metadataDescription_DEPRECATED) {
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);

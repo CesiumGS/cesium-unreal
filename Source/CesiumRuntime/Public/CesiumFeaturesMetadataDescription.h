@@ -357,14 +357,12 @@ struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
 public:
-#if WITH_EDITORONLY_DATA
   /**
    * @brief Description of the statistics reported by the tileset. Each entry
    * represents a class and its cumulative statistics.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Id"))
   TArray<FCesiumMetadataClassStatisticsDescription> Statistics;
-#endif
 
   /**
    * @brief Description of the feature ID sets available from the

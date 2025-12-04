@@ -1187,11 +1187,6 @@ public:
     return this->_pTileset.Get();
   }
 
-  const std::optional<FCesiumFeaturesMetadataDescription>&
-  getFeaturesMetadataDescription() const {
-    return this->_featuresMetadataDescription;
-  }
-
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -1343,9 +1338,6 @@ private:
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
 #endif
-
-  std::optional<FCesiumFeaturesMetadataDescription>
-      _featuresMetadataDescription;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   std::optional<FMetadataDescription> _metadataDescription_DEPRECATED;

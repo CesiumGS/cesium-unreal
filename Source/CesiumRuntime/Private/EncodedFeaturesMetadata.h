@@ -97,6 +97,13 @@ static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
 static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
 
 /**
+ * - Property Min: Prefix + PropertyEntityName + PropertyName + "_MIN"
+ * - Property Max: Prefix + PropertyEntityName + PropertyName + "_MAX"
+ */
+static const FString MaterialPropertyMinSuffix = "_MIN";
+static const FString MaterialPropertyMaxSuffix = "_MAX";
+
+/**
  * Naming convention for material inputs (for use in custom functions):
  * - Property Data: PropertyName + "_DATA"
  * - Property Raw Value: PropertyName + "_RAW"

@@ -71,6 +71,15 @@ public:
            ShowOnlyInnerProperties))
   FCesiumFeaturesMetadataDescription Description;
 
+  /**
+   * Syncs this component's statistics description from its tileset owner,
+   * retrieving values for the corresponding statistics.
+   *
+   * If there are described statistics that are not present on the tileset
+   * owner, they will be left as null values.
+   */
+  void SyncStatistics();
+
   // Previously the properties of FCesiumFeaturesMetadataDescription were
   // deconstructed here in order to flatten the Details panel UI. However, the
   // ShowOnlyInnerProperties attribute accomplishes the same thing. These
@@ -133,9 +142,9 @@ public:
 #endif
 
 protected:
-  /** PostLoad override. */
   virtual void PostLoad() override;
+  virtual void OnRegister() override;
 
 private:
-  void syncTilesetStatistics();
+  bool _isSyncing;
 };

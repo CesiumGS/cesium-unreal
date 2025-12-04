@@ -3068,11 +3068,12 @@ static void loadPrimitiveGameThreadPart(
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
 
-    const std::optional<FCesiumFeaturesMetadataDescription>&
-        maybeFeaturesDescription =
-            pTilesetActor->getFeaturesMetadataDescription();
-    if (maybeFeaturesDescription) {
-      addInstanceFeatureIds(pInstancedComponent, *maybeFeaturesDescription);
+    const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+        pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+    if (pFeaturesMetadataComponent) {
+      addInstanceFeatureIds(
+          pInstancedComponent,
+          pFeaturesMetadataComponent->Description);
     }
 
     pCesiumPrimitive = pInstancedComponent;
