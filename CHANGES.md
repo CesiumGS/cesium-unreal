@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Fixes :wrench:
+
+- Fixed deprecation warnings when compiling with Unreal Engine 5.5+ by replacing deprecated `GetInputsView()` calls with `FExpressionInputIterator` while maintaining compatibility with Unreal Engine 5.4.
+
 ##### Additions :tada:
 
 - Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
