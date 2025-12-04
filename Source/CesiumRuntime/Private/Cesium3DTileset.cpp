@@ -933,9 +933,6 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumTileExcluder*> tileExcluders;
   this->GetComponents<UCesiumTileExcluder>(tileExcluders);
 
-  UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
-      this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
-
   // Check if this component exists for backwards compatibility.
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
@@ -943,11 +940,7 @@ void ACesium3DTileset::LoadTileset() {
       this->FindComponentByClass<UDEPRECATED_CesiumEncodedMetadataComponent>();
 
   this->_metadataDescription_DEPRECATED = std::nullopt;
-
-  if (pFeaturesMetadataComponent &&
-      !pFeaturesMetadataComponent->Description.Statistics.IsEmpty()) {
-    pFeaturesMetadataComponent->SyncStatistics();
-  } else if (pEncodedMetadataComponent) {
+  if (pEncodedMetadataComponent) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -1137,6 +1130,13 @@ void ACesium3DTileset::LoadTileset() {
           ionAssetEndpointUrl);
     }
     break;
+  }
+
+  this->_pFeaturesMetadataComponent =
+      this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+
+  if (this->_pFeaturesMetadataComponent != nullptr) {
+    this->_pFeaturesMetadataComponent->SyncStatistics();
   }
 
 #ifdef CESIUM_DEBUG_TILE_STATES
@@ -2045,7 +2045,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  if (!this->_pTileset->getMetadata()) {
+  if (this->_pFeaturesMetadataComponent != nullptr &&
+      !this->_pTileset->getMetadata()) {
     // Styling may require the tileset's metadata to be loaded first (for schema
     // and/or statistics) before streaming tiles. But continue to dispatch tasks
     // so that the metadata future resolves.

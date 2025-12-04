@@ -32,6 +32,7 @@ struct FCesiumPrimitiveMetadataDescription;
 struct FCesiumMetadataPropertyDetails;
 class UMaterialInstanceDynamic;
 enum EMaterialParameterAssociation : int;
+enum class ECesiumMetadataStatisticSemantic;
 
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
@@ -510,6 +511,17 @@ bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata);
 
 void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 
+#pragma endregion
+
+#pragma region Statistics
+/**
+ * @brief Generates a name for a property statistic from a tileset's metadata.
+ * @param PropertyTable The property table
+ */
+FString getNameForStatistic(
+    const FString& classId,
+    const FString& propertyId,
+    ECesiumMetadataStatisticSemantic semantic);
 #pragma endregion
 
 #pragma region Utility

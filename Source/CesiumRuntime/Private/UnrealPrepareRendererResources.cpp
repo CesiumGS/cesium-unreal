@@ -39,7 +39,7 @@ UnrealPrepareRendererResources::prepareInLoadThread(
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
   UCesiumFeaturesMetadataComponent* pFeaturesMetadata =
-      this->_pActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+      this->_pActor->_pFeaturesMetadataComponent.Get();
 
   if (pFeaturesMetadata) {
     options.pFeaturesMetadataDescription = &pFeaturesMetadata->Description;
