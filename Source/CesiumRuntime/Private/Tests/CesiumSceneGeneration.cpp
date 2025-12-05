@@ -19,7 +19,7 @@
 namespace Cesium {
 
 FString SceneGenerationContext::testIonToken(
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI0ZWNiNmU2Yi00Nzk5LTQ1ZjAtYTY1Ny05YTEzZDE4ZTMzMDQiLCJpZCI6MjU5LCJpYXQiOjE3NjIxMjkzMzN9.WSE2EztMDUGhyunsIHIG7oxKbr18m0goBK9r966PCXE");
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI4NTY2OWRlNC1kZmVhLTQyNTgtYWQyZC1jZmViMTRlYmIzZDgiLCJpZCI6MjU5LCJpYXQiOjE3NjQ1NzgxMTV9.t_qU_zdvogXa5bz2Jfbh3JmoO6I5k66Y1JJ9eAa0Ka4");
 
 void SceneGenerationContext::setCommonProperties(
     const FVector& origin,
