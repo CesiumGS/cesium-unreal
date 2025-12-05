@@ -500,7 +500,6 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
       textureFlags |= TexCreate_SRGB;
     }
 
-#if ENGINE_VERSION_5_5_OR_HIGHER
     FRHITextureCreateDesc Desc;
     if (this->_depth > 1) {
       uint32 MipExtentX, MipExtentY, MipExtentZ;
@@ -531,46 +530,6 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
         .SetFlags(textureFlags)
         .SetInitialState(ERHIAccess::Unknown);
     this->_textureSize = RHICalcTexturePlatformSize(Desc).Size;
-#else
-    const FRHIResourceCreateInfo createInfo(this->_platformExtData);
-    uint32 alignment;
-
-    if (this->_depth > 1) {
-      uint32 MipExtentX, MipExtentY, MipExtentZ;
-      CalcMipMapExtent3D(
-          this->_width,
-          this->_height,
-          this->_depth,
-          this->_format,
-          0,
-          MipExtentX,
-          MipExtentY,
-          MipExtentZ);
-
-      this->_textureSize = RHICalcTexture3DPlatformSize(
-          MipExtentX,
-          MipExtentY,
-          MipExtentZ,
-          this->_format,
-          this->GetCurrentMipCount(),
-          textureFlags,
-          createInfo,
-          alignment);
-    } else {
-      const FIntPoint MipExtents =
-          CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
-
-      this->_textureSize = RHICalcTexture2DPlatformSize(
-          MipExtents.X,
-          MipExtents.Y,
-          this->_format,
-          this->GetCurrentMipCount(),
-          1,
-          textureFlags,
-          createInfo,
-          alignment);
-    }
-#endif
 
     INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
     INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
