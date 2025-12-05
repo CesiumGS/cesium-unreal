@@ -4,10 +4,6 @@
 	CesiumPointAttenuationVertexFactory.ush: point attenuation vertex factory shader code.
 =============================================================================*/
 
-#ifndef ENGINE_VERSION_5_5_OR_HIGHER
-#define ENGINE_VERSION_5_5_OR_HIGHER 0
-#endif
-
 #include "/Engine/Private/Common.ush"
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
@@ -354,7 +350,6 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	half3x3 TangentToLocal,
   	bool bIsPreviousFrame = false)
 {
-#if ENGINE_VERSION_5_5_OR_HIGHER
     FMaterialVertexParameters Result = MakeInitializedMaterialVertexParameters();
     if (bIsPreviousFrame)
     {
@@ -365,9 +360,6 @@ FMaterialVertexParameters GetMaterialVertexParameters(
       Result.PositionInstanceSpace = VertexFactoryGetInstanceSpacePosition(Input, Intermediates);
     }
     Result.PositionPrimitiveSpace = Result.PositionInstanceSpace; // No support for instancing, so instance == primitive
-#else
-  	FMaterialVertexParameters Result = (FMaterialVertexParameters)0;
-#endif
 
   	Result.SceneData = Intermediates.SceneData;
   	Result.WorldPosition = WorldPosition;
