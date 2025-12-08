@@ -809,7 +809,7 @@ private:
       BlueprintGetter = GetDoubleSidedCollisions,
       BlueprintSetter = SetDoubleSidedCollisions,
       Category = "Cesium|Physics")
-  bool DoubleSidedCollisions = false;
+  bool EnableDoubleSidedCollisions = false;
 
   /**
    * Whether to generate navigation collisions for this tileset.
