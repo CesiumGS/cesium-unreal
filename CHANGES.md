@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Fixes :wrench:
+
+- Fixed deprecation warnings when compiling with Unreal Engine 5.5+ by replacing deprecated `GetInputsView()` calls with `FExpressionInputIterator` while maintaining compatibility with Unreal Engine 5.4.
+
 ##### Additions :tada:
 
 - Replaced the "Auto Fill" button on `UCesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
