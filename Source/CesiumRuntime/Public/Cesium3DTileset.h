@@ -1108,10 +1108,10 @@ public:
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
-  bool GetDoubleSidedCollisions() const { return DoubleSidedCollisions; }
+  bool GetEnableDoubleSidedCollisions() const { return EnableDoubleSidedCollisions; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
-  void SetDoubleSidedCollisions(bool bCreatePhysicsMeshes);
+  void SetEnableDoubleSidedCollisions(bool bEnableDoubleSidedCollisions);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Navigation")
   bool GetCreateNavCollision() const { return CreateNavCollision; }
