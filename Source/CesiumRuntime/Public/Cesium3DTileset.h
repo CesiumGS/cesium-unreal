@@ -808,7 +808,8 @@ private:
       EditAnywhere,
       BlueprintGetter = GetDoubleSidedCollisions,
       BlueprintSetter = SetDoubleSidedCollisions,
-      Category = "Cesium|Physics")
+      Category = "Cesium|Physics",
+      meta = (EditCondition = "CreatePhysicsMeshes"))
   bool EnableDoubleSidedCollisions = false;
 
   /**
