@@ -801,8 +801,10 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
-   * Whether to enable doubled-sided collisions (both "front" and "back" faces)
-   * on the physics meshes created when CreatePhysicsMeshes is true.
+   * Whether to enable doubled-sided collisions (both front-facing and back-facing)
+   * on created physics meshes.
+   *
+   * Only relevant when CreatePhysicsMeshes is true.
    */
   UPROPERTY(
       EditAnywhere,
