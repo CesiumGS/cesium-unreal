@@ -3888,11 +3888,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
       MoveTemp(materials),
       MoveTemp(pFaceRemap),
       nullptr,
-      // Not sure what this is for: in my experience, whatever you pass here is
-      // overridden later on by a call to SetCullsBackFaceRaycast (from
-      // RegisterComponent) which will reset the property depending on the value
-      // of UBodySetup::bDoubleSidedGeometry.
-      // See ACesium3DTileset::DoubleSidedCollisions to effectively enable
-      // backface hits.
+      // The value passed in for bInCullsBackFaceRaycast will be overridden by
+      // UBodySetup::bDoubleSidedGeometry, so it doesn't matter here.
       /*bInCullsBackFaceRaycast*/false);
 }
