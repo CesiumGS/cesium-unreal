@@ -11,7 +11,7 @@ if (DEFINED ENV{UNREAL_ENGINE_ROOT} AND NOT UNREAL_ENGINE_ROOT)
 endif()
 
 if (NOT UNREAL_ENGINE_ROOT)
-  # On Windows and Mac, try to use the default UE 5.4 location
+  # On Windows and Mac, try to use the default UE 5.5 location
   if (WIN32)
      set(DEFAULT_UNREAL_INSTALLATION "C:/Program Files/Epic Games/UE_5.5")
   elseif(APPLE)
