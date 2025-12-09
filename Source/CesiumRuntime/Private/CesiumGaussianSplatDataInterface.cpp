@@ -26,16 +26,6 @@
 
 const FString ComputeSplatFunctionName = TEXT("ComputeSplat");
 
-const FString GetPositionFunctionName = TEXT("GetSplat_Position");
-const FString GetScaleFunctionName = TEXT("GetSplat_Scale");
-const FString GetOrientationFunctionName = TEXT("GetSplat_Orientation");
-const FString GetVisibilityFunctionName = TEXT("GetSplat_Visibility");
-const FString GetTransformRotationFunctionName =
-    TEXT("GetSplat_Transform_Rotation");
-const FString GetColorFunctionName = TEXT("GetSplat_Color");
-const FString GetSHContributionFunctionName = TEXT("GetSplat_SHContribution");
-const FString GetNumSplatsFunctionName = TEXT("GetNumSplats");
-
 namespace {
 void UploadSplatMatrices(
     FRHICommandListImmediate& RHICmdList,
@@ -384,11 +374,6 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
     return true;
   }
 
-  static const TCHAR* MatrixMathFormatBounds = TEXT(R"(
-	)");
-
-  const TMap<FString, FStringFormatArg> MatrixMathArgsBounds = {};
-
   if (FunctionInfo.DefinitionName == *ComputeSplatFunctionName) {
     const FString Path = GetShaderSourceFilePath(
         "/Plugin/CesiumForUnreal/Private/CesiumGaussianSplatCompute.usf");
@@ -433,215 +418,6 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
 
     OutHLSL += FString::Format(*ShaderTemplate, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetPositionFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float3 OutPosition)
-		{
-			{MatrixMath}
-			OutPosition = mul(SplatMatrix, float4({Buffer}[Index].xyz, 1.0)).xyz;
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("MatrixMath"),
-         FStringFormatArg(
-             FString::Format(MatrixMathFormatBounds, MatrixMathArgsBounds))},
-        {TEXT("Buffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetScaleFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float3 OutScale)
-		{
-			int SplatIndex = {IndicesBuffer}[Index];
-			float4 SScale = {MatrixBuffer}[SplatIndex * 7 + 5];
-			OutScale = SScale * {Buffer}[Index].xyz;
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("Buffer"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Scales"))},
-        {TEXT("IndicesBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("MatrixBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetOrientationFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float4 OutOrientation)
-		{
-			float4 q2 = {Buffer}[Index];
-			OutOrientation = q2;
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("Buffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Orientations"))},
-        {TEXT("IndicesBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("MatrixBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetVisibilityFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float OutVisibility)
-		{
-			int SplatIndex = {IndicesBuffer}[Index];
-			OutVisibility = {MatrixBuffer}[SplatIndex * 7 + 4].x;
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("IndicesBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("MatrixBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetTransformRotationFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float4 OutRotation)
-		{
-			int SplatIndex = {IndicesBuffer}[Index];
-			OutRotation = {MatrixBuffer}[SplatIndex * 7 + 6];
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("IndicesBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("MatrixBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetColorFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out float4 OutColor)
-		{
-			OutColor = {Buffer}[Index];
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("Buffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Colors"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetSHContributionFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(float3 WorldViewDir, int Index, out float3 OutColor)
-		{
-			const float SH_C1   = 0.4886025119029199f;
-			const float SH_C2[] = {1.0925484, -1.0925484, 0.3153916, -1.0925484, 0.5462742};
-			const float SH_C3[] = {-0.5900435899266435f, 2.890611442640554f, -0.4570457994644658f, 0.3731763325901154f,
-														-0.4570457994644658f, 1.445305721320277f, -0.5900435899266435f};
-
-			int SplatIndex = {SplatIndices}[Index];
-			int SHCount = {SHDegrees}[SplatIndex * 3];
-			int SHOffset = {SHDegrees}[SplatIndex * 3 + 1] + (Index - {SHDegrees}[SplatIndex * 3 + 2]) * SHCount;
-
-			const float x = WorldViewDir.x;
-			const float y = WorldViewDir.y;
-			const float z = WorldViewDir.z;
-			const float xx = x * x;
-			const float yy = y * y;
-			const float zz = z * z;
-			const float xy = x * y;
-			const float yz = y * z;
-			const float xz = x * z;
-			const float xyz = x * y * z;
-
-			float3 Color = float3(0.0, 0.0, 0.0);
-			if(SHCount >= 3) {
-				float3 shd1_0 = {Buffer}[SHOffset].xyz;
-				float3 shd1_1 = {Buffer}[SHOffset + 1].xyz;
-				float3 shd1_2 = {Buffer}[SHOffset + 2].xyz;
-				Color += SH_C1 * (-shd1_0 * y + shd1_1 * z - shd1_2 * x);
-			}
-
-			if(SHCount >= 8) {
-				float3 shd2_0 = {Buffer}[SHOffset + 3];
-				float3 shd2_1 = {Buffer}[SHOffset + 4];
-				float3 shd2_2 = {Buffer}[SHOffset + 5];
-				float3 shd2_3 = {Buffer}[SHOffset + 6];
-				float3 shd2_4 = {Buffer}[SHOffset + 7];
-				Color += (SH_C2[0] * xy) * shd2_0 + (SH_C2[1] * yz) * shd2_1 + (SH_C2[2] * (2.0 * zz - xx - yy)) * shd2_2
-					   + (SH_C2[3] * xz) * shd2_3 + (SH_C2[4] * (xx - yy)) * shd2_4;
-			}
-
-			if(SHCount >= 15) {
-				float3 shd3_0 = {Buffer}[SHOffset + 8];
-				float3 shd3_1 = {Buffer}[SHOffset + 9];
-				float3 shd3_2 = {Buffer}[SHOffset + 10];
-				float3 shd3_3 = {Buffer}[SHOffset + 11];
-				float3 shd3_4 = {Buffer}[SHOffset + 12];
-				float3 shd3_5 = {Buffer}[SHOffset + 13];
-				float3 shd3_6 = {Buffer}[SHOffset + 14];
-
-				Color += SH_C3[0] * shd3_0 * (3.0 * xx - yy) * y + SH_C3[1] * shd3_1 * xyz
-									 + SH_C3[2] * shd3_2 * (4.0 * zz - xx - yy) * y
-									 + SH_C3[3] * shd3_3 * z * (2.0 * zz - 3.0 * xx - 3.0 * yy)
-									 + SH_C3[4] * shd3_4 * x * (4.0 * zz - xx - yy)
-									 + SH_C3[5] * shd3_5 * (xx - yy) * z + SH_C3[6] * shd3_6 * x * (xx - 3.0 * yy);
-			}
-
-			OutColor = Color;
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("Buffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
-        {TEXT("SHDegrees"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
-        {TEXT("SplatIndices"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("PosBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
-  } else if (FunctionInfo.DefinitionName == *GetNumSplatsFunctionName) {
-    static const TCHAR* FormatBounds = TEXT(R"(
-		void {FunctionName}(int Index, out int OutNumSplats)
-		{
-			OutNumSplats = {SplatCount};
-		}
-		)");
-
-    const TMap<FString, FStringFormatArg> ArgsBounds = {
-        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("SplatCount"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatsCount"))}};
-
-    OutHLSL += FString::Format(FormatBounds, ArgsBounds);
   } else {
     return false;
   }
@@ -658,165 +434,37 @@ bool UCesiumGaussianSplatDataInterface::AppendCompileHash(
 
 void UCesiumGaussianSplatDataInterface::GetFunctions(
     TArray<FNiagaraFunctionSignature>& OutFunctions) {
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *ComputeSplatFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetMatrix4Def(),
-        TEXT("M_SystemLocalToWorld")));
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetMatrix4Def(),
-        TEXT("M_SystemWorldToLocal")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec3Def(),
-        TEXT("CameraPosition")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec4Def(),
-        TEXT("OutPosition")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetColorDef(),
-        TEXT("OutColor")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec2Def(),
-        TEXT("OutSpriteSize")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetFloatDef(),
-        TEXT("OutSpriteRotation")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetPositionFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec3Def(),
-        TEXT("Position")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetScaleFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetVec3Def(), TEXT("Scale")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetOrientationFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec4Def(),
-        TEXT("Orientation")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetVisibilityFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetFloatDef(),
-        TEXT("Visibility")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetTransformRotationFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec4Def(),
-        TEXT("Rotation")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetColorFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetVec4Def(), TEXT("Color")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetSHContributionFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetVec3Def(),
-        TEXT("WorldViewDir")));
-    Sig.Inputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
-    Sig.Outputs.Add(
-        FNiagaraVariable(FNiagaraTypeDefinition::GetVec3Def(), TEXT("Color")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
-
-  {
-    FNiagaraFunctionSignature Sig;
-    Sig.Name = *GetNumSplatsFunctionName;
-    Sig.Inputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition(GetClass()),
-        TEXT("GaussianSplatNDI")));
-    Sig.Outputs.Add(FNiagaraVariable(
-        FNiagaraTypeDefinition::GetIntDef(),
-        TEXT("NumSplats")));
-    Sig.bMemberFunction = true;
-    Sig.bRequiresContext = false;
-    OutFunctions.Add(Sig);
-  }
+  FNiagaraFunctionSignature Sig;
+  Sig.Name = *ComputeSplatFunctionName;
+  Sig.Inputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition(GetClass()),
+      TEXT("GaussianSplatNDI")));
+  Sig.Inputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetMatrix4Def(),
+      TEXT("M_SystemLocalToWorld")));
+  Sig.Inputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetMatrix4Def(),
+      TEXT("M_SystemWorldToLocal")));
+  Sig.Inputs.Add(
+      FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
+  Sig.Inputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetVec3Def(),
+      TEXT("CameraPosition")));
+  Sig.Outputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetVec4Def(),
+      TEXT("OutPosition")));
+  Sig.Outputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetColorDef(),
+      TEXT("OutColor")));
+  Sig.Outputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetVec2Def(),
+      TEXT("OutSpriteSize")));
+  Sig.Outputs.Add(FNiagaraVariable(
+      FNiagaraTypeDefinition::GetFloatDef(),
+      TEXT("OutSpriteRotation")));
+  Sig.bMemberFunction = true;
+  Sig.bRequiresContext = false;
+  OutFunctions.Add(Sig);
 }
 #endif
 
