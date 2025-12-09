@@ -118,6 +118,7 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   ActorParams.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 #if WITH_EDITOR
   ActorParams.bTemporaryEditorActor = true;
+  ActorParams.bHideFromSceneOutliner = true;
 #endif
   ACesiumGaussianSplatActor* SplatActor =
       InWorld.SpawnActor<ACesiumGaussianSplatActor>(ActorParams);

@@ -5,9 +5,12 @@
 #include "CesiumGaussianSplatSubsystem.h"
 #include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumRuntime.h"
+
 #include "Containers/Map.h"
+#include "CoreMinimal.h"
 #include "Engine/Engine.h"
 #include "HLSLTypeAliases.h"
+#include "Misc/FileHelper.h"
 #include "NiagaraCommon.h"
 #include "NiagaraCompileHashVisitor.h"
 #include "NiagaraComponent.h"
@@ -15,10 +18,13 @@
 #include "NiagaraRenderer.h"
 #include "NiagaraShaderParametersBuilder.h"
 #include "RHICommandList.h"
+#include "ShaderCore.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>
+
+const FString ComputeSplatFunctionName = TEXT("ComputeSplat");
 
 const FString GetPositionFunctionName = TEXT("GetSplat_Position");
 const FString GetScaleFunctionName = TEXT("GetSplat_Scale");
@@ -379,28 +385,55 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
   }
 
   static const TCHAR* MatrixMathFormatBounds = TEXT(R"(
-		int SplatIndex = {IndicesBuffer}[Index];
-		float4 c0 = {MatrixBuffer}[SplatIndex * 7];
-		float4 c1 = {MatrixBuffer}[SplatIndex * 7 + 1];
-		float4 c2 = {MatrixBuffer}[SplatIndex * 7 + 2];
-		float4 c3 = {MatrixBuffer}[SplatIndex * 7 + 3];
-		float4x4 SplatMatrix = float4x4(
-			c0.x, c1.x, c2.x, c3.x,
-			c0.y, c1.y, c2.y, c3.y,
-			c0.z, c1.z, c2.z, c3.z,
-			c0.w, c1.w, c2.w, c3.w
-		);
 	)");
 
-  const TMap<FString, FStringFormatArg> MatrixMathArgsBounds = {
-      {TEXT("IndicesBuffer"),
-       FStringFormatArg(
-           ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-      {TEXT("MatrixBuffer"),
-       FStringFormatArg(
-           ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))}};
+  const TMap<FString, FStringFormatArg> MatrixMathArgsBounds = {};
 
-  if (FunctionInfo.DefinitionName == *GetPositionFunctionName) {
+  if (FunctionInfo.DefinitionName == *ComputeSplatFunctionName) {
+    const FString Path = GetShaderSourceFilePath(
+        "/Plugin/CesiumForUnreal/Private/CesiumGaussianSplatCompute.usf");
+    if (Path.IsEmpty()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Can't find source file path for gaussian splat compute shader"));
+      return false;
+    }
+
+    FString ShaderTemplate;
+    FFileHelper::LoadFileToString(ShaderTemplate, *Path);
+
+    const TMap<FString, FStringFormatArg> ArgsBounds = {
+        {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
+        {TEXT("IndicesBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
+        {TEXT("MatrixBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))},
+        {TEXT("SHCoeffs"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
+        {TEXT("SHDegrees"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
+        {TEXT("SplatCount"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatsCount"))},
+        {TEXT("ScalesBuffer"),
+         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Scales"))},
+        {TEXT("OrientationsBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Orientations"))},
+        {TEXT("ColorsBuffer"),
+         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Colors"))},
+        {TEXT("PositionsBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
+
+    OutHLSL += FString::Format(*ShaderTemplate, ArgsBounds);
+  } else if (FunctionInfo.DefinitionName == *GetPositionFunctionName) {
     static const TCHAR* FormatBounds = TEXT(R"(
 		void {FunctionName}(int Index, out float3 OutPosition)
 		{
@@ -625,6 +658,40 @@ bool UCesiumGaussianSplatDataInterface::AppendCompileHash(
 
 void UCesiumGaussianSplatDataInterface::GetFunctions(
     TArray<FNiagaraFunctionSignature>& OutFunctions) {
+  {
+    FNiagaraFunctionSignature Sig;
+    Sig.Name = *ComputeSplatFunctionName;
+    Sig.Inputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition(GetClass()),
+        TEXT("GaussianSplatNDI")));
+    Sig.Inputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetMatrix4Def(),
+        TEXT("M_SystemLocalToWorld")));
+    Sig.Inputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetMatrix4Def(),
+        TEXT("M_SystemWorldToLocal")));
+    Sig.Inputs.Add(
+        FNiagaraVariable(FNiagaraTypeDefinition::GetIntDef(), TEXT("Index")));
+    Sig.Inputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetVec3Def(),
+        TEXT("CameraPosition")));
+    Sig.Outputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetVec4Def(),
+        TEXT("OutPosition")));
+    Sig.Outputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetColorDef(),
+        TEXT("OutColor")));
+    Sig.Outputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetVec2Def(),
+        TEXT("OutSpriteSize")));
+    Sig.Outputs.Add(FNiagaraVariable(
+        FNiagaraTypeDefinition::GetFloatDef(),
+        TEXT("OutSpriteRotation")));
+    Sig.bMemberFunction = true;
+    Sig.bRequiresContext = false;
+    OutFunctions.Add(Sig);
+  }
+
   {
     FNiagaraFunctionSignature Sig;
     Sig.Name = *GetPositionFunctionName;
