@@ -30,7 +30,10 @@ public:
    * Opens a window to add feature ID sets and metadata properties from the
    * current view of the tileset.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Add Properties"))
   void AddProperties();
 
   /**
@@ -40,7 +43,10 @@ public:
    * exists. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Generate Material"))
   void GenerateMaterial();
 #endif
 

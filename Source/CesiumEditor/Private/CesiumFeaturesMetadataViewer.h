@@ -210,6 +210,9 @@ private:
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
+  void removePropertyInstance(TSharedRef<PropertyInstance> pItem);
+  //void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
+
   static TSharedRef<FString> getSharedRef(const FString& string);
   static void initializeStaticVariables();
 

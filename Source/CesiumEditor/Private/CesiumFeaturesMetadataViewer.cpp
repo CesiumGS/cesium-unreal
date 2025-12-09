@@ -180,9 +180,9 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
                .ContentPadding(FMargin(1.0, 1.0))
                .HAlign(EHorizontalAlignment::HAlign_Center)
-               .Text(FText::FromString(TEXT("Sync with View")))
+               .Text(FText::FromString(TEXT("Refresh with Current View")))
                .ToolTipText(FText::FromString(TEXT(
-                   "Syncs the feature ID sets and metadata from currently loaded tiles in the ACesium3DTileset.")))
+                   "Refreshes the lists with the feature ID sets and metadata from currently loaded tiles in the ACesium3DTileset.")))
                .OnClicked_Lambda([this]() {
                  this->SyncAndRebuildUI();
                  return FReply::Handled();
@@ -713,18 +713,37 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
     }
   }
 
+  TSharedRef<SWidget> pAddButton = PropertyCustomizationHelpers::MakeAddButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->registerPropertyInstance(pItem); }),
+      FText::FromString(TEXT(
+          "Add this property to the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create(
+          [this, pItem]() { return this->canBeRegistered(pItem); }));
+  pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
+    return this->canBeRegistered(pItem) ? EVisibility::Visible
+                                        : EVisibility::Collapsed;
+  }));
+
+  TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->removePropertyInstance(pItem); }),
+      FText::FromString(TEXT(
+          "Remove this property from the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create(
+          [this, pItem]() { return !this->canBeRegistered(pItem); }));
+  pRemoveButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
+    return this->canBeRegistered(pItem) ? EVisibility::Collapsed
+                                        : EVisibility::Visible;
+  }));
+
   content->AddSlot()
       .AutoWidth()
       .HAlign(EHorizontalAlignment::HAlign_Right)
-      .VAlign(
-          EVerticalAlignment::
-              VAlign_Center)[PropertyCustomizationHelpers::MakeNewBlueprintButton(
-          FSimpleDelegate::CreateLambda(
-              [this, pItem]() { this->registerPropertyInstance(pItem); }),
-          FText::FromString(TEXT(
-              "Add this property to the tileset's CesiumFeaturesMetadataComponent.")),
-          TAttribute<bool>::Create(
-              [this, pItem]() { return this->canBeRegistered(pItem); }))];
+      .VAlign(EVerticalAlignment::VAlign_Center)
+          [SNew(SHorizontalBox) +
+           SHorizontalBox::Slot().AutoWidth()[pAddButton] +
+           SHorizontalBox::Slot().AutoWidth()[pRemoveButton]];
 
   return SNew(STableRow<TSharedRef<PropertyInstance>>, list)
       .Content()[SNew(SBox)
@@ -1120,7 +1139,7 @@ void CesiumFeaturesMetadataViewer::registerPropertyInstance(
     FCesiumPropertyTexturePropertyDescription& property = *pProperty;
     property.PropertyDetails = pItem->propertyDetails;
 
-    if (this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
+    if (!this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
       description.PrimitiveMetadata.PropertyTextureNames.Add(
           *pItem->pSourceName);
     }
@@ -1162,6 +1181,109 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
 
   this->_pFeaturesMetadataComponent->PostEditChange();
   UKismetSystemLibrary::EndTransaction();
+}
+
+void CesiumFeaturesMetadataViewer::removePropertyInstance(
+    TSharedRef<PropertyInstance> pItem) {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumFeaturesMetadataComponent."))
+    return;
+  }
+
+  FCesiumFeaturesMetadataDescription& description =
+      this->_pFeaturesMetadataComponent->Description;
+
+  if (pItem->encodingDetails) {
+    TArray<FCesiumPropertyTableDescription>& propertyTables =
+        description.ModelMetadata.PropertyTables;
+
+    int32 tableIndex = INDEX_NONE;
+    for (int32 i = 0; i < propertyTables.Num(); i++) {
+      if (propertyTables[i].Name == *pItem->pSourceName) {
+        tableIndex = i;
+        break;
+      }
+    }
+    if (tableIndex == INDEX_NONE) {
+      return;
+    }
+    FCesiumPropertyTableDescription& propertyTable = propertyTables[tableIndex];
+
+    int32 propertyIndex = INDEX_NONE;
+    for (int32 i = 0; i < propertyTable.Properties.Num(); i++) {
+      if (propertyTable.Properties[i].Name == *pItem->pPropertyId) {
+        propertyIndex = i;
+        break;
+      }
+    }
+
+    if (propertyIndex != INDEX_NONE) {
+      UKismetSystemLibrary::BeginTransaction(
+          TEXT("Cesium Features / Metadata Viewer"),
+          FText::FromString(
+              FString("Remove property instance from ACesium3DTileset")),
+          this->_pFeaturesMetadataComponent.Get());
+      this->_pFeaturesMetadataComponent->PreEditChange(NULL);
+
+      propertyTable.Properties.RemoveAt(propertyIndex);
+
+      if (propertyTable.Properties.IsEmpty()) {
+        propertyTables.RemoveAt(tableIndex);
+      }
+
+      this->_pFeaturesMetadataComponent->PostEditChange();
+      UKismetSystemLibrary::EndTransaction();
+    }
+  } else {
+    TArray<FCesiumPropertyTextureDescription>& propertyTextures =
+        description.ModelMetadata.PropertyTextures;
+    int32 textureIndex = INDEX_NONE;
+    for (int32 i = 0; i < propertyTextures.Num(); i++) {
+      if (propertyTextures[i].Name == *pItem->pSourceName) {
+        textureIndex = i;
+        break;
+      }
+    }
+    if (textureIndex == INDEX_NONE) {
+      return;
+    }
+    FCesiumPropertyTextureDescription& propertyTexture =
+        propertyTextures[textureIndex];
+
+    int32 propertyIndex = INDEX_NONE;
+    for (int32 i = 0; i < propertyTexture.Properties.Num(); i++) {
+      if (propertyTexture.Properties[i].Name == *pItem->pPropertyId) {
+        propertyIndex = i;
+        break;
+      }
+    }
+
+    if (propertyIndex != INDEX_NONE) {
+      UKismetSystemLibrary::BeginTransaction(
+          TEXT("Cesium Features / Metadata Viewer"),
+          FText::FromString(
+              FString("Remove property instance from ACesium3DTileset")),
+          this->_pFeaturesMetadataComponent.Get());
+      this->_pFeaturesMetadataComponent->PreEditChange(NULL);
+
+      propertyTexture.Properties.RemoveAt(propertyIndex);
+
+      if (propertyTexture.Properties.IsEmpty()) {
+        propertyTextures.RemoveAt(textureIndex);
+        if (this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
+          description.PrimitiveMetadata.PropertyTextureNames.Remove(
+              *pItem->pSourceName);
+        }
+      }
+
+      this->_pFeaturesMetadataComponent->PostEditChange();
+      UKismetSystemLibrary::EndTransaction();
+    }
+  }
 }
 
 TSharedRef<FString>
