@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Added the `DoubleSidedCollisions` boolean property to the `ACesium3DTileset` actor, allowing intersections and collisions with geometry to also work when hitting "back" faces.
+- Added `EnableDoubleSidedCollisions` to `ACesium3DTileset` to allow intersections and collisions with geometry to also work when hitting "back" faces.
 - Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
 
 ### v2.21.1 - 2025-12-01
