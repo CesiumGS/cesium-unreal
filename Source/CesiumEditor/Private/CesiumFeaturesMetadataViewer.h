@@ -211,7 +211,7 @@ private:
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
   void removePropertyInstance(TSharedRef<PropertyInstance> pItem);
-  //void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
+  void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
   static TSharedRef<FString> getSharedRef(const FString& string);
   static void initializeStaticVariables();

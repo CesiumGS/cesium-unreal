@@ -881,18 +881,37 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
                      "Add properties from the corresponding property table under \"glTF Metadata\"."))];
   }
 
+  TSharedRef<SWidget> pAddButton = PropertyCustomizationHelpers::MakeAddButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->registerFeatureIdSetInstance(pItem); }),
+      FText::FromString(TEXT(
+          "Add this feature ID set to the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create(
+          [this, pItem]() { return this->canBeRegistered(pItem); }));
+  pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
+    return this->canBeRegistered(pItem) ? EVisibility::Visible
+                                        : EVisibility::Collapsed;
+  }));
+
+  TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->removeFeatureIdSetInstance(pItem); }),
+      FText::FromString(TEXT(
+          "Remove this feature ID set from the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create(
+          [this, pItem]() { return !this->canBeRegistered(pItem); }));
+  pRemoveButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
+    return this->canBeRegistered(pItem) ? EVisibility::Collapsed
+                                        : EVisibility::Visible;
+  }));
+
   pBox->AddSlot()
       .AutoWidth()
       .HAlign(EHorizontalAlignment::HAlign_Right)
-      .VAlign(
-          EVerticalAlignment::
-              VAlign_Center)[PropertyCustomizationHelpers::MakeNewBlueprintButton(
-          FSimpleDelegate::CreateLambda(
-              [this, pItem]() { this->registerFeatureIdSetInstance(pItem); }),
-          FText::FromString(TEXT(
-              "Add this feature ID set to the tileset's CesiumFeaturesMetadataComponent.")),
-          TAttribute<bool>::Create(
-              [this, pItem]() { return this->canBeRegistered(pItem); }))];
+      .VAlign(EVerticalAlignment::VAlign_Center)
+          [SNew(SHorizontalBox) +
+           SHorizontalBox::Slot().AutoWidth()[pAddButton] +
+           SHorizontalBox::Slot().AutoWidth()[pRemoveButton]];
 
   return SNew(STableRow<TSharedRef<FeatureIdSetInstance>>, list)
       .Content()[SNew(SBox)
@@ -1283,6 +1302,43 @@ void CesiumFeaturesMetadataViewer::removePropertyInstance(
       this->_pFeaturesMetadataComponent->PostEditChange();
       UKismetSystemLibrary::EndTransaction();
     }
+  }
+}
+
+void CesiumFeaturesMetadataViewer::removeFeatureIdSetInstance(
+    TSharedRef<FeatureIdSetInstance> pItem) {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumFeaturesMetadataComponent."))
+    return;
+  }
+
+  TArray<FCesiumFeatureIdSetDescription>& featureIdSets =
+      this->_pFeaturesMetadataComponent->Description.PrimitiveFeatures
+          .FeatureIdSets;
+  int32 featureIdSetIndex = INDEX_NONE;
+  for (int32 i = 0; i < featureIdSets.Num(); i++) {
+    if (featureIdSets[i].Name == *pItem->pFeatureIdSetName) {
+      featureIdSetIndex = i;
+      break;
+    }
+  }
+
+  if (featureIdSetIndex != INDEX_NONE) {
+    UKismetSystemLibrary::BeginTransaction(
+        TEXT("Cesium Features / Metadata Viewer"),
+        FText::FromString(
+            FString("Register feature ID set instance with ACesium3DTileset")),
+        this->_pFeaturesMetadataComponent.Get());
+    this->_pFeaturesMetadataComponent->PreEditChange(NULL);
+
+    featureIdSets.RemoveAt(featureIdSetIndex);
+
+    this->_pFeaturesMetadataComponent->PostEditChange();
+    UKismetSystemLibrary::EndTransaction();
   }
 }
 
