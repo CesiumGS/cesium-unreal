@@ -3022,7 +3022,7 @@ static void loadPrimitiveGameThreadPart(
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
-    bool doubleSidedCollisions,
+    bool enableDoubleSidedCollisions,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
@@ -3433,7 +3433,7 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
-      pBodySetup->bDoubleSidedGeometry = doubleSidedCollisions;
+      pBodySetup->bDoubleSidedGeometry = enableDoubleSidedCollisions;
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
@@ -3489,7 +3489,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
-    bool doubleSidedCollisions) {
+    bool enableDoubleSidedCollisions) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3542,7 +3542,7 @@ UCesiumGltfComponent::CreateOffGameThread(
             cesiumToUnrealTransform,
             tile,
             createNavCollision,
-            doubleSidedCollisions,
+            enableDoubleSidedCollisions,
             pTilesetActor,
             node.InstanceTransforms,
             node.pInstanceFeatures);

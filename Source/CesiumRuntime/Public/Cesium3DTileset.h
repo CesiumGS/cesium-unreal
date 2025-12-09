@@ -808,8 +808,8 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintGetter = GetDoubleSidedCollisions,
-      BlueprintSetter = SetDoubleSidedCollisions,
+      BlueprintGetter = GetEnableDoubleSidedCollisions,
+      BlueprintSetter = SetEnableDoubleSidedCollisions,
       Category = "Cesium|Physics",
       meta = (EditCondition = "CreatePhysicsMeshes"))
   bool EnableDoubleSidedCollisions = false;

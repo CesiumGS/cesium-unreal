@@ -86,7 +86,7 @@ void* UnrealPrepareRendererResources::prepareInMainThread(
         this->_pActor->GetCustomDepthParameters(),
         tile,
         this->_pActor->GetCreateNavCollision(),
-        this->_pActor->GetDoubleSidedCollisions());
+        this->_pActor->GetEnableDoubleSidedCollisions());
   }
   // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
   return nullptr;
