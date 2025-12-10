@@ -1,7 +1,8 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeaturesMetadataComponent.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCommon.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumModelMetadata.h"
@@ -45,378 +46,9 @@ extern UNREALED_API class UEditorEngine* GEditor;
 using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
 
-namespace {
-void AutoFillPropertyTableDescriptions(
-    TArray<FCesiumPropertyTableDescription>& Descriptions,
-    const FCesiumModelMetadata& ModelMetadata) {
-  const TArray<FCesiumPropertyTable>& propertyTables =
-      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(ModelMetadata);
-
-  for (const auto& propertyTable : propertyTables) {
-    FString propertyTableName = getNameForPropertyTable(propertyTable);
-
-    FCesiumPropertyTableDescription* pDescription =
-        Descriptions.FindByPredicate(
-            [&name = propertyTableName](
-                const FCesiumPropertyTableDescription& existingPropertyTable) {
-              return existingPropertyTable.Name == name;
-            });
-
-    if (!pDescription) {
-      pDescription = &Descriptions.Emplace_GetRef();
-      pDescription->Name = propertyTableName;
-    }
-
-    const TMap<FString, FCesiumPropertyTableProperty>& properties =
-        UCesiumPropertyTableBlueprintLibrary::GetProperties(propertyTable);
-    for (const auto& propertyIt : properties) {
-      auto pExistingProperty = pDescription->Properties.FindByPredicate(
-          [&propertyName = propertyIt.Key](
-              const FCesiumPropertyTablePropertyDescription& existingProperty) {
-            return existingProperty.Name == propertyName;
-          });
-
-      if (pExistingProperty) {
-        // We have already accounted for this property, but we may need to check
-        // for its offset / scale, since they can differ from the class
-        // property's definition.
-        ECesiumMetadataType type = pExistingProperty->PropertyDetails.Type;
-        switch (type) {
-        case ECesiumMetadataType::Scalar:
-        case ECesiumMetadataType::Vec2:
-        case ECesiumMetadataType::Vec3:
-        case ECesiumMetadataType::Vec4:
-        case ECesiumMetadataType::Mat2:
-        case ECesiumMetadataType::Mat3:
-        case ECesiumMetadataType::Mat4:
-          break;
-        default:
-          continue;
-        }
-
-        FCesiumMetadataValue offset =
-            UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasOffset |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-        FCesiumMetadataValue scale =
-            UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasScale |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-        continue;
-      }
-
-      FCesiumPropertyTablePropertyDescription& property =
-          pDescription->Properties.Emplace_GetRef();
-      property.Name = propertyIt.Key;
-
-      const FCesiumMetadataValueType ValueType =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
-              propertyIt.Value);
-      property.PropertyDetails.SetValueType(ValueType);
-      property.PropertyDetails.ArraySize =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
-              propertyIt.Value);
-      property.PropertyDetails.bIsNormalized =
-          UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(
-              propertyIt.Value);
-
-      FCesiumMetadataValue offset =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasOffset =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-      FCesiumMetadataValue scale =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasScale =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-      FCesiumMetadataValue noData =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasNoDataValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(noData);
-
-      FCesiumMetadataValue defaultValue =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasDefaultValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(defaultValue);
-
-      property.EncodingDetails = CesiumMetadataPropertyDetailsToEncodingDetails(
-          property.PropertyDetails);
-    }
-  }
-}
-
-void AutoFillPropertyTextureDescriptions(
-    TArray<FCesiumPropertyTextureDescription>& Descriptions,
-    const FCesiumModelMetadata& ModelMetadata) {
-  const TArray<FCesiumPropertyTexture>& propertyTextures =
-      UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(ModelMetadata);
-
-  for (const auto& propertyTexture : propertyTextures) {
-    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-    FCesiumPropertyTextureDescription* pDescription =
-        Descriptions.FindByPredicate(
-            [&propertyTextureName =
-                 propertyTextureName](const FCesiumPropertyTextureDescription&
-                                          existingPropertyTexture) {
-              return existingPropertyTexture.Name == propertyTextureName;
-            });
-
-    if (!pDescription) {
-      pDescription = &Descriptions.Emplace_GetRef();
-      pDescription->Name = propertyTextureName;
-    }
-
-    const TMap<FString, FCesiumPropertyTextureProperty>& properties =
-        UCesiumPropertyTextureBlueprintLibrary::GetProperties(propertyTexture);
-    for (const auto& propertyIt : properties) {
-      auto pExistingProperty = pDescription->Properties.FindByPredicate(
-          [&propertyName =
-               propertyIt.Key](const FCesiumPropertyTexturePropertyDescription&
-                                   existingProperty) {
-            return propertyName == existingProperty.Name;
-          });
-
-      if (pExistingProperty) {
-        // We have already accounted for this property, but we may need to check
-        // for its offset / scale, since they can differ from the class
-        // property's definition.
-        ECesiumMetadataType type = pExistingProperty->PropertyDetails.Type;
-        switch (type) {
-        case ECesiumMetadataType::Scalar:
-        case ECesiumMetadataType::Vec2:
-        case ECesiumMetadataType::Vec3:
-        case ECesiumMetadataType::Vec4:
-        case ECesiumMetadataType::Mat2:
-        case ECesiumMetadataType::Mat3:
-        case ECesiumMetadataType::Mat4:
-          break;
-        default:
-          continue;
-        }
-
-        FCesiumMetadataValue offset =
-            UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasOffset |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-        FCesiumMetadataValue scale =
-            UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-                propertyIt.Value);
-        pExistingProperty->PropertyDetails.bHasScale |=
-            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-        continue;
-      }
-
-      FCesiumPropertyTexturePropertyDescription& property =
-          pDescription->Properties.Emplace_GetRef();
-      property.Name = propertyIt.Key;
-
-      const FCesiumMetadataValueType ValueType =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetValueType(
-              propertyIt.Value);
-      property.PropertyDetails.SetValueType(ValueType);
-      property.PropertyDetails.ArraySize =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetArraySize(
-              propertyIt.Value);
-      property.PropertyDetails.bIsNormalized =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
-              propertyIt.Value);
-
-      FCesiumMetadataValue offset =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasOffset =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-
-      FCesiumMetadataValue scale =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetOffset(
-              propertyIt.Value);
-      property.PropertyDetails.bHasScale =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-
-      FCesiumMetadataValue noData =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetNoDataValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasNoDataValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(noData);
-
-      FCesiumMetadataValue defaultValue =
-          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
-              propertyIt.Value);
-      property.PropertyDetails.bHasDefaultValue =
-          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(defaultValue);
-
-      auto maybeTextureTransform = propertyIt.Value.getTextureTransform();
-      if (maybeTextureTransform) {
-        property.bHasKhrTextureTransform =
-            (maybeTextureTransform->status() ==
-             CesiumGltf::KhrTextureTransformStatus::Valid);
-      }
-    }
-  }
-}
-
-void AutoFillFeatureIdSetDescriptions(
-    TArray<FCesiumFeatureIdSetDescription>& Descriptions,
-    const FCesiumPrimitiveFeatures& Features,
-    const FCesiumPrimitiveFeatures* InstanceFeatures,
-    const TArray<FCesiumPropertyTable>& PropertyTables) {
-  TArray<FCesiumFeatureIdSet> featureIDSets =
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(Features);
-  if (InstanceFeatures) {
-    featureIDSets.Append(
-        UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-            *InstanceFeatures));
-  }
-  int32 featureIDTextureCounter = 0;
-
-  for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
-    ECesiumFeatureIdSetType type =
-        UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet);
-    int64 count =
-        UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet);
-    if (type == ECesiumFeatureIdSetType::None || count == 0) {
-      // Empty or invalid feature ID set. Skip.
-      continue;
-    }
-
-    FString featureIDSetName =
-        getNameForFeatureIDSet(featureIDSet, featureIDTextureCounter);
-    FCesiumFeatureIdSetDescription* pDescription = Descriptions.FindByPredicate(
-        [&name = featureIDSetName](
-            const FCesiumFeatureIdSetDescription& existingFeatureIDSet) {
-          return existingFeatureIDSet.Name == name;
-        });
-
-    if (pDescription) {
-      // We have already accounted for a feature ID set of this name; skip.
-      continue;
-    }
-
-    pDescription = &Descriptions.Emplace_GetRef();
-    pDescription->Name = featureIDSetName;
-    pDescription->Type = type;
-
-    const int64 propertyTableIndex =
-        UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
-            featureIDSet);
-    if (propertyTableIndex >= 0 && propertyTableIndex < PropertyTables.Num()) {
-      const FCesiumPropertyTable& propertyTable =
-          PropertyTables[propertyTableIndex];
-      pDescription->PropertyTableName = getNameForPropertyTable(propertyTable);
-    }
-
-    if (type == ECesiumFeatureIdSetType::Texture) {
-      FCesiumFeatureIdTexture featureIdTexture =
-          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
-              featureIDSet);
-      auto maybeTextureTransform =
-          featureIdTexture.getFeatureIdTextureView().getTextureTransform();
-      if (maybeTextureTransform) {
-        pDescription->bHasKhrTextureTransform =
-            (maybeTextureTransform->status() ==
-             CesiumGltf::KhrTextureTransformStatus::Valid);
-      }
-    }
-  }
-}
-
-void AutoFillPropertyTextureNames(
-    TSet<FString>& Names,
-    const FCesiumPrimitiveMetadata& PrimitiveMetadata,
-    const TArray<FCesiumPropertyTexture>& PropertyTextures) {
-  const TArray<int64> propertyTextureIndices =
-      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
-          PrimitiveMetadata);
-
-  for (const int64& propertyTextureIndex : propertyTextureIndices) {
-    if (propertyTextureIndex < 0 ||
-        propertyTextureIndex >= PropertyTextures.Num()) {
-      continue;
-    }
-
-    const FCesiumPropertyTexture& propertyTexture =
-        PropertyTextures[propertyTextureIndex];
-    FString propertyTextureName = getNameForPropertyTexture(propertyTexture);
-    Names.Emplace(propertyTextureName);
-  }
-}
-
-} // namespace
-
-void UCesiumFeaturesMetadataComponent::AutoFill() {
-  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
-  if (!pOwner) {
-    return;
-  }
-
-  Super::PreEditChange(NULL);
-
-  // This assumes that the property tables are the same across all models in the
-  // tileset, and that they all have the same schema.
-  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
-    const UCesiumGltfComponent* pGltf = Cast<UCesiumGltfComponent>(pComponent);
-    if (!pGltf) {
-      continue;
-    }
-
-    const FCesiumModelMetadata& modelMetadata = pGltf->Metadata;
-    AutoFillPropertyTableDescriptions(
-        this->Description.ModelMetadata.PropertyTables,
-        modelMetadata);
-    AutoFillPropertyTextureDescriptions(
-        this->Description.ModelMetadata.PropertyTextures,
-        modelMetadata);
-
-    TArray<USceneComponent*> childComponents;
-    pGltf->GetChildrenComponents(false, childComponents);
-
-    for (const USceneComponent* pChildComponent : childComponents) {
-      const auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pChildComponent);
-      if (!pCesiumPrimitive) {
-        continue;
-      }
-      const CesiumPrimitiveData& primData =
-          pCesiumPrimitive->getPrimitiveData();
-      const FCesiumPrimitiveFeatures& primitiveFeatures = primData.Features;
-      const TArray<FCesiumPropertyTable>& propertyTables =
-          UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(
-              modelMetadata);
-      const FCesiumPrimitiveFeatures* pInstanceFeatures = nullptr;
-      const auto* pInstancedComponent =
-          Cast<UCesiumGltfInstancedComponent>(pChildComponent);
-      if (pInstancedComponent) {
-        pInstanceFeatures = pInstancedComponent->pInstanceFeatures.Get();
-      }
-      AutoFillFeatureIdSetDescriptions(
-          this->Description.PrimitiveFeatures.FeatureIdSets,
-          primitiveFeatures,
-          pInstanceFeatures,
-          propertyTables);
-
-      const FCesiumPrimitiveMetadata& primitiveMetadata = primData.Metadata;
-      const TArray<FCesiumPropertyTexture>& propertyTextures =
-          UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
-              modelMetadata);
-      AutoFillPropertyTextureNames(
-          this->Description.PrimitiveMetadata.PropertyTextureNames,
-          primitiveMetadata,
-          propertyTextures);
-    }
-  }
-
-  Super::PostEditChange();
+void UCesiumFeaturesMetadataComponent::AddProperties() {
+  ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  OnCesiumFeaturesMetadataAddProperties.Broadcast(pOwner);
 }
 
 static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {
@@ -548,10 +180,10 @@ static void ClearAutoGeneratedNodes(
       // Should not happen, but just in case, this node would be invalid. Break
       // any user-made connections to this node and don't attempt to remap it.
       for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-        for (FExpressionInput* Input : UserNode->GetInputsView()) {
-          if (Input->Expression == GetFeatureIdNode &&
-              Input->OutputIndex == 0) {
-            Input->Expression = nullptr;
+        for (FExpressionInputIterator It(UserNode); It; ++It) {
+          if (It.Input->Expression == GetFeatureIdNode &&
+              It.Input->OutputIndex == 0) {
+            It.Input->Expression = nullptr;
           }
         }
       }
@@ -573,10 +205,10 @@ static void ClearAutoGeneratedNodes(
       // In case, treat the node as invalid. Break any user-made connections to
       // this node and don't attempt to remap it.
       for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-        for (FExpressionInput* Input : UserNode->GetInputsView()) {
-          if (Input->Expression == GetFeatureIdNode &&
-              Input->OutputIndex == 0) {
-            Input->Expression = nullptr;
+        for (FExpressionInputIterator It(UserNode); It; ++It) {
+          if (It.Input->Expression == GetFeatureIdNode &&
+              It.Input->OutputIndex == 0) {
+            It.Input->Expression = nullptr;
           }
         }
       }
@@ -586,11 +218,11 @@ static void ClearAutoGeneratedNodes(
     FString Key = GetFeatureIdNode->GetDescription() + ParameterName;
     TArray<FExpressionInput*> Connections;
     for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-      for (FExpressionInput* Input : UserNode->GetInputsView()) {
-        // Look for user-made connections to this node.
-        if (Input->Expression == GetFeatureIdNode && Input->OutputIndex == 0) {
-          Connections.Add(Input);
-          Input->Expression = nullptr;
+      for (FExpressionInputIterator It(UserNode); It; ++It) {
+        if (It.Input->Expression == GetFeatureIdNode &&
+            It.Input->OutputIndex == 0) {
+          Connections.Add(It.Input);
+          It.Input->Expression = nullptr;
         }
       }
     }
@@ -610,11 +242,11 @@ static void ClearAutoGeneratedNodes(
       // Look for user-made connections to this property.
       TArray<FExpressionInput*> Connections;
       for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-        for (FExpressionInput* Input : UserNode->GetInputsView()) {
-          if (Input->Expression == GetPropertyValueNode &&
-              Input->OutputIndex == OutputIndex) {
-            Connections.Add(Input);
-            Input->Expression = nullptr;
+        for (FExpressionInputIterator It(UserNode); It; ++It) {
+          if (It.Input->Expression == GetPropertyValueNode &&
+              It.Input->OutputIndex == OutputIndex) {
+            Connections.Add(It.Input);
+            It.Input->Expression = nullptr;
           }
         }
       }
@@ -637,11 +269,11 @@ static void ClearAutoGeneratedNodes(
       // Look for user-made connections to this property.
       TArray<FExpressionInput*> Connections;
       for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-        for (FExpressionInput* Input : UserNode->GetInputsView()) {
-          if (Input->Expression == ApplyValueTransformNode &&
-              Input->OutputIndex == OutputIndex) {
-            Connections.Add(Input);
-            Input->Expression = nullptr;
+        for (FExpressionInputIterator It(UserNode); It; ++It) {
+          if (It.Input->Expression == ApplyValueTransformNode &&
+              It.Input->OutputIndex == OutputIndex) {
+            Connections.Add(It.Input);
+            It.Input->Expression = nullptr;
           }
         }
       }
@@ -683,11 +315,11 @@ static void ClearAutoGeneratedNodes(
       // In case, treat the node as invalid. Break any user-made connections to
       // this node and don't attempt to remap it.
       for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-        for (FExpressionInput* Input : UserNode->GetInputsView()) {
-          if (Input->Expression == IfNode && Input->OutputIndex == 0) {
-            Input->Expression = nullptr;
+        for (FExpressionInputIterator It(UserNode); It; ++It) {
+          if (It.Input->Expression == IfNode && It.Input->OutputIndex == 0) {
+            It.Input->Expression = nullptr;
           }
-        }
+        };
       }
       continue;
     }
@@ -695,11 +327,11 @@ static void ClearAutoGeneratedNodes(
     FString Key = IfNode->GetDescription() + IfNodeName;
     TArray<FExpressionInput*> Connections;
     for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-      for (FExpressionInput* Input : UserNode->GetInputsView()) {
+      for (FExpressionInputIterator It(UserNode); It; ++It) {
         // Look for user-made connections to this node.
-        if (Input->Expression == IfNode && Input->OutputIndex == 0) {
-          Connections.Add(Input);
-          Input->Expression = nullptr;
+        if (It.Input->Expression == IfNode && It.Input->OutputIndex == 0) {
+          Connections.Add(It.Input);
+          It.Input->Expression = nullptr;
         }
       }
     }
@@ -1210,33 +842,28 @@ UMaterialExpressionMaterialFunctionCall* GenerateNodesForFeatureIdTexture(
   Channels->MaterialExpressionEditorY = NodeY;
   AutoGeneratedNodes.Add(Channels);
 
-  // KHR_texture_transform parameters
-  UMaterialExpressionVectorParameter* TransformScaleOffset = nullptr;
-  UMaterialExpressionVectorParameter* TransformRotation = nullptr;
+  // Parameters to handle KHR_texture_transform if present.
+  UMaterialExpressionVectorParameter* TransformScaleOffset =
+      NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
+  TransformScaleOffset->ParameterName =
+      FName(SafeName + MaterialTextureScaleOffsetSuffix);
+  TransformScaleOffset->DefaultValue = {1, 1, 0, 0};
+  TransformScaleOffset->MaterialExpressionEditorX = NodeX;
+  TransformScaleOffset->MaterialExpressionEditorY = NodeY + 1.25 * Incr;
+  AutoGeneratedNodes.Add(TransformScaleOffset);
 
-  if (Description.bHasKhrTextureTransform) {
-    TransformScaleOffset =
-        NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
-    TransformScaleOffset->ParameterName =
-        FName(SafeName + MaterialTextureScaleOffsetSuffix);
-    TransformScaleOffset->DefaultValue = {1, 1, 0, 0};
-    TransformScaleOffset->MaterialExpressionEditorX = NodeX;
-    TransformScaleOffset->MaterialExpressionEditorY = NodeY + 1.25 * Incr;
-    AutoGeneratedNodes.Add(TransformScaleOffset);
+  MaximumParameterSectionX = FMath::Max(
+      MaximumParameterSectionX,
+      Incr * GetNameLengthScalar(TransformScaleOffset->ParameterName));
 
-    MaximumParameterSectionX = FMath::Max(
-        MaximumParameterSectionX,
-        Incr * GetNameLengthScalar(TransformScaleOffset->ParameterName));
-
-    TransformRotation =
-        NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
-    TransformRotation->ParameterName =
-        FName(SafeName + MaterialTextureRotationSuffix);
-    TransformRotation->DefaultValue = {0, 1, 0, 1};
-    TransformRotation->MaterialExpressionEditorX = NodeX;
-    TransformRotation->MaterialExpressionEditorY = NodeY + 2.5 * Incr;
-    AutoGeneratedNodes.Add(TransformRotation);
-  }
+  UMaterialExpressionVectorParameter* TransformRotation =
+      NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
+  TransformRotation->ParameterName =
+      FName(SafeName + MaterialTextureRotationSuffix);
+  TransformRotation->DefaultValue = {0, 1, 0, 1};
+  TransformRotation->MaterialExpressionEditorX = NodeX;
+  TransformRotation->MaterialExpressionEditorY = NodeY + 2.5 * Incr;
+  AutoGeneratedNodes.Add(TransformRotation);
 
   NodeX += MaximumParameterSectionX + Incr;
 
@@ -1251,16 +878,14 @@ UMaterialExpressionMaterialFunctionCall* GenerateNodesForFeatureIdTexture(
 
   UMaterialExpressionAppendVector* AppendScaleOffset = nullptr;
 
-  if (Description.bHasKhrTextureTransform) {
-    AppendScaleOffset =
-        NewObject<UMaterialExpressionAppendVector>(TargetMaterialLayer);
-    AppendScaleOffset->MaterialExpressionEditorX = NodeX;
-    AppendScaleOffset->MaterialExpressionEditorY =
-        TransformScaleOffset->MaterialExpressionEditorY;
-    AppendScaleOffset->A.Connect(0, TransformScaleOffset);
-    AppendScaleOffset->B.Connect(4, TransformScaleOffset);
-    AutoGeneratedNodes.Add(AppendScaleOffset);
-  }
+  AppendScaleOffset =
+      NewObject<UMaterialExpressionAppendVector>(TargetMaterialLayer);
+  AppendScaleOffset->MaterialExpressionEditorX = NodeX;
+  AppendScaleOffset->MaterialExpressionEditorY =
+      TransformScaleOffset->MaterialExpressionEditorY;
+  AppendScaleOffset->A.Connect(0, TransformScaleOffset);
+  AppendScaleOffset->B.Connect(4, TransformScaleOffset);
+  AutoGeneratedNodes.Add(AppendScaleOffset);
 
   NodeY -= 1.75 * Incr;
   NodeX += 1.25 * Incr;
@@ -1281,15 +906,12 @@ UMaterialExpressionMaterialFunctionCall* GenerateNodesForFeatureIdTexture(
       FeatureIdTexture;
   GetFeatureIdsFromTexture->FunctionInputs[2].Input.Expression = NumChannels;
   GetFeatureIdsFromTexture->FunctionInputs[3].Input.Expression = AppendChannels;
-
-  if (Description.bHasKhrTextureTransform) {
-    GetFeatureIdsFromTexture->FunctionInputs[4].Input.Connect(
-        0,
-        AppendScaleOffset);
-    GetFeatureIdsFromTexture->FunctionInputs[5].Input.Connect(
-        0,
-        TransformRotation);
-  }
+  GetFeatureIdsFromTexture->FunctionInputs[4].Input.Connect(
+      0,
+      AppendScaleOffset);
+  GetFeatureIdsFromTexture->FunctionInputs[5].Input.Connect(
+      0,
+      TransformRotation);
 
   AutoGeneratedNodes.Add(GetFeatureIdsFromTexture);
 
@@ -1976,7 +1598,8 @@ void GenerateNodesForPropertyTexture(
         PropertyTextureName,
         PropertyName);
     ECesiumEncodedMetadataType Type =
-        CesiumMetadataPropertyDetailsToEncodingDetails(Property.PropertyDetails)
+        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
+            Property.PropertyDetails)
             .Type;
 
     if (!foundFirstProperty) {
@@ -2044,84 +1667,79 @@ void GenerateNodesForPropertyTexture(
       MaximumPropertyDataSectionX = NodeX + 2 * Incr;
       NodeX = BeginSectionX;
 
-      if (Property.bHasKhrTextureTransform) {
-        PropertyDataSectionY += 1.25 * Incr;
+      PropertyDataSectionY += 1.25 * Incr;
 
-        UMaterialExpressionVectorParameter* TransformRotation =
-            NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
-        TransformRotation->ParameterName =
-            FName(FullPropertyName + MaterialTextureRotationSuffix);
-        TransformRotation->DefaultValue = {0, 1, 0, 1};
-        TransformRotation->MaterialExpressionEditorX = NodeX;
-        TransformRotation->MaterialExpressionEditorY = PropertyDataSectionY;
-        AutoGeneratedNodes.Add(TransformRotation);
+      // Parameters to handle KHR_texture_transform, if present.
+      UMaterialExpressionVectorParameter* TransformRotation =
+          NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
+      TransformRotation->ParameterName =
+          FName(FullPropertyName + MaterialTextureRotationSuffix);
+      TransformRotation->DefaultValue = {0, 1, 0, 1};
+      TransformRotation->MaterialExpressionEditorX = NodeX;
+      TransformRotation->MaterialExpressionEditorY = PropertyDataSectionY;
+      AutoGeneratedNodes.Add(TransformRotation);
 
-        UMaterialExpressionVectorParameter* TransformScaleOffset =
-            NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
-        TransformScaleOffset->ParameterName =
-            FName(FullPropertyName + MaterialTextureScaleOffsetSuffix);
-        TransformScaleOffset->DefaultValue = {1, 1, 0, 0};
-        TransformScaleOffset->MaterialExpressionEditorX = NodeX;
-        TransformScaleOffset->MaterialExpressionEditorY =
-            PropertyDataSectionY + Incr;
-        AutoGeneratedNodes.Add(TransformScaleOffset);
+      UMaterialExpressionVectorParameter* TransformScaleOffset =
+          NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
+      TransformScaleOffset->ParameterName =
+          FName(FullPropertyName + MaterialTextureScaleOffsetSuffix);
+      TransformScaleOffset->DefaultValue = {1, 1, 0, 0};
+      TransformScaleOffset->MaterialExpressionEditorX = NodeX;
+      TransformScaleOffset->MaterialExpressionEditorY =
+          PropertyDataSectionY + Incr;
+      AutoGeneratedNodes.Add(TransformScaleOffset);
 
-        UMaterialExpressionAppendVector* AppendScale =
-            NewObject<UMaterialExpressionAppendVector>(TargetMaterialLayer);
-        AppendScale->MaterialExpressionEditorX =
-            NodeX + Incr * (0.5 + GetNameLengthScalar(
-                                      TransformScaleOffset->ParameterName));
-        AppendScale->MaterialExpressionEditorY =
-            TransformRotation->MaterialExpressionEditorY;
-        AppendScale->A.Connect(1, TransformScaleOffset);
-        AppendScale->B.Connect(2, TransformScaleOffset);
-        AutoGeneratedNodes.Add(AppendScale);
+      UMaterialExpressionAppendVector* AppendScale =
+          NewObject<UMaterialExpressionAppendVector>(TargetMaterialLayer);
+      AppendScale->MaterialExpressionEditorX =
+          NodeX + Incr * (0.5 + GetNameLengthScalar(
+                                    TransformScaleOffset->ParameterName));
+      AppendScale->MaterialExpressionEditorY =
+          TransformRotation->MaterialExpressionEditorY;
+      AppendScale->A.Connect(1, TransformScaleOffset);
+      AppendScale->B.Connect(2, TransformScaleOffset);
+      AutoGeneratedNodes.Add(AppendScale);
 
-        UMaterialExpressionAppendVector* AppendOffset =
-            NewObject<UMaterialExpressionAppendVector>(TargetMaterialLayer);
-        AppendOffset->MaterialExpressionEditorX =
-            AppendScale->MaterialExpressionEditorX;
-        AppendOffset->MaterialExpressionEditorY =
-            TransformScaleOffset->MaterialExpressionEditorY;
-        AppendOffset->A.Connect(3, TransformScaleOffset);
-        AppendOffset->B.Connect(4, TransformScaleOffset);
-        AutoGeneratedNodes.Add(AppendOffset);
+      UMaterialExpressionAppendVector* AppendOffset =
+          NewObject<UMaterialExpressionAppendVector>(TargetMaterialLayer);
+      AppendOffset->MaterialExpressionEditorX =
+          AppendScale->MaterialExpressionEditorX;
+      AppendOffset->MaterialExpressionEditorY =
+          TransformScaleOffset->MaterialExpressionEditorY;
+      AppendOffset->A.Connect(3, TransformScaleOffset);
+      AppendOffset->B.Connect(4, TransformScaleOffset);
+      AutoGeneratedNodes.Add(AppendOffset);
 
-        MaximumPropertyDataSectionX = FMath::Max(
-            MaximumPropertyDataSectionX,
-            AppendOffset->MaterialExpressionEditorX + Incr - NodeX);
-        PropertyDataSectionY += 1.25 * Incr;
+      MaximumPropertyDataSectionX = FMath::Max(
+          MaximumPropertyDataSectionX,
+          AppendOffset->MaterialExpressionEditorX + Incr - NodeX);
+      PropertyDataSectionY += 1.25 * Incr;
 
-        UMaterialExpressionMaterialFunctionCall* TransformTexCoords =
-            NewObject<UMaterialExpressionMaterialFunctionCall>(
-                TargetMaterialLayer);
-        TransformTexCoords->MaterialFunction =
-            FunctionLibrary.TransformTexCoords;
-        TransformTexCoords->MaterialExpressionEditorX =
-            SelectTexCoords->MaterialExpressionEditorX + Incr * 1.5;
-        TransformTexCoords->MaterialExpressionEditorY =
-            SelectTexCoords->MaterialExpressionEditorY;
+      UMaterialExpressionMaterialFunctionCall* TransformTexCoords =
+          NewObject<UMaterialExpressionMaterialFunctionCall>(
+              TargetMaterialLayer);
+      TransformTexCoords->MaterialFunction = FunctionLibrary.TransformTexCoords;
+      TransformTexCoords->MaterialExpressionEditorX =
+          SelectTexCoords->MaterialExpressionEditorX + Incr * 1.5;
+      TransformTexCoords->MaterialExpressionEditorY =
+          SelectTexCoords->MaterialExpressionEditorY;
 
-        FunctionLibrary.TransformTexCoords->GetInputsAndOutputs(
-            TransformTexCoords->FunctionInputs,
-            TransformTexCoords->FunctionOutputs);
-        // For some reason, Connect() doesn't work with this input...
-        TransformTexCoords->FunctionInputs[0].Input.Expression =
-            SelectTexCoords;
-        TransformTexCoords->FunctionInputs[0].Input.OutputIndex = 0;
-        TransformTexCoords->FunctionInputs[1].Input.Connect(
-            0,
-            TransformRotation);
-        TransformTexCoords->FunctionInputs[2].Input.Connect(0, AppendScale);
-        TransformTexCoords->FunctionInputs[3].Input.Connect(0, AppendOffset);
-        AutoGeneratedNodes.Add(TransformTexCoords);
+      FunctionLibrary.TransformTexCoords->GetInputsAndOutputs(
+          TransformTexCoords->FunctionInputs,
+          TransformTexCoords->FunctionOutputs);
+      // For some reason, Connect() doesn't work with this input...
+      TransformTexCoords->FunctionInputs[0].Input.Expression = SelectTexCoords;
+      TransformTexCoords->FunctionInputs[0].Input.OutputIndex = 0;
+      TransformTexCoords->FunctionInputs[1].Input.Connect(0, TransformRotation);
+      TransformTexCoords->FunctionInputs[2].Input.Connect(0, AppendScale);
+      TransformTexCoords->FunctionInputs[3].Input.Connect(0, AppendOffset);
+      AutoGeneratedNodes.Add(TransformTexCoords);
 
-        TexCoordsInputFunction = TransformTexCoords;
+      TexCoordsInputFunction = TransformTexCoords;
 
-        MaximumPropertyDataSectionX = FMath::Max(
-            MaximumPropertyDataSectionX,
-            TransformTexCoords->MaterialExpressionEditorX + Incr * 1.5);
-      }
+      MaximumPropertyDataSectionX = FMath::Max(
+          MaximumPropertyDataSectionX,
+          TransformTexCoords->MaterialExpressionEditorX + Incr * 1.5);
 
       PropertyDataSectionY += 0.8 * Incr;
     }
@@ -2267,6 +1885,50 @@ UMaterialExpression* GenerateInstanceNodes(
   return GetFeatureIds;
 }
 
+void GenerateStatisticsNodes(
+    const FCesiumMetadataClassStatisticsDescription& ClassStatistics,
+    TArray<UMaterialExpression*>& AutoGeneratedNodes,
+    UMaterialFunctionMaterialLayer* TargetMaterialLayer,
+    int32& NodeX,
+    int32& NodeY) {
+  for (const FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+       ClassStatistics.Properties) {
+    for (const FCesiumMetadataPropertyStatisticValue& statisticValue :
+         propertyStatistics.Values) {
+      UMaterialExpressionParameter* pParameter = nullptr;
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(
+              statisticValue.Value);
+
+      switch (valueType.Type) {
+      case ECesiumMetadataType::Scalar:
+        pParameter =
+            NewObject<UMaterialExpressionScalarParameter>(TargetMaterialLayer);
+        break;
+      case ECesiumMetadataType::Vec2:
+      case ECesiumMetadataType::Vec3:
+      case ECesiumMetadataType::Vec4:
+        pParameter =
+            NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
+        break;
+      default:
+        // UE_LOG?
+        continue;
+      }
+
+      pParameter->ParameterName = FName(getNameForStatistic(
+          ClassStatistics.Id,
+          propertyStatistics.Id,
+          statisticValue.Semantic));
+      pParameter->MaterialExpressionEditorX = NodeX;
+      pParameter->MaterialExpressionEditorY = NodeY;
+
+      AutoGeneratedNodes.Add(pParameter);
+      NodeY += 0.75 * Incr;
+    }
+  }
+}
+
 void GenerateMaterialNodes(
     UCesiumFeaturesMetadataComponent* pComponent,
     MaterialGenerationState& MaterialState,
@@ -2285,6 +1947,17 @@ void GenerateMaterialNodes(
 
   int32 BeginSectionX = NodeX;
   int32 MaximumSectionX = BeginSectionX;
+
+  // Generate nodes for statistics first so they're easier to find.
+  for (const FCesiumMetadataClassStatisticsDescription& classStatistics :
+       pComponent->Description.Statistics) {
+    GenerateStatisticsNodes(
+        classStatistics,
+        MaterialState.AutoGeneratedNodes,
+        pComponent->TargetMaterialLayer,
+        NodeX,
+        NodeY);
+  }
 
   TSet<FString> GeneratedPropertyTableNames;
   GeneratedPropertyTableNames.Reserve(PropertyTables.Num());
@@ -2611,6 +2284,156 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
   }
 }
 
+#endif
+
+namespace {
+FCesiumMetadataValue getValueForSemantic(
+    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const FCesiumMetadataValueType& propertyType,
+    ECesiumMetadataStatisticSemantic semantic) {
+  CesiumUtility::JsonValue nullValue;
+
+  switch (semantic) {
+  case ECesiumMetadataStatisticSemantic::Min:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.min.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Max:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.max.value_or(nullValue),
+        propertyType);
+  default:
+    return FCesiumMetadataValue();
+  }
+}
+} // namespace
+
+void UCesiumFeaturesMetadataComponent::SyncStatistics() {
+  if (this->_isSyncing)
+    return;
+
+  ACesium3DTileset* pActor = this->GetOwner<ACesium3DTileset>();
+  if (!pActor || !pActor->GetTileset())
+    return;
+
+  this->_isSyncing = true;
+
+  Cesium3DTilesSelection::Tileset* pTileset = pActor->GetTileset();
+  pTileset->loadMetadata().thenInMainThread([this, pActor](
+                                                const Cesium3DTilesSelection::
+                                                    TilesetMetadata*
+                                                        pMetadata) {
+    if (!pMetadata || !pMetadata->statistics) {
+      // Tilesets may not contain any metadata or statistics...
+      return;
+    }
+
+    // ...however, if statistics are present, then there must be a schema.
+    if (!pMetadata->schema) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Tileset %s has incomplete metadata and cannot sync its statistics with "
+              "UCesiumFeaturesMetadataComponent."),
+          *pActor->GetName());
+      return;
+    }
+
+    const Cesium3DTiles::Schema& schema = *pMetadata->schema;
+    const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
+
+    for (FCesiumMetadataClassStatisticsDescription& classStatistics :
+         this->Description.Statistics) {
+      std::string classId = TCHAR_TO_UTF8(*classStatistics.Id);
+      const Cesium3DTiles::Class* pClass = schema.classes.contains(classId)
+                                               ? &schema.classes.at(classId)
+                                               : nullptr;
+      const Cesium3DTiles::ClassStatistics* pClassStatistics =
+          statistics.classes.contains(classId) ? &statistics.classes.at(classId)
+                                               : nullptr;
+
+      for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+           classStatistics.Properties) {
+        std::string propertyId = TCHAR_TO_UTF8(*propertyStatistics.Id);
+
+        auto propertyStatisticsIt =
+            pClassStatistics->properties.find(propertyId);
+
+        if (propertyStatisticsIt != pClassStatistics->properties.end()) {
+          FCesiumMetadataValueType type;
+          if (pClass && pClass->properties.contains(propertyId)) {
+            type = FCesiumMetadataValueType::fromClassProperty(
+                pClass->properties.at(propertyId));
+          }
+
+          for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+               propertyStatistics.Values) {
+            statisticValue.Value = getValueForSemantic(
+                propertyStatisticsIt->second,
+                type,
+                statisticValue.Semantic);
+          }
+        } else {
+          UE_LOG(
+              LogCesium,
+              Warning,
+              TEXT(
+                  "Tileset %s does not contain statistics for property %s from class %s "
+                  "on UCesiumFeaturesMetadataComponent."),
+              *pActor->GetName(),
+              *propertyStatistics.Id,
+              *classStatistics.Id);
+
+          for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+               propertyStatistics.Values) {
+            statisticValue.Value = FCesiumMetadataValue();
+          }
+        }
+      }
+    }
+    this->_isSyncing = false;
+  });
+}
+
+#if WITH_EDITOR
+
+void UCesiumFeaturesMetadataComponent::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+  if (!PropertyChangedEvent.Property) {
+    return;
+  }
+
+  if (PropertyChangedEvent.Property->GetFName() ==
+      GET_MEMBER_NAME_CHECKED(UCesiumFeaturesMetadataComponent, Description)) {
+    this->SyncStatistics();
+  }
+}
+
+void UCesiumFeaturesMetadataComponent::PostEditChangeChainProperty(
+    FPropertyChangedChainEvent& PropertyChangedChainEvent) {
+  Super::PostEditChangeChainProperty(PropertyChangedChainEvent);
+
+  if (!PropertyChangedChainEvent.Property ||
+      PropertyChangedChainEvent.PropertyChain.IsEmpty()) {
+    return;
+  }
+
+  const auto& pHeadProperty = PropertyChangedChainEvent.PropertyChain.GetHead();
+
+  FName HeadPropertyName = pHeadProperty->GetValue()->GetFName();
+  if (HeadPropertyName !=
+      GET_MEMBER_NAME_CHECKED(UCesiumFeaturesMetadataComponent, Description)) {
+    return;
+  }
+
+  const auto& pNextProperty = pHeadProperty->GetNextNode();
+  if (pNextProperty &&
+      pNextProperty->GetValue()->GetFName() == TEXT("Statistics")) {
+    this->SyncStatistics();
+  }
+}
 #endif // WITH_EDITOR
 
 void UCesiumFeaturesMetadataComponent::PostLoad() {
@@ -2618,24 +2441,24 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
   // These deprecated variables should only be non-empty on the first load, in
   // which case the contents of Description should be empty.
   if (this->FeatureIdSets.Num() > 0) {
-    CESIUM_ASSERT(this->Description.PrimitiveFeatures.FeatureIdSets.Num == 0);
+    CESIUM_ASSERT(this->Description.PrimitiveFeatures.FeatureIdSets.Num() == 0);
     Swap(
         this->FeatureIdSets,
         this->Description.PrimitiveFeatures.FeatureIdSets);
   }
   if (this->PropertyTextureNames.Num() > 0) {
     CESIUM_ASSERT(
-        this->Description.PrimitiveMetadata.PropertyTextureNames.Num == 0);
+        this->Description.PrimitiveMetadata.PropertyTextureNames.Num() == 0);
     Swap(
         this->PropertyTextureNames,
         this->Description.PrimitiveMetadata.PropertyTextureNames);
   }
   if (this->PropertyTables.Num() > 0) {
-    CESIUM_ASSERT(this->Description.ModelMetadata.PropertyTables.Num == 0);
+    CESIUM_ASSERT(this->Description.ModelMetadata.PropertyTables.Num() == 0);
     Swap(this->PropertyTables, this->Description.ModelMetadata.PropertyTables);
   }
   if (this->PropertyTextures.Num() > 0) {
-    CESIUM_ASSERT(this->Description.ModelMetadata.PropertyTextures.Num == 0);
+    CESIUM_ASSERT(this->Description.ModelMetadata.PropertyTextures.Num() == 0);
     Swap(
         this->PropertyTextures,
         this->Description.ModelMetadata.PropertyTextures);
@@ -2643,4 +2466,10 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   Super::PostLoad();
+}
+
+void UCesiumFeaturesMetadataComponent::OnRegister() {
+  Super::OnRegister();
+
+  // this->SyncStatistics();
 }

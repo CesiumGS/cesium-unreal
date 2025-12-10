@@ -46,6 +46,18 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting;
 
+/**
+ * The delegate for the OnCesiumFeaturesMetadataAddProperties, which is
+ * triggered when "Add Properties" is clicked on
+ * UCesiumFeaturesMetadataComponent.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesiumFeaturesMetadataAddProperties,
+    ACesium3DTileset*);
+
+CESIUMRUNTIME_API extern FCesiumFeaturesMetadataAddProperties
+    OnCesiumFeaturesMetadataAddProperties;
+
 CESIUMRUNTIME_API CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
 CESIUMRUNTIME_API const std::shared_ptr<CesiumAsync::IAssetAccessor>&
 getAssetAccessor();

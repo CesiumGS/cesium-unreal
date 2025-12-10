@@ -37,6 +37,7 @@ class UMaterialInterface;
 class ACesiumCartographicSelection;
 class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
+class UCesiumFeaturesMetadataComponent;
 class UCesiumVoxelRendererComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
@@ -47,6 +48,7 @@ struct ExtensionContent3dTilesContentVoxels;
 }
 
 namespace Cesium3DTilesSelection {
+class GltfModifier;
 class Tileset;
 class TilesetView;
 class TileOcclusionRendererProxyPool;
@@ -1193,11 +1195,6 @@ public:
     return this->_pTileset.Get();
   }
 
-  const std::optional<FCesiumFeaturesMetadataDescription>&
-  getFeaturesMetadataDescription() const {
-    return this->_featuresMetadataDescription;
-  }
-
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -1266,6 +1263,24 @@ public:
   void UpdateTransformFromCesium();
 
   /**
+   * Gets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   */
+  const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>&
+  GetGltfModifier() const;
+
+  /**
+   * Sets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   *
+   * Setting this property will call @ref RefreshTileset.
+   */
+  void SetGltfModifier(
+      const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
+
+  /**
    * Gets the optional receiver of events related to the lifecycle of tiles
    * created by this tileset.
    */
@@ -1280,7 +1295,7 @@ public:
    * ICesium3DTilesetLifecycleEventReceiver, otherwise it will be as if nullptr
    * were passed.
    */
-  void SetLifecycleEventReceiver(UObject* InEventReceiver);
+  void SetLifecycleEventReceiver(UObject* EventReceiver);
 
 private:
   /**
@@ -1353,13 +1368,12 @@ private:
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+  TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
 #endif
 
-  std::optional<FCesiumFeaturesMetadataDescription>
-      _featuresMetadataDescription;
   std::optional<FCesiumVoxelClassDescription> _voxelClassDescription;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -1409,6 +1423,8 @@ private:
   std::vector<Cesium3DTilesSelection::Tile::ConstPointer> _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _pGltfModifier;
 
   // Make this visible to the garbage collector, but don't save/load/copy it.
   // Use UObject instead of TScriptInterface as suggested by

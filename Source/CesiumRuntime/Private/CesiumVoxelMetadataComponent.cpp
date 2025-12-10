@@ -163,8 +163,9 @@ void AutoFillVoxelClassDescription(
     property.PropertyDetails.bHasDefaultValue =
         propertyIt.second.defaultProperty.has_value();
 
-    property.EncodingDetails = CesiumMetadataPropertyDetailsToEncodingDetails(
-        property.PropertyDetails);
+    property.EncodingDetails =
+        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
+            property.PropertyDetails);
   }
 }
 } // namespace
@@ -471,11 +472,13 @@ void UCesiumVoxelMetadataComponent::UpdateShaderPreview() {
           LogCesium,
           Warning,
           TEXT(
-              "Property %s of type %s, component type %s is not supported for voxels and will not be added to the generated material."),
+              "Property %s (%s) is not supported for voxels and will not be added to the generated material."),
           *Property.Name,
-          *MetadataTypeToString(Property.PropertyDetails.Type),
-          *MetadataComponentTypeToString(
-              Property.PropertyDetails.ComponentType));
+          *FCesiumMetadataValueType(
+               Property.PropertyDetails.Type,
+               Property.PropertyDetails.ComponentType,
+               Property.PropertyDetails.bIsArray)
+               .ToString());
       continue;
     }
 
@@ -784,11 +787,13 @@ static void GenerateMaterialNodes(
           LogCesium,
           Warning,
           TEXT(
-              "Property %s of type %s, component type %s is not supported for voxels and will not be added to the generated material."),
+              "Property %s (%s) is not supported for voxels and will not be added to the generated material."),
           *Property.Name,
-          *MetadataTypeToString(Property.PropertyDetails.Type),
-          *MetadataComponentTypeToString(
-              Property.PropertyDetails.ComponentType));
+          *FCesiumMetadataValueType(
+               Property.PropertyDetails.Type,
+               Property.PropertyDetails.ComponentType,
+               Property.PropertyDetails.bIsArray)
+               .ToString());
       continue;
     }
 

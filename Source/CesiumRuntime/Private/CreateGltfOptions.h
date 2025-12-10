@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumEncodedMetadataComponent.h"
+#include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumFeaturesMetadataDescription.h"
 #include "CesiumGltf/Mesh.h"
 #include "CesiumGltf/MeshPrimitive.h"
@@ -27,11 +28,9 @@ struct CreateModelOptions {
   CesiumGltf::Model* pModel = nullptr;
 
   /**
-   * A description of which feature ID sets and metadata should be
-   * encoded, taken from the tileset.
+   * The UCesiumFeaturesMetadataComponent attached to the tileset.
    */
-  const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      nullptr;
+  TWeakObjectPtr<UCesiumFeaturesMetadataComponent> pFeaturesMetadata = nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   const FMetadataDescription* pEncodedMetadataDescription_DEPRECATED = nullptr;
@@ -70,7 +69,7 @@ public:
   }
 
   CreateModelOptions(CreateModelOptions&& other)
-      : pFeaturesMetadataDescription(other.pFeaturesMetadataDescription),
+      : pFeaturesMetadata(other.pFeaturesMetadata),
         pEncodedMetadataDescription_DEPRECATED(
             other.pEncodedMetadataDescription_DEPRECATED),
         alwaysIncludeTangents(other.alwaysIncludeTangents),
