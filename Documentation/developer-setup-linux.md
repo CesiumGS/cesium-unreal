@@ -13,11 +13,11 @@ After compiling Unreal Engine, set the following environment variables in your `
 
 ```bash
 export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
-export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v22_clang-16.0.6-centos7/x86_64-unknown-linux-gnu
+export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v25_clang-18.1.0-rockylinux8/x86_64-unknown-linux-gnu
 export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Unix/LibCxx
 ```
 > [!note]
-> `v22_clang-16.0.6-centos7` is correct for Unreal Engine v5.4. It may be different for other versions of Unreal Engine. See the [Unreal documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/linux-development-requirements-for-unreal-engine?application_version=5.4) for the equivalent for your version of Unreal Engine.
+> `v25_clang-18.1.0-rockylinux8` is correct for Unreal Engine v5.6. It may be different for other versions of Unreal Engine. See the [Unreal documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/linux-development-requirements-for-unreal-engine?application_version=5.6) for the equivalent for your version of Unreal Engine.
 
 # Cloning the git repos
 
@@ -32,7 +32,7 @@ In this setup, we will build the Cesium for Unreal plugin separately from any pr
 
 First, let's clone the Cesium for Unreal repo by issuing the following command in the `~/dev` directory:
 ```
-git clone -b ue5-main --recursive https://github.com/CesiumGS/cesium-unreal.git
+git clone -b main --recursive https://github.com/CesiumGS/cesium-unreal.git
 ```
 > [!note]
 > The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
