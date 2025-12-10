@@ -138,8 +138,8 @@ private:
   };
 
   /**
-   * An instance of a CesiumGltf::PropertyTableProperty for a particular glTF in
-   * the tileset.
+   * An instance of a CesiumGltf::PropertyTableProperty or
+   * CesiumGltf::PropertyTextureProperty for a particular glTF in the tileset.
    *
    * It is technically possible for a tileset to have models with the same
    * property, but different schema definitions. This attempts to capture each

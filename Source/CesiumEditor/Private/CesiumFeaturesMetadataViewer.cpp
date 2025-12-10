@@ -1760,7 +1760,7 @@ void CesiumFeaturesMetadataViewer::removeFeatureIdSetInstance(
     UKismetSystemLibrary::BeginTransaction(
         TEXT("Cesium Features / Metadata Viewer"),
         FText::FromString(
-            FString("Register feature ID set instance with ACesium3DTileset")),
+            FString("Remove feature ID set instance from ACesium3DTileset")),
         this->_pFeaturesMetadataComponent.Get());
     this->_pFeaturesMetadataComponent->PreEditChange(NULL);
 
