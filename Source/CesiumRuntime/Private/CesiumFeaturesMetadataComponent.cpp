@@ -2323,15 +2323,23 @@ void UCesiumFeaturesMetadataComponent::SyncStatistics() {
                                                 const Cesium3DTilesSelection::
                                                     TilesetMetadata*
                                                         pMetadata) {
-    if (!pMetadata || !pMetadata->schema || !pMetadata->statistics) {
+    if (!pMetadata || !pMetadata->statistics) {
+      // Tilesets may not contain any metadata or statistics...
+      return;
+    }
+
+    // ...however, if statistics are present, then there must be a schema.
+    if (!pMetadata->schema) {
       UE_LOG(
           LogCesium,
           Error,
           TEXT(
-              "Tileset %s has incomplete metadata and cannot sync its statistics with UCesiumFeaturesMetadataComponent."),
+              "Tileset %s has incomplete metadata and cannot sync its statistics with "
+              "UCesiumFeaturesMetadataComponent."),
           *pActor->GetName());
       return;
     }
+
     const Cesium3DTiles::Schema& schema = *pMetadata->schema;
     const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
 
@@ -2371,7 +2379,8 @@ void UCesiumFeaturesMetadataComponent::SyncStatistics() {
               LogCesium,
               Warning,
               TEXT(
-                  "Tileset %s does not contain statistics for property %s from class %s on UCesiumFeaturesMetadataComponent."),
+                  "Tileset %s does not contain statistics for property %s from class %s "
+                  "on UCesiumFeaturesMetadataComponent."),
               *pActor->GetName(),
               *propertyStatistics.Id,
               *classStatistics.Id);

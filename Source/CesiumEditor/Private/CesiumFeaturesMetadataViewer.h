@@ -299,6 +299,7 @@ private:
   bool canBeRegistered(TSharedRef<PropertyInstance> pItem);
   bool canBeRegistered(TSharedRef<FeatureIdSetInstance> pItem);
 
+  bool canBeRemoved(TSharedRef<StatisticView> pItem);
   bool canBeRemoved(TSharedRef<PropertyInstance> pItem);
   bool canBeRemoved(TSharedRef<FeatureIdSetInstance> pItem);
 
@@ -306,6 +307,7 @@ private:
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
+  void removeStatistic(TSharedRef<StatisticView> pItem);
   void removePropertyInstance(TSharedRef<PropertyInstance> pItem);
   void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
