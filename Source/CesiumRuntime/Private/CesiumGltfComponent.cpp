@@ -503,7 +503,7 @@ void populateUnrealTexCoords(
       result.GltfToUnrealTexCoordMap;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (modelOptions.pFeaturesMetadataDescription) {
+  if (modelOptions.pFeaturesMetadata.IsValid()) {
     for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds(
           result.Features,
@@ -1123,7 +1123,9 @@ static void loadPrimitiveFeaturesMetadata(
       primitiveResult.TexCoordAccessorMap);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      pModelOptions->pFeaturesMetadataDescription;
+      pModelOptions->pFeaturesMetadata.IsValid()
+          ? &pModelOptions->pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Check for deprecated metadata description
@@ -1612,7 +1614,7 @@ static void loadPrimitive(
         options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
 
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (modelOptions.pFeaturesMetadataDescription) {
+    if (modelOptions.pFeaturesMetadata.IsValid()) {
       accumulateFeaturesMetadataAccessors(
           model,
           primitive,
@@ -2337,7 +2339,9 @@ static void loadModelMetadata(
   result.Metadata = FCesiumModelMetadata(model, *pModelMetadata);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      options.pFeaturesMetadataDescription;
+      options.pFeaturesMetadata.IsValid()
+          ? &options.pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   const FMetadataDescription* pMetadataDescription_DEPRECATED =
@@ -2392,10 +2396,10 @@ loadModelAnyThreadPart(
 
             loadModelMetadata(pHalf->loadModelResult, options);
 
-            if (options.pFeaturesMetadataDescription) {
+            if (options.pFeaturesMetadata.IsValid()) {
               gatherStatistics(
                   pHalf->loadModelResult,
-                  options.pFeaturesMetadataDescription->Statistics);
+                  options.pFeaturesMetadata->Description.Statistics);
             }
 
             glm::dmat4x4 rootTransform = transform;

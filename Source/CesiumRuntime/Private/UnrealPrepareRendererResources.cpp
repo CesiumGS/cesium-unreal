@@ -38,15 +38,14 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
-  UCesiumFeaturesMetadataComponent* pFeaturesMetadata =
-      this->_pActor->_pFeaturesMetadataComponent.Get();
+  options.pFeaturesMetadata = this->_pActor->_pFeaturesMetadataComponent;
 
-  if (pFeaturesMetadata) {
-    options.pFeaturesMetadataDescription = &pFeaturesMetadata->Description;
-  } else if (this->_pActor->_metadataDescription_DEPRECATED) {
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  if (this->_pActor->_metadataDescription_DEPRECATED) {
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);
   }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
