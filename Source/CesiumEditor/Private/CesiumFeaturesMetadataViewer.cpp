@@ -46,7 +46,6 @@ THIRD_PARTY_INCLUDES_END
 CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
   if (_pExistingWindow.IsValid()) {
     _pExistingWindow->_pTileset = pTileset;
-    _pExistingWindow->SyncAndRebuildUI();
   } else {
     // Open a new panel
     TSharedRef<CesiumFeaturesMetadataViewer> viewer =
@@ -65,6 +64,7 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
         pTileset->GetComponentByClass<UCesiumFeaturesMetadataComponent>();
   }
 
+  _pExistingWindow->SyncAndRebuildUI();
   _pExistingWindow->BringToFront();
 }
 
@@ -78,7 +78,6 @@ void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
       pTileset.IsValid() ? pTileset->GetActorLabel() : TEXT("Unknown");
 
   this->_pTileset = pTileset;
-  this->SyncAndRebuildUI();
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -169,6 +168,8 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                   .Text(FText::FromString(TEXT(
                       "This tileset does not contain any glTF metadata in this view.")))]];
   }
+
+  this->syncPropertyEncodingDetails();
 
   pContent->AddSlot()
       .AutoHeight()
@@ -387,6 +388,79 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
       if (!pExistingInstance) {
         pFeatureIdSetView->instances.Emplace(
             MakeShared<FeatureIdSetInstance>(std::move(Instance)));
+      }
+    }
+  }
+}
+
+void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    return;
+  }
+
+  const TArray<FCesiumPropertyTableDescription>& propertyTables =
+      this->_pFeaturesMetadataComponent->Description.ModelMetadata
+          .PropertyTables;
+
+  for (const FCesiumPropertyTableDescription& propertyTable : propertyTables) {
+    const PropertySourceView* pSourceView =
+        this->_metadataSources.FindByPredicate(
+            [&name = propertyTable.Name](const PropertySourceView& source) {
+              return *source.pName == name;
+            });
+    if (!pSourceView) {
+      continue;
+    }
+
+    for (const FCesiumPropertyTablePropertyDescription& property :
+         propertyTable.Properties) {
+      const TSharedRef<PropertyView>* ppPropertyView =
+          pSourceView->properties.FindByPredicate(
+              [&name = property.Name](
+                  const TSharedRef<PropertyView>& pPropertyView) {
+                return *pPropertyView->pId == name;
+              });
+      if (!ppPropertyView) {
+        continue;
+      }
+
+      const PropertyView& propertyView = **ppPropertyView;
+      for (const TSharedRef<PropertyInstance>& pInstance :
+           propertyView.instances) {
+        if (!pInstance->encodingDetails) {
+          // This is a property texture property; continue.
+          continue;
+        }
+
+        auto& conversionMethods = pInstance->encodingDetails->conversionMethods;
+        int32 conversionIndex = INDEX_NONE;
+        for (int32 i = 0; i < conversionMethods.Num(); i++) {
+          if (*pInstance->encodingDetails->conversionMethods[i] ==
+              property.EncodingDetails.Conversion) {
+            conversionIndex = i;
+            break;
+          }
+        }
+
+        if (conversionIndex == INDEX_NONE) {
+          // This conversion method isn't supported for the property; continue.
+          continue;
+        }
+
+        int64 typeIndex = int64(property.EncodingDetails.Type);
+        int64 componentTypeIndex =
+            int64(property.EncodingDetails.ComponentType);
+
+        // Here the combo boxes will still be nullptr because
+        // OnGenerateRow is not executed right away, so save the selected
+        // options.
+        pInstance->encodingDetails->pConversionSelection =
+            conversionMethods[conversionIndex].ToSharedPtr();
+        pInstance->encodingDetails->pEncodedTypeSelection =
+            this->_encodedTypeOptions[typeIndex].ToSharedPtr();
+        pInstance->encodingDetails->pEncodedComponentTypeSelection =
+            this->_encodedComponentTypeOptions[componentTypeIndex]
+                .ToSharedPtr();
       }
     }
   }
@@ -661,19 +735,26 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
     createEnumComboBox<ECesiumEncodedMetadataConversion>(
         pItem->encodingDetails->pConversionCombo,
         pItem->encodingDetails->conversionMethods,
-        bestFitEncodingDetails.Conversion,
+        pItem->encodingDetails->pConversionSelection
+            ? *pItem->encodingDetails->pConversionSelection
+            : bestFitEncodingDetails.Conversion,
         FString());
 
     createEnumComboBox<ECesiumEncodedMetadataType>(
         pItem->encodingDetails->pEncodedTypeCombo,
         this->_encodedTypeOptions,
-        bestFitEncodingDetails.Type,
+        pItem->encodingDetails->pEncodedTypeSelection
+            ? *pItem->encodingDetails->pEncodedTypeSelection
+            : bestFitEncodingDetails.Type,
         TEXT(
             "The type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
+
     createEnumComboBox<ECesiumEncodedMetadataComponentType>(
         pItem->encodingDetails->pEncodedComponentTypeCombo,
         this->_encodedComponentTypeOptions,
-        bestFitEncodingDetails.ComponentType,
+        pItem->encodingDetails->pEncodedComponentTypeSelection
+            ? *pItem->encodingDetails->pEncodedComponentTypeSelection
+            : bestFitEncodingDetails.ComponentType,
         TEXT(
             "The component type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
 
@@ -721,8 +802,9 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
       TAttribute<bool>::Create(
           [this, pItem]() { return this->canBeRegistered(pItem); }));
   pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return this->canBeRegistered(pItem) ? EVisibility::Visible
-                                        : EVisibility::Collapsed;
+    return (this->canBeRegistered(pItem) || !this->canBeRemoved(pItem))
+               ? EVisibility::Visible
+               : EVisibility::Collapsed;
   }));
 
   TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
@@ -731,10 +813,10 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
       FText::FromString(TEXT(
           "Remove this property from the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create(
-          [this, pItem]() { return !this->canBeRegistered(pItem); }));
+          [this, pItem]() { return this->canBeRemoved(pItem); }));
   pRemoveButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return this->canBeRegistered(pItem) ? EVisibility::Collapsed
-                                        : EVisibility::Visible;
+    return this->canBeRemoved(pItem) ? EVisibility::Visible
+                                     : EVisibility::Collapsed;
   }));
 
   content->AddSlot()
@@ -889,8 +971,9 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       TAttribute<bool>::Create(
           [this, pItem]() { return this->canBeRegistered(pItem); }));
   pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return this->canBeRegistered(pItem) ? EVisibility::Visible
-                                        : EVisibility::Collapsed;
+    return (this->canBeRegistered(pItem) || !this->canBeRemoved(pItem))
+               ? EVisibility::Visible
+               : EVisibility::Collapsed;
   }));
 
   TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
@@ -901,8 +984,8 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       TAttribute<bool>::Create(
           [this, pItem]() { return !this->canBeRegistered(pItem); }));
   pRemoveButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return this->canBeRegistered(pItem) ? EVisibility::Collapsed
-                                        : EVisibility::Visible;
+    return this->canBeRemoved(pItem) ? EVisibility::Visible
+                                     : EVisibility::Collapsed;
   }));
 
   pBox->AddSlot()
@@ -1099,6 +1182,49 @@ bool CesiumFeaturesMetadataViewer::canBeRegistered(
 
   return !pFeatureIdSet ||
          pFeatureIdSet->PropertyTableName != *pItem->pPropertyTableName;
+}
+
+bool CesiumFeaturesMetadataViewer::canBeRemoved(
+    TSharedRef<PropertyInstance> pItem) {
+
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    return false;
+  }
+
+  UCesiumFeaturesMetadataComponent& featuresMetadata =
+      *this->_pFeaturesMetadataComponent;
+
+  if (pItem->encodingDetails) {
+    return findProperty<
+               FCesiumPropertyTableDescription,
+               FCesiumPropertyTablePropertyDescription>(
+               featuresMetadata.Description.ModelMetadata.PropertyTables,
+               *pItem->pSourceName,
+               *pItem->pPropertyId,
+               false) != nullptr;
+  } else {
+    return findProperty<
+               FCesiumPropertyTextureDescription,
+               FCesiumPropertyTexturePropertyDescription>(
+               featuresMetadata.Description.ModelMetadata.PropertyTextures,
+               *pItem->pSourceName,
+               *pItem->pPropertyId,
+               false) != nullptr;
+  }
+}
+
+bool CesiumFeaturesMetadataViewer::canBeRemoved(
+    TSharedRef<FeatureIdSetInstance> pItem) {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    return false;
+  }
+
+  UCesiumFeaturesMetadataComponent& featuresMetadata =
+      *this->_pFeaturesMetadataComponent;
+  return findFeatureIdSet(
+             featuresMetadata.Description.PrimitiveFeatures.FeatureIdSets,
+             *pItem->pFeatureIdSetName,
+             false) != nullptr;
 }
 
 void CesiumFeaturesMetadataViewer::registerPropertyInstance(
