@@ -5,6 +5,7 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
+#include "CesiumMetadataValue.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
 #include "Templates/SharedPointer.h"
@@ -18,6 +19,8 @@
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
+
+enum class ECesiumMetadataStatisticSemantic;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
@@ -106,15 +109,32 @@ private:
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>
         pConversionCombo;
     /**
+     * The option to set as the selected conversion, if previously specified
+     * (e.g., by details queried from UCesiumFeatureMetadataComponent).
+     */
+    TSharedPtr<ECesiumEncodedMetadataConversion> pConversionSelection;
+    /**
      * The combo box widget for selecting the encoded type.
      */
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>
         pEncodedTypeCombo;
     /**
+     * The option to set as the selected encoded type, if previously specified
+     * (e.g., by details queried from UCesiumFeatureMetadataComponent).
+     */
+    TSharedPtr<ECesiumEncodedMetadataType> pEncodedTypeSelection;
+    /**
      * The combo box widget for selecting the encoded component type.
      */
     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>
         pEncodedComponentTypeCombo;
+    /**
+     * The option to set as the selected encoded component type, if previously
+     * specified (e.g., by details queried from
+     * UCesiumFeatureMetadataComponent).
+     */
+    TSharedPtr<ECesiumEncodedMetadataComponentType>
+        pEncodedComponentTypeSelection;
   };
 
   /**
@@ -233,6 +253,12 @@ private:
   void gatherGltfPropertySources(const TArray<TSource>& sources);
   void gatherGltfFeaturesMetadata();
 
+  /**
+   * @brief Syncs with any property encoding details present on the
+   * UCesiumFeaturesMetadataComponent.
+   */
+  void syncPropertyEncodingDetails();
+
   TSharedRef<ITableRow> createStatisticRow(
       TSharedRef<StatisticView> pItem,
       const TSharedRef<STableViewBase>& list);
@@ -273,9 +299,15 @@ private:
   bool canBeRegistered(TSharedRef<PropertyInstance> pItem);
   bool canBeRegistered(TSharedRef<FeatureIdSetInstance> pItem);
 
+  bool canBeRemoved(TSharedRef<PropertyInstance> pItem);
+  bool canBeRemoved(TSharedRef<FeatureIdSetInstance> pItem);
+
   void registerStatistic(TSharedRef<StatisticView> pItem);
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
+
+  void removePropertyInstance(TSharedRef<PropertyInstance> pItem);
+  void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
   static TSharedRef<FString> getSharedRef(const FString& string);
   static void initializeStaticVariables();
