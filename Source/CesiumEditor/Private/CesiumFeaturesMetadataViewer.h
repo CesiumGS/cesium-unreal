@@ -227,11 +227,12 @@ private:
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
 
-  bool canBeRegistered(TSharedRef<PropertyInstance> pItem);
-  bool canBeRegistered(TSharedRef<FeatureIdSetInstance> pItem);
+  enum ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
 
-  bool canBeRemoved(TSharedRef<PropertyInstance> pItem);
-  bool canBeRemoved(TSharedRef<FeatureIdSetInstance> pItem);
+  ComponentSearchResult findOnComponent(
+      TSharedRef<PropertyInstance> pItem,
+      bool compareEncodingDetails);
+  ComponentSearchResult findOnComponent(TSharedRef<FeatureIdSetInstance> pItem);
 
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
