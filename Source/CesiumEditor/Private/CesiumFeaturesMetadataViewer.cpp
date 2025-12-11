@@ -344,10 +344,8 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
       ECesiumFeatureIdSetType type =
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
               featureIdSet);
-      int64 count =
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIdSet);
-      if (type == ECesiumFeatureIdSetType::None || count == 0) {
-        // Empty or invalid feature ID set. Skip.
+      if (type == ECesiumFeatureIdSetType::None) {
+        // Invalid feature ID set. Skip.
         continue;
       }
 
@@ -801,11 +799,6 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
           "Add this property to the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create(
           [this, pItem]() { return this->canBeRegistered(pItem); }));
-  pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return (this->canBeRegistered(pItem) || !this->canBeRemoved(pItem))
-               ? EVisibility::Visible
-               : EVisibility::Collapsed;
-  }));
 
   TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
       FSimpleDelegate::CreateLambda(
@@ -814,18 +807,15 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
           "Remove this property from the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create(
           [this, pItem]() { return this->canBeRemoved(pItem); }));
-  pRemoveButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return this->canBeRemoved(pItem) ? EVisibility::Visible
-                                     : EVisibility::Collapsed;
-  }));
 
   content->AddSlot()
       .AutoWidth()
       .HAlign(EHorizontalAlignment::HAlign_Right)
-      .VAlign(EVerticalAlignment::VAlign_Center)
-          [SNew(SHorizontalBox) +
-           SHorizontalBox::Slot().AutoWidth()[pAddButton] +
-           SHorizontalBox::Slot().AutoWidth()[pRemoveButton]];
+      .VAlign(EVerticalAlignment::VAlign_Center)[pAddButton];
+  content->AddSlot()
+      .AutoWidth()
+      .HAlign(EHorizontalAlignment::HAlign_Right)
+      .VAlign(EVerticalAlignment::VAlign_Center)[pRemoveButton];
 
   return SNew(STableRow<TSharedRef<PropertyInstance>>, list)
       .Content()[SNew(SBox)
@@ -970,11 +960,6 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
           "Add this feature ID set to the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create(
           [this, pItem]() { return this->canBeRegistered(pItem); }));
-  pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return (this->canBeRegistered(pItem) || !this->canBeRemoved(pItem))
-               ? EVisibility::Visible
-               : EVisibility::Collapsed;
-  }));
 
   TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
       FSimpleDelegate::CreateLambda(
@@ -982,11 +967,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       FText::FromString(TEXT(
           "Remove this feature ID set from the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create(
-          [this, pItem]() { return !this->canBeRegistered(pItem); }));
-  pRemoveButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-    return this->canBeRemoved(pItem) ? EVisibility::Visible
-                                     : EVisibility::Collapsed;
-  }));
+          [this, pItem]() { return this->canBeRemoved(pItem); }));
 
   pBox->AddSlot()
       .AutoWidth()
@@ -1195,13 +1176,14 @@ bool CesiumFeaturesMetadataViewer::canBeRemoved(
       *this->_pFeaturesMetadataComponent;
 
   if (pItem->encodingDetails) {
-    return findProperty<
-               FCesiumPropertyTableDescription,
-               FCesiumPropertyTablePropertyDescription>(
-               featuresMetadata.Description.ModelMetadata.PropertyTables,
-               *pItem->pSourceName,
-               *pItem->pPropertyId,
-               false) != nullptr;
+    FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
+        FCesiumPropertyTableDescription,
+        FCesiumPropertyTablePropertyDescription>(
+        featuresMetadata.Description.ModelMetadata.PropertyTables,
+        *pItem->pSourceName,
+        *pItem->pPropertyId,
+        false);
+    return pProperty && pProperty->PropertyDetails == pItem->propertyDetails;
   } else {
     return findProperty<
                FCesiumPropertyTextureDescription,
