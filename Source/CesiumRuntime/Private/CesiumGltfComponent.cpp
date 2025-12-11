@@ -3890,5 +3890,5 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
       nullptr,
       // The value passed in for bInCullsBackFaceRaycast will be overridden by
       // UBodySetup::bDoubleSidedGeometry, so it doesn't matter here.
-      /*bInCullsBackFaceRaycast*/false);
+      /*bInCullsBackFaceRaycast*/ false);
 }

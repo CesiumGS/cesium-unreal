@@ -801,8 +801,8 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
-   * Whether to enable doubled-sided collisions (both front-facing and back-facing)
-   * on created physics meshes.
+   * Whether to enable doubled-sided collisions (both front-facing and
+   * back-facing) on created physics meshes.
    *
    * Only relevant when CreatePhysicsMeshes is true.
    */
@@ -1111,7 +1111,9 @@ public:
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
-  bool GetEnableDoubleSidedCollisions() const { return EnableDoubleSidedCollisions; }
+  bool GetEnableDoubleSidedCollisions() const {
+    return EnableDoubleSidedCollisions;
+  }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
   void SetEnableDoubleSidedCollisions(bool bEnableDoubleSidedCollisions);
