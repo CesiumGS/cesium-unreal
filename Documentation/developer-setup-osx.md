@@ -8,9 +8,9 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Install Xcode 14.1+ from https://developer.apple.com/xcode/resources/
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
-- Install the minimum supported version of Unreal Engine (version 5.4 as of this writing) from https://www.unrealengine.com/en-US/download
+- Install the minimum supported version of Unreal Engine (version 5.5 as of this writing) from https://www.unrealengine.com/en-US/download
 
-These instructions are intended for Unreal Engine 5.4. The process is similar for newer versions of Unreal Engine. Supported Xcode versions are specified in `/Users/Shared/Epic Games/UE_5.4/Engine/Config/Apple/Apple_SDK.json`.
+These instructions are intended for Unreal Engine 5.5. The process is similar for newer versions of Unreal Engine. Supported Xcode versions are specified in `/Users/Shared/Epic Games/UE_5.5/Engine/Config/Apple/Apple_SDK.json`.
 
 # Cloning the git repos
 
@@ -44,7 +44,7 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 (It may be helpful to place these commands in a shell script for future use.)
 
 ```
-export UNREAL_ENGINE_ROOT='/Users/Shared/Epic Games/UE_5.4'
+export UNREAL_ENGINE_ROOT='/Users/Shared/Epic Games/UE_5.5'
 cd ~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern
 cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug
 cmake --build build --target install --parallel 14
@@ -53,7 +53,7 @@ cmake --build build --target install --parallel 14
 Or to build a Release version:
 
 ```
-export UNREAL_ENGINE_ROOT='/Users/Shared/Epic Games/UE_5.4'
+export UNREAL_ENGINE_ROOT='/Users/Shared/Epic Games/UE_5.5'
 cd ~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern
 cmake -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build build --target install --parallel 14
@@ -119,7 +119,7 @@ Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-u
 Execute the following commands to build and install a Release version of cesium-native:
 
 ```
-export UNREAL_ENGINE_ROOT='/Users/Shared/Epic Games/UE_5.4'
+export UNREAL_ENGINE_ROOT='/Users/Shared/Epic Games/UE_5.5'
 cd ~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern
 cmake -B build-ios -S . -GXcode -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
 cmake --build build-ios --target install --config Release --parallel 14
@@ -140,7 +140,7 @@ Now we can generate Xcode project files for the Samples project and the plugin:
 
 ```
 cd ~/dev/cesium-unreal-samples
-"/Users/Shared/Epic Games/UE_5.4/Engine/Build/BatchFiles/Mac/GenerateProjectFiles.sh" -game -project="$PWD/CesiumForUnrealSamples.uproject"
+"/Users/Shared/Epic Games/UE_5.5/Engine/Build/BatchFiles/Mac/GenerateProjectFiles.sh" -game -project="$PWD/CesiumForUnrealSamples.uproject"
 ```
 
 You may see an error message like this:
@@ -157,7 +157,7 @@ If you see a message like this:
 
 > Exception while generating include data for UnrealEditor: Platform Mac is not a valid platform to build. Check that the SDK is installed properly.
 
-It probably means Unreal doesn't like your Xcode version. Be sure that a supported version of Xcode is installed. Supported Xcode versions are specified in `/Users/Shared/Epic Games/UE_5.4/Engine/Config/Apple/Apple_SDK.json`.
+It probably means Unreal doesn't like your Xcode version. Be sure that a supported version of Xcode is installed. Supported Xcode versions are specified in `/Users/Shared/Epic Games/UE_5.5/Engine/Config/Apple/Apple_SDK.json`.
 
 If the project file generation succeeds, you should see a file named `CesiumForUnrealSamples (Mac).xcworkspace` in the same directory as your uproject. Double-click it to open Xcode.
 

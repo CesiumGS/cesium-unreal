@@ -7,8 +7,10 @@
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumVoxelRendererComponent.h"
 #include "CreateGltfOptions.h"
 #include "ExtensionImageAssetUnreal.h"
+
 #include <Cesium3DTilesSelection/Tile.h>
 #include <Cesium3DTilesSelection/TileLoadResult.h>
 #include <CesiumAsync/AsyncSystem.h>
@@ -38,12 +40,17 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
-  if (this->_pActor->_featuresMetadataDescription) {
-    options.pFeaturesMetadataDescription =
-        &(*this->_pActor->_featuresMetadataDescription);
-  } else if (this->_pActor->_metadataDescription_DEPRECATED) {
+  options.pFeaturesMetadata = this->_pActor->_pFeaturesMetadataComponent;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  if (this->_pActor->_metadataDescription_DEPRECATED) {
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);
+  }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  if (this->_pActor->_pVoxelRendererComponent) {
+    options.pVoxelOptions = &this->_pActor->_pVoxelRendererComponent->Options;
   }
 
   const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;

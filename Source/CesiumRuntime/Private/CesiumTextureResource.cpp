@@ -99,6 +99,28 @@ private:
   std::vector<std::byte> _pixelData;
 };
 
+/**
+ * A Cesium texture resource that creates an empty `FRHITexture` when `InitRHI`
+ * is called from the render thread.
+ */
+class FCesiumCreateEmptyTextureResource : public FCesiumTextureResource {
+public:
+  FCesiumCreateEmptyTextureResource(
+      TextureGroup textureGroup,
+      uint32 width,
+      uint32 height,
+      uint32 depth,
+      EPixelFormat format,
+      TextureFilter filter,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      bool sRGB,
+      uint32 extData);
+
+protected:
+  virtual FTextureRHIRef InitializeTextureRHI() override;
+};
+
 ESamplerFilter convertFilter(TextureFilter filter) {
   switch (filter) {
   case TF_Nearest:
@@ -416,6 +438,29 @@ FCesiumTextureResourceUniquePtr FCesiumTextureResource::CreateWrapped(
       false));
 }
 
+FCesiumTextureResourceUniquePtr FCesiumTextureResource::CreateEmpty(
+    TextureGroup textureGroup,
+    uint32 width,
+    uint32 height,
+    uint32 depth,
+    EPixelFormat format,
+    TextureFilter filter,
+    TextureAddress addressX,
+    TextureAddress addressY,
+    bool sRGB) {
+  return FCesiumTextureResourceUniquePtr(new FCesiumCreateEmptyTextureResource(
+      textureGroup,
+      width,
+      height,
+      depth,
+      format,
+      filter,
+      addressX,
+      addressY,
+      sRGB,
+      0));
+}
+
 /*static*/ void FCesiumTextureResource::Destroy(FCesiumTextureResource* p) {
   if (p == nullptr)
     return;
@@ -500,7 +545,6 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
       textureFlags |= TexCreate_SRGB;
     }
 
-#if ENGINE_VERSION_5_5_OR_HIGHER
     FRHITextureCreateDesc Desc;
     if (this->_depth > 1) {
       uint32 MipExtentX, MipExtentY, MipExtentZ;
@@ -531,46 +575,6 @@ void FCesiumTextureResource::InitRHI(FRHICommandListBase& RHICmdList) {
         .SetFlags(textureFlags)
         .SetInitialState(ERHIAccess::Unknown);
     this->_textureSize = RHICalcTexturePlatformSize(Desc).Size;
-#else
-    const FRHIResourceCreateInfo createInfo(this->_platformExtData);
-    uint32 alignment;
-
-    if (this->_depth > 1) {
-      uint32 MipExtentX, MipExtentY, MipExtentZ;
-      CalcMipMapExtent3D(
-          this->_width,
-          this->_height,
-          this->_depth,
-          this->_format,
-          0,
-          MipExtentX,
-          MipExtentY,
-          MipExtentZ);
-
-      this->_textureSize = RHICalcTexture3DPlatformSize(
-          MipExtentX,
-          MipExtentY,
-          MipExtentZ,
-          this->_format,
-          this->GetCurrentMipCount(),
-          textureFlags,
-          createInfo,
-          alignment);
-    } else {
-      const FIntPoint MipExtents =
-          CalcMipMapExtent(this->_width, this->_height, this->_format, 0);
-
-      this->_textureSize = RHICalcTexture2DPlatformSize(
-          MipExtents.X,
-          MipExtents.Y,
-          this->_format,
-          this->GetCurrentMipCount(),
-          1,
-          textureFlags,
-          createInfo,
-          alignment);
-    }
-#endif
 
     INC_DWORD_STAT_BY(STAT_TextureMemory, this->_textureSize);
     INC_DWORD_STAT_FNAME_BY(this->_lodGroupStatName, this->_textureSize);
@@ -785,4 +789,71 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   this->_mipPositions.swap(mipPositions);
 
   return rhiTexture;
+}
+
+FCesiumCreateEmptyTextureResource::FCesiumCreateEmptyTextureResource(
+    TextureGroup textureGroup,
+    uint32 width,
+    uint32 height,
+    uint32 depth,
+    EPixelFormat format,
+    TextureFilter filter,
+    TextureAddress addressX,
+    TextureAddress addressY,
+    bool sRGB,
+    uint32 extData)
+    : FCesiumTextureResource(
+          textureGroup,
+          width,
+          height,
+          depth,
+          format,
+          filter,
+          addressX,
+          addressY,
+          sRGB,
+          false,
+          extData,
+          true) {}
+
+FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
+  FString debugName = TEXT("CesiumTextureUtility");
+
+  FRHIResourceCreateInfo createInfo{*debugName};
+  createInfo.BulkData = nullptr;
+  createInfo.ExtData = this->_platformExtData;
+
+  ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+  if (this->bSRGB) {
+    textureFlags |= TexCreate_SRGB;
+  }
+
+  if (this->_depth > 1) {
+    // Create a new empty RHI texture (3D).
+    return RHICreateTexture(
+        FRHITextureCreateDesc::Create3D(createInfo.DebugName)
+            .SetExtent(int32(this->_width), int32(this->_height))
+            .SetDepth(this->_depth)
+            .SetFormat(this->_format)
+            .SetNumMips(1)
+            .SetNumSamples(1)
+            .SetFlags(textureFlags)
+            .SetInitialState(ERHIAccess::Unknown)
+            .SetExtData(createInfo.ExtData)
+            .SetGPUMask(createInfo.GPUMask)
+            .SetClearValue(createInfo.ClearValueBinding));
+  }
+
+  // Create a new empty RHI texture (2D).
+  return RHICreateTexture(
+      FRHITextureCreateDesc::Create2D(createInfo.DebugName)
+          .SetExtent(int32(this->_width), int32(this->_height))
+          .SetFormat(this->_format)
+          .SetNumMips(1)
+          .SetNumSamples(1)
+          .SetFlags(textureFlags)
+          .SetInitialState(ERHIAccess::Unknown)
+          .SetExtData(createInfo.ExtData)
+          .SetGPUMask(createInfo.GPUMask)
+          .SetClearValue(createInfo.ClearValueBinding));
 }

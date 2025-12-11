@@ -2,52 +2,12 @@
 
 #pragma once
 
+#include "CesiumCommon.h"
 #include "HAL/Platform.h"
 #include <span>
 
-enum class ECesiumMetadataType : uint8;
-enum class ECesiumMetadataComponentType : uint8;
-enum class ECesiumEncodedMetadataType : uint8;
-enum class ECesiumEncodedMetadataComponentType : uint8;
 struct FCesiumPropertyTablePropertyDescription;
 struct FCesiumPropertyTableProperty;
-struct FCesiumMetadataPropertyDetails;
-struct FCesiumMetadataEncodingDetails;
-
-/**
- * @brief Gets the best-fitting encoded type for the given metadata type.
- */
-ECesiumEncodedMetadataType
-CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type);
-
-/**
- * @brief Gets the best-fitting encoded type for the given metadata component
- * type.
- */
-ECesiumEncodedMetadataComponentType
-CesiumMetadataComponentTypeToEncodingType(ECesiumMetadataComponentType Type);
-
-/**
- * @brief Gets the best-fitting encoded types and conversion method for a given
- * metadata type. This determines the best way (if one is possible) to transfer
- * values of the given type to the GPU, for access in Unreal materials.
- *
- * An array size can also be supplied if bIsArray is true on the given value
- * type. If bIsArray is true, but the given array size is zero, this indicates
- * the arrays of the property vary in length. Variable-length array properties
- * are unsupported.
- *
- * @param PropertyDetails The metadata property details
- */
-FCesiumMetadataEncodingDetails CesiumMetadataPropertyDetailsToEncodingDetails(
-    FCesiumMetadataPropertyDetails PropertyDetails);
-
-/**
- * @brief Gets the number of components associated with the given encoded type.
- * @param type The encoded metadata type.
- */
-size_t
-CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType Type);
 
 /**
  * Any custom encoding behavior, e.g., special encoding of unsupported
