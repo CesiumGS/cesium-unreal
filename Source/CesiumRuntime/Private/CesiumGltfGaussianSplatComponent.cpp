@@ -17,12 +17,6 @@
 #include <fmt/format.h>
 
 namespace {
-// We multiplied by 1024 because of the physics hack when building the glTF
-// primitive. This is the factor we use to reverse that operation.
-// This is 10.24, not 1024.0, because we *do* need to scale up by 100 units
-// because of glTF -> Unreal units conversions.
-const double RESCALE_FACTOR = 1024.0 / 100.0;
-
 int32 countShCoeffsOnPrimitive(CesiumGltf::MeshPrimitive& primitive) {
   if (primitive.attributes.contains(
           "KHR_gaussian_splatting:SH_DEGREE_3_COEF_6")) {
@@ -204,19 +198,16 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     // Take this opportunity to update the bounds.
     if (this->Bounds) {
       this->Bounds->Min = FVector(
-          std::min(Bounds->Min.X, Position.X / RESCALE_FACTOR),
-          std::min(Bounds->Min.Y, Position.Y / RESCALE_FACTOR),
-          std::min(Bounds->Min.Z, Position.Z / RESCALE_FACTOR));
+          std::min(Bounds->Min.X, Position.X),
+          std::min(Bounds->Min.Y, Position.Y),
+          std::min(Bounds->Min.Z, Position.Z));
       this->Bounds->Max = FVector(
-          std::max(Bounds->Max.X, Position.X / RESCALE_FACTOR),
-          std::max(Bounds->Max.Y, Position.Y / RESCALE_FACTOR),
-          std::max(Bounds->Max.Z, Position.Z / RESCALE_FACTOR));
+          std::max(Bounds->Max.X, Position.X),
+          std::max(Bounds->Max.Y, Position.Y),
+          std::max(Bounds->Max.Z, Position.Z));
     } else {
       this->Bounds = FBox();
-      this->Bounds->Min = FVector(
-          Position.X / RESCALE_FACTOR,
-          Position.Y / RESCALE_FACTOR,
-          Position.Z / RESCALE_FACTOR);
+      this->Bounds->Min = FVector(Position.X, Position.Y, Position.Z);
       this->Bounds->Max = Bounds->Min;
     }
   }

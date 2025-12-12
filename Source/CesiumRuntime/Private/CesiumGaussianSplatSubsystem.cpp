@@ -23,33 +23,32 @@ FBox CalculateBounds(
     check(Component);
     const FTransform& ComponentTransform = Component->GetComponentTransform();
     FBox ActorBounds = Component->GetBounds();
-    FVector Center = ComponentTransform.GetTranslation();
     FBox TransformedBounds{
-        ComponentTransform.TransformPositionNoScale(ActorBounds.Min),
-        ComponentTransform.TransformPositionNoScale(ActorBounds.Max)};
+        ComponentTransform.TransformPosition(ActorBounds.Min),
+        ComponentTransform.TransformPosition(ActorBounds.Max)};
 
     FVector BoundsMin = TransformedBounds.Min;
     FVector BoundsMax = TransformedBounds.Max;
     if (Bounds) {
       Bounds->Min = FVector(
-          std::min(Bounds->Min.X, (double)BoundsMin.X),
-          std::min(Bounds->Min.Y, (double)BoundsMin.Y),
-          std::min(Bounds->Min.Z, (double)BoundsMin.Z));
+          std::min(Bounds->Min.X, std::min(BoundsMin.X, BoundsMax.X)),
+          std::min(Bounds->Min.Y, std::min(BoundsMin.Y, BoundsMax.Y)),
+          std::min(Bounds->Min.Z, std::min(BoundsMin.Z, BoundsMax.Z)));
       Bounds->Max = FVector(
-          std::max(Bounds->Max.X, (double)BoundsMax.X),
-          std::max(Bounds->Max.Y, (double)BoundsMax.Y),
-          std::max(Bounds->Max.Z, (double)BoundsMax.Z));
+          std::max(Bounds->Max.X, std::max(BoundsMin.X, BoundsMax.X)),
+          std::max(Bounds->Max.Y, std::max(BoundsMin.Y, BoundsMax.Y)),
+          std::max(Bounds->Max.Z, std::max(BoundsMin.Z, BoundsMax.Z)));
     } else {
       Bounds = FBox(
           FVector4(
               BoundsMin.X - 1.0,
-              BoundsMin.Y - 1.0,
-              BoundsMin.Z - 1.0,
+              std::min(BoundsMin.Y, BoundsMax.Y) - 1.0,
+              std::min(BoundsMin.Z, BoundsMax.Z) - 1.0,
               0.0),
           FVector4(
-              BoundsMax.X + 1.0,
-              BoundsMax.Y + 1.0,
-              BoundsMax.Z + 1.0,
+              std::max(BoundsMin.X, BoundsMax.X) - 1.0,
+              std::max(BoundsMin.Y, BoundsMax.Y) - 1.0,
+              std::max(BoundsMin.Z, BoundsMax.Z) - 1.0,
               0.0));
     }
   }
@@ -118,6 +117,8 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   ActorParams.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 #if WITH_EDITOR
   ActorParams.bTemporaryEditorActor = true;
+  // Set this to false if you need the actor to be visible in the outliner to
+  // help with debugging.
   ActorParams.bHideFromSceneOutliner = true;
 #endif
   ACesiumGaussianSplatActor* SplatActor =
@@ -232,9 +233,7 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
   if (IsValid(this->NiagaraComponent)) {
-    FBox Bounds = CalculateBounds(this->SplatComponents);
-    const FTransform& NiagaraToWorld =
-        this->NiagaraComponent->GetComponentTransform();
+    const FBox Bounds = CalculateBounds(this->SplatComponents);
     this->NiagaraComponent->SetSystemFixedBounds(Bounds);
     UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
     GetSplatInterface()->RefreshMatrices();
