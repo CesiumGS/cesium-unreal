@@ -51,13 +51,19 @@ FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
 const FCesiumPrimitiveMetadata&
 UCesiumPrimitiveMetadataBlueprintLibrary::GetPrimitiveMetadata(
     const UPrimitiveComponent* component) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-  if (!IsValid(pGltfComponent)) {
-    return EmptyPrimitiveMetadata;
+  const UCesiumGltfInstancedComponent* pGltfInstancedComponent =
+      Cast<UCesiumGltfInstancedComponent>(component);
+  if (IsValid(pGltfInstancedComponent)) {
+    return pGltfInstancedComponent->getPrimitiveData().Metadata;
   }
 
-  return pGltfComponent->getPrimitiveData().Metadata;
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (IsValid(pGltfComponent)) {
+    return pGltfComponent->getPrimitiveData().Metadata;
+  }
+
+  return EmptyPrimitiveMetadata;
 }
 
 const TArray<int64>&

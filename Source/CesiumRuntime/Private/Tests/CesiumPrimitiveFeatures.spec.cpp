@@ -134,8 +134,8 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
       UCesiumGltfInstancedComponent* pComponent =
           NewObject<UCesiumGltfInstancedComponent>();
-      pComponent->getPrimitiveData().Features =
-          FCesiumPrimitiveFeatures(model, node, instanceFeatures);
+      pComponent->pInstanceFeatures =
+          MakeShared<FCesiumPrimitiveFeatures>(model, node, instanceFeatures);
 
       const FCesiumPrimitiveFeatures& primitiveFeatures =
           UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
@@ -147,7 +147,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       TestEqual("Number of FeatureIDSets", featureIDSets.Num(), 1);
     });
 
-    It("gets implicit feature ID", [this]() {
+    It("returns for regular glTF component", [this]() {
       model = CesiumGltf::Model();
       CesiumGltf::Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();

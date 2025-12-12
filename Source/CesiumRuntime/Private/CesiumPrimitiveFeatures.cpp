@@ -47,7 +47,7 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
   const UCesiumGltfInstancedComponent* pGltfInstancedComponent =
       Cast<UCesiumGltfInstancedComponent>(component);
   if (IsValid(pGltfInstancedComponent)) {
-    return pGltfInstancedComponent->getPrimitiveData().Features;
+    return *pGltfInstancedComponent->pInstanceFeatures;
   }
 
   const UCesiumGltfPrimitiveComponent* pGltfComponent =

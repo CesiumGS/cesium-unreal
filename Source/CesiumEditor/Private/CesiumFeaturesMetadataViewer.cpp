@@ -753,7 +753,7 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                    "The type of the property as defined in the EXT_structural_metadata extension.")))] +
       SHorizontalBox::Slot()
           .AutoWidth()
-          .MaxWidth(1.0f)
+          .MaxWidth(200.0f)
           .Padding(5.0f)
           .HAlign(EHorizontalAlignment::HAlign_Left)
           .VAlign(EVerticalAlignment::VAlign_Center)
@@ -795,7 +795,7 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
             "The component type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
 
     if (pItem->encodingDetails->pConversionCombo.IsValid()) {
-      content->AddSlot().FillWidth(0.65).Padding(5.0f).VAlign(
+      content->AddSlot().FillWidth(0.6).Padding(5.0f).VAlign(
           EVerticalAlignment::VAlign_Center)
           [pItem->encodingDetails->pConversionCombo->AsShared()];
     }
