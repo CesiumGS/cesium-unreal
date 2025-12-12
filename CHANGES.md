@@ -4,6 +4,7 @@
 
 ##### Additions :tada:
 
+- Replaced the "Auto Fill" button on `UCesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
 - Added `EnableDoubleSidedCollisions` to `ACesium3DTileset` to allow intersections and collisions with geometry to also work when hitting "back" faces.
 - Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
 
