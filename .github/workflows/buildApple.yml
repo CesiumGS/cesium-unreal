@@ -138,14 +138,10 @@ jobs:
           rm -rf extern
       - name: Build plugin for macOS and iOS
         run: |
-          sed -i '' 's/\"EngineVersion\": \"5.3.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          sed -i '' 's/\"EngineVersion\": \"5.5.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/${{ inputs.unreal-program-name }}
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac+iOS -Architecture_Mac=arm64+x64
-      - name: Print log
-        if: ${{ failure() }}
-        run: |
-          cat "/Users/runner/Library/Logs/Unreal Engine/LocalBuildLogs/UBT-UnrealEditor-Mac-Development.txt"
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
