@@ -1,0 +1,243 @@
+void {FunctionName}(
+  float4x4 M_SystemLocalToWorld, 
+  float4x4 M_SystemWorldToLocal,
+  int Index,
+  float3 CameraPosition,
+  out float4 OutPosition,
+  out float4 OutColor,
+  out float2 OutSpriteSize,
+  out float OutSpriteRotation)
+{
+  // Extra scale we give to each gaussian to allow for a clean rolloff.
+  // This must match the "scale" variable in the material.
+  const float OVERSCALE = 1.5;
+
+  int SplatIndex = {IndicesBuffer}[Index];
+  // Obtain the tile-level values.
+  float InVisibility = {MatrixBuffer}[SplatIndex * 7 + 4].x;
+  // Obtain just the rotation matrix of the tile.
+  float4x4 InGlobalRotationMatrix;
+  {
+    float4 InRotation = {MatrixBuffer}[SplatIndex * 7 + 6];
+    float x = InRotation.x;
+    float y = InRotation.y;
+    float z = InRotation.z;
+    float w = InRotation.w;
+    InGlobalRotationMatrix = float4x4(
+      1 - 2 * (y * y + z * z), 2 * (x * y - w * z),     2 * (x * z + w * y),     0.0,
+      2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),     0.0,
+      2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y), 0.0,
+      0.0,                     0.0,                     0.0,                     0.0
+  );
+  }
+  // Obtain full transformation matrix of the tile.
+  float4 c0 = {MatrixBuffer}[SplatIndex * 7];
+  float4 c1 = {MatrixBuffer}[SplatIndex * 7 + 1];
+  float4 c2 = {MatrixBuffer}[SplatIndex * 7 + 2];
+  float4 c3 = {MatrixBuffer}[SplatIndex * 7 + 3];
+  float4x4 SplatMatrix = float4x4(
+    c0.x, c1.x, c2.x, c3.x,
+    c0.y, c1.y, c2.y, c3.y,
+    c0.z, c1.z, c2.z, c3.z,
+    c0.w, c1.w, c2.w, c3.w
+  );
+
+  // Obtain all the splat values from the various buffers.
+  float3 InPosition = mul(SplatMatrix, float4({PositionsBuffer}[Index].xyz, 1.0)).xyz;
+  OutPosition = float4(InPosition, 1.0);
+  // Scale we can combine directly with the tile-level scale.
+  float3 InScale = {MatrixBuffer}[SplatIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
+  float4 InOrientation = {OrientationsBuffer}[Index];
+  float4 InColor = {ColorsBuffer}[Index];
+
+  // Global values
+  int NumSplats = {SplatCount};
+
+  // Set default output values
+  OutColor = float4(0.0, 0.0, 0.0, 0.0);
+  OutSpriteRotation = 0;
+  OutSpriteSize = float2(0.0, 0.0);
+
+  // Compute world, view, and clip pos
+  float4 WorldPos_H = float4(InPosition.xyz + LWCHackToFloat(PrimaryView.PreViewTranslation), 1.0f);
+  float4 ViewPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToView) * InVisibility;
+  float4 ClipPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToClip) * InVisibility;
+  float4 NdcPos = ClipPos_H / ClipPos_H.w;  
+  if(ClipPos_H.w <= 0.0 || ViewPos_H.z < 0.0f || abs(NdcPos.x) > 1.5f || abs(NdcPos.y) > 1.3f)
+  {
+    // Clipped
+    float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
+    OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
+    return;
+  }
+
+  // Calculate covariance matrix
+  // This is the three-dimensional equivalent to the variance of a normal distribution.
+  // That's the sigma symbol, which is why we call it Sigma below.
+  float3x3 cov;
+  {
+    float3x3 S = float3x3(
+      InScale.x, 0.0f,      0.0f,
+      0.0f,      InScale.y, 0.0f,
+      0.0f,      0.0f,      InScale.z
+    );
+
+    float3x3 InOrientationMatrix;
+    {
+        float x = InOrientation.x;
+        float y = InOrientation.y;
+        float z = InOrientation.z;
+        float w = InOrientation.w;
+        InOrientationMatrix = float3x3(
+          1 - 2 * (y * y + z * z), 2 * (x * y - w * z),     2 * (x * z + w * y),
+          2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),
+          2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y)
+        );
+    } 
+
+    float3x3 M = mul(S, InOrientationMatrix); 
+    // Compute the 3D covariance matrix in world space.
+    float3x3 Sigma = mul(transpose(M), M);
+
+    // Now we need to transform our world-space covariance matrix into a clip-space covariance matrix.
+    // However, we can't use the actual projection matrix as this would distort the gaussian.
+    // Instead, we compute an affine approximation of the projection matrix called the Jacobian.
+    // See the section of the below article starting with "The second step involves..." for more information:
+    // https://shi-yan.github.io/how_to_render_a_single_gaussian_splat/
+    float focal_x = PrimaryView.ViewToClip[0][0] * 0.5 * PrimaryView.ViewSizeAndInvSize.x;
+    float focal_y = PrimaryView.ViewToClip[1][1] * 0.5 * PrimaryView.ViewSizeAndInvSize.y; 
+    float4 t = ViewPos_H;
+    float3x3 J = float3x3(
+      focal_x / t.z, 0.0f,          -(focal_x * t.x) / (t.z * t.z),
+      0.0f,          -focal_y / t.z, (focal_y * t.y) / (t.z * t.z),
+      0.0f,          0.0f,           0.0f
+    );
+
+    // Now we create a compound matrix that will apply our global rotation, then transform our world-space 
+    // covariance matrix into view-space, then transform that view-space covariance matrix into (approximate)
+    // clip space using the jacobian, to get our final covariance matrix.
+    float3x3 W = float3x3(  
+      PrimaryView.TranslatedWorldToView[0][0], PrimaryView.TranslatedWorldToView[1][0], PrimaryView.TranslatedWorldToView[2][0],
+      PrimaryView.TranslatedWorldToView[0][1], PrimaryView.TranslatedWorldToView[1][1], PrimaryView.TranslatedWorldToView[2][1],
+      PrimaryView.TranslatedWorldToView[0][2], PrimaryView.TranslatedWorldToView[1][2], PrimaryView.TranslatedWorldToView[2][2]
+    );
+    W = mul(W, transpose(M_SystemLocalToWorld));    
+    float3x3 T = mul(mul(J, W), InGlobalRotationMatrix); 
+    cov = mul(mul(T, Sigma), transpose(T)); 
+  }
+
+  // Get the center position of our splat in normalized clip coordinates.
+  float4 uv0 = ClipPos_H / ClipPos_H.w;
+
+  // Calculate the eigenvectors of the gaussian splat.
+  // These vectors define the bounds of the quad that will contain our gaussian.
+  // For more information:
+  // https://www.sctheblog.com/blog/gaussian-splatting/#method-2-calculate-eigenvectors
+  float diagonal1 = cov[0][0] + .3;
+  float offDiagonal = cov[0][1];
+  float diagonal2 = cov[1][1] + .3;
+
+  float mid = 0.5 * (diagonal1 + diagonal2);
+  float radius = length(float2((diagonal1 - diagonal2) * 0.5, offDiagonal));
+  float lambda1 = mid + radius;
+  float lambda2 = max(mid - radius, 0.1);
+
+  float2 diagonalVector = normalize(float2(offDiagonal, lambda1 - diagonal1));
+  float4 covVectors = float4(
+      min(sqrt(2.0 * lambda1), 1024.0) * diagonalVector,
+      min(sqrt(2.0 * lambda2), 1024.0) * float2(diagonalVector.y, -diagonalVector.x)
+  );
+
+  // Clip splats that will be too large or too small on the screen.
+  float screenSpaceRadius = ceil(2.f * sqrt(max(lambda1, lambda2)));
+  if (screenSpaceRadius < 1 || screenSpaceRadius > 1000) 
+  {
+    return;
+  }
+
+  // Right now, we have two perpendicular screen-space eigenvectors. 
+  // We need to transform these into a world-space size and rotation to return to Unreal.
+  // First, we transform the screen-space coordinates into clip-space.
+  float2 Q = covVectors.xy / PrimaryView.ViewSizeAndInvSize.xy;
+  float2 R = covVectors.zw / PrimaryView.ViewSizeAndInvSize.xy;
+  // Center the eigenvectors on the splat position.
+  float4 clipRadiusA = uv0 + float4(Q.x, Q.y, 0, 0);
+  float4 clipRadiusB = uv0 + float4(R.x, R.y, 0, 0);
+  // Transform the eigenvectors into world-space.
+  float4 worldRadiusA = mul(clipRadiusA, PrimaryView.ClipToTranslatedWorld);
+  float4 worldRadiusB = mul(clipRadiusB, PrimaryView.ClipToTranslatedWorld);
+  worldRadiusA = worldRadiusA / worldRadiusA.w;
+  worldRadiusB = worldRadiusB / worldRadiusB.w;
+
+  // The size of the sprite is the length of the two world-space eigenvectors from the center.
+  // Since they are perpendicular, they define a quad. 
+  OutSpriteSize = float2(length(WorldPos_H - worldRadiusA), length(WorldPos_H - worldRadiusB)) * (10 * OVERSCALE);
+  // Calculate the rotation of the quad to fit the eigenvectors.
+  OutSpriteRotation = degrees(atan2(lambda1 - diagonal1, offDiagonal));
+
+  // Compute the spherical harmonics.
+  // Spherical harmonics are basically an approximation of a function on the surface of a sphere.
+  // With a set of coefficients, we can reconstruct that original function. The more coefficients
+  // we add, the closer that approximation gets to the real thing. 
+  // Here, the surface of the sphere represents all possible viewing directions,
+  // and the result represents the change in color from different directions.
+  {
+    float3 WorldViewDir = normalize(mul(InGlobalRotationMatrix, float3(CameraPosition.x, CameraPosition.y, CameraPosition.z) - float3(-WorldPos_H.x, WorldPos_H.y, -WorldPos_H.z))).xyz;
+    const float SH_C1   = 0.4886025119029199f;
+    const float SH_C2[] = { 1.0925484, -1.0925484, 0.3153916, -1.0925484, 0.5462742 };
+    const float SH_C3[] = {
+      -0.5900435899266435f, 2.890611442640554f, -0.4570457994644658f, 0.3731763325901154f,
+      -0.4570457994644658f, 1.445305721320277f, -0.5900435899266435f
+    };
+
+    int SHCount = {SHDegrees}[SplatIndex * 3];
+    int SHOffset = {SHDegrees}[SplatIndex * 3 + 1] + (Index - {SHDegrees}[SplatIndex * 3 + 2]) * SHCount;
+
+    const float x = WorldViewDir.x;
+    const float y = WorldViewDir.y;
+    const float z = WorldViewDir.z;
+    const float xx = x * x;
+    const float yy = y * y;
+    const float zz = z * z;
+    const float xy = x * y;
+    const float yz = y * z;
+    const float xz = x * z;
+    const float xyz = x * y * z;
+
+    float3 SHColor = float3(0.0, 0.0, 0.0);
+    if(SHCount >= 3) {
+      float3 shd1_0 = {SHCoeffs}[SHOffset].xyz;
+      float3 shd1_1 = {SHCoeffs}[SHOffset + 1].xyz;
+      float3 shd1_2 = {SHCoeffs}[SHOffset + 2].xyz;
+      SHColor += SH_C1 * (-shd1_0 * y + shd1_1 * z - shd1_2 * x);
+    }
+
+    if(SHCount >= 8) {
+      float3 shd2_0 = {SHCoeffs}[SHOffset + 3].xyz;
+      float3 shd2_1 = {SHCoeffs}[SHOffset + 4].xyz;
+      float3 shd2_2 = {SHCoeffs}[SHOffset + 5].xyz;
+      float3 shd2_3 = {SHCoeffs}[SHOffset + 6].xyz;
+      float3 shd2_4 = {SHCoeffs}[SHOffset + 7].xyz;
+      SHColor += (SH_C2[0] * xy) * shd2_0 + (SH_C2[1] * yz) * shd2_1 + (SH_C2[2] * (2.0 * zz - xx - yy)) * shd2_2
+              +  (SH_C2[3] * xz) * shd2_3 + (SH_C2[4] * (xx - yy)) * shd2_4;
+    }
+
+    if(SHCount >= 15) {
+      float3 shd3_0 = {SHCoeffs}[SHOffset + 8].xyz;
+      float3 shd3_1 = {SHCoeffs}[SHOffset + 9].xyz;
+      float3 shd3_2 = {SHCoeffs}[SHOffset + 10].xyz;
+      float3 shd3_3 = {SHCoeffs}[SHOffset + 11].xyz;
+      float3 shd3_4 = {SHCoeffs}[SHOffset + 12].xyz;
+      float3 shd3_5 = {SHCoeffs}[SHOffset + 13].xyz;
+      float3 shd3_6 = {SHCoeffs}[SHOffset + 14].xyz;
+
+      SHColor += SH_C3[0] * shd3_0 * (3.0 * xx - yy) * y + SH_C3[1] * shd3_1 * xyz
+              +  SH_C3[2] * shd3_2 * (4.0 * zz - xx - yy) * y
+              +  SH_C3[3] * shd3_3 * z * (2.0 * zz - 3.0 * xx - 3.0 * yy)
+              +  SH_C3[4] * shd3_4 * x * (4.0 * zz - xx - yy)
+              +  SH_C3[5] * shd3_5 * (xx - yy) * z + SH_C3[6] * shd3_6 * x * (xx - 3.0 * yy);
+    }
+
+    OutColor = InColor + float4(SHColor, 0.0);
+  }
+}

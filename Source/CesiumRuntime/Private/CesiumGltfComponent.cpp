@@ -7,6 +7,7 @@
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -48,6 +49,7 @@
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
+#include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
@@ -3040,8 +3042,22 @@ static void loadPrimitiveGameThreadPart(
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-
-  if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  bool createMesh = true;
+  if (meshPrimitive.hasExtension<CesiumGltf::ExtensionKhrGaussianSplatting>()) {
+    UCesiumGltfGaussianSplatComponent* pGaussianSplat =
+        NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
+    pGaussianSplat->Dimensions = loadResult.dimensions;
+    // UCesiumGltfGaussianSplatComponent works differently to other primitives -
+    // it just acts as a source of data for UCesiumGaussianSplatSystem to
+    // accumulate and render. We do not need to create a mesh from it.
+    pGaussianSplat->SetData(model, meshPrimitive);
+    pGaussianSplat->SetupAttachment(pGltf);
+    pGaussianSplat->RegisterComponent();
+    pGaussianSplat->SetMobility(pGltf->Mobility);
+    pGaussianSplat->RegisterWithSubsystem();
+    pCesiumPrimitive = pGaussianSplat;
+    createMesh = false;
+  } else if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
@@ -3081,21 +3097,27 @@ static void loadPrimitiveGameThreadPart(
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
   }
+
   CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
+
+  primData.pTilesetActor = pTilesetActor;
+  primData.overlayTextureCoordinateIDToUVIndex =
+      loadResult.overlayTextureCoordinateIDToUVIndex;
+  primData.GltfToUnrealTexCoordMap =
+      std::move(loadResult.GltfToUnrealTexCoordMap);
+  primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+  primData.HighPrecisionNodeTransform = loadResult.transform;
+  pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+  if (!createMesh) {
+    return;
+  }
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    primData.pTilesetActor = pTilesetActor;
-    primData.overlayTextureCoordinateIDToUVIndex =
-        loadResult.overlayTextureCoordinateIDToUVIndex;
-    primData.GltfToUnrealTexCoordMap =
-        std::move(loadResult.GltfToUnrealTexCoordMap);
-    primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    primData.PositionAccessor = std::move(loadResult.PositionAccessor);
-    primData.IndexAccessor = std::move(loadResult.IndexAccessor);
-    primData.HighPrecisionNodeTransform = loadResult.transform;
-    pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
