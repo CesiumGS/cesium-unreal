@@ -38,20 +38,19 @@ FCesiumModelMetadata::FCesiumModelMetadata(
 const FCesiumModelMetadata&
 UCesiumModelMetadataBlueprintLibrary::GetModelMetadata(
     const UPrimitiveComponent* component) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
+  const UCesiumGltfComponent* pModel = nullptr;
 
-  if (!IsValid(pGltfComponent)) {
-    return EmptyModelMetadata;
+  if (const UCesiumGltfInstancedComponent* pGltfInstancedComponent =
+          Cast<UCesiumGltfInstancedComponent>(component);
+      IsValid(pGltfInstancedComponent)) {
+    pModel = Cast<UCesiumGltfComponent>(pGltfInstancedComponent->GetOuter());
+  } else if (const UCesiumGltfPrimitiveComponent* pGltfComponent =
+                 Cast<UCesiumGltfPrimitiveComponent>(component);
+             IsValid(pGltfComponent)) {
+    pModel = Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
   }
 
-  const UCesiumGltfComponent* pModel =
-      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
-  if (!IsValid(pModel)) {
-    return EmptyModelMetadata;
-  }
-
-  return pModel->Metadata;
+  return IsValid(pModel) ? pModel->Metadata : EmptyModelMetadata;
 }
 
 /*static*/ const TMap<FString, FCesiumPropertyTable>
