@@ -62,12 +62,25 @@ void UCesiumGeocoderServiceIonGeocoderAsyncAction::Activate() {
         TEXT("Could not find valid Cesium ion server object to use."));
     return;
   }
+
+  CesiumUtility::Result<CesiumIonClient::LoginToken> tokenResult =
+      CesiumIonClient::LoginToken::parse(TCHAR_TO_UTF8(*this->_ionAccessToken));
+  if (!tokenResult.value) {
+    this->OnGeocodeRequestComplete.Broadcast(
+        false,
+        nullptr,
+        UTF8_TO_TCHAR(
+            tokenResult.errors.format("Error parsing access token:").c_str()));
+    return;
+  }
+
   CesiumIonClient::Connection::appData(
       getAsyncSystem(),
       getAssetAccessor(),
       TCHAR_TO_UTF8(*this->_cesiumIonServer->ApiUrl))
-      .thenInMainThread([this](CesiumIonClient::Response<
-                               CesiumIonClient::ApplicationData>&& response) {
+      .thenInMainThread([this, tokenResult](
+                            CesiumIonClient::Response<
+                                CesiumIonClient::ApplicationData>&& response) {
         if (!response.value) {
           this->OnGeocodeRequestComplete.Broadcast(
               false,
@@ -82,7 +95,7 @@ void UCesiumGeocoderServiceIonGeocoderAsyncAction::Activate() {
         CesiumIonClient::Connection connection(
             getAsyncSystem(),
             getAssetAccessor(),
-            TCHAR_TO_UTF8(*this->_ionAccessToken),
+            *tokenResult.value,
             *response.value,
             TCHAR_TO_UTF8(*this->_cesiumIonServer->ApiUrl));
         connection

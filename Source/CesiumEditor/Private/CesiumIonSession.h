@@ -63,7 +63,7 @@ public:
   FIonUpdated TokensUpdated;
   FIonUpdated DefaultsUpdated;
 
-  const std::optional<CesiumIonClient::Connection>& getConnection() const;
+  std::optional<CesiumIonClient::Connection>& getConnection() const;
   const CesiumIonClient::Profile& getProfile();
   const CesiumIonClient::Assets& getAssets();
   const std::vector<CesiumIonClient::Token>& getTokens();
@@ -123,7 +123,7 @@ private:
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
   TWeakObjectPtr<UCesiumIonServer> _pServer;
 
-  std::optional<CesiumIonClient::Connection> _connection;
+  mutable std::optional<CesiumIonClient::Connection> _connection;
   std::optional<CesiumIonClient::Profile> _profile;
   std::optional<CesiumIonClient::Assets> _assets;
   std::optional<std::vector<CesiumIonClient::Token>> _tokens;
