@@ -121,8 +121,7 @@ Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
                                                               const std::optional<
                                                                   Token>&
                                                                   maybeToken) {
-    std::optional<Connection>& maybeConnection =
-        pSession->getConnection();
+    std::optional<Connection>& maybeConnection = pSession->getConnection();
     if (maybeConnection && maybeToken && !maybeToken->id.empty() &&
         maybeToken->assetIds) {
       std::vector<int64_t> missingAssets =
