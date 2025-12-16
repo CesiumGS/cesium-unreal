@@ -16,8 +16,10 @@
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
+#include "Engine/TriggerBox.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include "Math/Box.h"
 #include "PrimitiveSceneProxy.h"
 #include <PhysicsEngine/BodyInstance.h>
 #include <atomic>
@@ -968,28 +970,6 @@ private:
   FCesiumPointCloudShading PointCloudShading;
 
   /**
-   * Array of runtime virtual textures into which we draw the mesh for this
-   * actor. The material also needs to be set up to output to a virtual texture.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetRuntimeVirtualTextures,
-      BlueprintSetter = SetRuntimeVirtualTextures,
-      Category = "VirtualTexture",
-      meta = (DisplayName = "Draw in Virtual Textures"))
-  TArray<TObjectPtr<URuntimeVirtualTexture>> RuntimeVirtualTextures;
-
-  /** Controls if this component draws in the main pass as well as in the
-   * virtual texture. You must refresh the Tileset after changing this value! */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetVirtualTextureRenderPassType,
-      Category = VirtualTexture,
-      meta = (DisplayName = "Draw in Main Pass"))
-  ERuntimeVirtualTextureMainPassType VirtualTextureRenderPassType =
-      ERuntimeVirtualTextureMainPassType::Exclusive;
-
-  /**
    * Translucent objects with a lower sort priority draw behind objects with a
    * higher priority. Translucent objects with the same priority are rendered
    * from back-to-front based on their bounds origin. This setting is also used
@@ -1007,6 +987,36 @@ private:
       AdvancedDisplay,
       Category = Rendering)
   int32 TranslucencySortPriority;
+
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetClippingVolumes,
+      BlueprintSetter = SetClippingVolumes,
+      Category = "Cesium|Rendering")
+  TArray<TSoftObjectPtr<ATriggerBox>> ClippingVolumes;
+
+  /**
+   * Array of runtime virtual textures into which we draw the mesh for this
+   * actor. The material also needs to be set up to output to a virtual
+   * texture.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetRuntimeVirtualTextures,
+      BlueprintSetter = SetRuntimeVirtualTextures,
+      Category = "VirtualTexture",
+      meta = (DisplayName = "Draw in Virtual Textures"))
+  TArray<TObjectPtr<URuntimeVirtualTexture>> RuntimeVirtualTextures;
+
+  /** Controls if this component draws in the main pass as well as in the
+   * virtual texture. You must refresh the Tileset after changing this value! */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetVirtualTextureRenderPassType,
+      Category = "VirtualTexture",
+      meta = (DisplayName = "Draw in Main Pass"))
+  ERuntimeVirtualTextureMainPassType VirtualTextureRenderPassType =
+      ERuntimeVirtualTextureMainPassType::Exclusive;
 
 protected:
   UPROPERTY()
@@ -1182,6 +1192,15 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetPointCloudShading(FCesiumPointCloudShading InPointCloudShading);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  const TArray<TSoftObjectPtr<ATriggerBox>>& GetClippingVolumes() const {
+    return ClippingVolumes;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetClippingVolumes(
+      const TArray<TSoftObjectPtr<ATriggerBox>>& InClippingVolumes);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();

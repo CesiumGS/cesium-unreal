@@ -33,6 +33,7 @@
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTileExcluder.h"
 #include "CesiumViewExtension.h"
+#include "ClippingVolumeModifier.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
@@ -583,6 +584,12 @@ void ACesium3DTileset::SetPointCloudShading(
   }
 }
 
+void ACesium3DTileset::SetClippingVolumes(
+    const TArray<TSoftObjectPtr<ATriggerBox>>& InClippingVolumes) {
+  this->ClippingVolumes = InClippingVolumes;
+  this->DestroyTileset();
+}
+
 void ACesium3DTileset::SetRuntimeVirtualTextures(
     TArray<URuntimeVirtualTexture*> InRuntimeVirtualTextures) {
   if (this->RuntimeVirtualTextures != InRuntimeVirtualTextures) {
@@ -1003,6 +1010,11 @@ void ACesium3DTileset::LoadTileset() {
       this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
   ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
+
+  if (this->ClippingVolumes.Num()) {
+    this->_pGltfModifier = std::make_shared<ClippingVolumeModifier>(this);
+    this->_pGltfModifier->trigger();
+  }
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,

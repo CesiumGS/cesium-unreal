@@ -3013,6 +3013,16 @@ void addInstanceFeatureIds(
 }
 } // namespace
 
+// static void loadDynamicPrimitiveGameThreadPart(
+//     CesiumGltf::Model& model,
+//     UCesiumGltfComponent* pGltf,
+//     LoadedPrimitiveResult& loadResult,
+//     const glm::dmat4x4& cesiumToUnrealTransform,
+//     const Cesium3DTilesSelection::Tile& tile,
+//     bool createNavCollision,
+//     bool enableDoubleSidedCollisions,
+//     ACesium3DTileset* pTilesetActor) {}
+
 static void loadPrimitiveGameThreadPart(
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
@@ -3032,6 +3042,12 @@ static void loadPrimitiveGameThreadPart(
   FName componentName = "";
 #endif
 
+  // if (const TArray<FBox>& clippingVolumes =
+  // pTilesetActor->GetClippingVolumes();
+  //     clippingVolumes.Num()) {
+  //   loadPrimi
+  // }
+
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
@@ -3039,6 +3055,7 @@ static void loadPrimitiveGameThreadPart(
       model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
 
   UStaticMeshComponent* pMesh = nullptr;
+//  UDynamicMeshComponent* pDynamicMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
 
   if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
