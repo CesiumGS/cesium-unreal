@@ -42,6 +42,70 @@ void ACesiumCartographicPolygon::BeginPlay() {
   this->MakeLinear();
 }
 
+TSoftObjectPtr<ACesiumCartographicPolygon>
+ACesiumCartographicPolygon::CreateClippingPolygon(TArray<FVector> points) {
+
+/*
+  // Bounding rect for Ion asset 3575638
+  TArray<FVector> points {
+    {56.120557, 25.292038, 0.000000},
+    {56.120557, 25.295596, 0.000000},
+    {56.124118, 25.295596, 0.000000},
+    {56.124118, 25.292038, 0.000000}
+  };
+*/
+
+  UE_LOG(LogTemp,Warning,TEXT("Found %d points"),points.Num());
+  
+  FVector center;
+  // get bounding quad
+  if (points.Num() > 0)
+  {
+    FVector mn = points[0];
+    FVector mx = mn;
+    
+    for(int i=1; i < points.Num(); ++i)
+    {
+      UE_LOG(LogTemp,Warning,TEXT("%f, %f, %f"),points[i].X, points[i].Y, points[i].Z);
+
+      mn.X = std::fmin(mn.X, points[i].X);
+      mn.Y = std::fmin(mn.Y, points[i].Y);
+      mn.Z = std::fmin(mn.Z, points[i].Z);
+      
+      mx.X = std::fmax(mx.X, points[i].X);
+      mx.Y = std::fmax(mx.Y, points[i].Y);
+      mx.Z = std::fmax(mx.Z, points[i].Z);
+    }
+
+    UE_LOG(LogTemp,Warning,TEXT("Min %f, %f, %f"),mn.X, mn.Y, mn.Z);
+    UE_LOG(LogTemp,Warning,TEXT("Max %f, %f, %f"),mx.X, mx.Y, mx.Z);
+    center = (mn + mx) / 2.0;
+  }
+  
+  UE_LOG(LogTemp, Warning, TEXT("Center %f, %f, %f"), center.X, center.Y, center.Z);
+  
+  TArray<FVector> unrealPoints;
+  
+  auto* world = GEngine->GetWorldContexts()[0].World();
+  assert(world && "Oh, no! Cannot find the world!");
+  
+  auto* result = world->SpawnActor<ACesiumCartographicPolygon>();
+  result->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
+  
+  auto* georeference = result->GlobeAnchor->ResolveGeoreference();
+  assert(georeference && "No valid Georeference found!");
+
+  for(int i=0; i < points.Num(); ++i)
+  {
+    FVector unrealPosition = georeference->TransformLongitudeLatitudeHeightPositionToUnreal(points[i]);
+    unrealPoints.Emplace(unrealPosition);
+  }
+  
+  result->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
+  
+  return result;
+}
+
 CesiumGeospatial::CartographicPolygon
 ACesiumCartographicPolygon::CreateCartographicPolygon(
     const FTransform& worldToTileset) const {
