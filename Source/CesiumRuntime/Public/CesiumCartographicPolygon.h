@@ -38,7 +38,7 @@ public:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
-  
+
   virtual void OnConstruction(const FTransform& Transform) override;
   /**
    * Creates and returns a CartographicPolygon object
@@ -50,9 +50,9 @@ public:
    */
   CesiumGeospatial::CartographicPolygon
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
-  
+
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  static TSoftObjectPtr<ACesiumCartographicPolygon> CreateClippingPolygon(TArray<FVector> points);
+  static TSoftObjectPtr<ACesiumCartographicPolygon> CreateClippingPolygon(const TArray<FVector>& points);
 
   // AActor overrides
   virtual void PostLoad() override;
@@ -61,5 +61,5 @@ protected:
   virtual void BeginPlay() override;
 
 private:
-  void MakeLinear();
+  void MakeLinear() const;
 };

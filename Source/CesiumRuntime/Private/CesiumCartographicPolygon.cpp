@@ -43,67 +43,41 @@ void ACesiumCartographicPolygon::BeginPlay() {
 }
 
 TSoftObjectPtr<ACesiumCartographicPolygon>
-ACesiumCartographicPolygon::CreateClippingPolygon(TArray<FVector> points) {
-
-/*
-  // Bounding rect for Ion asset 3575638
-  TArray<FVector> points {
-    {56.120557, 25.292038, 0.000000},
-    {56.120557, 25.295596, 0.000000},
-    {56.124118, 25.295596, 0.000000},
-    {56.124118, 25.292038, 0.000000}
-  };
-*/
-
-  UE_LOG(LogTemp,Warning,TEXT("Found %d points"),points.Num());
-  
-  FVector center;
-  // get bounding quad
-  if (points.Num() > 0)
-  {
-    FVector mn = points[0];
-    FVector mx = mn;
-    
-    for(int i=1; i < points.Num(); ++i)
-    {
-      UE_LOG(LogTemp,Warning,TEXT("%f, %f, %f"),points[i].X, points[i].Y, points[i].Z);
-
-      mn.X = std::fmin(mn.X, points[i].X);
-      mn.Y = std::fmin(mn.Y, points[i].Y);
-      mn.Z = std::fmin(mn.Z, points[i].Z);
-      
-      mx.X = std::fmax(mx.X, points[i].X);
-      mx.Y = std::fmax(mx.Y, points[i].Y);
-      mx.Z = std::fmax(mx.Z, points[i].Z);
-    }
-
-    UE_LOG(LogTemp,Warning,TEXT("Min %f, %f, %f"),mn.X, mn.Y, mn.Z);
-    UE_LOG(LogTemp,Warning,TEXT("Max %f, %f, %f"),mx.X, mx.Y, mx.Z);
-    center = (mn + mx) / 2.0;
+ACesiumCartographicPolygon::CreateClippingPolygon(const TArray<FVector>& points) {
+  if (points.IsEmpty()) {
+    UE_LOG(LogTemp, Error, TEXT("No points found"));
+    return nullptr;
   }
-  
-  UE_LOG(LogTemp, Warning, TEXT("Center %f, %f, %f"), center.X, center.Y, center.Z);
-  
-  TArray<FVector> unrealPoints;
-  
-  auto* world = GEngine->GetWorldContexts()[0].World();
-  assert(world && "Oh, no! Cannot find the world!");
-  
-  auto* result = world->SpawnActor<ACesiumCartographicPolygon>();
-  result->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
-  
-  auto* georeference = result->GlobeAnchor->ResolveGeoreference();
-  assert(georeference && "No valid Georeference found!");
 
+  auto* world = GEngine->GetWorldContexts()[0].World();
+  assert(world && "Oh, no! Cannot find the world! This should not happen.");
+
+  FVector center {};
+  for(int i=0; i < points.Num(); ++i)
+  {
+    UE_LOG(LogTemp,Verbose,TEXT("%f, %f, %f"), points[i].X, points[i].Y, points[i].Z);
+    center += points[i];
+  }
+  center /= points.Num();
+
+  UE_LOG(LogTemp, Verbose, TEXT("Center %f, %f, %f"), center.X, center.Y, center.Z);
+
+  const auto* aPoly = world->SpawnActor<ACesiumCartographicPolygon>();
+  aPoly->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
+
+  const auto* georeference = aPoly->GlobeAnchor->ResolveGeoreference();
+
+  TArray<FVector> unrealPoints;
+  unrealPoints.Reserve(points.Num());
   for(int i=0; i < points.Num(); ++i)
   {
     FVector unrealPosition = georeference->TransformLongitudeLatitudeHeightPositionToUnreal(points[i]);
-    unrealPoints.Emplace(unrealPosition);
+    unrealPoints.Add(unrealPosition);
   }
-  
-  result->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
-  
-  return result;
+
+  aPoly->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
+
+  return TSoftObjectPtr<ACesiumCartographicPolygon>(aPoly);
 }
 
 CesiumGeospatial::CartographicPolygon
@@ -138,7 +112,7 @@ ACesiumCartographicPolygon::CreateCartographicPolygon(
   return CartographicPolygon(polygon);
 }
 
-void ACesiumCartographicPolygon::MakeLinear() {
+void ACesiumCartographicPolygon::MakeLinear() const {
   // set spline point types to linear for all points.
   for (size_t i = 0; i < this->Polygon->GetNumberOfSplinePoints(); ++i) {
     this->Polygon->SetSplinePointType(i, ESplinePointType::Linear);
