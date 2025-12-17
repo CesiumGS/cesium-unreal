@@ -1,6 +1,8 @@
 #include "CesiumCompat.h"
 #include "CesiumCommon.h"
 
+#include "Materials/MaterialRelevance.h"
+
 FSceneInterfaceWrapper::FSceneInterfaceWrapper(
     FSceneInterface* InSceneInterface) {
 #if ENGINE_VERSION_5_7_OR_HIGHER

@@ -295,13 +295,14 @@ private:
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
 
-  bool canBeRegistered(TSharedRef<StatisticView> pItem);
-  bool canBeRegistered(TSharedRef<PropertyInstance> pItem);
-  bool canBeRegistered(TSharedRef<FeatureIdSetInstance> pItem);
+  enum ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
 
-  bool canBeRemoved(TSharedRef<StatisticView> pItem);
-  bool canBeRemoved(TSharedRef<PropertyInstance> pItem);
-  bool canBeRemoved(TSharedRef<FeatureIdSetInstance> pItem);
+  ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
+  ComponentSearchResult findOnComponent(
+      TSharedRef<PropertyInstance> pItem,
+      bool compareEncodingDetails) const;
+  ComponentSearchResult
+  findOnComponent(TSharedRef<FeatureIdSetInstance> pItem) const;
 
   void registerStatistic(TSharedRef<StatisticView> pItem);
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);

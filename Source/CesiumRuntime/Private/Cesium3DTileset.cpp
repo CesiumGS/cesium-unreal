@@ -501,6 +501,14 @@ void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
   }
 }
 
+void ACesium3DTileset::SetEnableDoubleSidedCollisions(
+    bool bEnableDoubleSidedCollisions) {
+  if (this->EnableDoubleSidedCollisions != bEnableDoubleSidedCollisions) {
+    this->EnableDoubleSidedCollisions = bEnableDoubleSidedCollisions;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetCreateNavCollision(bool bCreateNavCollision) {
   if (this->CreateNavCollision != bCreateNavCollision) {
     this->CreateNavCollision = bCreateNavCollision;
