@@ -279,32 +279,35 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
       FString propertyId = propertyIt.first.c_str();
       TSharedRef<FString> pPropertyId = getSharedRef(propertyId);
 
+      PropertyStatisticsView propertyStatistics{
+          pClassId,
+          pPropertyId,
+          TArray<TSharedRef<StatisticView>>()};
       TSharedRef<PropertyStatisticsView> pProperty =
-          MakeShared<PropertyStatisticsView>(
-              pClassId,
-              pPropertyId,
-              TArray<TSharedRef<StatisticView>>());
+          MakeShared<PropertyStatisticsView>(std::move(propertyStatistics));
 
       if (propertyIt.second.min) {
-        TSharedRef<StatisticView> statistic = MakeShared<StatisticView>(
+        StatisticView statistic{
             pClassId,
             pPropertyId,
             ECesiumMetadataStatisticSemantic::Min,
             FCesiumMetadataValue::fromJsonValue(
                 *propertyIt.second.min,
-                valueType));
-        pProperty->statistics.Emplace(std::move(statistic));
+                valueType)};
+        pProperty->statistics.Emplace(
+            MakeShared<StatisticView>(std::move(statistic)));
       }
 
       if (propertyIt.second.max) {
-        TSharedRef<StatisticView> statistic = MakeShared<StatisticView>(
+        StatisticView statistic{
             pClassId,
             pPropertyId,
             ECesiumMetadataStatisticSemantic::Max,
             FCesiumMetadataValue::fromJsonValue(
                 *propertyIt.second.max,
-                valueType));
-        pProperty->statistics.Emplace(std::move(statistic));
+                valueType)};
+        pProperty->statistics.Emplace(
+            MakeShared<StatisticView>(std::move(statistic)));
       }
 
       properties.Add(std::move(pProperty));

@@ -497,7 +497,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           propertyView(
               propertyTableProperty,
               classProperty,
-              int64_t(values.size()),
+              int64_t(values.size() / *classProperty.count),
               std::span<const std::byte>(data.data(), data.size()));
 
       FCesiumPropertyTableProperty property(propertyView);
@@ -510,7 +510,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          int64_t(values.size()));
+          int64_t(values.size() / *classProperty.count));
 
       FCesiumMetadataValueType expectedType(
           ECesiumMetadataType::Scalar,

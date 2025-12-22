@@ -10,13 +10,15 @@
 static FCesiumMetadataValue EmptyMetadataValue = FCesiumMetadataValue();
 
 FCesiumMetadataValue::FCesiumMetadataValue()
-    : _value(swl::monostate{}),
+    : _value(),
+      _arrayValue(std::nullopt),
       _valueType(),
       _storage(),
       _pEnumDefinition(nullptr) {}
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FString& String)
     : _value(),
+      _arrayValue(std::nullopt),
       _valueType(
           ECesiumMetadataType::String,
           ECesiumMetadataComponentType::None,
@@ -32,12 +34,15 @@ FCesiumMetadataValue::FCesiumMetadataValue(const FString& String)
 }
 
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumPropertyArray&& Array)
-    : _value(), _valueType(), _pEnumDefinition(nullptr) {
+    : _value(),
+      _arrayValue(std::move(Array)),
+      _valueType(),
+      _pEnumDefinition(nullptr) {
   FCesiumMetadataValueType elementType =
-      UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(Array);
+      UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(
+          *this->_arrayValue);
   this->_valueType = {elementType.Type, elementType.ComponentType, true};
-  this->_pEnumDefinition = Array._pEnumDefinition;
-  this->_value = std::move(Array);
+  this->_pEnumDefinition = this->_arrayValue->_pEnumDefinition;
 }
 
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumMetadataValue&& rhs) =
@@ -47,9 +52,11 @@ FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
     : _value(),
+      _arrayValue(std::nullopt),
       _valueType(rhs._valueType),
       _pEnumDefinition(rhs._pEnumDefinition) {
   swl::visit([this](const auto& value) { this->_value = value; }, rhs._value);
+  this->_arrayValue = rhs._arrayValue;
 }
 
 FCesiumMetadataValue&
@@ -538,6 +545,10 @@ UCesiumMetadataValueBlueprintLibrary::GetTrueComponentType(
 bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     bool DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) -> bool {
         return CesiumGltf::MetadataConversions<bool, decltype(value)>::convert(
@@ -552,6 +563,10 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 uint8 UCesiumMetadataValueBlueprintLibrary::GetByte(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     uint8 DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) -> uint8 {
         return CesiumGltf::MetadataConversions<uint8, decltype(value)>::convert(
@@ -564,6 +579,10 @@ uint8 UCesiumMetadataValueBlueprintLibrary::GetByte(
 int32 UCesiumMetadataValueBlueprintLibrary::GetInteger(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     int32 DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) {
         return CesiumGltf::MetadataConversions<int32, decltype(value)>::convert(
@@ -576,6 +595,10 @@ int32 UCesiumMetadataValueBlueprintLibrary::GetInteger(
 int64 UCesiumMetadataValueBlueprintLibrary::GetInteger64(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     int64 DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) -> int64 {
         return CesiumGltf::MetadataConversions<int64_t, decltype(value)>::
@@ -588,6 +611,10 @@ int64 UCesiumMetadataValueBlueprintLibrary::GetInteger64(
 float UCesiumMetadataValueBlueprintLibrary::GetFloat(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     float DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) -> float {
         return CesiumGltf::MetadataConversions<float, decltype(value)>::convert(
@@ -600,6 +627,10 @@ float UCesiumMetadataValueBlueprintLibrary::GetFloat(
 double UCesiumMetadataValueBlueprintLibrary::GetFloat64(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     double DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) -> double {
         return CesiumGltf::MetadataConversions<double, decltype(value)>::
@@ -612,6 +643,10 @@ double UCesiumMetadataValueBlueprintLibrary::GetFloat64(
 FIntPoint UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FIntPoint& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue](auto value) -> FIntPoint {
         if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
@@ -629,6 +664,10 @@ FIntPoint UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
 FVector2D UCesiumMetadataValueBlueprintLibrary::GetVector2D(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FVector2D& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue](auto value) -> FVector2D {
         if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
@@ -646,6 +685,10 @@ FVector2D UCesiumMetadataValueBlueprintLibrary::GetVector2D(
 FIntVector UCesiumMetadataValueBlueprintLibrary::GetIntVector(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FIntVector& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue](auto value) -> FIntVector {
         if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
@@ -663,6 +706,10 @@ FIntVector UCesiumMetadataValueBlueprintLibrary::GetIntVector(
 FVector3f UCesiumMetadataValueBlueprintLibrary::GetVector3f(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FVector3f& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue](auto value) -> FVector3f {
         if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
@@ -680,6 +727,10 @@ FVector3f UCesiumMetadataValueBlueprintLibrary::GetVector3f(
 FVector UCesiumMetadataValueBlueprintLibrary::GetVector(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FVector& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue](auto value) -> FVector {
         if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
@@ -697,6 +748,10 @@ FVector UCesiumMetadataValueBlueprintLibrary::GetVector(
 FVector4 UCesiumMetadataValueBlueprintLibrary::GetVector4(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FVector4& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue](auto value) -> FVector4 {
         if constexpr (CesiumGltf::IsMetadataString<decltype(value)>::value) {
@@ -714,6 +769,10 @@ FVector4 UCesiumMetadataValueBlueprintLibrary::GetVector4(
 FMatrix UCesiumMetadataValueBlueprintLibrary::GetMatrix(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FMatrix& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   auto maybeMat4 = swl::visit(
       [&DefaultValue](auto value) -> std::optional<glm::dmat4> {
         return CesiumGltf::MetadataConversions<glm::dmat4, decltype(value)>::
@@ -728,6 +787,10 @@ FMatrix UCesiumMetadataValueBlueprintLibrary::GetMatrix(
 FString UCesiumMetadataValueBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FString& DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [&DefaultValue, &Value](auto value) -> FString {
         using ValueType = decltype(value);
@@ -761,21 +824,13 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return swl::visit(
-      [&EnumDefinition =
-           Value._pEnumDefinition](auto value) -> FCesiumPropertyArray {
-        if constexpr (std::is_same_v<decltype(value), FCesiumPropertyArray>) {
-          return value;
-        } else {
-          return FCesiumPropertyArray();
-        }
-      },
-      Value._value);
+  return Value._arrayValue ? *Value._arrayValue : FCesiumPropertyArray();
 }
 
 bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return swl::holds_alternative<swl::monostate>(Value._value);
+  return swl::holds_alternative<swl::monostate>(Value._value) &&
+         !Value._arrayValue;
 }
 
 TMap<FString, FString> UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(
@@ -795,6 +850,10 @@ TMap<FString, FString> UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(
 uint64 CesiumMetadataValueAccess::GetUnsignedInteger64(
     const FCesiumMetadataValue& Value,
     uint64 DefaultValue) {
+  if (Value._arrayValue) {
+    return DefaultValue;
+  }
+
   return swl::visit(
       [DefaultValue](auto value) -> uint64 {
         return CesiumGltf::MetadataConversions<uint64_t, decltype(value)>::

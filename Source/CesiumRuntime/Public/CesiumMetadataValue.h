@@ -98,8 +98,7 @@ private:
       glm::mat<4, 4, int64_t>,
       glm::mat<4, 4, uint64_t>,
       glm::mat<4, 4, float>,
-      glm::mat<4, 4, double>,
-      FCesiumPropertyArray>;
+      glm::mat<4, 4, double>>;
 #pragma endregion
 
 public:
@@ -120,6 +119,7 @@ public:
       const T& Value,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
       : _value(Value),
+        _arrayValue(),
         _valueType(TypeToMetadataValueType<T>(pEnumDefinition)),
         _storage(),
         _pEnumDefinition(pEnumDefinition) {}
@@ -131,23 +131,42 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value)
-      : FCesiumMetadataValue(
-            std::move(Value),
-            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
+      : FCesiumMetadataValue(Value, TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
-      const CesiumGltf::PropertyArrayCopy<ArrayType>& Copy,
+      const CesiumGltf::PropertyArrayView<ArrayType>& Value,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
       : FCesiumMetadataValue(
-            CesiumGltf::PropertyArrayCopy<ArrayType>(Copy),
+            CesiumGltf::PropertyArrayView<ArrayType>(Value),
             pEnumDefinition) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
-      CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
+      CesiumGltf::PropertyArrayView<ArrayType>&& Value,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(FCesiumPropertyArray(std::move(Copy))),
+      : _value(),
+        _arrayValue(FCesiumPropertyArray(std::move(Value))),
+        _valueType(
+            TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
+                pEnumDefinition)),
+        _storage(),
+        _pEnumDefinition(pEnumDefinition) {}
+
+  template <typename ArrayType>
+  explicit FCesiumMetadataValue(
+      const CesiumGltf::PropertyArrayCopy<ArrayType>& Value,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
+      : FCesiumMetadataValue(
+            CesiumGltf::PropertyArrayCopy<ArrayType>(Value),
+            pEnumDefinition) {}
+
+  template <typename ArrayType>
+  explicit FCesiumMetadataValue(
+      CesiumGltf::PropertyArrayCopy<ArrayType>&& Value,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
+      : _value(),
+        _arrayValue(FCesiumPropertyArray(std::move(Value))),
         _valueType(
             TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
                 pEnumDefinition)),
@@ -165,13 +184,17 @@ public:
   explicit FCesiumMetadataValue(
       const std::optional<T>& MaybeValue,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(), _valueType(), _pEnumDefinition(pEnumDefinition) {
+      : _value(),
+        _arrayValue(),
+        _valueType(),
+        _pEnumDefinition(pEnumDefinition) {
     if (!MaybeValue) {
       return;
     }
 
     FCesiumMetadataValue temp(*MaybeValue);
     this->_value = std::move(temp._value);
+    this->_arrayValue = std::move(temp._arrayValue);
     this->_valueType = std::move(temp._valueType);
   }
 
@@ -219,6 +242,8 @@ private:
       const FCesiumMetadataValueType& targetType);
 
   ValueType _value;
+  std::optional<FCesiumPropertyArray> _arrayValue;
+
   FCesiumMetadataValueType _valueType;
   std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;

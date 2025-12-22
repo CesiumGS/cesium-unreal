@@ -1154,7 +1154,7 @@ void ACesium3DTileset::LoadTileset() {
   this->_pFeaturesMetadataComponent =
       this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
 
-  if (this->_pFeaturesMetadataComponent != nullptr) {
+  if (this->_pFeaturesMetadataComponent.IsValid()) {
     this->_pFeaturesMetadataComponent->SyncStatistics();
   }
 
