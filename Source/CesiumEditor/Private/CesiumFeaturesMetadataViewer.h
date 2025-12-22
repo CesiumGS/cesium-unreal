@@ -5,6 +5,7 @@
 #include "CesiumFeatureIdSet.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataPropertyDetails.h"
+#include "CesiumMetadataValue.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
 #include "Templates/SharedPointer.h"
@@ -18,6 +19,8 @@
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
+
+enum class ECesiumMetadataStatisticSemantic;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
@@ -37,6 +40,60 @@ public:
   void SyncAndRebuildUI();
 
 private:
+  /**
+   * A view of a statistic value.
+   */
+  struct StatisticView {
+    /**
+     * The ID of the class to which the property for this statistic belongs.
+     */
+    TSharedRef<FString> pClassId;
+    /**
+     * The ID of the property to which this statistic applies.
+     */
+    TSharedRef<FString> pPropertyId;
+    /**
+     * The semantic of this statistic.
+     */
+    ECesiumMetadataStatisticSemantic semantic;
+    /**
+     * The value of this statistic.
+     */
+    FCesiumMetadataValue value;
+  };
+
+  /**
+   * A view of an instance of Cesium3DTileset::PropertyStatistics.
+   */
+  struct PropertyStatisticsView {
+    /**
+     * The ID of the class to which the property belongs.
+     */
+    TSharedRef<FString> pClassId;
+    /**
+     * The ID of the property to which these statistics apply.
+     */
+    TSharedRef<FString> pId;
+    /**
+     * The statistics of the property.
+     */
+    TArray<TSharedRef<StatisticView>> statistics;
+  };
+
+  /**
+   * A view of an instance of Cesium3DTileset::ClassStatistics.
+   */
+  struct ClassStatisticsView {
+    /**
+     * The ID of the class to which these statistics apply.
+     */
+    TSharedRef<FString> pId;
+    /**
+     * The properties belonging to the class.
+     */
+    TArray<TSharedRef<PropertyStatisticsView>> properties;
+  };
+
   /**
    * Encoding details for a `CesiumGltf::PropertyTableProperty` instance.
    */
@@ -187,6 +244,7 @@ private:
     TArray<TSharedRef<FeatureIdSetInstance>> instances;
   };
 
+  void gatherTilesetStatistics();
   template <
       typename TSource,
       typename TSourceBlueprintLibrary,
@@ -200,6 +258,16 @@ private:
    * UCesiumFeaturesMetadataComponent.
    */
   void syncPropertyEncodingDetails();
+
+  TSharedRef<ITableRow> createStatisticRow(
+      TSharedRef<StatisticView> pItem,
+      const TSharedRef<STableViewBase>& list);
+  TSharedRef<ITableRow> createPropertyStatisticsDropdown(
+      TSharedRef<PropertyStatisticsView> pItem,
+      const TSharedRef<STableViewBase>& list);
+  void createClassStatisticsDropdown(
+      TSharedRef<SScrollBox>& pContent,
+      const ClassStatisticsView& classStatistics);
 
   TSharedRef<ITableRow> createPropertyInstanceRow(
       TSharedRef<PropertyInstance> pItem,
@@ -229,14 +297,18 @@ private:
 
   enum ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
 
+  ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
   ComponentSearchResult findOnComponent(
       TSharedRef<PropertyInstance> pItem,
-      bool compareEncodingDetails);
-  ComponentSearchResult findOnComponent(TSharedRef<FeatureIdSetInstance> pItem);
+      bool compareEncodingDetails) const;
+  ComponentSearchResult
+  findOnComponent(TSharedRef<FeatureIdSetInstance> pItem) const;
 
+  void registerStatistic(TSharedRef<StatisticView> pItem);
   void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
   void registerFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
+  void removeStatistic(TSharedRef<StatisticView> pItem);
   void removePropertyInstance(TSharedRef<PropertyInstance> pItem);
   void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
@@ -249,6 +321,7 @@ private:
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
 
+  TArray<ClassStatisticsView> _statisticsClasses;
   // The current Features / Metadata implementation folds the class / property
   // schemas into each implementation of PropertyTable, PropertyTableProperty,
   // etc. So this functions as a property source-centric view instead of a

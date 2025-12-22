@@ -76,13 +76,13 @@ struct LoadedPrimitiveResult {
    * A map of feature ID set names to their corresponding texture coordinate
    * indices in the Unreal mesh.
    */
-  TMap<FString, uint32_t> FeaturesMetadataTexCoordParameters;
+  TMap<FString, uint32_t> featuresMetadataTexCoordParameters;
 
   /**
    * A map of accessors indices that point to feature ID attributes to the index
    * of the same feature ID set in CesiumPrimitiveFeatures.
    */
-  std::unordered_map<int32_t, int32_t> AccessorToFeatureIdIndexMap;
+  std::unordered_map<int32_t, int32_t> accessorToFeatureIdIndexMap;
 
   bool isUnlit = false;
 
@@ -210,5 +210,11 @@ struct LoadedModelResult {
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
+
+  /**
+   * Metadata statistics to pass to the Unreal material, mapped by generated
+   * parameter name.
+   */
+  TMap<FString, FCesiumMetadataValue> metadataStatistics;
 };
 } // namespace LoadGltfResult

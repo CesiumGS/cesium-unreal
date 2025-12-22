@@ -12,6 +12,7 @@
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
+#include "CesiumMetadataValueCustomization.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
@@ -119,6 +120,7 @@ void registerDetailCustomization() {
   FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
   FCesium3DTilesetCustomization::Register(PropertyEditorModule);
+  FCesiumMetadataValueCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -135,6 +137,7 @@ void unregisterDetailCustomization() {
     FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
     FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
+    FCesiumMetadataValueCustomization::Unregister(PropertyEditorModule);
   }
 }
 

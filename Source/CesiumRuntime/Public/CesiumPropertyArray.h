@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -9,10 +9,14 @@
 #include <CesiumGltf/PropertyArrayView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 #include <swl/variant.hpp>
+
 #include "CesiumPropertyArray.generated.h"
 
+struct FCesiumMetadataValue;
+
 /**
- * A Blueprint-accessible wrapper for an array property in glTF metadata.
+ * A Blueprint-accessible wrapper for an array value from 3D Tiles or glTF
+ * metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPropertyArray {
@@ -20,89 +24,88 @@ struct CESIUMRUNTIME_API FCesiumPropertyArray {
 
 private:
 #pragma region ArrayType
-  template <typename T>
-  using ArrayPropertyView = CesiumGltf::PropertyArrayView<T>;
+  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
 
   using ArrayType = swl::variant<
-      ArrayPropertyView<int8_t>,
-      ArrayPropertyView<uint8_t>,
-      ArrayPropertyView<int16_t>,
-      ArrayPropertyView<uint16_t>,
-      ArrayPropertyView<int32_t>,
-      ArrayPropertyView<uint32_t>,
-      ArrayPropertyView<int64_t>,
-      ArrayPropertyView<uint64_t>,
-      ArrayPropertyView<float>,
-      ArrayPropertyView<double>,
-      ArrayPropertyView<bool>,
-      ArrayPropertyView<std::string_view>,
-      ArrayPropertyView<glm::vec<2, int8_t>>,
-      ArrayPropertyView<glm::vec<2, uint8_t>>,
-      ArrayPropertyView<glm::vec<2, int16_t>>,
-      ArrayPropertyView<glm::vec<2, uint16_t>>,
-      ArrayPropertyView<glm::vec<2, int32_t>>,
-      ArrayPropertyView<glm::vec<2, uint32_t>>,
-      ArrayPropertyView<glm::vec<2, int64_t>>,
-      ArrayPropertyView<glm::vec<2, uint64_t>>,
-      ArrayPropertyView<glm::vec<2, float>>,
-      ArrayPropertyView<glm::vec<2, double>>,
-      ArrayPropertyView<glm::vec<3, int8_t>>,
-      ArrayPropertyView<glm::vec<3, uint8_t>>,
-      ArrayPropertyView<glm::vec<3, int16_t>>,
-      ArrayPropertyView<glm::vec<3, uint16_t>>,
-      ArrayPropertyView<glm::vec<3, int32_t>>,
-      ArrayPropertyView<glm::vec<3, uint32_t>>,
-      ArrayPropertyView<glm::vec<3, int64_t>>,
-      ArrayPropertyView<glm::vec<3, uint64_t>>,
-      ArrayPropertyView<glm::vec<3, float>>,
-      ArrayPropertyView<glm::vec<3, double>>,
-      ArrayPropertyView<glm::vec<4, int8_t>>,
-      ArrayPropertyView<glm::vec<4, uint8_t>>,
-      ArrayPropertyView<glm::vec<4, int16_t>>,
-      ArrayPropertyView<glm::vec<4, uint16_t>>,
-      ArrayPropertyView<glm::vec<4, int32_t>>,
-      ArrayPropertyView<glm::vec<4, uint32_t>>,
-      ArrayPropertyView<glm::vec<4, int64_t>>,
-      ArrayPropertyView<glm::vec<4, uint64_t>>,
-      ArrayPropertyView<glm::vec<4, float>>,
-      ArrayPropertyView<glm::vec<4, double>>,
-      ArrayPropertyView<glm::mat<2, 2, int8_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint8_t>>,
-      ArrayPropertyView<glm::mat<2, 2, int16_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint16_t>>,
-      ArrayPropertyView<glm::mat<2, 2, int32_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint32_t>>,
-      ArrayPropertyView<glm::mat<2, 2, int64_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint64_t>>,
-      ArrayPropertyView<glm::mat<2, 2, float>>,
-      ArrayPropertyView<glm::mat<2, 2, double>>,
-      ArrayPropertyView<glm::mat<3, 3, int8_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint8_t>>,
-      ArrayPropertyView<glm::mat<3, 3, int16_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint16_t>>,
-      ArrayPropertyView<glm::mat<3, 3, int32_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint32_t>>,
-      ArrayPropertyView<glm::mat<3, 3, int64_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint64_t>>,
-      ArrayPropertyView<glm::mat<3, 3, float>>,
-      ArrayPropertyView<glm::mat<3, 3, double>>,
-      ArrayPropertyView<glm::mat<4, 4, int8_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint8_t>>,
-      ArrayPropertyView<glm::mat<4, 4, int16_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint16_t>>,
-      ArrayPropertyView<glm::mat<4, 4, int32_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint32_t>>,
-      ArrayPropertyView<glm::mat<4, 4, int64_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint64_t>>,
-      ArrayPropertyView<glm::mat<4, 4, float>>,
-      ArrayPropertyView<glm::mat<4, 4, double>>>;
+      ArrayView<int8_t>,
+      ArrayView<uint8_t>,
+      ArrayView<int16_t>,
+      ArrayView<uint16_t>,
+      ArrayView<int32_t>,
+      ArrayView<uint32_t>,
+      ArrayView<int64_t>,
+      ArrayView<uint64_t>,
+      ArrayView<float>,
+      ArrayView<double>,
+      ArrayView<bool>,
+      ArrayView<std::string_view>,
+      ArrayView<glm::vec<2, int8_t>>,
+      ArrayView<glm::vec<2, uint8_t>>,
+      ArrayView<glm::vec<2, int16_t>>,
+      ArrayView<glm::vec<2, uint16_t>>,
+      ArrayView<glm::vec<2, int32_t>>,
+      ArrayView<glm::vec<2, uint32_t>>,
+      ArrayView<glm::vec<2, int64_t>>,
+      ArrayView<glm::vec<2, uint64_t>>,
+      ArrayView<glm::vec<2, float>>,
+      ArrayView<glm::vec<2, double>>,
+      ArrayView<glm::vec<3, int8_t>>,
+      ArrayView<glm::vec<3, uint8_t>>,
+      ArrayView<glm::vec<3, int16_t>>,
+      ArrayView<glm::vec<3, uint16_t>>,
+      ArrayView<glm::vec<3, int32_t>>,
+      ArrayView<glm::vec<3, uint32_t>>,
+      ArrayView<glm::vec<3, int64_t>>,
+      ArrayView<glm::vec<3, uint64_t>>,
+      ArrayView<glm::vec<3, float>>,
+      ArrayView<glm::vec<3, double>>,
+      ArrayView<glm::vec<4, int8_t>>,
+      ArrayView<glm::vec<4, uint8_t>>,
+      ArrayView<glm::vec<4, int16_t>>,
+      ArrayView<glm::vec<4, uint16_t>>,
+      ArrayView<glm::vec<4, int32_t>>,
+      ArrayView<glm::vec<4, uint32_t>>,
+      ArrayView<glm::vec<4, int64_t>>,
+      ArrayView<glm::vec<4, uint64_t>>,
+      ArrayView<glm::vec<4, float>>,
+      ArrayView<glm::vec<4, double>>,
+      ArrayView<glm::mat<2, 2, int8_t>>,
+      ArrayView<glm::mat<2, 2, uint8_t>>,
+      ArrayView<glm::mat<2, 2, int16_t>>,
+      ArrayView<glm::mat<2, 2, uint16_t>>,
+      ArrayView<glm::mat<2, 2, int32_t>>,
+      ArrayView<glm::mat<2, 2, uint32_t>>,
+      ArrayView<glm::mat<2, 2, int64_t>>,
+      ArrayView<glm::mat<2, 2, uint64_t>>,
+      ArrayView<glm::mat<2, 2, float>>,
+      ArrayView<glm::mat<2, 2, double>>,
+      ArrayView<glm::mat<3, 3, int8_t>>,
+      ArrayView<glm::mat<3, 3, uint8_t>>,
+      ArrayView<glm::mat<3, 3, int16_t>>,
+      ArrayView<glm::mat<3, 3, uint16_t>>,
+      ArrayView<glm::mat<3, 3, int32_t>>,
+      ArrayView<glm::mat<3, 3, uint32_t>>,
+      ArrayView<glm::mat<3, 3, int64_t>>,
+      ArrayView<glm::mat<3, 3, uint64_t>>,
+      ArrayView<glm::mat<3, 3, float>>,
+      ArrayView<glm::mat<3, 3, double>>,
+      ArrayView<glm::mat<4, 4, int8_t>>,
+      ArrayView<glm::mat<4, 4, uint8_t>>,
+      ArrayView<glm::mat<4, 4, int16_t>>,
+      ArrayView<glm::mat<4, 4, uint16_t>>,
+      ArrayView<glm::mat<4, 4, int32_t>>,
+      ArrayView<glm::mat<4, 4, uint32_t>>,
+      ArrayView<glm::mat<4, 4, int64_t>>,
+      ArrayView<glm::mat<4, 4, uint64_t>>,
+      ArrayView<glm::mat<4, 4, float>>,
+      ArrayView<glm::mat<4, 4, double>>>;
 #pragma endregion
 
 public:
   /**
-   * Constructs an empty array instance with an unknown element type.
+   * Constructs an empty instance with an unknown element type.
    */
-  FCesiumPropertyArray() : _value(), _elementType() {}
+  FCesiumPropertyArray();
 
   /**
    * Constructs an array instance.
@@ -142,16 +145,11 @@ public:
   FCesiumPropertyArray& operator=(const FCesiumPropertyArray& rhs);
 
 private:
-  template <typename T, typename... VariantType>
-  static bool
-  holdsArrayAlternative(const swl::variant<VariantType...>& variant) {
-    return swl::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
-  }
-
   ArrayType _value;
   FCesiumMetadataValueType _elementType;
   std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumPropertyArrayBlueprintLibrary;
+  friend struct FCesiumMetadataValue;
 };

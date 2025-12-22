@@ -893,6 +893,27 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {
   }
 }
 
+FString getNameForStatistic(
+    const FString& classId,
+    const FString& propertyId,
+    ECesiumMetadataStatisticSemantic semantic) {
+  FString suffix;
+
+  switch (semantic) {
+  case ECesiumMetadataStatisticSemantic::Min:
+    suffix = MaterialPropertyMinSuffix;
+    break;
+  case ECesiumMetadataStatisticSemantic::Max:
+    suffix = MaterialPropertyMaxSuffix;
+    break;
+  default:
+    // UE_LOG?
+    return FString();
+  }
+
+  return createHlslSafeName(classId + "_" + propertyId) + suffix;
+}
+
 // The result should be a safe hlsl identifier, but any name clashes
 // after fixing safety will not be automatically handled.
 FString createHlslSafeName(const FString& rawName) {

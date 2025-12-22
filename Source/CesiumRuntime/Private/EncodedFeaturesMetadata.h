@@ -32,6 +32,7 @@ struct FCesiumPrimitiveMetadataDescription;
 struct FCesiumMetadataPropertyDetails;
 class UMaterialInstanceDynamic;
 enum EMaterialParameterAssociation : int;
+enum class ECesiumMetadataStatisticSemantic;
 
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
@@ -95,6 +96,13 @@ static const FString MaterialPropertyScaleSuffix = "_SCALE";
 static const FString MaterialPropertyNoDataSuffix = "_NO_DATA";
 static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
 static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
+
+/**
+ * - Property Min: Prefix + PropertyEntityName + PropertyName + "_MIN"
+ * - Property Max: Prefix + PropertyEntityName + PropertyName + "_MAX"
+ */
+static const FString MaterialPropertyMinSuffix = "_MIN";
+static const FString MaterialPropertyMaxSuffix = "_MAX";
 
 /**
  * Naming convention for material inputs (for use in custom functions):
@@ -503,6 +511,17 @@ bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata);
 
 void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 
+#pragma endregion
+
+#pragma region Statistics
+/**
+ * @brief Generates a name for a property statistic from a tileset's metadata.
+ * @param PropertyTable The property table
+ */
+FString getNameForStatistic(
+    const FString& classId,
+    const FString& propertyId,
+    ECesiumMetadataStatisticSemantic semantic);
 #pragma endregion
 
 #pragma region Utility
