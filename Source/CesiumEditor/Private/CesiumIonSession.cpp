@@ -193,8 +193,8 @@ void CesiumIonSession::connect() {
                     Promise<Connection> promise =
                         thiz->_asyncSystem.createPromise<Connection>();
                     if (!result.value) {
-                      promise.reject(std::runtime_error(
-                          result.errors.format("Errors connecting:")));
+                      promise.reject(std::runtime_error(result.errors.format(
+                          "Errors connecting to Cesium ion:")));
                     } else {
                       promise.resolve(std::move(*result.value));
                     }
@@ -203,7 +203,6 @@ void CesiumIonSession::connect() {
                   });
         }
 
-        // We can pass dummy values to the connection as
         return thiz->_asyncSystem
             .createResolvedFuture<CesiumIonClient::Connection>(
                 CesiumIonClient::Connection(
