@@ -51,6 +51,18 @@ void logResponseErrors(const std::exception& exception) {
       UTF8_TO_TCHAR(exception.what()));
 }
 
+template <typename T>
+bool disconnectOnNoValidToken(
+    CesiumIonSession& session,
+    const Response<T>& response) {
+  if (response.errorCode == "NoValidToken") {
+    session.disconnect();
+    return true;
+  } else {
+    return false;
+  }
+}
+
 } // namespace
 
 CesiumIonSession::CesiumIonSession(
@@ -248,13 +260,16 @@ void CesiumIonSession::resume() {
     return;
   }
 
+  FString userAccessToken = pUserAccessToken ? *pUserAccessToken : "";
+  FString userRefreshToken = pUserRefreshToken ? *pUserRefreshToken : "";
+
   this->_isResuming = true;
 
   std::shared_ptr<CesiumIonSession> thiz = this->shared_from_this();
 
   // Verify that the connection actually works.
   this->ensureAppDataLoaded()
-      .thenInMainThread([thiz, pUserAccessToken, pUserRefreshToken](
+      .thenInMainThread([thiz, userAccessToken, userRefreshToken](
                             bool loadedAppData) {
         if (!loadedAppData || !thiz->_appData.has_value()) {
           Promise<void> promise = thiz->_asyncSystem.createPromise<void>();
@@ -265,7 +280,9 @@ void CesiumIonSession::resume() {
         }
 
         CesiumUtility::Result<LoginToken> tokenResult =
-            LoginToken::parse(TCHAR_TO_UTF8(**pUserAccessToken));
+            userAccessToken.IsEmpty()
+                ? LoginToken("", -1)
+                : LoginToken::parse(TCHAR_TO_UTF8(*userAccessToken));
         if (!tokenResult.value) {
           Promise<void> promise = thiz->_asyncSystem.createPromise<void>();
           promise.reject(std::runtime_error(
@@ -277,7 +294,7 @@ void CesiumIonSession::resume() {
             thiz->_asyncSystem,
             thiz->_pAssetAccessor,
             std::move(*tokenResult.value),
-            TCHAR_TO_UTF8(**pUserRefreshToken),
+            TCHAR_TO_UTF8(*userRefreshToken),
             thiz->_pServer->OAuth2ApplicationID,
             OAUTH2_REDIRECT_URI,
             *thiz->_appData,
@@ -309,6 +326,11 @@ void CesiumIonSession::disconnect() {
   this->_defaults.reset();
   this->_appData.reset();
 
+  this->_loadProfileQueued = false;
+  this->_loadAssetsQueued = false;
+  this->_loadTokensQueued = false;
+  this->_loadDefaultsQueued = false;
+
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   pSettings->UserAccessTokenMap.Remove(this->_pServer.Get());
   pSettings->UserRefreshTokenMap.Remove(this->_pServer.Get());
@@ -334,8 +356,10 @@ void CesiumIonSession::refreshProfile() {
 
   this->_connection->me()
       .thenInMainThread([thiz](Response<Profile>&& profile) {
-        logResponseErrors(profile);
         thiz->_isLoadingProfile = false;
+        logResponseErrors(profile);
+        if (disconnectOnNoValidToken(*thiz, profile))
+          return;
         thiz->_profile = std::move(profile.value);
         thiz->ProfileUpdated.Broadcast();
         if (thiz->_loadProfileQueued)
@@ -364,8 +388,10 @@ void CesiumIonSession::refreshAssets() {
 
   this->_connection->assets()
       .thenInMainThread([thiz](Response<Assets>&& assets) {
-        logResponseErrors(assets);
         thiz->_isLoadingAssets = false;
+        logResponseErrors(assets);
+        if (disconnectOnNoValidToken(*thiz, assets))
+          return;
         thiz->_assets = std::move(assets.value);
         thiz->AssetsUpdated.Broadcast();
         if (thiz->_loadAssetsQueued)
@@ -394,8 +420,10 @@ void CesiumIonSession::refreshTokens() {
 
   this->_connection->tokens()
       .thenInMainThread([thiz](Response<TokenList>&& tokens) {
-        logResponseErrors(tokens);
         thiz->_isLoadingTokens = false;
+        logResponseErrors(tokens);
+        if (disconnectOnNoValidToken(*thiz, tokens))
+          return;
         thiz->_tokens = tokens.value
                             ? std::make_optional(std::move(tokens.value->items))
                             : std::nullopt;
@@ -426,8 +454,10 @@ void CesiumIonSession::refreshDefaults() {
 
   this->_connection->defaults()
       .thenInMainThread([thiz](Response<Defaults>&& defaults) {
-        logResponseErrors(defaults);
         thiz->_isLoadingDefaults = false;
+        logResponseErrors(defaults);
+        if (disconnectOnNoValidToken(*thiz, defaults))
+          return;
         thiz->_defaults = std::move(defaults.value);
         thiz->DefaultsUpdated.Broadcast();
         if (thiz->_loadDefaultsQueued)
