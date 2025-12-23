@@ -473,7 +473,7 @@ void CesiumIonSession::refreshDefaults() {
       });
 }
 
-std::optional<CesiumIonClient::Connection>&
+const std::optional<CesiumIonClient::Connection>&
 CesiumIonSession::getConnection() const {
   return this->_connection;
 }
