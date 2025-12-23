@@ -204,7 +204,7 @@ void showAssetDepotConfirmWindow(
 } // namespace
 
 void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
-  std::optional<CesiumIonClient::Connection>& connection =
+  const std::optional<CesiumIonClient::Connection>& connection =
       FCesiumEditorModule::serverManager().GetCurrentSession()->getConnection();
   if (!connection) {
     UE_LOG(
@@ -222,7 +222,7 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
   SelectCesiumIonToken::SelectAndAuthorizeToken(
       FCesiumEditorModule::serverManager().GetCurrentServer(),
       assetIDs)
-      .thenInMainThread([&connection, tilesetID = item->tilesetID](
+      .thenInMainThread([connection, tilesetID = item->tilesetID](
                             const std::optional<Token>& /*maybeToken*/) {
         // If token selection was canceled, or if an error occurred while
         // selecting the token, ignore it and create the tileset anyway. It's
@@ -230,7 +230,7 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
         // the problem using the resulting Troubleshooting panel.
         return connection->asset(tilesetID);
       })
-      .thenInMainThread([item, &connection](Response<Asset>&& response) {
+      .thenInMainThread([item, connection](Response<Asset>&& response) {
         if (!response.value.has_value()) {
           return connection->getAsyncSystem().createResolvedFuture<int64_t>(
               std::move(int64_t(item->tilesetID)));

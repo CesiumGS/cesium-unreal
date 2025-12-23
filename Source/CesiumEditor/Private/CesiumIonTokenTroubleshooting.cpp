@@ -546,72 +546,64 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
 
   int64 assetID = getIonAssetID(pIonObject);
 
-  CesiumUtility::Result<LoginToken>&& token =
-      CesiumIonClient::LoginToken::parse(TCHAR_TO_UTF8(*state.token));
+  auto pConnection = std::make_shared<Connection>(
+      ionSession.getAsyncSystem(),
+      ionSession.getAssetAccessor(),
+      TCHAR_TO_UTF8(*state.token),
+      ionSession.getAppData(),
+      TCHAR_TO_UTF8(*getCesiumIonServer(pIonObject)->ApiUrl));
 
-  if (!token.value) {
-    state.isValid = false;
-  } else {
-    auto pConnection = std::make_shared<Connection>(
-        ionSession.getAsyncSystem(),
-        ionSession.getAssetAccessor(),
-        *token.value,
-        ionSession.getAppData(),
-        TCHAR_TO_UTF8(*getCesiumIonServer(pIonObject)->ApiUrl));
+  // Don't let this panel be destroyed while the async operations below are in
+  // progress.
+  TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
+      StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
 
-    // Don't let this panel be destroyed while the async operations below are in
-    // progress.
-    TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
-        StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
+  pConnection->me()
+      .thenInMainThread(
+          [pPanel, pConnection, assetID, &state](Response<Profile>&& profile) {
+            state.isValid = profile.value.has_value();
+            if (pPanel->IsVisible()) {
+              return pConnection->asset(assetID);
+            } else {
+              return pConnection->getAsyncSystem().createResolvedFuture(
+                  Response<Asset>{});
+            }
+          })
+      .thenInMainThread([pPanel, pConnection, &state](Response<Asset>&& asset) {
+        state.allowsAccessToAsset = asset.value.has_value();
 
-    pConnection->me()
-        .thenInMainThread([pPanel, pConnection, assetID, &state](
-                              Response<Profile>&& profile) {
-          state.isValid = profile.value.has_value();
-          if (pPanel->IsVisible()) {
-            return pConnection->asset(assetID);
-          } else {
-            return pConnection->getAsyncSystem().createResolvedFuture(
-                Response<Asset>{});
+        if (pPanel->IsVisible()) {
+          // Query the tokens using the user's connection (_not_ the token
+          // connection created above).
+          CesiumIonSession& ionSession = getSession(pPanel->_pIonObject);
+          ionSession.resume();
+
+          const std::optional<Connection>& userConnection =
+              ionSession.getConnection();
+          if (!userConnection) {
+            Response<TokenList> result{};
+            return ionSession.getAsyncSystem().createResolvedFuture(
+                std::move(result));
           }
-        })
-        .thenInMainThread(
-            [pPanel, pConnection, &state](Response<Asset>&& asset) {
-              state.allowsAccessToAsset = asset.value.has_value();
-
-              if (pPanel->IsVisible()) {
-                // Query the tokens using the user's connection (_not_ the token
-                // connection created above).
-                CesiumIonSession& ionSession = getSession(pPanel->_pIonObject);
-                ionSession.resume();
-
-                std::optional<Connection>& userConnection =
-                    ionSession.getConnection();
-                if (!userConnection) {
-                  Response<TokenList> result{};
-                  return ionSession.getAsyncSystem().createResolvedFuture(
-                      std::move(result));
-                }
-                return userConnection->tokens();
-              } else {
-                return pConnection->getAsyncSystem().createResolvedFuture(
-                    Response<TokenList>{});
-              }
-            })
-        .thenInMainThread([pPanel, pConnection, &state](
-                              Response<TokenList>&& tokens) {
-          state.associatedWithUserAccount = false;
-          if (tokens.value.has_value()) {
-            auto it = std::find_if(
-                tokens.value->items.begin(),
-                tokens.value->items.end(),
-                [&pConnection](const Token& token) {
-                  return token.token == pConnection->getAccessToken();
-                });
-            state.associatedWithUserAccount = it != tokens.value->items.end();
-          }
-        });
-  }
+          return userConnection->tokens();
+        } else {
+          return pConnection->getAsyncSystem().createResolvedFuture(
+              Response<TokenList>{});
+        }
+      })
+      .thenInMainThread(
+          [pPanel, pConnection, &state](Response<TokenList>&& tokens) {
+            state.associatedWithUserAccount = false;
+            if (tokens.value.has_value()) {
+              auto it = std::find_if(
+                  tokens.value->items.begin(),
+                  tokens.value->items.end(),
+                  [&pConnection](const Token& token) {
+                    return token.token == pConnection->getAccessToken();
+                  });
+              state.associatedWithUserAccount = it != tokens.value->items.end();
+            }
+          });
 
   return this->createDiagnosticPanel(
       state.name,
@@ -775,7 +767,7 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
   }
 
   CesiumIonSession& session = getSession(this->_pIonObject);
-  std::optional<Connection>& maybeConnection = session.getConnection();
+  const std::optional<Connection>& maybeConnection = session.getConnection();
   if (!session.isConnected() || !maybeConnection) {
     UE_LOG(
         LogCesiumEditor,
@@ -792,10 +784,8 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
                                              pIonObject = this->_pIonObject,
                                              ionAssetID = getIonAssetID(
                                                  this->_pIonObject),
-                                             connection =
-                                                 std::move(*maybeConnection)](
-                                                Response<Token>&&
-                                                    response) mutable {
+                                             connection = *maybeConnection](
+                                                Response<Token>&& response) {
     if (!pStillAlive.IsValid()) {
       // UObject has been destroyed
       return connection.getAsyncSystem().createResolvedFuture();
