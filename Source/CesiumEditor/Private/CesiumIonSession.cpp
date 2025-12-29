@@ -280,7 +280,7 @@ void CesiumIonSession::resume() {
 
         CesiumUtility::Result<LoginToken> tokenResult =
             userAccessToken.IsEmpty()
-                ? LoginToken("", -1)
+                ? LoginToken("", std::nullopt)
                 : LoginToken::parse(TCHAR_TO_UTF8(*userAccessToken));
         if (!tokenResult.value) {
           Promise<void> promise = thiz->_asyncSystem.createPromise<void>();
