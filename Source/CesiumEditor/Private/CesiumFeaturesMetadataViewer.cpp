@@ -230,7 +230,7 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
   }
   const Cesium3DTiles::Schema& schema = *pMetadata->schema;
 
-  for (const auto classIt : maybeStatistics->classes) {
+  for (const auto& classIt : maybeStatistics->classes) {
     if (schema.classes.find(classIt.first) == schema.classes.end()) {
       UE_LOG(
           LogCesiumEditor,
@@ -246,7 +246,7 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
 
     TArray<TSharedRef<PropertyStatisticsView>> properties;
 
-    for (const auto propertyIt : classIt.second.properties) {
+    for (const auto& propertyIt : classIt.second.properties) {
       if (tilesetClass.properties.find(propertyIt.first) ==
           tilesetClass.properties.end()) {
         UE_LOG(
@@ -1343,9 +1343,8 @@ FCesiumMetadataPropertyStatisticsDescription* findPropertyStatistic(
   }
 
   if (!pClass) {
-    int32 index = statistics.Emplace(
-        classId,
-        TArray<FCesiumMetadataPropertyStatisticsDescription>());
+    int32 index =
+        statistics.Emplace(FCesiumMetadataClassStatisticsDescription{classId});
     pClass = &statistics[index];
   }
 
@@ -1357,7 +1356,8 @@ FCesiumMetadataPropertyStatisticsDescription* findPropertyStatistic(
           });
 
   if (!pProperty && createIfMissing) {
-    int32 index = pClass->Properties.Emplace(propertyId);
+    int32 index = pClass->Properties.Emplace(
+        FCesiumMetadataPropertyStatisticsDescription{propertyId});
     pProperty = &pClass->Properties[index];
   }
 
@@ -1566,7 +1566,8 @@ void CesiumFeaturesMetadataViewer::registerStatistic(
       pValue != nullptr) {
     pValue->Value = pItem->value;
   } else {
-    pProperty->Values.Emplace(pItem->semantic, pItem->value);
+    pProperty->Values.Emplace(
+        FCesiumMetadataPropertyStatisticValue{pItem->semantic, pItem->value});
   }
 
   this->_pFeaturesMetadataComponent->PostEditChange();
