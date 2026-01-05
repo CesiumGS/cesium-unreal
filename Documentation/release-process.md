@@ -84,7 +84,7 @@ If the uploaded packages are later found to have problems during testing, this s
 
 Cesium for Unreal supports a large number of platforms and Unreal Engine versions, so it is a huge amount of work to manually test them all. As a compromise, we generally:
 
-- Thoroughly test Editor and Player builds on Windows on the oldest and newest version of Unreal Engine that we currently support.
+- Thoroughly test Editor and Player builds on Windows on the oldest and newest versions of Unreal Engine that we currently support.
 - Thoroughly test other platforms when a release has an above-average chance of breaking on those other platforms. For example, if we added platform-specific code or added new shaders that could have compatibility problems on mobile platforms.
 - Spot check one or two other platforms / versions each release, and try to switch up which ones those are.
 
