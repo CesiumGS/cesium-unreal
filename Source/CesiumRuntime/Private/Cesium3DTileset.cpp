@@ -1312,7 +1312,15 @@ void ACesium3DTileset::DestroyTileset() {
 std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
   ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
-  std::vector<FCesiumCamera> cameras = this->GetPlayerCameras();
+  std::vector<FCesiumCamera> cameras;
+  if (pCameraManager && pCameraManager->useMainCamera) {
+    std::vector<FCesiumCamera> playerCameras = this->GetPlayerCameras();
+    cameras.insert(
+        cameras.end(),
+        std::make_move_iterator(playerCameras.begin()),
+        std::make_move_iterator(playerCameras.end()));
+
+  }
   std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
   cameras.insert(
       cameras.end(),
