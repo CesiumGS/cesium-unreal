@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### v2.22.1 - 2026-01-05
+
+##### Fixes :wrench:
+
+- Added a missing include that prevented the plugin from successfully building in non-unity builds.
+
 ### v2.22.0 - 2026-01-05
 
 ##### Breaking Changes :mega:
