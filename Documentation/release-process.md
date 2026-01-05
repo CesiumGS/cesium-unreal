@@ -34,7 +34,7 @@ In the cesium-native repo:
    - Log in using your own `@cesium.com` email address.
    - Click your name in the top-right corner and choose "Switch to CesiumJS". If you don't see this option, ask someone on the ion team to add you to the CesiumJS account.
    - Click "Access Tokens".
-   - Create a new token named "Cesium for Unreal Samples vX.Y.Z - Delete on Febtober 32, 2026". Replace the version number and date with real values. The date should be the date of the release two months out.
+   - Create a new token named "Cesium for Unreal Samples vX.Y.Z - Delete on MONTH DAY, YEAR", using real values for the version number and date. The date should be the date of the release two months out, using the month's name rather than its number.
    - Enable _only_ the `assets:read` and `geocode` scopes on the new token.
    - Set the other properties as follows (these should be the defaults):
      - `Allow URLs`: "All Urls"
