@@ -9,8 +9,8 @@ class IDetailCategoryBuilder;
 
 /**
  * An implementation of the IDetailCustomization interface that customizes
- * the Details View of a CesiumMetadataPropertyStatisticValue. It is registered in
- * FCesiumEditorModule::StartupModule.
+ * the Details View of a CesiumMetadataPropertyStatisticValue. It is registered
+ * in FCesiumEditorModule::StartupModule.
  */
 class FCesiumMetadataValueCustomization : public IPropertyTypeCustomization {
 public:
