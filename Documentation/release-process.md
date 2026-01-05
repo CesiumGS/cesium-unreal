@@ -108,7 +108,7 @@ To test the release, do the following:
 
 ## Release!
 
-1. Tag the cesium-native release, and push the tag. Be sure you're tagging the exact commit that cesium-unreal is using.
+1. Tag the cesium-native release if you haven't already, and push the tag. Be sure you're tagging the exact commit that cesium-unreal is using.
    - `git tag -a v0.56.0 -m "0.56.0 release"`
    - `git push origin v0.56.0`
 2. Tag the cesium-unreal release, and push the tag. Be sure you're tagging the exact commit that you tested.
