@@ -53,7 +53,7 @@ Cesium for Unreal has several release packages, and they're fairly large, so it 
 4. Download the artifacts that don't have an operating system in its name, e.g., `CesiumForUnreal-5X-main` and `CesiumForUnreal-5X-SourceOnly-main`. There will typically be 6 of these in total: a full build and a "SourceOnly" build for each of the three supported Unreal Engine versions.
 5. Rename each of the files downloaded above, replacing `main` in each with the actual release version number. For example, `CesiumForUnreal-57-SourceOnly-main.zip` might become `CesiumForUnreal-57-SourceOnly-v2.22.0.zip`.
 6. Create a new release by visiting https://github.com/CesiumGS/cesium-unreal/releases/new.
-7. We haven't created a tag for this release yet, so leave that blank for now.
+7. Leave the release tag blank for now, as we haven't created it yet.
 8. Set `Release Title` to "Cesium for Unreal v2.22.0", updating the version number as appropriate.
 9. Copy the "release notes" section from a previous release, which you can find by visiting https://github.com/CesiumGS/cesium-unreal/releases/latest and clicking the Edit button. But be careful not to save!
 10. Update the version numbers as appropriate in the top section. Replace the changelog section with the actual changelog entries from this release. Copy it from `CHANGES.md`.
