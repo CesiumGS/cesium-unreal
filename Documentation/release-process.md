@@ -52,17 +52,17 @@ Cesium for Unreal has several release packages, and they're fairly large, so it 
 3. Scroll down to **Artifacts**.
 4. Download the artifacts that don't have an operating system in its name, e.g., `CesiumForUnreal-5X-main` and `CesiumForUnreal-5X-SourceOnly-main`. There will typically be 6 of these in total: a full build and a "SourceOnly" build for each of the three supported Unreal Engine versions.
 5. Rename each of the files downloaded above, replacing `main` in each with the actual release version number. For example, `CesiumForUnreal-57-SourceOnly-main.zip` might become `CesiumForUnreal-57-SourceOnly-v2.22.0.zip`.
-6. Create a new release by visiting https://github.com/CesiumGS/cesium-unreal/releases/new`.
-7. We haven't created a tag for this release, so leave that blank for now.
+6. Create a new release by visiting https://github.com/CesiumGS/cesium-unreal/releases/new.
+7. We haven't created a tag for this release yet, so leave that blank for now.
 8. Set `Release Title` to "Cesium for Unreal v2.22.0", updating the version number as appropriate.
-9. Copy the "release notes" section from a previous release, which can find by visiting https://github.com/CesiumGS/cesium-unreal/releases/latest and clicking the Edit button. But be careful not to save!
+9. Copy the "release notes" section from a previous release, which you can find by visiting https://github.com/CesiumGS/cesium-unreal/releases/latest and clicking the Edit button. But be careful not to save!
 10. Update the version numbers as appropriate in the top section. Replace the changelog section with the actual changelog entries from this release. Copy it from `CHANGES.md`.
 11. Upload all 6 release package files by dragging them into the "Attach binaries" box. This will take a little while and doesn't have great feedback.
 12. Click Save Draft. Be careful not to publish it yet.
 13. Visit the [releases page](https://github.com/CesiumGS/cesium-unreal/releases) and you'll see the new draft release at the top. Expand the "Assets" section you should see the files you uploaded above.
 14. Take a moment to verify that the SHA256 listed for each file is identical to the SHA256 for the same file on the Artifacts page above. If they are, this proves the release package hasn't been inadvertently modified while you had a copy of it on your local machine. If they're different, stop the release process immediately!
 
-If the uploaded packages are later found to have problems during testing, this step will need to repeated.
+If the uploaded packages are later found to have problems during testing, this step will need to be repeated.
 
 ## Install the Updated Packages
 
@@ -72,7 +72,7 @@ If the uploaded packages are later found to have problems during testing, this s
 ## Update the "Cesium for Unreal Samples" Project
 
 1. Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory.
-2. Open the Samples project in the oldest support version of Unreal Engine. It is essential that you don't use a newer version for this step.
+2. Open the Samples project in the oldest supported version of Unreal Engine. It is essential that you don't use a newer version for this step.
 3. On the Cesium panel, click the Tokens button.
 4. In the "Specify a token" section, replace the token string with the one you created on Cesium ion above. This is the same one that you pasted into `CesiumSceneGeneration.cpp`.
 5. Click "Use as Project Default Token". Ensure that the tilesets reload successfully with the new token.
@@ -88,17 +88,17 @@ Cesium for Unreal supports a large number of platforms and Unreal Engine version
 - Thoroughly test other platforms when a release has an above-average chance of breaking on those other platforms. For example, if we added platform-specific code or added new shaders that could have compatibility problems on mobile platforms.
 - Spot check one or two other platforms / versions each release, and try to switch up which ones those are.
 
-To test the release, do the following. In the instructions below, replace `v2.0.0` with the actual version number you are targeting. Let `X` represent the minor version of Unreal Engine 5 you're currently testing.
+To test the release, do the following:
 
 1. Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory.
 2. The Samples project will be configured to use the oldest supported version of Unreal Engine. To test in a different version, right-click on the `CesiumForUnrealSamples.uproject` file and select "Switch Unreal Engine Version". On Windows 11, you may need to choose "Show More Options" first.
 3. Double-click the `CesiumForUnrealSamples.uproject` file to open it in the Editor.
 4. Verify that the version number in the lower-right corner of the Cesium panel is what you expect.
 5. Open each level in Content -> CesiumSamples -> Maps and verify it works correctly.
-  - Does it open without crashing?
-  - Does it look correct?
-  - Press Play. Does each sample work as expected? The billboard in each level should give you a good idea of what to expect.
-  - For `04_MAIN_CesiumSublevels`, make sure that the sub-levels are loading as expected. Ensure that no other tilesets or objects are showing outside of their intended sub-levels.
+   - Does it open without crashing?
+   - Does it look correct?
+   - Press Play. Does each sample work as expected? The billboard in each level should give you a good idea of what to expect.
+   - For `04_MAIN_CesiumSublevels`, make sure that the sub-levels are loading as expected. Ensure that no other tilesets or objects are showing outside of their intended sub-levels.
 6. Using one of the sample scenes, open the foliage window and create a new foliage type using any engine static mesh. Verify that foliage painting on Cesium World Terrain works correctly.
 7. Verify that signing in to Cesium ion works correctly.
 8. Test packaging, especially in the Shipping configuration.
@@ -118,7 +118,7 @@ To test the release, do the following. In the instructions below, replace `v2.0.
    - Visit https://github.com/CesiumGS/cesium-unreal/releases.
    - Find the Draft release you previously created and click its Edit button.
    - Select the tag you just created and pushed.
-   - Double-check the other details look good.
+   - Double-check that the other details look good.
    - Click "Publish release".
 4. Publish the release on Epic's Fab.
    - Visit https://fab.com.
@@ -131,7 +131,7 @@ To test the release, do the following. In the instructions below, replace `v2.0.
      - Change the "Project file link" to the URL of the "SourceOnly" package for that particular version in the GitHub Release you published above.
      - Change the "Version notes" field with the new version number and link to the changelog for that version.
    - Farther down the page, in the "Technical Details" section, update the version number, release date, and link to the changelog.
-   - Double check everything looks good (in particular, that the links to the SourceOnly packages work) and then click "Submit for Review".
+   - Double-check that everything looks good (in particular, that the links to the SourceOnly packages work) and then click "Submit for Review".
    - Select the option to publish immediately after the release is approved.
 5. Wait for Epic to publish the new release.
    - This usually takes somewhere between a couple of hours and a couple of days.
@@ -164,7 +164,7 @@ Once Epic has published the new release, there are a few more steps to complete.
    - Copy the release notes from a previous release, and modify them as appropriate.
    - Drag the download release ZIP file into the "Attach binaries" box and wait for it to upload.
    - Click "Publish Release".
-3. Publish Cesium for Unreal Sapmles to Fab.
+3. Publish Cesium for Unreal Samples to Fab.
    - Visit https://fab.com and sign in as `unreal@cesium.com` as before.
    - Go to Publish -> Listings -> Cesium for Unreal Samples.
    - Click "Unreal Engine" under the "Included Formats" section in the left sidebar.
@@ -173,7 +173,7 @@ Once Epic has published the new release, there are a few more steps to complete.
      - Change the "Project file link" to the URL of the release ZIP you published on the GitHub Releases page.
    - Click "Submit for review".
 4. Delete the old Cesium ion token.
-   - On the https://ion.cesium.com "Access Tokens" page, find the token that says "Delete on [today's date]".
+   - On the https://ion.cesium.com "Access Tokens" page, find the token that says something like: "Cesium for Unreal Samples vX.Y.Z - Delete on [today's date]".
    - Look at the token's recent usage. It won't be zero, but it should be significantly lower than the newer token.
    - Delete the old token.
    - The goal is to ensure that a copy of the Cesium for Unreal Samples project downloaded at any time will continue to work for a month. That's why we delete the token from two releases ago. However, if for whatever reason we skip releasing for a month, we should _not_ delete the old token on the date indicated in the description, and instead delete it a month later.
