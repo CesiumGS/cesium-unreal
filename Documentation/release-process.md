@@ -4,17 +4,7 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 
 ## Prepare Cesium Native for Release
 
-[cesium-native](https://github.com/CesiumGS/cesium-native) is used as a git submodule of cesium-unreal. So the first step in releasing Cesium for Unreal is to make sure that Cesium Native is ready for release.
-
-In the cesium-native repo:
-
-1. Verify that CI is passing on all platforms. Fix it if not.
-2. Verify that `CHANGES.md` is complete and accurate.
-   - Give the header of the section containing the latest changes an appropriate version number and date.
-   - Diff main against the previous released version. This helps catch changes that are missing from the changelog, as well as changelog entries that were accidentally added to the wrong section.
-3. Set the `version` property in `package.json`.
-4. Set the `VERSION` property passed to the `project()` function in `CMakeLists.txt`.
-5. Commit these changes. You can push them directly to `main`.
+[cesium-native](https://github.com/CesiumGS/cesium-native) is used as a git submodule of cesium-unreal. So the first step in releasing Cesium for Unreal is to make sure that Cesium Native is ready for release. See the [Cesium Native release guide](#native-release-process) for instructions. You may want to wait to create the new Cesium Native tag until after you have tested the Cesium for Unreal release.
 
 ## Prepare Cesium for Unreal for Release
 
@@ -55,7 +45,7 @@ Cesium for Unreal has several release packages, and they're fairly large, so it 
 6. Create a new release by visiting https://github.com/CesiumGS/cesium-unreal/releases/new.
 7. Leave the release tag blank for now, as we haven't created it yet.
 8. Set `Release Title` to "Cesium for Unreal v2.22.0", updating the version number as appropriate.
-9. Copy the "release notes" section from a previous release, which you can find by visiting https://github.com/CesiumGS/cesium-unreal/releases/latest and clicking the Edit button. But be careful not to save!
+9. Copy the "release notes" section from a previous release, which you can find by visiting https://github.com/CesiumGS/cesium-unreal/releases/latest and clicking the Edit button. Be careful not to change or save the previous release!
 10. Update the version numbers as appropriate in the top section. Replace the changelog section with the actual changelog entries from this release. Copy it from `CHANGES.md`.
 11. Upload all 6 release package files by dragging them into the "Attach binaries" box. This will take a little while and doesn't have great feedback.
 12. Click Save Draft. Be careful not to publish it yet.
@@ -108,11 +98,9 @@ To test the release, do the following:
 
 ## Release!
 
-1. Tag the cesium-native release if you haven't already, and push the tag. Be sure you're tagging the exact commit that cesium-unreal is using.
-   - `git tag -a v0.56.0 -m "0.56.0 release"`
-   - `git push origin v0.56.0`
+1. Tag the cesium-native release if you haven't already, and push the tag. See the [Cesium Native release guide](#native-release-process) for instructions.
 2. Tag the cesium-unreal release, and push the tag. Be sure you're tagging the exact commit that you tested.
-   - `git tag -a v2.22.0 -m "v2.22.0 release`
+   - `git tag -a v2.22.0 -m "v2.22.0 release"`
    - `git push origin v2.22.0`
 3. Publish the release on GitHub.
    - Visit https://github.com/CesiumGS/cesium-unreal/releases.
@@ -151,7 +139,7 @@ Once Epic has published the new release, there are a few more steps to complete.
    - Repeat an abbreviated version of the testing you did previously against this new Epic-built version. First and foremost, verify that the version shown on the Cesium panel is correct.
 2. Publish Cesium for Unreal Samples to GitHub releases.
    - Create and push a git tag for the Sample repo. Be sure you're tagging the exact commit that you tested.
-     - `git tag -a v2.22.0 -m "v2.22.0 release`
+     - `git tag -a v2.22.0 -m "v2.22.0 release"`
      - `git push origin v2.22.0`
    - Wait for CI to run on the pushed tag.
    - Go to https://github.com/CesiumGS/cesium-unreal/actions.
