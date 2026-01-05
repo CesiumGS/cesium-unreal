@@ -45,7 +45,7 @@ In the cesium-native repo:
 
 ## Optimistically upload the release packages to the GitHub releases page
 
-Cesium for Unreal has several release packages, and they're fairly large, so it can take awhile to upload them all to the GitHub Releases page. For that reason, it is helpful to start the process now, even though we haven't tested the release yet.
+Cesium for Unreal has several release packages, and they're fairly large, so it can take a while to upload them all to the GitHub Releases page. For that reason, it is helpful to start the process now, even though we haven't tested the release yet.
 
 1. Go to https://github.com/CesiumGS/cesium-unreal/actions.
 2. Click the most recent build of the `main` branch (it should be near the top). This should be the build for the commit you pushed in the previous section. If it's still running, wait. If it failed, you'll need to fix it.
