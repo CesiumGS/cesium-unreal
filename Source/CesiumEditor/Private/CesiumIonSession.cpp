@@ -6,12 +6,14 @@
 #include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
-THIRD_PARTY_INCLUDES_START
-#include "CesiumUtility/Uri.h"
-THIRD_PARTY_INCLUDES_END
+
 #include "FileHelpers.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
+
+THIRD_PARTY_INCLUDES_START
+#include <CesiumUtility/Uri.h>
+THIRD_PARTY_INCLUDES_END
 
 using namespace CesiumAsync;
 using namespace CesiumIonClient;

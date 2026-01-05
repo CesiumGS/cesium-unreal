@@ -15,6 +15,8 @@
 
 #include <optional>
 
+class SScrollBox;
+
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
