@@ -120,7 +120,7 @@ To test the release, do the following:
    - Select the tag you just created and pushed.
    - Double-check that the other details look good.
    - Click "Publish release".
-4. Publish the release on Epic's Fab.
+4. Publish the release on Epic's Fab marketplace.
    - Visit https://fab.com.
    - Sign in as `unreal@cesium.com`.
    - Go to Publish -> Listings -> Cesium for Unreal.
