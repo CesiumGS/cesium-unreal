@@ -108,6 +108,11 @@ To test the release, do the following:
    - Select the tag you just created and pushed.
    - Double-check that the other details look good.
    - Click "Publish release".
+4. Publish the reference documentation. A CI job automatically publishes the documentation to the web site at https://cesium.com/learn/cesium-unreal/ref-doc/ when it is merged into the [cesium.com](https://github.com/CesiumGS/cesium-unreal/tree/cesium.com) branch. So do the following:
+   - `git checkout cesium.com`
+   - `git merge v2.22.0 --ff-only`
+   - `git push`
+   - `git checkout main`
 4. Publish the release on Epic's Fab marketplace.
    - Visit https://fab.com.
    - Sign in as `unreal@cesium.com`.
