@@ -18,15 +18,15 @@ class CESIUMRUNTIME_API ACesiumCameraManager : public AActor {
 
 public:
   /**
-   * @brief Determines whether the camera tagged `MainCamera` should be used for Cesium3DTileset
-   * culling and level-of-detail.
+   * @brief Determines whether the camera tagged `MainCamera` should be used for
+   * Cesium3DTileset culling and level-of-detail.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool useMainCamera = true;
   /**
-   * @brief Determines whether the camera associated with the Editor's active scene view should be
-   * used for Cesium3DTileset culling and level-of-detail. In a game, this property has
-   * no effect.
+   * @brief Determines whether the camera associated with the Editor's active
+   * scene view should be used for Cesium3DTileset culling and level-of-detail.
+   * In a game, this property has no effect.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool useSceneViewCameraInEditor = true;

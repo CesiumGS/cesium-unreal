@@ -1319,7 +1319,6 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
         cameras.end(),
         std::make_move_iterator(playerCameras.begin()),
         std::make_move_iterator(playerCameras.end()));
-
   }
   std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
   cameras.insert(
