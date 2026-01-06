@@ -110,6 +110,7 @@ To test the release, do the following:
    - Click "Publish release".
 4. Publish the reference documentation. A CI job automatically publishes the documentation to the web site at https://cesium.com/learn/cesium-unreal/ref-doc/ when it is merged into the [cesium.com](https://github.com/CesiumGS/cesium-unreal/tree/cesium.com) branch. So do the following:
    - `git checkout cesium.com`
+   - `git pull --rebase`
    - `git merge v2.22.0 --ff-only`
    - `git push`
    - `git checkout main`
