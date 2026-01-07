@@ -6,6 +6,12 @@
 #include <CesiumGltf/MetadataConversions.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 
+FCesiumMetadataValue::FCesiumMetadataValue()
+    : _value(swl::monostate{}),
+      _arrayValue(),
+      _valueType(),
+      _pEnumDefinition() {}
+
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumMetadataValue&& rhs) =
     default;
 
@@ -14,22 +20,10 @@ FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
     : _value(),
+      _arrayValue(),
       _valueType(rhs._valueType),
-      _storage(rhs._storage),
       _pEnumDefinition(rhs._pEnumDefinition) {
-  swl::visit(
-      [this](const auto& value) {
-        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          if (!this->_storage.empty()) {
-            this->_value = decltype(value)(this->_storage);
-          } else {
-            this->_value = value;
-          }
-        } else {
-          this->_value = value;
-        }
-      },
-      rhs._value);
+  swl::visit([this](const auto& value) { this->_value = value; }, rhs._value);
 }
 
 FCesiumMetadataValue&
@@ -304,20 +298,14 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return swl::visit(
-      [&EnumDefinition =
-           Value._pEnumDefinition](auto value) -> FCesiumPropertyArray {
-        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          return FCesiumPropertyArray(value, EnumDefinition);
-        }
-        return FCesiumPropertyArray();
-      },
-      Value._value);
+  // TOptional.Get() == value_or
+  return Value._arrayValue.Get(FCesiumPropertyArray());
 }
 
 bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return swl::holds_alternative<swl::monostate>(Value._value);
+  return swl::holds_alternative<swl::monostate>(Value._value) &&
+         !Value._arrayValue.IsSet();
 }
 
 TMap<FString, FString> UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(
