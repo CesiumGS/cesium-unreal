@@ -732,7 +732,10 @@ public:
    *
    * String properties are returned as-is.
    *
-   * Scalar values are converted to a string with `std::to_string`.
+   * Scalar values are converted to a string with `std::to_string`. However,
+   * if the scalar value represents an enum, it will be looked up in property's
+   * enum definition. If the value exists in the definition, its string name
+   * will be returned. Otherwise, the default value is returned.
    *
    * Boolean properties are converted to "true" or "false".
    *

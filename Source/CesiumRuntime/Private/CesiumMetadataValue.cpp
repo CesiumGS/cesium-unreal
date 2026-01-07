@@ -72,6 +72,8 @@ UCesiumMetadataValueBlueprintLibrary::GetTrueComponentType(
   return CesiumMetadataValueTypeToTrueType(type);
 }
 
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     bool DefaultValue) {
@@ -83,8 +85,6 @@ bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
       },
       Value._value);
 }
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 uint8 UCesiumMetadataValueBlueprintLibrary::GetByte(
     UPARAM(ref) const FCesiumMetadataValue& Value,
@@ -276,13 +276,7 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
         } else {
           if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
             if (Value._pEnumDefinition.IsValid()) {
-              TOptional<FString> MaybeName =
-                  Value._pEnumDefinition->GetName(value);
-              if (MaybeName.IsSet()) {
-                return MaybeName.GetValue();
-              } else {
-                return DefaultValue;
-              }
+              return Value._pEnumDefinition->GetName(value).Get(DefaultValue);
             }
           }
 
@@ -298,7 +292,6 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  // TOptional.Get() == value_or
   return Value._arrayValue.Get(FCesiumPropertyArray());
 }
 
