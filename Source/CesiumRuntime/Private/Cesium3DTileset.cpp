@@ -14,7 +14,7 @@
 #include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
-#include "CesiumActors.h"
+#include "CesiumActors.h" 
 #include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
@@ -1268,6 +1268,18 @@ void ACesium3DTileset::DestroyTileset() {
     }
   }
 
+  if (this->_pFeaturesMetadataComponent.IsValid()) {
+    this->_pFeaturesMetadataComponent->interruptStatisticsSync();
+  }
+
+  // TArray<UCesiumGltfComponent*> gltfComponents;
+  // this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+  // for (UCesiumGltfComponent* pGltf : gltfComponents) {
+  //   pGltf->SetVisibility(false, true);
+  //   pGltf->DestroyComponent();
+  // }
+
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
   // It did crash in Tick() when we trigger refresh events at a high frequency,
   // typically if the user clicks a button "frantically"...)
@@ -2064,13 +2076,13 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  if (this->_pFeaturesMetadataComponent != nullptr &&
+  if (this->_pFeaturesMetadataComponent.IsValid() &&
       !this->_pTileset->getMetadata()) {
     // Styling may require the tileset's metadata to be loaded first (for schema
     // and/or statistics) before streaming tiles. But continue to dispatch tasks
     // so that the metadata future resolves.
     // This will not add much overhead since tilesets will have no metadata or
-    // otherwise embed in the tileset.json anyway.
+    // otherwise embed it in the tileset.json anyway.
     getAsyncSystem().dispatchMainThreadTasks();
     return;
   }

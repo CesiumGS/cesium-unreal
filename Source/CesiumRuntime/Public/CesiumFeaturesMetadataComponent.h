@@ -152,5 +152,11 @@ protected:
   virtual void OnRegister() override;
 
 private:
-  bool _isSyncing;
+  //void isSyncing() const;
+  void interruptStatisticsSync();
+  void clearStatistics();
+
+  bool _syncInProgress;
+
+  friend class ACesium3DTileset;
 };

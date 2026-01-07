@@ -2391,94 +2391,120 @@ FCesiumMetadataValue getValueForSemantic(
     return FCesiumMetadataValue();
   }
 }
+
 } // namespace
 
 void UCesiumFeaturesMetadataComponent::SyncStatistics() {
-  if (this->_isSyncing)
+  if (this->_syncInProgress)
     return;
+
+  this->clearStatistics();
 
   ACesium3DTileset* pActor = this->GetOwner<ACesium3DTileset>();
-  if (!pActor || !pActor->GetTileset())
+  if (!pActor || !pActor->GetTileset()) {
     return;
+  }
 
-  this->_isSyncing = true;
+  this->_syncInProgress = true;
 
   Cesium3DTilesSelection::Tileset* pTileset = pActor->GetTileset();
-  pTileset->loadMetadata().thenInMainThread([this, pActor](
-                                                const Cesium3DTilesSelection::
-                                                    TilesetMetadata*
-                                                        pMetadata) {
-    if (!pMetadata || !pMetadata->statistics) {
-      // Tilesets may not contain any metadata or statistics...
-      return;
-    }
+  pTileset->loadMetadata()
+      .thenInMainThread([this,
+                         pActor](const Cesium3DTilesSelection::TilesetMetadata*
+                                     pMetadata) {
+        this->_syncInProgress = false;
 
-    // ...however, if statistics are present, then there must be a schema.
-    if (!pMetadata->schema) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT(
-              "Tileset %s has incomplete metadata and cannot sync its statistics with "
-              "UCesiumFeaturesMetadataComponent."),
-          *pActor->GetName());
-      return;
-    }
+        if (!pMetadata || !pMetadata->statistics) {
+          // Tilesets may not contain any metadata or statistics...
+          return;
+        }
 
-    const Cesium3DTiles::Schema& schema = *pMetadata->schema;
-    const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
-
-    for (FCesiumMetadataClassStatisticsDescription& classStatistics :
-         this->Description.Statistics) {
-      std::string classId = TCHAR_TO_UTF8(*classStatistics.Id);
-      const Cesium3DTiles::Class* pClass = schema.classes.contains(classId)
-                                               ? &schema.classes.at(classId)
-                                               : nullptr;
-      const Cesium3DTiles::ClassStatistics* pClassStatistics =
-          statistics.classes.contains(classId) ? &statistics.classes.at(classId)
-                                               : nullptr;
-
-      for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
-           classStatistics.Properties) {
-        std::string propertyId = TCHAR_TO_UTF8(*propertyStatistics.Id);
-
-        auto propertyStatisticsIt =
-            pClassStatistics->properties.find(propertyId);
-
-        if (propertyStatisticsIt != pClassStatistics->properties.end()) {
-          FCesiumMetadataValueType type;
-          if (pClass && pClass->properties.contains(propertyId)) {
-            type = FCesiumMetadataValueType::fromClassProperty(
-                pClass->properties.at(propertyId));
-          }
-
-          for (FCesiumMetadataPropertyStatisticValue& statisticValue :
-               propertyStatistics.Values) {
-            statisticValue.Value = getValueForSemantic(
-                propertyStatisticsIt->second,
-                type,
-                statisticValue.Semantic);
-          }
-        } else {
+        // ...however, if statistics are present, then there must be a schema.
+        if (!pMetadata->schema) {
           UE_LOG(
               LogCesium,
-              Warning,
+              Error,
               TEXT(
-                  "Tileset %s does not contain statistics for property %s from class %s "
-                  "on UCesiumFeaturesMetadataComponent."),
-              *pActor->GetName(),
-              *propertyStatistics.Id,
-              *classStatistics.Id);
+                  "Tileset %s has incomplete metadata and cannot sync its statistics with "
+                  "UCesiumFeaturesMetadataComponent."),
+              *pActor->GetName());
+          return;
+        }
 
-          for (FCesiumMetadataPropertyStatisticValue& statisticValue :
-               propertyStatistics.Values) {
-            statisticValue.Value = FCesiumMetadataValue();
+        const Cesium3DTiles::Schema& schema = *pMetadata->schema;
+        const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
+
+        for (FCesiumMetadataClassStatisticsDescription& classStatistics :
+             this->Description.Statistics) {
+          std::string classId = TCHAR_TO_UTF8(*classStatistics.Id);
+          const Cesium3DTiles::Class* pClass = schema.classes.contains(classId)
+                                                   ? &schema.classes.at(classId)
+                                                   : nullptr;
+          const Cesium3DTiles::ClassStatistics* pClassStatistics =
+              statistics.classes.contains(classId)
+                  ? &statistics.classes.at(classId)
+                  : nullptr;
+
+          for (FCesiumMetadataPropertyStatisticsDescription&
+                   propertyStatistics : classStatistics.Properties) {
+            std::string propertyId = TCHAR_TO_UTF8(*propertyStatistics.Id);
+
+            auto propertyStatisticsIt =
+                pClassStatistics->properties.find(propertyId);
+
+            if (propertyStatisticsIt != pClassStatistics->properties.end()) {
+              FCesiumMetadataValueType type;
+              if (pClass && pClass->properties.contains(propertyId)) {
+                type = FCesiumMetadataValueType::fromClassProperty(
+                    pClass->properties.at(propertyId));
+              }
+
+              for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+                   propertyStatistics.Values) {
+                statisticValue.Value = getValueForSemantic(
+                    propertyStatisticsIt->second,
+                    type,
+                    statisticValue.Semantic);
+              }
+            } else {
+              UE_LOG(
+                  LogCesium,
+                  Warning,
+                  TEXT(
+                      "Tileset %s does not contain statistics for property %s from class %s "
+                      "on UCesiumFeaturesMetadataComponent."),
+                  *pActor->GetName(),
+                  *propertyStatistics.Id,
+                  *classStatistics.Id);
+
+              for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+                   propertyStatistics.Values) {
+                statisticValue.Value = FCesiumMetadataValue();
+              }
+            }
           }
         }
+      })
+      .catchInMainThread(
+          [this](std::exception&& e) { this->interruptStatisticsSync(); });
+}
+
+void UCesiumFeaturesMetadataComponent::interruptStatisticsSync() {
+  this->_syncInProgress = false;
+  this->clearStatistics();
+}
+
+void UCesiumFeaturesMetadataComponent::clearStatistics() {
+  for (FCesiumMetadataClassStatisticsDescription& classStatistics :
+       this->Description.Statistics) {
+    for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+         classStatistics.Properties) {
+      for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+           propertyStatistics.Values) {
+        statisticValue.Value = FCesiumMetadataValue();
       }
     }
-    this->_isSyncing = false;
-  });
+  }
 }
 
 #if WITH_EDITOR
@@ -2556,5 +2582,5 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
 void UCesiumFeaturesMetadataComponent::OnRegister() {
   Super::OnRegister();
 
-  // this->SyncStatistics();
+  this->SyncStatistics();
 }
