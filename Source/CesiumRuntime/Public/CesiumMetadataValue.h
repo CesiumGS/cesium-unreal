@@ -146,7 +146,7 @@ public:
       const CesiumGltf::PropertyArrayCopy<ArrayType>& Copy,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
       : FCesiumMetadataValue(
-            CesiumGltf::PropertyArrayView<ArrayType>(Value),
+            CesiumGltf::PropertyArrayCopy<ArrayType>(Copy),
             pEnumDefinition) {}
 
   template <typename ArrayType>
@@ -236,7 +236,9 @@ private:
 
   ValueType _value;
   TOptional<FCesiumPropertyArray> _arrayValue;
+
   FCesiumMetadataValueType _valueType;
+  std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;

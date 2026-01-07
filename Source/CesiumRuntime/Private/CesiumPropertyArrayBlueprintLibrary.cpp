@@ -140,4 +140,5 @@ FString UCesiumPropertyArrayBlueprintLibrary::GetString(
       UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index),
       defaultValue);
 }
-` PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
