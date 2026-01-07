@@ -10,28 +10,7 @@
 static FCesiumMetadataValue EmptyMetadataValue = FCesiumMetadataValue();
 
 FCesiumMetadataValue::FCesiumMetadataValue()
-    : _value(),
-      _arrayValue(std::nullopt),
-      _valueType(),
-      _storage(),
-      _pEnumDefinition(nullptr) {}
-
-FCesiumMetadataValue::FCesiumMetadataValue(const FString& String)
-    : _value(),
-      _arrayValue(std::nullopt),
-      _valueType(
-          ECesiumMetadataType::String,
-          ECesiumMetadataComponentType::None,
-          false),
-      _storage(),
-      _pEnumDefinition(nullptr) {
-  std::string value = TCHAR_TO_UTF8(*String);
-  this->_storage.resize(value.size());
-  std::memcpy(this->_storage.data(), value.data(), value.size());
-
-  const char* pString = reinterpret_cast<const char*>(this->_storage.data());
-  this->_value = std::string_view(pString, value.size());
-}
+    : _value(), _arrayValue(), _valueType(), _pEnumDefinition(nullptr) {}
 
 FCesiumMetadataValue::FCesiumMetadataValue(FCesiumPropertyArray&& Array)
     : _value(),
@@ -52,11 +31,10 @@ FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
     : _value(),
-      _arrayValue(std::nullopt),
+      _arrayValue(rhs._arrayValue),
       _valueType(rhs._valueType),
       _pEnumDefinition(rhs._pEnumDefinition) {
   swl::visit([this](const auto& value) { this->_value = value; }, rhs._value);
-  this->_arrayValue = rhs._arrayValue;
 }
 
 FCesiumMetadataValue&
@@ -542,6 +520,8 @@ UCesiumMetadataValueBlueprintLibrary::GetTrueComponentType(
   return CesiumMetadataValueTypeToTrueType(type);
 }
 
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     bool DefaultValue) {
@@ -557,8 +537,6 @@ bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
       },
       Value._value);
 }
-
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 uint8 UCesiumMetadataValueBlueprintLibrary::GetByte(
     UPARAM(ref) const FCesiumMetadataValue& Value,
@@ -802,13 +780,7 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
         } else {
           if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
             if (Value._pEnumDefinition.IsValid()) {
-              TOptional<FString> MaybeName =
-                  Value._pEnumDefinition->GetName(value);
-              if (MaybeName.IsSet()) {
-                return MaybeName.GetValue();
-              } else {
-                return DefaultValue;
-              }
+              return Value._pEnumDefinition->GetName(value).Get(DefaultValue);
             }
           }
 
@@ -824,13 +796,13 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
 
 FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return Value._arrayValue ? *Value._arrayValue : FCesiumPropertyArray();
+  return Value._arrayValue.Get(FCesiumPropertyArray());
 }
 
 bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
   return swl::holds_alternative<swl::monostate>(Value._value) &&
-         !Value._arrayValue;
+         !Value._arrayValue.IsSet();
 }
 
 TMap<FString, FString> UCesiumMetadataValueBlueprintLibrary::GetValuesAsStrings(
