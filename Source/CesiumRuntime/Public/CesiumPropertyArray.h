@@ -20,8 +20,7 @@ struct CESIUMRUNTIME_API FCesiumPropertyArray {
 
 private:
 #pragma region ArrayType
-  template <typename T>
-  using ArrayView = CesiumGltf::PropertyArrayView<T>;
+  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
 
   using ArrayType = swl::variant<
       ArrayView<int8_t>,
