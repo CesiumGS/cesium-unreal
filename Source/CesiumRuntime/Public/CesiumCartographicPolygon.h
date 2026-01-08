@@ -51,8 +51,16 @@ public:
   CesiumGeospatial::CartographicPolygon
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
+  /**
+   * Creates and returns a ACesiumCartographicPolygon specified by the given
+   * array of LLH coordinates.
+   * @param geoPoints An array of latitude/longitude/height coordinates that
+   * define a closed polygon.
+   * @return a ACesiumCartographicPolygon representing the transformed LLH
+   * coordinates.
+   */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  static TSoftObjectPtr<ACesiumCartographicPolygon> CreateClippingPolygon(const TArray<FVector>& points);
+  static TSoftObjectPtr<ACesiumCartographicPolygon> CreatePolygonFromGeoPoints(const TArray<FVector>& geoPoints);
 
   // AActor overrides
   virtual void PostLoad() override;
