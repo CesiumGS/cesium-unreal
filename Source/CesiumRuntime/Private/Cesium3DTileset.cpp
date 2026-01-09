@@ -82,6 +82,7 @@ ACesium3DTileset::ACesium3DTileset()
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
+      _destroyOnNextTick(false),
 
 #ifdef CESIUM_DEBUG_TILE_STATES
       _pStateDebug(nullptr),
@@ -130,6 +131,7 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 TSoftObjectPtr<ACesiumGeoreference> ACesium3DTileset::GetGeoreference() const {
@@ -339,7 +341,7 @@ void ACesium3DTileset::InvalidateResolvedCameraManager() {
   this->RefreshTileset();
 }
 
-void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
+void ACesium3DTileset::RefreshTileset() { this->_destroyOnNextTick = true; }
 
 void ACesium3DTileset::TroubleshootToken() {
   OnCesium3DTilesetIonTroubleshooting.Broadcast(this);
@@ -2018,6 +2020,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   if (this->SuspendUpdate) {
     return;
+  }
+
+  if (this->_destroyOnNextTick) {
+    this->DestroyTileset();
+    this->_destroyOnNextTick = false;
   }
 
   if (!this->_pTileset) {
