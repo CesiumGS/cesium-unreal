@@ -306,7 +306,7 @@ ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
 
 void ACesium3DTileset::InvalidateResolvedCreditSystem() {
   this->ResolvedCreditSystem = nullptr;
-  this->RefreshTileset();
+  this->DestroyTileset();
 }
 
 TSoftObjectPtr<ACesiumCameraManager>
@@ -338,7 +338,7 @@ ACesiumCameraManager* ACesium3DTileset::ResolveCameraManager() {
 
 void ACesium3DTileset::InvalidateResolvedCameraManager() {
   this->ResolvedCameraManager = nullptr;
-  this->RefreshTileset();
+  this->DestroyTileset();
 }
 
 void ACesium3DTileset::RefreshTileset() { this->_destroyOnNextTick = true; }
@@ -770,7 +770,7 @@ void ACesium3DTileset::HandleOnGeoreferenceEllipsoidChanged(
     UCesiumEllipsoid* OldEllipsoid,
     UCesiumEllipsoid* NewEllpisoid) {
   UE_LOG(LogCesium, Warning, TEXT("Ellipsoid changed"));
-  this->RefreshTileset();
+  this->DestroyTileset();
 }
 
 // Called when the game starts or when spawned
@@ -2007,6 +2007,11 @@ static void updateTileFades(const auto& tiles, bool fadingIn) {
 void ACesium3DTileset::Tick(float DeltaTime) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::TilesetTick)
 
+  if (this->_destroyOnNextTick) {
+    this->DestroyTileset();
+    this->_destroyOnNextTick = false;
+  }
+
   Super::Tick(DeltaTime);
 
   this->ResolveGeoreference();
@@ -2020,11 +2025,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   if (this->SuspendUpdate) {
     return;
-  }
-
-  if (this->_destroyOnNextTick) {
-    this->DestroyTileset();
-    this->_destroyOnNextTick = false;
   }
 
   if (!this->_pTileset) {
@@ -2342,7 +2342,7 @@ void ACesium3DTileset::RuntimeSettingsChanged(
           ->EnableExperimentalOcclusionCullingFeature;
   if (occlusionCullingAvailable != this->CanEnableOcclusionCulling) {
     this->CanEnableOcclusionCulling = occlusionCullingAvailable;
-    this->RefreshTileset();
+    this->DestroyTileset();
   }
 }
 #endif
@@ -2356,7 +2356,7 @@ void ACesium3DTileset::SetGltfModifier(
     const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier) {
   if (Modifier != this->_pGltfModifier) {
     this->_pGltfModifier = Modifier;
-    this->RefreshTileset();
+    this->DestroyTileset();
   }
 }
 
