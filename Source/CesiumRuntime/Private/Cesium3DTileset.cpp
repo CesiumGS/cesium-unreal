@@ -298,8 +298,8 @@ ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
         ACesiumCreditSystem::GetDefaultCreditSystem(this);
   }
 
-  // Refresh the tileset so it uses the new credit system.
-  this->RefreshTileset();
+  // Destroy the tileset so it reconstructs with the new credit system.
+  this->DestroyTileset();
 
   return this->ResolvedCreditSystem;
 }
