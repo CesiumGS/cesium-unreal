@@ -17,9 +17,9 @@ jobs:
       - name: Install Doxygen
         run: |
           cd ~
-          wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
-          tar xzf doxygen-1.12.0.linux.bin.tar.gz
-          export PATH=$PWD/doxygen-1.12.0/bin:$PATH
+          wget https://github.com/doxygen/doxygen/releases/download/Release_1_13_2/doxygen-1.13.2.linux.bin.tar.gz
+          tar xzf doxygen-1.13.2.linux.bin.tar.gz
+          export PATH=$PWD/doxygen-1.13.2/bin:$PATH
           echo "PATH=$PATH" >> "$GITHUB_ENV"
           doxygen --version
       - name: Check out repository code

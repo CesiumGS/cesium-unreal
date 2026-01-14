@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include "CesiumIonServer.h"
+#include "Delegates/DelegateCombinations.h"
 #include "UObject/WeakObjectPtrTemplates.h"
 #include <memory>
 
-class UCesiumIonServer;
 class CesiumIonSession;
 
 DECLARE_MULTICAST_DELEGATE(FCesiumIonServerChanged);

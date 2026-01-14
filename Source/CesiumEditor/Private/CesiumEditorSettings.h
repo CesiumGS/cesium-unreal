@@ -36,8 +36,15 @@ public:
       Config,
       EditAnywhere,
       Category = "Cesium ion",
-      meta = (DisplayName = "Token Map"))
+      meta = (DisplayName = "Access Token Map"))
   TMap<TSoftObjectPtr<UCesiumIonServer>, FString> UserAccessTokenMap;
+
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cesium ion",
+      meta = (DisplayName = "Refresh Token Map"))
+  TMap<TSoftObjectPtr<UCesiumIonServer>, FString> UserRefreshTokenMap;
 
   void Save();
 };
