@@ -2192,8 +2192,9 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
 #if WITH_EDITOR
 void ACesium3DTileset::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
   if (!PropertyChangedEvent.Property) {
-    Super::PostEditChangeProperty(PropertyChangedEvent);
     return;
   }
 
@@ -2267,8 +2268,6 @@ void ACesium3DTileset::PostEditChangeProperty(
     // Maximum Screen Space Error can affect how attenuated points are rendered,
     // so propagate the new value to the render proxies for this tileset.
     FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
-
-    Super::PostEditChangeProperty(PropertyChangedEvent);
   }
 }
 
