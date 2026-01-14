@@ -38,7 +38,6 @@ public:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
-
   virtual void OnConstruction(const FTransform& Transform) override;
   /**
    * Creates and returns a CartographicPolygon object
@@ -52,15 +51,13 @@ public:
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
   /**
-   * Creates and returns a ACesiumCartographicPolygon specified by the given
-   * array of LLH coordinates.
-   * @param geoPoints An array of latitude/longitude/height coordinates that
+   * Sets the spline points from an array of geographic coordinates
+   * @param
+   * @param points An array of longitude/latitude/height coordinates that
    * define a closed polygon.
-   * @return a ACesiumCartographicPolygon representing the transformed LLH
-   * coordinates.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  static TSoftObjectPtr<ACesiumCartographicPolygon> CreatePolygonFromGeoPoints(const TArray<FVector>& geoPoints);
+  void SetPolygonPointsLongitudeLatitudeHeight(const TArray<FVector>& points);
 
   // AActor overrides
   virtual void PostLoad() override;

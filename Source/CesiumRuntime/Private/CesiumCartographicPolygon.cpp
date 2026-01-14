@@ -42,35 +42,29 @@ void ACesiumCartographicPolygon::BeginPlay() {
   this->MakeLinear();
 }
 
-TSoftObjectPtr<ACesiumCartographicPolygon>
-ACesiumCartographicPolygon::CreatePolygonFromGeoPoints(const TArray<FVector>& geoPoints) {
-  if (geoPoints.IsEmpty()) {
-    UE_LOG(LogTemp, Error, TEXT("Cannot create polygon from empty dataset."));
-    return nullptr;
+void ACesiumCartographicPolygon::SetPolygonPointsLongitudeLatitudeHeight(
+    const TArray<FVector>& points) {
+  if (points.IsEmpty()) {
+    UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
+    return;
   }
-
-  auto* world = GEngine->GetWorldContexts()[0].World();
-  assert(world && "World not found");
-
-  const auto* aPoly = world->SpawnActor<ACesiumCartographicPolygon>();
-  const auto* georeference = aPoly->GlobeAnchor->ResolveGeoreference();
 
   TArray<FVector> unrealPoints;
-  unrealPoints.Reserve(geoPoints.Num());
+  unrealPoints.Reserve(points.Num());
 
-  FVector center {};
-  for(const auto& p : geoPoints)
-  {
+  FVector center{};
+  const auto* georeference = this->GlobeAnchor->ResolveGeoreference();
+
+  for (const auto& p : points) {
     center += p;
-    FVector unrealPosition = georeference->TransformLongitudeLatitudeHeightPositionToUnreal(p);
+    const FVector unrealPosition =
+        georeference->TransformLongitudeLatitudeHeightPositionToUnreal(p);
     unrealPoints.Add(unrealPosition);
   }
-  center /= geoPoints.Num();
+  center /= points.Num();
 
-  aPoly->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
-  aPoly->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
-
-  return TSoftObjectPtr<ACesiumCartographicPolygon>(aPoly);
+  this->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
+  this->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
 }
 
 CesiumGeospatial::CartographicPolygon
