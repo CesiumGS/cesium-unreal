@@ -47,13 +47,12 @@ FString FCesiumMetadataValueType::ToString() const {
 
 /*static*/ FCesiumMetadataValueType FCesiumMetadataValueType::fromClassProperty(
     const Cesium3DTiles::ClassProperty& property) {
-  CesiumGltf::PropertyType propertyType =
-      convertStringToPropertyType(property.type);
+  PropertyType propertyType = convertStringToPropertyType(property.type);
 
-  CesiumGltf::PropertyComponentType propertyComponentType =
+  PropertyComponentType propertyComponentType =
       property.componentType
           ? convertStringToPropertyComponentType(*property.componentType)
-          : CesiumGltf::PropertyComponentType::None;
+          : PropertyComponentType::None;
 
   return FCesiumMetadataValueType{
       ECesiumMetadataType(propertyType),

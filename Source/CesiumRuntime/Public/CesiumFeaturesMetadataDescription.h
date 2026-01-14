@@ -355,7 +355,7 @@ struct FCesiumMetadataClassStatisticsDescription {
   FString Id;
 
   /**
-   * @brief The properties belonging to this class.
+   * @brief The statistics of properties belonging to this class.
    */
   UPROPERTY(
       EditAnywhere,

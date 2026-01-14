@@ -158,7 +158,7 @@ void FCesiumPropertyArraySpec::Define() {
       FString expected("[true, false, false, true, true]");
       TestEqual(
           "ToString",
-          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array, FString()),
           expected);
     });
 
@@ -174,7 +174,7 @@ void FCesiumPropertyArraySpec::Define() {
       FString expected("[1, 2, 3, -1]");
       TestEqual(
           "ToString",
-          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array, FString()),
           expected);
     });
 
@@ -201,7 +201,7 @@ void FCesiumPropertyArraySpec::Define() {
       FString expected("[Boolean, Byte, Integer, Integer64]");
       TestEqual(
           "ToString",
-          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array, FString()),
           expected);
     });
 
@@ -218,7 +218,7 @@ void FCesiumPropertyArraySpec::Define() {
       FString expected("[Test, These, Strings]");
       TestEqual(
           "ToString",
-          UCesiumPropertyArrayBlueprintLibrary::ToString(array),
+          UCesiumPropertyArrayBlueprintLibrary::ToString(array, FString()),
           expected);
     });
   });

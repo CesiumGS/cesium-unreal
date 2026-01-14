@@ -135,7 +135,7 @@ static FeaturesMetadataClassification ClassifyNodes(
         continue;
       }
 
-      // If nodes are added for feature ID sets (to handle null feature ID
+      // "If" nodes are added for feature ID sets (to handle null feature ID
       // values) and for properties that specify a "no data" and/or default
       // value.
       UMaterialExpressionIf* pIfNode = Cast<UMaterialExpressionIf>(pNode);
@@ -2008,7 +2008,21 @@ void GenerateStatisticsNodes(
             NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
         break;
       default:
-        // UE_LOG?
+        FString semanticName =
+            StaticEnum<ECesiumMetadataStatisticSemantic>()
+                ->GetNameStringByValue(int64(statisticValue.Semantic));
+        FString enumName =
+            StaticEnum<ECesiumMetadataType>()->GetNameStringByValue(
+                int64(valueType.Type));
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT(
+                "Skipping material node generation for %s %s in %s due to unsupported statistic type %s"),
+            *propertyStatistics.Id,
+            *semanticName,
+            *ClassStatistics.Id,
+            *enumName);
         continue;
       }
 
@@ -2396,6 +2410,26 @@ FCesiumMetadataValue getValueForSemantic(
     return FCesiumMetadataValue::fromJsonValue(
         propertyStatistics.max.value_or(nullValue),
         propertyType);
+  case ECesiumMetadataStatisticSemantic::Mean:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.mean.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Median:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.median.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::StandardDeviation:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.standardDeviation.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Variance:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.variance.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Sum:
+    return FCesiumMetadataValue::fromJsonValue(
+        propertyStatistics.sum.value_or(nullValue),
+        propertyType);
   default:
     return FCesiumMetadataValue();
   }
@@ -2404,14 +2438,14 @@ FCesiumMetadataValue getValueForSemantic(
 void syncStatisticsFromMetadata(
     ACesium3DTileset& tilesetActor,
     UCesiumFeaturesMetadataComponent& metadataComponent,
-    const Cesium3DTilesSelection::TilesetMetadata* pMetadata) {
-  if (!pMetadata || !pMetadata->statistics) {
-    // Tilesets may not contain any metadata or statistics...
+    const Cesium3DTilesSelection::TilesetMetadata& metadata) {
+  if (!metadata.statistics) {
+    // Tilesets may not contain any statistics...
     return;
   }
 
   // ...however, if statistics are present, then there must be a schema.
-  if (!pMetadata->schema) {
+  if (!metadata.schema) {
     UE_LOG(
         LogCesium,
         Error,
@@ -2422,8 +2456,8 @@ void syncStatisticsFromMetadata(
     return;
   }
 
-  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
-  const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
+  const Cesium3DTiles::Schema& schema = *metadata.schema;
+  const Cesium3DTiles::Statistics& statistics = *metadata.statistics;
 
   for (FCesiumMetadataClassStatisticsDescription& classStatistics :
        metadataComponent.Description.Statistics) {
@@ -2488,7 +2522,7 @@ void UCesiumFeaturesMetadataComponent::SyncStatistics() {
       pActor ? pActor->GetTileset() : nullptr;
 
   if (pTileset && pTileset->getMetadata()) {
-    syncStatisticsFromMetadata(*pActor, *this, pTileset->getMetadata());
+    syncStatisticsFromMetadata(*pActor, *this, *pTileset->getMetadata());
   } else if (pTileset) {
     this->_syncInProgress = true;
 
@@ -2502,7 +2536,11 @@ void UCesiumFeaturesMetadataComponent::SyncStatistics() {
                 // intentionally interrupted.
                 return;
               }
-              syncStatisticsFromMetadata(*pActor, *this, pMetadata);
+
+              if (pMetadata) {
+                syncStatisticsFromMetadata(*pActor, *this, *pMetadata);
+              }
+
               this->_syncInProgress = false;
             })
         .catchInMainThread(

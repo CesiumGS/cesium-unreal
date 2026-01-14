@@ -21,7 +21,6 @@ class SScrollBox;
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
-
 enum class ECesiumMetadataStatisticSemantic;
 
 class CesiumFeaturesMetadataViewer : public SWindow {

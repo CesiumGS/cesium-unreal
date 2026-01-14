@@ -135,7 +135,7 @@ public:
 
   /**
    * Syncs this component's statistics description from its tileset owner,
-   * retrieving values for the corresponding statistics.
+   * retrieving values for the corresponding semantics.
    *
    * If there are described statistics that are not present on the tileset
    * owner, they will be left as null values.
@@ -153,6 +153,8 @@ public:
    */
   void InterruptSync();
 
+  virtual void PostLoad() override;
+
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -161,7 +163,6 @@ public:
 #endif
 
 protected:
-  virtual void PostLoad() override;
   // Called when a component is registered. This seems to be the best way to
   // intercept when the component is pasted (to then update its statistics).
   virtual void OnRegister() override;

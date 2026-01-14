@@ -208,8 +208,8 @@ public:
 
   /**
    * Converts a CesiumUtility::JsonValue to a FCesiumMetadataValue with the
-   * specified type. This is a strict interpretation of the value; the function
-   * will not convert between types or component types, even if possible.
+   * specified type. This is a strict interpretation of the value; conversion
+   * will not be done between types or component types, even if possible.
    *
    * @param jsonValue The JSON value.
    * @param targetType The value type to which to convert the JSON value.
@@ -236,9 +236,7 @@ private:
 
   ValueType _value;
   TOptional<FCesiumPropertyArray> _arrayValue;
-
   FCesiumMetadataValueType _valueType;
-  std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
