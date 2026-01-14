@@ -77,7 +77,6 @@ public:
    * Prints the contents of the array to a human-readable string in the format
    * "[A, B, C, ... Z]".
    * @param Array The array.
-   * @param DefaultValue The default value for any invalid elements.
    * @return A string capturing the contents of the array.
    */
   UFUNCTION(
@@ -85,8 +84,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyArray")
   static FString ToString(
-      UPARAM(ref) const FCesiumPropertyArray& Array,
-      const FString& DefaultValue);
+      UPARAM(ref) const FCesiumPropertyArray& Array);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**

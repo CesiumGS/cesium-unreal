@@ -45,15 +45,14 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
 }
 
 FString UCesiumPropertyArrayBlueprintLibrary::ToString(
-    UPARAM(ref) const FCesiumPropertyArray& Array,
-    const FString& DefaultValue) {
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
   TArray<FString> results;
   const int64 size = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
   for (int64 i = 0; i < size; i++) {
     FCesiumMetadataValue value =
         UCesiumPropertyArrayBlueprintLibrary::GetValue(Array, i);
     results.Add(
-        UCesiumMetadataValueBlueprintLibrary::GetString(value, DefaultValue));
+        UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
   }
 
   return "[" + FString::Join(results, TEXT(", ")) + "]";
