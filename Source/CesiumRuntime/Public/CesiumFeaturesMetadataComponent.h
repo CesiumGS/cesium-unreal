@@ -149,11 +149,12 @@ public:
 
 protected:
   virtual void PostLoad() override;
+  // Called when a component is registered. This seems to be the best way to
+  // intercept when the component is pasted (to then update its statistics).
   virtual void OnRegister() override;
 
 private:
-  //void isSyncing() const;
-  void interruptStatisticsSync();
+  void interruptSync();
   void clearStatistics();
 
   bool _syncInProgress;

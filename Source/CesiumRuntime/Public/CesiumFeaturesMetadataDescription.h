@@ -277,7 +277,27 @@ enum class ECesiumMetadataStatisticSemantic {
   /**
    * The maximum property value occurring in the tileset.
    */
-  Max
+  Max,
+  /**
+   * The arithmetic mean of property values occurring in the tileset.
+   */
+  Mean,
+  /**
+   * The median of property values occurring in the tileset.
+   */
+  Median,
+  /**
+   * The standard deviation of property values occurring in the tileset.
+   */
+  StandardDeviation,
+  /**
+   * The variance of property values occurring in the tileset.
+   */
+  Variance,
+  /**
+   * The sum of property values occurring in the tileset.
+   */
+  Sum
 };
 
 /**

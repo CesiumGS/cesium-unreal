@@ -14,7 +14,7 @@
 #include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
-#include "CesiumActors.h" 
+#include "CesiumActors.h"
 #include "CesiumAsync/SharedAssetDepot.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
@@ -1269,16 +1269,8 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   if (this->_pFeaturesMetadataComponent.IsValid()) {
-    this->_pFeaturesMetadataComponent->interruptStatisticsSync();
+    this->_pFeaturesMetadataComponent->interruptSync();
   }
-
-  // TArray<UCesiumGltfComponent*> gltfComponents;
-  // this->GetComponents<UCesiumGltfComponent>(gltfComponents);
-
-  // for (UCesiumGltfComponent* pGltf : gltfComponents) {
-  //   pGltf->SetVisibility(false, true);
-  //   pGltf->DestroyComponent();
-  // }
 
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
   // It did crash in Tick() when we trigger refresh events at a high frequency,
@@ -2200,9 +2192,8 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
 #if WITH_EDITOR
 void ACesium3DTileset::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
-  Super::PostEditChangeProperty(PropertyChangedEvent);
-
   if (!PropertyChangedEvent.Property) {
+    Super::PostEditChangeProperty(PropertyChangedEvent);
     return;
   }
 
@@ -2276,6 +2267,8 @@ void ACesium3DTileset::PostEditChangeProperty(
     // Maximum Screen Space Error can affect how attenuated points are rendered,
     // so propagate the new value to the render proxies for this tileset.
     FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
+
+    Super::PostEditChangeProperty(PropertyChangedEvent);
   }
 }
 
