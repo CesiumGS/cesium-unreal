@@ -1420,10 +1420,12 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [](const auto& view) -> FCesiumMetadataValue {
+      [pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no "no data" value is specified.
         return FCesiumMetadataValue(
-            CesiumGltf::propertyValueViewToCopy(view.noData()));
+            CesiumGltf::propertyValueViewToCopy(view.noData()),
+            pEnumDefinition);
       });
 }
 
@@ -1434,10 +1436,12 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
       Property._property,
       Property._valueType,
       Property._normalized,
-      [](const auto& view) -> FCesiumMetadataValue {
+      [pEnumDefinition = Property._pEnumDefinition](
+          const auto& view) -> FCesiumMetadataValue {
         // Returns an empty value if no default value is specified.
         return FCesiumMetadataValue(
-            CesiumGltf::propertyValueViewToCopy(view.defaultValue()));
+            CesiumGltf::propertyValueViewToCopy(view.defaultValue()),
+            pEnumDefinition);
       });
 }
 

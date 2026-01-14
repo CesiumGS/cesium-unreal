@@ -1,7 +1,8 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "UnrealMetadataConversions.h"
+
 #include <CesiumGltf/MetadataConversions.h>
 
 ECesiumMetadataBlueprintType
@@ -41,6 +42,20 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
         return FCesiumMetadataValue(v[index], pEnumDefinition);
       },
       array._value);
+}
+
+FString UCesiumPropertyArrayBlueprintLibrary::ToString(
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  TArray<FString> results;
+  const int64 size = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
+  for (int64 i = 0; i < size; i++) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyArrayBlueprintLibrary::GetValue(Array, i);
+    results.Add(
+        UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
+  }
+
+  return "[" + FString::Join(results, TEXT(", ")) + "]";
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS

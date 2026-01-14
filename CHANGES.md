@@ -1,5 +1,12 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
+- Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
+
 ### v2.22.1 - 2026-01-05
 
 ##### Fixes :wrench:
