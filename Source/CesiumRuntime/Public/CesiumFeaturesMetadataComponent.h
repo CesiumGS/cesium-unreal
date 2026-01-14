@@ -77,15 +77,7 @@ public:
            ShowOnlyInnerProperties))
   FCesiumFeaturesMetadataDescription Description;
 
-  /**
-   * Syncs this component's statistics description from its tileset owner,
-   * retrieving values for the corresponding statistics.
-   *
-   * If there are described statistics that are not present on the tileset
-   * owner, they will be left as null values.
-   */
-  void SyncStatistics();
-
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Previously the properties of FCesiumFeaturesMetadataDescription were
   // deconstructed here in order to flatten the Details panel UI. However, the
   // ShowOnlyInnerProperties attribute accomplishes the same thing. These
@@ -139,6 +131,27 @@ public:
            DeprecationMessage =
                "Use PropertyTextures on the CesiumFeaturesMetadataDescription's ModelMetadata instead."))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
+   * Syncs this component's statistics description from its tileset owner,
+   * retrieving values for the corresponding statistics.
+   *
+   * If there are described statistics that are not present on the tileset
+   * owner, they will be left as null values.
+   */
+  void SyncStatistics();
+
+  /**
+   * Whether a sync is already in progress.
+   */
+  bool IsSyncing() const;
+
+  /**
+   * Interrupts any sync happening on this component. Usually called before
+   * destroying or refreshing a tileset.
+   */
+  void InterruptSync();
 
 #if WITH_EDITOR
   virtual void
@@ -154,10 +167,7 @@ protected:
   virtual void OnRegister() override;
 
 private:
-  void interruptSync();
   void clearStatistics();
 
   bool _syncInProgress;
-
-  friend class ACesium3DTileset;
 };

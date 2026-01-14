@@ -2510,7 +2510,11 @@ void UCesiumFeaturesMetadataComponent::SyncStatistics() {
   }
 }
 
-void UCesiumFeaturesMetadataComponent::interruptSync() {
+bool UCesiumFeaturesMetadataComponent::IsSyncing() const {
+  return this->_syncInProgress;
+}
+
+void UCesiumFeaturesMetadataComponent::InterruptSync() {
   this->_syncInProgress = false;
   this->clearStatistics();
 }

@@ -1269,7 +1269,7 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   if (this->_pFeaturesMetadataComponent.IsValid()) {
-    this->_pFeaturesMetadataComponent->interruptSync();
+    this->_pFeaturesMetadataComponent->InterruptSync();
   }
 
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
@@ -2069,7 +2069,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   if (this->_pFeaturesMetadataComponent.IsValid() &&
-      !this->_pTileset->getMetadata()) {
+      this->_pFeaturesMetadataComponent->IsSyncing()) {
     // Styling may require the tileset's metadata to be loaded first (for schema
     // and/or statistics) before streaming tiles. But continue to dispatch tasks
     // so that the metadata future resolves.

@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
+
 ### v2.22.1 - 2026-01-05
 
 ##### Fixes :wrench:
