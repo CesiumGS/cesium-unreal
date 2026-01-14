@@ -17,8 +17,7 @@ FCesiumMetadataValue::FCesiumMetadataValue(FCesiumPropertyArray&& Array)
       _arrayValue(),
       _valueType(),
       _pEnumDefinition(Array._pEnumDefinition) {
-  FCesiumMetadataValueType elementType =
-      UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(Array);
+  FCesiumMetadataValueType elementType = Array._elementType;
   this->_valueType = {elementType.Type, elementType.ComponentType, true};
   this->_arrayValue = std::move(Array);
 }
@@ -212,7 +211,7 @@ template <glm::length_t N, typename T>
 std::optional<glm::mat<N, N, T>>
 convertToMatN(const CesiumUtility::JsonValue::Array& array) {
   std::vector<T> components = getScalarArray<T>(array);
-  if (components.size() != N) {
+  if (components.size() != N * N) {
     return std::nullopt;
   }
 
@@ -708,9 +707,7 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FString& DefaultValue) {
   if (Value._arrayValue) {
-    return UCesiumPropertyArrayBlueprintLibrary::ToString(
-        *Value._arrayValue,
-        DefaultValue);
+    return UCesiumPropertyArrayBlueprintLibrary::ToString(*Value._arrayValue);
   }
 
   return swl::visit(
@@ -724,7 +721,9 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
         } else {
           if constexpr (CesiumGltf::IsMetadataInteger<ValueType>::value) {
             if (Value._pEnumDefinition.IsValid()) {
-              return Value._pEnumDefinition->GetName(value).Get(DefaultValue);
+              TOptional<FString> maybeName =
+                  Value._pEnumDefinition->GetName(value);
+              return maybeName.Get(DefaultValue);
             }
           }
 

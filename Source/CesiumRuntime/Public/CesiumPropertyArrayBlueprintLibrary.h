@@ -83,8 +83,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyArray")
-  static FString ToString(
-      UPARAM(ref) const FCesiumPropertyArray& Array);
+  static FString ToString(UPARAM(ref) const FCesiumPropertyArray& Array);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**

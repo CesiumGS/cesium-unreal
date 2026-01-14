@@ -1301,7 +1301,7 @@ void FCesiumMetadataValueSpec::Define() {
 
       pString = strings.Find(FString("array"));
       TestTrue("has array value", pString != nullptr);
-      TestEqual("array value as string", *pString, FString());
+      TestEqual("array value as string", *pString, FString("[1, 2, 3]"));
     });
   });
 

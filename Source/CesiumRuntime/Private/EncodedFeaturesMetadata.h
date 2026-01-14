@@ -92,8 +92,7 @@ static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
 static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
 
 /**
- * Property Statistic Semantic:
- * Prefix + PropertyEntityName + PropertyName + "_SEMANTIC"
+ * Property Statistic Semantic: ClassId + PropertyId + "_SEMANTIC"
  */
 static const TMap<ECesiumMetadataStatisticSemantic, FString>
     MaterialPropertyStatisticSuffixes = {

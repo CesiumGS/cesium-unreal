@@ -287,29 +287,42 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
       TSharedRef<PropertyStatisticsView> pProperty =
           MakeShared<PropertyStatisticsView>(std::move(propertyStatistics));
 
-      if (propertyIt.second.min) {
-        StatisticView statistic{
-            pClassId,
-            pPropertyId,
-            ECesiumMetadataStatisticSemantic::Min,
-            FCesiumMetadataValue::fromJsonValue(
-                *propertyIt.second.min,
-                valueType)};
-        pProperty->statistics.Emplace(
-            MakeShared<StatisticView>(std::move(statistic)));
-      }
+      auto syncStatistic =
+          [&pProperty, &pClassId, &pPropertyId, &valueType](
+              ECesiumMetadataStatisticSemantic semantic,
+              const std::optional<CesiumUtility::JsonValue>& maybeValue) {
+            if (maybeValue) {
+              StatisticView statistic{
+                  pClassId,
+                  pPropertyId,
+                  semantic,
+                  FCesiumMetadataValue::fromJsonValue(*maybeValue, valueType)};
+              pProperty->statistics.Emplace(
+                  MakeShared<StatisticView>(std::move(statistic)));
+            }
+          };
 
-      if (propertyIt.second.max) {
-        StatisticView statistic{
-            pClassId,
-            pPropertyId,
-            ECesiumMetadataStatisticSemantic::Max,
-            FCesiumMetadataValue::fromJsonValue(
-                *propertyIt.second.max,
-                valueType)};
-        pProperty->statistics.Emplace(
-            MakeShared<StatisticView>(std::move(statistic)));
-      }
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Min,
+          propertyIt.second.min);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Max,
+          propertyIt.second.max);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Mean,
+          propertyIt.second.mean);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Median,
+          propertyIt.second.median);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::StandardDeviation,
+          propertyIt.second.standardDeviation);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Variance,
+          propertyIt.second.variance);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Sum,
+          propertyIt.second.sum);
 
       properties.Add(std::move(pProperty));
     }
