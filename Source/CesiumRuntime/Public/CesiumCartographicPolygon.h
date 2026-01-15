@@ -53,11 +53,12 @@ public:
   /**
    * Sets the spline points from an array of geographic coordinates
    * @param
-   * @param points An array of longitude/latitude/height coordinates that
-   * define a closed polygon.
+   * @param Points An array of points expressed as longitude in degrees (X),
+   * latitude in degrees (Y) and height in meters (Z) that
+   * define the polygon.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetPolygonPointsLongitudeLatitudeHeight(const TArray<FVector>& points);
+  void SetPolygonPointsLongitudeLatitudeHeight(const TArray<FVector>& Points);
 
   // AActor overrides
   virtual void PostLoad() override;
@@ -66,5 +67,5 @@ protected:
   virtual void BeginPlay() override;
 
 private:
-  void MakeLinear() const;
+  void MakeLinear();
 };

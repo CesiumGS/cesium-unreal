@@ -43,25 +43,25 @@ void ACesiumCartographicPolygon::BeginPlay() {
 }
 
 void ACesiumCartographicPolygon::SetPolygonPointsLongitudeLatitudeHeight(
-    const TArray<FVector>& points) {
-  if (points.IsEmpty()) {
+    const TArray<FVector>& Points) {
+  if (Points.IsEmpty()) {
     UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
     return;
   }
 
   TArray<FVector> unrealPoints;
-  unrealPoints.Reserve(points.Num());
+  unrealPoints.Reserve(Points.Num());
 
   FVector center{};
-  const auto* georeference = this->GlobeAnchor->ResolveGeoreference();
+  const ACesiumGeoreference* pGeoreference = this->GlobeAnchor->ResolveGeoreference();
 
-  for (const auto& p : points) {
-    center += p;
+  for (const FVector& point : Points) {
+    center += point;
     const FVector unrealPosition =
-        georeference->TransformLongitudeLatitudeHeightPositionToUnreal(p);
+        pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(point);
     unrealPoints.Add(unrealPosition);
   }
-  center /= points.Num();
+  center /= Points.Num();
 
   this->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
   this->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
@@ -99,7 +99,7 @@ ACesiumCartographicPolygon::CreateCartographicPolygon(
   return CartographicPolygon(polygon);
 }
 
-void ACesiumCartographicPolygon::MakeLinear() const {
+void ACesiumCartographicPolygon::MakeLinear() {
   // set spline point types to linear for all points.
   for (size_t i = 0; i < this->Polygon->GetNumberOfSplinePoints(); ++i) {
     this->Polygon->SetSplinePointType(i, ESplinePointType::Linear);
