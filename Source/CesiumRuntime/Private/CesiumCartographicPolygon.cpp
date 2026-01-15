@@ -42,8 +42,8 @@ void ACesiumCartographicPolygon::BeginPlay() {
   this->MakeLinear();
 }
 
-void ACesiumCartographicPolygon::SetPolygonPointsCartographic(
-    const ECesiumCartographicCoordinateSpace CoordinateSpace,
+void ACesiumCartographicPolygon::SetPolygonPoints(
+    const ECesiumGlobeCoordinateSpace CoordinateSpace,
     const TArray<FVector>& Points) {
   if (Points.IsEmpty()) {
     UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
@@ -67,7 +67,7 @@ void ACesiumCartographicPolygon::SetPolygonPointsCartographic(
     center += point;
     unrealPosition =
         (CoordinateSpace ==
-         ECesiumCartographicCoordinateSpace::LatitudeLongitudeHeight)
+         ECesiumGlobeCoordinateSpace::LatitudeLongitudeHeight)
             ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
                   point)
             : pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(

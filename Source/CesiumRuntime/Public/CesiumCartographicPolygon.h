@@ -13,7 +13,7 @@
 #include "CesiumCartographicPolygon.generated.h"
 
 UENUM(BlueprintType)
-enum class ECesiumCartographicCoordinateSpace : uint8 {
+enum class ECesiumGlobeCoordinateSpace : uint8 {
   LatitudeLongitudeHeight UMETA(DisplayName = "Latitude Longitude Height"),
   EarthCenteredEarthFixed UMETA(DisplayName = "Earth Centered Earth Fixed"),
 };
@@ -64,8 +64,8 @@ public:
    * CoordinateSpace.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetPolygonPointsCartographic(
-      const ECesiumCartographicCoordinateSpace CoordinateSpace,
+  void SetPolygonPoints(
+      const ECesiumGlobeCoordinateSpace CoordinateSpace,
       const TArray<FVector>& Points);
 
   // AActor overrides
