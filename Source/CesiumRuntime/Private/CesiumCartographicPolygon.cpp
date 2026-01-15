@@ -42,23 +42,36 @@ void ACesiumCartographicPolygon::BeginPlay() {
   this->MakeLinear();
 }
 
-void ACesiumCartographicPolygon::SetPolygonPointsLongitudeLatitudeHeight(
+void ACesiumCartographicPolygon::SetPolygonPointsCartographic(
+    const ECesiumCartographicCoordinateSpace CoordinateSpace,
     const TArray<FVector>& Points) {
   if (Points.IsEmpty()) {
     UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
     return;
   }
+  assert(
+      (CoordnateSystem == ECesiumCartographicCoordinateSystem::Cartesian ||
+       CoordnateSystem ==
+           ECesiumCartographicCoordinateSystem::CCCS_LatitudeLongitudeHeight) &&
+      "Invalid CoordinatSystem value.");
 
   TArray<FVector> unrealPoints;
   unrealPoints.Reserve(Points.Num());
 
   FVector center{};
-  const ACesiumGeoreference* pGeoreference = this->GlobeAnchor->ResolveGeoreference();
+  const ACesiumGeoreference* pGeoreference =
+      this->GlobeAnchor->ResolveGeoreference();
 
+  FVector unrealPosition{};
   for (const FVector& point : Points) {
     center += point;
-    const FVector unrealPosition =
-        pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(point);
+    unrealPosition =
+        (CoordinateSpace ==
+         ECesiumCartographicCoordinateSpace::LatitudeLongitudeHeight)
+            ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+                  point)
+            : pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
+                  point);
     unrealPoints.Add(unrealPosition);
   }
   center /= Points.Num();

@@ -2,9 +2,7 @@
 
 #pragma once
 
-#include "CesiumGeoreference.h"
 #include "CesiumGeospatial/CartographicPolygon.h"
-#include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
@@ -13,6 +11,12 @@
 #include <vector>
 
 #include "CesiumCartographicPolygon.generated.h"
+
+UENUM(BlueprintType)
+enum class ECesiumCartographicCoordinateSpace : uint8 {
+  LatitudeLongitudeHeight UMETA(DisplayName = "Latitude Longitude Height"),
+  EarthCenteredEarthFixed UMETA(DisplayName = "Earth Centered Earth Fixed"),
+};
 
 /**
  * A spline-based polygon actor used to rasterize 2D polygons on top of
@@ -52,13 +56,17 @@ public:
 
   /**
    * Sets the spline points from an array of geographic coordinates
-   * @param
-   * @param Points An array of points expressed as longitude in degrees (X),
-   * latitude in degrees (Y) and height in meters (Z) that
-   * define the polygon.
+   * @param CoordinateSpace The coordinate space used in the provided Points
+   * array. Either longitude expressed in degrees (X), latitude in degrees (Y)
+   * and height in meters (Z), or Earth-Centered, Earth-Fixed cartesian
+   * coordinates.
+   * @param Points An array of points expressed in terms of the given
+   * CoordinateSpace.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetPolygonPointsLongitudeLatitudeHeight(const TArray<FVector>& Points);
+  void SetPolygonPointsCartographic(
+      const ECesiumCartographicCoordinateSpace CoordinateSpace,
+      const TArray<FVector>& Points);
 
   // AActor overrides
   virtual void PostLoad() override;
