@@ -52,8 +52,8 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
   }
 
   switch (CoordinateReferenceSystem) {
-    case ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight:
-    case ECesiumCoordinateReferenceSystem::EarthCenteredEarthFixed:
+  case ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight:
+  case ECesiumCoordinateReferenceSystem::EarthCenteredEarthFixed:
     break;
   default:
     UE_LOG(LogTemp, Error, TEXT("Unhandled CoordinateReferenceSystem value."));
