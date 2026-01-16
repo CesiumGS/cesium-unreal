@@ -50,11 +50,15 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
     UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
     return;
   }
-  CESIUM_ASSERT(
-      (CoordnateSystem == ECesiumCartographicCoordinateSystem::Cartesian ||
-       CoordnateSystem ==
-           ECesiumCartographicCoordinateSystem::CCCS_LatitudeLongitudeHeight) &&
-      "Invalid CoordinateReferenceSystem value.");
+
+  switch (CoordinateReferenceSystem) {
+    case ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight:
+    case ECesiumCoordinateReferenceSystem::EarthCenteredEarthFixed:
+    break;
+  default:
+    UE_LOG(LogTemp, Error, TEXT("Unhandled CoordinateReferenceSystem value."));
+    return;
+  }
 
   TArray<FVector> unrealPoints;
   unrealPoints.Reserve(Points.Num());
