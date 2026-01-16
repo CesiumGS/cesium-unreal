@@ -27,7 +27,6 @@
 using namespace CesiumTextureUtility;
 
 namespace EncodedFeaturesMetadata {
-
 FString getNameForFeatureIDSet(
     const FCesiumFeatureIdSet& featureIDSet,
     int32& FeatureIdTextureCounter) {
@@ -897,21 +896,8 @@ FString getNameForStatistic(
     const FString& classId,
     const FString& propertyId,
     ECesiumMetadataStatisticSemantic semantic) {
-  FString suffix;
-
-  switch (semantic) {
-  case ECesiumMetadataStatisticSemantic::Min:
-    suffix = MaterialPropertyMinSuffix;
-    break;
-  case ECesiumMetadataStatisticSemantic::Max:
-    suffix = MaterialPropertyMaxSuffix;
-    break;
-  default:
-    // UE_LOG?
-    return FString();
-  }
-
-  return createHlslSafeName(classId + "_" + propertyId) + suffix;
+  return createHlslSafeName(classId + "_" + propertyId) +
+         MaterialPropertyStatisticSuffixes[semantic];
 }
 
 // The result should be a safe hlsl identifier, but any name clashes

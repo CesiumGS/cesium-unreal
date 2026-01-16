@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumFeaturesMetadataDescription.h"
 #include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumTextureUtility.h"
@@ -22,17 +23,10 @@ struct FCesiumPrimitiveMetadata;
 struct FCesiumPropertyTable;
 struct FCesiumPropertyTableProperty;
 struct FCesiumPropertyTexture;
-struct FCesiumPropertyTableDescription;
-struct FCesiumPropertyTextureDescription;
-struct FFeatureTextureDescription;
-struct FCesiumModelMetadataDescription;
-struct FCesiumPrimitiveFeaturesDescription;
-struct FCesiumPrimitiveMetadataDescription;
 
 struct FCesiumMetadataPropertyDetails;
 class UMaterialInstanceDynamic;
 enum EMaterialParameterAssociation : int;
-enum class ECesiumMetadataStatisticSemantic;
 
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
@@ -98,11 +92,18 @@ static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
 static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
 
 /**
- * - Property Min: Prefix + PropertyEntityName + PropertyName + "_MIN"
- * - Property Max: Prefix + PropertyEntityName + PropertyName + "_MAX"
+ * Property Statistic Semantic: ClassId + PropertyId + "_SEMANTIC"
  */
-static const FString MaterialPropertyMinSuffix = "_MIN";
-static const FString MaterialPropertyMaxSuffix = "_MAX";
+static const TMap<ECesiumMetadataStatisticSemantic, FString>
+    MaterialPropertyStatisticSuffixes = {
+        {ECesiumMetadataStatisticSemantic::Min, "_MIN"},
+        {ECesiumMetadataStatisticSemantic::Max, "_MAX"},
+        {ECesiumMetadataStatisticSemantic::Mean, "_MEAN"},
+        {ECesiumMetadataStatisticSemantic::Median, "_MEDIAN"},
+        {ECesiumMetadataStatisticSemantic::StandardDeviation,
+         "_STANDARD_DEVIATION"},
+        {ECesiumMetadataStatisticSemantic::Variance, "_VARIANCE"},
+        {ECesiumMetadataStatisticSemantic::Sum, "_SUM"}};
 
 /**
  * Naming convention for material inputs (for use in custom functions):
@@ -155,16 +156,6 @@ static const FString MaterialTextureRotationSuffix = "_TX_ROTATION";
 FString getNameForFeatureIDSet(
     const FCesiumFeatureIdSet& FeatureIDSet,
     int32& FeatureIDTextureCounter);
-/**
- * @brief Generates a HLSL-safe name for a feature ID set. This is used by the
- * material for parameter nodes.
- *
- * @param FeatureIDSet The feature ID set
- * @param FeatureIDTextureCounter The counter representing how many feature ID
- * textures have been seen in the primitive thus far. Will be incremented by
- * this function if the given feature ID set is a texture.
- */
-FString getMaterialNameForFeatureIDSet();
 
 /**
  * @brief A feature ID texture that has been encoded for access on the GPU.
@@ -514,14 +505,18 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 #pragma endregion
 
 #pragma region Statistics
+
 /**
  * @brief Generates a name for a property statistic from a tileset's metadata.
- * @param PropertyTable The property table
+ * @param classId The ID of the class containing the statistic.
+ * @param propertyId The ID of the property for which the statistic exists.
+ * @param semantic The semantic of the statistic.
  */
 FString getNameForStatistic(
     const FString& classId,
     const FString& propertyId,
     ECesiumMetadataStatisticSemantic semantic);
+
 #pragma endregion
 
 #pragma region Utility

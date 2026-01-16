@@ -508,6 +508,14 @@ void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
   }
 }
 
+void ACesium3DTileset::SetEnableDoubleSidedCollisions(
+    bool bEnableDoubleSidedCollisions) {
+  if (this->EnableDoubleSidedCollisions != bEnableDoubleSidedCollisions) {
+    this->EnableDoubleSidedCollisions = bEnableDoubleSidedCollisions;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetCreateNavCollision(bool bCreateNavCollision) {
   if (this->CreateNavCollision != bCreateNavCollision) {
     this->CreateNavCollision = bCreateNavCollision;
@@ -1163,7 +1171,7 @@ void ACesium3DTileset::LoadTileset() {
   this->_pFeaturesMetadataComponent =
       this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
 
-  if (this->_pFeaturesMetadataComponent != nullptr) {
+  if (this->_pFeaturesMetadataComponent.IsValid()) {
     this->_pFeaturesMetadataComponent->SyncStatistics();
   }
 
@@ -1293,6 +1301,10 @@ void ACesium3DTileset::DestroyTileset() {
     if (pTileExcluder->IsActive()) {
       pTileExcluder->RemoveFromTileset();
     }
+  }
+
+  if (this->_pFeaturesMetadataComponent.IsValid()) {
+    this->_pFeaturesMetadataComponent->InterruptSync();
   }
 
   if (this->_pVoxelRendererComponent) {
@@ -2099,13 +2111,13 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  if (this->_pFeaturesMetadataComponent != nullptr &&
-      !this->_pTileset->getMetadata()) {
+  if (this->_pFeaturesMetadataComponent.IsValid() &&
+      this->_pFeaturesMetadataComponent->IsSyncing()) {
     // Styling may require the tileset's metadata to be loaded first (for schema
     // and/or statistics) before streaming tiles. But continue to dispatch tasks
     // so that the metadata future resolves.
     // This will not add much overhead since tilesets will have no metadata or
-    // otherwise embed in the tileset.json anyway.
+    // otherwise embed it in the tileset.json anyway.
     getAsyncSystem().dispatchMainThreadTasks();
     return;
   }

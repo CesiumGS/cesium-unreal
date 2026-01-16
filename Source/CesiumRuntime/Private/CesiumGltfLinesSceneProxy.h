@@ -4,6 +4,7 @@
 
 #include "CesiumCompat.h"
 #include "PrimitiveSceneProxy.h"
+#include "StaticMeshResources.h"
 
 class UCesiumGltfLinesComponent;
 

@@ -47,7 +47,6 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
 FString UCesiumPropertyArrayBlueprintLibrary::ToString(
     UPARAM(ref) const FCesiumPropertyArray& Array) {
   TArray<FString> results;
-
   const int64 size = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
   for (int64 i = 0; i < size; i++) {
     FCesiumMetadataValue value =
@@ -140,4 +139,5 @@ FString UCesiumPropertyArrayBlueprintLibrary::GetString(
       UCesiumPropertyArrayBlueprintLibrary::GetValue(array, index),
       defaultValue);
 }
+
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

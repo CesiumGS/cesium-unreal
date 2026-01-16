@@ -16,7 +16,7 @@ FCesiumPropertyArray::FCesiumPropertyArray(const FCesiumPropertyArray& rhs)
     : _value(),
       _elementType(rhs._elementType),
       _storage(rhs._storage),
-      _pEnumDefinition(nullptr) {
+      _pEnumDefinition(rhs._pEnumDefinition) {
   swl::visit(
       [this](const auto& value) {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {

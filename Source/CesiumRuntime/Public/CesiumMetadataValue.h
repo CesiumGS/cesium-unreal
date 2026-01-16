@@ -6,6 +6,7 @@
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Misc/Optional.h"
 #include "UObject/ObjectMacros.h"
 
 #include <CesiumGltf/PropertyTypeTraits.h>
@@ -98,8 +99,7 @@ private:
       glm::mat<4, 4, int64_t>,
       glm::mat<4, 4, uint64_t>,
       glm::mat<4, 4, float>,
-      glm::mat<4, 4, double>,
-      FCesiumPropertyArray>;
+      glm::mat<4, 4, double>>;
 #pragma endregion
 
 public:
@@ -120,8 +120,8 @@ public:
       const T& Value,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition)
       : _value(Value),
+        _arrayValue(),
         _valueType(TypeToMetadataValueType<T>(pEnumDefinition)),
-        _storage(),
         _pEnumDefinition(pEnumDefinition) {}
 
   /**
@@ -131,9 +131,15 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value)
+      : FCesiumMetadataValue(Value, TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
+
+  template <typename ArrayType>
+  explicit FCesiumMetadataValue(
+      const CesiumGltf::PropertyArrayView<ArrayType>& Value,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
       : FCesiumMetadataValue(
-            std::move(Value),
-            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
+            CesiumGltf::PropertyArrayView<ArrayType>(Value),
+            pEnumDefinition) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
@@ -145,13 +151,24 @@ public:
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
-      CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
+      CesiumGltf::PropertyArrayView<ArrayType>&& Value,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(FCesiumPropertyArray(std::move(Copy))),
+      : _value(),
+        _arrayValue(FCesiumPropertyArray(std::move(Value))),
         _valueType(
             TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
                 pEnumDefinition)),
-        _storage(),
+        _pEnumDefinition(pEnumDefinition) {}
+
+  template <typename ArrayType>
+  explicit FCesiumMetadataValue(
+      CesiumGltf::PropertyArrayCopy<ArrayType>&& Copy,
+      const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
+      : _value(),
+        _arrayValue(FCesiumPropertyArray(std::move(Copy))),
+        _valueType(
+            TypeToMetadataValueType<CesiumGltf::PropertyArrayView<ArrayType>>(
+                pEnumDefinition)),
         _pEnumDefinition(pEnumDefinition) {}
 
   /**
@@ -165,20 +182,19 @@ public:
   explicit FCesiumMetadataValue(
       const std::optional<T>& MaybeValue,
       const TSharedPtr<FCesiumMetadataEnum>& pEnumDefinition = nullptr)
-      : _value(), _valueType(), _pEnumDefinition(pEnumDefinition) {
+      : _value(),
+        _arrayValue(),
+        _valueType(),
+        _pEnumDefinition(pEnumDefinition) {
     if (!MaybeValue) {
       return;
     }
 
     FCesiumMetadataValue temp(*MaybeValue);
     this->_value = std::move(temp._value);
+    this->_arrayValue = std::move(temp._arrayValue);
     this->_valueType = std::move(temp._valueType);
   }
-
-  /**
-   * Constructs a metadata value from a given FString.
-   */
-  FCesiumMetadataValue(const FString& String);
 
   /**
    * Constructs a metadata value from a given FCesiumPropertyArray.
@@ -192,8 +208,8 @@ public:
 
   /**
    * Converts a CesiumUtility::JsonValue to a FCesiumMetadataValue with the
-   * specified type. This is a strict interpretation of the value; the function
-   * will not convert between types or component types, even if possible.
+   * specified type. This is a strict interpretation of the value; conversion
+   * will not be done between types or component types, even if possible.
    *
    * @param jsonValue The JSON value.
    * @param targetType The value type to which to convert the JSON value.
@@ -219,8 +235,8 @@ private:
       const FCesiumMetadataValueType& targetType);
 
   ValueType _value;
+  TOptional<FCesiumPropertyArray> _arrayValue;
   FCesiumMetadataValueType _valueType;
-  std::vector<std::byte> _storage;
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
@@ -747,7 +763,10 @@ public:
    *
    * String properties are returned as-is.
    *
-   * Scalar values are converted to a string with `std::to_string`.
+   * Scalar values are converted to a string with `std::to_string`. However,
+   * if the scalar value represents an enum, it will be looked up in property's
+   * enum definition. If the value exists in the definition, its string name
+   * will be returned. Otherwise, the default value is returned.
    *
    * Boolean properties are converted to "true" or "false".
    *
