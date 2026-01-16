@@ -36,6 +36,15 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
       Category = "Metadata",
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyAttributePropertyDescription> Properties;
+
+  /**
+   * @brief Description of the statistics of the properties on the voxel class.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata",
+      Meta = (TitleProperty = "Name"))
+  FCesiumMetadataClassStatisticsDescription Statistics;
 };
 
 /**
@@ -63,7 +72,7 @@ public:
    * of metadata. Make sure to delete the properties that aren't relevant.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
-  void AutoFill();
+  void BuildShader();
 
   /**
    * This button can be used to create a boiler-plate material layer that
@@ -78,11 +87,19 @@ public:
 
 #if WITH_EDITORONLY_DATA
   /**
-   * This is the target UMaterialFunctionMaterialLayer that the
-   * boiler-plate material generation will use. When pressing
-   * "Generate Material", nodes will be added to this material to enable access
-   * to the requested metadata. If this is left blank, a new material layer
-   * will be created in the /Game/ folder.
+   * This is the target UMaterialInstance that the boiler-plate material
+   * generation will use. When pressing "Generate Material", nodes will be added
+   * to this material to enable access to the requested metadata. If this is
+   * left blank, a new material layer will be created in the /Game/ folder.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterialInstance* TargetMaterial = nullptr;
+
+  /**
+   * This is the target UMaterialInstance that the boiler-plate material
+   * generation will use. When pressing "Generate Material", nodes will be added
+   * to this material to enable access to the requested metadata. If this is
+   * left blank, a new material layer will be created in the /Game/ folder.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
@@ -111,10 +128,11 @@ public:
           (TitleProperty = "Custom Shader",
            DisplayAfter = "CustomShaderPreview",
            MultiLine = true))
-  FString CustomShader = TEXT("return 1;");
+  FString CustomShader = TEXT("return float4(1, 1, 1, 0.02);");
 
   /**
-   * Any additional functions to include for use in the custom shader.
+   * Any additional functions to include for use in the custom shader. The HLSL
+   * code provided here is included verbatim in the generated material.
    */
   UPROPERTY(
       EditAnywhere,

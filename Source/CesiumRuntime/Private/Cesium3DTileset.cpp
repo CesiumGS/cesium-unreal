@@ -981,12 +981,6 @@ void ACesium3DTileset::LoadTileset() {
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  const UCesiumVoxelMetadataComponent* pVoxelMetadataComponent =
-      this->FindComponentByClass<UCesiumVoxelMetadataComponent>();
-  if (pVoxelMetadataComponent) {
-    this->_voxelClassDescription = pVoxelMetadataComponent->Description;
-  }
-
   this->_cesiumViewExtension = cesiumViewExtension;
 
   if (GetDefault<UCesiumRuntimeSettings>()
@@ -1175,6 +1169,12 @@ void ACesium3DTileset::LoadTileset() {
     this->_pFeaturesMetadataComponent->SyncStatistics();
   }
 
+  this->_pVoxelMetadataComponent =
+      this->FindComponentByClass<UCesiumVoxelMetadataComponent>();
+  if (this->_pVoxelMetadataComponent.IsValid()) {
+    this->_pVoxelMetadataComponent->SyncStatistics();
+  }
+
 #ifdef CESIUM_DEBUG_TILE_STATES
   FString dbDirectory = FPaths::Combine(
       FPaths::ProjectSavedDir(),
@@ -1192,13 +1192,16 @@ void ACesium3DTileset::LoadTileset() {
           TCHAR_TO_UTF8(*dbFile));
 #endif
 
-  this->_pTileset->getRootTileAvailableEvent().thenImmediately([thiz = this]() {
-    if (!thiz->_pTileset || !thiz->_pTileset->getRootTile()) {
+  this->_pTileset->getRootTileAvailableEvent().thenInMainThread([this]() {
+    if (!IsValid(this)) {
       return;
     }
 
+    const Cesium3DTilesSelection::Tile* pRootTile =
+        this->_pTileset ? this->_pTileset->getRootTile() : nullptr;
+
     const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
-        thiz->_pTileset->getRootTile()->getContent().getExternalContent();
+        pRootTile ? pRootTile->getContent().getExternalContent() : nullptr;
     if (!pExternalContent) {
       return;
     }
@@ -1206,7 +1209,7 @@ void ACesium3DTileset::LoadTileset() {
     const auto* pVoxelExtension = pExternalContent->getExtension<
         Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
-      thiz->createVoxelRenderer(*pVoxelExtension);
+      this->createVoxelRenderer(*pVoxelExtension);
     }
   });
 
@@ -1305,6 +1308,10 @@ void ACesium3DTileset::DestroyTileset() {
 
   if (this->_pFeaturesMetadataComponent.IsValid()) {
     this->_pFeaturesMetadataComponent->InterruptSync();
+  }
+
+  if (this->_pVoxelMetadataComponent.IsValid()) {
+    this->_pVoxelMetadataComponent->InterruptSync();
   }
 
   if (this->_pVoxelRendererComponent) {
@@ -2161,28 +2168,28 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     this->_pVoxelRendererComponent->UpdateTiles(
         pResult->tilesToRenderThisFrame,
         pResult->tileScreenSpaceErrorThisFrame);
-  } else {
-    removeCollisionForTiles(pResult->tilesFadingOut);
-    hideTiles(this->_tilesToHideNextFrame);
+  }
 
-    _tilesToHideNextFrame.clear();
-    for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile :
-         pResult->tilesFadingOut) {
-      const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-          pTile->getContent().getRenderContent();
-      if (!this->UseLodTransitions ||
-          (pRenderContent &&
-           pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
-        _tilesToHideNextFrame.push_back(pTile);
-      }
+  removeCollisionForTiles(pResult->tilesFadingOut);
+  hideTiles(this->_tilesToHideNextFrame);
 
-      showTilesToRender(pResult->tilesToRenderThisFrame);
+  _tilesToHideNextFrame.clear();
+  for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile :
+       pResult->tilesFadingOut) {
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        pTile->getContent().getRenderContent();
+    if (!this->UseLodTransitions ||
+        (pRenderContent &&
+         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
+      _tilesToHideNextFrame.push_back(pTile);
+    }
 
-      if (this->UseLodTransitions) {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
-        updateTileFades(pResult->tilesToRenderThisFrame, true);
-        updateTileFades(pResult->tilesFadingOut, false);
-      }
+    showTilesToRender(pResult->tilesToRenderThisFrame);
+
+    if (this->UseLodTransitions) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
+      updateTileFades(pResult->tilesToRenderThisFrame, true);
+      updateTileFades(pResult->tilesFadingOut, false);
     }
   }
 
@@ -2426,7 +2433,9 @@ void ACesium3DTileset::createVoxelRenderer(
   }
 
   const FCesiumVoxelClassDescription* pVoxelClassDescription =
-      this->_voxelClassDescription ? &(*this->_voxelClassDescription) : nullptr;
+      this->_pVoxelMetadataComponent.IsValid()
+          ? &(this->_pVoxelMetadataComponent->Description)
+          : nullptr;
 
   this->_pVoxelRendererComponent = UCesiumVoxelRendererComponent::Create(
       this,

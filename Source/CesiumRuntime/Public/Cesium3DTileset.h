@@ -1391,12 +1391,11 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
+  TWeakObjectPtr<UCesiumVoxelMetadataComponent> _pVoxelMetadataComponent;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
 #endif
-
-  std::optional<FCesiumVoxelClassDescription> _voxelClassDescription;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   std::optional<FMetadataDescription> _metadataDescription_DEPRECATED;

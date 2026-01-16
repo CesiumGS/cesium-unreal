@@ -11,16 +11,16 @@
   BEGIN CUSTOM SHADER
 =========================*/
 
-struct CustomShaderProperties
-{
-%s
-};
-
 struct CustomShader
 {
+
+ // Properties
+%s
+
+ // Additional Functions
 %s
   
-  float4 Shade(CustomShaderProperties Properties)
+  float4 Shade()
   {
 %s
   }
