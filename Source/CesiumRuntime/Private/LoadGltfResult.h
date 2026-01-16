@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -156,6 +158,11 @@ struct LoadedPrimitiveResult {
    */
   CesiumGltf::IndexAccessorType IndexAccessor;
 #pragma endregion
+
+  /**
+   * The index of the property attribute that is used by voxels.
+   */
+  std::optional<int32_t> voxelPropertyAttributeIndex;
 };
 
 /**

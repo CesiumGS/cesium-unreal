@@ -203,6 +203,60 @@ struct CESIUMRUNTIME_API FCesiumPropertyTextureDescription {
 };
 
 /**
+ * @brief Description of a property attribute property that should be encoded
+ * for access on the GPU.
+ *
+ * This is similar to FCesiumPropertyTablePropertyDescription, but is limited to
+ * the types that are supported for property attribute properties.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumPropertyAttributePropertyDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * The name of this property. This will be how it is referenced in the
+   * material.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name;
+
+  /**
+   * Describes the underlying type of this property and other relevant
+   * information from its EXT_structural_metadata definition. Not all types of
+   * properties can be encoded to the GPU, or coerced to GPU-compatible types.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumMetadataPropertyDetails PropertyDetails;
+
+  /**
+   * Describes how the property will be encoded as data on the GPU, if possible.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumMetadataEncodingDetails EncodingDetails;
+};
+
+/**
+ * @brief Description of a property attribute with properties that should be
+ * made accessible to Unreal materials.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumPropertyAttributeDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * @brief The name of this property attribute.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name;
+
+  /**
+   * @brief Descriptions of the properties to upload to the GPU.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  TArray<FCesiumPropertyAttributePropertyDescription> Properties;
+};
+
+/**
  * @brief Names of the metadata entities referenced by the
  * EXT_structural_metadata on a glTF's primitives.
  *

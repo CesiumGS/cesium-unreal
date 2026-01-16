@@ -1,0 +1,224 @@
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumVoxelTemplate.usf: Template for creating custom shaders to style voxel data.
+=============================================================================*/
+
+// This depends on CesiumVoxelOctree.usf, but a local #include cannot be resolved here.
+// It must be linked under "Include File Paths" in a Custom node in the material.
+
+/*=======================
+  BEGIN CUSTOM SHADER
+=========================*/
+
+struct CustomShader
+{
+
+ // Properties
+%s
+
+ // Additional Functions
+%s
+  
+  float4 Shade()
+  {
+%s
+  }
+};
+
+/*=======================
+  END CUSTOM SHADER
+=========================*/
+
+/*===========================
+  BEGIN VOXEL MEGATEXTURES
+=============================*/
+
+struct VoxelMegatextures
+{
+  %s
+  int ShapeConstant;
+  uint3 TileCount; // Number of tiles in the texture, in three dimensions.
+
+  // NOTE: Unlike VoxelOctree, these dimensions are specified with respect to the voxel attributes
+  // in the glTF model. For box and cylinder voxels, the YZ dimensions will be swapped.
+  uint3 GridDimensions;
+  uint3 PaddingBefore;
+  uint3 PaddingAfter;
+
+  int3 TileIndexToCoords(in int Index)
+  {
+    if (TileCount.x == 0 || TileCount.y == 0 || TileCount.z == 0)
+    {
+      return 0;
+    }
+    int ZSlice = TileCount.x * TileCount.y;
+    int Z = Index / ZSlice;
+    int Y = (Index % ZSlice) / TileCount.x;
+    int X = Index % TileCount.x;
+    return int3(X, Y, Z) * (GridDimensions + PaddingBefore + PaddingAfter);
+  }
+  
+  CustomShaderProperties GetProperties(in TileSample Sample)
+  {
+    // Compute the tile location within the texture.
+    float3 TileCoords = TileIndexToCoords(Sample.Index);
+    
+    // Compute int coordinates of the voxel within the tile.
+    float3 LocalUV = Sample.LocalUV;
+    uint3 DataDimensions = GridDimensions + PaddingBefore + PaddingAfter;
+
+    if (ShapeConstant == BOX)
+    {
+      // Since glTFs are y-up (and 3D Tiles is z-up), the data must be accessed to reflect the transforms
+      // from a Y-up to Z-up frame of reference, plus the Cesium -> Unreal transform as well.
+      LocalUV = float3(LocalUV.x, clamp(1.0 - LocalUV.z, 0.0, 1.0), LocalUV.y);
+    }
+
+    float3 VoxelCoords = floor(LocalUV * float3(GridDimensions));
+    // Account for padding
+    VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
+    
+    int3 Coords = TileCoords + VoxelCoords;
+    
+    CustomShaderProperties Properties = (CustomShaderProperties) 0;
+ %s
+
+    return Properties;
+  }
+};
+
+/*===========================
+  END VOXEL MEGATEXTURES
+=============================*/
+  
+/*===========================
+  MAIN FUNCTION BODY
+=============================*/
+
+#define STEP_COUNT_MAX 1000
+#define ALPHA_ACCUMULATION_MAX 0.98 // Must be > 0.0 and <= 1.0
+
+VoxelOctree Octree;
+Octree.GridShape = (Shape) 0;
+Octree.GridShape.Initialize(ShapeConstant);
+
+Ray R = (Ray) 0;
+R.Origin = RayOrigin;
+R.Direction = RayDirection;
+
+// Input ray is Unit Space.
+//
+// Ultimately, we want to traverse the voxel grid in a [0, 1] UV space to simplify much of
+// the voxel octree math. This is simply referred to UV space, or "vanilla" UV space.
+// However, this UV space won't always be a perfect voxel cube. It must conform to the specified
+// shape of the voxel volume. Voxel cells may be curved (e.g., around a cylinder), or non-uniformly
+// scaled. This shape-relative UV space is aptly referred to as Shape UV Space.
+//
+// Shape UV Space is DIFFERENT from the shape's Unit Space. Think of Unit Space as the perfect
+// version of the grid geometry: a solid box, cylinder, or ellipsoid, within [-1, 1].
+// The actual voxel volume can be a subsection of that perfect unit space, e.g., a hollowed
+// cylinder with radius [0.5, 1].
+//
+// Shape UV Space is the [0, 1] grid mapping that conforms to the actual voxel volume. Imagine 
+// the voxel grid curving concentrically around a unit cylinder, then being "smooshed" to fit in
+// the volume of the hollow cylinder. Shape UV Space must account for the angle bounds of a cylinder,
+// and the longitude / latitude / height bounds of an ellipsoid.
+//
+// Therefore, we must convert the unit space ray to the equivalent Shape UV Space ray to sample correctly.
+// Spaces will be referred to as follows:
+// 
+// Unit Space: Unit space of the grid geometry from [-1, 1]. A perfectly solid box, cylinder, or ellipsoid.
+// Shape UV Space: Voxel space from [0, 1] conforming to the actual voxel volume. The volume could be a box, a part of a cylinder, or a region on an ellipsoid.
+// (Vanilla) UV Space: Voxel space within an untransformed voxel octree. This can be envisioned as a simple cube spanning [0, 1] in three dimensions.
+
+RayIntersections Intersections = Octree.GridShape.Intersect(R);
+if (Intersections.Entry.t == NO_HIT) {
+  return 0;
+}
+
+// Intersections are returned in Unit Space. Transform to UV space [0, 1] for raymarching through octree.
+R.Origin = UnitToUV(R.Origin);
+R.Direction = R.Direction * 0.5;
+
+// Initialize octree
+Octree.SetNodeData(OctreeData);
+Octree.GridDimensions = GridDimensions;
+ 
+// Initialize data textures
+VoxelMegatextures DataTextures;
+DataTextures.ShapeConstant = ShapeConstant;
+DataTextures.TileCount = TileCount;
+
+// Account for y-up -> z-up conventions for certain shapes.
+switch (ShapeConstant) {
+  case BOX:
+    DataTextures.GridDimensions = round(GridDimensions.xzy);
+    DataTextures.PaddingBefore = round(PaddingBefore.xzy);
+    DataTextures.PaddingAfter = round(PaddingAfter.xzy);
+    break;
+  default:
+    DataTextures.GridDimensions = round(GridDimensions);
+    DataTextures.PaddingBefore = round(PaddingBefore);
+    DataTextures.PaddingAfter = round(PaddingAfter);
+    break;
+}
+
+%s
+
+float CurrentT = Intersections.Entry.t;
+float EndT = Intersections.Exit.t;
+float3 PositionUV = R.Origin + CurrentT * R.Direction;
+
+// The Jacobian is necessary to compute voxel intersections with respect to the grid's shape.
+float3x3 JacobianT;
+float3 PositionShapeUVSpace = Octree.GridShape.ConvertUVToShapeUVSpace(PositionUV, JacobianT);
+
+float3 RawDirection = R.Direction;
+
+OctreeTraversal Traversal;
+TileSample Sample;
+Octree.BeginTraversal(PositionShapeUVSpace, Traversal, Sample);
+Intersection NextIntersection = Octree.GetNextVoxelIntersection(Sample, RawDirection, Intersections, JacobianT, CurrentT);
+
+float4 AccumulatedResult = float4(0, 0, 0, 0);
+
+CustomShaderProperties Properties;
+CustomShader CS;
+
+for (int step = 0; step < STEP_COUNT_MAX; step++) {
+  if (Sample.Index >= 0) {
+    Properties = DataTextures.GetProperties(Sample);
+    // TODO: expose additional properties?
+    float4 result = CS.Shade(Properties);
+    AccumulatedResult += result;
+
+    // Stop traversing if the alpha has been fully saturated.
+    if (AccumulatedResult.w > ALPHA_ACCUMULATION_MAX) {
+      AccumulatedResult.w = ALPHA_ACCUMULATION_MAX;
+      break;
+    }
+  }
+
+  if (NextIntersection.t <= 0.0) {
+    // Shape is infinitely thin. The ray may have hit the edge of a
+    // foreground voxel. Step ahead slightly to check for more voxels
+    NextIntersection.t = 0.00001;
+  }
+
+  // Keep raymarching
+  CurrentT += NextIntersection.t;
+  if (CurrentT > EndT) {
+    break;
+  }
+
+  PositionUV = R.Origin + CurrentT * R.Direction;
+  PositionShapeUVSpace = Octree.GridShape.ConvertUVToShapeUVSpace(PositionUV, JacobianT);
+  Octree.ResumeTraversal(PositionShapeUVSpace, Traversal, Sample);
+  NextIntersection = Octree.GetNextVoxelIntersection(Sample, RawDirection, Intersections, JacobianT, CurrentT);
+}
+
+// Convert the alpha from [0,ALPHA_ACCUMULATION_MAX] to [0,1]
+AccumulatedResult.a /= ALPHA_ACCUMULATION_MAX;
+
+return AccumulatedResult;
