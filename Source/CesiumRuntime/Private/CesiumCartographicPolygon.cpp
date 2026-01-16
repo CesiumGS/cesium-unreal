@@ -5,6 +5,7 @@
 #include "CesiumUtility/Math.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
+#include <CesiumUtility/Assert.h>
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
@@ -43,13 +44,13 @@ void ACesiumCartographicPolygon::BeginPlay() {
 }
 
 void ACesiumCartographicPolygon::SetPolygonPoints(
-    const ECesiumCoordinateReferenceSystem CoordinateSpace,
+    const ECesiumCoordinateReferenceSystem CoordinateReferenceSystem,
     const TArray<FVector>& Points) {
   if (Points.IsEmpty()) {
     UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
     return;
   }
-  assert(
+  CESIUM_ASSERT(
       (CoordnateSystem == ECesiumCartographicCoordinateSystem::Cartesian ||
        CoordnateSystem ==
            ECesiumCartographicCoordinateSystem::CCCS_LatitudeLongitudeHeight) &&
@@ -66,7 +67,7 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
   for (const FVector& point : Points) {
     center += point;
     unrealPosition =
-        (CoordinateSpace ==
+        (CoordinateReferenceSystem ==
          ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight)
             ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
                   point)
@@ -76,7 +77,7 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
   }
   center /= Points.Num();
 
-  if (CoordinateSpace ==
+  if (CoordinateReferenceSystem ==
       ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight) {
     this->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
   } else {

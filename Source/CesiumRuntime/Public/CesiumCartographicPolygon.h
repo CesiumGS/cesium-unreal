@@ -13,7 +13,7 @@
 #include "CesiumCartographicPolygon.generated.h"
 
 /**
- * A coordinate space used to interpret position data.
+ * A coordinate reference system used to interpret position data.
  */
 UENUM(BlueprintType)
 enum class ECesiumCoordinateReferenceSystem : uint8 {
@@ -66,16 +66,14 @@ public:
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
   /**
-   * Sets the spline points from an array of positions in the specified
-   * coordinate space.
-   * @param CoordinateSpace The coordinate space used in the provided Points
-   * array.
-   * @param Points An array of points expressed in terms of the given
-   * CoordinateSpace.
+  * Sets the spline points from an array of positions in the specified
+  * coordinate reference system.
+  * @param CoordinateReferenceSystem The coordinate reference system in which the points are expressed.
+  * @param Points The array of points expressed in the specified coordinate system.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetPolygonPoints(
-      const ECesiumCoordinateReferenceSystem CoordinateSpace,
+      const ECesiumCoordinateReferenceSystem CoordinateReferenceSystem,
       const TArray<FVector>& Points);
 
   // AActor overrides
