@@ -18,13 +18,13 @@
 UENUM(BlueprintType)
 enum class ECesiumCoordinateReferenceSystem : uint8 {
   /**
-   * Indicates a coordinate space expressed in terms of longitude in degrees
-   * (X), latitude in degrees (Y) and height in meters (Z).
+   * Indicates a coordinate reference system expressed in terms of longitude
+   * in degrees (X), latitude in degrees (Y) and height in meters (Z).
    */
   LongitudeLatitudeHeight UMETA(DisplayName = "Longitude Latitude Height"),
   /**
-   * Indicates a Cartesian coordinate system expressed in Earth-centered,
-   * Earth-fixed 3D coordinates.
+   * Indicates a Cartesian coordinate reference system expressed in
+   * Earth-centered, Earth-fixed 3D coordinates.
    */
   EarthCenteredEarthFixed UMETA(DisplayName = "Earth-Centered, Earth-Fixed"),
 };
