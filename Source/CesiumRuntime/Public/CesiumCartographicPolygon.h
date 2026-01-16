@@ -66,10 +66,12 @@ public:
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
   /**
-  * Sets the spline points from an array of positions in the specified
-  * coordinate reference system.
-  * @param CoordinateReferenceSystem The coordinate reference system in which the points are expressed.
-  * @param Points The array of points expressed in the specified coordinate system.
+   * Sets the spline points from an array of positions in the specified
+   * coordinate reference system.
+   * @param CoordinateReferenceSystem The coordinate reference system in which
+   * the points are expressed.
+   * @param Points The array of points expressed in the specified coordinate
+   * system.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetPolygonPoints(
