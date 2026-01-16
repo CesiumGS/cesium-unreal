@@ -43,7 +43,7 @@ void ACesiumCartographicPolygon::BeginPlay() {
 }
 
 void ACesiumCartographicPolygon::SetPolygonPoints(
-    const ECesiumGlobeCoordinateSpace CoordinateSpace,
+    const ECesiumCoordinateReferenceSystem CoordinateSpace,
     const TArray<FVector>& Points) {
   if (Points.IsEmpty()) {
     UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
@@ -53,7 +53,7 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
       (CoordnateSystem == ECesiumCartographicCoordinateSystem::Cartesian ||
        CoordnateSystem ==
            ECesiumCartographicCoordinateSystem::CCCS_LatitudeLongitudeHeight) &&
-      "Invalid CoordinatSystem value.");
+      "Invalid CoordinateSystem value.");
 
   TArray<FVector> unrealPoints;
   unrealPoints.Reserve(Points.Num());
@@ -67,7 +67,7 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
     center += point;
     unrealPosition =
         (CoordinateSpace ==
-         ECesiumGlobeCoordinateSpace::LatitudeLongitudeHeight)
+         ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight)
             ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
                   point)
             : pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
@@ -76,7 +76,13 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
   }
   center /= Points.Num();
 
-  this->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
+  if (CoordinateSpace ==
+      ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight) {
+    this->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
+  } else {
+    this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(center);
+  }
+
   this->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
 }
 

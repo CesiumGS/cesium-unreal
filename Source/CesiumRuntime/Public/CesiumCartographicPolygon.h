@@ -12,10 +12,21 @@
 
 #include "CesiumCartographicPolygon.generated.h"
 
+/**
+ * A coordinate space used to interpret position data.
+ */
 UENUM(BlueprintType)
-enum class ECesiumGlobeCoordinateSpace : uint8 {
-  LatitudeLongitudeHeight UMETA(DisplayName = "Latitude Longitude Height"),
-  EarthCenteredEarthFixed UMETA(DisplayName = "Earth Centered Earth Fixed"),
+enum class ECesiumCoordinateReferenceSystem : uint8 {
+  /**
+   * Indicates a coordinate space expressed in terms of longitude in degrees
+   * (X), latitude in degrees (Y) and height in meters (Z).
+   */
+  LongitudeLatitudeHeight UMETA(DisplayName = "Longitude Latitude Height"),
+  /**
+   * Indicates a Cartesian coordinate system expressed in Earth-centered,
+   * Earth-fixed 3D coordinates.
+   */
+  EarthCenteredEarthFixed UMETA(DisplayName = "Earth-Centered, Earth-Fixed"),
 };
 
 /**
@@ -55,17 +66,16 @@ public:
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
   /**
-   * Sets the spline points from an array of geographic coordinates
+   * Sets the spline points from an array of positions in the specified
+   * coordinate space.
    * @param CoordinateSpace The coordinate space used in the provided Points
-   * array. Either longitude expressed in degrees (X), latitude in degrees (Y)
-   * and height in meters (Z), or Earth-Centered, Earth-Fixed cartesian
-   * coordinates.
+   * array.
    * @param Points An array of points expressed in terms of the given
    * CoordinateSpace.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetPolygonPoints(
-      const ECesiumGlobeCoordinateSpace CoordinateSpace,
+      const ECesiumCoordinateReferenceSystem CoordinateSpace,
       const TArray<FVector>& Points);
 
   // AActor overrides

@@ -23,7 +23,7 @@
 - Replaced the "Auto Fill" button on `UCesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
 - Added `EnableDoubleSidedCollisions` to `ACesium3DTileset` to allow intersections and collisions with geometry to also work when hitting "back" faces.
 - Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
-- Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of ECEF or latitutde/longitude/height points.
+- Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
 - Added support for refreshing Cesium ion login tokens after they expire and the refresh token is still valid.
 
 ##### Fixes :wrench:
@@ -117,7 +117,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
 - Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin.
-- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level. 
+- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.49.0 to v0.50.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
