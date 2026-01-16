@@ -54,7 +54,7 @@ void ACesiumCartographicPolygon::SetPolygonPoints(
       (CoordnateSystem == ECesiumCartographicCoordinateSystem::Cartesian ||
        CoordnateSystem ==
            ECesiumCartographicCoordinateSystem::CCCS_LatitudeLongitudeHeight) &&
-      "Invalid CoordinateSystem value.");
+      "Invalid CoordinateReferenceSystem value.");
 
   TArray<FVector> unrealPoints;
   unrealPoints.Reserve(Points.Num());
