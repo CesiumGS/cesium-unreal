@@ -694,7 +694,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
-      this->_pTileset->getRootTile();
+      this->_pTileset ? this->_pTileset->getRootTile() : nullptr;
   if (!pRootTile) {
     return;
   }
