@@ -29,12 +29,10 @@ FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
-    : _value(),
+    : _value(rhs._value),
       _arrayValue(rhs._arrayValue),
       _valueType(rhs._valueType),
-      _pEnumDefinition(rhs._pEnumDefinition) {
-  swl::visit([this](const auto& value) { this->_value = value; }, rhs._value);
-}
+      _pEnumDefinition(rhs._pEnumDefinition) {}
 
 FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(const FCesiumMetadataValue& rhs) {

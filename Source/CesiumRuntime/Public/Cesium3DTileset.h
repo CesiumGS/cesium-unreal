@@ -1290,7 +1290,7 @@ public:
    * each tile's glTF model after it has been loaded, before it can be
    * displayed.
    *
-   * Setting this property will call @ref RefreshTileset.
+   * Setting this property will refresh the tileset.
    */
   void SetGltfModifier(
       const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
@@ -1376,6 +1376,8 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
+  
+  bool _destroyOnNextTick;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
