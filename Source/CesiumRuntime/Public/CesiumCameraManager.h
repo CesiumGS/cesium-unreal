@@ -2,11 +2,33 @@
 
 #pragma once
 
+#include "Camera/CameraComponent.h"
 #include "CesiumCamera.h"
 #include "Containers/Map.h"
 #include "GameFramework/Actor.h"
 
 #include "CesiumCameraManager.generated.h"
+
+/**
+ * @brief Class for storing a viewport along with a CameraComponent, since that
+ * doesn't include a viewport!
+ */
+USTRUCT(BlueprintType)
+struct FAuxiliaryCamera {
+  GENERATED_BODY()
+public:
+  /**
+   * @brief the viewport
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FVector2D ViewportSize;
+
+  /**
+   * @brief the camera component
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TObjectPtr<UCameraComponent> CameraComponent;
+};
 
 /**
  * @brief Manages custom {@link FCesiumCamera}s for all
@@ -30,13 +52,11 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool useSceneViewCameraInEditor = true;
-
   /**
    * @brief Array of auxilliary cameras.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TMap<int32, FCesiumCamera> cameras;
-
+  TArray<FAuxiliaryCamera> otherCameras;
   /**
    * @brief Get the camera manager for this world.
    */
@@ -92,8 +112,14 @@ public:
 
   virtual void Tick(float DeltaTime) override;
 
+  /**
+   * @brief Return a list of all cameras handled by the manager.
+   */
+  std::vector<FCesiumCamera> GetAllCameras() const;
+
 private:
   int32 _currentCameraId = 0;
+  TMap<int32, FCesiumCamera> _cameras;
 
   static FName DEFAULT_CAMERAMANAGER_TAG;
 };

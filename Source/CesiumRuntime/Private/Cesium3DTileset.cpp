@@ -1335,12 +1335,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
 #endif
 
   if (pCameraManager) {
-    const TMap<int32, FCesiumCamera>& extraCameras =
-        pCameraManager->GetCameras();
-    cameras.reserve(cameras.size() + extraCameras.Num());
-    for (auto cameraIt : extraCameras) {
-      cameras.push_back(cameraIt.Value);
-    }
+    std::vector<FCesiumCamera> extraCameras = pCameraManager->GetAllCameras();
+    cameras.insert(cameras.end(), extraCameras.begin(), extraCameras.end());
   }
 
   return cameras;

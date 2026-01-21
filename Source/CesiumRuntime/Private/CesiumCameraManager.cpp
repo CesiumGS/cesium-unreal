@@ -89,12 +89,12 @@ void ACesiumCameraManager::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
 
 int32 ACesiumCameraManager::AddCamera(UPARAM(ref) const FCesiumCamera& camera) {
   int32 cameraId = this->_currentCameraId++;
-  this->cameras.Emplace(cameraId, camera);
+  this->_cameras.Emplace(cameraId, camera);
   return cameraId;
 }
 
 bool ACesiumCameraManager::RemoveCamera(int32 cameraId) {
-  int32 numRemovedPairs = this->cameras.Remove(cameraId);
+  int32 numRemovedPairs = this->_cameras.Remove(cameraId);
   bool success = numRemovedPairs > 0;
   return success;
 }
@@ -102,7 +102,7 @@ bool ACesiumCameraManager::RemoveCamera(int32 cameraId) {
 bool ACesiumCameraManager::UpdateCamera(
     int32 cameraId,
     UPARAM(ref) const FCesiumCamera& camera) {
-  FCesiumCamera* pCurrentCamera = this->cameras.Find(cameraId);
+  FCesiumCamera* pCurrentCamera = this->_cameras.Find(cameraId);
   if (pCurrentCamera) {
     *pCurrentCamera = camera;
     return true;
@@ -112,5 +112,24 @@ bool ACesiumCameraManager::UpdateCamera(
 }
 
 const TMap<int32, FCesiumCamera>& ACesiumCameraManager::GetCameras() const {
-  return this->cameras;
+  return this->_cameras;
+}
+
+std::vector<FCesiumCamera> ACesiumCameraManager::GetAllCameras() const {
+  std::vector<FCesiumCamera> result;
+  for (auto camera : this->_cameras) {
+    result.push_back(camera.Value);
+  }
+  for (const auto& otherCamera : this->otherCameras) {
+    TObjectPtr<UCameraComponent> component = otherCamera.CameraComponent;
+    FVector cameraLocation = component->GetComponentLocation();
+    FRotator cameraRotation = component->GetComponentRotation();
+    double cameraFov = component->FieldOfView;
+    result.emplace_back(
+        otherCamera.ViewportSize,
+        cameraLocation,
+        cameraRotation,
+        cameraFov);
+  }
+  return result;
 }
