@@ -2,6 +2,11 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
+- Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
+
 ##### Fixes :wrench:
 
 - Fixed an access violation that could occur if `ACesium3DTileset::RefreshTileset` was invoked in a callback for asynchronous actions.
