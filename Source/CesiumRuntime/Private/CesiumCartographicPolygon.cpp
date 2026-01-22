@@ -10,57 +10,93 @@
 #include <ThirdParty/ShaderConductor/ShaderConductor/External/SPIRV-Headers/include/spirv/unified1/spirv.h>
 #include <glm/glm.hpp>
 
-#if WITH_EDITOR
-#include "GameFramework/PlayerController.h"
-#include "Editor/EditorEngine.h"
-#endif
-
 using namespace CesiumGeospatial;
 
-bool getRayPlaneIntersection(const FVector& rayStart, const FVector& rayDir, const FPlane& targetPlane, /* out */ FVector& intersectionPoint)
+#include "Editor/UnrealEdEngine.h"
+#include "Editor.h"
+#include "LevelEditorViewport.h"
+
+struct FViewportCornerInfo
 {
-  // Check if the ray and plane are parallel first to avoid division by zero
-  if (FMath::Abs(FVector::DotProduct(rayDir, targetPlane.GetNormal())) < DBL_EPSILON)
+  FVector WorldPosition;
+  FVector Direction;
+  FVector PlanePosition;
+  bool hitsPlane;
+};
+
+bool GetEditorViewportCorners(TArray<FViewportCornerInfo>& Corners)
+{
+  #if WITH_EDITOR
+  if (GEditor && GEditor->GetActiveViewport())
   {
-    UE_LOG(LogTemp, Warning, TEXT("Ray is parallel to the plane, no single intersection point."));
-    return false;
+    FViewport* ActiveViewport = GEditor->GetActiveViewport();
+    FLevelEditorViewportClient* ViewportClient = nullptr;
+
+    // Get the viewport client
+    for (FLevelEditorViewportClient* Client : GEditor->GetLevelViewportClients())
+    {
+      if (Client && Client->Viewport == ActiveViewport)
+      {
+        ViewportClient = Client;
+        break;
+      }
+    }
+
+    if (ViewportClient)
+    {
+      FSceneViewFamilyContext ViewFamily(FSceneViewFamily::ConstructionValues(
+      ViewportClient->Viewport,
+      ViewportClient->GetScene(),
+      ViewportClient->EngineShowFlags)
+      .SetRealtimeUpdate(true));
+
+      FSceneView* View = ViewportClient->CalcSceneView(&ViewFamily);
+
+      if (View)
+      {
+        FIntPoint ViewportSize = ActiveViewport->GetSizeXY();
+
+        TArray<FVector2D> ScreenPositions = {
+          FVector2D(0.1 * ViewportSize.X, 0.9 * ViewportSize.Y), // bottom left
+          FVector2D(0.9 * ViewportSize.X, 0.9 * ViewportSize.Y), // bottom right
+          FVector2D(0.9 * ViewportSize.X, 0.1 * ViewportSize.Y), // top right
+          FVector2D(0.1 * ViewportSize.X, 0.1 * ViewportSize.Y), // top left right
+          FVector2D(ViewportSize.X * 0.5f, ViewportSize.Y * 0.5f)  // Center
+        };
+
+        const FPlane groundPlane (FVector::UpVector, 0.0f);
+        for (const FVector2D& ScreenPos : ScreenPositions)
+        {
+          FViewportCornerInfo Corner;
+
+          // Deproject screen position to world space
+          View->DeprojectFVector2D(ScreenPos, Corner.WorldPosition, Corner.Direction);
+
+          Corner.hitsPlane = false;
+          float denominator = FVector::DotProduct(Corner.Direction, groundPlane );
+          if (FMath::Abs(denominator) > FLT_EPSILON) {
+            float T = -(FVector::DotProduct(Corner.WorldPosition, groundPlane) + groundPlane.W) / denominator;
+            Corner.hitsPlane = true;
+            Corner.PlanePosition = Corner.WorldPosition + Corner.Direction * T;
+          } else {
+            // ray is parallel to ground or intersection is behind the camera.
+            return false;
+          }
+
+          // Corner.Direction = Corner.Direction.GetSafeNormal();
+          Corners.Add(Corner);
+        }
+
+        return true;
+      }
+    }
   }
 
-  double t = FMath::RayPlaneIntersectionParam(rayStart, rayDir, targetPlane);
+  #endif
 
-  if (t > DBL_EPSILON)
-  {
-    intersectionPoint = rayStart + t * rayDir;
-    return true;
-  }
-
-  // no intersection, or it is behind the viewer.
   return false;
 }
 
-bool getViewportCenterGroundIntersection(FVector& groundIntersection) {
-  if (!GEditor)
-    return false;
-
-  UUnrealEditorSubsystem* editorSubsystem = GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
-  if (!editorSubsystem)
-    return false;
-
-  FVector viewPosition;
-  FRotator viewRotation;
-
-  editorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation);
-  FVector viewDirection = viewRotation.Vector();
-
-  FPlane groundPlane(FVector::UpVector);
-
-  if (!getRayPlaneIntersection(viewPosition, viewDirection, groundPlane, groundIntersection)) {
-    // view direction does not intersect ground plane
-    return false;
-  }
-
-  return true;;
-}
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   PrimaryActorTick.bCanEverTick = false;
@@ -69,7 +105,6 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   this->SetRootComponent(this->Polygon);
   this->Polygon->SetClosedLoop(true);
   this->Polygon->SetMobility(EComponentMobility::Movable);
-  FVector groundCenter {};
 
   TArray<FVector> points {
     FVector(-10000.0f, -10000.0f, 0.0f),
@@ -77,39 +112,40 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
     FVector(10000.0f, 10000.0f, 0.0f),
     FVector(-10000.0f, 10000.0f, 0.0f)};
 
-  if (getViewportCenterGroundIntersection(groundCenter)) {
-    for (FVector& point : points) {
-      point += groundCenter;
+  TArray<FViewportCornerInfo> corners;
+
+  if (GetEditorViewportCorners(corners))
+  {
+    float extent = FVector::Distance(corners[0].PlanePosition, corners[1].PlanePosition) * 0.9f;
+    FVector center = corners[4].PlanePosition;
+    points = {
+    { -extent, -extent, 0 },
+    { extent, -extent, 0 },
+    { extent, extent, 0 },
+    { -extent, extent, 0 },
+    };
+    //
+    // for (FVector& point : points) {
+    //   point += center;
+    // }
+    if (corners.Num() >= 4) {
+      for (int i=0; i < 4; ++i) {
+        points[i] += center;
+        // FVector& p1 = points[i];
+        // FViewportCornerInfo& corner = corners[i];
+        // p1 = corner.PlanePosition;
+      }
     }
   }
 
   this->Polygon->SetSplinePoints(points,
       ESplineCoordinateSpace::Local);
 
-  /*
-  #include "UnrealEd/Public/LevelEditorViewport.h"
-  #include "Editor/EditorEngine.h"
-  #include "Editor.h"
+#if WITH_EDITOR
+  if (GEditor)
+    GEditor->RedrawAllViewports(true);
+#endif
 
-  bool DeprojectEditorScreenToWorld(const FVector2D& ScreenPosition, FVector& WorldLocation, FVector& WorldDirection)
-  {
-  // Ensure the editor and an active viewport are available
-  if (GEditor && GEditor->GetActiveViewport())
-  {
-  FLevelEditorViewportClient* ViewportClient = static_cast<FLevelEditorViewportClient*>(GEditor->GetActiveViewport()->GetClient());
-
-  if (ViewportClient)
-  {
-  // Use the ViewportClient's DeprojectScreenToWorld function
-  // This function takes the screen position (pixel coordinates) and outputs the world location and direction
-  return ViewportClient->DeprojectScreenToWorld(ScreenPosition, WorldLocation, WorldDirection);
-  }
-  }
-
-  // Return false if the operation failed (e.g., no active viewport)
-  return false;
-  }
-*/
   this->MakeLinear();
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
