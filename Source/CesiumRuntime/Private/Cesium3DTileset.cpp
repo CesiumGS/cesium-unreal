@@ -1313,7 +1313,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
   ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
   std::vector<FCesiumCamera> cameras;
-  if (pCameraManager && pCameraManager->useMainCamera) {
+  if (pCameraManager && pCameraManager->usePlayerCameras) {
     std::vector<FCesiumCamera> playerCameras = this->GetPlayerCameras();
     cameras.insert(
         cameras.end(),
@@ -1327,11 +1327,13 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
       std::make_move_iterator(sceneCaptures.end()));
 
 #if WITH_EDITOR
-  std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();
-  cameras.insert(
-      cameras.end(),
-      std::make_move_iterator(editorCameras.begin()),
-      std::make_move_iterator(editorCameras.end()));
+  if (pCameraManager && pCameraManager->UseEditorCameras) {
+    std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();
+    cameras.insert(
+        cameras.end(),
+        std::make_move_iterator(editorCameras.begin()),
+        std::make_move_iterator(editorCameras.end()));
+  }
 #endif
 
   if (pCameraManager) {
@@ -1495,9 +1497,17 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   // where users can volunteer cameras to be used with the tile selection as
   // needed?
   TArray<AActor*> sceneCaptures;
-  static TSubclassOf<ASceneCapture2D> SceneCapture2D =
-      ASceneCapture2D::StaticClass();
-  UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+  ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
+  if (pCameraManager && pCameraManager->UseSceneCapturesInScene) {
+    static TSubclassOf<ASceneCapture2D> SceneCapture2D =
+        ASceneCapture2D::StaticClass();
+    UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+  }
+  for (auto sceneCaptureActor : pCameraManager->SceneCaptureActors) {
+    if (Cast<ASceneCapture2D>(sceneCaptureActor.Get())) {
+      sceneCaptures.Push(sceneCaptureActor.Get());
+    }
+  }
 
   std::vector<FCesiumCamera> cameras;
   cameras.reserve(sceneCaptures.Num());
