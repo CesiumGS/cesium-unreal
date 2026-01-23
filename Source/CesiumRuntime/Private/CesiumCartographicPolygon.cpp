@@ -24,6 +24,99 @@ struct FViewportCornerInfo
   bool hitsPlane;
 };
 
+float GetEditorViewportWidthAtGround()
+{
+    float Width = 0.0f;
+
+    #if WITH_EDITOR
+    if (GEditor && GEditor->GetActiveViewport())
+    {
+        FViewport* ActiveViewport = GEditor->GetActiveViewport();
+        FLevelEditorViewportClient* ViewportClient = nullptr;
+
+        // Get the viewport client
+        for (FLevelEditorViewportClient* Client : GEditor->GetLevelViewportClients())
+        {
+            if (Client && Client->Viewport == ActiveViewport)
+            {
+                ViewportClient = Client;
+                break;
+            }
+        }
+
+        if (ViewportClient)
+        {
+            FSceneViewFamilyContext ViewFamily(FSceneViewFamily::ConstructionValues(
+                ViewportClient->Viewport,
+                ViewportClient->GetScene(),
+                ViewportClient->EngineShowFlags)
+                .SetRealtimeUpdate(true));
+
+            FSceneView* View = ViewportClient->CalcSceneView(&ViewFamily);
+
+            if (View)
+            {
+                FIntPoint ViewportSize = ActiveViewport->GetSizeXY();
+
+                // Define the plane at Z=0
+                FPlane GroundPlane(FVector(0, 0, 0), FVector(0, 0, 1));
+
+                // Get left edge of viewport (vertically centered)
+                FVector2D LeftScreen(0, ViewportSize.Y * 0.5f);
+                FVector LeftWorldPos, LeftDirection;
+                View->DeprojectFVector2D(LeftScreen, LeftWorldPos, LeftDirection);
+                LeftDirection.Normalize();
+
+                // Get right edge of viewport (vertically centered)
+                FVector2D RightScreen(ViewportSize.X, ViewportSize.Y * 0.5f);
+                FVector RightWorldPos, RightDirection;
+                View->DeprojectFVector2D(RightScreen, RightWorldPos, RightDirection);
+                RightDirection.Normalize();
+
+                // Project left ray onto Z=0 plane
+                FVector LeftPoint = FVector::ZeroVector;
+                bool bLeftHits = false;
+                float DenominatorLeft = FVector::DotProduct(LeftDirection, GroundPlane);
+                if (FMath::Abs(DenominatorLeft) > KINDA_SMALL_NUMBER)
+                {
+                    float T = -(FVector::DotProduct(LeftWorldPos, GroundPlane) + GroundPlane.W) / DenominatorLeft;
+                    if (T >= 0)
+                    {
+                        bLeftHits = true;
+                        LeftPoint = LeftWorldPos + (LeftDirection * T);
+                    }
+                }
+
+                // Project right ray onto Z=0 plane
+                FVector RightPoint = FVector::ZeroVector;
+                bool bRightHits = false;
+                float DenominatorRight = FVector::DotProduct(RightDirection, GroundPlane);
+                if (FMath::Abs(DenominatorRight) > KINDA_SMALL_NUMBER)
+                {
+                    float T = -(FVector::DotProduct(RightWorldPos, GroundPlane) + GroundPlane.W) / DenominatorRight;
+                    if (T >= 0)
+                    {
+                        bRightHits = true;
+                        RightPoint = RightWorldPos + (RightDirection * T);
+                    }
+                }
+
+                // Calculate distance between the two points if both hit
+                if (bLeftHits && bRightHits)
+                {
+                    Width = FVector::Dist(LeftPoint, RightPoint);
+
+                    // Convert from Unreal units (cm) to meters
+                    // Width = Width / 100.0f;
+                }
+            }
+        }
+    }
+    #endif
+
+    return Width;
+}
+
 bool GetEditorViewportCorners(TArray<FViewportCornerInfo>& Corners)
 {
   #if WITH_EDITOR
@@ -54,7 +147,7 @@ bool GetEditorViewportCorners(TArray<FViewportCornerInfo>& Corners)
 
       if (View)
       {
-        FIntPoint ViewportSize = ActiveViewport->GetSizeXY();
+        const FIntPoint ViewportSize = ActiveViewport->GetSizeXY();
 
         TArray<FVector2D> ScreenPositions = {
           FVector2D(0.1 * ViewportSize.X, 0.9 * ViewportSize.Y), // bottom left
@@ -116,24 +209,18 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
 
   if (GetEditorViewportCorners(corners))
   {
-    float extent = FVector::Distance(corners[0].PlanePosition, corners[1].PlanePosition) * 0.9f;
+    // float extent = FVector::Distance(corners[0].PlanePosition, corners[1].PlanePosition) * 0.9f;
+    float extent = GetEditorViewportWidthAtGround() * 0.4f;
     FVector center = corners[4].PlanePosition;
     points = {
-    { -extent, -extent, 0 },
-    { extent, -extent, 0 },
-    { extent, extent, 0 },
-    { -extent, extent, 0 },
+    { -1, -1, 0 },
+    { 1, -1, 0 },
+    { 1, 1, 0 },
+    { -1, 1, 0 },
     };
-    //
-    // for (FVector& point : points) {
-    //   point += center;
-    // }
     if (corners.Num() >= 4) {
       for (int i=0; i < 4; ++i) {
-        points[i] += center;
-        // FVector& p1 = points[i];
-        // FViewportCornerInfo& corner = corners[i];
-        // p1 = corner.PlanePosition;
+        points[i] = points[i] * extent + center;
       }
     }
   }
