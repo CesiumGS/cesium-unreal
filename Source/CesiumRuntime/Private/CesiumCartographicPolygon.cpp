@@ -9,42 +9,57 @@
 
 using namespace CesiumGeospatial;
 
-bool computeViewGroundIntersectionAndDistance(FVector& spawnPosition, float& extent) {
+bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
+#if WITH_EDITOR
   if (!GEditor)
     return false;
 
-  UUnrealEditorSubsystem* editorSubsystem = GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
+  UUnrealEditorSubsystem* editorSubsystem =
+      GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
   if (!editorSubsystem)
     return false;
 
-  FVector viewPosition;
-  FRotator viewRotation;
+  FVector viewPosition{};
+  FRotator viewRotation{};
 
   editorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation);
   FVector viewDirection = viewRotation.Vector();
 
-  FPlane groundPlane(FVector::UpVector);
-
   // Check if the ray and plane are parallel first to avoid division by zero
-  if (FMath::Abs(FVector::DotProduct(viewDirection, FVector::UpVector)) < DBL_EPSILON)
-  {
-    UE_LOG(LogTemp, Warning, TEXT("Ray is parallel to the plane, no single intersection point."));
+  if (FMath::Abs(FVector::DotProduct(viewDirection, FVector::UpVector)) <
+      DBL_EPSILON) {
+    // Ray is parallel to the plane, no single intersection point.
     return false;
   }
 
-  extent = FMath::RayPlaneIntersectionParam(viewPosition, viewDirection, groundPlane);
+  const FPlane groundPlane(FVector::UpVector);
+  const float distance = FMath::RayPlaneIntersectionParam(
+      viewPosition,
+      viewDirection,
+      groundPlane);
 
-  if (extent > DBL_EPSILON)
-  {
-    spawnPosition = viewPosition + extent * viewDirection;
-    return true;
-  } else {
-    // view direction does not intersect ground plane
-    spawnPosition = viewPosition;
-    spawnPosition.Z = 0;
-    extent = 0.0f;
+  if (distance <= DBL_EPSILON) {
+    // no intersection found in front of the camera.
     return false;
   }
+
+  const FVector spawnPosition = viewPosition + distance * viewDirection;
+  const float extent = distance / 2.0f;
+  const TArray<FVector> points = {
+      {-extent, -extent, 0},
+      {extent, -extent, 0},
+      {extent, extent, 0},
+      {-extent, extent, 0},
+  };
+
+  this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
+
+  this->MakeLinear();
+  this->SetActorLocation(spawnPosition);
+
+  return true;
+
+#endif
 }
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
@@ -55,30 +70,14 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   this->Polygon->SetClosedLoop(true);
   this->Polygon->SetMobility(EComponentMobility::Movable);
 
-  float extent = 10000.0f;
-
-#if WITH_EDITOR
-  FVector polygonCenter {};
-  float distanceToGround=0;
-
-  if (computeViewGroundIntersectionAndDistance(polygonCenter,distanceToGround)) {
-    extent = distanceToGround / 2.0f;
-    this->SetActorLocation(polygonCenter);
-  } else {
-    extent = 10000.0f;
-  }
-#endif
-
   TArray<FVector> points = {
-    {-extent,-extent,0},
-    { extent,-extent,0},
-    { extent, extent,0},
-    {-extent, extent,0},
+      {-10000.0f, -10000.0f, 0},
+      {10000.0f, -10000.0f, 0},
+      {10000.0f, 10000.0f, 0},
+      {-10000.0f, 10000.0f, 0},
   };
 
-  this->Polygon->SetSplinePoints(
-      points,
-      ESplineCoordinateSpace::Local);
+  this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
 
 #if WITH_EDITOR
   if (GEditor)
