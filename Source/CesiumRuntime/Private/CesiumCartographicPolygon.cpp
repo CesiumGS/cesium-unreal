@@ -2,42 +2,14 @@
 
 #include "CesiumCartographicPolygon.h"
 #include "CesiumActors.h"
-#include "CesiumUtility/Math.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
 #include "Subsystems/UnrealEditorSubsystem.h"
-#include <CesiumUtility/Assert.h>
-#include <ThirdParty/ShaderConductor/ShaderConductor/External/SPIRV-Headers/include/spirv/unified1/spirv.h>
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
 
-#include "Editor/UnrealEdEngine.h"
-#include "Editor.h"
-#include "LevelEditorViewport.h"
-
-bool getRayPlaneIntersection(const FVector& rayStart, const FVector& rayDir, const FPlane& targetPlane, /* out */ FVector& intersectionPoint)
-{
-  // Check if the ray and plane are parallel first to avoid division by zero
-  if (FMath::Abs(FVector::DotProduct(rayDir, targetPlane.GetNormal())) < DBL_EPSILON)
-  {
-    UE_LOG(LogTemp, Warning, TEXT("Ray is parallel to the plane, no single intersection point."));
-    return false;
-  }
-
-  double t = FMath::RayPlaneIntersectionParam(rayStart, rayDir, targetPlane);
-
-  if (t > DBL_EPSILON)
-  {
-    intersectionPoint = rayStart + t * rayDir;
-    return true;
-  }
-
-  // no intersection, or it is behind the viewer.
-  return false;
-}
-
-bool getViewportCenterGroundIntersection(FVector& groundIntersection, float& distance) {
+bool computeViewGroundIntersectionAndDistance(FVector& spawnPosition, float& extent) {
   if (!GEditor)
     return false;
 
@@ -53,16 +25,26 @@ bool getViewportCenterGroundIntersection(FVector& groundIntersection, float& dis
 
   FPlane groundPlane(FVector::UpVector);
 
-  if (!getRayPlaneIntersection(viewPosition, viewDirection, groundPlane, groundIntersection)) {
-    // view direction does not intersect ground plane
-    groundIntersection = viewPosition;
-    groundIntersection.Z = 0;
+  // Check if the ray and plane are parallel first to avoid division by zero
+  if (FMath::Abs(FVector::DotProduct(viewDirection, FVector::UpVector)) < DBL_EPSILON)
+  {
+    UE_LOG(LogTemp, Warning, TEXT("Ray is parallel to the plane, no single intersection point."));
     return false;
   }
 
-  distance = FVector::Distance(groundIntersection,viewPosition);
+  extent = FMath::RayPlaneIntersectionParam(viewPosition, viewDirection, groundPlane);
 
-  return true;;
+  if (extent > DBL_EPSILON)
+  {
+    spawnPosition = viewPosition + extent * viewDirection;
+    return true;
+  } else {
+    // view direction does not intersect ground plane
+    spawnPosition = viewPosition;
+    spawnPosition.Z = 0;
+    extent = 0.0f;
+    return false;
+  }
 }
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
@@ -73,23 +55,26 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   this->Polygon->SetClosedLoop(true);
   this->Polygon->SetMobility(EComponentMobility::Movable);
 
-  TArray<FVector> points{
-    {-1,-1,0},
-    {1,-1,0},
-    {1,1,0},
-    {-1,1,0}
+  float extent = 10000.0f;
+
+#if WITH_EDITOR
+  FVector polygonCenter {};
+  float distanceToGround=0;
+
+  if (computeViewGroundIntersectionAndDistance(polygonCenter,distanceToGround)) {
+    extent = distanceToGround / 2.0f;
+    this->SetActorLocation(polygonCenter);
+  } else {
+    extent = 10000.0f;
+  }
+#endif
+
+  TArray<FVector> points = {
+    {-extent,-extent,0},
+    { extent,-extent,0},
+    { extent, extent,0},
+    {-extent, extent,0},
   };
-
-  FVector groundIntersection {};
-  float distance=0;
-  if (!getViewportCenterGroundIntersection(groundIntersection,distance)) {
-    distance = 10000.0f;
-  }
-  this->SetActorLocation(groundIntersection);
-
-  for (auto& point : points) {
-    point = point * distance / 2.0;
-  }
 
   this->Polygon->SetSplinePoints(
       points,
