@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
+ 
 ##### Fixes :wrench:
 
 - Fixed an access violation that could occur if `ACesium3DTileset::RefreshTileset` was invoked in a callback for asynchronous actions.
@@ -23,7 +27,6 @@
 - Replaced the "Auto Fill" button on `UCesiumFeaturesMetadataComponent` with "Add Properties". This allows metadata properties and feature ID sets to be selectively added to the component, rather than adding them all in bulk.
 - Added `EnableDoubleSidedCollisions` to `ACesium3DTileset` to allow intersections and collisions with geometry to also work when hitting "back" faces.
 - Added an optional glTF model post-processing stage after the tile loading step, before the tile can be displayed.
-- Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
 - Added support for refreshing Cesium ion login tokens after they expire and the refresh token is still valid.
 
 ##### Fixes :wrench:
