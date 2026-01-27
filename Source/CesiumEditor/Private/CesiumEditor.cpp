@@ -748,12 +748,12 @@ AActor* FCesiumEditorModule::SpawnBlankTileset() {
 }
 
 AActor* FCesiumEditorModule::SpawnCartographicPolygon() {
-  ACesiumCartographicPolygon* actor = static_cast<ACesiumCartographicPolygon*>(
+  ACesiumCartographicPolygon* pActor = static_cast<ACesiumCartographicPolygon*>(
       SpawnActorWithClass(ACesiumCartographicPolygon::StaticClass()));
-  if (actor) {
-    actor->ResetSplineAndCenterInEditorViewport();
+  if (pActor) {
+    pActor->ResetSplineAndCenterInEditorViewport();
   }
-  return actor;
+  return pActor;
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {

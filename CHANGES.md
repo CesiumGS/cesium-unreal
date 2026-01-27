@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- `ACesiumCartographicPolygon`s created via the Cesium editor panel are sized and transformed to be visible in the active editor viewport.
+
 ##### Fixes :wrench:
 
 - Fixed an access violation that could occur if `ACesium3DTileset::RefreshTileset` was invoked in a callback for asynchronous actions.

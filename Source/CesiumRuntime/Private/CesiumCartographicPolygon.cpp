@@ -4,7 +4,9 @@
 #include "CesiumActors.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
+#if WITH_EDITOR
 #include "Subsystems/UnrealEditorSubsystem.h"
+#endif
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
@@ -14,20 +16,20 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
   if (!GEditor)
     return false;
 
-  UUnrealEditorSubsystem* editorSubsystem =
+  UUnrealEditorSubsystem* pEditorSubsystem =
       GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
-  if (!editorSubsystem)
+  if (!pEditorSubsystem)
     return false;
 
   FVector viewPosition{};
   FRotator viewRotation{};
 
-  editorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation);
-  FVector viewDirection = viewRotation.Vector();
+  pEditorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation);
+  const FVector viewDirection = viewRotation.Vector();
 
   // Check if the ray and plane are parallel first to avoid division by zero
   if (FMath::Abs(FVector::DotProduct(viewDirection, FVector::UpVector)) <
-      DBL_EPSILON) {
+      KINDA_SMALL_NUMBER) {
     // Ray is parallel to the plane, no single intersection point.
     return false;
   }
@@ -38,7 +40,7 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
       viewDirection,
       groundPlane);
 
-  if (distance <= DBL_EPSILON) {
+  if (distance < KINDA_SMALL_NUMBER) {
     // no intersection found in front of the camera.
     return false;
   }
@@ -56,10 +58,9 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
 
   this->MakeLinear();
   this->SetActorLocation(spawnPosition);
+#endif
 
   return true;
-
-#endif
 }
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
@@ -78,12 +79,6 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   };
 
   this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
-
-#if WITH_EDITOR
-  if (GEditor)
-    GEditor->RedrawAllViewports(true);
-#endif
-
   this->MakeLinear();
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);

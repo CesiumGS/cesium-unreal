@@ -83,9 +83,9 @@ public:
 
   /**
    * Set the spline points to a square centered where the editor camera view ray
-   * intersects the ground and sized to fit within thee viewport.
-   * @returns boolean indicating whether the spline points and transform were
-   * successfully recomputed.
+   * intersects the ground and sized to fit within the viewport.
+   * @returns Whether the spline points and transform were successfully
+   * recomputed.
    */
   bool ResetSplineAndCenterInEditorViewport();
 
