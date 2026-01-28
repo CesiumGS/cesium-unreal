@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "CesiumCamera.h"
 #include "Containers/Map.h"
+#include "Engine/SceneCapture2D.h"
 #include "GameFramework/Actor.h"
 
 #include "CesiumCameraManager.generated.h"
@@ -44,7 +45,7 @@ public:
    * be used for Cesium3DTileset culling and level-of-detail.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool usePlayerCameras = true;
+  bool UsePlayerCameras = true;
   /**
    * @brief Determines whether the camera associated with the Editor's active
    * scene view should be used for Cesium3DTileset culling and level-of-detail.
@@ -54,22 +55,27 @@ public:
   bool UseEditorCameras = true;
 
   /**
-   * @brief Search for the scene capture actors.
+   * @brief Whether to find and use all scene captures within the level for
+   * Cesium3DTileset culling and level-of-detail.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool UseSceneCapturesInScene = true;
+  bool UseSceneCapturesInLevel = true;
 
   /**
    * @brief Array of auxilliary cameras.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TArray<FAuxiliaryCamera> otherCameras;
+  TArray<FAuxiliaryCamera> AdditionalCameras;
 
   /**
    * @brief Array of explicit scene capture actors.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TArray<TObjectPtr<AActor>> SceneCaptureActors;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta = (EditCondition = "!UseSceneCapturesInLevel", EditConditionHides))
+  TArray<TObjectPtr<ASceneCapture2D>> SceneCaptures;
 
   /**
    * @brief Get the camera manager for this world.

@@ -25,6 +25,7 @@ public:
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   FVector2D ViewportSize;
+
   /**
    * @brief The Unreal location of the camera.
    */

@@ -1313,7 +1313,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
   ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
   std::vector<FCesiumCamera> cameras;
-  if (pCameraManager && pCameraManager->usePlayerCameras) {
+  if (pCameraManager && pCameraManager->UsePlayerCameras) {
     std::vector<FCesiumCamera> playerCameras = this->GetPlayerCameras();
     cameras.insert(
         cameras.end(),
@@ -1498,15 +1498,13 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   // needed?
   TArray<AActor*> sceneCaptures;
   ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
-  if (pCameraManager && pCameraManager->UseSceneCapturesInScene) {
+  if (pCameraManager && pCameraManager->UseSceneCapturesInLevel) {
     static TSubclassOf<ASceneCapture2D> SceneCapture2D =
         ASceneCapture2D::StaticClass();
     UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
   }
-  for (auto sceneCaptureActor : pCameraManager->SceneCaptureActors) {
-    if (Cast<ASceneCapture2D>(sceneCaptureActor.Get())) {
-      sceneCaptures.Push(sceneCaptureActor.Get());
-    }
+  for (auto sceneCaptureActor : pCameraManager->SceneCaptures) {
+    sceneCaptures.Push(sceneCaptureActor.Get());
   }
 
   std::vector<FCesiumCamera> cameras;
