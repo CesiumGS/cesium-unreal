@@ -5,7 +5,8 @@
 ##### Additions :tada:
 
 - Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
- 
+- Enabled waterMask on macOS
+
 ##### Fixes :wrench:
 
 - Fixed an access violation that could occur if `ACesium3DTileset::RefreshTileset` was invoked in a callback for asynchronous actions.
