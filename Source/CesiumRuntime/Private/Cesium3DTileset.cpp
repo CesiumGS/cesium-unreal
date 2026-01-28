@@ -2295,11 +2295,6 @@ void ACesium3DTileset::PostEditImport() {
 }
 
 bool ACesium3DTileset::CanEditChange(const FProperty* InProperty) const {
-  if (InProperty->GetFName() ==
-      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask)) {
-    // Disable this option on Mac
-    return PlatformName != TEXT("Mac");
-  }
   return true;
 }
 #endif
