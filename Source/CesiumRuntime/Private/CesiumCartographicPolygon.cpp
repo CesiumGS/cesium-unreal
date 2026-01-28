@@ -58,9 +58,11 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
 
   this->MakeLinear();
   this->SetActorLocation(spawnPosition);
-#endif
 
   return true;
+#endif
+
+  return false;
 }
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
