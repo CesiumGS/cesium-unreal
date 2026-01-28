@@ -81,6 +81,14 @@ public:
   // AActor overrides
   virtual void PostLoad() override;
 
+  /**
+   * Set the spline points to a square centered where the editor camera view ray
+   * intersects the ground and sized to fit within the viewport.
+   * @returns Whether the spline points and transform were successfully
+   * recomputed.
+   */
+  bool ResetSplineAndCenterInEditorViewport();
+
 protected:
   virtual void BeginPlay() override;
 

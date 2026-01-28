@@ -2,13 +2,68 @@
 
 #include "CesiumCartographicPolygon.h"
 #include "CesiumActors.h"
-#include "CesiumUtility/Math.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
-#include <CesiumUtility/Assert.h>
+#if WITH_EDITOR
+#include "Subsystems/UnrealEditorSubsystem.h"
+#endif
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
+
+bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
+#if WITH_EDITOR
+  if (!GEditor)
+    return false;
+
+  UUnrealEditorSubsystem* pEditorSubsystem =
+      GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
+  if (!pEditorSubsystem)
+    return false;
+
+  FVector viewPosition{};
+  FRotator viewRotation{};
+
+  pEditorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation);
+  const FVector viewDirection = viewRotation.Vector();
+
+  // Check if the ray and plane are parallel first to avoid division by zero
+  if (FMath::Abs(FVector::DotProduct(viewDirection, FVector::UpVector)) <
+      KINDA_SMALL_NUMBER) {
+    // Ray is parallel to the plane, no single intersection point.
+    return false;
+  }
+
+  const FPlane groundPlane(FVector::UpVector);
+  const float distance = FMath::RayPlaneIntersectionParam(
+      viewPosition,
+      viewDirection,
+      groundPlane);
+
+  if (distance < KINDA_SMALL_NUMBER) {
+    // no intersection found in front of the camera.
+    return false;
+  }
+
+  const FVector spawnPosition = viewPosition + distance * viewDirection;
+  const float extent = distance / 2.0f;
+  const TArray<FVector> points = {
+      {-extent, -extent, 0},
+      {extent, -extent, 0},
+      {extent, extent, 0},
+      {-extent, extent, 0},
+  };
+
+  this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
+
+  this->MakeLinear();
+  this->SetActorLocation(spawnPosition);
+
+  return true;
+#endif
+
+  return false;
+}
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   PrimaryActorTick.bCanEverTick = false;
@@ -18,14 +73,14 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   this->Polygon->SetClosedLoop(true);
   this->Polygon->SetMobility(EComponentMobility::Movable);
 
-  this->Polygon->SetSplinePoints(
-      TArray<FVector>{
-          FVector(-10000.0f, -10000.0f, 0.0f),
-          FVector(10000.0f, -10000.0f, 0.0f),
-          FVector(10000.0f, 10000.0f, 0.0f),
-          FVector(-10000.0f, 10000.0f, 0.0f)},
-      ESplineCoordinateSpace::Local);
+  TArray<FVector> points = {
+      {-10000.0f, -10000.0f, 0},
+      {10000.0f, -10000.0f, 0},
+      {10000.0f, 10000.0f, 0},
+      {-10000.0f, 10000.0f, 0},
+  };
 
+  this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
   this->MakeLinear();
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
