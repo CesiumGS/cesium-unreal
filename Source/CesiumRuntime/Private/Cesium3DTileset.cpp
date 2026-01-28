@@ -1077,11 +1077,7 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
 
-  // TODO: figure out why water material crashes mac
-#if PLATFORM_MAC
-#else
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
-#endif
 
   CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
   supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
