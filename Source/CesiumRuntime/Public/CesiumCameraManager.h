@@ -123,7 +123,8 @@ public:
   bool UpdateCamera(int32 CameraId, UPARAM(ref) const FCesiumCamera& Camera);
 
   /**
-   * @brief Get a read-only map of the current camera IDs to cameras.
+   * @brief Get a read-only map of the current camera IDs to cameras. These
+   * cameras have been added to the manager with {@link AddCamera}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   const TMap<int32, FCesiumCamera>& GetCameras() const;
