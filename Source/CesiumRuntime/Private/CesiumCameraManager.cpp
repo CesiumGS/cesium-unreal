@@ -114,3 +114,22 @@ bool ACesiumCameraManager::UpdateCamera(
 const TMap<int32, FCesiumCamera>& ACesiumCameraManager::GetCameras() const {
   return this->_cameras;
 }
+
+std::vector<FCesiumCamera> ACesiumCameraManager::GetAllCameras() const {
+  std::vector<FCesiumCamera> result;
+  for (auto camera : this->_cameras) {
+    result.push_back(camera.Value);
+  }
+  for (const auto& otherCamera : this->AdditionalCameras) {
+    TObjectPtr<UCameraComponent> component = otherCamera.CameraComponent;
+    FVector cameraLocation = component->GetComponentLocation();
+    FRotator cameraRotation = component->GetComponentRotation();
+    double cameraFov = component->FieldOfView;
+    result.emplace_back(
+        otherCamera.ViewportSize,
+        cameraLocation,
+        cameraRotation,
+        cameraFov);
+  }
+  return result;
+}

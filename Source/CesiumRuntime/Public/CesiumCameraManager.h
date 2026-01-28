@@ -2,11 +2,34 @@
 
 #pragma once
 
+#include "Camera/CameraComponent.h"
 #include "CesiumCamera.h"
 #include "Containers/Map.h"
+#include "Engine/SceneCapture2D.h"
 #include "GameFramework/Actor.h"
 
 #include "CesiumCameraManager.generated.h"
+
+/**
+ * @brief Class for storing a viewport along with a CameraComponent, since that
+ * doesn't include a viewport!
+ */
+USTRUCT(BlueprintType)
+struct FAuxiliaryCamera {
+  GENERATED_BODY()
+public:
+  /**
+   * @brief the viewport
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FVector2D ViewportSize;
+
+  /**
+   * @brief the camera component
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TObjectPtr<UCameraComponent> CameraComponent;
+};
 
 /**
  * @brief Manages custom {@link FCesiumCamera}s for all
@@ -17,6 +40,43 @@ class CESIUMRUNTIME_API ACesiumCameraManager : public AActor {
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief Determines whether the cameras attached to PlayerControllers should
+   * be used for Cesium3DTileset culling and level-of-detail.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool UsePlayerCameras = true;
+  /**
+   * @brief Determines whether the camera associated with the Editor's active
+   * scene view should be used for Cesium3DTileset culling and level-of-detail.
+   * In a game, this property has no effect.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool UseEditorCameras = true;
+
+  /**
+   * @brief Whether to find and use all scene captures within the level for
+   * Cesium3DTileset culling and level-of-detail.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool UseSceneCapturesInLevel = true;
+
+  /**
+   * @brief Array of auxilliary cameras.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TArray<FAuxiliaryCamera> AdditionalCameras;
+
+  /**
+   * @brief Array of explicit scene capture actors.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta = (EditCondition = "!UseSceneCapturesInLevel", EditConditionHides))
+  TArray<TObjectPtr<ASceneCapture2D>> SceneCaptures;
+
   /**
    * @brief Get the camera manager for this world.
    */
@@ -63,7 +123,8 @@ public:
   bool UpdateCamera(int32 CameraId, UPARAM(ref) const FCesiumCamera& Camera);
 
   /**
-   * @brief Get a read-only map of the current camera IDs to cameras.
+   * @brief Get a read-only map of the current camera IDs to cameras. These
+   * cameras have been added to the manager with {@link AddCamera}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   const TMap<int32, FCesiumCamera>& GetCameras() const;
@@ -71,6 +132,11 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
 
   virtual void Tick(float DeltaTime) override;
+
+  /**
+   * @brief Return a list of all cameras handled by the manager.
+   */
+  std::vector<FCesiumCamera> GetAllCameras() const;
 
 private:
   int32 _currentCameraId = 0;

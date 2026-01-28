@@ -1313,8 +1313,15 @@ void ACesium3DTileset::DestroyTileset() {
 
 std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
-  std::vector<FCesiumCamera> cameras = this->GetPlayerCameras();
-
+  ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
+  std::vector<FCesiumCamera> cameras;
+  if (pCameraManager && pCameraManager->UsePlayerCameras) {
+    std::vector<FCesiumCamera> playerCameras = this->GetPlayerCameras();
+    cameras.insert(
+        cameras.end(),
+        std::make_move_iterator(playerCameras.begin()),
+        std::make_move_iterator(playerCameras.end()));
+  }
   std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
   cameras.insert(
       cameras.end(),
@@ -1322,21 +1329,18 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
       std::make_move_iterator(sceneCaptures.end()));
 
 #if WITH_EDITOR
-  std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();
-  cameras.insert(
-      cameras.end(),
-      std::make_move_iterator(editorCameras.begin()),
-      std::make_move_iterator(editorCameras.end()));
+  if (pCameraManager && pCameraManager->UseEditorCameras) {
+    std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();
+    cameras.insert(
+        cameras.end(),
+        std::make_move_iterator(editorCameras.begin()),
+        std::make_move_iterator(editorCameras.end()));
+  }
 #endif
 
-  ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
   if (pCameraManager) {
-    const TMap<int32, FCesiumCamera>& extraCameras =
-        pCameraManager->GetCameras();
-    cameras.reserve(cameras.size() + extraCameras.Num());
-    for (auto cameraIt : extraCameras) {
-      cameras.push_back(cameraIt.Value);
-    }
+    std::vector<FCesiumCamera> extraCameras = pCameraManager->GetAllCameras();
+    cameras.insert(cameras.end(), extraCameras.begin(), extraCameras.end());
   }
 
   return cameras;
@@ -1495,9 +1499,15 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   // where users can volunteer cameras to be used with the tile selection as
   // needed?
   TArray<AActor*> sceneCaptures;
-  static TSubclassOf<ASceneCapture2D> SceneCapture2D =
-      ASceneCapture2D::StaticClass();
-  UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+  ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
+  if (pCameraManager && pCameraManager->UseSceneCapturesInLevel) {
+    static TSubclassOf<ASceneCapture2D> SceneCapture2D =
+        ASceneCapture2D::StaticClass();
+    UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+  }
+  for (auto sceneCaptureActor : pCameraManager->SceneCaptures) {
+    sceneCaptures.Push(sceneCaptureActor.Get());
+  }
 
   std::vector<FCesiumCamera> cameras;
   cameras.reserve(sceneCaptures.Num());
