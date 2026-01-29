@@ -721,6 +721,29 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 
   return NewActor;
 }
+
+/**
+ * Tries to spawn an actor with the given class, with all
+ * default parameters, in the current level of the edited world.
+ * Reselects the spawned actor to ensure that it is properly
+ * displayed in the editor viewport.
+ *
+ * @param actorClass The class
+ * @return The resulting actor, or `nullptr` if the actor
+ * could not be spawned.
+ */
+AActor* SpawnActorWithClassSelected(UClass* actorClass) {
+  AActor* pActor = SpawnActorWithClass(actorClass);
+  if (pActor && GEditor) {
+    GEditor->SelectActor(pActor,false,true);
+    GEditor->RedrawAllViewports();
+    GEditor->SelectActor(pActor,true,true);
+  }
+
+  return pActor;
+}
+
+
 } // namespace
 
 AActor* FCesiumEditorModule::GetCurrentLevelCesiumSunSky() {
@@ -749,7 +772,7 @@ AActor* FCesiumEditorModule::SpawnBlankTileset() {
 
 AActor* FCesiumEditorModule::SpawnCartographicPolygon() {
   ACesiumCartographicPolygon* pActor = static_cast<ACesiumCartographicPolygon*>(
-      SpawnActorWithClass(ACesiumCartographicPolygon::StaticClass()));
+      SpawnActorWithClassSelected(ACesiumCartographicPolygon::StaticClass()));
   if (pActor) {
     pActor->ResetSplineAndCenterInEditorViewport();
   }

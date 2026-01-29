@@ -6,47 +6,68 @@
 #include "StaticMeshResources.h"
 #if WITH_EDITOR
 #include "Subsystems/UnrealEditorSubsystem.h"
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
+#include "EditorViewportClient.h"
 #endif
+#include "CesiumRuntime.h"
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
 
 bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
 #if WITH_EDITOR
-  if (!GEditor)
+  if (!GEditor) {
+    UE_LOG(LogCesium, Error, TEXT("Could not retrieve GEditor instance."));
     return false;
+  }
 
   UUnrealEditorSubsystem* pEditorSubsystem =
       GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
-  if (!pEditorSubsystem)
+  if (!pEditorSubsystem) {
+    UE_LOG(LogCesium, Error, TEXT("Could not retrieve Editor subsystem."));
     return false;
+  }
 
   FVector viewPosition{};
   FRotator viewRotation{};
 
-  pEditorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation);
+  if (!pEditorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation)) {
+    UE_LOG(LogCesium, Error, TEXT("Could not retrieve viewport camera info."));
+    return false;
+  }
+
+  // raycast the active viewport view ray to find its intersection with the
+  // terrain.
   const FVector viewDirection = viewRotation.Vector();
+  constexpr float traceDistance = 10000000.0f;
+  FVector rayEnd = viewPosition + (viewDirection * traceDistance);
 
-  // Check if the ray and plane are parallel first to avoid division by zero
-  if (FMath::Abs(FVector::DotProduct(viewDirection, FVector::UpVector)) <
-      KINDA_SMALL_NUMBER) {
-    // Ray is parallel to the plane, no single intersection point.
-    return false;
+  FCollisionQueryParams traceParams {};
+  traceParams.bTraceComplex = true;
+  traceParams.bReturnPhysicalMaterial = true;
+
+  FHitResult hitResult {};
+
+  bool hit = GEditor->GetEditorWorldContext().World()->LineTraceSingleByChannel(
+    hitResult,
+    viewPosition,
+    rayEnd,
+    ECC_WorldStatic,
+    traceParams
+    );
+
+  FVector spawnPosition;
+  float extent;
+  if (hit) {
+    extent = hitResult.Distance / 2.0f;
+    spawnPosition = hitResult.Location;
+  } else {
+    // no intersection detected, so create the polygon just in front of the camera.
+    extent = 1000.0f;
+    spawnPosition = viewPosition + viewDirection * extent * 2.0f;
   }
 
-  const FPlane groundPlane(FVector::UpVector);
-  const float distance = FMath::RayPlaneIntersectionParam(
-      viewPosition,
-      viewDirection,
-      groundPlane);
-
-  if (distance < KINDA_SMALL_NUMBER) {
-    // no intersection found in front of the camera.
-    return false;
-  }
-
-  const FVector spawnPosition = viewPosition + distance * viewDirection;
-  const float extent = distance / 2.0f;
   const TArray<FVector> points = {
       {-extent, -extent, 0},
       {extent, -extent, 0},
@@ -73,7 +94,7 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   this->Polygon->SetClosedLoop(true);
   this->Polygon->SetMobility(EComponentMobility::Movable);
 
-  TArray<FVector> points = {
+  const TArray<FVector> points = {
       {-10000.0f, -10000.0f, 0},
       {10000.0f, -10000.0f, 0},
       {10000.0f, 10000.0f, 0},
