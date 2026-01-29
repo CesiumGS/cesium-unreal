@@ -735,14 +735,13 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 AActor* SpawnActorWithClassSelected(UClass* actorClass) {
   AActor* pActor = SpawnActorWithClass(actorClass);
   if (pActor && GEditor) {
-    GEditor->SelectActor(pActor,false,true);
+    GEditor->SelectActor(pActor, false, true);
     GEditor->RedrawAllViewports();
-    GEditor->SelectActor(pActor,true,true);
+    GEditor->SelectActor(pActor, true, true);
   }
 
   return pActor;
 }
-
 
 } // namespace
 

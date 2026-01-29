@@ -5,10 +5,10 @@
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
 #if WITH_EDITOR
-#include "Subsystems/UnrealEditorSubsystem.h"
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
 #include "EditorViewportClient.h"
+#include "Subsystems/UnrealEditorSubsystem.h"
 #endif
 #include "CesiumRuntime.h"
 #include <glm/glm.hpp>
@@ -32,7 +32,9 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
   FVector viewPosition{};
   FRotator viewRotation{};
 
-  if (!pEditorSubsystem->GetLevelViewportCameraInfo(viewPosition, viewRotation)) {
+  if (!pEditorSubsystem->GetLevelViewportCameraInfo(
+          viewPosition,
+          viewRotation)) {
     UE_LOG(LogCesium, Error, TEXT("Could not retrieve viewport camera info."));
     return false;
   }
@@ -43,19 +45,18 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
   constexpr float traceDistance = 10000000.0f;
   FVector rayEnd = viewPosition + (viewDirection * traceDistance);
 
-  FCollisionQueryParams traceParams {};
+  FCollisionQueryParams traceParams{};
   traceParams.bTraceComplex = true;
   traceParams.bReturnPhysicalMaterial = true;
 
-  FHitResult hitResult {};
+  FHitResult hitResult{};
 
   bool hit = GEditor->GetEditorWorldContext().World()->LineTraceSingleByChannel(
-    hitResult,
-    viewPosition,
-    rayEnd,
-    ECC_WorldStatic,
-    traceParams
-    );
+      hitResult,
+      viewPosition,
+      rayEnd,
+      ECC_WorldStatic,
+      traceParams);
 
   FVector spawnPosition;
   float extent;
@@ -63,7 +64,8 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
     extent = hitResult.Distance / 2.0f;
     spawnPosition = hitResult.Location;
   } else {
-    // no intersection detected, so create the polygon just in front of the camera.
+    // no intersection detected, so create the polygon just in front of the
+    // camera.
     extent = 1000.0f;
     spawnPosition = viewPosition + viewDirection * extent * 2.0f;
   }
