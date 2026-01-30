@@ -5,6 +5,7 @@
 #include "CesiumUtility/Math.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
+#include <CesiumUtility/Assert.h>
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
@@ -40,6 +41,54 @@ void ACesiumCartographicPolygon::OnConstruction(const FTransform& Transform) {
 void ACesiumCartographicPolygon::BeginPlay() {
   Super::BeginPlay();
   this->MakeLinear();
+}
+
+void ACesiumCartographicPolygon::SetPolygonPoints(
+    const ECesiumCoordinateReferenceSystem CoordinateReferenceSystem,
+    const TArray<FVector>& Points) {
+  if (Points.IsEmpty()) {
+    UE_LOG(LogTemp, Error, TEXT("Points array cannot be empty"));
+    return;
+  }
+
+  switch (CoordinateReferenceSystem) {
+  case ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight:
+  case ECesiumCoordinateReferenceSystem::EarthCenteredEarthFixed:
+    break;
+  default:
+    UE_LOG(LogTemp, Error, TEXT("Unhandled CoordinateReferenceSystem value."));
+    return;
+  }
+
+  TArray<FVector> unrealPoints;
+  unrealPoints.Reserve(Points.Num());
+
+  FVector center{};
+  const ACesiumGeoreference* pGeoreference =
+      this->GlobeAnchor->ResolveGeoreference();
+
+  FVector unrealPosition{};
+  for (const FVector& point : Points) {
+    center += point;
+    unrealPosition =
+        (CoordinateReferenceSystem ==
+         ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight)
+            ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+                  point)
+            : pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
+                  point);
+    unrealPoints.Add(unrealPosition);
+  }
+  center /= Points.Num();
+
+  if (CoordinateReferenceSystem ==
+      ECesiumCoordinateReferenceSystem::LongitudeLatitudeHeight) {
+    this->GlobeAnchor->MoveToLongitudeLatitudeHeight(center);
+  } else {
+    this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(center);
+  }
+
+  this->Polygon->SetSplinePoints(unrealPoints, ESplineCoordinateSpace::World);
 }
 
 CesiumGeospatial::CartographicPolygon

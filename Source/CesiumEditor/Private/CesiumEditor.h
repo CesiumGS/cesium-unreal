@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -110,12 +110,14 @@ private:
       const FCesiumRasterOverlayLoadFailureDetails& details);
   void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
+  void OnFeaturesMetadataAddProperties(ACesium3DTileset* pTileset);
 
   CesiumIonServerManager _serverManager;
   FDelegateHandle _tilesetLoadFailureSubscription;
   FDelegateHandle _rasterOverlayLoadFailureSubscription;
   FDelegateHandle _tilesetIonTroubleshootingSubscription;
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
+  FDelegateHandle _featuresMetadataAddPropertiesSubscription;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
   CesiumEditorReparentHandler _reparentHandler;

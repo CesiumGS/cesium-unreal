@@ -103,7 +103,7 @@ jobs:
           printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
       - name: Build plugin
         run: |
-          sed -i 's/\"EngineVersion\": \"5.3.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
+          sed -i 's/\"EngineVersion\": \"5.5.0\"/\"EngineVersion\": \"${{ inputs.unreal-engine-version }}\"/g' CesiumForUnreal.uplugin
           cd $UNREAL_ENGINE_ROOT/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
       - name: Fix RPATH

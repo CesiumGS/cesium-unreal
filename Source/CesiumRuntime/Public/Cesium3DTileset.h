@@ -801,6 +801,20 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
+   * Whether to enable doubled-sided collisions (both front-facing and
+   * back-facing) on created physics meshes.
+   *
+   * Only relevant when CreatePhysicsMeshes is true.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableDoubleSidedCollisions,
+      BlueprintSetter = SetEnableDoubleSidedCollisions,
+      Category = "Cesium|Physics",
+      meta = (EditCondition = "CreatePhysicsMeshes"))
+  bool EnableDoubleSidedCollisions = false;
+
+  /**
    * Whether to generate navigation collisions for this tileset.
    *
    * Enabling this option creates collisions for navigation when a 3D Tiles
@@ -1096,6 +1110,14 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
+  bool GetEnableDoubleSidedCollisions() const {
+    return EnableDoubleSidedCollisions;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
+  void SetEnableDoubleSidedCollisions(bool bEnableDoubleSidedCollisions);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Navigation")
   bool GetCreateNavCollision() const { return CreateNavCollision; }
 
@@ -1213,7 +1235,6 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
-  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
@@ -1273,7 +1294,7 @@ public:
    * each tile's glTF model after it has been loaded, before it can be
    * displayed.
    *
-   * Setting this property will call @ref RefreshTileset.
+   * Setting this property will refresh the tileset.
    */
   void SetGltfModifier(
       const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
@@ -1358,6 +1379,7 @@ private:
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+  bool _destroyOnNextTick;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;

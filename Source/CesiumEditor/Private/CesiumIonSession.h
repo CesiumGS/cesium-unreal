@@ -2,16 +2,19 @@
 
 #pragma once
 
-#include "CesiumAsync/AsyncSystem.h"
-#include "CesiumAsync/IAssetAccessor.h"
-#include "CesiumAsync/SharedFuture.h"
-#include "CesiumIonClient/Connection.h"
+#include "CesiumIonServer.h"
+
 #include "Delegates/Delegate.h"
+
+THIRD_PARTY_INCLUDES_START
+#include <CesiumAsync/AsyncSystem.h>
+#include <CesiumAsync/IAssetAccessor.h>
+#include <CesiumAsync/SharedFuture.h>
+#include <CesiumIonClient/Connection.h>
 #include <memory>
+THIRD_PARTY_INCLUDES_END
 
 DECLARE_MULTICAST_DELEGATE(FIonUpdated);
-
-class UCesiumIonServer;
 
 class CesiumIonSession : public std::enable_shared_from_this<CesiumIonSession> {
 public:

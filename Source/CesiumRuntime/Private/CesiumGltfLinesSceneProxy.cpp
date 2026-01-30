@@ -8,7 +8,6 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneInterface.h"
 #include "SceneView.h"
-#include "StaticMeshResources.h"
 
 SIZE_T FCesiumGltfLinesSceneProxy::GetTypeHash() const {
   static size_t UniquePointer;
