@@ -1077,11 +1077,7 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
 
-  // TODO: figure out why water material crashes mac
-#if PLATFORM_MAC
-#else
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
-#endif
 
   CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
   supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
@@ -2298,14 +2294,6 @@ void ACesium3DTileset::PostEditImport() {
   this->DestroyTileset();
 }
 
-bool ACesium3DTileset::CanEditChange(const FProperty* InProperty) const {
-  if (InProperty->GetFName() ==
-      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask)) {
-    // Disable this option on Mac
-    return PlatformName != TEXT("Mac");
-  }
-  return true;
-}
 #endif
 
 void ACesium3DTileset::BeginDestroy() {

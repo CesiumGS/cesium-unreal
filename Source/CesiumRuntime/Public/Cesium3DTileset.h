@@ -1235,7 +1235,6 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
-  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
