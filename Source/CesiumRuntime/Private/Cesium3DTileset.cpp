@@ -2294,9 +2294,6 @@ void ACesium3DTileset::PostEditImport() {
   this->DestroyTileset();
 }
 
-bool ACesium3DTileset::CanEditChange(const FProperty* InProperty) const {
-  return true;
-}
 #endif
 
 void ACesium3DTileset::BeginDestroy() {
