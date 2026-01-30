@@ -15,8 +15,8 @@
 
 using namespace CesiumGeospatial;
 
-bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
 #if WITH_EDITOR
+bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
   if (!GEditor) {
     UE_LOG(LogCesium, Error, TEXT("Could not retrieve GEditor instance."));
     return false;
@@ -83,10 +83,8 @@ bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
   this->SetActorLocation(spawnPosition);
 
   return true;
-#endif
-
-  return false;
 }
+#endif
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   PrimaryActorTick.bCanEverTick = false;
