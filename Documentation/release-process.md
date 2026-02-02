@@ -4,7 +4,7 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 
 ## Prepare Cesium Native for Release
 
-[cesium-native](https://github.com/CesiumGS/cesium-native) is used as a git submodule of cesium-unreal. So the first step in releasing Cesium for Unreal is to make sure that Cesium Native is ready for release. See the [Cesium Native release guide](#native-release-process) for instructions. You may want to wait to create the new Cesium Native tag until after you have tested the Cesium for Unreal release.
+[cesium-native](https://github.com/CesiumGS/cesium-native) is used as a git submodule of cesium-unreal. So the first step in releasing Cesium for Unreal is to make sure that Cesium Native is ready for release. See the [Cesium Native release guide](https://github.com/CesiumGS/cesium-native/blob/main/doc/topics/release-process.md) for instructions. You may want to wait to create the new Cesium Native tag until after you have tested the Cesium for Unreal release.
 
 ## Prepare Cesium for Unreal for Release
 
