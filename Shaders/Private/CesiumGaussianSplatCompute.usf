@@ -14,11 +14,11 @@ void {FunctionName}(
 
   int SplatIndex = {IndicesBuffer}[Index];
   // Obtain the tile-level values.
-  float InVisibility = {MatrixBuffer}[SplatIndex * 7 + 4].x;
+  float InVisibility = {TileMatrixBuffer}[SplatIndex * 7 + 4].x;
   // Obtain just the rotation matrix of the tile.
   float4x4 InGlobalRotationMatrix;
   {
-    float4 InRotation = {MatrixBuffer}[SplatIndex * 7 + 6];
+    float4 InRotation = {TileMatrixBuffer}[SplatIndex * 7 + 6];
     float x = InRotation.x;
     float y = InRotation.y;
     float z = InRotation.z;
@@ -28,13 +28,13 @@ void {FunctionName}(
       2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),     0.0,
       2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y), 0.0,
       0.0,                     0.0,                     0.0,                     0.0
-  );
+    );
   }
   // Obtain full transformation matrix of the tile.
-  float4 c0 = {MatrixBuffer}[SplatIndex * 7];
-  float4 c1 = {MatrixBuffer}[SplatIndex * 7 + 1];
-  float4 c2 = {MatrixBuffer}[SplatIndex * 7 + 2];
-  float4 c3 = {MatrixBuffer}[SplatIndex * 7 + 3];
+  float4 c0 = {TileMatrixBuffer}[SplatIndex * 7];
+  float4 c1 = {TileMatrixBuffer}[SplatIndex * 7 + 1];
+  float4 c2 = {TileMatrixBuffer}[SplatIndex * 7 + 2];
+  float4 c3 = {TileMatrixBuffer}[SplatIndex * 7 + 3];
   float4x4 SplatMatrix = float4x4(
     c0.x, c1.x, c2.x, c3.x,
     c0.y, c1.y, c2.y, c3.y,
@@ -46,7 +46,7 @@ void {FunctionName}(
   float3 InPosition = mul(SplatMatrix, float4({PositionsBuffer}[Index].xyz, 1.0)).xyz;
   OutPosition = float4(InPosition, 1.0);
   // Scale we can combine directly with the tile-level scale.
-  float3 InScale = {MatrixBuffer}[SplatIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
+  float3 InScale = {TileMatrixBuffer}[SplatIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
   float4 InOrientation = {OrientationsBuffer}[Index];
   float4 InColor = {ColorsBuffer}[Index];
 
@@ -54,7 +54,7 @@ void {FunctionName}(
   int NumSplats = {SplatCount};
 
   // Set default output values
-  OutColor = float4(0.0, 0.0, 0.0, 0.0);
+  OutColor = InColor;
   OutSpriteRotation = 0;
   OutSpriteSize = float2(0.0, 0.0);
 
@@ -62,8 +62,10 @@ void {FunctionName}(
   float4 WorldPos_H = float4(InPosition.xyz + LWCHackToFloat(PrimaryView.PreViewTranslation), 1.0f);
   float4 ViewPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToView) * InVisibility;
   float4 ClipPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToClip) * InVisibility;
-  float4 NdcPos = ClipPos_H / ClipPos_H.w;  
-  if(ClipPos_H.w <= 0.0 || ViewPos_H.z < 0.0f || abs(NdcPos.x) > 1.5f || abs(NdcPos.y) > 1.3f)
+  float4 NdcPos = ClipPos_H / ClipPos_H.w;
+
+  // TODO: Check if this is right.
+  if (ClipPos_H.w <= 0.0 || ViewPos_H.z < 0.0f || abs(NdcPos.x) > 1.5f || abs(NdcPos.y) > 1.3f)
   {
     // Clipped
     float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
@@ -76,28 +78,12 @@ void {FunctionName}(
   // That's the sigma symbol, which is why we call it Sigma below.
   float3x3 cov;
   {
-    float3x3 S = float3x3(
-      InScale.x, 0.0f,      0.0f,
-      0.0f,      InScale.y, 0.0f,
-      0.0f,      0.0f,      InScale.z
-    );
-
-    float3x3 InOrientationMatrix;
-    {
-        float x = InOrientation.x;
-        float y = InOrientation.y;
-        float z = InOrientation.z;
-        float w = InOrientation.w;
-        InOrientationMatrix = float3x3(
-          1 - 2 * (y * y + z * z), 2 * (x * y - w * z),     2 * (x * z + w * y),
-          2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),
-          2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y)
-        );
-    } 
-
-    float3x3 M = mul(S, InOrientationMatrix); 
-    // Compute the 3D covariance matrix in world space.
-    float3x3 Sigma = mul(transpose(M), M);
+    // Retrieve the pre-computed 3D covariance matrix in world space.
+    float3x3 sigma = float3x3(
+        {CovarianceMatrixBuffer}[Index * 3 + 0].xyz,
+        {CovarianceMatrixBuffer}[Index * 3 + 1].xyz,
+        {CovarianceMatrixBuffer}[Index * 3 + 2].xyz
+      );
 
     // Now we need to transform our world-space covariance matrix into a clip-space covariance matrix.
     // However, we can't use the actual projection matrix as this would distort the gaussian.
@@ -121,9 +107,10 @@ void {FunctionName}(
       PrimaryView.TranslatedWorldToView[0][1], PrimaryView.TranslatedWorldToView[1][1], PrimaryView.TranslatedWorldToView[2][1],
       PrimaryView.TranslatedWorldToView[0][2], PrimaryView.TranslatedWorldToView[1][2], PrimaryView.TranslatedWorldToView[2][2]
     );
-    W = mul(W, transpose(M_SystemLocalToWorld));    
+    W = mul(W, transpose(M_SystemLocalToWorld));
+
     float3x3 T = mul(mul(J, W), InGlobalRotationMatrix); 
-    cov = mul(mul(T, Sigma), transpose(T)); 
+    cov = mul(mul(T, sigma), transpose(T));
   }
 
   // Get the center position of our splat in normalized clip coordinates.

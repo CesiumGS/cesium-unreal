@@ -21,6 +21,7 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
   FReadBuffer SplatMatricesBuffer;
   FReadBuffer SplatSHDegreesBuffer;
   FReadBuffer PositionsBuffer;
+  FReadBuffer CovarianceMatrixBuffer;
   FReadBuffer ScalesBuffer;
   FReadBuffer OrientationsBuffer;
   FReadBuffer ColorsBuffer;
@@ -40,6 +41,7 @@ BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
 SHADER_PARAMETER(int, SplatsCount)
 SHADER_PARAMETER_SRV(Buffer<uint>, SplatIndices)
 SHADER_PARAMETER_SRV(Buffer<float4>, SplatMatrices)
+SHADER_PARAMETER_SRV(Buffer<float3>, CovarianceMatrices)
 SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
 SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
 SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)

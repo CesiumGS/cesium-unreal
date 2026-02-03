@@ -401,26 +401,9 @@ FBox UCesiumGltfGaussianSplatComponent::GetBounds() const {
 }
 
 glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
-  const FTransform& Transform = this->GetComponentTransform();
-  glm::quat quat(
-      Transform.GetRotation().W,
-      Transform.GetRotation().X,
-      Transform.GetRotation().Y,
-      Transform.GetRotation().Z);
-  const glm::mat4x4 mat = glm::translate(
-                              glm::identity<glm::mat4x4>(),
-                              glm::vec3(
-                                  Transform.GetLocation().X,
-                                  Transform.GetLocation().Y,
-                                  Transform.GetLocation().Z)) *
-                          glm::mat4_cast(quat) *
-                          glm::scale(
-                              glm::identity<glm::mat4x4>(),
-                              glm::vec3(
-                                  Transform.GetScale3D().X,
-                                  Transform.GetScale3D().Y,
-                                  Transform.GetScale3D().Z));
-  return mat;
+  const FTransform& transform = this->GetComponentTransform();
+  FMatrix matrix = transform.ToMatrixWithScale();
+  return glm::mat4(VecMath::createMatrix4D(matrix));
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
