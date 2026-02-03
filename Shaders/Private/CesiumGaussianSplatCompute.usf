@@ -64,10 +64,15 @@ void {FunctionName}(
   float4 ClipPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToClip) * InVisibility;
   float4 NdcPos = ClipPos_H / ClipPos_H.w;
 
-  // TODO: Check if this is right.
-  if (ClipPos_H.w <= 0.0 || ViewPos_H.z < 0.0f || abs(NdcPos.x) > 1.5f || abs(NdcPos.y) > 1.3f)
+
+  // Provide a buffer of 20% around the screen edges so edge-adjacent splats aren't
+  // prematurely discarded if they still affect the screen.
+  float clip = 1.2 * ClipPos_H.w;
+  if (
+    ClipPos_H.z < -clip || ClipPos_H.x < -clip || ClipPos_H.x > clip ||
+    ClipPos_H.y < -clip || ClipPos_H.y > clip )
   {
-    // Clipped
+    // Move the particle far out of camera view.
     float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
     OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
     return;
@@ -121,8 +126,8 @@ void {FunctionName}(
   // For more information:
   // https://www.sctheblog.com/blog/gaussian-splatting/#method-2-calculate-eigenvectors
   float diagonal1 = cov[0][0] + .3;
-  float offDiagonal = cov[0][1];
   float diagonal2 = cov[1][1] + .3;
+  float offDiagonal = cov[0][1];
 
   float mid = 0.5 * (diagonal1 + diagonal2);
   float radius = length(float2((diagonal1 - diagonal2) * 0.5, offDiagonal));
@@ -139,6 +144,9 @@ void {FunctionName}(
   float screenSpaceRadius = ceil(2.f * sqrt(max(lambda1, lambda2)));
   if (screenSpaceRadius < 1 || screenSpaceRadius > 1000) 
   {
+    // Move the particle far out of camera view.
+  //  float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
+   // OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
     return;
   }
 
