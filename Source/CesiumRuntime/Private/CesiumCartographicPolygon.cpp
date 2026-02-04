@@ -2,6 +2,7 @@
 
 #include "CesiumCartographicPolygon.h"
 #include "CesiumActors.h"
+#include "CesiumGeoreference.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
 #if WITH_EDITOR
