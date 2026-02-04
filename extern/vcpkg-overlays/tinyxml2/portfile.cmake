@@ -7,6 +7,16 @@
 # and it should _not_ end with a slash.
 # For example: `C:/Program Files/Epic Games/UE_5.3`
 
+# If not on Linux or Windows, bail and use the vcpkg port. This is a
+# hack and is not generally done at the portfile.cmake level; usually
+# there would be a conditional in a vcpkg manifest file. However, we
+# are not using manifest mode with Unreal yet.
+if(NOT(VCPKG_TARGET_IS_WINDOWS OR VCPKG_TARGET_IS_LINUX))
+  set(CURRENT_PORT_DIR "${VCPKG_ROOT_DIR}/ports/tinyxml2")
+  include("${VCPKG_ROOT_DIR}/ports/tinyxml2/portfile.cmake")
+return()
+endif()
+
 # This was copied from the openssl vcpkg overlay. Unfortunately,
 # directory structure of Unreal's third party tree is not consistent
 # across packages, especially with respect to include file
@@ -40,24 +50,7 @@ endif()
 
 list(GET TINYXML2_VERSION_DIRS 0 TINYXML2_ROOT_DIR)
 
-if (VCPKG_TARGET_IS_ANDROID)
-  set(TINYXML2_INCLUDE_PATH "${TINYXML2_ROOT_DIR}/include/Android")
-  if (VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
-    set(TINYXML2_LIB_PATH "${TINYXML2_ROOT_DIR}/lib/Android/x64")
-  elseif (VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
-    set(TINYXML2_LIB_PATH "${TINYXML2_ROOT_DIR}/lib/Android/ARM64")
-  else()
-    message(FATAL_ERROR "Unknown Unreal / TinyXML2 paths for Android platform with architecture ${VCPKG_TARGET_ARCHITECTURE}.")
-  endif()
-elseif (VCPKG_TARGET_IS_IOS)
-  set(TINYXML2_LIB_PATH "${TINYXML2_ROOT_DIR}/lib/IOS")
-  set(TINYXM2_LIB_LOCATION "${TINYXML2_LIB_PATH}/libtinyxml2.a")
-  set(TINYXML2_INCLUDE_PATH "${TINYXML2_ROOT_DIR}/include")
-elseif (VCPKG_TARGET_IS_OSX)
-  set(TINYXML2_LIB_PATH "${TINYXML2_ROOT_DIR}/lib/Mac")
-  set(TINYXM2_LIB_LOCATION "${TINYXML2_LIB_PATH}/libtinyxml2.a")
-  set(TINYXML2_INCLUDE_PATH "${TINYXML2_ROOT_DIR}/include")
-elseif (VCPKG_TARGET_IS_WINDOWS)
+if (VCPKG_TARGET_IS_WINDOWS)
   set(TINYXML2_INCLUDE_PATH "${TINYXML2_ROOT_DIR}/include")
   set(TINYXML2_LIB_PATH "${TINYXML2_ROOT_DIR}/lib/Win64/Release")
   set(TINYXML2_LIB_LOCATION "${TINYXML2_LIB_PATH}/tinyxml2.lib")
