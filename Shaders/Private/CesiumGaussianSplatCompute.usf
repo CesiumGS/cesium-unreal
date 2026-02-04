@@ -8,10 +8,6 @@ void {FunctionName}(
   out float2 OutSpriteSize,
   out float OutSpriteRotation)
 {
-  // Extra scale we give to each gaussian to allow for a clean rolloff.
-  // This must match the "scale" variable in the material.
-  const float OVERSCALE = 1.5;
-
   int SplatIndex = {IndicesBuffer}[Index];
   // Obtain the tile-level values.
   float InVisibility = {TileMatrixBuffer}[SplatIndex * 7 + 4].x;
@@ -95,12 +91,11 @@ void {FunctionName}(
     // Instead, we compute an affine approximation of the projection matrix called the Jacobian.
     // See the section of the below article starting with "The second step involves..." for more information:
     // https://shi-yan.github.io/how_to_render_a_single_gaussian_splat/
-    float focal_x = PrimaryView.ViewToClip[0][0] * 0.5 * PrimaryView.ViewSizeAndInvSize.x;
-    float focal_y = PrimaryView.ViewToClip[1][1] * 0.5 * PrimaryView.ViewSizeAndInvSize.y; 
+    float2 focal = float2(PrimaryView.ViewToClip[0][0], PrimaryView.ViewToClip[1][1]) * 0.5 * PrimaryView.ViewSizeAndInvSize.xy;
     float4 t = ViewPos_H;
     float3x3 J = float3x3(
-      focal_x / t.z, 0.0f,          -(focal_x * t.x) / (t.z * t.z),
-      0.0f,          -focal_y / t.z, (focal_y * t.y) / (t.z * t.z),
+      focal.x / t.z, 0.0f,          -(focal.x * t.x) / (t.z * t.z),
+      0.0f,          -focal.y / t.z, (focal.y * t.y) / (t.z * t.z),
       0.0f,          0.0f,           0.0f
     );
 
@@ -125,8 +120,8 @@ void {FunctionName}(
   // These vectors define the bounds of the quad that will contain our gaussian.
   // For more information:
   // https://www.sctheblog.com/blog/gaussian-splatting/#method-2-calculate-eigenvectors
-  float diagonal1 = cov[0][0] + .3;
-  float diagonal2 = cov[1][1] + .3;
+  float diagonal1 = cov[0][0] + 0.3;
+  float diagonal2 = cov[1][1] + 0.3;
   float offDiagonal = cov[0][1];
 
   float mid = 0.5 * (diagonal1 + diagonal2);
@@ -135,29 +130,29 @@ void {FunctionName}(
   float lambda2 = max(mid - radius, 0.1);
 
   float2 diagonalVector = normalize(float2(offDiagonal, lambda1 - diagonal1));
-  float4 covVectors = float4(
-      min(sqrt(2.0 * lambda1), 1024.0) * diagonalVector,
-      min(sqrt(2.0 * lambda2), 1024.0) * float2(diagonalVector.y, -diagonalVector.x)
-  );
 
-  // Clip splats that will be too large or too small on the screen.
-  float screenSpaceRadius = ceil(2.f * sqrt(max(lambda1, lambda2)));
-  if (screenSpaceRadius < 1 || screenSpaceRadius > 1000) 
+  // Extract the major and minor axes of the Gaussian ellipsoid used to calculate
+  // the vertex position in clip space.
+  float2 majorAxis = min(3.0 * sqrt(lambda1), 1024.0) * diagonalVector;
+  float2 minorAxis = min(3.0 * sqrt(lambda2), 1024.0) * float2(diagonalVector.y, -diagonalVector.x);
+
+  // Clip splats that will be too small on the screen.
+  if (dot(majorAxis, majorAxis) < 4.0 && dot(minorAxis, minorAxis) < 4.0) 
   {
     // Move the particle far out of camera view.
-  //  float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
-   // OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
+    float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
+    OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
     return;
   }
 
   // Right now, we have two perpendicular screen-space eigenvectors. 
   // We need to transform these into a world-space size and rotation to return to Unreal.
   // First, we transform the screen-space coordinates into clip-space.
-  float2 Q = covVectors.xy / PrimaryView.ViewSizeAndInvSize.xy;
-  float2 R = covVectors.zw / PrimaryView.ViewSizeAndInvSize.xy;
+  float2 Q = majorAxis * PrimaryView.ViewSizeAndInvSize.zw;
+  float2 R = minorAxis * PrimaryView.ViewSizeAndInvSize.zw;
   // Center the eigenvectors on the splat position.
-  float4 clipRadiusA = uv0 + float4(Q.x, Q.y, 0, 0);
-  float4 clipRadiusB = uv0 + float4(R.x, R.y, 0, 0);
+  float4 clipRadiusA = uv0 + float4(Q.xy, 0, 0);
+  float4 clipRadiusB = uv0 + float4(R.xy, 0, 0);
   // Transform the eigenvectors into world-space.
   float4 worldRadiusA = mul(clipRadiusA, PrimaryView.ClipToTranslatedWorld);
   float4 worldRadiusB = mul(clipRadiusB, PrimaryView.ClipToTranslatedWorld);
@@ -166,7 +161,7 @@ void {FunctionName}(
 
   // The size of the sprite is the length of the two world-space eigenvectors from the center.
   // Since they are perpendicular, they define a quad. 
-  OutSpriteSize = float2(length(WorldPos_H - worldRadiusA), length(WorldPos_H - worldRadiusB)) * (10 * OVERSCALE);
+  OutSpriteSize = float2(length(WorldPos_H - worldRadiusA), length(WorldPos_H - worldRadiusB)) * 10;
   // Calculate the rotation of the quad to fit the eigenvectors.
   OutSpriteRotation = degrees(atan2(lambda1 - diagonal1, offDiagonal));
 
