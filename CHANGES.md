@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ???
+
+##### Fixes :wrench:
+
+- Add a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
+
 ### v2.23.0 - 2026-02-02
 
 ##### Additions :tada:
