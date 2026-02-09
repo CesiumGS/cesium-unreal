@@ -26,6 +26,7 @@ void {FunctionName}(
       0.0,                     0.0,                     0.0,                     0.0
     );
   }
+
   // Obtain full transformation matrix of the tile.
   float4 c0 = {TileMatrixBuffer}[SplatIndex * 7];
   float4 c1 = {TileMatrixBuffer}[SplatIndex * 7 + 1];
@@ -39,8 +40,8 @@ void {FunctionName}(
   );
 
   // Obtain all the splat values from the various buffers.
-  float3 InPosition = mul(SplatMatrix, float4({PositionsBuffer}[Index].xyz, 1.0)).xyz;
-  OutPosition = float4(InPosition, 1.0);
+  float4 InPosition = float4({PositionsBuffer}[Index].xyz, 1.0);
+  OutPosition = InPosition;
   // Scale we can combine directly with the tile-level scale.
   float3 InScale = {TileMatrixBuffer}[SplatIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
   float4 InOrientation = {OrientationsBuffer}[Index];
@@ -54,12 +55,15 @@ void {FunctionName}(
   OutSpriteRotation = 0;
   OutSpriteSize = float2(0.0, 0.0);
 
-  // Compute world, view, and clip pos
-  float4 WorldPos_H = float4(InPosition.xyz + LWCHackToFloat(PrimaryView.PreViewTranslation), 1.0f);
-  float4 ViewPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToView) * InVisibility;
-  float4 ClipPos_H = mul(WorldPos_H, PrimaryView.TranslatedWorldToClip) * InVisibility;
-  float4 NdcPos = ClipPos_H / ClipPos_H.w;
+  float4 WorldPos_H = mul(InPosition, M_SystemLocalToWorld);
+  // Account for the world offset.
+  WorldPos_H.xyz += LWCHackToFloat(PrimaryView.PreViewTranslation); 
+  float4 ViewPos_H = mul(WorldPos_H, View.TranslatedWorldToView) * InVisibility;
+  float4 ClipPos_H = mul(ViewPos_H, View.ViewToClip) * InVisibility;
 
+  // Compute a position that moves the particle far out of camera view if discarded.
+  float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
+  float4 DiscardPos = mul(ViewPosFar, M_SystemWorldToLocal);
 
   // Provide a buffer of 20% around the screen edges so edge-adjacent splats aren't
   // prematurely discarded if they still affect the screen.
@@ -68,11 +72,12 @@ void {FunctionName}(
     ClipPos_H.z < -clip || ClipPos_H.x < -clip || ClipPos_H.x > clip ||
     ClipPos_H.y < -clip || ClipPos_H.y > clip )
   {
-    // Move the particle far out of camera view.
-    float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
-    OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
+    OutPosition = DiscardPos;
     return;
   }
+
+  // Normalize the clip coordinates.
+  ClipPos_H = ClipPos_H / ClipPos_H.w;
 
   // Calculate covariance matrix
   // This is the three-dimensional equivalent to the variance of a normal distribution.
@@ -91,30 +96,25 @@ void {FunctionName}(
     // Instead, we compute an affine approximation of the projection matrix called the Jacobian.
     // See the section of the below article starting with "The second step involves..." for more information:
     // https://shi-yan.github.io/how_to_render_a_single_gaussian_splat/
-    float2 focal = float2(PrimaryView.ViewToClip[0][0], PrimaryView.ViewToClip[1][1]) * 0.5 * PrimaryView.ViewSizeAndInvSize.xy;
+    float2 focal = float2(View.ViewToClip[0][0], View.ViewToClip[1][1]) * 0.5 * View.ViewSizeAndInvSize.xy;
     float4 t = ViewPos_H;
+    float2 J1 = focal / t.z;
+    float2 J2 = -focal * float2(t.x, t.y) / (t.z * t.z);
     float3x3 J = float3x3(
-      focal.x / t.z, 0.0f,          -(focal.x * t.x) / (t.z * t.z),
-      0.0f,          -focal.y / t.z, (focal.y * t.y) / (t.z * t.z),
-      0.0f,          0.0f,           0.0f
+      J1.x, 0.0, J2.x,
+      0.0, J1.y, J2.y,
+      0.0, 0.0, 0.0
     );
 
     // Now we create a compound matrix that will apply our global rotation, then transform our world-space 
     // covariance matrix into view-space, then transform that view-space covariance matrix into (approximate)
     // clip space using the jacobian, to get our final covariance matrix.
-    float3x3 W = float3x3(  
-      PrimaryView.TranslatedWorldToView[0][0], PrimaryView.TranslatedWorldToView[1][0], PrimaryView.TranslatedWorldToView[2][0],
-      PrimaryView.TranslatedWorldToView[0][1], PrimaryView.TranslatedWorldToView[1][1], PrimaryView.TranslatedWorldToView[2][1],
-      PrimaryView.TranslatedWorldToView[0][2], PrimaryView.TranslatedWorldToView[1][2], PrimaryView.TranslatedWorldToView[2][2]
-    );
-    W = mul(W, transpose(M_SystemLocalToWorld));
-
-    float3x3 T = mul(mul(J, W), InGlobalRotationMatrix); 
-    cov = mul(mul(T, sigma), transpose(T));
+    float3x3 W = (float3x3) transpose(View.TranslatedWorldToView);
+    float3x3 sigmaView = mul(mul(W, sigma), transpose(W));
+  
+    //float3x3 T = mul(mul(J, W), InGlobalRotationMatrix); 
+    cov = mul(mul(J, sigmaView), transpose(J));
   }
-
-  // Get the center position of our splat in normalized clip coordinates.
-  float4 uv0 = ClipPos_H / ClipPos_H.w;
 
   // Calculate the eigenvectors of the gaussian splat.
   // These vectors define the bounds of the quad that will contain our gaussian.
@@ -139,31 +139,29 @@ void {FunctionName}(
   // Clip splats that will be too small on the screen.
   if (dot(majorAxis, majorAxis) < 4.0 && dot(minorAxis, minorAxis) < 4.0) 
   {
-    // Move the particle far out of camera view.
-    float4 ViewPosFar = float4(LWCHackToFloat(PrimaryView.WorldViewOrigin) - LWCHackToFloat(PrimaryView.ViewForward) * 1000000.0f, 1.0f);
-    OutPosition = mul(ViewPosFar, M_SystemWorldToLocal);
+    OutPosition = DiscardPos;
     return;
   }
 
   // Right now, we have two perpendicular screen-space eigenvectors. 
   // We need to transform these into a world-space size and rotation to return to Unreal.
-  // First, we transform the screen-space coordinates into clip-space.
-  float2 Q = majorAxis * PrimaryView.ViewSizeAndInvSize.zw;
-  float2 R = minorAxis * PrimaryView.ViewSizeAndInvSize.zw;
-  // Center the eigenvectors on the splat position.
-  float4 clipRadiusA = uv0 + float4(Q.xy, 0, 0);
-  float4 clipRadiusB = uv0 + float4(R.xy, 0, 0);
-  // Transform the eigenvectors into world-space.
-  float4 worldRadiusA = mul(clipRadiusA, PrimaryView.ClipToTranslatedWorld);
-  float4 worldRadiusB = mul(clipRadiusB, PrimaryView.ClipToTranslatedWorld);
-  worldRadiusA = worldRadiusA / worldRadiusA.w;
-  worldRadiusB = worldRadiusB / worldRadiusB.w;
+
+  float4 xClip = ClipPos_H + float4(majorAxis * View.ViewSizeAndInvSize.zw * 2., 0, 0);
+  float4 yClip = ClipPos_H + float4(minorAxis * View.ViewSizeAndInvSize.zw * 2., 0, 0);
+
+  float4 xWorld = mul(xClip, View.ClipToTranslatedWorld);
+  float4 yWorld = mul(yClip, View.ClipToTranslatedWorld);
+  xWorld /= xWorld.w;
+  yWorld /= yWorld.w;
 
   // The size of the sprite is the length of the two world-space eigenvectors from the center.
   // Since they are perpendicular, they define a quad. 
-  OutSpriteSize = float2(length(WorldPos_H - worldRadiusA), length(WorldPos_H - worldRadiusB)) * 10;
+  OutSpriteSize.x = length(WorldPos_H - xWorld) * 4.0;
+  OutSpriteSize.y = length(WorldPos_H - yWorld) * 4.0;
+
   // Calculate the rotation of the quad to fit the eigenvectors.
-  OutSpriteRotation = degrees(atan2(lambda1 - diagonal1, offDiagonal));
+  float Z = dot(float2(0,1), normalize(minorAxis));
+  OutSpriteRotation = degrees(acos(Z));
 
   // Compute the spherical harmonics.
   // Spherical harmonics are basically an approximation of a function on the surface of a sphere.

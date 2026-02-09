@@ -42,7 +42,7 @@ public:
 
   FBox GetBounds() const;
 
-  glm::mat4x4 GetMatrix() const;
+  glm::dmat4 GetMatrix() const;
 
   virtual void BeginDestroy() override;
 

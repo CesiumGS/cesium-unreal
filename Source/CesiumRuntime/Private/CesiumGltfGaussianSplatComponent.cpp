@@ -400,10 +400,10 @@ FBox UCesiumGltfGaussianSplatComponent::GetBounds() const {
   return this->Bounds.Get(FBox());
 }
 
-glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
+glm::dmat4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
   const FTransform& transform = this->GetComponentTransform();
   FMatrix matrix = transform.ToMatrixWithScale();
-  return glm::mat4(VecMath::createMatrix4D(matrix));
+  return VecMath::createMatrix4D(matrix);
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {

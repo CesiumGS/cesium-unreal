@@ -38,9 +38,11 @@ void UploadSplatMatrices(
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
     FReadBuffer& TileMatrixBuffer,
     FReadBuffer& CovarianceMatrixBuffer,
+    FReadBuffer& PositionsBuffer,
     int32 NumSplats) {
   releaseIfNonEmpty(TileMatrixBuffer);
   releaseIfNonEmpty(CovarianceMatrixBuffer);
+  releaseIfNonEmpty(PositionsBuffer);
 
   if (Components.IsEmpty()) {
     // Will crash if we try to allocate a buffer of size 0
@@ -66,6 +68,14 @@ void UploadSplatMatrices(
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
+  PositionsBuffer.Initialize(
+      RHICmdList,
+      TEXT("FNDIGaussianSplatProxy_Positions"),
+      sizeof(FVector4f),
+      NumSplats,
+      EPixelFormat::PF_A32B32G32R32F,
+      BUF_Static);
+
   float* pTileMatrixData = static_cast<float*>(RHICmdList.LockBuffer(
       TileMatrixBuffer.Buffer,
       0,
@@ -78,8 +88,15 @@ void UploadSplatMatrices(
       NumSplats * 3 * sizeof(FVector4f),
       EResourceLockMode::RLM_WriteOnly));
 
+  float* pPositionData = static_cast<float*>(RHICmdList.LockBuffer(
+      PositionsBuffer.Buffer,
+      0,
+      NumSplats * sizeof(FVector4f),
+      EResourceLockMode::RLM_WriteOnly));
+
   int32 tileMatrixOffset = 0;
   int32 covarianceOffset = 0;
+  int32 positionOffset = 0;
 
   for (int32 c = 0; c < Components.Num(); c++) {
     UCesiumGltfGaussianSplatComponent* pComponent = Components[c];
@@ -89,7 +106,7 @@ void UploadSplatMatrices(
     FVector tileScale = ComponentToWorld.GetScale3D();
     FQuat tileRotation = ComponentToWorld.GetRotation();
 
-    glm::mat4x4 tileMatrix = pComponent->GetMatrix();
+    glm::dmat4 tileMatrix = pComponent->GetMatrix();
     pTileMatrixData[tileMatrixOffset] = (float)tileMatrix[0].x;
     pTileMatrixData[tileMatrixOffset + 1] = (float)tileMatrix[0].y;
     pTileMatrixData[tileMatrixOffset + 2] = (float)tileMatrix[0].z;
@@ -170,11 +187,27 @@ void UploadSplatMatrices(
       pCovarianceData[covarianceOffset + 11] = 0.0f;
 
       covarianceOffset += CovarianceMatrixStride;
+
+      glm::dvec4 position(
+          pComponent->Positions[4 * i + 0],
+          pComponent->Positions[4 * i + 1],
+          pComponent->Positions[4 * i + 2],
+          1.0);
+
+      glm::dvec4 worldPosition = tileMatrix * position;
+
+      pPositionData[positionOffset + 0] = static_cast<float>(worldPosition.x);
+      pPositionData[positionOffset + 1] = static_cast<float>(worldPosition.y);
+      pPositionData[positionOffset + 2] = static_cast<float>(worldPosition.z);
+      pPositionData[positionOffset + 3] = 1.0f;
+
+      positionOffset += 4;
     }
   }
 
   RHICmdList.UnlockBuffer(TileMatrixBuffer.Buffer);
   RHICmdList.UnlockBuffer(CovarianceMatrixBuffer.Buffer);
+  RHICmdList.UnlockBuffer(PositionsBuffer.Buffer);
 }
 
 } // namespace
@@ -203,6 +236,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           SplatSystem->SplatComponents,
           this->SplatMatricesBuffer,
           this->CovarianceMatrixBuffer,
+          this->PositionsBuffer,
           SplatSystem->GetNumSplats());
     });
   }
@@ -230,9 +264,8 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           SplatComponent->NumCoefficients * SplatComponent->NumSplats;
     }
 
-    const int32 ExpectedPosBytes = NumSplats * 4 * sizeof(float);
-    if (this->PositionsBuffer.NumBytes != ExpectedPosBytes) {
-      releaseIfNonEmpty(this->PositionsBuffer);
+    const int32 ExpectedScaleBytes = NumSplats * 4 * sizeof(float);
+    if (this->ScalesBuffer.NumBytes != ExpectedScaleBytes) {
       releaseIfNonEmpty(this->ScalesBuffer);
       releaseIfNonEmpty(this->OrientationsBuffer);
       releaseIfNonEmpty(this->ColorsBuffer);
@@ -244,14 +277,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         return;
       }
 
-      if (ExpectedPosBytes > 0) {
-        this->PositionsBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Positions"),
-            sizeof(FVector4f),
-            NumSplats,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
+      if (ExpectedScaleBytes > 0) {
         this->ScalesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_Scales"),
@@ -297,15 +323,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
 
-        float* PositionsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-            this->PositionsBuffer.Buffer,
-            0,
-            ExpectedPosBytes,
-            EResourceLockMode::RLM_WriteOnly));
         float* ScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->ScalesBuffer.Buffer,
             0,
-            ExpectedPosBytes,
+            ExpectedScaleBytes,
             EResourceLockMode::RLM_WriteOnly));
         float* OrientationsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->OrientationsBuffer.Buffer,
@@ -343,11 +364,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           check(Component);
 
           FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(PositionsBuffer + SplatCountWritten * 4),
-              Component->Positions.GetData(),
-              Component->Positions.Num() * sizeof(float));
-
-          FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(ScalesBuffer + SplatCountWritten * 4),
               Component->Scales.GetData(),
               Component->Scales.Num() * sizeof(float));
@@ -382,7 +398,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               Component->NumSplats * Component->NumCoefficients;
         }
 
-        RHICmdList.UnlockBuffer(this->PositionsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->OrientationsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
