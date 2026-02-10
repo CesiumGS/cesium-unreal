@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -13,11 +13,11 @@
 
 /**
  * @brief A component that can be added to Cesium3DTileset actors to
- * dictate what metadata to encode for access on the GPU. The selection can be
- * automatically populated based on available metadata by clicking the
- * "Auto Fill" button. Once a selection of desired metadata is made, the
- * boiler-plate material code to access the selected properties can be
- * auto-generated using the "Generate Material" button.
+ * dictate what feature ID sets or metadata to encode for access on the GPU.
+ * "Add Properties" allows users to find and select desired feature ID sets and
+ * metadata properties. Once a selection is made, "Generate Material" can be
+ * used to auto-generated the boiler-plate code to access the selected
+ * properties in the Unreal material.
  */
 UCLASS(ClassGroup = Cesium, Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
@@ -27,15 +27,14 @@ class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
 public:
 #if WITH_EDITOR
   /**
-   * Populate the description of metadata and feature IDs using the current view
-   * of the tileset. This determines what to encode to the GPU based on the
-   * existing metadata.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
+   * Opens a window to add feature ID sets and metadata properties from the
+   * current view of the tileset.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
-  void AutoFill();
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Add Properties"))
+  void AddProperties();
 
   /**
    * This button can be used to create a boiler-plate material layer that
@@ -44,7 +43,10 @@ public:
    * exists. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Generate Material"))
   void GenerateMaterial();
 #endif
 

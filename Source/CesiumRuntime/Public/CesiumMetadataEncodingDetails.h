@@ -8,6 +8,8 @@
 
 #include "CesiumMetadataEncodingDetails.generated.h"
 
+struct FCesiumMetadataPropertyDetails;
+
 /**
  * @brief The component type that a metadata property's values will be encoded
  * as. These correspond to the pixel component types that are supported in
@@ -15,6 +17,13 @@
  */
 UENUM()
 enum class ECesiumEncodedMetadataComponentType : uint8 { None, Uint8, Float };
+
+/**
+ * @brief Gets the best-fitting encoded type for the given metadata component
+ * type.
+ */
+ECesiumEncodedMetadataComponentType
+CesiumMetadataComponentTypeToEncodingType(ECesiumMetadataComponentType Type);
 
 /**
  * @brief The type that a metadata property's values will be encoded as.
@@ -27,6 +36,19 @@ enum class ECesiumEncodedMetadataType : uint8 {
   Vec3,
   Vec4
 };
+
+/**
+ * @brief Gets the best-fitting encoded type for the given metadata type.
+ */
+ECesiumEncodedMetadataType
+CesiumMetadataTypeToEncodingType(ECesiumMetadataType Type);
+
+/**
+ * @brief Gets the number of components associated with the given encoded type.
+ * @param type The encoded metadata type.
+ */
+size_t
+CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType Type);
 
 /**
  * @brief Indicates how a property value from EXT_structural_metadata should be
@@ -59,21 +81,15 @@ enum class ECesiumEncodedMetadataConversion : uint8 {
  * access in Unreal materials.
  */
 USTRUCT()
-struct FCesiumMetadataEncodingDetails {
+struct CESIUMRUNTIME_API FCesiumMetadataEncodingDetails {
   GENERATED_USTRUCT_BODY()
 
-  FCesiumMetadataEncodingDetails()
-      : Type(ECesiumEncodedMetadataType::None),
-        ComponentType(ECesiumEncodedMetadataComponentType::None),
-        Conversion(ECesiumEncodedMetadataConversion::None) {}
+  FCesiumMetadataEncodingDetails();
 
   FCesiumMetadataEncodingDetails(
       ECesiumEncodedMetadataType InType,
       ECesiumEncodedMetadataComponentType InComponentType,
-      ECesiumEncodedMetadataConversion InConversion)
-      : Type(InType),
-        ComponentType(InComponentType),
-        Conversion(InConversion) {}
+      ECesiumEncodedMetadataConversion InConversion);
 
   /**
    * The GPU-compatible type that this property's values will be encoded as.
@@ -97,18 +113,25 @@ struct FCesiumMetadataEncodingDetails {
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumEncodedMetadataConversion Conversion;
 
-  inline bool operator==(const FCesiumMetadataEncodingDetails& Info) const {
-    return Type == Info.Type && ComponentType == Info.ComponentType &&
-           Conversion == Info.Conversion;
-  }
+  bool operator==(const FCesiumMetadataEncodingDetails& Info) const;
 
-  inline bool operator!=(const FCesiumMetadataEncodingDetails& Info) const {
-    return Type != Info.Type || ComponentType != Info.ComponentType ||
-           Conversion != Info.Conversion;
-  }
+  bool operator!=(const FCesiumMetadataEncodingDetails& Info) const;
 
-  bool HasValidType() const {
-    return Type != ECesiumEncodedMetadataType::None &&
-           ComponentType != ECesiumEncodedMetadataComponentType::None;
-  }
+  bool HasValidType() const;
+
+  /**
+   * @brief Gets the best-fitting encoded types and conversion method for a
+   * given metadata type. This determines the best way (if one is possible) to
+   * transfer values of the given type to the GPU, for access in Unreal
+   * materials.
+   *
+   * An array size can also be supplied if bIsArray is true on the given value
+   * type. If bIsArray is true, but the given array size is zero, this indicates
+   * the arrays of the property vary in length. Variable-length array properties
+   * are unsupported.
+   *
+   * @param PropertyDetails The metadata property details
+   */
+  static FCesiumMetadataEncodingDetails
+  GetBestFitForProperty(const FCesiumMetadataPropertyDetails& PropertyDetails);
 };

@@ -1787,13 +1787,11 @@ static void loadPrimitive(
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
 
-#if ENGINE_VERSION_5_5_OR_HIGHER
   if (isTriangles) {
     // UE 5.5 requires that we do this in order to avoid a crash when ray
     // tracing is enabled.
     RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
   }
-#endif
 
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
@@ -3024,6 +3022,7 @@ static void loadPrimitiveGameThreadPart(
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
+    bool enableDoubleSidedCollisions,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
@@ -3175,12 +3174,6 @@ static void loadPrimitiveGameThreadPart(
                CesiumGltf::Material::AlphaMode::BLEND;
   };
 
-#if PLATFORM_MAC
-  // TODO: figure out why water material crashes mac
-  UMaterialInterface* pUserDesignatedMaterial =
-      is_in_blend_mode(loadResult) ? pGltf->BaseMaterialWithTranslucency
-                                   : pGltf->BaseMaterial;
-#else
   UMaterialInterface* pUserDesignatedMaterial;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
     pUserDesignatedMaterial = pGltf->BaseMaterialWithWater;
@@ -3189,7 +3182,6 @@ static void loadPrimitiveGameThreadPart(
                                   ? pGltf->BaseMaterialWithTranslucency
                                   : pGltf->BaseMaterial;
   }
-#endif
 
   // Move this right now: CreateMaterial may need them!
   // "Safe" even though loadResult is still used later, because the methods used
@@ -3454,6 +3446,7 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
+      pBodySetup->bDoubleSidedGeometry = enableDoubleSidedCollisions;
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
@@ -3508,7 +3501,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision) {
+    bool createNavCollision,
+    bool enableDoubleSidedCollisions) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3561,6 +3555,7 @@ UCesiumGltfComponent::CreateOffGameThread(
             cesiumToUnrealTransform,
             tile,
             createNavCollision,
+            enableDoubleSidedCollisions,
             pTilesetActor,
             node.InstanceTransforms,
             node.pInstanceFeatures);
@@ -3906,5 +3901,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
       MoveTemp(materials),
       MoveTemp(pFaceRemap),
       nullptr,
-      false);
+      // The value passed in for bInCullsBackFaceRaycast will be overridden by
+      // UBodySetup::bDoubleSidedGeometry, so it doesn't matter here.
+      /*bInCullsBackFaceRaycast*/ false);
 }
