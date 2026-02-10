@@ -32,13 +32,18 @@ class UCesiumGaussianSplatSubsystem : public UEngineSubsystem,
   GENERATED_BODY()
 
 public:
-  // static UCesiumGaussianSplatSubsystem* Get(UWorld* InWorld);
   virtual void Initialize(FSubsystemCollectionBase& Collection) override;
   virtual void Deinitialize() override;
 
-  void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
-  void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+  void RegisterComponent(UCesiumGltfGaussianSplatComponent* Component);
+  void UnregisterComponent(UCesiumGltfGaussianSplatComponent* Component);
+
+  /**
+   * Respond to changes in the visibility of any of its component.
+   */
+  void OnComponentVisibilityChanged();
   void RecomputeBounds();
+
   int32 GetNumSplats() const;
 
   TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;

@@ -17,8 +17,9 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
   TObjectPtr<class UCesiumGaussianSplatDataInterface> Owner = nullptr;
   FCriticalSection BufferLock;
 
-  FReadBuffer SplatIndicesBuffer;
-  FReadBuffer SplatMatricesBuffer;
+  FReadBuffer TileVisibilityBuffer;
+  FReadBuffer TileIndicesBuffer;
+  FReadBuffer TileMatricesBuffer;
   FReadBuffer SplatSHDegreesBuffer;
   FReadBuffer PositionsBuffer;
   FReadBuffer CovarianceMatrixBuffer;
@@ -29,6 +30,7 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 
   bool bNeedsUpdate = true;
   bool bMatricesNeedUpdate = true;
+  bool bVisibilityNeedsUpdate = true;
 
   virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
     return 0;
@@ -38,9 +40,9 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
-SHADER_PARAMETER(int, SplatsCount)
-SHADER_PARAMETER_SRV(Buffer<uint>, SplatIndices)
-SHADER_PARAMETER_SRV(Buffer<float4>, SplatMatrices)
+SHADER_PARAMETER_SRV(Buffer<uint>, TileVisibility)
+SHADER_PARAMETER_SRV(Buffer<uint>, TileIndices)
+SHADER_PARAMETER_SRV(Buffer<float4>, TileMatrices)
 SHADER_PARAMETER_SRV(Buffer<float3>, CovarianceMatrices)
 SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
 SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
@@ -87,6 +89,7 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 public:
   void Refresh();
   void RefreshMatrices();
+  void RefreshVisibility();
 
   FScopeLock LockGaussianBuffers();
 };

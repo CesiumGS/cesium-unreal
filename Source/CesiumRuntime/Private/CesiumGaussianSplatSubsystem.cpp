@@ -197,7 +197,7 @@ void UCesiumGaussianSplatSubsystem::Deinitialize() {
   this->LastCreatedWorld = nullptr;
 }
 
-void UCesiumGaussianSplatSubsystem::RegisterSplat(
+void UCesiumGaussianSplatSubsystem::RegisterComponent(
     UCesiumGltfGaussianSplatComponent* Component) {
   check(Component);
 
@@ -215,7 +215,7 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
   this->UpdateNiagaraComponent();
 }
 
-void UCesiumGaussianSplatSubsystem::UnregisterSplat(
+void UCesiumGaussianSplatSubsystem::UnregisterComponent(
     UCesiumGltfGaussianSplatComponent* Component) {
   check(Component);
 
@@ -231,13 +231,27 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
   this->UpdateNiagaraComponent();
 }
 
-void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
-  if (IsValid(this->NiagaraComponent)) {
-    const FBox Bounds = CalculateBounds(this->SplatComponents);
-    this->NiagaraComponent->SetSystemFixedBounds(Bounds);
-    UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
-    GetSplatInterface()->RefreshMatrices();
+void UCesiumGaussianSplatSubsystem::OnComponentVisibilityChanged() {
+  if (!IsValid(this->NiagaraComponent)) {
+    return;
   }
+
+  const FBox Bounds = CalculateBounds(this->SplatComponents);
+  this->NiagaraComponent->SetSystemFixedBounds(Bounds);
+  UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
+  this->GetSplatInterface()->RefreshVisibility();
+}
+
+void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
+  if (!IsValid(this->NiagaraComponent)) {
+    return;
+  }
+
+  const FBox Bounds = CalculateBounds(this->SplatComponents);
+  this->NiagaraComponent->SetSystemFixedBounds(Bounds);
+  UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
+  this->GetSplatInterface()->RefreshMatrices();
+  this->GetSplatInterface()->RefreshVisibility();
 }
 
 void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {

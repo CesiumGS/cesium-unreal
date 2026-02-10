@@ -22,10 +22,6 @@ public:
   UCesiumGltfGaussianSplatComponent();
   virtual ~UCesiumGltfGaussianSplatComponent();
 
-  // The dimensions of the point component. Used to estimate the geometric
-  // error.
-  glm::vec3 Dimensions;
-
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 

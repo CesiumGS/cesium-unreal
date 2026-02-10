@@ -33,6 +33,41 @@ void releaseIfNonEmpty(FReadBuffer& buffer) {
   }
 }
 
+void updateVisibility(
+    FRHICommandListImmediate& RHICmdList,
+    TArray<UCesiumGltfGaussianSplatComponent*>& Components,
+    FReadBuffer& Buffer) {
+  releaseIfNonEmpty(Buffer);
+
+  if (Components.IsEmpty()) {
+    // Will crash if we try to allocate a buffer of size 0
+    return;
+  }
+
+  Buffer.Initialize(
+      RHICmdList,
+      TEXT("FNDIGaussianSplatProxy_VisibilityBuffer"),
+      sizeof(uint32),
+      Components.Num(),
+      EPixelFormat::PF_R32_UINT,
+      BUF_Static);
+
+  uint32* pVisibilityData = static_cast<uint32*>(RHICmdList.LockBuffer(
+      Buffer.Buffer,
+      0,
+      Components.Num() * sizeof(uint32),
+      EResourceLockMode::RLM_WriteOnly));
+
+  for (int32 c = 0; c < Components.Num(); c++) {
+    UCesiumGltfGaussianSplatComponent* pComponent = Components[c];
+    check(pComponent);
+
+    pVisibilityData[c] = pComponent->IsVisible() ? 1u : 0u;
+  }
+
+  RHICmdList.UnlockBuffer(Buffer.Buffer);
+}
+
 void UploadSplatMatrices(
     FRHICommandListImmediate& RHICmdList,
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
@@ -222,6 +257,22 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     return;
   }
 
+  if (this->bVisibilityNeedsUpdate) {
+    this->bVisibilityNeedsUpdate = false;
+
+    ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatMatrices)
+    ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+      if (!IsValid(SplatSystem))
+        return;
+
+      FScopeLock ScopeLock(&this->BufferLock);
+      updateVisibility(
+          RHICmdList,
+          SplatSystem->SplatComponents,
+          this->TileVisibilityBuffer);
+    });
+  }
+
   if (this->bMatricesNeedUpdate) {
     this->bMatricesNeedUpdate = false;
 
@@ -234,7 +285,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
       UploadSplatMatrices(
           RHICmdList,
           SplatSystem->SplatComponents,
-          this->SplatMatricesBuffer,
+          this->TileMatricesBuffer,
           this->CovarianceMatrixBuffer,
           this->PositionsBuffer,
           SplatSystem->GetNumSplats());
@@ -266,18 +317,25 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
     const int32 ExpectedScaleBytes = NumSplats * 4 * sizeof(float);
     if (this->ScalesBuffer.NumBytes != ExpectedScaleBytes) {
+      releaseIfNonEmpty(this->TileIndicesBuffer);
       releaseIfNonEmpty(this->ScalesBuffer);
       releaseIfNonEmpty(this->OrientationsBuffer);
       releaseIfNonEmpty(this->ColorsBuffer);
       releaseIfNonEmpty(this->SHNonZeroCoeffsBuffer);
       releaseIfNonEmpty(this->SplatSHDegreesBuffer);
-      releaseIfNonEmpty(this->SplatIndicesBuffer);
 
       if (SplatSystem->SplatComponents.IsEmpty()) {
         return;
       }
 
       if (ExpectedScaleBytes > 0) {
+        this->TileIndicesBuffer.Initialize(
+            RHICmdList,
+            TEXT("FNDIGaussianSplatProxy_TileIndicesBuffer"),
+            sizeof(uint32),
+            NumSplats,
+            EPixelFormat::PF_R32_UINT,
+            BUF_Static);
         this->ScalesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_Scales"),
@@ -308,13 +366,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               EPixelFormat::PF_A32B32G32R32F,
               BUF_Static);
         }
-        this->SplatIndicesBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
-            sizeof(uint32),
-            NumSplats,
-            EPixelFormat::PF_R32_UINT,
-            BUF_Static);
         this->SplatSHDegreesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
@@ -323,6 +374,11 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
 
+        uint32* pIndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
+            this->TileIndicesBuffer.Buffer,
+            0,
+            NumSplats * sizeof(uint32),
+            EResourceLockMode::RLM_WriteOnly));
         float* ScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->ScalesBuffer.Buffer,
             0,
@@ -345,11 +401,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                                        TotalCoeffsCount * 4 * sizeof(float),
                                        EResourceLockMode::RLM_WriteOnly))
                                  : nullptr;
-        uint32* IndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
-            this->SplatIndicesBuffer.Buffer,
-            0,
-            NumSplats * sizeof(uint32),
-            EResourceLockMode::RLM_WriteOnly));
         uint32* SHDegreesBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatSHDegreesBuffer.Buffer,
             0,
@@ -362,6 +413,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           UCesiumGltfGaussianSplatComponent* Component =
               SplatSystem->SplatComponents[i];
           check(Component);
+
+          for (int32 j = 0; j < Component->NumSplats; j++) {
+            pIndexBuffer[SplatCountWritten + j] = static_cast<uint32>(i);
+          }
 
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(ScalesBuffer + SplatCountWritten * 4),
@@ -384,9 +439,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                 Component->SphericalHarmonics.GetData(),
                 Component->SphericalHarmonics.Num() * sizeof(float));
           }
-          for (int32 j = 0; j < Component->NumSplats; j++) {
-            IndexBuffer[SplatCountWritten + j] = static_cast<uint32>(i);
-          }
 
           SHDegreesBuffer[i * 3] =
               static_cast<uint32>(Component->NumCoefficients);
@@ -398,13 +450,13 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               Component->NumSplats * Component->NumCoefficients;
         }
 
+        RHICmdList.UnlockBuffer(this->TileIndicesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->OrientationsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
         if (TotalCoeffsCount > 0) {
           RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
         }
-        RHICmdList.UnlockBuffer(this->SplatIndicesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
       }
     }
@@ -424,17 +476,17 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
   UNiagaraDataInterface::GetParameterDefinitionHLSL(ParamInfo, OutHLSL);
 
   OutHLSL.Appendf(
-      TEXT("int %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatsCount"));
-  OutHLSL.Appendf(
       TEXT("Buffer<uint> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatIndices"));
+      TEXT("_TileIndices"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatMatrices"));
+      TEXT("_TileMatrices"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<uint> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_TileVisibility"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
@@ -495,21 +547,21 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 
     const TMap<FString, FStringFormatArg> ArgsBounds = {
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("IndicesBuffer"),
+        {TEXT("TileVisibilityBuffer"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileVisibility"))},
+        {TEXT("TileIndicesBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileIndices"))},
         {TEXT("TileMatrixBuffer"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))},
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileMatrices"))},
         {TEXT("SHCoeffs"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
         {TEXT("SHDegrees"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
-        {TEXT("SplatCount"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatsCount"))},
         {TEXT("CovarianceMatrixBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_CovarianceMatrices"))},
@@ -591,12 +643,12 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
 
     DIProxy.UploadToGPU(SplatSystem);
 
-    Params->SplatsCount =
-        IsValid(SplatSystem) ? SplatSystem->GetNumSplats() : 0;
-    Params->SplatIndices =
-        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatIndicesBuffer.SRV);
-    Params->SplatMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        DIProxy.SplatMatricesBuffer.SRV);
+    Params->TileVisibility =
+        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.TileVisibilityBuffer.SRV);
+    Params->TileIndices =
+        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.TileIndicesBuffer.SRV);
+    Params->TileMatrices =
+        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.TileMatricesBuffer.SRV);
     Params->CovarianceMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
         DIProxy.CovarianceMatrixBuffer.SRV);
     Params->Positions =
@@ -637,6 +689,10 @@ void UCesiumGaussianSplatDataInterface::Refresh() {
 
 void UCesiumGaussianSplatDataInterface::RefreshMatrices() {
   this->GetProxyAs<FNDIGaussianSplatProxy>()->bMatricesNeedUpdate = true;
+}
+
+void UCesiumGaussianSplatDataInterface::RefreshVisibility() {
+  this->GetProxyAs<FNDIGaussianSplatProxy>()->bVisibilityNeedsUpdate = true;
 }
 
 FScopeLock UCesiumGaussianSplatDataInterface::LockGaussianBuffers() {

@@ -8,13 +8,12 @@ void {FunctionName}(
   out float2 OutSpriteSize,
   out float OutSpriteRotation)
 {
-  int SplatIndex = {IndicesBuffer}[Index];
   // Obtain the tile-level values.
-  float InVisibility = {TileMatrixBuffer}[SplatIndex * 7 + 4].x;
-  // Obtain just the rotation matrix of the tile.
+  int TileIndex = {TileIndicesBuffer}[Index];
+  uint InVisibility = {TileVisibilityBuffer}[TileIndex];
   float4x4 InGlobalRotationMatrix;
   {
-    float4 InRotation = {TileMatrixBuffer}[SplatIndex * 7 + 6];
+    float4 InRotation = {TileMatrixBuffer}[TileIndex * 7 + 6];
     float x = InRotation.x;
     float y = InRotation.y;
     float z = InRotation.z;
@@ -28,11 +27,11 @@ void {FunctionName}(
   }
 
   // Obtain full transformation matrix of the tile.
-  float4 c0 = {TileMatrixBuffer}[SplatIndex * 7];
-  float4 c1 = {TileMatrixBuffer}[SplatIndex * 7 + 1];
-  float4 c2 = {TileMatrixBuffer}[SplatIndex * 7 + 2];
-  float4 c3 = {TileMatrixBuffer}[SplatIndex * 7 + 3];
-  float4x4 SplatMatrix = float4x4(
+  float4 c0 = {TileMatrixBuffer}[TileIndex * 7];
+  float4 c1 = {TileMatrixBuffer}[TileIndex * 7 + 1];
+  float4 c2 = {TileMatrixBuffer}[TileIndex * 7 + 2];
+  float4 c3 = {TileMatrixBuffer}[TileIndex * 7 + 3];
+  float4x4 Tile = float4x4(
     c0.x, c1.x, c2.x, c3.x,
     c0.y, c1.y, c2.y, c3.y,
     c0.z, c1.z, c2.z, c3.z,
@@ -43,12 +42,9 @@ void {FunctionName}(
   float4 InPosition = float4({PositionsBuffer}[Index].xyz, 1.0);
   OutPosition = InPosition;
   // Scale we can combine directly with the tile-level scale.
-  float3 InScale = {TileMatrixBuffer}[SplatIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
+  float3 InScale = {TileMatrixBuffer}[TileIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
   float4 InOrientation = {OrientationsBuffer}[Index];
   float4 InColor = {ColorsBuffer}[Index];
-
-  // Global values
-  int NumSplats = {SplatCount};
 
   // Set default output values
   OutColor = InColor;
@@ -85,7 +81,7 @@ void {FunctionName}(
   float3x3 cov;
   {
     // Retrieve the pre-computed 3D covariance matrix in world space.
-    float3x3 sigma = float3x3(
+    float3x3 Sigma = float3x3(
         {CovarianceMatrixBuffer}[Index * 3 + 0].xyz,
         {CovarianceMatrixBuffer}[Index * 3 + 1].xyz,
         {CovarianceMatrixBuffer}[Index * 3 + 2].xyz
@@ -110,10 +106,8 @@ void {FunctionName}(
     // covariance matrix into view-space, then transform that view-space covariance matrix into (approximate)
     // clip space using the jacobian, to get our final covariance matrix.
     float3x3 W = (float3x3) transpose(View.TranslatedWorldToView);
-    float3x3 sigmaView = mul(mul(W, sigma), transpose(W));
-  
-    //float3x3 T = mul(mul(J, W), InGlobalRotationMatrix); 
-    cov = mul(mul(J, sigmaView), transpose(J));
+    float3x3 SigmaView = mul(mul(W, Sigma), transpose(W));
+    cov = mul(mul(J, SigmaView), transpose(J));
   }
 
   // Calculate the eigenvectors of the gaussian splat.
@@ -143,11 +137,10 @@ void {FunctionName}(
     return;
   }
 
-  // Right now, we have two perpendicular screen-space eigenvectors. 
-  // We need to transform these into a world-space size and rotation to return to Unreal.
-
-  float4 xClip = ClipPos_H + float4(majorAxis * View.ViewSizeAndInvSize.zw * 2., 0, 0);
-  float4 yClip = ClipPos_H + float4(minorAxis * View.ViewSizeAndInvSize.zw * 2., 0, 0);
+  // Transform the perpendicular screen-space eigenvectors into a
+  // world-space size and rotation for the Niagara sprite.
+  float4 xClip = ClipPos_H + float4(majorAxis * View.ViewSizeAndInvSize.zw * 2.0, 0, 0);
+  float4 yClip = ClipPos_H + float4(minorAxis * View.ViewSizeAndInvSize.zw * 2.0, 0, 0);
 
   float4 xWorld = mul(xClip, View.ClipToTranslatedWorld);
   float4 yWorld = mul(yClip, View.ClipToTranslatedWorld);
@@ -178,8 +171,8 @@ void {FunctionName}(
       -0.4570457994644658f, 1.445305721320277f, -0.5900435899266435f
     };
 
-    int SHCount = {SHDegrees}[SplatIndex * 3];
-    int SHOffset = {SHDegrees}[SplatIndex * 3 + 1] + (Index - {SHDegrees}[SplatIndex * 3 + 2]) * SHCount;
+    int SHCount = {SHDegrees}[TileIndex * 3];
+    int SHOffset = {SHDegrees}[TileIndex * 3 + 1] + (Index - {SHDegrees}[TileIndex * 3 + 2]) * SHCount;
 
     const float x = WorldViewDir.x;
     const float y = WorldViewDir.y;

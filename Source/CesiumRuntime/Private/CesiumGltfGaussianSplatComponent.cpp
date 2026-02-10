@@ -107,8 +107,7 @@ void writeConvertedAccessor(
 } // namespace
 
 // Sets default values for this component's properties
-UCesiumGltfGaussianSplatComponent::UCesiumGltfGaussianSplatComponent()
-    : Dimensions(glm::vec3(0)) {}
+UCesiumGltfGaussianSplatComponent::UCesiumGltfGaussianSplatComponent() {}
 
 UCesiumGltfGaussianSplatComponent::~UCesiumGltfGaussianSplatComponent() {}
 
@@ -146,7 +145,7 @@ void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
   ensure(SplatSubsystem);
 
-  SplatSubsystem->RecomputeBounds();
+  SplatSubsystem->OnComponentVisibilityChanged();
   UE_LOG(
       LogCesium,
       Log,
@@ -408,11 +407,11 @@ glm::dmat4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
   check(GEngine);
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
+  ensure(pSplatSubsystem);
 
-  SplatSubsystem->RegisterSplat(this);
+  pSplatSubsystem->RegisterComponent(this);
 }
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
@@ -422,12 +421,12 @@ void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
     return;
   }
 
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
 
-  if (!IsValid(SplatSubsystem)) {
+  if (!IsValid(pSplatSubsystem)) {
     return;
   }
 
-  SplatSubsystem->UnregisterSplat(this);
+  pSplatSubsystem->UnregisterComponent(this);
 }
