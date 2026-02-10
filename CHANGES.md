@@ -1,10 +1,11 @@
 # Change Log {#changes}
 
-### vxxx
+### ???
 
-#### Fixes :wrench:
+##### Fixes :wrench:
 
-- Use the tinyxml2 library from Unreal's SDK if it is available; currently Unreal supplies the library on Linux and Windows. This eliminate a source of conflicts with other plugins that also use tinyxml2.
+- Added a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
+- Build now uses the tinyxml2 library from Unreal's SDK on Linux and Windows if it is available. This eliminate a source of conflicts with other plugins that also use tinyxml2.
 
 ### v2.23.0 - 2026-02-02
 
