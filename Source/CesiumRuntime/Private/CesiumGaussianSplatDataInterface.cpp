@@ -79,7 +79,7 @@ void updateTileTransforms(
     tileRotation.Normalize();
 
     // Write in row-order for easy access in HLSL.
-    pTransformData[offset] = FVector4f(
+    pTransformData[offset + 0] = FVector4f(
         tileMatrix[0][0],
         tileMatrix[1][0],
         tileMatrix[2][0],
@@ -112,6 +112,7 @@ void updateTileTransforms(
         static_cast<float>(tileRotation.Y),
         static_cast<float>(tileRotation.Z),
         static_cast<float>(tileRotation.W));
+
     offset += vectorsPerComponent;
   }
 
@@ -158,7 +159,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
       return;
 
     FScopeLock ScopeLock(&this->BufferLock);
-
     const int32 NumSplats = SplatSystem->GetNumSplats();
 
     int32 TotalCoeffsCount = 0;
@@ -170,7 +170,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     }
 
     const int32 expectedPositionBytes = NumSplats * 4 * sizeof(float);
-    if (this->ColorsBuffer.NumBytes != expectedPositionBytes) {
+    if (this->PositionsBuffer.NumBytes != expectedPositionBytes) {
       releaseIfNonEmpty(this->TileIndicesBuffer);
       releaseIfNonEmpty(this->PositionsBuffer);
       releaseIfNonEmpty(this->ScalesBuffer);
@@ -322,6 +322,9 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         }
 
         RHICmdList.UnlockBuffer(this->TileIndicesBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->PositionsBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->RotationsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
         if (TotalCoeffsCount > 0) {
           RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);

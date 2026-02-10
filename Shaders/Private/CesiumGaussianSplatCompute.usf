@@ -10,15 +10,8 @@ void {FunctionName}(
 {
   // Obtain the tile-level values.
   int TileIndex = {TileIndicesBuffer}[Index];
-  float4x4 TileMatrix = float4x4(
-    {TileTransformsBuffer}[TileIndex * 6 + 0],
-    {TileTransformsBuffer}[TileIndex * 6 + 1],
-    {TileTransformsBuffer}[TileIndex * 6 + 2],
-    {TileTransformsBuffer}[TileIndex * 6 + 3]
-  );
-
   float3 TileScale = {TileTransformsBuffer}[TileIndex * 6 + 4].xyz;
-  uint InVisibility = (uint){TileTransformsBuffer}[TileIndex * 6 + 4].w;
+  float InVisibility = {TileTransformsBuffer}[TileIndex * 6 + 4].w;
   float4x4 InTileRotationMatrix;
   {
     float4 InRotation = {TileTransformsBuffer}[TileIndex * 6 + 5];
@@ -33,9 +26,15 @@ void {FunctionName}(
       0.0,                     0.0,                     0.0,                     0.0
     );
   }
+  float4x4 TileMatrix = float4x4(
+    {TileTransformsBuffer}[TileIndex * 6 + 0],
+    {TileTransformsBuffer}[TileIndex * 6 + 1],
+    {TileTransformsBuffer}[TileIndex * 6 + 2],
+    {TileTransformsBuffer}[TileIndex * 6 + 3]
+  );
 
   // Obtain all the splat values from the various buffers.
-  float4 InPosition = float4({PositionsBuffer}[Index].xyz, 1.0);
+  float4 InPosition = mul(TileMatrix, float4({PositionsBuffer}[Index].xyz, 1.0));
   float4 InColor = {ColorsBuffer}[Index];
   // Scale we can combine directly with the tile-level scale.
   float3 InScale = TileScale * {ScalesBuffer}[Index].xyz;
