@@ -1,15 +1,24 @@
 # Change Log {#changes}
 
-### ? - ?
+### ???
+
+##### Fixes :wrench:
+
+- Add a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
+
+### v2.23.0 - 2026-02-02
 
 ##### Additions :tada:
 
+- `ACesiumCartographicPolygon`s created via the Cesium editor panel are sized and translated to be visible in the active editor viewport.
 - Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
 - Re-enabled `ACesium3DTileset::EnableWaterMask` for macOS devices.
 
 ##### Fixes :wrench:
 
 - Fixed an access violation that could occur if `ACesium3DTileset::RefreshTileset` was invoked in a callback for asynchronous actions.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.56.0 to v0.57.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.22.1 - 2026-01-05
 

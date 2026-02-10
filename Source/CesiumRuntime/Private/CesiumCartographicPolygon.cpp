@@ -2,13 +2,90 @@
 
 #include "CesiumCartographicPolygon.h"
 #include "CesiumActors.h"
-#include "CesiumUtility/Math.h"
+#include "CesiumGeoreference.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
-#include <CesiumUtility/Assert.h>
+#if WITH_EDITOR
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
+#include "EditorViewportClient.h"
+#include "Subsystems/UnrealEditorSubsystem.h"
+#endif
+#include "CesiumRuntime.h"
 #include <glm/glm.hpp>
 
 using namespace CesiumGeospatial;
+
+#if WITH_EDITOR
+bool ACesiumCartographicPolygon::ResetSplineAndCenterInEditorViewport() {
+  if (!GEditor) {
+    UE_LOG(LogCesium, Error, TEXT("Could not retrieve GEditor instance."));
+    return false;
+  }
+
+  UUnrealEditorSubsystem* pEditorSubsystem =
+      GEditor->GetEditorSubsystem<UUnrealEditorSubsystem>();
+  if (!pEditorSubsystem) {
+    UE_LOG(LogCesium, Error, TEXT("Could not retrieve Editor subsystem."));
+    return false;
+  }
+
+  FVector viewPosition{};
+  FRotator viewRotation{};
+
+  if (!pEditorSubsystem->GetLevelViewportCameraInfo(
+          viewPosition,
+          viewRotation)) {
+    UE_LOG(LogCesium, Error, TEXT("Could not retrieve viewport camera info."));
+    return false;
+  }
+
+  // raycast the active viewport view ray to find its intersection with the
+  // terrain.
+  const FVector viewDirection = viewRotation.Vector();
+  constexpr float traceDistance = 10000000.0f;
+  FVector rayEnd = viewPosition + (viewDirection * traceDistance);
+
+  FCollisionQueryParams traceParams{};
+  traceParams.bTraceComplex = true;
+  traceParams.bReturnPhysicalMaterial = true;
+
+  FHitResult hitResult{};
+
+  bool hit = GEditor->GetEditorWorldContext().World()->LineTraceSingleByChannel(
+      hitResult,
+      viewPosition,
+      rayEnd,
+      ECC_WorldStatic,
+      traceParams);
+
+  FVector spawnPosition;
+  float extent;
+  if (hit) {
+    extent = hitResult.Distance / 2.0f;
+    spawnPosition = hitResult.Location;
+  } else {
+    // no intersection detected, so create the polygon just in front of the
+    // camera.
+    extent = 1000.0f;
+    spawnPosition = viewPosition + viewDirection * extent * 2.0f;
+  }
+
+  const TArray<FVector> points = {
+      {-extent, -extent, 0},
+      {extent, -extent, 0},
+      {extent, extent, 0},
+      {-extent, extent, 0},
+  };
+
+  this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
+
+  this->MakeLinear();
+  this->SetActorLocation(spawnPosition);
+
+  return true;
+}
+#endif
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   PrimaryActorTick.bCanEverTick = false;
@@ -18,14 +95,14 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   this->Polygon->SetClosedLoop(true);
   this->Polygon->SetMobility(EComponentMobility::Movable);
 
-  this->Polygon->SetSplinePoints(
-      TArray<FVector>{
-          FVector(-10000.0f, -10000.0f, 0.0f),
-          FVector(10000.0f, -10000.0f, 0.0f),
-          FVector(10000.0f, 10000.0f, 0.0f),
-          FVector(-10000.0f, 10000.0f, 0.0f)},
-      ESplineCoordinateSpace::Local);
+  const TArray<FVector> points = {
+      {-10000.0f, -10000.0f, 0},
+      {10000.0f, -10000.0f, 0},
+      {10000.0f, 10000.0f, 0},
+      {-10000.0f, 10000.0f, 0},
+  };
 
+  this->Polygon->SetSplinePoints(points, ESplineCoordinateSpace::Local);
   this->MakeLinear();
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
