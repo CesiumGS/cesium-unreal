@@ -19,16 +19,16 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 
   FReadBuffer TileVisibilityBuffer;
   FReadBuffer TileIndicesBuffer;
-  FReadBuffer TileRotationsBuffer;
-  FReadBuffer SplatSHDegreesBuffer;
+  FReadBuffer TileTransformsBuffer;
   FReadBuffer PositionsBuffer;
-  FReadBuffer CovarianceMatrixBuffer;
+  FReadBuffer ScalesBuffer;
+  FReadBuffer RotationsBuffer;
   FReadBuffer ColorsBuffer;
+  FReadBuffer SplatSHDegreesBuffer;
   FReadBuffer SHNonZeroCoeffsBuffer;
 
   bool bNeedsUpdate = true;
   bool bMatricesNeedUpdate = true;
-  bool bVisibilityNeedsUpdate = true;
 
   virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
     return 0;
@@ -38,14 +38,14 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
-SHADER_PARAMETER_SRV(Buffer<uint>, TileVisibility)
+SHADER_PARAMETER_SRV(Buffer<float4>, TileTransforms)
 SHADER_PARAMETER_SRV(Buffer<uint>, TileIndices)
-SHADER_PARAMETER_SRV(Buffer<float4>, TileRotations)
 SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
-SHADER_PARAMETER_SRV(Buffer<float3>, CovarianceMatrices)
+SHADER_PARAMETER_SRV(Buffer<float4>, Scales)
+SHADER_PARAMETER_SRV(Buffer<float4>, Rotations)
 SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
 SHADER_PARAMETER_SRV(Buffer<uint>, SplatSHDegrees)
-SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)
+SHADER_PARAMETER_SRV(Buffer<float4>, SHNonZeroCoeffs)
 END_SHADER_PARAMETER_STRUCT()
 
 UCLASS()
@@ -85,7 +85,6 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 public:
   void Refresh();
   void RefreshMatrices();
-  void RefreshVisibility();
 
   FScopeLock LockGaussianBuffers();
 };

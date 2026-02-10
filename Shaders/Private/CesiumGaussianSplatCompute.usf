@@ -10,10 +10,18 @@ void {FunctionName}(
 {
   // Obtain the tile-level values.
   int TileIndex = {TileIndicesBuffer}[Index];
-  uint InVisibility = {TileVisibilityBuffer}[TileIndex];
+  float4x4 TileMatrix = float4x4(
+    {TileTransformsBuffer}[TileIndex * 6 + 0],
+    {TileTransformsBuffer}[TileIndex * 6 + 1],
+    {TileTransformsBuffer}[TileIndex * 6 + 2],
+    {TileTransformsBuffer}[TileIndex * 6 + 3]
+  );
+
+  float3 TileScale = {TileTransformsBuffer}[TileIndex * 6 + 4].xyz;
+  uint InVisibility = (uint){TileTransformsBuffer}[TileIndex * 6 + 4].w;
   float4x4 InTileRotationMatrix;
   {
-    float4 InRotation = {TileRotationBuffer}[TileIndex];
+    float4 InRotation = {TileTransformsBuffer}[TileIndex * 6 + 5];
     float x = InRotation.x;
     float y = InRotation.y;
     float z = InRotation.z;
@@ -29,6 +37,9 @@ void {FunctionName}(
   // Obtain all the splat values from the various buffers.
   float4 InPosition = float4({PositionsBuffer}[Index].xyz, 1.0);
   float4 InColor = {ColorsBuffer}[Index];
+  // Scale we can combine directly with the tile-level scale.
+  float3 InScale = TileScale * {ScalesBuffer}[Index].xyz;
+  float4 InRotation = {RotationsBuffer}[Index];
 
   // Set default output values
   OutPosition = InPosition;
@@ -60,37 +71,53 @@ void {FunctionName}(
   // Normalize the clip coordinates.
   ClipPos_H = ClipPos_H / ClipPos_H.w;
 
-  float3x3 cov;
+  // Calculate the covariance matrix.
+  // This is the three-dimensional equivalent to the variance of a normal distribution.
+  float3x3 Vrk;
   {
-    // Retrieve the pre-computed 3D covariance matrix in world space.
-    float3x3 Sigma = float3x3(
-        {CovarianceMatrixBuffer}[Index * 3 + 0].xyz,
-        {CovarianceMatrixBuffer}[Index * 3 + 1].xyz,
-        {CovarianceMatrixBuffer}[Index * 3 + 2].xyz
-      );
-
-    // Now we need to transform our world-space covariance matrix into a clip-space covariance matrix.
-    // However, we can't use the actual projection matrix as this would distort the gaussian.
-    // Instead, we compute an affine approximation of the projection matrix called the Jacobian.
-    // See the section of the below article starting with "The second step involves..." for more information:
-    // https://shi-yan.github.io/how_to_render_a_single_gaussian_splat/
-    float2 focal = float2(View.ViewToClip[0][0], View.ViewToClip[1][1]) * 0.5 * View.ViewSizeAndInvSize.xy;
-    float4 t = ViewPos_H;
-    float2 J1 = focal / t.z;
-    float2 J2 = -focal * float2(t.x, t.y) / (t.z * t.z);
-    float3x3 J = float3x3(
-      J1.x, 0.0, J2.x,
-      0.0, J1.y, J2.y,
-      0.0, 0.0, 0.0
+    float3x3 S = float3x3(
+      InScale.x, 0.0f,      0.0f,
+      0.0f,      InScale.y, 0.0f,
+      0.0f,      0.0f,      InScale.z
     );
 
-    // Now we create a compound matrix that will apply our global rotation, then transform our world-space 
-    // covariance matrix into view-space, then transform that view-space covariance matrix into (approximate)
-    // clip space using the jacobian, to get our final covariance matrix.
-    float3x3 W = (float3x3) transpose(View.TranslatedWorldToView);
-    float3x3 SigmaView = mul(mul(W, Sigma), transpose(W));
-    cov = mul(mul(J, SigmaView), transpose(J));
+    float3x3 R;
+    {
+      float x = InRotation.x;
+      float y = InRotation.y;
+      float z = InRotation.z;
+      float w = InRotation.w;
+      R = float3x3(
+        1 - 2 * (y * y + z * z), 2 * (x * y - w * z),     2 * (x * z + w * y),
+        2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),
+        2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y)
+      );
+    }
+
+      float3x3 M = mul(S, R); 
+      // Compute the 3D covariance matrix in world space.
+      Vrk = mul(transpose(M), M);
   }
+
+  // Now transform the world-space covariance matrix to clip-space.
+  // We can't use the actual projection matrix as this would distort the gaussian.
+  // Instead, we compute an affine approximation of the projection matrix called the Jacobian.
+  // See the section of the below article starting with "The second step involves..." for more information:
+  // https://shi-yan.github.io/how_to_render_a_single_gaussian_splat/
+  float2 focal = float2(View.ViewToClip[0][0], View.ViewToClip[1][1]) * 0.5 * View.ViewSizeAndInvSize.xy;
+  float4 t = ViewPos_H;
+  float2 J1 = focal / t.z;
+  float2 J2 = -focal * float2(t.x, t.y) / (t.z * t.z);
+  float3x3 J = float3x3(
+    J1.x, 0.0, J2.x,
+    0.0, J1.y, J2.y,
+    0.0, 0.0, 0.0
+  );
+
+  // Transform our covariance into view space, ensuring the rotation is correct
+  float3x3 W = (float3x3) transpose(View.TranslatedWorldToView);
+  float3x3 VrkView = mul(mul(W, Vrk), transpose(W));
+  float3x3 cov = mul(mul(J, VrkView), transpose(J));
 
   // Calculate the eigenvectors of the gaussian splat.
   // These vectors define the bounds of the quad that will contain our gaussian.

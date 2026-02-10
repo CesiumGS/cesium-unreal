@@ -37,13 +37,7 @@ public:
 
   void RegisterComponent(UCesiumGltfGaussianSplatComponent* Component);
   void UnregisterComponent(UCesiumGltfGaussianSplatComponent* Component);
-
-  /**
-   * Respond to changes in the visibility of any of its component.
-   */
-  void OnComponentVisibilityChanged();
   void RecomputeBounds();
-
   int32 GetNumSplats() const;
 
   TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;

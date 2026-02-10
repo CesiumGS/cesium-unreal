@@ -231,17 +231,6 @@ void UCesiumGaussianSplatSubsystem::UnregisterComponent(
   this->UpdateNiagaraComponent();
 }
 
-void UCesiumGaussianSplatSubsystem::OnComponentVisibilityChanged() {
-  if (!IsValid(this->NiagaraComponent)) {
-    return;
-  }
-
-  const FBox Bounds = CalculateBounds(this->SplatComponents);
-  this->NiagaraComponent->SetSystemFixedBounds(Bounds);
-  UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
-  this->GetSplatInterface()->RefreshVisibility();
-}
-
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
   if (!IsValid(this->NiagaraComponent)) {
     return;
@@ -251,7 +240,6 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
   this->NiagaraComponent->SetSystemFixedBounds(Bounds);
   UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
   this->GetSplatInterface()->RefreshMatrices();
-  this->GetSplatInterface()->RefreshVisibility();
 }
 
 void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {

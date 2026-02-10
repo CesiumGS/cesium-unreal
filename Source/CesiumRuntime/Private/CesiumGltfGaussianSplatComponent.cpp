@@ -145,7 +145,7 @@ void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
   ensure(SplatSubsystem);
 
-  SplatSubsystem->OnComponentVisibilityChanged();
+  SplatSubsystem->RecomputeBounds();
   UE_LOG(
       LogCesium,
       Log,
