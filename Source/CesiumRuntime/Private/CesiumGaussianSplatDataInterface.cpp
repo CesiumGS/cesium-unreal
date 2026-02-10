@@ -28,6 +28,7 @@ const FString ComputeSplatFunctionName = TEXT("ComputeSplat");
 
 namespace {
 void UploadSplatMatrices(
+    UWorld* InWorld,
     FRHICommandListImmediate& RHICmdList,
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
     FReadBuffer& Buffer) {
@@ -35,7 +36,14 @@ void UploadSplatMatrices(
     Buffer.Release();
   }
 
-  if (Components.IsEmpty()) {
+  int32 NumComponents = 0;
+  for (int32 i = 0; i < Components.Num(); i++) {
+    if (IsValid(Components[i]) && Components[i]->GetWorld() == InWorld) {
+      NumComponents++;
+    }
+  }
+
+  if (NumComponents == 0) {
     // Will crash if we try to allocate a buffer of size 0
     return;
   }
@@ -46,19 +54,24 @@ void UploadSplatMatrices(
       RHICmdList,
       TEXT("FNDIGaussianSplatProxy_SplatMatricesBuffer"),
       sizeof(FVector4f),
-      Components.Num() * Stride,
+      NumComponents * Stride,
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
   float* BufferData = static_cast<float*>(RHICmdList.LockBuffer(
       Buffer.Buffer,
       0,
-      Components.Num() * sizeof(FVector4f) * Stride,
+      NumComponents * sizeof(FVector4f) * Stride,
       EResourceLockMode::RLM_WriteOnly));
+  int32 WrittenComponents = 0;
   for (int32 i = 0; i < Components.Num(); i++) {
     check(Components[i]);
+    if (Components[i]->GetWorld() != InWorld) {
+      continue;
+    }
     glm::mat4x4 mat = Components[i]->GetMatrix();
-    const int32 Offset = i * (sizeof(FVector4f) / sizeof(float)) * Stride;
+    const int32 Offset =
+        WrittenComponents * (sizeof(FVector4f) / sizeof(float)) * Stride;
     BufferData[Offset] = (float)mat[0].x;
     BufferData[Offset + 1] = (float)mat[0].y;
     BufferData[Offset + 2] = (float)mat[0].z;
@@ -93,6 +106,7 @@ void UploadSplatMatrices(
     BufferData[Offset + 25] = (float)Rotation.Y;
     BufferData[Offset + 26] = (float)Rotation.Z;
     BufferData[Offset + 27] = (float)Rotation.W;
+    WrittenComponents++;
   }
 
   RHICmdList.UnlockBuffer(Buffer.Buffer);
@@ -109,13 +123,16 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     return;
   }
 
+  UWorld* World = this->Owner->GetWorld();
+
   if (this->bMatricesNeedUpdate) {
     this->bMatricesNeedUpdate = false;
 
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatMatrices)
-    ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+    ([this, SplatSystem, World](FRHICommandListImmediate& RHICmdList) {
       FScopeLock ScopeLock(&this->BufferLock);
       UploadSplatMatrices(
+          World,
           RHICmdList,
           SplatSystem->SplatComponents,
           this->SplatMatricesBuffer);
@@ -129,16 +146,22 @@ void FNDIGaussianSplatProxy::UploadToGPU(
   this->bNeedsUpdate = false;
 
   ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
-  ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+  ([this, SplatSystem, World](FRHICommandListImmediate& RHICmdList) {
     FScopeLock ScopeLock(&this->BufferLock);
-    const int32 NumSplats = SplatSystem->GetNumSplats();
 
     int32 TotalCoeffsCount = 0;
+    int32 TotalSplatComponentsCount = 0;
+    int32 NumSplats = 0;
     for (const UCesiumGltfGaussianSplatComponent* SplatComponent :
          SplatSystem->SplatComponents) {
       check(SplatComponent);
+      if (SplatComponent->GetWorld() != World) {
+        continue;
+      }
       TotalCoeffsCount +=
           SplatComponent->NumCoefficients * SplatComponent->NumSplats;
+      NumSplats += SplatComponent->NumSplats;
+      TotalSplatComponentsCount++;
     }
 
     const int32 ExpectedPosBytes = NumSplats * 4 * sizeof(float);
@@ -153,7 +176,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         this->SplatIndicesBuffer.Release();
       }
 
-      if (SplatSystem->SplatComponents.IsEmpty()) {
+      if (TotalSplatComponentsCount == 0) {
         return;
       }
 
@@ -206,7 +229,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
             sizeof(uint32),
-            SplatSystem->SplatComponents.Num() * 3,
+            TotalSplatComponentsCount * 3,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
       }
@@ -249,15 +272,19 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         uint32* SHDegreesBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatSHDegreesBuffer.Buffer,
             0,
-            SplatSystem->SplatComponents.Num() * sizeof(uint32) * 3,
+            TotalSplatComponentsCount * sizeof(uint32) * 3,
             EResourceLockMode::RLM_WriteOnly));
 
         int32 CoeffCountWritten = 0;
         int32 SplatCountWritten = 0;
+        int32 CurrentIdx = 0;
         for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
           UCesiumGltfGaussianSplatComponent* Component =
               SplatSystem->SplatComponents[i];
           check(Component);
+          if (Component->GetWorld() != World) {
+            continue;
+          }
 
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(PositionsBuffer + SplatCountWritten * 4),
@@ -284,17 +311,21 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                 Component->SphericalHarmonics.Num() * sizeof(float));
           }
           for (int32 j = 0; j < Component->NumSplats; j++) {
-            IndexBuffer[SplatCountWritten + j] = static_cast<uint32>(i);
+            IndexBuffer[SplatCountWritten + j] =
+                static_cast<uint32>(CurrentIdx);
           }
 
-          SHDegreesBuffer[i * 3] =
+          SHDegreesBuffer[CurrentIdx * 3] =
               static_cast<uint32>(Component->NumCoefficients);
-          SHDegreesBuffer[i * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
-          SHDegreesBuffer[i * 3 + 2] = static_cast<uint32>(SplatCountWritten);
+          SHDegreesBuffer[CurrentIdx * 3 + 1] =
+              static_cast<uint32>(CoeffCountWritten);
+          SHDegreesBuffer[CurrentIdx * 3 + 2] =
+              static_cast<uint32>(SplatCountWritten);
 
           SplatCountWritten += Component->NumSplats;
           CoeffCountWritten +=
               Component->NumSplats * Component->NumCoefficients;
+          CurrentIdx++;
         }
 
         RHICmdList.UnlockBuffer(this->PositionsBuffer.Buffer);
