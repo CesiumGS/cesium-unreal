@@ -3046,7 +3046,6 @@ static void loadPrimitiveGameThreadPart(
   if (meshPrimitive.hasExtension<CesiumGltf::ExtensionKhrGaussianSplatting>()) {
     UCesiumGltfGaussianSplatComponent* pGaussianSplat =
         NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
-    pGaussianSplat->Dimensions = loadResult.dimensions;
     // UCesiumGltfGaussianSplatComponent works differently to other primitives -
     // it just acts as a source of data for UCesiumGaussianSplatSystem to
     // accumulate and render. We do not need to create a mesh from it.
