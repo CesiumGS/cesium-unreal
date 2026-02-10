@@ -68,14 +68,14 @@ void updateVisibility(
   RHICmdList.UnlockBuffer(Buffer.Buffer);
 }
 
-void UploadSplatMatrices(
+void updateWorldSpaceParameters(
     FRHICommandListImmediate& RHICmdList,
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
-    FReadBuffer& TileMatrixBuffer,
+    FReadBuffer& TileRotationBuffer,
     FReadBuffer& CovarianceMatrixBuffer,
     FReadBuffer& PositionsBuffer,
     int32 NumSplats) {
-  releaseIfNonEmpty(TileMatrixBuffer);
+  releaseIfNonEmpty(TileRotationBuffer);
   releaseIfNonEmpty(CovarianceMatrixBuffer);
   releaseIfNonEmpty(PositionsBuffer);
 
@@ -84,14 +84,13 @@ void UploadSplatMatrices(
     return;
   }
 
-  const int32 TileMatrixStride = 7 * sizeof(FVector4f) / sizeof(float);
   const int32 CovarianceMatrixStride = 3 * sizeof(FVector4f) / sizeof(float);
 
-  TileMatrixBuffer.Initialize(
+  TileRotationBuffer.Initialize(
       RHICmdList,
       TEXT("FNDIGaussianSplatProxy_SplatMatricesBuffer"),
       sizeof(FVector4f),
-      Components.Num() * TileMatrixStride,
+      Components.Num(),
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
@@ -111,11 +110,12 @@ void UploadSplatMatrices(
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
-  float* pTileMatrixData = static_cast<float*>(RHICmdList.LockBuffer(
-      TileMatrixBuffer.Buffer,
-      0,
-      Components.Num() * sizeof(FVector4f) * TileMatrixStride,
-      EResourceLockMode::RLM_WriteOnly));
+  FVector4f* pTileRotationData =
+      reinterpret_cast<FVector4f*>(RHICmdList.LockBuffer(
+          TileRotationBuffer.Buffer,
+          0,
+          Components.Num() * sizeof(FVector4f),
+          EResourceLockMode::RLM_WriteOnly));
 
   float* pCovarianceData = static_cast<float*>(RHICmdList.LockBuffer(
       CovarianceMatrixBuffer.Buffer,
@@ -129,7 +129,6 @@ void UploadSplatMatrices(
       NumSplats * sizeof(FVector4f),
       EResourceLockMode::RLM_WriteOnly));
 
-  int32 tileMatrixOffset = 0;
   int32 covarianceOffset = 0;
   int32 positionOffset = 0;
 
@@ -138,52 +137,22 @@ void UploadSplatMatrices(
     check(pComponent);
 
     const FTransform& ComponentToWorld = pComponent->GetComponentToWorld();
-    FVector tileScale = ComponentToWorld.GetScale3D();
     FQuat tileRotation = ComponentToWorld.GetRotation();
+    tileRotation.Normalize();
+
+    pTileRotationData[c] = FVector4f(
+        static_cast<float>(tileRotation.X),
+        static_cast<float>(tileRotation.Y),
+        static_cast<float>(tileRotation.Z),
+        static_cast<float>(tileRotation.W));
 
     glm::dmat4 tileMatrix = pComponent->GetMatrix();
-    pTileMatrixData[tileMatrixOffset] = (float)tileMatrix[0].x;
-    pTileMatrixData[tileMatrixOffset + 1] = (float)tileMatrix[0].y;
-    pTileMatrixData[tileMatrixOffset + 2] = (float)tileMatrix[0].z;
-    pTileMatrixData[tileMatrixOffset + 3] = (float)tileMatrix[0].w;
-    pTileMatrixData[tileMatrixOffset + 4] = (float)tileMatrix[1].x;
-    pTileMatrixData[tileMatrixOffset + 5] = (float)tileMatrix[1].y;
-    pTileMatrixData[tileMatrixOffset + 6] = (float)tileMatrix[1].z;
-    pTileMatrixData[tileMatrixOffset + 7] = (float)tileMatrix[1].w;
-    pTileMatrixData[tileMatrixOffset + 8] = (float)tileMatrix[2].x;
-    pTileMatrixData[tileMatrixOffset + 9] = (float)tileMatrix[2].y;
-    pTileMatrixData[tileMatrixOffset + 10] = (float)tileMatrix[2].z;
-    pTileMatrixData[tileMatrixOffset + 11] = (float)tileMatrix[2].w;
-    pTileMatrixData[tileMatrixOffset + 12] = (float)tileMatrix[3].x;
-    pTileMatrixData[tileMatrixOffset + 13] = (float)tileMatrix[3].y;
-    pTileMatrixData[tileMatrixOffset + 14] = (float)tileMatrix[3].z;
-    pTileMatrixData[tileMatrixOffset + 15] = (float)tileMatrix[3].w;
-
-    // Previously these four held location information, but we don't use it
-    // (we just use the matrix for that). So, instead, the first component
-    // holds visibility and the other three are currently unused.
-    pTileMatrixData[tileMatrixOffset + 16] =
-        pComponent->IsVisible() ? 1.0f : 0.0f;
-    pTileMatrixData[tileMatrixOffset + 17] = 0.0f;
-    pTileMatrixData[tileMatrixOffset + 18] = 0.0f;
-    pTileMatrixData[tileMatrixOffset + 19] = 0.0f;
-
-    pTileMatrixData[tileMatrixOffset + 20] = (float)tileScale.X;
-    pTileMatrixData[tileMatrixOffset + 21] = (float)tileScale.Y;
-    pTileMatrixData[tileMatrixOffset + 22] = (float)tileScale.Z;
-    pTileMatrixData[tileMatrixOffset + 23] = (float)1.0;
-
-    pTileMatrixData[tileMatrixOffset + 24] = (float)tileRotation.X;
-    pTileMatrixData[tileMatrixOffset + 25] = (float)tileRotation.Y;
-    pTileMatrixData[tileMatrixOffset + 26] = (float)tileRotation.Z;
-    pTileMatrixData[tileMatrixOffset + 27] = (float)tileRotation.W;
-
-    tileMatrixOffset += TileMatrixStride;
+    FVector tileScale = ComponentToWorld.GetScale3D();
 
     // Compute the world-space covariance of each splat from its scale and
     // rotation. Doing this on the double-precision on the CPU will mitigate
     // precision issues in the shader.
-    const int32 splatCount = pComponent->Orientations.Num() / 4;
+    const int32 splatCount = pComponent->Rotations.Num() / 4;
     for (int32 i = 0; i < splatCount; i++) {
       glm::dvec3 scale = VecMath::createVector3D(tileScale) *
                          glm::dvec3(
@@ -191,12 +160,11 @@ void UploadSplatMatrices(
                              pComponent->Scales[4 * i + 1],
                              pComponent->Scales[4 * i + 2]);
 
-      // TODO: why not tile rotation here?
       glm::dquat rotation(
-          double(pComponent->Orientations[4 * i + 3]),
-          double(pComponent->Orientations[4 * i + 0]),
-          double(pComponent->Orientations[4 * i + 1]),
-          double(pComponent->Orientations[4 * i + 2]));
+          double(pComponent->Rotations[4 * i + 3]),
+          double(pComponent->Rotations[4 * i + 0]),
+          double(pComponent->Rotations[4 * i + 1]),
+          double(pComponent->Rotations[4 * i + 2]));
 
       glm::dmat3 S =
           glm::dmat3(glm::scale(glm::identity<glm::dmat4x4>(), scale));
@@ -240,7 +208,7 @@ void UploadSplatMatrices(
     }
   }
 
-  RHICmdList.UnlockBuffer(TileMatrixBuffer.Buffer);
+  RHICmdList.UnlockBuffer(TileRotationBuffer.Buffer);
   RHICmdList.UnlockBuffer(CovarianceMatrixBuffer.Buffer);
   RHICmdList.UnlockBuffer(PositionsBuffer.Buffer);
 }
@@ -282,10 +250,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         return;
 
       FScopeLock ScopeLock(&this->BufferLock);
-      UploadSplatMatrices(
+      updateWorldSpaceParameters(
           RHICmdList,
           SplatSystem->SplatComponents,
-          this->TileMatricesBuffer,
+          this->TileRotationsBuffer,
           this->CovarianceMatrixBuffer,
           this->PositionsBuffer,
           SplatSystem->GetNumSplats());
@@ -315,11 +283,9 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           SplatComponent->NumCoefficients * SplatComponent->NumSplats;
     }
 
-    const int32 ExpectedScaleBytes = NumSplats * 4 * sizeof(float);
-    if (this->ScalesBuffer.NumBytes != ExpectedScaleBytes) {
+    const int32 ExpectedColorBytes = NumSplats * 4 * sizeof(float);
+    if (this->ColorsBuffer.NumBytes != ExpectedColorBytes) {
       releaseIfNonEmpty(this->TileIndicesBuffer);
-      releaseIfNonEmpty(this->ScalesBuffer);
-      releaseIfNonEmpty(this->OrientationsBuffer);
       releaseIfNonEmpty(this->ColorsBuffer);
       releaseIfNonEmpty(this->SHNonZeroCoeffsBuffer);
       releaseIfNonEmpty(this->SplatSHDegreesBuffer);
@@ -328,27 +294,13 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         return;
       }
 
-      if (ExpectedScaleBytes > 0) {
+      if (ExpectedColorBytes > 0) {
         this->TileIndicesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_TileIndicesBuffer"),
             sizeof(uint32),
             NumSplats,
             EPixelFormat::PF_R32_UINT,
-            BUF_Static);
-        this->ScalesBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Scales"),
-            sizeof(FVector4f),
-            NumSplats,
-            EPixelFormat::PF_A32B32G32R32F,
-            BUF_Static);
-        this->OrientationsBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_Orientations"),
-            sizeof(FVector4f),
-            NumSplats,
-            EPixelFormat::PF_A32B32G32R32F,
             BUF_Static);
         this->ColorsBuffer.Initialize(
             RHICmdList,
@@ -378,16 +330,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             this->TileIndicesBuffer.Buffer,
             0,
             NumSplats * sizeof(uint32),
-            EResourceLockMode::RLM_WriteOnly));
-        float* ScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-            this->ScalesBuffer.Buffer,
-            0,
-            ExpectedScaleBytes,
-            EResourceLockMode::RLM_WriteOnly));
-        float* OrientationsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-            this->OrientationsBuffer.Buffer,
-            0,
-            NumSplats * 4 * sizeof(float),
             EResourceLockMode::RLM_WriteOnly));
         float* ColorsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->ColorsBuffer.Buffer,
@@ -419,16 +361,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           }
 
           FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(ScalesBuffer + SplatCountWritten * 4),
-              Component->Scales.GetData(),
-              Component->Scales.Num() * sizeof(float));
-          FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(
-                  OrientationsBuffer + SplatCountWritten * 4),
-              Component->Orientations.GetData(),
-              Component->Orientations.Num() * sizeof(float));
-
-          FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(ColorsBuffer + SplatCountWritten * 4),
               Component->Colors.GetData(),
               Component->Colors.Num() * sizeof(float));
@@ -451,8 +383,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         }
 
         RHICmdList.UnlockBuffer(this->TileIndicesBuffer.Buffer);
-        RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
-        RHICmdList.UnlockBuffer(this->OrientationsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
         if (TotalCoeffsCount > 0) {
           RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
@@ -478,15 +408,15 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
   OutHLSL.Appendf(
       TEXT("Buffer<uint> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
+      TEXT("_TileVisibility"));
+  OutHLSL.Appendf(
+      TEXT("Buffer<uint> %s%s;\n"),
+      *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_TileIndices"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_TileMatrices"));
-  OutHLSL.Appendf(
-      TEXT("Buffer<uint> %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_TileVisibility"));
+      TEXT("_TileRotations"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
@@ -495,14 +425,6 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
       TEXT("_CovarianceMatrices"));
-  OutHLSL.Appendf(
-      TEXT("Buffer<float4> %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_Scales"));
-  OutHLSL.Appendf(
-      TEXT("Buffer<float4> %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_Orientations"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
@@ -550,31 +472,26 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
         {TEXT("TileVisibilityBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileVisibility"))},
+        {TEXT("TileRotationBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileRotations"))},
         {TEXT("TileIndicesBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileIndices"))},
-        {TEXT("TileMatrixBuffer"),
+        {TEXT("PositionsBuffer"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileMatrices"))},
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))},
+        {TEXT("ColorsBuffer"),
+         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Colors"))},
+        {TEXT("CovarianceMatrixBuffer"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_CovarianceMatrices"))},
         {TEXT("SHCoeffs"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
         {TEXT("SHDegrees"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
-        {TEXT("CovarianceMatrixBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_CovarianceMatrices"))},
-        {TEXT("ScalesBuffer"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Scales"))},
-        {TEXT("OrientationsBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Orientations"))},
-        {TEXT("ColorsBuffer"),
-         FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Colors"))},
-        {TEXT("PositionsBuffer"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Positions"))}};
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))}};
 
     OutHLSL += FString::Format(*ShaderTemplate, ArgsBounds);
   } else {
@@ -647,16 +564,12 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
         FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.TileVisibilityBuffer.SRV);
     Params->TileIndices =
         FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.TileIndicesBuffer.SRV);
-    Params->TileMatrices =
-        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.TileMatricesBuffer.SRV);
+    Params->TileRotations = FNiagaraRenderer::GetSrvOrDefaultFloat4(
+        DIProxy.TileRotationsBuffer.SRV);
     Params->CovarianceMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
         DIProxy.CovarianceMatrixBuffer.SRV);
     Params->Positions =
         FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.PositionsBuffer.SRV);
-    Params->Scales =
-        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ScalesBuffer.SRV);
-    Params->Orientations =
-        FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.OrientationsBuffer.SRV);
     Params->Colors =
         FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ColorsBuffer.SRV);
     Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(

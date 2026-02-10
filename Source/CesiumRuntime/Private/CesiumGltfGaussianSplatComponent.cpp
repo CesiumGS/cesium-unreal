@@ -265,12 +265,19 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     return;
   }
 
-  this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
+  this->Rotations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
   for (int32 i = 0; i < rotationView.size(); i++) {
-    this->Orientations[i * 4] = rotationView[i].x;
-    this->Orientations[i * 4 + 1] = -rotationView[i].y;
-    this->Orientations[i * 4 + 2] = rotationView[i].z;
-    this->Orientations[i * 4 + 3] = rotationView[i].w;
+    FQuat rotation(
+        rotationView[i].x,
+        -rotationView[i].y,
+        rotationView[i].z,
+        rotationView[i].w);
+    rotation.Normalize();
+
+    this->Rotations[i * 4] = rotation.X;
+    this->Rotations[i * 4 + 1] = rotation.Y;
+    this->Rotations[i * 4 + 2] = rotation.Z;
+    this->Rotations[i * 4 + 3] = rotation.W;
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator colorIt =

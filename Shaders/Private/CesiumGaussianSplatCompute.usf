@@ -11,14 +11,14 @@ void {FunctionName}(
   // Obtain the tile-level values.
   int TileIndex = {TileIndicesBuffer}[Index];
   uint InVisibility = {TileVisibilityBuffer}[TileIndex];
-  float4x4 InGlobalRotationMatrix;
+  float4x4 InTileRotationMatrix;
   {
-    float4 InRotation = {TileMatrixBuffer}[TileIndex * 7 + 6];
+    float4 InRotation = {TileRotationBuffer}[TileIndex];
     float x = InRotation.x;
     float y = InRotation.y;
     float z = InRotation.z;
     float w = InRotation.w;
-    InGlobalRotationMatrix = float4x4(
+    InTileRotationMatrix = float4x4(
       1 - 2 * (y * y + z * z), 2 * (x * y - w * z),     2 * (x * z + w * y),     0.0,
       2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),     0.0,
       2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y), 0.0,
@@ -26,28 +26,13 @@ void {FunctionName}(
     );
   }
 
-  // Obtain full transformation matrix of the tile.
-  float4 c0 = {TileMatrixBuffer}[TileIndex * 7];
-  float4 c1 = {TileMatrixBuffer}[TileIndex * 7 + 1];
-  float4 c2 = {TileMatrixBuffer}[TileIndex * 7 + 2];
-  float4 c3 = {TileMatrixBuffer}[TileIndex * 7 + 3];
-  float4x4 Tile = float4x4(
-    c0.x, c1.x, c2.x, c3.x,
-    c0.y, c1.y, c2.y, c3.y,
-    c0.z, c1.z, c2.z, c3.z,
-    c0.w, c1.w, c2.w, c3.w
-  );
-
   // Obtain all the splat values from the various buffers.
   float4 InPosition = float4({PositionsBuffer}[Index].xyz, 1.0);
-  OutPosition = InPosition;
-  // Scale we can combine directly with the tile-level scale.
-  float3 InScale = {TileMatrixBuffer}[TileIndex * 7 + 5].xyz * {ScalesBuffer}[Index].xyz;
-  float4 InOrientation = {OrientationsBuffer}[Index];
   float4 InColor = {ColorsBuffer}[Index];
 
   // Set default output values
-  OutColor = InColor;
+  OutPosition = InPosition;
+  OutColor = float4(0.0, 0.0, 0.0, 0.0);
   OutSpriteRotation = 0;
   OutSpriteSize = float2(0.0, 0.0);
 
@@ -75,9 +60,6 @@ void {FunctionName}(
   // Normalize the clip coordinates.
   ClipPos_H = ClipPos_H / ClipPos_H.w;
 
-  // Calculate covariance matrix
-  // This is the three-dimensional equivalent to the variance of a normal distribution.
-  // That's the sigma symbol, which is why we call it Sigma below.
   float3x3 cov;
   {
     // Retrieve the pre-computed 3D covariance matrix in world space.
@@ -163,7 +145,7 @@ void {FunctionName}(
   // Here, the surface of the sphere represents all possible viewing directions,
   // and the result represents the change in color from different directions.
   {
-    float3 WorldViewDir = normalize(mul(InGlobalRotationMatrix, float3(CameraPosition.x, CameraPosition.y, CameraPosition.z) - float3(-WorldPos_H.x, WorldPos_H.y, -WorldPos_H.z))).xyz;
+    float3 WorldViewDir = normalize(mul(InTileRotationMatrix, float3(CameraPosition.x, CameraPosition.y, CameraPosition.z) - float3(-WorldPos_H.x, WorldPos_H.y, -WorldPos_H.z))).xyz;
     const float SH_C1   = 0.4886025119029199f;
     const float SH_C2[] = { 1.0925484, -1.0925484, 0.3153916, -1.0925484, 0.5462742 };
     const float SH_C3[] = {

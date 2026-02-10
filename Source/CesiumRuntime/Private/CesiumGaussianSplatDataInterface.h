@@ -19,12 +19,10 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 
   FReadBuffer TileVisibilityBuffer;
   FReadBuffer TileIndicesBuffer;
-  FReadBuffer TileMatricesBuffer;
+  FReadBuffer TileRotationsBuffer;
   FReadBuffer SplatSHDegreesBuffer;
   FReadBuffer PositionsBuffer;
   FReadBuffer CovarianceMatrixBuffer;
-  FReadBuffer ScalesBuffer;
-  FReadBuffer OrientationsBuffer;
   FReadBuffer ColorsBuffer;
   FReadBuffer SHNonZeroCoeffsBuffer;
 
@@ -42,11 +40,9 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
 SHADER_PARAMETER_SRV(Buffer<uint>, TileVisibility)
 SHADER_PARAMETER_SRV(Buffer<uint>, TileIndices)
-SHADER_PARAMETER_SRV(Buffer<float4>, TileMatrices)
-SHADER_PARAMETER_SRV(Buffer<float3>, CovarianceMatrices)
+SHADER_PARAMETER_SRV(Buffer<float4>, TileRotations)
 SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
-SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
-SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)
+SHADER_PARAMETER_SRV(Buffer<float3>, CovarianceMatrices)
 SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
 SHADER_PARAMETER_SRV(Buffer<uint>, SplatSHDegrees)
 SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)

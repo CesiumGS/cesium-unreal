@@ -44,7 +44,7 @@ public:
 
   TArray<float> Positions;
   TArray<float> Scales;
-  TArray<float> Orientations;
+  TArray<float> Rotations;
   TArray<float> Colors;
   TArray<float> SphericalHarmonics;
 
