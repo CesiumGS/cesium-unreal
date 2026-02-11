@@ -34,11 +34,23 @@ void releaseIfNonEmpty(FReadBuffer& buffer) {
 }
 
 void updateTileTransforms(
+    UWorld* pWorld,
     FRHICommandListImmediate& RHICmdList,
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
     FReadBuffer& Buffer) {
   releaseIfNonEmpty(Buffer);
-  if (Components.IsEmpty()) {
+
+  // In Play-in-Editor mode, the Editor instance of the system doesn't get
+  // destroyed, which results in duplicate splats in Play. Therefore, check
+  // to make sure that components belong to the same world before adding them.
+  int32 NumComponents = 0;
+  for (int32 i = 0; i < Components.Num(); i++) {
+    if (IsValid(Components[i]) && Components[i]->GetWorld() == pWorld) {
+      NumComponents++;
+    }
+  }
+
+  if (NumComponents == 0) {
     // Will crash if we try to allocate a buffer of size 0
     return;
   }
@@ -56,7 +68,7 @@ void updateTileTransforms(
       RHICmdList,
       TEXT("FNDIGaussianSplatProxy_TileTransformsBuffer"),
       sizeof(FVector4f),
-      Components.Num() * vectorsPerComponent,
+      NumComponents * vectorsPerComponent,
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
@@ -64,13 +76,16 @@ void updateTileTransforms(
       reinterpret_cast<FVector4f*>(RHICmdList.LockBuffer(
           Buffer.Buffer,
           0,
-          Components.Num() * sizeof(FVector4f) * vectorsPerComponent,
+          NumComponents * sizeof(FVector4f) * vectorsPerComponent,
           EResourceLockMode::RLM_WriteOnly));
 
   int32 offset = 0;
   for (int32 i = 0; i < Components.Num(); i++) {
     UCesiumGltfGaussianSplatComponent* pComponent = Components[i];
     check(pComponent);
+    if (pComponent->GetWorld() != pWorld) {
+      continue;
+    }
 
     glm::mat4 tileMatrix(pComponent->GetMatrix());
     const FTransform& ComponentToWorld = pComponent->GetComponentToWorld();
@@ -131,16 +146,19 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     return;
   }
 
+  UWorld* pWorld = this->Owner->GetWorld();
+
   if (this->bMatricesNeedUpdate) {
     this->bMatricesNeedUpdate = false;
 
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatMatrices)
-    ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+    ([this, pWorld, SplatSystem](FRHICommandListImmediate& RHICmdList) {
       if (!IsValid(SplatSystem))
         return;
 
       FScopeLock ScopeLock(&this->BufferLock);
       updateTileTransforms(
+          pWorld,
           RHICmdList,
           SplatSystem->SplatComponents,
           this->TileTransformsBuffer);
@@ -154,19 +172,25 @@ void FNDIGaussianSplatProxy::UploadToGPU(
   this->bNeedsUpdate = false;
 
   ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
-  ([this, SplatSystem](FRHICommandListImmediate& RHICmdList) {
+  ([this, SplatSystem, pWorld](FRHICommandListImmediate& RHICmdList) {
     if (!IsValid(SplatSystem))
       return;
 
     FScopeLock ScopeLock(&this->BufferLock);
-    const int32 NumSplats = SplatSystem->GetNumSplats();
 
     int32 TotalCoeffsCount = 0;
+    int32 TotalSplatComponentsCount = 0;
+    int32 NumSplats = 0;
     for (const UCesiumGltfGaussianSplatComponent* SplatComponent :
          SplatSystem->SplatComponents) {
       check(SplatComponent);
+      if (SplatComponent->GetWorld() != pWorld) {
+        continue;
+      }
       TotalCoeffsCount +=
           SplatComponent->NumCoefficients * SplatComponent->NumSplats;
+      NumSplats += SplatComponent->NumSplats;
+      TotalSplatComponentsCount++;
     }
 
     const int32 expectedPositionBytes = NumSplats * 4 * sizeof(float);
@@ -179,7 +203,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
       releaseIfNonEmpty(this->SHNonZeroCoeffsBuffer);
       releaseIfNonEmpty(this->SplatSHDegreesBuffer);
 
-      if (SplatSystem->SplatComponents.IsEmpty()) {
+      if (TotalSplatComponentsCount == 0) {
         return;
       }
 
@@ -234,7 +258,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
             sizeof(uint32),
-            SplatSystem->SplatComponents.Num() * 3,
+            TotalSplatComponentsCount * 3,
             EPixelFormat::PF_R32_UINT,
             BUF_Static);
 
@@ -273,18 +297,22 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         uint32* pSHDegreesData = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatSHDegreesBuffer.Buffer,
             0,
-            SplatSystem->SplatComponents.Num() * sizeof(uint32) * 3,
+            TotalSplatComponentsCount * sizeof(uint32) * 3,
             EResourceLockMode::RLM_WriteOnly));
 
         int32 CoeffCountWritten = 0;
         int32 SplatCountWritten = 0;
+        int32 CurrentIdx = 0;
         for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
           UCesiumGltfGaussianSplatComponent* Component =
               SplatSystem->SplatComponents[i];
           check(Component);
+          if (Component->GetWorld() != pWorld) {
+            continue;
+          }
 
           for (int32 j = 0; j < Component->NumSplats; j++) {
-            pIndexData[SplatCountWritten + j] = static_cast<uint32>(i);
+            pIndexData[SplatCountWritten + j] = static_cast<uint32>(CurrentIdx);
           }
 
           FPlatformMemory::Memcpy(
@@ -311,14 +339,15 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                 Component->SphericalHarmonics.Num() * sizeof(float));
           }
 
-          pSHDegreesData[i * 3] =
+          pSHDegreesData[CurrentIdx * 3] =
               static_cast<uint32>(Component->NumCoefficients);
-          pSHDegreesData[i * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
-          pSHDegreesData[i * 3 + 2] = static_cast<uint32>(SplatCountWritten);
+          pSHDegreesData[CurrentIdx * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
+          pSHDegreesData[CurrentIdx * 3 + 2] = static_cast<uint32>(SplatCountWritten);
 
           SplatCountWritten += Component->NumSplats;
           CoeffCountWritten +=
               Component->NumSplats * Component->NumCoefficients;
+          CurrentIdx++;
         }
 
         RHICmdList.UnlockBuffer(this->TileIndicesBuffer.Buffer);
