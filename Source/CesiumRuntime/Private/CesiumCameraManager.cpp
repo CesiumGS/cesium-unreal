@@ -121,15 +121,10 @@ std::vector<FCesiumCamera> ACesiumCameraManager::GetAllCameras() const {
     result.push_back(camera.Value);
   }
   for (const auto& otherCamera : this->AdditionalCameras) {
-    TObjectPtr<UCameraComponent> component = otherCamera.CameraComponent;
-    FVector cameraLocation = component->GetComponentLocation();
-    FRotator cameraRotation = component->GetComponentRotation();
-    double cameraFov = component->FieldOfView;
-    result.emplace_back(
-        otherCamera.ViewportSize,
-        cameraLocation,
-        cameraRotation,
-        cameraFov);
+    if (!(otherCamera.FieldOfViewDegrees == 0.0 ||
+          !otherCamera.CameraComponent)) {
+      result.push_back(otherCamera);
+    }
   }
   return result;
 }

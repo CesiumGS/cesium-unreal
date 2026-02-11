@@ -1557,8 +1557,19 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset,
     UCesiumEllipsoid* ellipsoid) {
-  double horizontalFieldOfView =
-      FMath::DegreesToRadians(camera.FieldOfViewDegrees);
+  double horizontalFieldOfView = 0.0;
+  FRotator cameraRotation;
+  FVector cameraLocation;
+  if (camera.ParameterSource == ECameraParameterSource::Local) {
+    horizontalFieldOfView = FMath::DegreesToRadians(camera.FieldOfViewDegrees);
+    cameraRotation = camera.Rotation;
+    cameraLocation = camera.Location;
+  } else {
+    horizontalFieldOfView =
+        FMath::DegreesToRadians(camera.CameraComponent->FieldOfView);
+    cameraRotation = camera.CameraComponent->GetComponentRotation();
+    cameraLocation = camera.CameraComponent->GetComponentLocation();
+  }
 
   double actualAspectRatio;
   glm::dvec2 size(camera.ViewportSize.X, camera.ViewportSize.Y);

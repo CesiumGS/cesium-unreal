@@ -11,27 +11,6 @@
 #include "CesiumCameraManager.generated.h"
 
 /**
- * @brief Class for storing a viewport along with a CameraComponent, since that
- * doesn't include a viewport!
- */
-USTRUCT(BlueprintType)
-struct FAuxiliaryCamera {
-  GENERATED_BODY()
-public:
-  /**
-   * @brief the viewport
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FVector2D ViewportSize;
-
-  /**
-   * @brief the camera component
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TObjectPtr<UCameraComponent> CameraComponent;
-};
-
-/**
  * @brief Manages custom {@link FCesiumCamera}s for all
  * {@link ACesium3DTileset}s in the world.
  */
@@ -62,10 +41,10 @@ public:
   bool UseSceneCapturesInLevel = true;
 
   /**
-   * @brief Array of auxilliary cameras.
+   * @brief Array of additional cameras.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TArray<FAuxiliaryCamera> AdditionalCameras;
+  TArray<FCesiumCamera> AdditionalCameras;
 
   /**
    * @brief Array of explicit scene capture actors.

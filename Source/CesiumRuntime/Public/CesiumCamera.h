@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Camera/CameraComponent.h"
 #include "Math/Rotator.h"
 #include "Math/Vector.h"
 #include "Math/Vector2D.h"
@@ -10,6 +11,19 @@
 #include "Cesium3DTilesSelection/ViewState.h"
 
 #include "CesiumCamera.generated.h"
+
+UENUM(BlueprintType)
+enum class ECameraParameterSource : uint8 {
+  /**
+   * Camera parameters are set directly
+   */
+  Local UMETA(DisplayName = "Local Pose"),
+
+  /**
+   * Camera parameters come from a camera component
+   */
+  CameraComponent UMETA(DisplayName = "From Camera Component")
+};
 
 /**
  * @brief A camera description that {@link ACesium3DTileset}s can use to decide
@@ -20,6 +34,18 @@ struct CESIUMRUNTIME_API FCesiumCamera {
   GENERATED_USTRUCT_BODY()
 
 public:
+  /**
+   * @brief Source of camera parameters
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECameraParameterSource ParameterSource = ECameraParameterSource::Local;
+
+  /**
+   * @brief Source camera component, if any.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  TSoftObjectPtr<UCameraComponent> CameraComponent;
+
   /**
    * @brief The pixel dimensions of the viewport.
    */
