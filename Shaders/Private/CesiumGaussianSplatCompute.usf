@@ -10,28 +10,20 @@ void {FunctionName}(
 {
   // Obtain the tile-level values.
   int TileIndex = {TileIndicesBuffer}[Index];
-  float3 TileScale = {TileTransformsBuffer}[TileIndex * 6 + 4].xyz;
-  float InVisibility = {TileTransformsBuffer}[TileIndex * 6 + 4].w;
-  float4x4 InTileRotationMatrix;
-  {
-    float4 InRotation = {TileTransformsBuffer}[TileIndex * 6 + 5];
-    float x = InRotation.x;
-    float y = InRotation.y;
-    float z = InRotation.z;
-    float w = InRotation.w;
-    InTileRotationMatrix = float4x4(
-      1 - 2 * (y * y + z * z), 2 * (x * y - w * z),     2 * (x * z + w * y),     0.0,
-      2 * (x * y + w * z),     1 - 2 * (x * x + z * z), 2 * (y * z - w * x),     0.0,
-      2 * (x * z - w * y),     2 * (y * z + w * x),     1 - 2 * (x * x + y * y), 0.0,
-      0.0,                     0.0,                     0.0,                     0.0
-    );
-  }
   float4x4 TileMatrix = float4x4(
-    {TileTransformsBuffer}[TileIndex * 6 + 0],
-    {TileTransformsBuffer}[TileIndex * 6 + 1],
-    {TileTransformsBuffer}[TileIndex * 6 + 2],
-    {TileTransformsBuffer}[TileIndex * 6 + 3]
+    {TileTransformsBuffer}[TileIndex * 9 + 0],
+    {TileTransformsBuffer}[TileIndex * 9 + 1],
+    {TileTransformsBuffer}[TileIndex * 9 + 2],
+    {TileTransformsBuffer}[TileIndex * 9 + 3]
   );
+  float4x4 InverseTileMatrix = float4x4(
+    {TileTransformsBuffer}[TileIndex * 9 + 4],
+    {TileTransformsBuffer}[TileIndex * 9 + 5],
+    {TileTransformsBuffer}[TileIndex * 9 + 6],
+    {TileTransformsBuffer}[TileIndex * 9 + 7]
+  );
+  float3 TileScale = {TileTransformsBuffer}[TileIndex * 9 + 8].xyz;
+  float InVisibility = {TileTransformsBuffer}[TileIndex * 9 + 8].w;
 
   // Obtain all the splat values from the various buffers.
   float4 InPosition = mul(TileMatrix, float4({PositionsBuffer}[Index].xyz, 1.0));
@@ -72,14 +64,15 @@ void {FunctionName}(
 
   // Calculate the covariance matrix.
   // This is the three-dimensional equivalent to the variance of a normal distribution.
+
   float3x3 Vrk;
   {
-    float3x3 S = float3x3(
-      InScale.x, 0.0f,      0.0f,
-      0.0f,      InScale.y, 0.0f,
-      0.0f,      0.0f,      InScale.z
-    );
 
+    float3x3 S = float3x3(
+      InScale.x, 0.0f, 0.0f,
+      0.0f, InScale.y, 0.0f,
+      0.0f, 0.0f, InScale.z
+    );
     float3x3 R;
     {
       float x = InRotation.x;
@@ -171,20 +164,35 @@ void {FunctionName}(
   // Here, the surface of the sphere represents all possible viewing directions,
   // and the result represents the change in color from different directions.
   {
-    float3 WorldViewDir = normalize(mul(InTileRotationMatrix, float3(CameraPosition.x, CameraPosition.y, CameraPosition.z) - float3(-WorldPos_H.x, WorldPos_H.y, -WorldPos_H.z))).xyz;
-    const float SH_C1   = 0.4886025119029199f;
-    const float SH_C2[] = { 1.0925484, -1.0925484, 0.3153916, -1.0925484, 0.5462742 };
+    const float SH_C1   = 0.48860251;
+    const float SH_C2[] = {
+      1.092548430,
+      -1.09254843,
+      0.315391565,
+      -1.09254843,
+      0.546274215};
     const float SH_C3[] = {
-      -0.5900435899266435f, 2.890611442640554f, -0.4570457994644658f, 0.3731763325901154f,
-      -0.4570457994644658f, 1.445305721320277f, -0.5900435899266435f
+      -0.59004358,
+      2.890611442,
+      -0.45704579,
+      0.373176332,
+      -0.45704579,
+      1.445305721,
+      -0.59004358
     };
 
     int SHCount = {SHDegrees}[TileIndex * 3];
-    int SHOffset = {SHDegrees}[TileIndex * 3 + 1] + (Index - {SHDegrees}[TileIndex * 3 + 2]) * SHCount;
+    int coefficientOffset = {SHDegrees}[TileIndex * 3 + 1];
+    int splatOffset = {SHDegrees}[TileIndex * 3 + 2];
+    int SHOffset = coefficientOffset + (Index - splatOffset) * SHCount;
 
-    const float x = WorldViewDir.x;
-    const float y = WorldViewDir.y;
-    const float z = WorldViewDir.z;
+    float3 WorldViewDir = normalize(WorldPos_H - CameraPosition);
+    float3x3 WorldToLocal = mul(InverseTileMatrix, M_SystemWorldToLocal);
+    float3 LocalViewDir = normalize(mul(WorldViewDir, InverseTileMatrix));
+    const float x = LocalViewDir.x;
+    const float y = LocalViewDir.y;
+    const float z = LocalViewDir.z;
+
     const float xx = x * x;
     const float yy = y * y;
     const float zz = z * z;
@@ -194,24 +202,27 @@ void {FunctionName}(
     const float xyz = x * y * z;
 
     float3 SHColor = float3(0.0, 0.0, 0.0);
-    if(SHCount >= 3) {
+    if (SHCount >= 3) {
       float3 shd1_0 = {SHCoeffs}[SHOffset].xyz;
       float3 shd1_1 = {SHCoeffs}[SHOffset + 1].xyz;
       float3 shd1_2 = {SHCoeffs}[SHOffset + 2].xyz;
-      SHColor += SH_C1 * (-shd1_0 * y + shd1_1 * z - shd1_2 * x);
+      SHColor += -SH_C1 * y * shd1_0 + SH_C1 * z * shd1_1 - SH_C1 * x * shd1_2;
     }
 
-    if(SHCount >= 8) {
+    if (SHCount >= 8) {
       float3 shd2_0 = {SHCoeffs}[SHOffset + 3].xyz;
       float3 shd2_1 = {SHCoeffs}[SHOffset + 4].xyz;
       float3 shd2_2 = {SHCoeffs}[SHOffset + 5].xyz;
       float3 shd2_3 = {SHCoeffs}[SHOffset + 6].xyz;
       float3 shd2_4 = {SHCoeffs}[SHOffset + 7].xyz;
-      SHColor += (SH_C2[0] * xy) * shd2_0 + (SH_C2[1] * yz) * shd2_1 + (SH_C2[2] * (2.0 * zz - xx - yy)) * shd2_2
-              +  (SH_C2[3] * xz) * shd2_3 + (SH_C2[4] * (xx - yy)) * shd2_4;
+      SHColor += SH_C2[0] * xy * shd2_0
+              +  SH_C2[1] * yz * shd2_1
+              +  SH_C2[2] * (2.0 * zz - xx - yy) * shd2_2
+              +  SH_C2[3] * xz * shd2_3
+              +  SH_C2[4] * (xx - yy) * shd2_4;
     }
 
-    if(SHCount >= 15) {
+    if (SHCount >= 15) {
       float3 shd3_0 = {SHCoeffs}[SHOffset + 8].xyz;
       float3 shd3_1 = {SHCoeffs}[SHOffset + 9].xyz;
       float3 shd3_2 = {SHCoeffs}[SHOffset + 10].xyz;
@@ -220,11 +231,13 @@ void {FunctionName}(
       float3 shd3_5 = {SHCoeffs}[SHOffset + 13].xyz;
       float3 shd3_6 = {SHCoeffs}[SHOffset + 14].xyz;
 
-      SHColor += SH_C3[0] * shd3_0 * (3.0 * xx - yy) * y + SH_C3[1] * shd3_1 * xyz
-              +  SH_C3[2] * shd3_2 * (4.0 * zz - xx - yy) * y
-              +  SH_C3[3] * shd3_3 * z * (2.0 * zz - 3.0 * xx - 3.0 * yy)
-              +  SH_C3[4] * shd3_4 * x * (4.0 * zz - xx - yy)
-              +  SH_C3[5] * shd3_5 * (xx - yy) * z + SH_C3[6] * shd3_6 * x * (xx - 3.0 * yy);
+      SHColor += SH_C3[0] * y * (3.0 * xx - yy) * shd3_0
+              +  SH_C3[1] * xyz * shd3_1
+              +  SH_C3[2] * y * (4.0 * zz - xx - yy) * shd3_2
+              +  SH_C3[3] * z * (2.0 * zz - 3.0 * xx - 3.0 * yy) * shd3_3
+              +  SH_C3[4] * x * (4.0 * zz - xx - yy) * shd3_4
+              +  SH_C3[5] * z * (xx - yy) * shd3_5
+              +  SH_C3[6] * x * (xx - 3.0 * yy) * shd3_6;
     }
 
     OutColor = InColor + float4(SHColor, 0.0);

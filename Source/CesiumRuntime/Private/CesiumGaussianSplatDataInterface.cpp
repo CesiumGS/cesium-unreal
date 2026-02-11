@@ -60,9 +60,12 @@ void updateTileTransforms(
   // 1: Tile transform row 1
   // 2: Tile transform row 2
   // 3: Tile transform row 3
-  // 4: Tile scale (xyz), visibility (w)
-  // 5: Tile rotation
-  const int32 vectorsPerComponent = 6;
+  // 4: Inverse tile transform row 0
+  // 5: Inverse tile transform row 1
+  // 6: Inverse tile transform row 2
+  // 7: Inverse tile transform row 3
+  // 8: Tile scale (xyz), visibility (w)
+  const int32 vectorsPerComponent = 9;
 
   Buffer.Initialize(
       RHICmdList,
@@ -115,18 +118,34 @@ void updateTileTransforms(
         tileMatrix[2][3],
         tileMatrix[3][3]);
 
-    float visibility = Components[i]->IsVisible() ? 1.0f : 0.0f;
+    glm::dmat4 inverseTileMatrix(glm::inverse(pComponent->GetMatrix()));
     pTransformData[offset + 4] = FVector4f(
+        inverseTileMatrix[0][0],
+        inverseTileMatrix[1][0],
+        inverseTileMatrix[2][0],
+        inverseTileMatrix[3][0]);
+    pTransformData[offset + 5] = FVector4f(
+        inverseTileMatrix[0][1],
+        inverseTileMatrix[1][1],
+        inverseTileMatrix[2][1],
+        inverseTileMatrix[3][1]);
+    pTransformData[offset + 6] = FVector4f(
+        inverseTileMatrix[0][2],
+        inverseTileMatrix[1][2],
+        inverseTileMatrix[2][2],
+        inverseTileMatrix[3][2]);
+    pTransformData[offset + 7] = FVector4f(
+        inverseTileMatrix[0][3],
+        inverseTileMatrix[1][3],
+        inverseTileMatrix[2][3],
+        inverseTileMatrix[3][3]);
+
+    float visibility = pComponent->IsVisible() ? 1.0f : 0.0f;
+    pTransformData[offset + 8] = FVector4f(
         static_cast<float>(tileScale.X),
         static_cast<float>(tileScale.Y),
         static_cast<float>(tileScale.Z),
         visibility);
-
-    pTransformData[offset + 5] = FVector4f(
-        static_cast<float>(tileRotation.X),
-        static_cast<float>(tileRotation.Y),
-        static_cast<float>(tileRotation.Z),
-        static_cast<float>(tileRotation.W));
 
     offset += vectorsPerComponent;
   }
@@ -244,6 +263,14 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             EPixelFormat::PF_A32B32G32R32F,
             BUF_Static);
 
+        this->SplatSHDegreesBuffer.Initialize(
+            RHICmdList,
+            TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
+            sizeof(uint32),
+            TotalSplatComponentsCount * 3,
+            EPixelFormat::PF_R32_UINT,
+            BUF_Static);
+
         if (TotalCoeffsCount > 0) {
           this->SHNonZeroCoeffsBuffer.Initialize(
               RHICmdList,
@@ -253,14 +280,6 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               EPixelFormat::PF_A32B32G32R32F,
               BUF_Static);
         }
-
-        this->SplatSHDegreesBuffer.Initialize(
-            RHICmdList,
-            TEXT("FNDIGaussianSplatProxy_SplatSHDegrees"),
-            sizeof(uint32),
-            TotalSplatComponentsCount * 3,
-            EPixelFormat::PF_R32_UINT,
-            BUF_Static);
 
         uint32* pIndexData = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->TileIndicesBuffer.Buffer,
@@ -287,6 +306,11 @@ void FNDIGaussianSplatProxy::UploadToGPU(
             0,
             NumSplats * 4 * sizeof(float),
             EResourceLockMode::RLM_WriteOnly));
+        uint32* pSHDegreesData = static_cast<uint32*>(RHICmdList.LockBuffer(
+            this->SplatSHDegreesBuffer.Buffer,
+            0,
+            TotalSplatComponentsCount * sizeof(uint32) * 3,
+            EResourceLockMode::RLM_WriteOnly));
         float* pSHNonZeroCoeffsData =
             TotalCoeffsCount > 0 ? static_cast<float*>(RHICmdList.LockBuffer(
                                        this->SHNonZeroCoeffsBuffer.Buffer,
@@ -294,15 +318,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                                        TotalCoeffsCount * 4 * sizeof(float),
                                        EResourceLockMode::RLM_WriteOnly))
                                  : nullptr;
-        uint32* pSHDegreesData = static_cast<uint32*>(RHICmdList.LockBuffer(
-            this->SplatSHDegreesBuffer.Buffer,
-            0,
-            TotalSplatComponentsCount * sizeof(uint32) * 3,
-            EResourceLockMode::RLM_WriteOnly));
 
         int32 CoeffCountWritten = 0;
         int32 SplatCountWritten = 0;
-        int32 CurrentIdx = 0;
+        int32 writeIndex = 0;
         for (int32 i = 0; i < SplatSystem->SplatComponents.Num(); i++) {
           UCesiumGltfGaussianSplatComponent* Component =
               SplatSystem->SplatComponents[i];
@@ -312,7 +331,7 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           }
 
           for (int32 j = 0; j < Component->NumSplats; j++) {
-            pIndexData[SplatCountWritten + j] = static_cast<uint32>(CurrentIdx);
+            pIndexData[SplatCountWritten + j] = static_cast<uint32>(writeIndex);
           }
 
           FPlatformMemory::Memcpy(
@@ -331,6 +350,14 @@ void FNDIGaussianSplatProxy::UploadToGPU(
               reinterpret_cast<void*>(pColorData + SplatCountWritten * 4),
               Component->Colors.GetData(),
               Component->Colors.Num() * sizeof(float));
+
+          pSHDegreesData[writeIndex * 3] =
+              static_cast<uint32>(Component->NumCoefficients);
+          pSHDegreesData[writeIndex * 3 + 1] =
+              static_cast<uint32>(CoeffCountWritten);
+          pSHDegreesData[writeIndex * 3 + 2] =
+              static_cast<uint32>(SplatCountWritten);
+
           if (TotalCoeffsCount > 0) {
             FPlatformMemory::Memcpy(
                 reinterpret_cast<void*>(
@@ -339,17 +366,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
                 Component->SphericalHarmonics.Num() * sizeof(float));
           }
 
-          pSHDegreesData[CurrentIdx * 3] =
-              static_cast<uint32>(Component->NumCoefficients);
-          pSHDegreesData[CurrentIdx * 3 + 1] =
-              static_cast<uint32>(CoeffCountWritten);
-          pSHDegreesData[CurrentIdx * 3 + 2] =
-              static_cast<uint32>(SplatCountWritten);
-
           SplatCountWritten += Component->NumSplats;
           CoeffCountWritten +=
               Component->NumSplats * Component->NumCoefficients;
-          CurrentIdx++;
+          writeIndex++;
         }
 
         RHICmdList.UnlockBuffer(this->TileIndicesBuffer.Buffer);
@@ -357,10 +377,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         RHICmdList.UnlockBuffer(this->ScalesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->RotationsBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->ColorsBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
         if (TotalCoeffsCount > 0) {
           RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
         }
-        RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
       }
     }
   });
@@ -458,12 +478,12 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Rotations"))},
         {TEXT("ColorsBuffer"),
          FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Colors"))},
-        {TEXT("SHCoeffs"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
         {TEXT("SHDegrees"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))}};
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
+        {TEXT("SHCoeffs"),
+         FStringFormatArg(
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))}};
 
     OutHLSL += FString::Format(*ShaderTemplate, ArgsBounds);
   } else {
@@ -544,10 +564,10 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
         FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.RotationsBuffer.SRV);
     Params->Colors =
         FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ColorsBuffer.SRV);
-    Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        DIProxy.SHNonZeroCoeffsBuffer.SRV);
     Params->SplatSHDegrees =
         FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatSHDegreesBuffer.SRV);
+    Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(
+        DIProxy.SHNonZeroCoeffsBuffer.SRV);
   }
 }
 
