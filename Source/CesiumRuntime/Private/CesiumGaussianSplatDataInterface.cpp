@@ -341,8 +341,10 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
           pSHDegreesData[CurrentIdx * 3] =
               static_cast<uint32>(Component->NumCoefficients);
-          pSHDegreesData[CurrentIdx * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
-          pSHDegreesData[CurrentIdx * 3 + 2] = static_cast<uint32>(SplatCountWritten);
+          pSHDegreesData[CurrentIdx * 3 + 1] =
+              static_cast<uint32>(CoeffCountWritten);
+          pSHDegreesData[CurrentIdx * 3 + 2] =
+              static_cast<uint32>(SplatCountWritten);
 
           SplatCountWritten += Component->NumSplats;
           CoeffCountWritten +=
