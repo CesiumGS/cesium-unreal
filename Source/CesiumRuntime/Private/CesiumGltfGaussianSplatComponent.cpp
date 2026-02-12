@@ -119,11 +119,11 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
   const FTransform& Transform = this->GetComponentTransform();
 
   check(GEngine);
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
+  ensure(pSplatSubsystem);
 
-  SplatSubsystem->RecomputeBounds();
+  pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
@@ -131,21 +131,21 @@ void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
     ETeleportType /*Teleport*/) {
   const FTransform& Transform = this->GetComponentTransform();
   check(GEngine);
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
+  ensure(pSplatSubsystem);
 
-  SplatSubsystem->RecomputeBounds();
+  pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
   const FTransform& Transform = this->GetComponentTransform();
   check(GEngine);
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
+  ensure(pSplatSubsystem);
 
-  SplatSubsystem->RecomputeBounds();
+  pSplatSubsystem->RecomputeBounds();
   UE_LOG(
       LogCesium,
       Log,
@@ -165,11 +165,11 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
   check(GEngine);
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
+  ensure(pSplatSubsystem);
 
-  SplatSubsystem->RegisterSplat(this);
+  pSplatSubsystem->RegisterSplat(this);
 }
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
@@ -179,14 +179,14 @@ void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
     return;
   }
 
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+  UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
 
-  if (!IsValid(SplatSubsystem)) {
+  if (!IsValid(pSplatSubsystem)) {
     return;
   }
 
-  SplatSubsystem->UnregisterSplat(this);
+  pSplatSubsystem->UnregisterSplat(this);
 }
 
 FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
