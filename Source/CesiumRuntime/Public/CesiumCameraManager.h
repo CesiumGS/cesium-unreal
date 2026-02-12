@@ -53,7 +53,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      Meta = (EditCondition = "!UseSceneCapturesInLevel", EditConditionHides))
+      Meta = (EditCondition = "!UseSceneCapturesInLevel"))
   TArray<TObjectPtr<ASceneCapture2D>> SceneCaptures;
 
   /**

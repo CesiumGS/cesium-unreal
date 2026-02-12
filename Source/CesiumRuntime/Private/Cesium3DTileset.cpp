@@ -1502,11 +1502,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
     static TSubclassOf<ASceneCapture2D> SceneCapture2D =
         ASceneCapture2D::StaticClass();
     UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+  } else {
+    for (auto sceneCaptureActor : pCameraManager->SceneCaptures) {
+      sceneCaptures.Push(sceneCaptureActor.Get());
+    }
   }
-  for (auto sceneCaptureActor : pCameraManager->SceneCaptures) {
-    sceneCaptures.Push(sceneCaptureActor.Get());
-  }
-
   std::vector<FCesiumCamera> cameras;
   cameras.reserve(sceneCaptures.Num());
 
@@ -1560,7 +1560,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   double horizontalFieldOfView = 0.0;
   FRotator cameraRotation;
   FVector cameraLocation;
-  if (camera.ParameterSource == ECameraParameterSource::Local) {
+  if (camera.ParameterSource == ECameraParameterSource::Manual) {
     horizontalFieldOfView = FMath::DegreesToRadians(camera.FieldOfViewDegrees);
     cameraRotation = camera.Rotation;
     cameraLocation = camera.Location;

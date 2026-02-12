@@ -15,9 +15,9 @@
 UENUM(BlueprintType)
 enum class ECameraParameterSource : uint8 {
   /**
-   * Camera parameters are set directly
+   * Camera parameters are set explicitly by the user.
    */
-  Local UMETA(DisplayName = "Local Pose"),
+  Manual UMETA(DisplayName = "Set Manually"),
 
   /**
    * Camera parameters come from a camera component
@@ -38,7 +38,7 @@ public:
    * @brief Source of camera parameters
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECameraParameterSource ParameterSource = ECameraParameterSource::Local;
+  ECameraParameterSource ParameterSource = ECameraParameterSource::Manual;
 
   /**
    * @brief Source camera component, if any.
@@ -49,25 +49,40 @@ public:
   /**
    * @brief The pixel dimensions of the viewport.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FVector2D ViewportSize;
 
   /**
    * @brief The Unreal location of the camera.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "ParameterSource == ECameraParameterSource::Manual"))
   FVector Location;
 
   /**
    * @brief The Unreal rotation of the camera.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "ParameterSource == ECameraParameterSource::Manual"))
   FRotator Rotation;
 
   /**
    * @brief The horizontal field of view of the camera in degrees.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "ParameterSource == ECameraParameterSource::Manual"))
   double FieldOfViewDegrees;
 
   /**
