@@ -62,6 +62,13 @@ createNativeGlobeAnchor(const FMatrix& actorToECEF) {
 
 } // namespace
 
+UCesiumGlobeAnchorComponent::UCesiumGlobeAnchorComponent() {
+  // Enable ticking for this component
+  PrimaryComponentTick.bCanEverTick = true;
+  PrimaryComponentTick.bStartWithTickEnabled = true;
+  PrimaryComponentTick.TickGroup = TG_PostPhysics;
+}
+
 TSoftObjectPtr<ACesiumGeoreference>
 UCesiumGlobeAnchorComponent::GetGeoreference() const {
   return this->Georeference;
@@ -83,6 +90,22 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   if (this->IsRegistered()) {
     this->ResolveGeoreference();
   }
+}
+
+void UCesiumGlobeAnchorComponent::SetHeightReference(ECesiumHeightReference NewHeightReference) {
+  this->HeightReference = NewHeightReference;
+}
+
+ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
+  return this->HeightReference;
+}
+
+void UCesiumGlobeAnchorComponent::SetHeightReferenceUpdateInterval(int NewHeightReferenceUpdateInterval) {
+  this->HeightReferenceUpdateInterval = NewHeightReferenceUpdateInterval;
+}
+
+int UCesiumGlobeAnchorComponent::GetHeightReferenceUpdateInterval() const {
+  return this->HeightReferenceUpdateInterval;
 }
 
 ACesiumGeoreference*
@@ -749,6 +772,20 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     return;
   }
 
+  UWorld* pWorld = GetWorld();
+  if (pWorld) {
+    if (pWorld->WorldType == EWorldType::Editor) {
+      FVector llh = this->GetLongitudeLatitudeHeight();
+      FVector positionOnTerrain;
+      if (this->QueryPositionOnTileset(positionOnTerrain)) {
+        this->InitialHeightAboveTerrain = llh.Z - positionOnTerrain.Z;
+        UE_LOG(LogTemp, Display, TEXT("Initial Height Above Tileset = %f"),this->InitialHeightAboveTerrain);
+      }
+    }
+  }
+  UE_LOG(LogTemp, Display, TEXT("OnActorTransformChanged"));
+
+
   this->_setNewActorToECEFFromRelativeTransform();
 }
 
@@ -792,4 +829,81 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
     this->SetActorToEarthCenteredEarthFixedMatrix(
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
+}
+
+
+bool UCesiumGlobeAnchorComponent::QueryPositionOnTileset(FVector& GroundIntersection) {
+  GroundIntersection = {-1.0f, -1.0f, -1.0f };
+  if (!GetOwner() || !GetWorld()) {
+    return false;
+  }
+
+  // Get the actor's current world position
+  FVector actorPosition = GetOwner()->GetActorLocation();
+
+  const float traceDistance = 1000000.0f;
+  // Set up the line trace start and end points
+  FVector rayStart = actorPosition + FVector(0.0, 0.0, traceDistance);
+  FVector rayEnd = actorPosition - FVector(0.0, 0.0, traceDistance);
+
+  FCollisionQueryParams queryParams{};
+
+  // Ignore the owner actor to avoid self collision
+  queryParams.AddIgnoredActor(GetOwner());
+  queryParams.bTraceComplex = true;
+  queryParams.bReturnPhysicalMaterial = false;
+
+  // Perform the line trace
+  FHitResult rayIntersection;
+  bool hit = GetWorld()->LineTraceSingleByChannel(
+      rayIntersection,
+      rayStart,
+      rayEnd,
+      ECC_WorldStatic,
+      // Cesium 3D Tiles are typically static
+      queryParams
+      );
+
+  if (!hit) {
+    return false;
+  }
+
+  // Valid tileset surface detected
+  float surfaceHeight = rayIntersection.Location.Z;
+  float heightAboveTileset = actorPosition.Z - surfaceHeight;
+
+  ACesiumGeoreference* pGeoreference = ResolveGeoreference();
+
+  if (!IsValid(pGeoreference))
+    return false;
+
+  GroundIntersection = pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(rayIntersection.Location);
+
+  return true;
+}
+
+void UCesiumGlobeAnchorComponent::TickComponent(
+    float DeltaTime,
+    ELevelTick TickType,
+    FActorComponentTickFunction* ThisTickFunction) {
+
+  Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+  return;
+
+  if (--this->_heightReferenceUpdateCounter > 0) {
+    return;
+  }
+
+  this->_heightReferenceUpdateCounter = this->HeightReferenceUpdateInterval;
+
+  FVector positionOnTerrain{};
+  // Query the height above the 3D tileset at the actor's location
+  if (!QueryPositionOnTileset(positionOnTerrain))
+    return;
+
+  FVector llh = this->GetLongitudeLatitudeHeight();
+  llh.Z = positionOnTerrain.Z + this->InitialHeightAboveTerrain;
+
+  this->MoveToLongitudeLatitudeHeight(llh);
 }
