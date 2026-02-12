@@ -206,10 +206,10 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
     // uploading previous components to GPU
     FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
     this->SplatComponents.Add(Component);
-    this->NumSplats += Component->NumSplats;
+    this->NumSplats += Component->Data.NumSplats;
   } else {
     this->SplatComponents.Add(Component);
-    this->NumSplats += Component->NumSplats;
+    this->NumSplats += Component->Data.NumSplats;
   }
 
   this->UpdateNiagaraComponent();
@@ -222,10 +222,10 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
   if (IsValid(this->NiagaraComponent)) {
     FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
     this->SplatComponents.Remove(Component);
-    this->NumSplats -= Component->NumSplats;
+    this->NumSplats -= Component->Data.NumSplats;
   } else {
     this->SplatComponents.Remove(Component);
-    this->NumSplats -= Component->NumSplats;
+    this->NumSplats -= Component->Data.NumSplats;
   }
 
   this->UpdateNiagaraComponent();

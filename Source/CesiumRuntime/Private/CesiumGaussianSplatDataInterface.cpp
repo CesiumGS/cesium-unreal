@@ -27,7 +27,7 @@
 const FString ComputeSplatFunctionName = TEXT("ComputeSplat");
 
 namespace {
-void UploadSplatMatrices(
+void UploadTileTransforms(
     UWorld* InWorld,
     FRHICommandListImmediate& RHICmdList,
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
@@ -48,64 +48,106 @@ void UploadSplatMatrices(
     return;
   }
 
-  const int32 Stride = 7;
+  // Each tile corresponds to ten vectors:
+  // 0: Tile transform row 0
+  // 1: Tile transform row 1
+  // 2: Tile transform row 2
+  // 3: Tile transform row 3
+  // 4: Inverse tile transform row 0
+  // 5: Inverse tile transform row 1
+  // 6: Inverse tile transform row 2
+  // 7: Inverse tile transform row 3
+  // 8: Tile scale (xyz), visibility (w)
+  // 9: Tile rotation
+  const int32 VectorsPerComponent = 10;
 
   Buffer.Initialize(
       RHICmdList,
-      TEXT("FNDIGaussianSplatProxy_SplatMatricesBuffer"),
+      TEXT("FNDIGaussianSplatProxy_TileTransformsBuffer"),
       sizeof(FVector4f),
-      NumComponents * Stride,
+      NumComponents * VectorsPerComponent,
       EPixelFormat::PF_A32B32G32R32F,
       BUF_Static);
 
-  float* BufferData = static_cast<float*>(RHICmdList.LockBuffer(
+  FVector4f* pBufferData = static_cast<FVector4f*>(RHICmdList.LockBuffer(
       Buffer.Buffer,
       0,
-      NumComponents * sizeof(FVector4f) * Stride,
+      NumComponents * sizeof(FVector4f) * VectorsPerComponent,
       EResourceLockMode::RLM_WriteOnly));
+
   int32 WrittenComponents = 0;
   for (int32 i = 0; i < Components.Num(); i++) {
-    check(Components[i]);
-    if (Components[i]->GetWorld() != InWorld) {
+    UCesiumGltfGaussianSplatComponent* pComponent = Components[i];
+    check(pComponent);
+    if (pComponent->GetWorld() != InWorld) {
       continue;
     }
-    glm::mat4x4 mat = Components[i]->GetMatrix();
-    const int32 Offset =
-        WrittenComponents * (sizeof(FVector4f) / sizeof(float)) * Stride;
-    BufferData[Offset] = (float)mat[0].x;
-    BufferData[Offset + 1] = (float)mat[0].y;
-    BufferData[Offset + 2] = (float)mat[0].z;
-    BufferData[Offset + 3] = (float)mat[0].w;
-    BufferData[Offset + 4] = (float)mat[1].x;
-    BufferData[Offset + 5] = (float)mat[1].y;
-    BufferData[Offset + 6] = (float)mat[1].z;
-    BufferData[Offset + 7] = (float)mat[1].w;
-    BufferData[Offset + 8] = (float)mat[2].x;
-    BufferData[Offset + 9] = (float)mat[2].y;
-    BufferData[Offset + 10] = (float)mat[2].z;
-    BufferData[Offset + 11] = (float)mat[2].w;
-    BufferData[Offset + 12] = (float)mat[3].x;
-    BufferData[Offset + 13] = (float)mat[3].y;
-    BufferData[Offset + 14] = (float)mat[3].z;
-    BufferData[Offset + 15] = (float)mat[3].w;
-    const FTransform& ComponentToWorld = Components[i]->GetComponentToWorld();
-    // Previously these four held location information, but we don't use it (we
-    // just use the matrix for that). So, instead, the first component holds
-    // visibility and the other three are currently unused.
-    BufferData[Offset + 16] = Components[i]->IsVisible() ? 1.0f : 0.0f;
-    BufferData[Offset + 17] = 0.0f;
-    BufferData[Offset + 18] = 0.0f;
-    BufferData[Offset + 19] = 0.0f;
-    FVector Scale = ComponentToWorld.GetScale3D();
-    BufferData[Offset + 20] = (float)Scale.X;
-    BufferData[Offset + 21] = (float)Scale.Y;
-    BufferData[Offset + 22] = (float)Scale.Z;
-    BufferData[Offset + 23] = (float)1.0;
-    FQuat Rotation = ComponentToWorld.GetRotation();
-    BufferData[Offset + 24] = (float)Rotation.X;
-    BufferData[Offset + 25] = (float)Rotation.Y;
-    BufferData[Offset + 26] = (float)Rotation.Z;
-    BufferData[Offset + 27] = (float)Rotation.W;
+
+    const int32 Offset = WrittenComponents * VectorsPerComponent;
+
+    glm::mat4 TileMatrix(pComponent->GetMatrix());
+    const FTransform& ComponentToWorld = pComponent->GetComponentToWorld();
+    FVector TileScale = ComponentToWorld.GetScale3D();
+    FQuat TileRotation = ComponentToWorld.GetRotation();
+    TileRotation.Normalize();
+
+    // Write in row-order for easy access in HLSL.
+    pBufferData[Offset + 0] = FVector4f(
+        TileMatrix[0][0],
+        TileMatrix[1][0],
+        TileMatrix[2][0],
+        TileMatrix[3][0]);
+    pBufferData[Offset + 1] = FVector4f(
+        TileMatrix[0][1],
+        TileMatrix[1][1],
+        TileMatrix[2][1],
+        TileMatrix[3][1]);
+    pBufferData[Offset + 2] = FVector4f(
+        TileMatrix[0][2],
+        TileMatrix[1][2],
+        TileMatrix[2][2],
+        TileMatrix[3][2]);
+    pBufferData[Offset + 3] = FVector4f(
+        TileMatrix[0][3],
+        TileMatrix[1][3],
+        TileMatrix[2][3],
+        TileMatrix[3][3]);
+
+    glm::dmat4 inverseTileMatrix(glm::inverse(pComponent->GetMatrix()));
+    pBufferData[Offset + 4] = FVector4f(
+        inverseTileMatrix[0][0],
+        inverseTileMatrix[1][0],
+        inverseTileMatrix[2][0],
+        inverseTileMatrix[3][0]);
+    pBufferData[Offset + 5] = FVector4f(
+        inverseTileMatrix[0][1],
+        inverseTileMatrix[1][1],
+        inverseTileMatrix[2][1],
+        inverseTileMatrix[3][1]);
+    pBufferData[Offset + 6] = FVector4f(
+        inverseTileMatrix[0][2],
+        inverseTileMatrix[1][2],
+        inverseTileMatrix[2][2],
+        inverseTileMatrix[3][2]);
+    pBufferData[Offset + 7] = FVector4f(
+        inverseTileMatrix[0][3],
+        inverseTileMatrix[1][3],
+        inverseTileMatrix[2][3],
+        inverseTileMatrix[3][3]);
+
+    float visibility = pComponent->IsVisible() ? 1.0f : 0.0f;
+    pBufferData[Offset + 8] = FVector4f(
+        static_cast<float>(TileScale.X),
+        static_cast<float>(TileScale.Y),
+        static_cast<float>(TileScale.Z),
+        visibility);
+
+    pBufferData[Offset + 9] = FVector4f(
+        static_cast<float>(TileRotation.X),
+        static_cast<float>(TileRotation.Y),
+        static_cast<float>(TileRotation.Z),
+        static_cast<float>(TileRotation.W));
+
     WrittenComponents++;
   }
 
@@ -131,11 +173,11 @@ void FNDIGaussianSplatProxy::UploadToGPU(
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatMatrices)
     ([this, SplatSystem, World](FRHICommandListImmediate& RHICmdList) {
       FScopeLock ScopeLock(&this->BufferLock);
-      UploadSplatMatrices(
+      UploadTileTransforms(
           World,
           RHICmdList,
           SplatSystem->SplatComponents,
-          this->SplatMatricesBuffer);
+          this->TileTransformsBuffer);
     });
   }
 
@@ -159,8 +201,8 @@ void FNDIGaussianSplatProxy::UploadToGPU(
         continue;
       }
       TotalCoeffsCount +=
-          SplatComponent->NumCoefficients * SplatComponent->NumSplats;
-      NumSplats += SplatComponent->NumSplats;
+          SplatComponent->Data.NumCoefficients * SplatComponent->Data.NumSplats;
+      NumSplats += SplatComponent->Data.NumSplats;
       TotalSplatComponentsCount++;
     }
 
@@ -288,43 +330,43 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(PositionsBuffer + SplatCountWritten * 4),
-              Component->Positions.GetData(),
-              Component->Positions.Num() * sizeof(float));
+              Component->Data.Positions.GetData(),
+              Component->Data.Positions.Num() * sizeof(float));
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(ScalesBuffer + SplatCountWritten * 4),
-              Component->Scales.GetData(),
-              Component->Scales.Num() * sizeof(float));
+              Component->Data.Scales.GetData(),
+              Component->Data.Scales.Num() * sizeof(float));
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(
                   OrientationsBuffer + SplatCountWritten * 4),
-              Component->Orientations.GetData(),
-              Component->Orientations.Num() * sizeof(float));
+              Component->Data.Orientations.GetData(),
+              Component->Data.Orientations.Num() * sizeof(float));
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(ColorsBuffer + SplatCountWritten * 4),
-              Component->Colors.GetData(),
-              Component->Colors.Num() * sizeof(float));
+              Component->Data.Colors.GetData(),
+              Component->Data.Colors.Num() * sizeof(float));
           if (TotalCoeffsCount > 0) {
             FPlatformMemory::Memcpy(
                 reinterpret_cast<void*>(
                     SHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
-                Component->SphericalHarmonics.GetData(),
-                Component->SphericalHarmonics.Num() * sizeof(float));
+                Component->Data.SphericalHarmonics.GetData(),
+                Component->Data.SphericalHarmonics.Num() * sizeof(float));
           }
-          for (int32 j = 0; j < Component->NumSplats; j++) {
+          for (int32 j = 0; j < Component->Data.NumSplats; j++) {
             IndexBuffer[SplatCountWritten + j] =
                 static_cast<uint32>(CurrentIdx);
           }
 
           SHDegreesBuffer[CurrentIdx * 3] =
-              static_cast<uint32>(Component->NumCoefficients);
+              static_cast<uint32>(Component->Data.NumCoefficients);
           SHDegreesBuffer[CurrentIdx * 3 + 1] =
               static_cast<uint32>(CoeffCountWritten);
           SHDegreesBuffer[CurrentIdx * 3 + 2] =
               static_cast<uint32>(SplatCountWritten);
 
-          SplatCountWritten += Component->NumSplats;
+          SplatCountWritten += Component->Data.NumSplats;
           CoeffCountWritten +=
-              Component->NumSplats * Component->NumCoefficients;
+              Component->Data.NumSplats * Component->Data.NumCoefficients;
           CurrentIdx++;
         }
 
@@ -365,7 +407,7 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatMatrices"));
+      TEXT("_TileTransforms"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
@@ -425,9 +467,9 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
         {TEXT("IndicesBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
-        {TEXT("MatrixBuffer"),
+        {TEXT("TileTransformsBuffer"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatMatrices"))},
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileTransforms"))},
         {TEXT("SHCoeffs"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SHNonZeroCoeffs"))},
@@ -519,8 +561,8 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
         IsValid(SplatSystem) ? SplatSystem->GetNumSplats() : 0;
     Params->SplatIndices =
         FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatIndicesBuffer.SRV);
-    Params->SplatMatrices = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        DIProxy.SplatMatricesBuffer.SRV);
+    Params->TileTransforms = FNiagaraRenderer::GetSrvOrDefaultFloat4(
+        DIProxy.TileTransformsBuffer.SRV);
     Params->Positions =
         FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.PositionsBuffer.SRV);
     Params->Scales =

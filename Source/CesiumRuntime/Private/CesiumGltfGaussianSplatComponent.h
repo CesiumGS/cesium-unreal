@@ -4,11 +4,35 @@
 
 #include "CesiumGltfPrimitiveComponent.h"
 
+#include "Misc/Optional.h"
+#include "Math/Box.h"
+
 #include <CesiumGltf/MeshPrimitive.h>
 
 #include <glm/mat4x4.hpp>
 
 #include "CesiumGltfGaussianSplatComponent.generated.h"
+
+USTRUCT()
+struct FCesiumGltfGaussianSplatData {
+  GENERATED_BODY()
+  TArray<float> Positions;
+  TArray<float> Scales;
+  TArray<float> Orientations;
+  TArray<float> Colors;
+  TArray<float> SphericalHarmonics;
+  TOptional<FBox> Bounds;
+
+  int32 NumCoefficients = 0;
+
+  int32 NumSplats = 0;
+
+  FCesiumGltfGaussianSplatData() {}
+
+  FCesiumGltfGaussianSplatData(
+      CesiumGltf::Model& model,
+      CesiumGltf::MeshPrimitive& meshPrimitive);
+};
 
 /**
  * A component that represents and renders a glTF gaussian splat.
@@ -35,27 +59,13 @@ public:
       EUpdateTransformFlags UpdateTransformFlags,
       ETeleportType Teleport) override;
 
-  void
-  SetData(CesiumGltf::Model& model, CesiumGltf::MeshPrimitive& meshPrimitive);
-
   void RegisterWithSubsystem();
 
   FBox GetBounds() const;
 
   glm::mat4x4 GetMatrix() const;
 
+  FCesiumGltfGaussianSplatData Data;
+
   virtual void BeginDestroy() override;
-
-  TArray<float> Positions;
-  TArray<float> Scales;
-  TArray<float> Orientations;
-  TArray<float> Colors;
-  TArray<float> SphericalHarmonics;
-
-  int32 NumCoefficients = 0;
-
-  int32 NumSplats = 0;
-
-private:
-  TOptional<FBox> Bounds;
 };

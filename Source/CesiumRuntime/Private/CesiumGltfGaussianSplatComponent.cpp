@@ -154,7 +154,43 @@ void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
       this->IsVisible() ? TEXT("true") : TEXT("false"));
 }
 
-void UCesiumGltfGaussianSplatComponent::SetData(
+FBox UCesiumGltfGaussianSplatComponent::GetBounds() const {
+  return this->Data.Bounds.Get(FBox());
+}
+
+glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
+  const FTransform& transform = this->GetComponentTransform();
+  FMatrix matrix = transform.ToMatrixWithScale();
+  return (glm::mat4x4)VecMath::createMatrix4D(matrix);
+}
+
+void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
+  check(GEngine);
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+  ensure(SplatSubsystem);
+
+  SplatSubsystem->RegisterSplat(this);
+}
+
+void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
+  Super::BeginDestroy();
+
+  if (!IsValid(GEngine)) {
+    return;
+  }
+
+  UCesiumGaussianSplatSubsystem* SplatSubsystem =
+      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+
+  if (!IsValid(SplatSubsystem)) {
+    return;
+  }
+
+  SplatSubsystem->UnregisterSplat(this);
+}
+
+FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& meshPrimitive) {
   const int32 numShCoeffs = countShCoeffsOnPrimitive(meshPrimitive);
@@ -198,13 +234,13 @@ void UCesiumGltfGaussianSplatComponent::SetData(
     // Take this opportunity to update the bounds.
     if (this->Bounds) {
       this->Bounds->Min = FVector(
-          std::min(Bounds->Min.X, Position.X),
-          std::min(Bounds->Min.Y, Position.Y),
-          std::min(Bounds->Min.Z, Position.Z));
+          std::min(this->Bounds->Min.X, Position.X),
+          std::min(this->Bounds->Min.Y, Position.Y),
+          std::min(this->Bounds->Min.Z, Position.Z));
       this->Bounds->Max = FVector(
-          std::max(Bounds->Max.X, Position.X),
-          std::max(Bounds->Max.Y, Position.Y),
-          std::max(Bounds->Max.Z, Position.Z));
+          std::max(this->Bounds->Max.X, Position.X),
+          std::max(this->Bounds->Max.Y, Position.Y),
+          std::max(this->Bounds->Max.Z, Position.Z));
     } else {
       this->Bounds = FBox();
       this->Bounds->Min = FVector(Position.X, Position.Y, Position.Z);
@@ -268,10 +304,17 @@ void UCesiumGltfGaussianSplatComponent::SetData(
 
   this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
   for (int32 i = 0; i < rotationView.size(); i++) {
-    this->Orientations[i * 4] = rotationView[i].x;
-    this->Orientations[i * 4 + 1] = -rotationView[i].y;
-    this->Orientations[i * 4 + 2] = rotationView[i].z;
-    this->Orientations[i * 4 + 3] = rotationView[i].w;
+    FQuat rotation(
+      rotationView[i].x,
+      -rotationView[i].y,
+      rotationView[i].z,
+      rotationView[i].w);
+    rotation.Normalize();
+
+    this->Orientations[i * 4] = rotation.X;
+    this->Orientations[i * 4 + 1] = rotation.Y;
+    this->Orientations[i * 4 + 2] = rotation.Z;
+    this->Orientations[i * 4 + 3] = rotation.W;
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator colorIt =
@@ -394,57 +437,4 @@ void UCesiumGltfGaussianSplatComponent::SetData(
       return;
     }
   }
-}
-
-FBox UCesiumGltfGaussianSplatComponent::GetBounds() const {
-  return this->Bounds.Get(FBox());
-}
-
-glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
-  const FTransform& Transform = this->GetComponentTransform();
-  glm::quat quat(
-      Transform.GetRotation().W,
-      Transform.GetRotation().X,
-      Transform.GetRotation().Y,
-      Transform.GetRotation().Z);
-  const glm::mat4x4 mat = glm::translate(
-                              glm::identity<glm::mat4x4>(),
-                              glm::vec3(
-                                  Transform.GetLocation().X,
-                                  Transform.GetLocation().Y,
-                                  Transform.GetLocation().Z)) *
-                          glm::mat4_cast(quat) *
-                          glm::scale(
-                              glm::identity<glm::mat4x4>(),
-                              glm::vec3(
-                                  Transform.GetScale3D().X,
-                                  Transform.GetScale3D().Y,
-                                  Transform.GetScale3D().Z));
-  return mat;
-}
-
-void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
-  check(GEngine);
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-  ensure(SplatSubsystem);
-
-  SplatSubsystem->RegisterSplat(this);
-}
-
-void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
-  Super::BeginDestroy();
-
-  if (!IsValid(GEngine)) {
-    return;
-  }
-
-  UCesiumGaussianSplatSubsystem* SplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-
-  if (!IsValid(SplatSubsystem)) {
-    return;
-  }
-
-  SplatSubsystem->UnregisterSplat(this);
 }
