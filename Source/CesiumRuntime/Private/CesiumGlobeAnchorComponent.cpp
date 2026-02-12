@@ -92,7 +92,8 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   }
 }
 
-void UCesiumGlobeAnchorComponent::SetHeightReference(ECesiumHeightReference NewHeightReference) {
+void UCesiumGlobeAnchorComponent::SetHeightReference(
+    ECesiumHeightReference NewHeightReference) {
   this->HeightReference = NewHeightReference;
 }
 
@@ -100,7 +101,8 @@ ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
   return this->HeightReference;
 }
 
-void UCesiumGlobeAnchorComponent::SetHeightReferenceUpdateInterval(int NewHeightReferenceUpdateInterval) {
+void UCesiumGlobeAnchorComponent::SetHeightReferenceUpdateInterval(
+    int NewHeightReferenceUpdateInterval) {
   this->HeightReferenceUpdateInterval = NewHeightReferenceUpdateInterval;
 }
 
@@ -779,12 +781,15 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
       FVector positionOnTerrain;
       if (this->QueryPositionOnTileset(positionOnTerrain)) {
         this->InitialHeightAboveTerrain = llh.Z - positionOnTerrain.Z;
-        UE_LOG(LogTemp, Display, TEXT("Initial Height Above Tileset = %f"),this->InitialHeightAboveTerrain);
+        UE_LOG(
+            LogTemp,
+            Display,
+            TEXT("Initial Height Above Tileset = %f"),
+            this->InitialHeightAboveTerrain);
       }
     }
   }
   UE_LOG(LogTemp, Display, TEXT("OnActorTransformChanged"));
-
 
   this->_setNewActorToECEFFromRelativeTransform();
 }
@@ -831,9 +836,9 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
   }
 }
 
-
-bool UCesiumGlobeAnchorComponent::QueryPositionOnTileset(FVector& GroundIntersection) {
-  GroundIntersection = {-1.0f, -1.0f, -1.0f };
+bool UCesiumGlobeAnchorComponent::QueryPositionOnTileset(
+    FVector& GroundIntersection) {
+  GroundIntersection = {INFINITY, INFINITY, INFINITY};
   if (!GetOwner() || !GetWorld()) {
     return false;
   }
@@ -841,10 +846,10 @@ bool UCesiumGlobeAnchorComponent::QueryPositionOnTileset(FVector& GroundIntersec
   // Get the actor's current world position
   FVector actorPosition = GetOwner()->GetActorLocation();
 
-  const float traceDistance = 1000000.0f;
+  constexpr float traceDistance = 1000000.0f;
   // Set up the line trace start and end points
-  FVector rayStart = actorPosition + FVector(0.0, 0.0, traceDistance);
-  FVector rayEnd = actorPosition - FVector(0.0, 0.0, traceDistance);
+  const FVector rayStart = actorPosition + FVector(0.0, 0.0, traceDistance);
+  const FVector rayEnd = actorPosition - FVector(0.0, 0.0, traceDistance);
 
   FCollisionQueryParams queryParams{};
 
@@ -853,31 +858,26 @@ bool UCesiumGlobeAnchorComponent::QueryPositionOnTileset(FVector& GroundIntersec
   queryParams.bTraceComplex = true;
   queryParams.bReturnPhysicalMaterial = false;
 
-  // Perform the line trace
   FHitResult rayIntersection;
   bool hit = GetWorld()->LineTraceSingleByChannel(
       rayIntersection,
       rayStart,
       rayEnd,
       ECC_WorldStatic,
-      // Cesium 3D Tiles are typically static
-      queryParams
-      );
+      queryParams);
 
   if (!hit) {
     return false;
   }
-
-  // Valid tileset surface detected
-  float surfaceHeight = rayIntersection.Location.Z;
-  float heightAboveTileset = actorPosition.Z - surfaceHeight;
 
   ACesiumGeoreference* pGeoreference = ResolveGeoreference();
 
   if (!IsValid(pGeoreference))
     return false;
 
-  GroundIntersection = pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(rayIntersection.Location);
+  GroundIntersection =
+      pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
+          rayIntersection.Location);
 
   return true;
 }

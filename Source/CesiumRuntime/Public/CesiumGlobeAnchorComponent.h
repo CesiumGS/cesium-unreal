@@ -61,14 +61,14 @@ private:
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
   UPROPERTY(
-    EditAnywhere,
-    BlueprintReadWrite,
-    BlueprintGetter = GetHeightReference,
-    BlueprintSetter = SetHeightReference,
-    Category = "ACesium",
-    meta=(AllowPrivateAccess)
-    )
-  ECesiumHeightReference HeightReference = ECesiumHeightReference::RelativeToTerrain;
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReference,
+      BlueprintSetter = SetHeightReference,
+      Category = "ACesium",
+      meta = (AllowPrivateAccess))
+  ECesiumHeightReference HeightReference =
+      ECesiumHeightReference::RelativeToTerrain;
 
   UPROPERTY(
       EditAnywhere,
@@ -174,7 +174,10 @@ private:
 #pragma endregion
 
 public:
-  virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+  virtual void TickComponent(
+      float DeltaTime,
+      ELevelTick TickType,
+      FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Property Accessors
 public:
