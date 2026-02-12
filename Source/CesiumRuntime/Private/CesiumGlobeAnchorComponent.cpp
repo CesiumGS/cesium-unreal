@@ -889,6 +889,9 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+  if (this->HeightReference != ECesiumHeightReference::RelativeToTerrain)
+    return;
+
   if (--this->_heightReferenceUpdateCounter > 0) {
     return;
   }
