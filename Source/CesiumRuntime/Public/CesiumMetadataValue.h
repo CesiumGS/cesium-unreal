@@ -5,6 +5,7 @@
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
+#include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Misc/Optional.h"
 #include "UObject/ObjectMacros.h"

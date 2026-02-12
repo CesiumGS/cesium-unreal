@@ -3207,12 +3207,6 @@ static void loadPrimitiveGameThreadPart(
                CesiumGltf::Material::AlphaMode::BLEND;
   };
 
-#if PLATFORM_MAC
-  // TODO: figure out why water material crashes mac
-  UMaterialInterface* pUserDesignatedMaterial =
-      is_in_blend_mode(loadResult) ? pGltf->BaseMaterialWithTranslucency
-                                   : pGltf->BaseMaterial;
-#else
   UMaterialInterface* pUserDesignatedMaterial;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
     pUserDesignatedMaterial = pGltf->BaseMaterialWithWater;
@@ -3221,7 +3215,6 @@ static void loadPrimitiveGameThreadPart(
                                   ? pGltf->BaseMaterialWithTranslucency
                                   : pGltf->BaseMaterial;
   }
-#endif
 
   // Move this right now: CreateMaterial may need them!
   // "Safe" even though loadResult is still used later, because the methods used
