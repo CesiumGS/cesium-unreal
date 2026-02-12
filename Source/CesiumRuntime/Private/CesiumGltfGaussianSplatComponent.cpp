@@ -304,10 +304,10 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
   this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
   for (int32 i = 0; i < rotationView.size(); i++) {
     FQuat rotation(
-      rotationView[i].x,
-      -rotationView[i].y,
-      rotationView[i].z,
-      rotationView[i].w);
+        rotationView[i].x,
+        -rotationView[i].y,
+        rotationView[i].z,
+        rotationView[i].w);
     rotation.Normalize();
 
     this->Orientations[i * 4] = rotation.X;
