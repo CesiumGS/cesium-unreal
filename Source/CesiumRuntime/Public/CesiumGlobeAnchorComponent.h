@@ -10,18 +10,18 @@
 class ACesiumGeoreference;
 
 /**
- * A coordinate reference system used to interpret position data.
+ * Mode for height reference of
  */
 UENUM(BlueprintType)
-enum class ECesiumHeightReference : uint8 {
+enum class ECesiumHeightReferenceMode : uint8 {
   /**
-   * Height offset relative to the ellipsoid
+   * Height offset relative to the ellipsoid.
    */
   RelativeToEllipsoid UMETA(DisplayName = "Relative to ellipsoid"),
   /**
-   * Indicates a height offset is relative to the terrain
+   * Reference height is relative to the terrain.
    */
-  RelativeToTerrain UMETA(DisplayName = "Clamp to terrain"),
+  RelativeToTileset UMETA(DisplayName = "Clamp to terrain"),
 };
 
 /**
@@ -65,28 +65,37 @@ private:
       BlueprintReadWrite,
       BlueprintGetter = GetHeightReference,
       BlueprintSetter = SetHeightReference,
-      Category = "ACesium",
+      Category = "Cesium",
       meta = (AllowPrivateAccess))
-  ECesiumHeightReference HeightReference =
-      ECesiumHeightReference::RelativeToTerrain;
+  ECesiumHeightReferenceMode HeightReference =
+      ECesiumHeightReferenceMode::RelativeToTileset;
 
+  /**
+   * How many frames to skip between height reference updates.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       BlueprintGetter = GetHeightReferenceUpdateInterval,
       BlueprintSetter = SetHeightReferenceUpdateInterval,
-      Category = "ACesium",
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
-  int HeightReferenceUpdateInterval = 10;
+  int HeightReferenceUpdateInterval = 1;
 
+  /**
+   * Height above the terrain to maintain when HeightReference is
+   * RelativeToTerrain.
+   * This is automatically set to the actor's height above the terrain when
+   * the actor's Transform is updated.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       // BlueprintGetter = GetInitialHeightAboveTerrain,
       // BlueprintSetter = SetInitialHeightAboveTerrain,
-      Category = "ACesium",
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
-  float InitialHeightAboveTerrain = 0;
+  float FixedHeightAboveTerrain = 0;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -173,12 +182,6 @@ private:
 
 #pragma endregion
 
-public:
-  virtual void TickComponent(
-      float DeltaTime,
-      ELevelTick TickType,
-      FActorComponentTickFunction* ThisTickFunction) override;
-
 #pragma region Property Accessors
 public:
   /**
@@ -206,10 +209,10 @@ public:
   void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
 
   UFUNCTION(BlueprintGetter)
-  ECesiumHeightReference GetHeightReference() const;
+  ECesiumHeightReferenceMode GetHeightReference() const;
 
   UFUNCTION(BlueprintSetter)
-  void SetHeightReference(ECesiumHeightReference NewHeightReference);
+  void SetHeightReference(ECesiumHeightReferenceMode NewHeightReference);
 
   UFUNCTION(BlueprintGetter)
   int GetHeightReferenceUpdateInterval() const;
@@ -517,6 +520,12 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Sync();
 
+  /**
+   * @brief Calculate the height distance from the actor to the terrain.
+   * @param GroundIntersection Calculated point on the terrain directly below
+   * the actor.
+   * @return Whether an intersection was found.
+   */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   bool QueryPositionOnTileset(FVector& GroundIntersection);
 #pragma endregion
@@ -589,6 +598,12 @@ protected:
    */
   virtual void OnUnregister() override;
 #pragma endregion
+
+protected:
+  virtual void TickComponent(
+      float DeltaTime,
+      ELevelTick TickType,
+      FActorComponentTickFunction* ThisTickFunction) override;
 
 #pragma region Implementation Details
 private:

@@ -93,16 +93,19 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightReference(
-    ECesiumHeightReference NewHeightReference) {
+    ECesiumHeightReferenceMode NewHeightReference) {
   this->HeightReference = NewHeightReference;
 }
 
-ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
+ECesiumHeightReferenceMode
+UCesiumGlobeAnchorComponent::GetHeightReference() const {
   return this->HeightReference;
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightReferenceUpdateInterval(
     int NewHeightReferenceUpdateInterval) {
+  NewHeightReferenceUpdateInterval =
+      std::max(NewHeightReferenceUpdateInterval, 1);
   this->HeightReferenceUpdateInterval = NewHeightReferenceUpdateInterval;
 }
 
@@ -776,16 +779,13 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
   UWorld* pWorld = GetWorld();
   if (pWorld) {
+    // in editor, update the FixedHeightAboveTerrain used when the actor moves
+    // and HeightReference is set to RelativeToTerrain.
     if (pWorld->WorldType == EWorldType::Editor) {
       FVector llh = this->GetLongitudeLatitudeHeight();
       FVector positionOnTerrain;
       if (this->QueryPositionOnTileset(positionOnTerrain)) {
-        this->InitialHeightAboveTerrain = llh.Z - positionOnTerrain.Z;
-        UE_LOG(
-            LogTemp,
-            Display,
-            TEXT("Initial Height Above Tileset = %f"),
-            this->InitialHeightAboveTerrain);
+        this->FixedHeightAboveTerrain = llh.Z - positionOnTerrain.Z;
       }
     }
   }
@@ -889,7 +889,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (this->HeightReference != ECesiumHeightReference::RelativeToTerrain)
+  if (this->HeightReference != ECesiumHeightReferenceMode::RelativeToTileset)
     return;
 
   if (--this->_heightReferenceUpdateCounter > 0) {
@@ -904,7 +904,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
     return;
 
   FVector llh = this->GetLongitudeLatitudeHeight();
-  llh.Z = positionOnTerrain.Z + this->InitialHeightAboveTerrain;
+  llh.Z = positionOnTerrain.Z + this->FixedHeightAboveTerrain;
 
   this->MoveToLongitudeLatitudeHeight(llh);
 }
