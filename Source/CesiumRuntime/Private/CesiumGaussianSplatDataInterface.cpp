@@ -28,7 +28,7 @@ const FString ComputeSplatFunctionName = TEXT("ComputeSplat");
 
 namespace {
 void UploadTileTransforms(
-    UWorld* InWorld,
+    UWorld* pInWorld,
     FRHICommandListImmediate& RHICmdList,
     TArray<UCesiumGltfGaussianSplatComponent*>& Components,
     FReadBuffer& Buffer) {
@@ -38,7 +38,7 @@ void UploadTileTransforms(
 
   int32 NumComponents = 0;
   for (int32 i = 0; i < Components.Num(); i++) {
-    if (IsValid(Components[i]) && Components[i]->GetWorld() == InWorld) {
+    if (IsValid(Components[i]) && Components[i]->GetWorld() == pInWorld) {
       NumComponents++;
     }
   }
@@ -79,7 +79,7 @@ void UploadTileTransforms(
   for (int32 i = 0; i < Components.Num(); i++) {
     UCesiumGltfGaussianSplatComponent* pComponent = Components[i];
     check(pComponent);
-    if (pComponent->GetWorld() != InWorld) {
+    if (pComponent->GetWorld() != pInWorld) {
       continue;
     }
 
@@ -279,39 +279,39 @@ void FNDIGaussianSplatProxy::UploadToGPU(
 
     if (ExpectedPosBytes > 0) {
       {
-        float* PositionsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+        float* pPositionsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->PositionsBuffer.Buffer,
             0,
             ExpectedPosBytes,
             EResourceLockMode::RLM_WriteOnly));
-        float* ScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+        float* pScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->ScalesBuffer.Buffer,
             0,
             ExpectedPosBytes,
             EResourceLockMode::RLM_WriteOnly));
-        float* OrientationsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+        float* pOrientationsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->OrientationsBuffer.Buffer,
             0,
             NumSplats * 4 * sizeof(float),
             EResourceLockMode::RLM_WriteOnly));
-        float* ColorsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
+        float* pColorsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
             this->ColorsBuffer.Buffer,
             0,
             NumSplats * 4 * sizeof(float),
             EResourceLockMode::RLM_WriteOnly));
-        float* SHNonZeroCoeffsBuffer =
+        float* pSHNonZeroCoeffsBuffer =
             TotalCoeffsCount > 0 ? static_cast<float*>(RHICmdList.LockBuffer(
                                        this->SHNonZeroCoeffsBuffer.Buffer,
                                        0,
                                        TotalCoeffsCount * 4 * sizeof(float),
                                        EResourceLockMode::RLM_WriteOnly))
                                  : nullptr;
-        uint32* IndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
+        uint32* pIndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatIndicesBuffer.Buffer,
             0,
             NumSplats * sizeof(uint32),
             EResourceLockMode::RLM_WriteOnly));
-        uint32* SHDegreesBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
+        uint32* pSHDegreesBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
             this->SplatSHDegreesBuffer.Buffer,
             0,
             TotalSplatComponentsCount * sizeof(uint32) * 3,
@@ -329,39 +329,39 @@ void FNDIGaussianSplatProxy::UploadToGPU(
           }
 
           FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(PositionsBuffer + SplatCountWritten * 4),
+              reinterpret_cast<void*>(pPositionsBuffer + SplatCountWritten * 4),
               Component->Data.Positions.GetData(),
               Component->Data.Positions.Num() * sizeof(float));
           FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(ScalesBuffer + SplatCountWritten * 4),
+              reinterpret_cast<void*>(pScalesBuffer + SplatCountWritten * 4),
               Component->Data.Scales.GetData(),
               Component->Data.Scales.Num() * sizeof(float));
           FPlatformMemory::Memcpy(
               reinterpret_cast<void*>(
-                  OrientationsBuffer + SplatCountWritten * 4),
+                  pOrientationsBuffer + SplatCountWritten * 4),
               Component->Data.Orientations.GetData(),
               Component->Data.Orientations.Num() * sizeof(float));
           FPlatformMemory::Memcpy(
-              reinterpret_cast<void*>(ColorsBuffer + SplatCountWritten * 4),
+              reinterpret_cast<void*>(pColorsBuffer + SplatCountWritten * 4),
               Component->Data.Colors.GetData(),
               Component->Data.Colors.Num() * sizeof(float));
           if (TotalCoeffsCount > 0) {
             FPlatformMemory::Memcpy(
                 reinterpret_cast<void*>(
-                    SHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
+                    pSHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
                 Component->Data.SphericalHarmonics.GetData(),
                 Component->Data.SphericalHarmonics.Num() * sizeof(float));
           }
           for (int32 j = 0; j < Component->Data.NumSplats; j++) {
-            IndexBuffer[SplatCountWritten + j] =
+            pIndexBuffer[SplatCountWritten + j] =
                 static_cast<uint32>(CurrentIdx);
           }
 
-          SHDegreesBuffer[CurrentIdx * 3] =
+          pSHDegreesBuffer[CurrentIdx * 3] =
               static_cast<uint32>(Component->Data.NumCoefficients);
-          SHDegreesBuffer[CurrentIdx * 3 + 1] =
+          pSHDegreesBuffer[CurrentIdx * 3 + 1] =
               static_cast<uint32>(CoeffCountWritten);
-          SHDegreesBuffer[CurrentIdx * 3 + 2] =
+          pSHDegreesBuffer[CurrentIdx * 3 + 2] =
               static_cast<uint32>(SplatCountWritten);
 
           SplatCountWritten += Component->Data.NumSplats;

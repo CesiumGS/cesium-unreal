@@ -3065,7 +3065,6 @@ static void loadPrimitiveGameThreadPart(
     }
     UCesiumGltfGaussianSplatComponent* pGaussianSplat =
         NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
-    pGaussianSplat->Dimensions = loadResult.dimensions;
     pGaussianSplat->Data = MoveTemp(*loadResult.GaussianSplatData.Release());
     pGaussianSplat->SetupAttachment(pGltf);
     pGaussianSplat->RegisterComponent();

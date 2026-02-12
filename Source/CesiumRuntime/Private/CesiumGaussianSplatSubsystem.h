@@ -56,11 +56,11 @@ private:
   void UpdateNiagaraComponent();
   UCesiumGaussianSplatDataInterface* GetSplatInterface() const;
 
-  UNiagaraComponent* NiagaraComponent = nullptr;
+  UNiagaraComponent* pNiagaraComponent = nullptr;
 
-  ACesiumGaussianSplatActor* NiagaraActor = nullptr;
+  ACesiumGaussianSplatActor* pNiagaraActor = nullptr;
 
-  UWorld* LastCreatedWorld = nullptr;
+  UWorld* pLastCreatedWorld = nullptr;
   bool bIsTickEnabled = false;
   int32 NumSplats = 0;
 

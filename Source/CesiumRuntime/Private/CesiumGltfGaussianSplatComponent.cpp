@@ -107,8 +107,7 @@ void writeConvertedAccessor(
 } // namespace
 
 // Sets default values for this component's properties
-UCesiumGltfGaussianSplatComponent::UCesiumGltfGaussianSplatComponent()
-    : Dimensions(glm::vec3(0)) {}
+UCesiumGltfGaussianSplatComponent::UCesiumGltfGaussianSplatComponent() {}
 
 UCesiumGltfGaussianSplatComponent::~UCesiumGltfGaussianSplatComponent() {}
 
