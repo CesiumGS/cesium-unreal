@@ -889,8 +889,6 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  return;
-
   if (--this->_heightReferenceUpdateCounter > 0) {
     return;
   }
