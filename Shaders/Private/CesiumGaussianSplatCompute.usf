@@ -120,11 +120,11 @@ void {FunctionName}(
   float2 J2 = -focal * float2(t.x, t.y) / (t.z * t.z);
   float3x3 J = float3x3(
     J1.x, 0.0, J2.x,
-    0.0, J1.y, J2.y,
+    0.0, -J1.y, -J2.y,
     0.0, 0.0, 0.0
   );
 
-  float3x3 R = (float3x3)transpose(View.TranslatedWorldToView);
+  float3x3 R = (float3x3)mul(transpose(View.TranslatedWorldToView), InTileRotationMatrix);
 
   // Transform our covariance into view space to ensure our orientation is correct.
   float3x3 Vrk_view = mul(mul(R, Vrk), transpose(R));
@@ -170,8 +170,7 @@ void {FunctionName}(
   OutSpriteSize.y = length(WorldPos_H - yWorld) * 2;
 
   // Calculate the rotation of the quad to fit the eigenvectors.
-  float Z = dot(float2(0, 1), normalize(minorAxis));
-  OutSpriteRotation = degrees(acos(Z));
+  OutSpriteRotation = degrees(atan2(lambda1 - diagonal1, offDiagonal));
 
 
   // Compute the spherical harmonics.
@@ -191,7 +190,7 @@ void {FunctionName}(
     int SHCount = {SHDegrees}[TileIndex * 3];
     int SHOffset = {SHDegrees}[TileIndex * 3 + 1] + (Index - {SHDegrees}[TileIndex * 3 + 2]) * SHCount;
 
-    float3 WorldViewDir = normalize(WorldPos_H - CameraPosition);
+    float3 WorldViewDir = normalize(mul(InTileRotationMatrix, WorldPos_H - CameraPosition));
     float3x3 WorldToLocal = mul(InverseTileMatrix, M_SystemWorldToLocal);
     float3 LocalViewDir = normalize(mul(WorldViewDir, InverseTileMatrix));
 
