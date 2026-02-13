@@ -2,6 +2,8 @@
 
 #include "CesiumMetadataValueType.h"
 
+#include <Cesium3DTiles/ClassProperty.h>
+
 using namespace CesiumGltf;
 
 FCesiumMetadataValueType::FCesiumMetadataValueType()
@@ -41,4 +43,19 @@ FString FCesiumMetadataValueType::ToString() const {
   }
 
   return FString::Join(strings, TEXT(" "));
+}
+
+/*static*/ FCesiumMetadataValueType FCesiumMetadataValueType::fromClassProperty(
+    const Cesium3DTiles::ClassProperty& property) {
+  PropertyType propertyType = convertStringToPropertyType(property.type);
+
+  PropertyComponentType propertyComponentType =
+      property.componentType
+          ? convertStringToPropertyComponentType(*property.componentType)
+          : PropertyComponentType::None;
+
+  return FCesiumMetadataValueType{
+      ECesiumMetadataType(propertyType),
+      ECesiumMetadataComponentType(propertyComponentType),
+      property.array};
 }

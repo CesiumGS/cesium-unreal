@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -11,6 +11,7 @@
 #include "UObject/ObjectMacros.h"
 
 #include <CesiumGltf/PropertyTypeTraits.h>
+#include <CesiumUtility/JsonValue.h>
 #include <glm/glm.hpp>
 #include <optional>
 #include <swl/variant.hpp>
@@ -131,9 +132,7 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value)
-      : FCesiumMetadataValue(
-            std::move(Value),
-            TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
+      : FCesiumMetadataValue(Value, TSharedPtr<FCesiumMetadataEnum>(nullptr)) {}
 
   template <typename ArrayType>
   explicit FCesiumMetadataValue(
@@ -198,12 +197,44 @@ public:
     this->_valueType = std::move(temp._valueType);
   }
 
+  /**
+   * Constructs a metadata value from a given FCesiumPropertyArray.
+   */
+  FCesiumMetadataValue(FCesiumPropertyArray&& Array);
+
   FCesiumMetadataValue(FCesiumMetadataValue&& rhs);
   FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs);
   FCesiumMetadataValue(const FCesiumMetadataValue& rhs);
   FCesiumMetadataValue& operator=(const FCesiumMetadataValue& rhs);
 
+  /**
+   * Converts a CesiumUtility::JsonValue to a FCesiumMetadataValue with the
+   * specified type. This is a strict interpretation of the value; conversion
+   * will not be done between types or component types, even if possible.
+   *
+   * @param jsonValue The JSON value.
+   * @param targetType The value type to which to convert the JSON value.
+   * @returns The value as an FCesiumMetadataValue.
+   */
+  static FCesiumMetadataValue fromJsonValue(
+      const CesiumUtility::JsonValue& jsonValue,
+      const FCesiumMetadataValueType& targetType);
+
 private:
+  /**
+   * Create a FCesiumMetadataValue from the given JsonValue::Array, interpreted
+   * from the target type.
+   *
+   * Numeric arrays can be interpreted as either scalar arrays or vector/matrix
+   * values. It is also possible to have arrays of vectors or arrays of
+   * matrices. If this function is called with bIsArray = true, then nested
+   * arrays are acceptable (assuming vector or matrix type). Otherwise, the
+   * array is considered invalid.
+   */
+  static FCesiumMetadataValue fromJsonArray(
+      const CesiumUtility::JsonValue::Array& jsonValue,
+      const FCesiumMetadataValueType& targetType);
+
   ValueType _value;
   TOptional<FCesiumPropertyArray> _arrayValue;
   FCesiumMetadataValueType _valueType;

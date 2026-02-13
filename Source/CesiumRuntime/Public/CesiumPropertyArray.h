@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -9,10 +9,14 @@
 #include <CesiumGltf/PropertyArrayView.h>
 #include <CesiumGltf/PropertyTypeTraits.h>
 #include <swl/variant.hpp>
+
 #include "CesiumPropertyArray.generated.h"
 
+struct FCesiumMetadataValue;
+
 /**
- * A Blueprint-accessible wrapper for an array property in glTF metadata.
+ * A Blueprint-accessible wrapper for an array value from 3D Tiles or glTF
+ * metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPropertyArray {
@@ -99,7 +103,7 @@ private:
 
 public:
   /**
-   * Constructs an empty array instance with an unknown element type.
+   * Constructs an empty instance with an unknown element type.
    */
   FCesiumPropertyArray();
 
@@ -147,4 +151,5 @@ private:
   TSharedPtr<FCesiumMetadataEnum> _pEnumDefinition;
 
   friend class UCesiumPropertyArrayBlueprintLibrary;
+  friend struct FCesiumMetadataValue;
 };

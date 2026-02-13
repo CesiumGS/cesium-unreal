@@ -88,7 +88,6 @@ ACesium3DTileset::ACesium3DTileset()
       _pStateDebug(nullptr),
 #endif
 
-      _featuresMetadataDescription(),
       _metadataDescription_DEPRECATED(),
 
       _lastTilesRendered(0),
@@ -953,22 +952,14 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumTileExcluder*> tileExcluders;
   this->GetComponents<UCesiumTileExcluder>(tileExcluders);
 
-  const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
-      this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
-
   // Check if this component exists for backwards compatibility.
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
   const UDEPRECATED_CesiumEncodedMetadataComponent* pEncodedMetadataComponent =
       this->FindComponentByClass<UDEPRECATED_CesiumEncodedMetadataComponent>();
 
-  this->_featuresMetadataDescription = std::nullopt;
   this->_metadataDescription_DEPRECATED = std::nullopt;
-
-  if (pFeaturesMetadataComponent) {
-    this->_featuresMetadataDescription =
-        pFeaturesMetadataComponent->Description;
-  } else if (pEncodedMetadataComponent) {
+  if (pEncodedMetadataComponent) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -1158,6 +1149,13 @@ void ACesium3DTileset::LoadTileset() {
     break;
   }
 
+  this->_pFeaturesMetadataComponent =
+      this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+
+  if (this->_pFeaturesMetadataComponent.IsValid()) {
+    this->_pFeaturesMetadataComponent->SyncStatistics();
+  }
+
 #ifdef CESIUM_DEBUG_TILE_STATES
   FString dbDirectory = FPaths::Combine(
       FPaths::ProjectSavedDir(),
@@ -1266,6 +1264,10 @@ void ACesium3DTileset::DestroyTileset() {
     if (pTileExcluder->IsActive()) {
       pTileExcluder->RemoveFromTileset();
     }
+  }
+
+  if (this->_pFeaturesMetadataComponent.IsValid()) {
+    this->_pFeaturesMetadataComponent->InterruptSync();
   }
 
   // Tiles are about to be deleted, so we should not keep raw pointers on them.
@@ -2066,6 +2068,17 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       glm::isnan(unrealWorldToCesiumTileset[3].y) ||
       glm::isnan(unrealWorldToCesiumTileset[3].z)) {
     // Probably caused by a zero scale.
+    return;
+  }
+
+  if (this->_pFeaturesMetadataComponent.IsValid() &&
+      this->_pFeaturesMetadataComponent->IsSyncing()) {
+    // Styling may require the tileset's metadata to be loaded first (for schema
+    // and/or statistics) before streaming tiles. But continue to dispatch tasks
+    // so that the metadata future resolves.
+    // This will not add much overhead since tilesets will have no metadata or
+    // otherwise embed it in the tileset.json anyway.
+    getAsyncSystem().dispatchMainThreadTasks();
     return;
   }
 

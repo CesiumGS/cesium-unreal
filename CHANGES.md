@@ -2,6 +2,15 @@
 
 ### ???
 
+##### Breaking Changes :mega:
+
+- Removed `Cesium3DTileset::getFeaturesMetadataDescription`. This can be directly retrieved from its attached `UCesiumFeaturesMetadataComponent` instead.
+
+##### Additions :tada:
+
+- Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
+- Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
+
 ##### Fixes :wrench:
 
 - Added a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
@@ -14,6 +23,7 @@
 - `ACesiumCartographicPolygon`s created via the Cesium editor panel are sized and translated to be visible in the active editor viewport.
 - Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
 - Re-enabled `ACesium3DTileset::EnableWaterMask` for macOS devices.
+
 
 ##### Fixes :wrench:
 

@@ -168,7 +168,7 @@ void accumulateFeaturesMetadataAccessors(
               std::to_string(encodedProperty.textureCoordinateSetIndex),
           gltfToUnrealTexCoordMap);
 
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           fullPropertyName +
               EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           index);
@@ -188,10 +188,10 @@ void accumulateFeaturesMetadataAccessors(
       if (accessorIndex < 0)
         continue;
 
-      primitiveResult.AccessorToFeatureIdIndexMap.emplace(
+      primitiveResult.accessorToFeatureIdIndexMap.emplace(
           accessorIndex,
           encodedFeatureIDSet.index);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName,
           addAttributeAccessorToMap(
               primitive,
@@ -201,7 +201,7 @@ void accumulateFeaturesMetadataAccessors(
       int64 setIndex = encodedFeatureIDSet.texture->textureCoordinateSetIndex;
       std::string attributeName = "TEXCOORD_" + std::to_string(setIndex);
 
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName + EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           addAttributeAccessorToMap(
               primitive,
@@ -217,7 +217,7 @@ void accumulateFeaturesMetadataAccessors(
       // Use try_emplace to ensure a texture coordinate index is only assigned
       // the first time.
       gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName,
           gltfToUnrealTexCoordMap[-1]);
     }
@@ -244,7 +244,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
   for (const CesiumEncodedMetadataUtility::EncodedFeatureIdTexture&
            encodedFeatureIdTexture :
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
-    primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+    primitiveResult.featuresMetadataTexCoordParameters.Emplace(
         encodedFeatureIdTexture.baseName + "UV",
         addAttributeAccessorToMap(
             primitive,
@@ -266,7 +266,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
       if (pEncodedFeatureTexture) {
         for (const CesiumEncodedMetadataUtility::EncodedFeatureTextureProperty&
                  encodedProperty : pEncodedFeatureTexture->properties) {
-          primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+          primitiveResult.featuresMetadataTexCoordParameters.Emplace(
               encodedProperty.baseName + "UV",
               addAttributeAccessorToMap(
                   primitive,
@@ -299,10 +299,10 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
       if (accessor < 0)
         continue;
 
-      primitiveResult.AccessorToFeatureIdIndexMap.emplace(
+      primitiveResult.accessorToFeatureIdIndexMap.emplace(
           accessor,
           encodedFeatureIdAttribute.index);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           encodedFeatureIdAttribute.name,
           addAttributeAccessorToMap(
               primitive,
@@ -503,8 +503,8 @@ void populateUnrealTexCoords(
       result.GltfToUnrealTexCoordMap;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (modelOptions.pFeaturesMetadataDescription) {
-    for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
+  if (modelOptions.pFeaturesMetadata.IsValid()) {
+    for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds(
           result.Features,
           indexPair.second,
@@ -514,7 +514,7 @@ void populateUnrealTexCoords(
           duplicateVertices);
     }
   } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
-    for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
+    for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds_DEPRECATED(
           result.Metadata_DEPRECATED,
           indexPair.second,
@@ -527,7 +527,7 @@ void populateUnrealTexCoords(
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   for (const auto indexPair : gltfToUnrealTexCoordMap) {
-    if (result.AccessorToFeatureIdIndexMap.contains(indexPair.first)) {
+    if (result.accessorToFeatureIdIndexMap.contains(indexPair.first)) {
       continue;
     }
     copyTextureCoordinates(
@@ -1123,7 +1123,9 @@ static void loadPrimitiveFeaturesMetadata(
       primitiveResult.TexCoordAccessorMap);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      pModelOptions->pFeaturesMetadataDescription;
+      pModelOptions->pFeaturesMetadata.IsValid()
+          ? &pModelOptions->pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Check for deprecated metadata description
@@ -1612,7 +1614,7 @@ static void loadPrimitive(
         options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
 
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (modelOptions.pFeaturesMetadataDescription) {
+    if (modelOptions.pFeaturesMetadata.IsValid()) {
       accumulateFeaturesMetadataAccessors(
           model,
           primitive,
@@ -2335,7 +2337,9 @@ static void loadModelMetadata(
   result.Metadata = FCesiumModelMetadata(model, *pModelMetadata);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      options.pFeaturesMetadataDescription;
+      options.pFeaturesMetadata.IsValid()
+          ? &options.pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   const FMetadataDescription* pMetadataDescription_DEPRECATED =
@@ -2354,6 +2358,26 @@ static void loadModelMetadata(
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
+static void gatherStatistics(
+    LoadedModelResult& result,
+    const TArray<FCesiumMetadataClassStatisticsDescription>& statistics) {
+  for (const FCesiumMetadataClassStatisticsDescription& classStatistics :
+       statistics) {
+    for (const FCesiumMetadataPropertyStatisticsDescription&
+             propertyStatistics : classStatistics.Properties) {
+      for (const FCesiumMetadataPropertyStatisticValue& statisticValue :
+           propertyStatistics.Values) {
+        result.metadataStatistics.Add(
+            EncodedFeaturesMetadata::getNameForStatistic(
+                classStatistics.Id,
+                propertyStatistics.Id,
+                statisticValue.Semantic),
+            statisticValue.Value);
+      }
+    }
+  }
+}
+
 static CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 loadModelAnyThreadPart(
     const CesiumAsync::AsyncSystem& asyncSystem,
@@ -2369,6 +2393,12 @@ loadModelAnyThreadPart(
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
+
+            if (options.pFeaturesMetadata.IsValid()) {
+              gatherStatistics(
+                  pHalf->loadModelResult,
+                  options.pFeaturesMetadata->Description.Statistics);
+            }
 
             glm::dmat4x4 rootTransform = transform;
 
@@ -2729,16 +2759,16 @@ void SetWaterParameterValues(
 }
 
 static void SetFeaturesMetadataParameterValues(
-    const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
     LoadedPrimitiveResult& loadResult,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
   // This handles texture coordinate indices for both attribute feature ID
   // sets and property textures.
   for (const auto& textureCoordinateSet :
-       loadResult.FeaturesMetadataTexCoordParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -2789,6 +2819,29 @@ static void SetFeaturesMetadataParameterValues(
           association,
           index,
           propertyTable);
+    }
+  }
+
+  for (const auto& pair : metadataStatistics) {
+    FCesiumMetadataValueType valueType =
+        UCesiumMetadataValueBlueprintLibrary::GetValueType(pair.Value);
+    switch (valueType.Type) {
+    case ECesiumMetadataType::Scalar:
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(FName(pair.Key), association, index),
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(pair.Value, 0.0f));
+      break;
+    case ECesiumMetadataType::Vec2:
+    case ECesiumMetadataType::Vec3:
+    case ECesiumMetadataType::Vec4:
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(FName(pair.Key), association, index),
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              pair.Value,
+              FVector4::Zero()));
+      break;
+    default:
+      break;
     }
   }
 }
@@ -2847,7 +2900,7 @@ static void SetMetadataParameterValues_DEPRECATED(
   }
 
   for (const auto& textureCoordinateSet :
-       loadResult.FeaturesMetadataTexCoordParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -3023,7 +3076,8 @@ static void loadPrimitiveGameThreadPart(
     bool enableDoubleSidedCollisions,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
-    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
+    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -3067,11 +3121,12 @@ static void loadPrimitiveGameThreadPart(
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
 
-    const std::optional<FCesiumFeaturesMetadataDescription>&
-        maybeFeaturesDescription =
-            pTilesetActor->getFeaturesMetadataDescription();
-    if (maybeFeaturesDescription) {
-      addInstanceFeatureIds(pInstancedComponent, *maybeFeaturesDescription);
+    const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+        pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+    if (pFeaturesMetadataComponent) {
+      addInstanceFeatureIds(
+          pInstancedComponent,
+          pFeaturesMetadataComponent->Description);
     }
 
     pCesiumPrimitive = pInstancedComponent;
@@ -3312,9 +3367,9 @@ static void loadPrimitiveGameThreadPart(
       int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
       if (featuresMetadataIndex >= 0) {
         SetFeaturesMetadataParameterValues(
-            model,
             *pGltf,
             loadResult,
+            metadataStatistics,
             pMaterialForGltfPrimitive,
             EMaterialParameterAssociation::LayerParameter,
             featuresMetadataIndex);
@@ -3492,34 +3547,35 @@ UCesiumGltfComponent::CreateOffGameThread(
   //   return nullptr;
   // }
 
-  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
-  Gltf->pTile = &tile;
-  Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
-  Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  pGltf->pTile = &tile;
+  pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
+  pGltf->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
-  Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
-  Gltf->EncodedMetadata_DEPRECATED =
+  pGltf->Metadata = std::move(pReal->loadModelResult.Metadata);
+  pGltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
+  pGltf->EncodedMetadata_DEPRECATED =
       std::move(pReal->loadModelResult.EncodedMetadata_DEPRECATED);
 
   if (pBaseMaterial) {
-    Gltf->BaseMaterial = pBaseMaterial;
+    pGltf->BaseMaterial = pBaseMaterial;
   }
 
   if (pBaseTranslucentMaterial) {
-    Gltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
+    pGltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
   }
 
   if (pBaseWaterMaterial) {
-    Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
+    pGltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  Gltf->CustomDepthParameters = CustomDepthParameters;
+  pGltf->CustomDepthParameters = CustomDepthParameters;
 
-  encodeModelMetadataGameThreadPart(Gltf->EncodedMetadata);
+  encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
-  if (Gltf->EncodedMetadata_DEPRECATED) {
-    encodeMetadataGameThreadPart(*Gltf->EncodedMetadata_DEPRECATED);
+  if (pGltf->EncodedMetadata_DEPRECATED) {
+    encodeMetadataGameThreadPart(*pGltf->EncodedMetadata_DEPRECATED);
   }
 
   for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
@@ -3528,7 +3584,7 @@ UCesiumGltfComponent::CreateOffGameThread(
            node.meshResult->primitiveResults) {
         loadPrimitiveGameThreadPart(
             model,
-            Gltf,
+            pGltf,
             primitive,
             cesiumToUnrealTransform,
             tile,
@@ -3536,19 +3592,20 @@ UCesiumGltfComponent::CreateOffGameThread(
             enableDoubleSidedCollisions,
             pTilesetActor,
             node.InstanceTransforms,
-            node.pInstanceFeatures);
+            node.pInstanceFeatures,
+            pReal->loadModelResult.metadataStatistics);
       }
     }
   }
 
   if (ICesium3DTilesetLifecycleEventReceiver* Receiver =
           pTilesetActor->GetLifecycleEventReceiver()) {
-    Receiver->OnTileLoaded(*Gltf);
+    Receiver->OnTileLoaded(*pGltf);
   }
 
-  Gltf->SetVisibility(false, true);
-  Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-  return Gltf;
+  pGltf->SetVisibility(false, true);
+  pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  return pGltf;
 }
 
 void UCesiumGltfComponent::OnVisibilityChanged() {

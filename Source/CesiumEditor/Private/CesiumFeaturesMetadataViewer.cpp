@@ -72,7 +72,7 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
 void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
   CesiumFeaturesMetadataViewer::initializeStaticVariables();
 
-  SAssignNew(this->_pContent, SVerticalBox);
+  SAssignNew(this->_pContent, SScrollBox);
 
   const TWeakObjectPtr<ACesium3DTileset>& pTileset = InArgs._Tileset;
   FString label =
@@ -116,15 +116,20 @@ void populateEnumOptions(TArray<TSharedRef<TEnum>>& options) {
 void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   this->_metadataSources.Empty();
   this->_featureIdSets.Empty();
+  this->_statisticsClasses.Empty();
   this->_stringMap.Empty();
   this->_propertyTextureNames.Empty();
 
+  this->gatherTilesetStatistics();
   this->gatherGltfFeaturesMetadata();
+  this->syncPropertyEncodingDetails();
 
-  TSharedRef<SVerticalBox> pContent = this->_pContent.ToSharedRef();
+  TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
   pContent->ClearChildren();
 
-  pContent->AddSlot().AutoHeight()
+  TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
+
+  pVerticalBox->AddSlot().AutoHeight()
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
@@ -136,9 +141,9 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     for (const FeatureIdSetView& featureIdSet : this->_featureIdSets) {
       this->createGltfFeatureIdSetDropdown(pGltfFeatures, featureIdSet);
     }
-    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
+    pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
   } else {
-    pContent->AddSlot().AutoHeight()
+    pVerticalBox->AddSlot().AutoHeight()
         [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
          SHorizontalBox::Slot()
              [SNew(STextBlock)
@@ -147,7 +152,7 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                       "This tileset does not contain any glTF features in this view.")))]];
   }
 
-  pContent->AddSlot().AutoHeight()
+  pVerticalBox->AddSlot().AutoHeight()
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
@@ -159,9 +164,9 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     for (const PropertySourceView& source : this->_metadataSources) {
       this->createGltfPropertySourceDropdown(pGltfContent, source);
     }
-    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
+    pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
   } else {
-    pContent->AddSlot().AutoHeight()
+    pVerticalBox->AddSlot().AutoHeight()
         [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
          SHorizontalBox::Slot()
              [SNew(STextBlock)
@@ -170,10 +175,21 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                       "This tileset does not contain any glTF metadata in this view.")))]];
   }
 
-  this->syncPropertyEncodingDetails();
+  if (!this->_statisticsClasses.IsEmpty()) {
+    pVerticalBox->AddSlot().AutoHeight()
+        [SNew(SHeader).Content()
+             [SNew(STextBlock)
+                  .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                  .Text(FText::FromString(TEXT("Tileset Statistics")))
+                  .Margin(FMargin(0.f, 10.f))]];
+    TSharedRef<SScrollBox> pStatisticsContent = SNew(SScrollBox);
+    for (const ClassStatisticsView& theClass : this->_statisticsClasses) {
+      this->createClassStatisticsDropdown(pStatisticsContent, theClass);
+    }
+    pVerticalBox->AddSlot().AutoHeight()[pStatisticsContent];
+  }
 
-  pContent->AddSlot()
-      .AutoHeight()
+  pVerticalBox->AddSlot()
       .Padding(0.0f, 10.0f)
       .VAlign(VAlign_Bottom)
       .HAlign(HAlign_Center)
@@ -189,6 +205,135 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                  this->SyncAndRebuildUI();
                  return FReply::Handled();
                })];
+
+  pContent->AddSlot()[pVerticalBox];
+}
+
+void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
+  if (!this->_pTileset.IsValid())
+    return;
+
+  ACesium3DTileset& tileset = *this->_pTileset;
+  const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
+      tileset.GetTileset() ? tileset.GetTileset()->getMetadata() : nullptr;
+
+  const std::optional<Cesium3DTiles::Statistics>& maybeStatistics =
+      pMetadata ? pMetadata->statistics : std::nullopt;
+  if (!maybeStatistics) {
+    return;
+  }
+
+  if (!pMetadata->schema) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT(
+            "Tileset {} contains statistics but has no metadata schema to qualify them."),
+        *tileset.GetActorLabel());
+    return;
+  }
+  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
+
+  for (const auto& classIt : maybeStatistics->classes) {
+    if (schema.classes.find(classIt.first) == schema.classes.end()) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT(
+              "Tileset {} contains statistics for class {}, but it is missing from the metadata schema."),
+          *tileset.GetActorLabel());
+      continue;
+    }
+
+    const Cesium3DTiles::Class& tilesetClass = schema.classes.at(classIt.first);
+    TSharedRef<FString> pClassId = getSharedRef(classIt.first.c_str());
+
+    TArray<TSharedRef<PropertyStatisticsView>> properties;
+
+    for (const auto& propertyIt : classIt.second.properties) {
+      if (tilesetClass.properties.find(propertyIt.first) ==
+          tilesetClass.properties.end()) {
+        UE_LOG(
+            LogCesiumEditor,
+            Warning,
+            TEXT(
+                "Tileset {} contains statistics for property {} in class {}, but it is missing from the schema."),
+            *tileset.GetActorLabel());
+        continue;
+      }
+
+      FCesiumMetadataValueType valueType =
+          FCesiumMetadataValueType::fromClassProperty(
+              tilesetClass.properties.at(propertyIt.first));
+
+      // Statistics are only applicable to numeric types, so skip for all
+      // others.
+      switch (valueType.Type) {
+      case ECesiumMetadataType::Scalar:
+      case ECesiumMetadataType::Vec2:
+      case ECesiumMetadataType::Vec3:
+      case ECesiumMetadataType::Vec4:
+      case ECesiumMetadataType::Mat2:
+      case ECesiumMetadataType::Mat3:
+      case ECesiumMetadataType::Mat4:
+        break;
+      default:
+        continue;
+      }
+
+      FString propertyId = propertyIt.first.c_str();
+      TSharedRef<FString> pPropertyId = getSharedRef(propertyId);
+
+      PropertyStatisticsView propertyStatistics{
+          pClassId,
+          pPropertyId,
+          TArray<TSharedRef<StatisticView>>()};
+      TSharedRef<PropertyStatisticsView> pProperty =
+          MakeShared<PropertyStatisticsView>(std::move(propertyStatistics));
+
+      auto syncStatistic =
+          [&pProperty, &pClassId, &pPropertyId, &valueType](
+              ECesiumMetadataStatisticSemantic semantic,
+              const std::optional<CesiumUtility::JsonValue>& maybeValue) {
+            if (maybeValue) {
+              StatisticView statistic{
+                  pClassId,
+                  pPropertyId,
+                  semantic,
+                  FCesiumMetadataValue::fromJsonValue(*maybeValue, valueType)};
+              pProperty->statistics.Emplace(
+                  MakeShared<StatisticView>(std::move(statistic)));
+            }
+          };
+
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Min,
+          propertyIt.second.min);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Max,
+          propertyIt.second.max);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Mean,
+          propertyIt.second.mean);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Median,
+          propertyIt.second.median);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::StandardDeviation,
+          propertyIt.second.standardDeviation);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Variance,
+          propertyIt.second.variance);
+      syncStatistic(
+          ECesiumMetadataStatisticSemantic::Sum,
+          propertyIt.second.sum);
+
+      properties.Add(std::move(pProperty));
+    }
+
+    ClassStatisticsView classStatistics{pClassId, std::move(properties)};
+    this->_statisticsClasses.Emplace(std::move(classStatistics));
+  }
 }
 
 namespace {
@@ -658,9 +803,7 @@ template <typename TEnum> FString enumToNameString(TEnum value) {
   const UEnum* pEnum = StaticEnum<TEnum>();
   return pEnum ? pEnum->GetNameStringByValue((int64)value) : FString();
 }
-} // namespace
 
-namespace {
 template <typename TEnum> FText getEnumDisplayNameText(TEnum value) {
   UEnum* pEnum = StaticEnum<TEnum>();
   if (pEnum) {
@@ -708,6 +851,97 @@ bool validateEncodingDetails(const FCesiumMetadataEncodingDetails& details) {
   }
 }
 } // namespace
+
+TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createStatisticRow(
+    TSharedRef<StatisticView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+
+  TSharedRef<SWidget> pAddButton = PropertyCustomizationHelpers::MakeAddButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->registerStatistic(pItem); }),
+      FText::FromString(TEXT(
+          "Add this property statistic to the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create([this, pItem]() {
+        return this->findOnComponent(pItem) == ComponentSearchResult::NoMatch;
+      }));
+
+  TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->removeStatistic(pItem); }),
+      FText::FromString(TEXT(
+          "Remove this property statistic from the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create([this, pItem]() {
+        return this->findOnComponent(pItem) != ComponentSearchResult::NoMatch;
+      }));
+
+  return SNew(STableRow<TSharedRef<StatisticView>>, list)
+      .Content()
+          [SNew(SBox)
+               .HAlign(EHorizontalAlignment::HAlign_Fill)
+               .Content()
+                   [SNew(SHorizontalBox) +
+                    SHorizontalBox::Slot().FillWidth(0.5f).Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(
+                                 enumToNameString(pItem->semantic)))] +
+                    SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(
+                                 UCesiumMetadataValueBlueprintLibrary::
+                                     GetString(pItem->value, FString())))] +
+                    SHorizontalBox::Slot()
+                        .AutoWidth()
+                        .HAlign(EHorizontalAlignment::HAlign_Right)
+                        .VAlign(EVerticalAlignment::VAlign_Center)[pAddButton] +
+                    SHorizontalBox::Slot()
+                        .AutoWidth()
+                        .HAlign(EHorizontalAlignment::HAlign_Right)
+                        .VAlign(
+                            EVerticalAlignment::VAlign_Center)[pRemoveButton]]];
+}
+
+TSharedRef<ITableRow>
+CesiumFeaturesMetadataViewer::createPropertyStatisticsDropdown(
+    TSharedRef<PropertyStatisticsView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  return SNew(STableRow<TSharedRef<PropertyStatisticsView>>, list)
+      .Content()[SNew(SExpandableArea)
+                     .InitiallyCollapsed(true)
+                     .HeaderContent()[SNew(STextBlock)
+                                          .Text(FText::FromString(*pItem->pId))]
+                     .BodyContent()[SNew(SListView<TSharedRef<StatisticView>>)
+                                        .ListItemsSource(&pItem->statistics)
+                                        .SelectionMode(ESelectionMode::None)
+                                        .OnGenerateRow(
+                                            this,
+                                            &CesiumFeaturesMetadataViewer::
+                                                createStatisticRow)]];
+}
+
+void CesiumFeaturesMetadataViewer::createClassStatisticsDropdown(
+    TSharedRef<SScrollBox>& pContent,
+    const ClassStatisticsView& classStatistics) {
+
+  pContent->AddSlot()
+      [SNew(SExpandableArea)
+           .InitiallyCollapsed(false)
+           .HeaderContent()[SNew(STextBlock)
+                                .Text(FText::FromString(*classStatistics.pId))]
+           .BodyContent()
+               [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+                SHorizontalBox::Slot()
+                    [SNew(SListView<TSharedRef<PropertyStatisticsView>>)
+                         .ListItemsSource(&classStatistics.properties)
+                         .SelectionMode(ESelectionMode::None)
+                         .OnGenerateRow(
+                             this,
+                             &CesiumFeaturesMetadataViewer::
+                                 createPropertyStatisticsDropdown)]]];
+}
 
 TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
     TSharedRef<PropertyInstance> pItem,
@@ -1084,6 +1318,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       .VAlign(EVerticalAlignment::VAlign_Center)
           [SNew(SHorizontalBox) +
            SHorizontalBox::Slot().AutoWidth()[pAddButton] +
+           SHorizontalBox::Slot().AutoWidth()[pOverwriteButton] +
            SHorizontalBox::Slot().AutoWidth()[pRemoveButton]];
 
   return SNew(STableRow<TSharedRef<FeatureIdSetInstance>>, list)
@@ -1110,6 +1345,43 @@ void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
 }
 
 namespace {
+FCesiumMetadataPropertyStatisticsDescription* findPropertyStatistic(
+    TArray<FCesiumMetadataClassStatisticsDescription>& statistics,
+    const FString& classId,
+    const FString& propertyId,
+    bool createIfMissing) {
+  FCesiumMetadataClassStatisticsDescription* pClass =
+      statistics.FindByPredicate(
+          [&classId](
+              const FCesiumMetadataClassStatisticsDescription& existingClass) {
+            return existingClass.Id == classId;
+          });
+  if (!pClass && !createIfMissing) {
+    return nullptr;
+  }
+
+  if (!pClass) {
+    int32 index =
+        statistics.Emplace(FCesiumMetadataClassStatisticsDescription{classId});
+    pClass = &statistics[index];
+  }
+
+  FCesiumMetadataPropertyStatisticsDescription* pProperty =
+      pClass->Properties.FindByPredicate(
+          [&propertyId](const FCesiumMetadataPropertyStatisticsDescription&
+                            existingProperty) {
+            return existingProperty.Id == propertyId;
+          });
+
+  if (!pProperty && createIfMissing) {
+    int32 index = pClass->Properties.Emplace(
+        FCesiumMetadataPropertyStatisticsDescription{propertyId});
+    pProperty = &pClass->Properties[index];
+  }
+
+  return pProperty;
+}
+
 template <typename TPropertySource, typename TProperty>
 TProperty* findProperty(
     TArray<TPropertySource>& sources,
@@ -1165,8 +1437,41 @@ FCesiumFeatureIdSetDescription* findFeatureIdSet(
 
 CesiumFeaturesMetadataViewer::ComponentSearchResult
 CesiumFeaturesMetadataViewer::findOnComponent(
+    TSharedRef<StatisticView> pItem) const {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    return ComponentSearchResult::NoMatch;
+  }
+
+  UCesiumFeaturesMetadataComponent& featuresMetadata =
+      *this->_pFeaturesMetadataComponent;
+
+  TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
+      featuresMetadata.Description.Statistics;
+
+  FCesiumMetadataPropertyStatisticsDescription* pProperty =
+      findPropertyStatistic(
+          statistics,
+          *pItem->pClassId,
+          *pItem->pPropertyId,
+          false);
+  FCesiumMetadataPropertyStatisticValue* pValue = nullptr;
+
+  if (pProperty) {
+    pValue = pProperty->Values.FindByPredicate(
+        [semantic = pItem->semantic](
+            const FCesiumMetadataPropertyStatisticValue& existingValue) {
+          return existingValue.Semantic == semantic;
+        });
+  }
+
+  return pValue ? ComponentSearchResult::ExactMatch
+                : ComponentSearchResult::NoMatch;
+}
+
+CesiumFeaturesMetadataViewer::ComponentSearchResult
+CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<PropertyInstance> pItem,
-    bool compareEncodingDetails) {
+    bool compareEncodingDetails) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return ComponentSearchResult::NoMatch;
   }
@@ -1175,7 +1480,7 @@ CesiumFeaturesMetadataViewer::findOnComponent(
 
   if (pItem->encodingDetails) {
     // Check whether the property already exists.
-    FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
+    const FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTableDescription,
         FCesiumPropertyTablePropertyDescription>(
         featuresMetadata.Description.ModelMetadata.PropertyTables,
@@ -1206,7 +1511,7 @@ CesiumFeaturesMetadataViewer::findOnComponent(
       return ComponentSearchResult::ExactMatch;
     }
   } else {
-    FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
+    const FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
         FCesiumPropertyTextureDescription,
         FCesiumPropertyTexturePropertyDescription>(
         featuresMetadata.Description.ModelMetadata.PropertyTextures,
@@ -1226,18 +1531,17 @@ CesiumFeaturesMetadataViewer::findOnComponent(
 
 CesiumFeaturesMetadataViewer::ComponentSearchResult
 CesiumFeaturesMetadataViewer::findOnComponent(
-    TSharedRef<FeatureIdSetInstance> pItem) {
+    TSharedRef<FeatureIdSetInstance> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return ComponentSearchResult::NoMatch;
   }
   UCesiumFeaturesMetadataComponent& featuresMetadata =
       *this->_pFeaturesMetadataComponent;
 
-  FCesiumFeatureIdSetDescription* pFeatureIdSet = findFeatureIdSet(
+  const FCesiumFeatureIdSetDescription* pFeatureIdSet = findFeatureIdSet(
       featuresMetadata.Description.PrimitiveFeatures.FeatureIdSets,
       *pItem->pFeatureIdSetName,
       false);
-
   if (!pFeatureIdSet) {
     return ComponentSearchResult::NoMatch;
   }
@@ -1245,6 +1549,46 @@ CesiumFeaturesMetadataViewer::findOnComponent(
   return pFeatureIdSet->PropertyTableName == *pItem->pPropertyTableName
              ? ComponentSearchResult::ExactMatch
              : ComponentSearchResult::PartialMatch;
+}
+
+void CesiumFeaturesMetadataViewer::registerStatistic(
+    TSharedRef<StatisticView> pItem) {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumFeaturesMetadataComponent."))
+    return;
+  }
+
+  TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
+      this->_pFeaturesMetadataComponent->Description.Statistics;
+
+  FCesiumMetadataPropertyStatisticsDescription* pProperty =
+      findPropertyStatistic(
+          statistics,
+          *pItem->pClassId,
+          *pItem->pPropertyId,
+          true);
+  CESIUM_ASSERT(pProperty != nullptr);
+
+  this->_pFeaturesMetadataComponent->PreEditChange(NULL);
+
+  if (FCesiumMetadataPropertyStatisticValue* pValue =
+          pProperty->Values.FindByPredicate(
+              [semantic = pItem->semantic](
+                  const FCesiumMetadataPropertyStatisticValue& existingValue) {
+                return existingValue.Semantic == semantic;
+              });
+      pValue != nullptr) {
+    pValue->Value = pItem->value;
+  } else {
+    pProperty->Values.Emplace(
+        FCesiumMetadataPropertyStatisticValue{pItem->semantic, pItem->value});
+  }
+
+  this->_pFeaturesMetadataComponent->PostEditChange();
 }
 
 void CesiumFeaturesMetadataViewer::registerPropertyInstance(
@@ -1346,6 +1690,76 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
 
   this->_pFeaturesMetadataComponent->PostEditChange();
   UKismetSystemLibrary::EndTransaction();
+}
+
+void CesiumFeaturesMetadataViewer::removeStatistic(
+    TSharedRef<StatisticView> pItem) {
+  if (!this->_pFeaturesMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumFeaturesMetadataComponent."))
+    return;
+  }
+
+  TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
+      this->_pFeaturesMetadataComponent->Description.Statistics;
+  int32 classIndex = INDEX_NONE;
+  for (int32 i = 0; i < statistics.Num(); i++) {
+    if (statistics[i].Id == *pItem->pClassId) {
+      classIndex = i;
+      break;
+    }
+  }
+
+  if (classIndex == INDEX_NONE) {
+    return;
+  }
+  FCesiumMetadataClassStatisticsDescription& classStatistics =
+      statistics[classIndex];
+
+  int32 propertyIndex = INDEX_NONE;
+  for (int32 i = 0; i < classStatistics.Properties.Num(); i++) {
+    if (classStatistics.Properties[i].Id == *pItem->pPropertyId) {
+      propertyIndex = i;
+      break;
+    }
+  }
+  if (propertyIndex == INDEX_NONE) {
+    return;
+  }
+  FCesiumMetadataPropertyStatisticsDescription& propertyStatistics =
+      classStatistics.Properties[propertyIndex];
+
+  int32 valueIndex = INDEX_NONE;
+  for (int32 i = 0; i < propertyStatistics.Values.Num(); i++) {
+    if (propertyStatistics.Values[i].Semantic == pItem->semantic) {
+      valueIndex = i;
+      break;
+    }
+  }
+
+  if (valueIndex != INDEX_NONE) {
+    UKismetSystemLibrary::BeginTransaction(
+        TEXT("Cesium Features / Metadata Viewer"),
+        FText::FromString(FString("Remove statistic from ACesium3DTileset")),
+        this->_pFeaturesMetadataComponent.Get());
+    this->_pFeaturesMetadataComponent->PreEditChange(NULL);
+
+    propertyStatistics.Values.RemoveAt(valueIndex);
+
+    if (propertyStatistics.Values.IsEmpty()) {
+      classStatistics.Properties.RemoveAt(propertyIndex);
+    }
+
+    if (classStatistics.Properties.IsEmpty()) {
+      statistics.RemoveAt(classIndex);
+    }
+
+    this->_pFeaturesMetadataComponent->PostEditChange();
+    UKismetSystemLibrary::EndTransaction();
+  }
 }
 
 void CesiumFeaturesMetadataViewer::removePropertyInstance(
