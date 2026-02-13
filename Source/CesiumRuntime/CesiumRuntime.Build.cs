@@ -107,6 +107,13 @@ public class CesiumRuntime : ModuleRules
                 "ChaosCore"
             }
         );
+        // TinyXML2 is provided on Linux and Windows so use it,
+        // instead of the vcpkg version, to prevent conflicts with other
+        // plugins that link with the Unreal version.
+        if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            PublicDependencyModuleNames.Add("TinyXML2");
+        }
 
         // Use UE's MikkTSpace on most platforms, except Android and iOS.
         // On those platforms, UE's isn't available, so we use our own.
