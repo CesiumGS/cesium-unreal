@@ -10,6 +10,21 @@
 class ACesiumGeoreference;
 
 /**
+ * Mode for height reference of
+ */
+UENUM(BlueprintType)
+enum class ECesiumHeightReferenceMode : uint8 {
+  /**
+   * Height offset relative to the ellipsoid.
+   */
+  RelativeToEllipsoid UMETA(DisplayName = "Relative to ellipsoid"),
+  /**
+   * Reference height is relative to the terrain.
+   */
+  RelativeToTileset UMETA(DisplayName = "Clamp to terrain"),
+};
+
+/**
  * This component can be added to a movable actor to anchor it to the globe
  * and maintain precise placement. When the owning actor is transformed through
  * normal Unreal Engine mechanisms, the internal geospatial coordinates will be
@@ -44,6 +59,43 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
+
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReference,
+      BlueprintSetter = SetHeightReference,
+      Category = "Cesium",
+      meta = (AllowPrivateAccess))
+  ECesiumHeightReferenceMode HeightReference =
+      ECesiumHeightReferenceMode::RelativeToTileset;
+
+  /**
+   * How many frames to skip between height reference updates.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReferenceUpdateInterval,
+      BlueprintSetter = SetHeightReferenceUpdateInterval,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  int HeightReferenceUpdateInterval = 1;
+
+  /**
+   * Height above the terrain to maintain when HeightReference is
+   * RelativeToTerrain.
+   * This is automatically set to the actor's height above the terrain when
+   * the actor's Transform is updated.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      // BlueprintGetter = GetInitialHeightAboveTerrain,
+      // BlueprintSetter = SetInitialHeightAboveTerrain,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  float FixedHeightAboveTerrain = 0;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -155,6 +207,18 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
+
+  UFUNCTION(BlueprintGetter)
+  ECesiumHeightReferenceMode GetHeightReference() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetHeightReference(ECesiumHeightReferenceMode NewHeightReference);
+
+  UFUNCTION(BlueprintGetter)
+  int GetHeightReferenceUpdateInterval() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetHeightReferenceUpdateInterval(int NewHeightReferenceUpdateInterval);
 
   /**
    * Gets the resolved georeference used by this component. This is not
@@ -279,6 +343,7 @@ public:
 #pragma endregion
 
 #pragma region Public Methods
+  UCesiumGlobeAnchorComponent();
 
 public:
   /**
@@ -455,6 +520,14 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Sync();
 
+  /**
+   * @brief Calculate the height distance from the actor to the terrain.
+   * @param GroundIntersection Calculated point on the terrain directly below
+   * the actor.
+   * @return Whether an intersection was found.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  bool QueryPositionOnTileset(FVector& GroundIntersection);
 #pragma endregion
 
 #pragma region Obsolete
@@ -526,8 +599,16 @@ protected:
   virtual void OnUnregister() override;
 #pragma endregion
 
+protected:
+  virtual void TickComponent(
+      float DeltaTime,
+      ELevelTick TickType,
+      FActorComponentTickFunction* ThisTickFunction) override;
+
 #pragma region Implementation Details
 private:
+  int _heightReferenceUpdateCounter = 0;
+
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 
   USceneComponent* _getRootComponent(bool warnIfNull) const;
