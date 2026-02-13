@@ -789,7 +789,6 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
       }
     }
   }
-  UE_LOG(LogTemp, Display, TEXT("OnActorTransformChanged"));
 
   this->_setNewActorToECEFFromRelativeTransform();
 }
