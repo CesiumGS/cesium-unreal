@@ -1,5 +1,26 @@
 # Change Log {#changes}
 
+### ???
+
+##### Fixes :wrench:
+
+- Added a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
+- Build now uses the tinyxml2 library from Unreal's SDK on Linux and Windows if it is available. This eliminate a source of conflicts with other plugins that also use tinyxml2.
+
+### v2.23.0 - 2026-02-02
+
+##### Additions :tada:
+
+- `ACesiumCartographicPolygon`s created via the Cesium editor panel are sized and translated to be visible in the active editor viewport.
+- Added `ACesiumCartographicPolygon::SetPolygonPoints` to shape a polygon spline from a list of points in cartographic or Earth-Centered, Earth-Fixed space.
+- Re-enabled `ACesium3DTileset::EnableWaterMask` for macOS devices.
+
+##### Fixes :wrench:
+
+- Fixed an access violation that could occur if `ACesium3DTileset::RefreshTileset` was invoked in a callback for asynchronous actions.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.56.0 to v0.57.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.22.1 - 2026-01-05
 
 ##### Fixes :wrench:
@@ -110,7 +131,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 - Fixed error messages in the Unreal log about uninitialized fields in `FCesiumGeocoderServiceAttribution` and `FCesiumGeocoderServiceFeature`.
 - Fixed a bug where `CesiumEllipsoidFunctions` was inaccessible outside of the plugin.
-- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level. 
+- Fixed an issue where `UCesiumGlobeAnchorComponent::SetEastSouthUpRotation()` would throw an exception if no `ACesiumGeoreference` was found in the level.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.49.0 to v0.50.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 

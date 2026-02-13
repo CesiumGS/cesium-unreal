@@ -1,0 +1,12 @@
+set(IMPORT_LIB_LOCATION "@TINYXML2_LIB_LOCATION@")
+set(IMPORT_INCLUDE_DIR "@TINYXML2_INCLUDE_PATH@")
+
+# Use a prefix specific to this project
+set(projPrefix tinyxml2)
+set(proj tinyxml2)
+
+add_library(${projPrefix}::${proj} STATIC IMPORTED)
+set_target_properties(${projPrefix}::${proj} PROPERTIES
+  INCLUDE_DIRECTORIES "${IMPORT_INCLUDE_DIR}"
+  INTERFACE_INCLUDE_DIRECTORIES "${IMPORT_INCLUDE_DIR}"
+  IMPORTED_LOCATION "${IMPORT_LIB_LOCATION}")
