@@ -72,7 +72,7 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
 void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
   CesiumFeaturesMetadataViewer::initializeStaticVariables();
 
-  SAssignNew(this->_pContent, SVerticalBox);
+  SAssignNew(this->_pContent, SScrollBox);
 
   const TWeakObjectPtr<ACesium3DTileset>& pTileset = InArgs._Tileset;
   FString label =
@@ -116,6 +116,7 @@ void populateEnumOptions(TArray<TSharedRef<TEnum>>& options) {
 void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   this->_metadataSources.Empty();
   this->_featureIdSets.Empty();
+  this->_statisticsClasses.Empty();
   this->_stringMap.Empty();
   this->_propertyTextureNames.Empty();
 
@@ -123,10 +124,12 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   this->gatherGltfFeaturesMetadata();
   this->syncPropertyEncodingDetails();
 
-  TSharedRef<SVerticalBox> pContent = this->_pContent.ToSharedRef();
+  TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
   pContent->ClearChildren();
 
-  pContent->AddSlot().AutoHeight()
+  TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
+
+  pVerticalBox->AddSlot().AutoHeight()
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
@@ -138,9 +141,9 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     for (const FeatureIdSetView& featureIdSet : this->_featureIdSets) {
       this->createGltfFeatureIdSetDropdown(pGltfFeatures, featureIdSet);
     }
-    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
+    pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
   } else {
-    pContent->AddSlot().AutoHeight()
+    pVerticalBox->AddSlot().AutoHeight()
         [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
          SHorizontalBox::Slot()
              [SNew(STextBlock)
@@ -149,7 +152,7 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                       "This tileset does not contain any glTF features in this view.")))]];
   }
 
-  pContent->AddSlot().AutoHeight()
+  pVerticalBox->AddSlot().AutoHeight()
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
@@ -161,9 +164,9 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     for (const PropertySourceView& source : this->_metadataSources) {
       this->createGltfPropertySourceDropdown(pGltfContent, source);
     }
-    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
+    pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
   } else {
-    pContent->AddSlot().AutoHeight()
+    pVerticalBox->AddSlot().AutoHeight()
         [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
          SHorizontalBox::Slot()
              [SNew(STextBlock)
@@ -173,7 +176,7 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   }
 
   if (!this->_statisticsClasses.IsEmpty()) {
-    pContent->AddSlot().AutoHeight()
+    pVerticalBox->AddSlot().AutoHeight()
         [SNew(SHeader).Content()
              [SNew(STextBlock)
                   .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
@@ -183,11 +186,10 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
     for (const ClassStatisticsView& theClass : this->_statisticsClasses) {
       this->createClassStatisticsDropdown(pStatisticsContent, theClass);
     }
-    pContent->AddSlot().AutoHeight()[pStatisticsContent];
+    pVerticalBox->AddSlot().AutoHeight()[pStatisticsContent];
   }
 
-  pContent->AddSlot()
-      .AutoHeight()
+  pVerticalBox->AddSlot()
       .Padding(0.0f, 10.0f)
       .VAlign(VAlign_Bottom)
       .HAlign(HAlign_Center)
@@ -203,6 +205,8 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                  this->SyncAndRebuildUI();
                  return FReply::Handled();
                })];
+
+  pContent->AddSlot()[pVerticalBox];
 }
 
 void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
@@ -1314,6 +1318,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       .VAlign(EVerticalAlignment::VAlign_Center)
           [SNew(SHorizontalBox) +
            SHorizontalBox::Slot().AutoWidth()[pAddButton] +
+           SHorizontalBox::Slot().AutoWidth()[pOverwriteButton] +
            SHorizontalBox::Slot().AutoWidth()[pRemoveButton]];
 
   return SNew(STableRow<TSharedRef<FeatureIdSetInstance>>, list)

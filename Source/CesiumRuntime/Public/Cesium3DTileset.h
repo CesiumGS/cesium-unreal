@@ -1375,7 +1375,7 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
-  
+
   bool _destroyOnNextTick;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
