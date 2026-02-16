@@ -2,6 +2,10 @@
 
 ### ???
 
+##### Additions :tada:
+- Added `UCesiumGlobeAnchor::HeightReference`. Setting this to `ECesiumHeightReferenceMode::Tileset` will cause the actor to maintain its height above the tileset or geometry during LOD transitions or object movement.
+- Added `UCesiumGlobeAncor::TilesetHeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
+
 ##### Fixes :wrench:
 
 - Add a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.

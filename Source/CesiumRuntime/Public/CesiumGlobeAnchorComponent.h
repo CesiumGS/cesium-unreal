@@ -84,6 +84,8 @@ private:
   /**
    * Interval, in Ticks, to update object's height when HeightReference is set
    * to Tileset.
+   *
+   * A value of 1 causes Height to be updated on every Tick.
    */
   UPROPERTY(
       EditAnywhere,
