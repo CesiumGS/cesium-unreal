@@ -32,6 +32,31 @@ void FCesiumCameraManagerSpec::Define() {
        });
   });
 
+  Describe("AdditionalCameras", [this]() {
+    It("should add and remove a single camera", [this]() {
+      UWorld* world = CesiumTestHelpers::getGlobalWorldContext();
+      ACesiumCameraManager* cameraManager =
+          ACesiumCameraManager::GetDefaultCameraManager(world);
+      TestNotNull("Returned pointer is valid", cameraManager);
+      TestEqual(
+          "Starting camera count is 0",
+          cameraManager->AdditionalCameras.Num(),
+          0);
+
+      FCesiumCamera newCamera;
+      cameraManager->AdditionalCameras.Add(newCamera);
+      TestEqual(
+          "Camera count is 1 after camera is added",
+          cameraManager->AdditionalCameras.Num(),
+          1);
+      cameraManager->AdditionalCameras.Empty();
+      TestEqual(
+          "Camera count returns to 0",
+          cameraManager->AdditionalCameras.Num(),
+          0);
+    });
+  });
+
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   Describe("Deprecated", [this]() {
     Describe("AddCamera", [this]() {
