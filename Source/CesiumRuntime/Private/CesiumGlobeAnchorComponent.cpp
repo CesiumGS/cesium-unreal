@@ -593,6 +593,8 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   this->ResolveGeoreference();
+
+  _computeAndSetFixedHeightAboveHeightReference();
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
@@ -769,6 +771,17 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
+bool UCesiumGlobeAnchorComponent::_computeAndSetFixedHeightAboveHeightReference() {
+  FVector llh = this->GetLongitudeLatitudeHeight();
+  FVector positionOnTerrain;
+  if (this->QueryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain)) {
+    this->_fixedHeightAboveHeightReference = llh.Z - positionOnTerrain.Z;
+    return true;
+  }
+  return false;
+}
+
+
 void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     USceneComponent* InRootComponent,
     EUpdateTransformFlags UpdateTransformFlags,
@@ -778,18 +791,9 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   }
 
   UWorld* pWorld = GetWorld();
-  if (pWorld) {
-    // in editor, update the FixedHeightAboveTerrain used when the actor moves
-    // and HeightReference is set to RelativeToTerrain.
-    if (pWorld->WorldType == EWorldType::Editor) {
-      FVector llh = this->GetLongitudeLatitudeHeight();
-      FVector positionOnTerrain;
-      if (this->QueryPositionOnTileset(positionOnTerrain)) {
-        this->FixedHeightAboveTerrain = llh.Z - positionOnTerrain.Z;
-      }
-    }
+  if (pWorld && pWorld->WorldType == EWorldType::Editor) {
+    _computeAndSetFixedHeightAboveHeightReference();
   }
-
   this->_setNewActorToECEFFromRelativeTransform();
 }
 
@@ -835,7 +839,7 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
   }
 }
 
-bool UCesiumGlobeAnchorComponent::QueryPositionOnTileset(
+bool UCesiumGlobeAnchorComponent::QueryLongitudeLatitudeHeightPositionOnTileset(
     FVector& GroundIntersection) {
   GroundIntersection = {INFINITY, INFINITY, INFINITY};
   if (!GetOwner() || !GetWorld()) {
@@ -899,11 +903,11 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   FVector positionOnTerrain{};
   // Query the height above the 3D tileset at the actor's location
-  if (!QueryPositionOnTileset(positionOnTerrain))
+  if (!this->QueryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain))
     return;
 
   FVector llh = this->GetLongitudeLatitudeHeight();
-  llh.Z = positionOnTerrain.Z + this->FixedHeightAboveTerrain;
+  llh.Z = positionOnTerrain.Z + this->_fixedHeightAboveHeightReference;
 
   this->MoveToLongitudeLatitudeHeight(llh);
 }

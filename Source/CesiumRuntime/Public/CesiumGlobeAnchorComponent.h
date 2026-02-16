@@ -10,18 +10,19 @@
 class ACesiumGeoreference;
 
 /**
- * Mode for height reference of
+ * When updating actor's height during movement or LOD transitions, controls
+ * whether to maintain height relative to the ellipsoid or tileset.
  */
 UENUM(BlueprintType)
 enum class ECesiumHeightReferenceMode : uint8 {
   /**
-   * Height offset relative to the ellipsoid.
+   * Maintain height relative to the ellipsoid.
    */
   Ellipsoid UMETA(DisplayName = "Ellipsoid"),
   /**
-   * Reference height is relative to the terrain.
+   * Maintain height relative to the tileset.
    */
-  Tileset UMETA(DisplayName = "Tileset"),
+  Tileset UMETA(DisplayName = "Tileset")
 };
 
 /**
@@ -92,21 +93,6 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   int HeightReferenceUpdateInterval = 1;
-
-  /**
-   * Height above the terrain to maintain when HeightReference is
-   * RelativeToTerrain.
-   * This is automatically set to the actor's height above the terrain when
-   * the actor's Transform is updated.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      // BlueprintGetter = GetInitialHeightAboveTerrain,
-      // BlueprintSetter = SetInitialHeightAboveTerrain,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  float FixedHeightAboveTerrain = 0;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -532,13 +518,12 @@ public:
   void Sync();
 
   /**
-   * @brief Calculate the height distance from the actor to the terrain.
-   * @param GroundIntersection Calculated point on the terrain directly below
-   * the actor.
-   * @return Whether an intersection was found.
+   * Raycast directly downward from the component to the tileset. Calculate
+   * longitude/latitude/height coordinates of the intersection, if found.
+   * Returns whether an intersection was found.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  bool QueryPositionOnTileset(FVector& GroundIntersection);
+  bool QueryLongitudeLatitudeHeightPositionOnTileset(FVector& GroundIntersection);
 #pragma endregion
 
 #pragma region Obsolete
@@ -619,6 +604,11 @@ protected:
 #pragma region Implementation Details
 private:
   int _heightReferenceUpdateCounter = 0;
+
+  UPROPERTY()
+  float _fixedHeightAboveHeightReference = 0.0f;
+
+  bool _computeAndSetFixedHeightAboveHeightReference();
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 
