@@ -91,8 +91,11 @@ private:
       BlueprintGetter = GetHeightReferenceUpdateInterval,
       BlueprintSetter = SetHeightReferenceUpdateInterval,
       Category = "Cesium",
-      Meta = (AllowPrivateAccess, EditConditionHides, EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset")
-      )
+      Meta =
+          (AllowPrivateAccess,
+           EditConditionHides,
+           EditCondition =
+               "HeightReference == ECesiumHeightReferenceMode::Tileset"))
   int TilesetHeightUpdateInterval = 1;
 
   /**
@@ -603,7 +606,8 @@ private:
   float _fixedHeightAboveHeightReference = 0.0f;
 
   bool _computeAndSetFixedHeightAboveHeightReference();
-  bool _queryLongitudeLatitudeHeightPositionOnTileset(FVector& groundIntersection);
+  bool
+  _queryLongitudeLatitudeHeightPositionOnTileset(FVector& groundIntersection);
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 

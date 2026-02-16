@@ -771,7 +771,8 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
-bool UCesiumGlobeAnchorComponent::_computeAndSetFixedHeightAboveHeightReference() {
+bool UCesiumGlobeAnchorComponent::
+    _computeAndSetFixedHeightAboveHeightReference() {
   FVector llh = this->GetLongitudeLatitudeHeight();
   FVector positionOnTerrain;
   if (this->_queryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain)) {
@@ -781,8 +782,9 @@ bool UCesiumGlobeAnchorComponent::_computeAndSetFixedHeightAboveHeightReference(
   return false;
 }
 
-bool UCesiumGlobeAnchorComponent::_queryLongitudeLatitudeHeightPositionOnTileset(
-    FVector& groundIntersection) {
+bool UCesiumGlobeAnchorComponent::
+    _queryLongitudeLatitudeHeightPositionOnTileset(
+        FVector& groundIntersection) {
   groundIntersection = {INFINITY, INFINITY, INFINITY};
   if (!GetOwner() || !GetWorld()) {
     return false;
@@ -826,7 +828,6 @@ bool UCesiumGlobeAnchorComponent::_queryLongitudeLatitudeHeightPositionOnTileset
 
   return true;
 }
-
 
 void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     USceneComponent* InRootComponent,
@@ -884,7 +885,6 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
 }
-
 
 void UCesiumGlobeAnchorComponent::TickComponent(
     float DeltaTime,
