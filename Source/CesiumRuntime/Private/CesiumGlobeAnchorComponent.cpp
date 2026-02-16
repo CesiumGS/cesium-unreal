@@ -888,7 +888,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (this->HeightReference != ECesiumHeightReferenceMode::RelativeToTileset)
+  if (this->HeightReference != ECesiumHeightReferenceMode::Tileset)
     return;
 
   if (--this->_heightReferenceUpdateCounter > 0) {

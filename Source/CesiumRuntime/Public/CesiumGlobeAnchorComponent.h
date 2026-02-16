@@ -17,11 +17,11 @@ enum class ECesiumHeightReferenceMode : uint8 {
   /**
    * Height offset relative to the ellipsoid.
    */
-  RelativeToEllipsoid UMETA(DisplayName = "Relative to ellipsoid"),
+  Ellipsoid UMETA(DisplayName = "Ellipsoid"),
   /**
    * Reference height is relative to the terrain.
    */
-  RelativeToTileset UMETA(DisplayName = "Clamp to terrain"),
+  Tileset UMETA(DisplayName = "Tileset"),
 };
 
 /**
@@ -60,6 +60,16 @@ private:
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
+  /**
+   * Reference used when updating height during movement or LOD transitions.
+   *
+   * ELLIPSOID indicates that the object will maintain a fixed height above the
+   * ellipsoid. No special handling is performed.
+   *
+   * TILESET causes the object to maintain its height above the tileset. The
+   * object may move vertically to maintain a fixed height above the terrain or
+   * other geometry below the object.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -68,10 +78,11 @@ private:
       Category = "Cesium",
       meta = (AllowPrivateAccess))
   ECesiumHeightReferenceMode HeightReference =
-      ECesiumHeightReferenceMode::RelativeToTileset;
+      ECesiumHeightReferenceMode::Ellipsoid;
 
   /**
-   * How many frames to skip between height reference updates.
+   * Interval, in Ticks, to update object's height when HeightReference is set
+   * to Tileset.
    */
   UPROPERTY(
       EditAnywhere,
