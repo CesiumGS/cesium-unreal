@@ -16,11 +16,11 @@ class ACesiumGeoreference;
 UENUM(BlueprintType)
 enum class ECesiumHeightReferenceMode : uint8 {
   /**
-   * Maintain height relative to the ellipsoid.
+   * Height is interpreted relative to ellipsoid.
    */
   Ellipsoid UMETA(DisplayName = "Ellipsoid"),
   /**
-   * Maintain height relative to the tileset.
+   * Height is interpreted relative to the surface of a 3D tileset.
    */
   Tileset UMETA(DisplayName = "Tileset")
 };
@@ -91,8 +91,9 @@ private:
       BlueprintGetter = GetHeightReferenceUpdateInterval,
       BlueprintSetter = SetHeightReferenceUpdateInterval,
       Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  int HeightReferenceUpdateInterval = 1;
+      Meta = (AllowPrivateAccess, EditConditionHides, EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset")
+      )
+  int TilesetHeightUpdateInterval = 1;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -517,13 +518,6 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Sync();
 
-  /**
-   * Raycast directly downward from the component to the tileset. Calculate
-   * longitude/latitude/height coordinates of the intersection, if found.
-   * Returns whether an intersection was found.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  bool QueryLongitudeLatitudeHeightPositionOnTileset(FVector& GroundIntersection);
 #pragma endregion
 
 #pragma region Obsolete
@@ -609,6 +603,7 @@ private:
   float _fixedHeightAboveHeightReference = 0.0f;
 
   bool _computeAndSetFixedHeightAboveHeightReference();
+  bool _queryLongitudeLatitudeHeightPositionOnTileset(FVector& groundIntersection);
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 

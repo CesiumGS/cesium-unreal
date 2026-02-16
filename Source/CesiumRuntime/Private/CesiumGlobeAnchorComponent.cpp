@@ -106,11 +106,11 @@ void UCesiumGlobeAnchorComponent::SetHeightReferenceUpdateInterval(
     int NewHeightReferenceUpdateInterval) {
   NewHeightReferenceUpdateInterval =
       std::max(NewHeightReferenceUpdateInterval, 1);
-  this->HeightReferenceUpdateInterval = NewHeightReferenceUpdateInterval;
+  this->TilesetHeightUpdateInterval = NewHeightReferenceUpdateInterval;
 }
 
 int UCesiumGlobeAnchorComponent::GetHeightReferenceUpdateInterval() const {
-  return this->HeightReferenceUpdateInterval;
+  return this->TilesetHeightUpdateInterval;
 }
 
 ACesiumGeoreference*
@@ -774,11 +774,57 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 bool UCesiumGlobeAnchorComponent::_computeAndSetFixedHeightAboveHeightReference() {
   FVector llh = this->GetLongitudeLatitudeHeight();
   FVector positionOnTerrain;
-  if (this->QueryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain)) {
+  if (this->_queryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain)) {
     this->_fixedHeightAboveHeightReference = llh.Z - positionOnTerrain.Z;
     return true;
   }
   return false;
+}
+
+bool UCesiumGlobeAnchorComponent::_queryLongitudeLatitudeHeightPositionOnTileset(
+    FVector& groundIntersection) {
+  groundIntersection = {INFINITY, INFINITY, INFINITY};
+  if (!GetOwner() || !GetWorld()) {
+    return false;
+  }
+
+  // Get the actor's current world position
+  FVector actorPosition = GetOwner()->GetActorLocation();
+
+  constexpr float traceDistance = 1000000.0f;
+  // Set up the line trace start and end points
+  const FVector rayStart = actorPosition + FVector(0.0, 0.0, traceDistance);
+  const FVector rayEnd = actorPosition - FVector(0.0, 0.0, traceDistance);
+
+  FCollisionQueryParams queryParams{};
+
+  // Ignore the owner actor to avoid self collision
+  queryParams.AddIgnoredActor(GetOwner());
+  queryParams.bTraceComplex = true;
+  queryParams.bReturnPhysicalMaterial = false;
+
+  FHitResult rayIntersection;
+  bool hit = GetWorld()->LineTraceSingleByChannel(
+      rayIntersection,
+      rayStart,
+      rayEnd,
+      ECC_WorldStatic,
+      queryParams);
+
+  if (!hit) {
+    return false;
+  }
+
+  ACesiumGeoreference* pGeoreference = ResolveGeoreference();
+
+  if (!IsValid(pGeoreference))
+    return false;
+
+  groundIntersection =
+      pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
+          rayIntersection.Location);
+
+  return true;
 }
 
 
@@ -839,51 +885,6 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
   }
 }
 
-bool UCesiumGlobeAnchorComponent::QueryLongitudeLatitudeHeightPositionOnTileset(
-    FVector& GroundIntersection) {
-  GroundIntersection = {INFINITY, INFINITY, INFINITY};
-  if (!GetOwner() || !GetWorld()) {
-    return false;
-  }
-
-  // Get the actor's current world position
-  FVector actorPosition = GetOwner()->GetActorLocation();
-
-  constexpr float traceDistance = 1000000.0f;
-  // Set up the line trace start and end points
-  const FVector rayStart = actorPosition + FVector(0.0, 0.0, traceDistance);
-  const FVector rayEnd = actorPosition - FVector(0.0, 0.0, traceDistance);
-
-  FCollisionQueryParams queryParams{};
-
-  // Ignore the owner actor to avoid self collision
-  queryParams.AddIgnoredActor(GetOwner());
-  queryParams.bTraceComplex = true;
-  queryParams.bReturnPhysicalMaterial = false;
-
-  FHitResult rayIntersection;
-  bool hit = GetWorld()->LineTraceSingleByChannel(
-      rayIntersection,
-      rayStart,
-      rayEnd,
-      ECC_WorldStatic,
-      queryParams);
-
-  if (!hit) {
-    return false;
-  }
-
-  ACesiumGeoreference* pGeoreference = ResolveGeoreference();
-
-  if (!IsValid(pGeoreference))
-    return false;
-
-  GroundIntersection =
-      pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
-          rayIntersection.Location);
-
-  return true;
-}
 
 void UCesiumGlobeAnchorComponent::TickComponent(
     float DeltaTime,
@@ -899,11 +900,11 @@ void UCesiumGlobeAnchorComponent::TickComponent(
     return;
   }
 
-  this->_heightReferenceUpdateCounter = this->HeightReferenceUpdateInterval;
+  this->_heightReferenceUpdateCounter = this->TilesetHeightUpdateInterval;
 
   FVector positionOnTerrain{};
   // Query the height above the 3D tileset at the actor's location
-  if (!this->QueryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain))
+  if (!this->_queryLongitudeLatitudeHeightPositionOnTileset(positionOnTerrain))
     return;
 
   FVector llh = this->GetLongitudeLatitudeHeight();
