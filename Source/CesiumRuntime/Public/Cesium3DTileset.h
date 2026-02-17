@@ -252,6 +252,16 @@ private:
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumCameraManager> CameraManager;
 
+  UPROPERTY(
+    EditAnywhere,
+    BlueprintReadWrite,
+    BlueprintGetter = GetClippingBox,
+    BlueprintSetter = SetClippingBox,
+    Category = "Cesium",
+    Meta = (AllowPrivateAccess)
+  )
+  FBox ClippingBox;
+
   /**
    * The resolved Camera Manager used by this Tileset. This is not serialized
    * because it may point to a Camera Manager in the PersistentLevel while this
@@ -324,6 +334,14 @@ public:
   /** @copydoc ACesium3DTileset::CameraManager */
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetCameraManager(TSoftObjectPtr<ACesiumCameraManager> NewCameraManager);
+
+  /** @copydoc ACesium3DTileset::CameraManager */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FBox GetClippingBox() const;
+
+  /** @copydoc ACesium3DTileset::CameraManager */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetClippingBox(FBox NewBox);
 
   /**
    * Resolves the Cesium Camera Manager to use with this Actor. Returns

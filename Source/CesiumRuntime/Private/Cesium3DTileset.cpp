@@ -8,6 +8,7 @@
 #include "Cesium3DTilesSelection/EllipsoidTilesetLoader.h"
 #include "Cesium3DTilesSelection/GltfModifier.h"
 #include "Cesium3DTilesSelection/Tile.h"
+#include "Cesium3DTilesSelection/ManifoldGltfModifier.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesSelection/TilesetSharedAssetSystem.h"
@@ -320,6 +321,19 @@ void ACesium3DTileset::SetCameraManager(
   this->InvalidateResolvedCameraManager();
   this->ResolveCameraManager();
 }
+
+FBox
+ACesium3DTileset::GetClippingBox() const {
+  return this->ClippingBox;
+}
+
+void ACesium3DTileset::SetClippingBox(FBox NewBox) {
+  if (NewBox != this->ClippingBox) {
+    this->DestroyTileset();
+    this->ClippingBox = NewBox;
+  }
+}
+
 
 ACesiumCameraManager* ACesium3DTileset::ResolveCameraManager() {
   if (IsValid(this->ResolvedCameraManager)) {
@@ -1005,6 +1019,26 @@ void ACesium3DTileset::LoadTileset() {
       this->ResolveGeoreference()->GetEllipsoid()->GetNativeEllipsoid();
 
   ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
+
+  if (this->ClippingBox.IsValid && this->ClippingBox.GetVolume() > 0) {
+    std::shared_ptr<Cesium3DTilesSelection::ManifoldGltfModifier>
+        manifoldModifier =
+            std::make_shared<Cesium3DTilesSelection::ManifoldGltfModifier>();
+
+    manifoldModifier->box = CesiumGeometry::AxisAlignedBox(
+        this->ClippingBox.Min.X,
+        this->ClippingBox.Min.Y,
+        this->ClippingBox.Min.Z,
+        this->ClippingBox.Max.X,
+        this->ClippingBox.Max.Y,
+        this->ClippingBox.Max.Z);
+
+    manifoldModifier->trigger();
+    this->_pGltfModifier = manifoldModifier;
+  }
+  else {
+    this->_pGltfModifier = nullptr;
+  }
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
