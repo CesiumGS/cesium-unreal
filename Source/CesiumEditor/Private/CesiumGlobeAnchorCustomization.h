@@ -109,10 +109,34 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Height = 0.0;
 
+  /**
+   * Reference used when updating height during movement or LOD transitions.
+   *
+   * ELLIPSOID indicates that the object will maintain a fixed height above the
+   * ellipsoid. No special handling is performed.
+   *
+   * TILESET causes the object to maintain its height above the tileset. The
+   * object may move vertically to maintain a fixed height above the terrain or
+   * other geometry below the object.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumHeightReferenceMode HeightReference = ECesiumHeightReferenceMode::Ellipsoid;
+  ECesiumHeightReferenceMode HeightReference =
+      ECesiumHeightReferenceMode::Ellipsoid;
 
-  UPROPERTY(EditAnywhere, Category = "Cesium",meta=(EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset", EditConditionHides))
+  /**
+   * Interval, in Ticks, to update object's height when HeightReference is set
+   * to Tileset.
+   *
+   * A value of 1 causes Height to be updated on every Tick.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta =
+          (EditCondition = "HeightReference ==
+           ECesiumHeightReferenceMode::Tileset ",
+           EditConditionHides,
+           ClampMin = 1))
   int TilesetHeightUpdateInterval = 1;
   /**
    * The rotation around the right (Y) axis. Zero pitch means the look direction

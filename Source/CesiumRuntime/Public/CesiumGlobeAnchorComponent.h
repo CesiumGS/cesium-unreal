@@ -71,6 +71,7 @@ private:
    * object may move vertically to maintain a fixed height above the terrain or
    * other geometry below the object.
    */
+  UPROPERTY()
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
 
@@ -80,7 +81,7 @@ private:
    *
    * A value of 1 causes Height to be updated on every Tick.
    */
-
+  UPROPERTY()
   int TilesetHeightUpdateInterval = 1;
 
   /**

@@ -104,8 +104,6 @@ UCesiumGlobeAnchorComponent::GetHeightReference() const {
 
 void UCesiumGlobeAnchorComponent::SetTilesetHeightUpdateInterval(
     int NewTilesetHeightUpdateInterval) {
-  NewTilesetHeightUpdateInterval =
-      std::max(NewTilesetHeightUpdateInterval, 1);
   this->TilesetHeightUpdateInterval = NewTilesetHeightUpdateInterval;
 }
 
