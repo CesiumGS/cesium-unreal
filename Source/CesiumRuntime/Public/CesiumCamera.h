@@ -37,13 +37,19 @@ public:
   /**
    * @brief Source of camera parameters
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECameraParameterSource ParameterSource = ECameraParameterSource::Manual;
 
   /**
    * @brief Source camera component, if any.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "ParameterSource == ECameraParameterSource::CameraComponent"))
   TSoftObjectPtr<UCameraComponent> CameraComponent;
 
   /**

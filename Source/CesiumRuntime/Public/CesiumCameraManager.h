@@ -41,12 +41,6 @@ public:
   bool UseSceneCapturesInLevel = true;
 
   /**
-   * @brief Array of additional cameras.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TArray<FCesiumCamera> AdditionalCameras;
-
-  /**
    * @brief Array of explicit scene capture actors.
    */
   UPROPERTY(
@@ -55,6 +49,12 @@ public:
       Category = "Cesium",
       Meta = (EditCondition = "!UseSceneCapturesInLevel"))
   TArray<TObjectPtr<ASceneCapture2D>> SceneCaptures;
+
+  /**
+   * @brief Array of additional cameras.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TArray<FCesiumCamera> AdditionalCameras;
 
   /**
    * @brief Get the camera manager for this world.
@@ -84,10 +84,12 @@ public:
    * @deprecated The AdditionalCameras array should be used for directly storing
    * and accessing cameras.
    */
-  UE_DEPRECATED(
-      "Cesium For Unreal v2.0",
-      "Use the AdditionalCameras array instead.")
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use the AdditionalCameras array instead."))
   bool RemoveCamera(int32 CameraId);
 
   /**
@@ -95,10 +97,12 @@ public:
    * @deprecated The AdditionalCameras array should be used for directly storing
    * and accessing cameras.
    */
-  UE_DEPRECATED(
-      "Cesium For Unreal v2.0",
-      "Use the AdditionalCameras array instead.")
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use the AdditionalCameras array instead."))
   bool UpdateCamera(int32 CameraId, UPARAM(ref) const FCesiumCamera& Camera);
 
   /**
@@ -106,10 +110,12 @@ public:
    * @deprecated The AdditionalCameras array should be used for directly storing
    * and accessing cameras.
    */
-  UE_DEPRECATED(
-      "Cesium For Unreal v2.0",
-      "Use the AdditionalCameras array instead.")
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use the AdditionalCameras array instead."))
   const TMap<int32, FCesiumCamera>& GetCameras() const;
 
   virtual bool ShouldTickIfViewportsOnly() const override;
@@ -122,6 +128,9 @@ public:
   std::vector<FCesiumCamera> GetAllCameras() const;
 
 private:
+  /**
+   * Support for deprecated camera interface.
+   */
   int32 _currentCameraId = 0;
   TMap<int32, FCesiumCamera> _cameras;
 

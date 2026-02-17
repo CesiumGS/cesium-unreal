@@ -1490,21 +1490,23 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
 }
 
 std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
-  // TODO: really USceneCaptureComponent2D can be attached to any actor, is it
-  // worth searching every actor? Might it be better to provide an interface
-  // where users can volunteer cameras to be used with the tile selection as
-  // needed?
   TArray<AActor*> sceneCaptures;
   ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
-  if (pCameraManager && pCameraManager->UseSceneCapturesInLevel) {
-    static TSubclassOf<ASceneCapture2D> SceneCapture2D =
-        ASceneCapture2D::StaticClass();
-    UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
-  } else {
-    for (auto sceneCaptureActor : pCameraManager->SceneCaptures) {
-      sceneCaptures.Push(sceneCaptureActor.Get());
+  if (pCameraManager) {
+    if (pCameraManager->UseSceneCapturesInLevel) {
+      static TSubclassOf<ASceneCapture2D> SceneCapture2D =
+          ASceneCapture2D::StaticClass();
+      UGameplayStatics::GetAllActorsOfClass(
+          this,
+          SceneCapture2D,
+          sceneCaptures);
+    } else {
+      for (auto sceneCaptureActor : pCameraManager->SceneCaptures) {
+        sceneCaptures.Push(sceneCaptureActor.Get());
+      }
     }
   }
+
   std::vector<FCesiumCamera> cameras;
   cameras.reserve(sceneCaptures.Num());
 
