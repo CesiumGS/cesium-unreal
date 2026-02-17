@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumDegreesMinutesSecondsEditor.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "IDetailCustomization.h"
 #include "TickableEditorObject.h"
 #include "CesiumGlobeAnchorCustomization.generated.h"
@@ -108,6 +109,11 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Height = 0.0;
 
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumHeightReferenceMode HeightReference = ECesiumHeightReferenceMode::Ellipsoid;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium",meta=(EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset", EditConditionHides))
+  int TilesetHeightUpdateInterval = 1;
   /**
    * The rotation around the right (Y) axis. Zero pitch means the look direction
    * (+X) is level with the horizon. Positive pitch is looking up, negative

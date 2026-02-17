@@ -102,14 +102,14 @@ UCesiumGlobeAnchorComponent::GetHeightReference() const {
   return this->HeightReference;
 }
 
-void UCesiumGlobeAnchorComponent::SetHeightReferenceUpdateInterval(
-    int NewHeightReferenceUpdateInterval) {
-  NewHeightReferenceUpdateInterval =
-      std::max(NewHeightReferenceUpdateInterval, 1);
-  this->TilesetHeightUpdateInterval = NewHeightReferenceUpdateInterval;
+void UCesiumGlobeAnchorComponent::SetTilesetHeightUpdateInterval(
+    int NewTilesetHeightUpdateInterval) {
+  NewTilesetHeightUpdateInterval =
+      std::max(NewTilesetHeightUpdateInterval, 1);
+  this->TilesetHeightUpdateInterval = NewTilesetHeightUpdateInterval;
 }
 
-int UCesiumGlobeAnchorComponent::GetHeightReferenceUpdateInterval() const {
+int UCesiumGlobeAnchorComponent::GetTilesetHeightUpdateInterval() const {
   return this->TilesetHeightUpdateInterval;
 }
 

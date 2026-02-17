@@ -71,13 +71,6 @@ private:
    * object may move vertically to maintain a fixed height above the terrain or
    * other geometry below the object.
    */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      BlueprintGetter = GetHeightReference,
-      BlueprintSetter = SetHeightReference,
-      Category = "Cesium",
-      meta = (AllowPrivateAccess))
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
 
@@ -87,17 +80,7 @@ private:
    *
    * A value of 1 causes Height to be updated on every Tick.
    */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      BlueprintGetter = GetHeightReferenceUpdateInterval,
-      BlueprintSetter = SetHeightReferenceUpdateInterval,
-      Category = "Cesium",
-      Meta =
-          (AllowPrivateAccess,
-           EditConditionHides,
-           EditCondition =
-               "HeightReference == ECesiumHeightReferenceMode::Tileset"))
+
   int TilesetHeightUpdateInterval = 1;
 
   /**
@@ -218,10 +201,10 @@ public:
   void SetHeightReference(ECesiumHeightReferenceMode NewHeightReference);
 
   UFUNCTION(BlueprintGetter)
-  int GetHeightReferenceUpdateInterval() const;
+  int GetTilesetHeightUpdateInterval() const;
 
   UFUNCTION(BlueprintSetter)
-  void SetHeightReferenceUpdateInterval(int NewHeightReferenceUpdateInterval);
+  void SetTilesetHeightUpdateInterval(int NewHeightReferenceUpdateInterval);
 
   /**
    * Gets the resolved georeference used by this component. This is not
