@@ -182,6 +182,16 @@ void FCesiumGlobeAnchorCustomization::CreatePositionLongitudeLatitudeHeight(
               TilesetHeightUpdateInterval));
 
   Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
+
+  TSharedPtr<IPropertyHandle> _fixedHeightAboveHeightReferenceProperty =
+    DetailBuilder.AddObjectPropertyData(
+    View,
+    GET_MEMBER_NAME_CHECKED(
+        UCesiumGlobeAnchorDerivedProperties,
+        _fixedHeightAboveHeightReference));
+
+  Group.AddPropertyRow(_fixedHeightAboveHeightReferenceProperty.ToSharedRef());
+
 }
 
 void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
@@ -263,9 +273,15 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
                             Height) ||
         propertyName == GET_MEMBER_NAME_CHECKED(
                             UCesiumGlobeAnchorDerivedProperties,
-                            HeightReference)) {
+                            HeightReference) ||
+        propertyName == GET_MEMBER_NAME_CHECKED(
+                                    UCesiumGlobeAnchorDerivedProperties,
+                                    _fixedHeightAboveHeightReference)
+
+                            ) {
       this->GlobeAnchor->Modify();
       this->GlobeAnchor->SetHeightReference(this->HeightReference);
+      this->GlobeAnchor->_fixedHeightAboveHeightReference = this->_fixedHeightAboveHeightReference;
       this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
           FVector(this->Longitude, this->Latitude, this->Height));
     } else if (
@@ -332,8 +348,10 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       FVector llh = this->GlobeAnchor->GetLongitudeLatitudeHeight();
       this->Longitude = llh.X;
       this->Latitude = llh.Y;
-      this->Height = llh.Z;
+      // this->Height = llh.Z;
+      this->Height = this->GlobeAnchor->GetHeight();
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
+      this->_fixedHeightAboveHeightReference = this->GlobeAnchor->_fixedHeightAboveHeightReference;
       this->TilesetHeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
 

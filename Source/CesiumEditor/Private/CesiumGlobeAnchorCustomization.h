@@ -123,6 +123,10 @@ public:
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
 
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  float _fixedHeightAboveHeightReference;
+
   /**
    * Interval, in Ticks, to update object's height when HeightReference is set
    * to Tileset.
@@ -133,8 +137,7 @@ public:
       EditAnywhere,
       Category = "Cesium",
       meta =
-          (EditCondition = "HeightReference ==
-           ECesiumHeightReferenceMode::Tileset ",
+          (EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset",
            EditConditionHides,
            ClampMin = 1))
   int TilesetHeightUpdateInterval = 1;

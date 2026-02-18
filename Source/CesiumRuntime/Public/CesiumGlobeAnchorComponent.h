@@ -345,7 +345,7 @@ public:
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
-  FVector GetLongitudeLatitudeHeight() const;
+  FVector GetLongitudeLatitudeHeight(bool ignoreHeightReference = false) const;
 
   /**
    * Gets the longitude in degrees.
@@ -366,7 +366,8 @@ public:
   double GetLatitude() const { return this->GetLongitudeLatitudeHeight().Y; }
 
   /**
-   * Gets the height in meters above the ellipsoid.
+   * Gets the height in meters above the ellipsoid or tileset, depending on
+   * the value of HeightReference.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
@@ -376,7 +377,7 @@ public:
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "Height"))
-  double GetHeight() const { return this->GetLongitudeLatitudeHeight().Z; }
+  double GetHeight() const;
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in
@@ -588,12 +589,20 @@ protected:
 private:
   int _heightReferenceUpdateCounter = 0;
 
+public:
+  /**
+   * When HeightReference is ::Tileset, this is the fixed height
+   * above the tileset that we want to maintain.
+   */
   UPROPERTY()
   float _fixedHeightAboveHeightReference = 0.0f;
-
-  bool _computeAndSetFixedHeightAboveHeightReference();
+private:
+  /**
+   * Find the location on the tileset directly above or below the component.
+   * Returns whether an intersection was found.
+   */
   bool
-  _queryLongitudeLatitudeHeightPositionOnTileset(FVector& groundIntersection);
+  _queryLongitudeLatitudeHeightPositionOnTileset(FVector& groundIntersection, bool startElsewhere = false, const FVector& position ={});
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 
