@@ -1170,7 +1170,7 @@ void ACesium3DTileset::LoadTileset() {
   this->_pVoxelMetadataComponent =
       this->FindComponentByClass<UCesiumVoxelMetadataComponent>();
   if (this->_pVoxelMetadataComponent.IsValid()) {
-    this->_pVoxelMetadataComponent->SyncStatistics();
+    //this->_pVoxelMetadataComponent->SyncStatistics();
   }
 
 #ifdef CESIUM_DEBUG_TILE_STATES
@@ -1309,7 +1309,7 @@ void ACesium3DTileset::DestroyTileset() {
   }
 
   if (this->_pVoxelMetadataComponent.IsValid()) {
-    this->_pVoxelMetadataComponent->InterruptSync();
+//    this->_pVoxelMetadataComponent->InterruptSync();
   }
 
   if (this->_pVoxelRendererComponent) {
@@ -2167,10 +2167,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->_tilesToHideNextFrame,
       pResult->tilesToRenderThisFrame);
 
-  if (this->_pVoxelRendererComponent) {
+  if (this->_pVoxelRendererComponent) {/*
     this->_pVoxelRendererComponent->UpdateTiles(
         pResult->tilesToRenderThisFrame,
-        pResult->tileScreenSpaceErrorThisFrame);
+        pResult->tileScreenSpaceErrorThisFrame);*/
   }
 
   removeCollisionForTiles(pResult->tilesFadingOut);

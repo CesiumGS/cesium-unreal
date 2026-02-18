@@ -7,6 +7,7 @@
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -49,6 +50,7 @@
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionExtPrimitiveVoxels.h>
+#include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
@@ -1418,7 +1420,6 @@ static void loadPrimitive(
           : defaultMaterial;
 
   primitiveResult.materialIndex = materialID;
-
   primitiveResult.isUnlit =
       material.hasExtension<CesiumGltf::ExtensionKhrMaterialsUnlit>() &&
       !options.pMeshOptions->pNodeOptions->pModelOptions
@@ -1801,7 +1802,6 @@ static void loadPrimitive(
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.pCollisionMesh = nullptr;
-
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
   if (isTriangles &&
@@ -2021,6 +2021,43 @@ static void loadVoxels(
   }
 }
 
+static void loadGaussianSplats(
+    LoadedPrimitiveResult& primitiveResult,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const CesiumGltf::ExtensionKhrGaussianSplatting& splatExtension,
+    const glm::dmat4x4& transform,
+    const CreatePrimitiveOptions& options) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadGaussianSplats)
+  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Primitive mode %d is not POINTS as required by KHR_gaussian_splatting. Skipped."),
+        primitive.mode);
+    return;
+  }
+
+  const CesiumGltf::Model& model =
+      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  const CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+
+  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
+  glm::dmat4 scaleMatrix = glm::dmat4(
+      glm::dvec4(scale, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, scale, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, scale, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
+  const std::string name = getPrimitiveName(model, mesh, primitive);
+  primitiveResult.name = name;
+  primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
+  primitiveResult.primitiveIndex = options.primitiveIndex;
+  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
+  primitiveResult.GaussianSplatData =
+      MakeUnique<FCesiumGltfGaussianSplatData>(model, primitive);
+}
+
 static void loadPrimitive(
     LoadedPrimitiveResult& result,
     const glm::dmat4x4& transform,
@@ -2038,14 +2075,23 @@ static void loadPrimitive(
     return;
   }
 
-  const CesiumGltf::ExtensionExtPrimitiveVoxels* pVoxelExtension =
-      primitive.getExtension<CesiumGltf::ExtensionExtPrimitiveVoxels>();
-  if (pVoxelExtension) {
-    // Special path for voxels.
+  if (const auto* pGaussianSplattingExtension =
+          primitive.getExtension<CesiumGltf::ExtensionKhrGaussianSplatting>();
+      pGaussianSplattingExtension) {
+    loadGaussianSplats(
+        result,
+        primitive,
+        *pGaussianSplattingExtension,
+        transform,
+        options);
+    return;
+  }
+  if (const auto* pVoxelExtension =
+          primitive.getExtension<CesiumGltf::ExtensionExtPrimitiveVoxels>();
+      pVoxelExtension) {
     loadVoxels(result, primitive, *pVoxelExtension, transform, options);
     return;
   }
-
   auto positionAccessorIt =
       primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::POSITION);
   if (positionAccessorIt == primitive.attributes.end()) {
@@ -2108,8 +2154,7 @@ static void loadMesh(
     loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.RenderData &&
-        primitiveResult.voxelPropertyAttributeIndex < 0) {
+    if (!primitiveResult.HasRenderableData()) {
       result->primitiveResults.pop_back();
     }
   }
@@ -2196,8 +2241,8 @@ static void loadInstancingData(
   // instance transform applied, and then be transformed back to Unreal. It's
   // tempting to do this by trying some manipulation of the individual glTF
   // instance operations, but that general approach has always ended in
-  // tears. Better to formally multiply out the matrices and be assured that the
-  // operation is correct.
+  // tears. Better to formally multiply out the matrices and be assured that
+  // the operation is correct.
   std::vector<glm::dmat4> instanceTransforms(count, glm::dmat4(1.0));
 
   // Note: the glm functions translate() and scale() post-multiply the matrix
@@ -3249,7 +3294,6 @@ static void loadPrimitiveGameThreadPart(
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-
   if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
@@ -3291,21 +3335,23 @@ static void loadPrimitiveGameThreadPart(
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
   }
+
   CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
+
+  primData.pTilesetActor = pTilesetActor;
+  primData.overlayTextureCoordinateIDToUVIndex =
+      loadResult.overlayTextureCoordinateIDToUVIndex;
+  primData.GltfToUnrealTexCoordMap =
+      std::move(loadResult.GltfToUnrealTexCoordMap);
+  primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+  primData.HighPrecisionNodeTransform = loadResult.transform;
+  pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    primData.pTilesetActor = pTilesetActor;
-    primData.overlayTextureCoordinateIDToUVIndex =
-        loadResult.overlayTextureCoordinateIDToUVIndex;
-    primData.GltfToUnrealTexCoordMap =
-        std::move(loadResult.GltfToUnrealTexCoordMap);
-    primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    primData.PositionAccessor = std::move(loadResult.PositionAccessor);
-    primData.IndexAccessor = std::move(loadResult.IndexAccessor);
-    primData.HighPrecisionNodeTransform = loadResult.transform;
-    pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
@@ -3329,8 +3375,8 @@ static void loadPrimitiveGameThreadPart(
         primData.pTilesetActor->GetTranslucencySortPriority();
 
     pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
-    // Unreal will crash trying to generate ray tracing information for a static
-    // mesh without triangles (and it doesn't make sense anyways!)
+    // Unreal will crash trying to generate ray tracing information for a
+    // static mesh without triangles (and it doesn't make sense anyways!)
     switch (meshPrimitive.mode) {
     case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
     case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
@@ -3372,9 +3418,9 @@ static void loadPrimitiveGameThreadPart(
   }
 
   // Move this right now: CreateMaterial may need them!
-  // "Safe" even though loadResult is still used later, because the methods used
-  // during material setup (SetGltfParameterValues, etc.) below do not use these
-  // members.
+  // "Safe" even though loadResult is still used later, because the methods
+  // used during material setup (SetGltfParameterValues, etc.) below do not
+  // use these members.
   primData.Features = std::move(loadResult.Features);
   primData.Metadata = std::move(loadResult.Metadata);
 
@@ -3432,9 +3478,9 @@ static void loadPrimitiveGameThreadPart(
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
 
-    // The base material might be a Material, or it might be a MaterialInstance.
-    // Only MaterialInstances can use the material layer system, so only
-    // MaterialInstances will have UCesiumMaterialUserData.
+    // The base material might be a Material, or it might be a
+    // MaterialInstance. Only MaterialInstances can use the material layer
+    // system, so only MaterialInstances will have UCesiumMaterialUserData.
     UMaterialInstance* pBaseAsMaterialInstance =
         Cast<UMaterialInstance>(pBaseMaterial);
 
@@ -3714,6 +3760,48 @@ static void loadVoxelsGameThreadPart(
   }
 }
 
+static void loadGaussianSplatsGameThreadPart(
+    CesiumGltf::Model& model,
+    UCesiumGltfComponent* pGltf,
+    LoadedPrimitiveResult& loadResult,
+    const glm::dmat4x4& cesiumToUnrealTransform,
+    ACesium3DTileset* pTilesetActor) {
+  if (!loadResult.GaussianSplatData) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Primitive with KHR_gaussian_splatting did not contain valid data."));
+    return;
+  }
+
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
+
+  UCesiumGltfGaussianSplatComponent* pGaussianSplat =
+      NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
+  pGaussianSplat->Data = MoveTemp(*loadResult.GaussianSplatData.Release());
+  pGaussianSplat->SetupAttachment(pGltf);
+  pGaussianSplat->SetMobility(pGltf->Mobility);
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+    pGaussianSplat->RegisterComponent();
+  }
+
+  pGaussianSplat->RegisterWithSubsystem();
+
+  CesiumPrimitiveData& primData = pGaussianSplat->getPrimitiveData();
+  primData.pTilesetActor = pTilesetActor;
+  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+  primData.HighPrecisionNodeTransform = loadResult.transform;
+  pGaussianSplat->UpdateTransformFromCesium(cesiumToUnrealTransform);
+}
+
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumAsync::AsyncSystem& AsyncSystem,
@@ -3785,7 +3873,14 @@ UCesiumGltfComponent::CreateOffGameThread(
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
-        if (primitive.voxelPropertyAttributeIndex) {
+        if (primitive.GaussianSplatData) {
+          loadGaussianSplatsGameThreadPart(
+              model,
+              pGltf,
+              primitive,
+              cesiumToUnrealTransform,
+              pTilesetActor);
+        } else if (primitive.voxelPropertyAttributeIndex) {
           loadVoxelsGameThreadPart(
               model,
               pGltf,
@@ -3800,6 +3895,7 @@ UCesiumGltfComponent::CreateOffGameThread(
               cesiumToUnrealTransform,
               tile,
               createNavCollision,
+              enableDoubleSidedCollisions,
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures,

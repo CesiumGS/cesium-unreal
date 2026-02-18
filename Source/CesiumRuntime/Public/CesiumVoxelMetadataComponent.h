@@ -71,8 +71,8 @@ public:
    * Warning: Using Auto Fill may populate the description with a large amount
    * of metadata. Make sure to delete the properties that aren't relevant.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
-  void BuildShader();
+  //UFUNCTION(CallInEditor, Category = "Cesium")
+  //void BuildShader();
 
   /**
    * This button can be used to create a boiler-plate material layer that
