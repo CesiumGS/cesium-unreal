@@ -184,14 +184,13 @@ void FCesiumGlobeAnchorCustomization::CreatePositionLongitudeLatitudeHeight(
   Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
 
   TSharedPtr<IPropertyHandle> _fixedHeightAboveHeightReferenceProperty =
-    DetailBuilder.AddObjectPropertyData(
-    View,
-    GET_MEMBER_NAME_CHECKED(
-        UCesiumGlobeAnchorDerivedProperties,
-        _fixedHeightAboveHeightReference));
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(
+              UCesiumGlobeAnchorDerivedProperties,
+              _fixedHeightAboveHeightReference));
 
   Group.AddPropertyRow(_fixedHeightAboveHeightReferenceProperty.ToSharedRef());
-
 }
 
 void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
@@ -261,6 +260,11 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetTilesetHeightUpdateInterval(
         this->TilesetHeightUpdateInterval);
+  } else if (
+      propertyName ==
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Height)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->SetHeight(this->Height);
   } else if (true) {
     if (propertyName == GET_MEMBER_NAME_CHECKED(
                             UCesiumGlobeAnchorDerivedProperties,
@@ -268,20 +272,21 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
         propertyName == GET_MEMBER_NAME_CHECKED(
                             UCesiumGlobeAnchorDerivedProperties,
                             Latitude) ||
-        propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumGlobeAnchorDerivedProperties,
-                            Height) ||
+        // propertyName == GET_MEMBER_NAME_CHECKED(
+        //                     UCesiumGlobeAnchorDerivedProperties,
+        //                     Height) ||
         propertyName == GET_MEMBER_NAME_CHECKED(
                             UCesiumGlobeAnchorDerivedProperties,
                             HeightReference) ||
         propertyName == GET_MEMBER_NAME_CHECKED(
-                                    UCesiumGlobeAnchorDerivedProperties,
-                                    _fixedHeightAboveHeightReference)
+                            UCesiumGlobeAnchorDerivedProperties,
+                            _fixedHeightAboveHeightReference)
 
-                            ) {
+    ) {
       this->GlobeAnchor->Modify();
       this->GlobeAnchor->SetHeightReference(this->HeightReference);
-      this->GlobeAnchor->_fixedHeightAboveHeightReference = this->_fixedHeightAboveHeightReference;
+      // this->GlobeAnchor->_fixedHeightAboveHeightReference =
+      // this->_fixedHeightAboveHeightReference;
       this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
           FVector(this->Longitude, this->Latitude, this->Height));
     } else if (
@@ -351,7 +356,8 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       // this->Height = llh.Z;
       this->Height = this->GlobeAnchor->GetHeight();
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
-      this->_fixedHeightAboveHeightReference = this->GlobeAnchor->_fixedHeightAboveHeightReference;
+      this->_fixedHeightAboveHeightReference =
+          this->GlobeAnchor->_fixedHeightAboveHeightReference;
       this->TilesetHeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
 

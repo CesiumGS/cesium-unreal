@@ -379,6 +379,12 @@ public:
       Meta = (ReturnDisplayName = "Height"))
   double GetHeight() const;
 
+  // UFUNCTION(
+  //   BlueprintPure,
+  //   Category = "Cesium",
+  //   Meta = (ReturnDisplayName = "Height"))
+  void SetHeight(const double NewHeight);
+
   /**
    * Moves the Actor to which this component is attached to a given longitude in
    * degrees (X), latitude in degrees (Y), and height in meters (Z).
@@ -596,13 +602,16 @@ public:
    */
   UPROPERTY()
   float _fixedHeightAboveHeightReference = 0.0f;
+
 private:
   /**
    * Find the location on the tileset directly above or below the component.
    * Returns whether an intersection was found.
    */
-  bool
-  _queryLongitudeLatitudeHeightPositionOnTileset(FVector& groundIntersection, bool startElsewhere = false, const FVector& position ={});
+  bool _queryLongitudeLatitudeHeightPositionOnTileset(
+      FVector& groundIntersection,
+      bool startElsewhere = false,
+      const FVector& position = {});
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 
