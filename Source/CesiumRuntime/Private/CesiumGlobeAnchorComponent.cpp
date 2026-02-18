@@ -375,25 +375,15 @@ double UCesiumGlobeAnchorComponent::GetHeight() const {
 }
 
 void UCesiumGlobeAnchorComponent::SetHeight(const double NewHeight) {
-  /*
-   * If in Tileset mode, calculate the adjust the _fixedHeightAbove...
-   * to reflect the new height.*/
-  // if (this->GetHeightReference() == ECesiumHeightReferenceMode::Ellipsoid) {
-  //   this->_fixedHeightAboveHeightReference = NewHeight;
-  // }
-  // FVector llh = this->GetLongitudeLatitudeHeight();
-  // llh.Z = NewHeight;
-  // this->MoveToLongitudeLatitudeHeight(llh);
-
-  FVector positionOnTileset;
   FVector realLLH = this->GetLongitudeLatitudeHeight(true);
   ;
-  realLLH.Z = NewHeight;
 
-  if (this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset &&
-      this->_queryLongitudeLatitudeHeightPositionOnTileset(positionOnTileset)) {
+  // FVector positionOnTileset;
+  if (this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
     this->_fixedHeightAboveHeightReference = NewHeight;
     realLLH.Z = 0;
+  } else {
+    realLLH.Z = NewHeight;
   }
 
   this->MoveToLongitudeLatitudeHeight(realLLH);
