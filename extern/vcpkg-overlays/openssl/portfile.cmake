@@ -28,6 +28,11 @@ foreach(OPENSSL_POSSIBLE_ROOT_DIR IN LISTS OPENSSL_POSSIBLE_ROOT_DIRS)
   endif()
 endforeach()
 
+# Filter out directories which are not version numbers.
+# Must match e.g. "1.1.1t"
+set(version_regex "/[0-9]+\\.[0-9]+\\.[0-9]+")
+list(FILTER OPENSSL_VERSION_DIRS INCLUDE REGEX "${version_regex}")
+
 # There should be exactly one version, otherwise we don't know what to do.
 list(LENGTH OPENSSL_VERSION_DIRS OPENSSL_VERSION_DIRS_LENGTH)
 if(NOT OPENSSL_VERSION_DIRS_LENGTH EQUAL 1)

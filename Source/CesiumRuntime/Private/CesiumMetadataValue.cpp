@@ -30,12 +30,10 @@ FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(FCesiumMetadataValue&& rhs) = default;
 
 FCesiumMetadataValue::FCesiumMetadataValue(const FCesiumMetadataValue& rhs)
-    : _value(),
+    : _value(rhs._value),
       _arrayValue(rhs._arrayValue),
       _valueType(rhs._valueType),
-      _pEnumDefinition(rhs._pEnumDefinition) {
-  swl::visit([this](const auto& value) { this->_value = value; }, rhs._value);
-}
+      _pEnumDefinition(rhs._pEnumDefinition) {}
 
 FCesiumMetadataValue&
 FCesiumMetadataValue::operator=(const FCesiumMetadataValue& rhs) {
@@ -44,434 +42,718 @@ FCesiumMetadataValue::operator=(const FCesiumMetadataValue& rhs) {
 }
 
 namespace {
-template <typename TFrom>
-FCesiumMetadataValue convertScalar(
-    const TFrom& input,
-    ECesiumMetadataComponentType targetComponentType) {
-  switch (targetComponentType) {
-  case ECesiumMetadataComponentType::Int8:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<int8_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Uint8:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<uint8_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Int16:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<int16_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Uint16:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<uint16_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Int32:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<int32_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Uint32:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<uint32_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Int64:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<int64_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Uint64:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<uint64_t, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Float32:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<float, TFrom>::convert(input));
-  case ECesiumMetadataComponentType::Float64:
-    return FCesiumMetadataValue(
-        CesiumGltf::MetadataConversions<double, TFrom>::convert(input));
-  default:
-    return EmptyMetadataValue;
+struct ComponentTypeFit {
+  ECesiumMetadataComponentType smallestSignedType =
+      ECesiumMetadataComponentType::None;
+  ECesiumMetadataComponentType smallestUnsignedType =
+      ECesiumMetadataComponentType::None;
+  ECesiumMetadataComponentType smallestFloatingType =
+      ECesiumMetadataComponentType::None;
+
+  inline bool isValid() const {
+    return smallestSignedType != ECesiumMetadataComponentType::None ||
+           smallestUnsignedType != ECesiumMetadataComponentType::None ||
+           smallestFloatingType != ECesiumMetadataComponentType::None;
   }
-}
 
-template <typename T>
-std::vector<T> getScalarArray(const CesiumUtility::JsonValue::Array& array) {
-  std::vector<T> result(array.size());
+  bool
+  isCompatibleWithComponentType(ECesiumMetadataComponentType componentType) {
+    // If the smallest-fitting type is bigger than the desired one, the value
+    // cannot be losslessly converted.
+    switch (componentType) {
+    case ECesiumMetadataComponentType::Float32:
+    case ECesiumMetadataComponentType::Float64:
+      return smallestFloatingType != ECesiumMetadataComponentType::None &&
+             smallestFloatingType <= componentType;
+    case ECesiumMetadataComponentType::Int8:
+    case ECesiumMetadataComponentType::Int16:
+    case ECesiumMetadataComponentType::Int32:
+    case ECesiumMetadataComponentType::Int64:
+      return smallestSignedType != ECesiumMetadataComponentType::None &&
+             smallestSignedType <= componentType;
+    case ECesiumMetadataComponentType::Uint8:
+    case ECesiumMetadataComponentType::Uint16:
+    case ECesiumMetadataComponentType::Uint32:
+    case ECesiumMetadataComponentType::Uint64:
+      return smallestUnsignedType != ECesiumMetadataComponentType::None &&
+             smallestUnsignedType <= componentType;
+    default:
+      return false;
+    }
+  }
 
-  for (int64 i = 0; i < int64(result.size()); i++) {
-    std::optional<T> maybeConverted = std::nullopt;
-    if (array[i].isInt64()) {
-      maybeConverted = CesiumGltf::MetadataConversions<T, int64_t>::convert(
-          array[i].getInt64());
-    } else if (array[i].isUint64()) {
-      maybeConverted = CesiumGltf::MetadataConversions<T, uint64_t>::convert(
-          array[i].getUint64());
-    } else if (array[i].isDouble()) {
-      maybeConverted = CesiumGltf::MetadataConversions<T, double>::convert(
-          array[i].getDouble());
+  void operator&=(const ComponentTypeFit& other) {
+    if (smallestSignedType > ECesiumMetadataComponentType::None) {
+      smallestSignedType =
+          (other.smallestSignedType > ECesiumMetadataComponentType::None)
+              ? std::max(smallestSignedType, other.smallestSignedType)
+              : ECesiumMetadataComponentType::None;
     }
 
-    if (!maybeConverted) {
-      // This value is not a number or could not be converted; exit early.
-      return std::vector<T>();
+    if (smallestUnsignedType > ECesiumMetadataComponentType::None) {
+      smallestUnsignedType =
+          (other.smallestUnsignedType > ECesiumMetadataComponentType::None)
+              ? std::max(smallestUnsignedType, other.smallestUnsignedType)
+              : ECesiumMetadataComponentType::None;
     }
 
-    result[i] = *maybeConverted;
+    if (smallestFloatingType > ECesiumMetadataComponentType::None) {
+      smallestFloatingType =
+          (other.smallestFloatingType > ECesiumMetadataComponentType::None)
+              ? std::max(smallestFloatingType, other.smallestFloatingType)
+              : ECesiumMetadataComponentType::None;
+    }
+  }
+};
+
+ComponentTypeFit
+getBestComponentTypeFit(const CesiumUtility::JsonValue& value) {
+  ComponentTypeFit result;
+
+  std::optional<int64_t> valueAsInt;
+  std::optional<uint64_t> valueAsUint;
+  std::optional<double> valueAsDouble;
+
+  if (value.isInt64()) {
+    valueAsInt = value.getInt64();
+    if (*valueAsInt >= 0) {
+      valueAsUint = uint64_t(*valueAsInt);
+    }
+    if (CesiumUtility::losslessNarrow<double>(*valueAsInt).has_value()) {
+      valueAsDouble = double(*valueAsInt);
+    }
+  } else if (value.isUint64()) {
+    valueAsUint = value.getUint64();
+    if (*valueAsUint <= uint64_t(std::numeric_limits<int64_t>::max())) {
+      valueAsInt = int64_t(*valueAsUint);
+    }
+    if (CesiumUtility::losslessNarrow<double>(*valueAsUint).has_value()) {
+      valueAsDouble = double(*valueAsUint);
+    }
+  } else if (value.isDouble()) {
+    valueAsDouble = value.getDouble();
+    if (CesiumUtility::losslessNarrow<int64_t>(*valueAsDouble).has_value()) {
+      valueAsInt = int64_t(*valueAsDouble);
+    }
+    if (CesiumUtility::losslessNarrow<uint64_t>(*valueAsDouble).has_value()) {
+      valueAsUint = uint64_t(*valueAsDouble);
+    }
+  }
+
+  if (valueAsInt) {
+    if (CesiumUtility::losslessNarrow<int8_t>(*valueAsInt).has_value())
+      result.smallestSignedType = ECesiumMetadataComponentType::Int8;
+    else if (CesiumUtility::losslessNarrow<int16_t>(*valueAsInt).has_value())
+      result.smallestSignedType = ECesiumMetadataComponentType::Int16;
+    else if (CesiumUtility::losslessNarrow<int32_t>(*valueAsInt).has_value())
+      result.smallestSignedType = ECesiumMetadataComponentType::Int32;
+    else
+      result.smallestSignedType = ECesiumMetadataComponentType::Int64;
+
+    if (CesiumUtility::losslessNarrow<float>(*valueAsInt).has_value())
+      result.smallestFloatingType = ECesiumMetadataComponentType::Float32;
+    else if (CesiumUtility::losslessNarrow<double>(*valueAsInt).has_value())
+      result.smallestFloatingType = ECesiumMetadataComponentType::Float64;
+  }
+
+  if (valueAsUint) {
+    if (*valueAsUint <= std::numeric_limits<uint8_t>::max())
+      result.smallestUnsignedType = ECesiumMetadataComponentType::Uint8;
+    else if (*valueAsUint <= std::numeric_limits<uint16_t>::max())
+      result.smallestUnsignedType = ECesiumMetadataComponentType::Uint16;
+    else if (*valueAsUint <= std::numeric_limits<uint32_t>::max())
+      result.smallestUnsignedType = ECesiumMetadataComponentType::Uint32;
+    else
+      result.smallestUnsignedType = ECesiumMetadataComponentType::Uint64;
+
+    if (CesiumUtility::losslessNarrow<float>(*valueAsUint).has_value())
+      result.smallestFloatingType = ECesiumMetadataComponentType::Float32;
+    else if (CesiumUtility::losslessNarrow<double>(*valueAsUint).has_value())
+      result.smallestFloatingType = ECesiumMetadataComponentType::Float64;
+  }
+
+  if (valueAsDouble) {
+    // Intentionally more lax with floating point conversions.
+    std::optional<float> maybeFloat =
+        CesiumGltf::MetadataConversions<float, double>::convert(*valueAsDouble);
+    result.smallestFloatingType = maybeFloat
+                                      ? ECesiumMetadataComponentType::Float32
+                                      : ECesiumMetadataComponentType::Float64;
   }
 
   return result;
 }
 
-FCesiumMetadataValue convertToScalarArray(
-    const CesiumUtility::JsonValue::Array& array,
-    ECesiumMetadataComponentType targetComponentType) {
-  FCesiumPropertyArray resultArray;
-  switch (targetComponentType) {
-  case ECesiumMetadataComponentType::Int8:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<int8_t>(getScalarArray<int8_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Uint8:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<uint8_t>(getScalarArray<uint8_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Int16:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<int16_t>(getScalarArray<int16_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Uint16:
-    resultArray = FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<uint16_t>(
-        getScalarArray<uint16_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Int32:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<int32_t>(getScalarArray<int32_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Uint32:
-    resultArray = FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<uint32_t>(
-        getScalarArray<uint32_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Int64:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<int64_t>(getScalarArray<int64_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Uint64:
-    resultArray = FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<uint64_t>(
-        getScalarArray<uint64_t>(array)));
-    break;
-  case ECesiumMetadataComponentType::Float32:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<float>(getScalarArray<float>(array)));
-    break;
-  case ECesiumMetadataComponentType::Float64:
-    resultArray = FCesiumPropertyArray(
-        CesiumGltf::PropertyArrayCopy<double>(getScalarArray<double>(array)));
-    break;
-  default:
-    return EmptyMetadataValue;
-  }
+ComponentTypeFit
+getBestComponentTypeFit(const CesiumUtility::JsonValue::Array& array) {
+  if (array.empty())
+    return ComponentTypeFit{};
 
-  return UCesiumPropertyArrayBlueprintLibrary::GetArraySize(resultArray)
-             ? FCesiumMetadataValue(std::move(resultArray))
-             : EmptyMetadataValue;
+  ComponentTypeFit result = getBestComponentTypeFit(array[0]);
+  for (size_t i = 1; i < array.size(); i++) {
+    result &= getBestComponentTypeFit(array[i]);
+  }
+  return result;
 }
 
-template <glm::length_t N, typename T>
-std::optional<glm::vec<N, T>>
-convertToVecN(const CesiumUtility::JsonValue::Array& array) {
-  std::vector<T> components = getScalarArray<T>(array);
-  if (components.size() != N) {
-    return std::nullopt;
-  }
-
-  auto* pResult = reinterpret_cast<glm::vec<N, T>*>(components.data());
-  return *pResult;
-}
-
-template <glm::length_t N>
-FCesiumMetadataValue convertToVecN(
-    const CesiumUtility::JsonValue::Array& array,
-    ECesiumMetadataComponentType targetComponentType) {
-  switch (targetComponentType) {
-  case ECesiumMetadataComponentType::Int8:
-    return FCesiumMetadataValue(convertToVecN<N, int8_t>(array));
-  case ECesiumMetadataComponentType::Uint8:
-    return FCesiumMetadataValue(convertToVecN<N, uint8_t>(array));
-  case ECesiumMetadataComponentType::Int16:
-    return FCesiumMetadataValue(convertToVecN<N, int16_t>(array));
-  case ECesiumMetadataComponentType::Uint16:
-    return FCesiumMetadataValue(convertToVecN<N, uint16_t>(array));
-  case ECesiumMetadataComponentType::Int32:
-    return FCesiumMetadataValue(convertToVecN<N, int32_t>(array));
-  case ECesiumMetadataComponentType::Uint32:
-    return FCesiumMetadataValue(convertToVecN<N, uint32_t>(array));
-  case ECesiumMetadataComponentType::Int64:
-    return FCesiumMetadataValue(convertToVecN<N, int64_t>(array));
-  case ECesiumMetadataComponentType::Uint64:
-    return FCesiumMetadataValue(convertToVecN<N, uint64_t>(array));
-  case ECesiumMetadataComponentType::Float32:
-    return FCesiumMetadataValue(convertToVecN<N, float>(array));
-  case ECesiumMetadataComponentType::Float64:
-    return FCesiumMetadataValue(convertToVecN<N, double>(array));
-  default:
-    return EmptyMetadataValue;
-  }
-}
-
-template <glm::length_t N, typename T>
-std::optional<glm::mat<N, N, T>>
-convertToMatN(const CesiumUtility::JsonValue::Array& array) {
-  std::vector<T> components = getScalarArray<T>(array);
-  if (components.size() != N * N) {
-    return std::nullopt;
-  }
-
-  auto pResult = reinterpret_cast<glm::mat<N, N, T>*>(components.data());
-  return *pResult;
-}
-
-template <glm::length_t N>
-FCesiumMetadataValue convertToMatN(
-    const CesiumUtility::JsonValue::Array& array,
-    ECesiumMetadataComponentType targetComponentType) {
-  switch (targetComponentType) {
-  case ECesiumMetadataComponentType::Int8:
-    return FCesiumMetadataValue(convertToMatN<N, int8_t>(array));
-  case ECesiumMetadataComponentType::Uint8:
-    return FCesiumMetadataValue(convertToMatN<N, uint8_t>(array));
-  case ECesiumMetadataComponentType::Int16:
-    return FCesiumMetadataValue(convertToMatN<N, int16_t>(array));
-  case ECesiumMetadataComponentType::Uint16:
-    return FCesiumMetadataValue(convertToMatN<N, uint16_t>(array));
-  case ECesiumMetadataComponentType::Int32:
-    return FCesiumMetadataValue(convertToMatN<N, int32_t>(array));
-  case ECesiumMetadataComponentType::Uint32:
-    return FCesiumMetadataValue(convertToMatN<N, uint32_t>(array));
-  case ECesiumMetadataComponentType::Int64:
-    return FCesiumMetadataValue(convertToMatN<N, int64_t>(array));
-  case ECesiumMetadataComponentType::Uint64:
-    return FCesiumMetadataValue(convertToMatN<N, uint64_t>(array));
-  case ECesiumMetadataComponentType::Float32:
-    return FCesiumMetadataValue(convertToMatN<N, float>(array));
-  case ECesiumMetadataComponentType::Float64:
-    return FCesiumMetadataValue(convertToMatN<N, double>(array));
-  default:
-    return EmptyMetadataValue;
-  }
-}
-
-template <glm::length_t N, typename T>
-FCesiumMetadataValue
-convertToVecNArray(const CesiumUtility::JsonValue::Array& array) {
-  std::vector<glm::vec<N, T>> values(array.size());
-
-  for (size_t i = 0; i < array.size(); i++) {
-    if (!array[i].isArray() || array[i].getArray().size() != N) {
-      return EmptyMetadataValue;
+std::vector<int64_t>
+getInt64Array(const CesiumUtility::JsonValue::Array& array) {
+  std::vector<int64_t> result(array.size());
+  for (int64 i = 0; i < int64(result.size()); i++) {
+    if (array[i].isInt64()) {
+      result[i] = array[i].getInt64();
+    } else if (array[i].isUint64()) {
+      result[i] = static_cast<int64_t>(array[i].getUint64());
+    } else if (array[i].isDouble()) {
+      result[i] = static_cast<int64_t>(array[i].getDouble());
+    } else {
+      return std::vector<int64_t>();
     }
-
-    const CesiumUtility::JsonValue::Array& subArray = array[i].getArray();
-    std::optional<glm::vec<N, T>> maybeValue = convertToVecN<N, T>(subArray);
-    if (!maybeValue) {
-      return EmptyMetadataValue;
-    }
-    values[i] = *maybeValue;
   }
-
-  return FCesiumMetadataValue(
-      CesiumGltf::PropertyArrayCopy<glm::vec<N, T>>(values));
+  return result;
 }
 
-template <glm::length_t N>
-FCesiumMetadataValue convertToVecNArray(
-    const CesiumUtility::JsonValue::Array& array,
-    ECesiumMetadataComponentType targetComponentType) {
-  switch (targetComponentType) {
-  case ECesiumMetadataComponentType::Int8:
-    return FCesiumMetadataValue(convertToVecNArray<N, int8_t>(array));
-  case ECesiumMetadataComponentType::Uint8:
-    return FCesiumMetadataValue(convertToVecNArray<N, uint8_t>(array));
-  case ECesiumMetadataComponentType::Int16:
-    return FCesiumMetadataValue(convertToVecNArray<N, int16_t>(array));
-  case ECesiumMetadataComponentType::Uint16:
-    return FCesiumMetadataValue(convertToVecNArray<N, uint16_t>(array));
-  case ECesiumMetadataComponentType::Int32:
-    return FCesiumMetadataValue(convertToVecNArray<N, int32_t>(array));
-  case ECesiumMetadataComponentType::Uint32:
-    return FCesiumMetadataValue(convertToVecNArray<N, uint32_t>(array));
-  case ECesiumMetadataComponentType::Int64:
-    return FCesiumMetadataValue(convertToVecNArray<N, int64_t>(array));
-  case ECesiumMetadataComponentType::Uint64:
-    return FCesiumMetadataValue(convertToVecNArray<N, uint64_t>(array));
-  case ECesiumMetadataComponentType::Float32:
-    return FCesiumMetadataValue(convertToVecNArray<N, float>(array));
-  case ECesiumMetadataComponentType::Float64:
-    return FCesiumMetadataValue(convertToVecNArray<N, double>(array));
-  default:
-    return EmptyMetadataValue;
+std::vector<uint64_t>
+getUint64Array(const CesiumUtility::JsonValue::Array& array) {
+  std::vector<uint64_t> result(array.size());
+  for (int64 i = 0; i < int64(result.size()); i++) {
+    if (array[i].isInt64()) {
+      result[i] = static_cast<uint64_t>(array[i].getInt64());
+    } else if (array[i].isUint64()) {
+      result[i] = array[i].getUint64();
+    } else if (array[i].isDouble()) {
+      result[i] = static_cast<uint64_t>(array[i].getDouble());
+    } else {
+      return std::vector<uint64_t>();
+    }
   }
+  return result;
 }
 
-template <glm::length_t N, typename T>
-FCesiumMetadataValue
-convertToMatNArray(const CesiumUtility::JsonValue::Array& array) {
-  std::vector<glm::mat<N, N, T>> values(array.size());
-
-  for (size_t i = 0; i < array.size(); i++) {
-    if (!array[i].isArray() || array[i].getArray().size() != N * N) {
-      return EmptyMetadataValue;
+std::vector<double>
+getDoubleArray(const CesiumUtility::JsonValue::Array& array) {
+  std::vector<double> result(array.size());
+  for (int64 i = 0; i < int64(result.size()); i++) {
+    if (array[i].isInt64()) {
+      result[i] = static_cast<double>(array[i].getInt64());
+    } else if (array[i].isUint64()) {
+      result[i] = static_cast<double>(array[i].getUint64());
+    } else if (array[i].isDouble()) {
+      result[i] = array[i].getDouble();
+    } else {
+      return std::vector<double>();
     }
-
-    const CesiumUtility::JsonValue::Array& subArray = array[i].getArray();
-    std::optional<glm::mat<N, N, T>> maybeValue = convertToMatN<N, T>(subArray);
-    if (!maybeValue) {
-      return EmptyMetadataValue;
-    }
-    values[i] = *maybeValue;
   }
-
-  return FCesiumMetadataValue(
-      CesiumGltf::PropertyArrayCopy<glm::mat<N, N, T>>(values));
-}
-
-template <glm::length_t N>
-FCesiumMetadataValue convertToMatNArray(
-    const CesiumUtility::JsonValue::Array& array,
-    ECesiumMetadataComponentType targetComponentType) {
-  switch (targetComponentType) {
-  case ECesiumMetadataComponentType::Int8:
-    return FCesiumMetadataValue(convertToMatNArray<N, int8_t>(array));
-  case ECesiumMetadataComponentType::Uint8:
-    return FCesiumMetadataValue(convertToMatNArray<N, uint8_t>(array));
-  case ECesiumMetadataComponentType::Int16:
-    return FCesiumMetadataValue(convertToMatNArray<N, int16_t>(array));
-  case ECesiumMetadataComponentType::Uint16:
-    return FCesiumMetadataValue(convertToMatNArray<N, uint16_t>(array));
-  case ECesiumMetadataComponentType::Int32:
-    return FCesiumMetadataValue(convertToMatNArray<N, int32_t>(array));
-  case ECesiumMetadataComponentType::Uint32:
-    return FCesiumMetadataValue(convertToMatNArray<N, uint32_t>(array));
-  case ECesiumMetadataComponentType::Int64:
-    return FCesiumMetadataValue(convertToMatNArray<N, int64_t>(array));
-  case ECesiumMetadataComponentType::Uint64:
-    return FCesiumMetadataValue(convertToMatNArray<N, uint64_t>(array));
-  case ECesiumMetadataComponentType::Float32:
-    return FCesiumMetadataValue(convertToMatNArray<N, float>(array));
-  case ECesiumMetadataComponentType::Float64:
-    return FCesiumMetadataValue(convertToMatNArray<N, double>(array));
-  default:
-    return EmptyMetadataValue;
-  }
+  return result;
 }
 
 } // namespace
 
-/*static*/ FCesiumMetadataValue FCesiumMetadataValue::fromJsonArray(
+void FCesiumMetadataValue::initializeAsScalarArray(
+    const CesiumUtility::JsonValue::Array& array,
+    const FCesiumMetadataValueType& targetType) {
+  ComponentTypeFit bestFit = getBestComponentTypeFit(array);
+  if (!bestFit.isCompatibleWithComponentType(targetType.ComponentType))
+    return;
+
+  FCesiumPropertyArray resultArray;
+
+  switch (targetType.ComponentType) {
+  case ECesiumMetadataComponentType::Float32:
+  case ECesiumMetadataComponentType::Float64: {
+    std::vector<double> values = getDoubleArray(array);
+    resultArray = FCesiumPropertyArray(
+        CesiumGltf::PropertyArrayCopy<double>(std::move(values)));
+    break;
+  }
+  case ECesiumMetadataComponentType::Int8:
+  case ECesiumMetadataComponentType::Int16:
+  case ECesiumMetadataComponentType::Int32:
+  case ECesiumMetadataComponentType::Int64: {
+    std::vector<int64_t> values = getInt64Array(array);
+    resultArray = FCesiumPropertyArray(
+        CesiumGltf::PropertyArrayCopy<int64_t>(std::move(values)));
+    break;
+  }
+  case ECesiumMetadataComponentType::Uint8:
+  case ECesiumMetadataComponentType::Uint16:
+  case ECesiumMetadataComponentType::Uint32:
+  case ECesiumMetadataComponentType::Uint64: {
+    std::vector<uint64_t> values = getUint64Array(array);
+    resultArray = FCesiumPropertyArray(
+        CesiumGltf::PropertyArrayCopy<uint64_t>(std::move(values)));
+
+    break;
+  }
+  default:
+    return;
+  }
+
+  // Override the element type. The element type is cached for user information
+  // and does not impact the underlying element access.
+  resultArray._elementType.ComponentType = targetType.ComponentType;
+  this->_arrayValue = std::move(resultArray);
+  this->_valueType = targetType;
+}
+
+void FCesiumMetadataValue::initializeAsVecOrMat(
+    const CesiumUtility::JsonValue::Array& array,
+    const FCesiumMetadataValueType& targetType) {
+  ComponentTypeFit bestFit = getBestComponentTypeFit(array);
+  if (!bestFit.isCompatibleWithComponentType(targetType.ComponentType))
+    return;
+
+  switch (targetType.ComponentType) {
+  case ECesiumMetadataComponentType::Float32:
+  case ECesiumMetadataComponentType::Float64: {
+    std::vector<double> values = getDoubleArray(array);
+    switch (targetType.Type) {
+    case ECesiumMetadataType::Vec2:
+      if (values.size() != 2)
+        return;
+      this->_value = *reinterpret_cast<glm::dvec2*>(values.data());
+      break;
+    case ECesiumMetadataType::Vec3:
+      if (values.size() != 3)
+        return;
+      this->_value = *reinterpret_cast<glm::dvec3*>(values.data());
+      break;
+    case ECesiumMetadataType::Vec4:
+      if (values.size() != 4)
+        return;
+      this->_value = *reinterpret_cast<glm::dvec4*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat2:
+      if (values.size() != 4)
+        return;
+      this->_value = *reinterpret_cast<glm::dmat2*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat3:
+      if (values.size() != 9)
+        return;
+      this->_value = *reinterpret_cast<glm::dmat3*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat4:
+      if (values.size() != 16)
+        return;
+      this->_value = *reinterpret_cast<glm::dmat4*>(values.data());
+      break;
+    default:
+      return;
+    }
+    break;
+  }
+  case ECesiumMetadataComponentType::Int8:
+  case ECesiumMetadataComponentType::Int16:
+  case ECesiumMetadataComponentType::Int32:
+  case ECesiumMetadataComponentType::Int64: {
+    std::vector<int64_t> values = getInt64Array(array);
+    switch (targetType.Type) {
+    case ECesiumMetadataType::Vec2:
+      if (values.size() != 2)
+        return;
+      this->_value = *reinterpret_cast<glm::vec<2, int64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Vec3:
+      if (values.size() != 3)
+        return;
+      this->_value = *reinterpret_cast<glm::vec<2, int64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Vec4:
+      if (values.size() != 4)
+        return;
+      this->_value = *reinterpret_cast<glm::vec<2, int64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat2:
+      if (values.size() != 4)
+        return;
+      this->_value = *reinterpret_cast<glm::mat<2, 2, int64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat3:
+      if (values.size() != 9)
+        return;
+      this->_value = *reinterpret_cast<glm::mat<3, 3, int64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat4:
+      if (values.size() != 16)
+        return;
+      this->_value = *reinterpret_cast<glm::mat<4, 4, int64_t>*>(values.data());
+      break;
+    default:
+      return;
+    }
+    break;
+  }
+  case ECesiumMetadataComponentType::Uint8:
+  case ECesiumMetadataComponentType::Uint16:
+  case ECesiumMetadataComponentType::Uint32:
+  case ECesiumMetadataComponentType::Uint64: {
+    std::vector<uint64_t> values = getUint64Array(array);
+    switch (targetType.Type) {
+    case ECesiumMetadataType::Vec2:
+      if (values.size() != 2)
+        return;
+      this->_value = *reinterpret_cast<glm::vec<2, uint64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Vec3:
+      if (values.size() != 3)
+        return;
+      this->_value = *reinterpret_cast<glm::vec<2, uint64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Vec4:
+      if (values.size() != 4)
+        return;
+      this->_value = *reinterpret_cast<glm::vec<2, uint64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat2:
+      if (values.size() != 4)
+        return;
+      this->_value =
+          *reinterpret_cast<glm::mat<2, 2, uint64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat3:
+      if (values.size() != 9)
+        return;
+      this->_value =
+          *reinterpret_cast<glm::mat<3, 3, uint64_t>*>(values.data());
+      break;
+    case ECesiumMetadataType::Mat4:
+      if (values.size() != 16)
+        return;
+      this->_value =
+          *reinterpret_cast<glm::mat<4, 4, uint64_t>*>(values.data());
+      break;
+    default:
+      return;
+    }
+    break;
+  }
+  default:
+    return;
+  }
+
+  // Override the value type. The value type struct is user-facing but does
+  // not impact underlying element conversion or access.
+  this->_valueType = targetType;
+}
+
+void FCesiumMetadataValue::initializeAsVecOrMatArray(
+    const CesiumUtility::JsonValue::Array& array,
+    const FCesiumMetadataValueType& targetType) {
+  if (array.empty() || !array[0].isArray()) {
+    return;
+  }
+
+  ComponentTypeFit bestFit = getBestComponentTypeFit(array[0].getArray());
+  for (size_t i = 1; i < array.size(); i++) {
+    if (!array[i].isArray()) {
+      return;
+    }
+    bestFit &= getBestComponentTypeFit(array[i].getArray());
+  }
+
+  if (!bestFit.isCompatibleWithComponentType(targetType.ComponentType))
+    return;
+
+  const size_t expectedElementCount =
+      CesiumGltf::getComponentCountFromPropertyType(
+          CesiumGltf::PropertyType(targetType.Type));
+
+  switch (targetType.ComponentType) {
+  case ECesiumMetadataComponentType::Float32:
+  case ECesiumMetadataComponentType::Float64: {
+    std::vector<double> values;
+    for (size_t i = 0; i < array.size(); i++) {
+      std::vector<double> element = getDoubleArray(array[i].getArray());
+      if (element.size() != expectedElementCount)
+        return;
+      values.insert(values.end(), element.begin(), element.end());
+    }
+    switch (targetType.Type) {
+    case ECesiumMetadataType::Vec2: {
+      std::vector<glm::dvec2> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(double));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::dvec2>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Vec3: {
+      std::vector<glm::dvec3> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(double));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::dvec3>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Vec4: {
+      std::vector<glm::dvec4> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(double));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::dvec4>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat2: {
+      std::vector<glm::dmat2> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(double));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::dmat2>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat3: {
+      std::vector<glm::dmat3> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(double));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::dmat3>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat4: {
+      std::vector<glm::dmat4> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(double));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::dmat4>(std::move(copy)));
+      break;
+    }
+    default:
+      return;
+    }
+    break;
+  }
+  case ECesiumMetadataComponentType::Int8:
+  case ECesiumMetadataComponentType::Int16:
+  case ECesiumMetadataComponentType::Int32:
+  case ECesiumMetadataComponentType::Int64: {
+    std::vector<int64_t> values;
+    for (size_t i = 0; i < array.size(); i++) {
+      std::vector<int64_t> element = getInt64Array(array[i].getArray());
+      if (element.size() != expectedElementCount)
+        return;
+      values.insert(values.end(), element.begin(), element.end());
+    }
+    switch (targetType.Type) {
+    case ECesiumMetadataType::Vec2: {
+      std::vector<glm::vec<2, int64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(int64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::vec<2, int64_t>>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Vec3: {
+      std::vector<glm::vec<3, int64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(int64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::vec<3, int64_t>>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Vec4: {
+      std::vector<glm::vec<4, int64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(int64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::vec<4, int64_t>>(std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat2: {
+      std::vector<glm::mat<2, 2, int64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(int64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::mat<2, 2, int64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat3: {
+      std::vector<glm::mat<3, 3, int64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(int64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::mat<3, 3, int64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat4: {
+      std::vector<glm::mat<4, 4, int64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(int64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::mat<4, 4, int64_t>>(
+              std::move(copy)));
+      break;
+    }
+    default:
+      return;
+    }
+    break;
+  }
+  case ECesiumMetadataComponentType::Uint8:
+  case ECesiumMetadataComponentType::Uint16:
+  case ECesiumMetadataComponentType::Uint32:
+  case ECesiumMetadataComponentType::Uint64: {
+    std::vector<uint64_t> values;
+    for (size_t i = 0; i < array.size(); i++) {
+      std::vector<uint64_t> element = getUint64Array(array[i].getArray());
+      if (element.size() != expectedElementCount)
+        return;
+      values.insert(values.end(), element.begin(), element.end());
+    }
+    switch (targetType.Type) {
+    case ECesiumMetadataType::Vec2: {
+      std::vector<glm::vec<2, uint64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(uint64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::vec<2, uint64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Vec3: {
+      std::vector<glm::vec<3, uint64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(uint64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::vec<3, uint64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Vec4: {
+      std::vector<glm::vec<4, uint64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(uint64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::vec<4, uint64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat2: {
+      std::vector<glm::mat<2, 2, uint64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(uint64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::mat<2, 2, uint64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat3: {
+      std::vector<glm::mat<3, 3, uint64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(uint64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::mat<3, 3, uint64_t>>(
+              std::move(copy)));
+      break;
+    }
+    case ECesiumMetadataType::Mat4: {
+      std::vector<glm::mat<4, 4, uint64_t>> copy(array.size());
+      std::memcpy(copy.data(), values.data(), values.size() * sizeof(uint64_t));
+      this->_arrayValue = FCesiumPropertyArray(
+          CesiumGltf::PropertyArrayCopy<glm::mat<4, 4, uint64_t>>(
+              std::move(copy)));
+      break;
+    }
+    default:
+      return;
+    }
+    break;
+  }
+  default:
+    return;
+  }
+
+  // Override the value type. The value type struct is user-facing but does
+  // not impact underlying element conversion or access.
+  this->_valueType = targetType;
+}
+
+void FCesiumMetadataValue::initializeFromJsonArray(
     const CesiumUtility::JsonValue::Array& array,
     const FCesiumMetadataValueType& targetType) {
   if (array.empty()) {
-    return EmptyMetadataValue;
+    return;
   }
 
   if (!targetType.bIsArray) {
-    // If the target type is not actually an array, then it must be one of the
-    // following.
-    switch (targetType.Type) {
-    case ECesiumMetadataType::Vec2:
-      return convertToVecN<2>(array, targetType.ComponentType);
-    case ECesiumMetadataType::Vec3:
-      return convertToVecN<3>(array, targetType.ComponentType);
-    case ECesiumMetadataType::Vec4:
-      return convertToVecN<4>(array, targetType.ComponentType);
-    case ECesiumMetadataType::Mat2:
-      return convertToMatN<2>(array, targetType.ComponentType);
-    case ECesiumMetadataType::Mat3:
-      return convertToMatN<3>(array, targetType.ComponentType);
-    case ECesiumMetadataType::Mat4:
-      return convertToMatN<4>(array, targetType.ComponentType);
-      break;
-    default:
-      return EmptyMetadataValue;
-    }
+    // If the target type is not actually an array, then it must be a vector or
+    // matrix value.
+    this->initializeAsVecOrMat(array, targetType);
+    return;
   }
 
-  if (targetType.Type == ECesiumMetadataType::Boolean) {
+  switch (targetType.Type) {
+  case ECesiumMetadataType::Boolean: {
     std::vector<bool> values(array.size());
     for (size_t i = 0; i < array.size(); i++) {
       if (!array[i].isBool()) {
-        return EmptyMetadataValue;
+        return;
       }
       values[i] = array[i].getBool();
     }
-    return FCesiumMetadataValue(CesiumGltf::PropertyArrayCopy<bool>(values));
+    this->_arrayValue =
+        FCesiumPropertyArray(CesiumGltf::PropertyArrayCopy<bool>(values));
+    break;
   }
-
-  if (targetType.Type == ECesiumMetadataType::String) {
+  case ECesiumMetadataType::String: {
     std::vector<std::string> values(array.size());
     for (size_t i = 0; i < array.size(); i++) {
       if (!array[i].isString()) {
-        return EmptyMetadataValue;
+        return;
       }
       values[i] = array[i].getString();
     }
-    return FCesiumMetadataValue(
+    this->_arrayValue = FCesiumPropertyArray(
         CesiumGltf::PropertyArrayCopy<std::string_view>(values));
+    break;
   }
-
-  if (targetType.Type == ECesiumMetadataType::Scalar ||
-      targetType.Type == ECesiumMetadataType::Enum) {
-    return convertToScalarArray(array, targetType.ComponentType);
-  }
-
-  // Nested arrays can indicate arrays of vecNs / matNs, and numeric data can be
-  // handled in contiguous buffers.
-  switch (targetType.Type) {
+  case ECesiumMetadataType::Scalar:
+  case ECesiumMetadataType::Enum:
+    this->initializeAsScalarArray(array, targetType);
+    break;
   case ECesiumMetadataType::Vec2:
-    return convertToVecNArray<2>(array, targetType.ComponentType);
   case ECesiumMetadataType::Vec3:
-    return convertToVecNArray<3>(array, targetType.ComponentType);
   case ECesiumMetadataType::Vec4:
-    return convertToVecNArray<4>(array, targetType.ComponentType);
   case ECesiumMetadataType::Mat2:
-    return convertToMatNArray<2>(array, targetType.ComponentType);
   case ECesiumMetadataType::Mat3:
-    return convertToMatNArray<3>(array, targetType.ComponentType);
   case ECesiumMetadataType::Mat4:
-    return convertToMatNArray<4>(array, targetType.ComponentType);
+    this->initializeAsVecOrMatArray(array, targetType);
+    break;
   default:
-    return EmptyMetadataValue;
+    return;
   }
 }
-/*static*/ FCesiumMetadataValue FCesiumMetadataValue::fromJsonValue(
-    const CesiumUtility::JsonValue& jsonValue,
-    const FCesiumMetadataValueType& targetType) {
-  if (jsonValue.isArray()) {
-    return fromJsonArray(jsonValue.getArray(), targetType);
-  } else if (targetType.bIsArray) {
-    return EmptyMetadataValue;
+
+FCesiumMetadataValue::FCesiumMetadataValue(
+    const CesiumUtility::JsonValue& JsonValue,
+    const FCesiumMetadataValueType& TargetType)
+    : _value(), _arrayValue(), _valueType(), _pEnumDefinition(nullptr) {
+  if (JsonValue.isArray()) {
+    this->initializeFromJsonArray(JsonValue.getArray(), TargetType);
+    return;
+  } else if (TargetType.bIsArray) {
+    // Array type mismatch; exit early.
+    return;
   }
 
-  if (jsonValue.isBool()) {
-    return targetType.Type == ECesiumMetadataType::Boolean
-               ? FCesiumMetadataValue(jsonValue.getBool())
-               : EmptyMetadataValue;
-  }
-
-  if (jsonValue.isString()) {
-    return targetType.Type == ECesiumMetadataType::String
-               ? FCesiumMetadataValue(std::string_view(jsonValue.getString()))
-               : EmptyMetadataValue;
-  }
-
-  if (targetType.Type == ECesiumMetadataType::Scalar ||
-      targetType.Type == ECesiumMetadataType::Enum) {
-    if (jsonValue.isInt64()) {
-      return FCesiumMetadataValue(
-          convertScalar(jsonValue.getInt64(), targetType.ComponentType));
+  switch (TargetType.Type) {
+  case ECesiumMetadataType::Boolean:
+    if (JsonValue.isBool()) {
+      this->_value = JsonValue.getBool();
+      this->_valueType.Type = ECesiumMetadataType::Boolean;
+    }
+    return;
+  case ECesiumMetadataType::String:
+    if (JsonValue.isString()) {
+      this->_value = std::string_view(JsonValue.getString());
+      this->_valueType.Type = ECesiumMetadataType::String;
+    }
+    return;
+  case ECesiumMetadataType::Scalar:
+  case ECesiumMetadataType::Enum: {
+    ComponentTypeFit bestFit = getBestComponentTypeFit(JsonValue);
+    if (!bestFit.isCompatibleWithComponentType(TargetType.ComponentType)) {
+      return;
     }
 
-    if (jsonValue.isUint64()) {
-      return FCesiumMetadataValue(
-          convertScalar(jsonValue.getUint64(), targetType.ComponentType));
+    if (JsonValue.isInt64()) {
+      this->_value = JsonValue.getInt64();
+    } else if (JsonValue.isUint64()) {
+      this->_value = JsonValue.getUint64();
+    } else if (JsonValue.isDouble()) {
+      this->_value = JsonValue.getDouble();
     }
-
-    if (jsonValue.isDouble()) {
-      return FCesiumMetadataValue(
-          convertScalar(jsonValue.getDouble(), targetType.ComponentType));
-    }
+    this->_valueType = TargetType;
+    return;
   }
-
-  return EmptyMetadataValue;
+  default:
+    return;
+  }
 }
 
 ECesiumMetadataBlueprintType

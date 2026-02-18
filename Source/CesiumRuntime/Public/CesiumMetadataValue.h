@@ -5,6 +5,7 @@
 #include "CesiumMetadataEnum.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
+#include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Misc/Optional.h"
 #include "UObject/ObjectMacros.h"
@@ -201,23 +202,24 @@ public:
    */
   FCesiumMetadataValue(FCesiumPropertyArray&& Array);
 
+  /**
+   * Constructs a FCesiumMetadataValue with the specified type  from a
+   * CesiumUtility::JsonValue. This is a strict interpretation of the value;
+   * conversion will not be done between types or component types, even if
+   * possible.
+   *
+   * @param JsonValue The JSON value.
+   * @param TargetType The value type to which to convert the JSON value.
+   * @returns The value as an FCesiumMetadataValue.
+   */
+  FCesiumMetadataValue(
+      const CesiumUtility::JsonValue& JsonValue,
+      const FCesiumMetadataValueType& TargetType);
+
   FCesiumMetadataValue(FCesiumMetadataValue&& rhs);
   FCesiumMetadataValue& operator=(FCesiumMetadataValue&& rhs);
   FCesiumMetadataValue(const FCesiumMetadataValue& rhs);
   FCesiumMetadataValue& operator=(const FCesiumMetadataValue& rhs);
-
-  /**
-   * Converts a CesiumUtility::JsonValue to a FCesiumMetadataValue with the
-   * specified type. This is a strict interpretation of the value; conversion
-   * will not be done between types or component types, even if possible.
-   *
-   * @param jsonValue The JSON value.
-   * @param targetType The value type to which to convert the JSON value.
-   * @returns The value as an FCesiumMetadataValue.
-   */
-  static FCesiumMetadataValue fromJsonValue(
-      const CesiumUtility::JsonValue& jsonValue,
-      const FCesiumMetadataValueType& targetType);
 
 private:
   /**
@@ -230,8 +232,17 @@ private:
    * arrays are acceptable (assuming vector or matrix type). Otherwise, the
    * array is considered invalid.
    */
-  static FCesiumMetadataValue fromJsonArray(
-      const CesiumUtility::JsonValue::Array& jsonValue,
+  void initializeFromJsonArray(
+      const CesiumUtility::JsonValue::Array& array,
+      const FCesiumMetadataValueType& targetType);
+  void initializeAsScalarArray(
+      const CesiumUtility::JsonValue::Array& array,
+      const FCesiumMetadataValueType& targetType);
+  void initializeAsVecOrMat(
+      const CesiumUtility::JsonValue::Array& array,
+      const FCesiumMetadataValueType& targetType);
+  void initializeAsVecOrMatArray(
+      const CesiumUtility::JsonValue::Array& array,
       const FCesiumMetadataValueType& targetType);
 
   ValueType _value;
@@ -241,6 +252,7 @@ private:
 
   friend class UCesiumMetadataValueBlueprintLibrary;
   friend class CesiumMetadataValueAccess;
+  friend class UCesiumPropertyArrayBlueprintLibrary;
 };
 
 UCLASS()

@@ -60,14 +60,14 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - name: Configure vcpkg caching
-        uses: ./.github/actions/vcpkg-cache
-        with:
-          id: ${{ inputs.upload-package-base-name }}
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Configure vcpkg caching
+        uses: ./.github/actions/vcpkg-cache
+        with:
+          id: ${{ inputs.upload-package-base-name }}
       - name: Install Ninja and patchelf
         run: |
           sudo apt install -y ninja-build patchelf

@@ -1237,7 +1237,6 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
-  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
@@ -1297,7 +1296,7 @@ public:
    * each tile's glTF model after it has been loaded, before it can be
    * displayed.
    *
-   * Setting this property will call @ref RefreshTileset.
+   * Setting this property will refresh the tileset.
    */
   void SetGltfModifier(
       const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
@@ -1392,6 +1391,8 @@ private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
   TWeakObjectPtr<UCesiumVoxelMetadataComponent> _pVoxelMetadataComponent;
+
+  bool _destroyOnNextTick;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;

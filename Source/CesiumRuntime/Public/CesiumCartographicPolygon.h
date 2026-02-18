@@ -2,9 +2,7 @@
 
 #pragma once
 
-#include "CesiumGeoreference.h"
 #include "CesiumGeospatial/CartographicPolygon.h"
-#include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
@@ -13,6 +11,23 @@
 #include <vector>
 
 #include "CesiumCartographicPolygon.generated.h"
+
+/**
+ * A coordinate reference system used to interpret position data.
+ */
+UENUM(BlueprintType)
+enum class ECesiumCoordinateReferenceSystem : uint8 {
+  /**
+   * Indicates a coordinate reference system expressed in terms of longitude
+   * in degrees (X), latitude in degrees (Y) and height in meters (Z).
+   */
+  LongitudeLatitudeHeight UMETA(DisplayName = "Longitude Latitude Height"),
+  /**
+   * Indicates a Cartesian coordinate reference system expressed in
+   * Earth-centered, Earth-fixed 3D coordinates.
+   */
+  EarthCenteredEarthFixed UMETA(DisplayName = "Earth-Centered, Earth-Fixed"),
+};
 
 /**
  * A spline-based polygon actor used to rasterize 2D polygons on top of
@@ -39,7 +54,6 @@ public:
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   virtual void OnConstruction(const FTransform& Transform) override;
-
   /**
    * Creates and returns a CartographicPolygon object
    * created from the current spline selection.
@@ -51,8 +65,31 @@ public:
   CesiumGeospatial::CartographicPolygon
   CreateCartographicPolygon(const FTransform& worldToTileset) const;
 
+  /**
+   * Sets the spline points from an array of positions in the specified
+   * coordinate reference system.
+   * @param CoordinateReferenceSystem The coordinate reference system in which
+   * the points are expressed.
+   * @param Points The array of points expressed in the specified coordinate
+   * system.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetPolygonPoints(
+      const ECesiumCoordinateReferenceSystem CoordinateReferenceSystem,
+      const TArray<FVector>& Points);
+
   // AActor overrides
   virtual void PostLoad() override;
+
+#if WITH_EDITOR
+  /**
+   * Set the spline points to a square centered where the editor camera view ray
+   * intersects the ground and sized to fit within the viewport.
+   * @returns Whether the spline points and transform were successfully
+   * recomputed.
+   */
+  bool ResetSplineAndCenterInEditorViewport();
+#endif
 
 protected:
   virtual void BeginPlay() override;

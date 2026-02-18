@@ -154,6 +154,450 @@ void FCesiumMetadataValueSpec::Define() {
           ECesiumMetadataComponentType::Uint8);
       TestTrue("IsArray", valueType.bIsArray);
     });
+
+    Describe("constructs from JsonValue", [this]() {
+      Describe("and is empty", [this]() {
+        It("for invalid type", [this]() {
+          CesiumUtility::JsonValue value(10);
+          FCesiumMetadataValue result(value, FCesiumMetadataValueType());
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for invalid component type", [this]() {
+          FCesiumMetadataValueType badType(
+              ECesiumMetadataType::Scalar,
+              ECesiumMetadataComponentType::None,
+              false);
+          CesiumUtility::JsonValue value(10);
+          FCesiumMetadataValue result(value, badType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for mismatched type", [this]() {
+          FCesiumMetadataValueType targetType(
+              ECesiumMetadataType::String,
+              ECesiumMetadataComponentType::None,
+              false);
+          CesiumUtility::JsonValue value(-10);
+          FCesiumMetadataValue result(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for mismatched component type", [this]() {
+          FCesiumMetadataValueType targetType(
+              ECesiumMetadataType::Scalar,
+              ECesiumMetadataComponentType::Uint8,
+              false);
+          CesiumUtility::JsonValue value(-10);
+          FCesiumMetadataValue result(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+
+          targetType.bIsArray = true;
+          value = CesiumUtility::JsonValue(
+              {CesiumUtility::JsonValue(10), CesiumUtility::JsonValue(-20)});
+          result = FCesiumMetadataValue(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for mismatched array type", [this]() {
+          FCesiumMetadataValueType targetType(
+              ECesiumMetadataType::Scalar,
+              ECesiumMetadataComponentType::Int8,
+              true);
+          CesiumUtility::JsonValue value(-10);
+          FCesiumMetadataValue result(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for mismatched array element type", [this]() {
+          FCesiumMetadataValueType targetType(
+              ECesiumMetadataType::String,
+              ECesiumMetadataComponentType::None,
+              true);
+          CesiumUtility::JsonValue value(
+              CesiumUtility::JsonValue::Array{CesiumUtility::JsonValue(10.0)});
+          FCesiumMetadataValue result(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for wrong nested array size", [this]() {
+          FCesiumMetadataValueType targetType(
+              ECesiumMetadataType::Vec2,
+              ECesiumMetadataComponentType::Float32,
+              true);
+          std::vector<std::vector<double>> values{{-1.0, 4.0}, {0.4}};
+          CesiumUtility::JsonValue value = toJsonValue(values);
+          FCesiumMetadataValue result(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+
+        It("for out-of-bounds number", [this]() {
+          FCesiumMetadataValueType targetType(
+              ECesiumMetadataType::Scalar,
+              ECesiumMetadataComponentType::Uint8,
+              false);
+          CesiumUtility::JsonValue value(-1);
+          FCesiumMetadataValue result(value, targetType);
+          TestTrue(
+              "value is empty",
+              UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
+        });
+      });
+
+      It("for boolean value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Boolean,
+            ECesiumMetadataComponentType::None,
+            false);
+        CesiumUtility::JsonValue value(true);
+
+        FCesiumMetadataValue result(value, targetType);
+        TestTrue(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetBoolean(result, false));
+      });
+
+      It("for signed int value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Scalar,
+            ECesiumMetadataComponentType::Int32,
+            false);
+        CesiumUtility::JsonValue value(-30);
+
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetInteger(result, 0),
+            -30);
+      });
+
+      It("for unsigned int value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Scalar,
+            ECesiumMetadataComponentType::Uint64,
+            false);
+        CesiumUtility::JsonValue value(1000000);
+
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual<uint64_t>(
+            "value",
+            CesiumMetadataValueAccess::GetUnsignedInteger64(result, 0),
+            1000000);
+      });
+
+      It("for floating point value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Scalar,
+            ECesiumMetadataComponentType::Float32,
+            false);
+        CesiumUtility::JsonValue value(10.0456);
+
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetFloat(result, 0.0f),
+            float(10.0456));
+      });
+
+      It("for int vec value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Vec2,
+            ECesiumMetadataComponentType::Int32,
+            false);
+        CesiumUtility::JsonValue value =
+            toJsonValue(std::vector<int64_t>{-1, 2});
+
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+                result,
+                FIntPoint(0)),
+            FIntPoint(-1, 2));
+      });
+
+      It("for floating point vec value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Vec3,
+            ECesiumMetadataComponentType::Float32,
+            false);
+        CesiumUtility::JsonValue value =
+            toJsonValue(std::vector<double>{1.0, 2.0, 3.0});
+
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+                result,
+                FVector3f::Zero()),
+            FVector3f(1.0, 2.0, 3.0));
+      });
+
+      It("for int mat value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Mat2,
+            ECesiumMetadataComponentType::Int32,
+            false);
+        // clang-format off
+        std::vector<uint64_t> values{
+          1, 2,
+          3, 4
+        };
+        // clang-format on
+        CesiumUtility::JsonValue value = toJsonValue(values);
+
+        FMatrix expected(
+            FPlane4d(1.0, 3.0, 0.0, 0.0),
+            FPlane4d(2.0, 4.0, 0.0, 0.0),
+            FPlane4d(0.0, 0.0, 0.0, 0.0),
+            FPlane4d(0.0, 0.0, 0.0, 0.0));
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+                result,
+                FMatrix::Identity),
+            expected);
+      });
+
+      It("returns floating point mat value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Mat3,
+            ECesiumMetadataComponentType::Float64,
+            false);
+        // clang-format off
+        std::vector<double> values{
+          -1.1, 2.0, -3.33,
+          0.4, 5.5, 6.0,
+          7.77, 8.0, -0.9
+        };
+        // clang-format on
+
+        std::vector<CesiumUtility::JsonValue> jsonValues(values.size());
+        for (size_t i = 0; i < values.size(); i++) {
+          jsonValues[i] = CesiumUtility::JsonValue(values[i]);
+        }
+        CesiumUtility::JsonValue value(jsonValues);
+
+        FMatrix expected(
+            FPlane4d(-1.1, 0.4, 7.77, 0.0),
+            FPlane4d(2.0, 5.5, 8.0, 0.0),
+            FPlane4d(-3.33, 6.0, -0.9, 0.0),
+            FPlane4d(0.0, 0.0, 0.0, 0.0));
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+                result,
+                FMatrix::Identity),
+            expected);
+      });
+
+      It("for string value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::String,
+            ECesiumMetadataComponentType::None,
+            false);
+        std::string testValue("a test string");
+        CesiumUtility::JsonValue value(testValue);
+
+        FCesiumMetadataValue result(value, targetType);
+        TestEqual(
+            "value",
+            UCesiumMetadataValueBlueprintLibrary::GetString(result, FString()),
+            FString(testValue.c_str()));
+      });
+
+      It("for boolean array value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Boolean,
+            ECesiumMetadataComponentType::None,
+            true);
+        std::vector<bool> values{true, false, true, true, false};
+        CesiumUtility::JsonValue value = toJsonValue(values);
+        FCesiumMetadataValue result(value, targetType);
+        FCesiumPropertyArray array =
+            UCesiumMetadataValueBlueprintLibrary::GetArray(result);
+        TestEqual(
+            "array is non-empty",
+            UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
+            int64(values.size()));
+
+        for (size_t i = 0; i < values.size(); i++) {
+          FCesiumMetadataValue element =
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumMetadataValueBlueprintLibrary::GetBoolean(element, false),
+              values[i]);
+        }
+      });
+
+      It("for int array value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Scalar,
+            ECesiumMetadataComponentType::Int32,
+            true);
+        std::vector<int64_t> values{-1, -5, 20, 3};
+        CesiumUtility::JsonValue value = toJsonValue(values);
+
+        FCesiumMetadataValue result(value, targetType);
+        FCesiumPropertyArray array =
+            UCesiumMetadataValueBlueprintLibrary::GetArray(result);
+        TestEqual(
+            "array is non-empty",
+            UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
+            int64(values.size()));
+
+        for (size_t i = 0; i < values.size(); i++) {
+          FCesiumMetadataValue element =
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumMetadataValueBlueprintLibrary::GetInteger(element, 0),
+              values[i]);
+        }
+      });
+
+      It("for float array value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Scalar,
+            ECesiumMetadataComponentType::Float32,
+            true);
+        std::vector<double> values{-0.51, 0.0, 1.12, -3.0};
+        CesiumUtility::JsonValue value = toJsonValue(values);
+
+        FCesiumMetadataValue result(value, targetType);
+        FCesiumPropertyArray array =
+            UCesiumMetadataValueBlueprintLibrary::GetArray(result);
+        TestEqual(
+            "array is non-empty",
+            UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
+            int64(values.size()));
+
+        for (size_t i = 0; i < values.size(); i++) {
+          FCesiumMetadataValue element =
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumMetadataValueBlueprintLibrary::GetFloat64(element, 0.0),
+              values[i]);
+        }
+      });
+
+      It("for vecN array value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Vec3,
+            ECesiumMetadataComponentType::Int32,
+            true);
+        std::vector<std::vector<int64_t>> values{
+            {-1, 0, 20},
+            {5, 1, 0},
+            {-2, 3, -3}};
+        CesiumUtility::JsonValue value = toJsonValue(values);
+
+        FCesiumMetadataValue result(value, targetType);
+        FCesiumPropertyArray array =
+            UCesiumMetadataValueBlueprintLibrary::GetArray(result);
+        TestEqual(
+            "array is non-empty",
+            UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
+            int64(values.size()));
+
+        for (size_t i = 0; i < values.size(); i++) {
+          FCesiumMetadataValue element =
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+                  element,
+                  FIntVector(0)),
+              FIntVector(values[i][0], values[i][1], values[i][2]));
+        }
+      });
+
+      It("for matN array value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::Mat2,
+            ECesiumMetadataComponentType::Float64,
+            true);
+        std::vector<std::vector<double>> values{
+            {-1.0, 0.4, 8.8, 0.0},
+            {4.5, 6.0, 7.0, -0.8},
+            {-9.9, 9.2, 0.3, -3.0}};
+        CesiumUtility::JsonValue value = toJsonValue(values);
+
+        FCesiumMetadataValue result(value, targetType);
+        FCesiumPropertyArray array =
+            UCesiumMetadataValueBlueprintLibrary::GetArray(result);
+        TestEqual(
+            "array is non-empty",
+            UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
+            int64(values.size()));
+
+        for (size_t i = 0; i < values.size(); i++) {
+          FCesiumMetadataValue element =
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
+          FMatrix expected(
+              FPlane4d(values[i][0], values[i][2], 0.0, 0.0),
+              FPlane4d(values[i][1], values[i][3], 0.0, 0.0),
+              FPlane4d(0.0, 0.0, 0.0, 0.0),
+              FPlane4d(0.0, 0.0, 0.0, 0.0));
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+                  element,
+                  FMatrix::Identity),
+              expected);
+        }
+      });
+
+      It("for string array value", [this]() {
+        FCesiumMetadataValueType targetType(
+            ECesiumMetadataType::String,
+            ECesiumMetadataComponentType::None,
+            true);
+        std::vector<std::string> values{
+            "test1",
+            "another test string",
+            "third!"};
+        CesiumUtility::JsonValue value = toJsonValue(values);
+        FCesiumMetadataValue result(value, targetType);
+        FCesiumPropertyArray array =
+            UCesiumMetadataValueBlueprintLibrary::GetArray(result);
+        TestEqual(
+            "array is non-empty",
+            UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
+            int64(values.size()));
+
+        for (size_t i = 0; i < values.size(); i++) {
+          FCesiumMetadataValue element =
+              UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
+          TestEqual(
+              std::string("value" + std::to_string(i)).c_str(),
+              UCesiumMetadataValueBlueprintLibrary::GetString(
+                  element,
+                  FString()),
+              FString(values[i].c_str()));
+        }
+      });
+    });
   });
 
   Describe("GetBoolean", [this]() {
@@ -1384,467 +1828,5 @@ void FCesiumMetadataValueSpec::Define() {
                  defaultValue),
              defaultValue);
        });
-  });
-
-  Describe("fromJsonValue", [this]() {
-    Describe("returns empty value", [this]() {
-      It("for invalid type", [this]() {
-        CesiumUtility::JsonValue value(10);
-        FCesiumMetadataValue result = FCesiumMetadataValue::fromJsonValue(
-            value,
-            FCesiumMetadataValueType());
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for invalid component type", [this]() {
-        FCesiumMetadataValueType badType(
-            ECesiumMetadataType::Scalar,
-            ECesiumMetadataComponentType::None,
-            false);
-        CesiumUtility::JsonValue value(10);
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, badType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for mismatched type", [this]() {
-        FCesiumMetadataValueType targetType(
-            ECesiumMetadataType::String,
-            ECesiumMetadataComponentType::None,
-            false);
-        CesiumUtility::JsonValue value(-10);
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for mismatched component type", [this]() {
-        FCesiumMetadataValueType targetType(
-            ECesiumMetadataType::Scalar,
-            ECesiumMetadataComponentType::Uint8,
-            false);
-        CesiumUtility::JsonValue value(-10);
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-
-        targetType.bIsArray = true;
-        value = CesiumUtility::JsonValue(
-            {CesiumUtility::JsonValue(10), CesiumUtility::JsonValue(-20)});
-        result = FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for mismatched array type", [this]() {
-        FCesiumMetadataValueType targetType(
-            ECesiumMetadataType::Scalar,
-            ECesiumMetadataComponentType::Int8,
-            true);
-        CesiumUtility::JsonValue value(-10);
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for mismatched array element type", [this]() {
-        FCesiumMetadataValueType targetType(
-            ECesiumMetadataType::String,
-            ECesiumMetadataComponentType::None,
-            true);
-        CesiumUtility::JsonValue value(
-            CesiumUtility::JsonValue::Array{CesiumUtility::JsonValue(10.0)});
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for wrong nested array size", [this]() {
-        FCesiumMetadataValueType targetType(
-            ECesiumMetadataType::Vec2,
-            ECesiumMetadataComponentType::Float32,
-            true);
-        std::vector<std::vector<double>> values{{-1.0, 4.0}, {0.4}};
-        CesiumUtility::JsonValue value = toJsonValue(values);
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-
-      It("for out-of-bounds number", [this]() {
-        FCesiumMetadataValueType targetType(
-            ECesiumMetadataType::Scalar,
-            ECesiumMetadataComponentType::Uint8,
-            false);
-        CesiumUtility::JsonValue value(-1);
-        FCesiumMetadataValue result =
-            FCesiumMetadataValue::fromJsonValue(value, targetType);
-        TestTrue(
-            "value is empty",
-            UCesiumMetadataValueBlueprintLibrary::IsEmpty(result));
-      });
-    });
-
-    It("returns boolean value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Boolean,
-          ECesiumMetadataComponentType::None,
-          false);
-      CesiumUtility::JsonValue value(true);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestTrue(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetBoolean(result, false));
-    });
-
-    It("returns signed int value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Scalar,
-          ECesiumMetadataComponentType::Int32,
-          false);
-      CesiumUtility::JsonValue value(-30);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger(result, 0),
-          -30);
-    });
-
-    It("returns unsigned int value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Scalar,
-          ECesiumMetadataComponentType::Uint64,
-          false);
-      CesiumUtility::JsonValue value(1000000);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual<uint64_t>(
-          "value",
-          CesiumMetadataValueAccess::GetUnsignedInteger64(result, 0),
-          1000000);
-    });
-
-    It("returns floating point value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Scalar,
-          ECesiumMetadataComponentType::Float32,
-          false);
-      CesiumUtility::JsonValue value(10.0456);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetFloat(result, 0.0f),
-          float(10.0456));
-    });
-
-    It("returns int vec value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Vec2,
-          ECesiumMetadataComponentType::Int32,
-          false);
-      CesiumUtility::JsonValue value = toJsonValue(std::vector<int64_t>{-1, 2});
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
-              result,
-              FIntPoint(0)),
-          FIntPoint(-1, 2));
-    });
-
-    It("returns floating point vec value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Vec3,
-          ECesiumMetadataComponentType::Float32,
-          false);
-      CesiumUtility::JsonValue value =
-          toJsonValue(std::vector<double>{1.0, 2.0, 3.0});
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
-              result,
-              FVector3f::Zero()),
-          FVector3f(1.0, 2.0, 3.0));
-    });
-
-    It("returns int mat value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Mat2,
-          ECesiumMetadataComponentType::Int32,
-          false);
-      // clang-format off
-      std::vector<uint64_t> values{
-        1, 2,
-        3, 4
-      };
-      // clang-format on
-      CesiumUtility::JsonValue value = toJsonValue(values);
-
-      FMatrix expected(
-          FPlane4d(1.0, 3.0, 0.0, 0.0),
-          FPlane4d(2.0, 4.0, 0.0, 0.0),
-          FPlane4d(0.0, 0.0, 0.0, 0.0),
-          FPlane4d(0.0, 0.0, 0.0, 0.0));
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
-              result,
-              FMatrix::Identity),
-          expected);
-    });
-
-    It("returns floating point mat value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Mat3,
-          ECesiumMetadataComponentType::Float64,
-          false);
-      // clang-format off
-      std::vector<double> values{
-        -1.1, 2.0, -3.33,
-        0.4, 5.5, 6.0,
-        7.77, 8.0, -0.9
-      };
-      // clang-format on
-
-      std::vector<CesiumUtility::JsonValue> jsonValues(values.size());
-      for (size_t i = 0; i < values.size(); i++) {
-        jsonValues[i] = CesiumUtility::JsonValue(values[i]);
-      }
-      CesiumUtility::JsonValue value(jsonValues);
-
-      FMatrix expected(
-          FPlane4d(-1.1, 0.4, 7.77, 0.0),
-          FPlane4d(2.0, 5.5, 8.0, 0.0),
-          FPlane4d(-3.33, 6.0, -0.9, 0.0),
-          FPlane4d(0.0, 0.0, 0.0, 0.0));
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
-              result,
-              FMatrix::Identity),
-          expected);
-    });
-
-    It("returns string value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::String,
-          ECesiumMetadataComponentType::None,
-          false);
-      std::string testValue("a test string");
-      CesiumUtility::JsonValue value(testValue);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      TestEqual(
-          "value",
-          UCesiumMetadataValueBlueprintLibrary::GetString(result, FString()),
-          FString(testValue.c_str()));
-    });
-
-    It("returns boolean array value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Boolean,
-          ECesiumMetadataComponentType::None,
-          true);
-      std::vector<bool> values{true, false, true, true, false};
-      CesiumUtility::JsonValue value = toJsonValue(values);
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      FCesiumPropertyArray array =
-          UCesiumMetadataValueBlueprintLibrary::GetArray(result);
-      TestEqual(
-          "array is non-empty",
-          UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
-          int64(values.size()));
-
-      for (size_t i = 0; i < values.size(); i++) {
-        FCesiumMetadataValue element =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
-        TestEqual(
-            std::string("value" + std::to_string(i)).c_str(),
-            UCesiumMetadataValueBlueprintLibrary::GetBoolean(element, false),
-            values[i]);
-      }
-    });
-
-    It("returns int array value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Scalar,
-          ECesiumMetadataComponentType::Int32,
-          true);
-      std::vector<int64_t> values{-1, -5, 20, 3};
-      CesiumUtility::JsonValue value = toJsonValue(values);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      FCesiumPropertyArray array =
-          UCesiumMetadataValueBlueprintLibrary::GetArray(result);
-      TestEqual(
-          "array is non-empty",
-          UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
-          int64(values.size()));
-
-      for (size_t i = 0; i < values.size(); i++) {
-        FCesiumMetadataValue element =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
-        TestEqual(
-            std::string("value" + std::to_string(i)).c_str(),
-            UCesiumMetadataValueBlueprintLibrary::GetInteger(element, 0),
-            values[i]);
-      }
-    });
-
-    It("returns float array value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Scalar,
-          ECesiumMetadataComponentType::Float32,
-          true);
-      std::vector<double> values{-0.51, 0.0, 1.12, -3.0};
-      CesiumUtility::JsonValue value = toJsonValue(values);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      FCesiumPropertyArray array =
-          UCesiumMetadataValueBlueprintLibrary::GetArray(result);
-      TestEqual(
-          "array is non-empty",
-          UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
-          int64(values.size()));
-
-      for (size_t i = 0; i < values.size(); i++) {
-        FCesiumMetadataValue element =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
-        TestEqual(
-            std::string("value" + std::to_string(i)).c_str(),
-            UCesiumMetadataValueBlueprintLibrary::GetFloat64(element, 0.0),
-            values[i]);
-      }
-    });
-
-    It("returns vecN array value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Vec3,
-          ECesiumMetadataComponentType::Int32,
-          true);
-      std::vector<std::vector<int64_t>> values{
-          {-1, 0, 20},
-          {5, 1, 0},
-          {-2, 3, -3}};
-      CesiumUtility::JsonValue value = toJsonValue(values);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      FCesiumPropertyArray array =
-          UCesiumMetadataValueBlueprintLibrary::GetArray(result);
-      TestEqual(
-          "array is non-empty",
-          UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
-          int64(values.size()));
-
-      for (size_t i = 0; i < values.size(); i++) {
-        FCesiumMetadataValue element =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
-        TestEqual(
-            std::string("value" + std::to_string(i)).c_str(),
-            UCesiumMetadataValueBlueprintLibrary::GetIntVector(
-                element,
-                FIntVector(0)),
-            FIntVector(values[i][0], values[i][1], values[i][2]));
-      }
-    });
-
-    It("returns matN array value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::Mat2,
-          ECesiumMetadataComponentType::Float64,
-          true);
-      std::vector<std::vector<double>> values{
-          {-1.0, 0.4, 8.8, 0.0},
-          {4.5, 6.0, 7.0, -0.8},
-          {-9.9, 9.2, 0.3, -3.0}};
-      CesiumUtility::JsonValue value = toJsonValue(values);
-
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      FCesiumPropertyArray array =
-          UCesiumMetadataValueBlueprintLibrary::GetArray(result);
-      TestEqual(
-          "array is non-empty",
-          UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
-          int64(values.size()));
-
-      for (size_t i = 0; i < values.size(); i++) {
-        FCesiumMetadataValue element =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
-        FMatrix expected(
-            FPlane4d(values[i][0], values[i][2], 0.0, 0.0),
-            FPlane4d(values[i][1], values[i][3], 0.0, 0.0),
-            FPlane4d(0.0, 0.0, 0.0, 0.0),
-            FPlane4d(0.0, 0.0, 0.0, 0.0));
-        TestEqual(
-            std::string("value" + std::to_string(i)).c_str(),
-            UCesiumMetadataValueBlueprintLibrary::GetMatrix(
-                element,
-                FMatrix::Identity),
-            expected);
-      }
-    });
-
-    It("returns string array value", [this]() {
-      FCesiumMetadataValueType targetType(
-          ECesiumMetadataType::String,
-          ECesiumMetadataComponentType::None,
-          true);
-      std::vector<std::string> values{"test1", "another test string", "third!"};
-      CesiumUtility::JsonValue value = toJsonValue(values);
-      FCesiumMetadataValue result =
-          FCesiumMetadataValue::fromJsonValue(value, targetType);
-      FCesiumPropertyArray array =
-          UCesiumMetadataValueBlueprintLibrary::GetArray(result);
-      TestEqual(
-          "array is non-empty",
-          UCesiumPropertyArrayBlueprintLibrary::GetArraySize(array),
-          int64(values.size()));
-
-      for (size_t i = 0; i < values.size(); i++) {
-        FCesiumMetadataValue element =
-            UCesiumPropertyArrayBlueprintLibrary::GetValue(array, i);
-        TestEqual(
-            std::string("value" + std::to_string(i)).c_str(),
-            UCesiumMetadataValueBlueprintLibrary::GetString(element, FString()),
-            FString(values[i].c_str()));
-      }
-    });
   });
 }

@@ -317,7 +317,7 @@ private:
   static void initializeStaticVariables();
 
   static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
-  TSharedPtr<SVerticalBox> _pContent;
+  TSharedPtr<SScrollBox> _pContent;
 
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;

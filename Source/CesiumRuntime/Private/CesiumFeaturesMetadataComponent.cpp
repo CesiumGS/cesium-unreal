@@ -2248,6 +2248,9 @@ void GenerateMaterialNodes(
   }
 
   NodeX += BeginSectionX + MaximumSectionX;
+  // If no nodes were generated, this prevents the next nodes from spawning on
+  // top of each other.
+  NodeX = FMath::Max(NodeX, 1.5 * Incr);
 
   UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes = nullptr;
   for (const TObjectPtr<UMaterialExpression>& ExistingNode :
@@ -2403,31 +2406,31 @@ FCesiumMetadataValue getValueForSemantic(
 
   switch (semantic) {
   case ECesiumMetadataStatisticSemantic::Min:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.min.value_or(nullValue),
         propertyType);
   case ECesiumMetadataStatisticSemantic::Max:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.max.value_or(nullValue),
         propertyType);
   case ECesiumMetadataStatisticSemantic::Mean:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.mean.value_or(nullValue),
         propertyType);
   case ECesiumMetadataStatisticSemantic::Median:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.median.value_or(nullValue),
         propertyType);
   case ECesiumMetadataStatisticSemantic::StandardDeviation:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.standardDeviation.value_or(nullValue),
         propertyType);
   case ECesiumMetadataStatisticSemantic::Variance:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.variance.value_or(nullValue),
         propertyType);
   case ECesiumMetadataStatisticSemantic::Sum:
-    return FCesiumMetadataValue::fromJsonValue(
+    return FCesiumMetadataValue(
         propertyStatistics.sum.value_or(nullValue),
         propertyType);
   default:
