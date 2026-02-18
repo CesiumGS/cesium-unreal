@@ -595,7 +595,6 @@ protected:
 private:
   int _heightReferenceUpdateCounter = 0;
 
-public:
   /**
    * When HeightReference is ::Tileset, this is the fixed height
    * above the tileset that we want to maintain.
@@ -603,7 +602,6 @@ public:
   UPROPERTY()
   float _fixedHeightAboveHeightReference = 0.0f;
 
-private:
   /**
    * Find the location on the tileset directly above or below the component.
    * Returns whether an intersection was found.

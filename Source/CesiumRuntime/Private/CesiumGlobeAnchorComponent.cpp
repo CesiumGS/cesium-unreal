@@ -351,19 +351,11 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   FVector targetPosition = TargetLongitudeLatitudeHeight;
 
   if (this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
-    FVector groundIntersection;
 
-    auto* pGeoreference = this->ResolveGeoreference();
-    if (!IsValid(pGeoreference)) {
-      return;
-    }
-    FVector unrealTargetPosition =
-        pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
-            TargetLongitudeLatitudeHeight);
     if (_queryLongitudeLatitudeHeightPositionOnTileset(
             targetPosition,
             true,
-            unrealTargetPosition)) {
+            TargetLongitudeLatitudeHeight)) {
       targetPosition.Z += this->_fixedHeightAboveHeightReference;
     }
   }
@@ -834,7 +826,7 @@ bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
         bool startElsewhere,
-        const FVector& position) {
+        const FVector& targetPosition) {
   if (!GetOwner() || !GetWorld()) {
     return false;
   }
@@ -844,9 +836,13 @@ bool UCesiumGlobeAnchorComponent::
   if (!IsValid(pGeoreference))
     return false;
 
+  FVector unrealTargetPosition =
+      pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+          targetPosition);
+
   // Get the actor's current world position
   FVector startPosition =
-      startElsewhere ? position : GetOwner()->GetActorLocation();
+      startElsewhere ? unrealTargetPosition : GetOwner()->GetActorLocation();
 
   constexpr float traceDistance = 1000000.0f;
   // Set up the line trace start and end points
