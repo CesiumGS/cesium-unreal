@@ -389,7 +389,6 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
 }
 
 double UCesiumGlobeAnchorComponent::GetHeight() const {
-  return this->GetLongitudeLatitudeHeight().Z;
   return this->GetHeightReference() == ECesiumHeightReferenceMode::Ellipsoid
              ? this->GetLongitudeLatitudeHeight().Z
              : this->_fixedHeightAboveHeightReference;
