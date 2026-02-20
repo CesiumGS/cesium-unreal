@@ -334,8 +334,7 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       FVector llh = this->GlobeAnchor->GetLongitudeLatitudeHeight();
       this->Longitude = llh.X;
       this->Latitude = llh.Y;
-      // this->Height = llh.Z;
-      this->Height = this->GlobeAnchor->GetHeight();
+      this->Height = llh.Z;
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
       this->TilesetHeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
