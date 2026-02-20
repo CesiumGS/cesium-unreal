@@ -187,6 +187,48 @@ bool FCesium3DTilesetPhysicsWithSmallScale::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesium3DTilesetCameraManagerCameras,
+    "Cesium.Unit.3DTileset.CameraManagerCameras",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+static setupForCameras(SceneGenerationContext& context) {
+  setupForPhysicsWithSmallScale(context);
+}
+
+bool checkCameras(
+    SceneGenerationContext& creationContext,
+    SceneGenerationContext& playContext,
+    TestPass::TestingParameter parameter) {
+  FHitResult hit;
+
+  FVector lookDirection =
+      playContext.pawn->GetViewRotation().RotateVector(FVector::XAxisVector);
+
+  return UKismetSystemLibrary::LineTraceSingle(
+      playContext.world,
+      playContext.pawn->GetPawnViewLocation(),
+      playContext.pawn->GetPawnViewLocation() + lookDirection * 100000.0,
+      ETraceTypeQuery::TraceTypeQuery1,
+      true,
+      {},
+      EDrawDebugTrace::Persistent,
+      hit,
+      true);
+}
+
+bool FCesium3DTilesetCameraManagerCameras::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Refresh Pass", tilesetPass, checkCameras});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForCameras,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
 } // namespace Cesium
 
 #endif
