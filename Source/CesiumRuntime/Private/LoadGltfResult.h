@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -50,6 +51,21 @@ struct LoadedPrimitiveResult {
    * created on the main thread.
    */
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
+
+  /**
+   * Data for rendering a gaussian splat. This will be used over `RenderData`
+   * when the primitive is a gaussian splat.
+   */
+  TUniquePtr<FCesiumGltfGaussianSplatData> GaussianSplatData = nullptr;
+
+  /**
+   * Returns whether or not this primitive has renderable data (either
+   * `RenderData` or `GaussianSplatData` are not nullptr). If this returns
+   * false, this primitive should be removed from consideration for rendering.
+   */
+  bool HasRenderableData() {
+    return RenderData != nullptr || GaussianSplatData != nullptr;
+  }
 
   /**
    * The index of the material for this primitive within the parent model, or -1

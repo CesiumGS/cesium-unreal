@@ -13,8 +13,10 @@
 
 ##### Additions :tada:
 
+- Added support for loading tilesets with the `KHR_gaussian_splatting` extension.
 - Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
 - Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
+- Added `DetectTransformChanges` to `UCesiumGlobeAnchorComponent` to toggle whether the globe anchor should update itself after changes in its Actor's transform.
 
 ##### Fixes :wrench:
 
