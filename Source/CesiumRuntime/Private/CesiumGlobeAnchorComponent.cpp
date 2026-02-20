@@ -842,9 +842,10 @@ bool UCesiumGlobeAnchorComponent::
 
   // Get the actor's current world position
   FVector startPosition =
-    alternateActorPosition.has_value()
-      ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(alternateActorPosition.value())
-      : GetOwner()->GetActorLocation();
+      alternateActorPosition.has_value()
+          ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+                alternateActorPosition.value())
+          : GetOwner()->GetActorLocation();
 
   constexpr float traceDistance = 1000000.0f;
   // Set up the line trace start and end points
