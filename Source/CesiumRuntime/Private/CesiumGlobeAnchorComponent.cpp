@@ -6,7 +6,10 @@
 #include "CesiumGeoreference.h"
 #include "CesiumRuntime.h"
 #include "CesiumWgs84Ellipsoid.h"
+#include "CollisionQueryParams.h"
 #include "Components/SceneComponent.h"
+#include "Engine/HitResult.h"
+#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
 #include <glm/gtc/quaternion.hpp>
@@ -889,6 +892,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   UWorld* pWorld = GetWorld();
   this->_setNewActorToECEFFromRelativeTransform();
 
+#if WITH_EDITOR
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
       this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
     // update the height-above-reference based on the new transform.
@@ -899,6 +903,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
       this->_fixedHeightAboveHeightReference = realLLH.Z - positionOnTileset.Z;
     }
   }
+#endif
 }
 
 void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
