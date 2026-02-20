@@ -3,6 +3,7 @@
 #if WITH_EDITOR
 
 #include "Cesium3DTileset.h"
+#include "CesiumCameraManager.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumLoadTestCore.h"
@@ -192,8 +193,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     "Cesium.Unit.3DTileset.CameraManagerCameras",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
 
-static setupForCameras(SceneGenerationContext& context) {
+static void setupForCameras(SceneGenerationContext& context) {
   setupForPhysicsWithSmallScale(context);
+  ACesium3DTileset* tileset = context.tilesets[0];
+  ACesiumCameraManager* cameraManager = ACesiumCameraManager::GetDefaultCameraManager(tileset);
+  cameraManager->UsePlayerCameras = false;
 }
 
 bool checkCameras(
@@ -205,7 +209,7 @@ bool checkCameras(
   FVector lookDirection =
       playContext.pawn->GetViewRotation().RotateVector(FVector::XAxisVector);
 
-  return UKismetSystemLibrary::LineTraceSingle(
+  return !UKismetSystemLibrary::LineTraceSingle(
       playContext.world,
       playContext.pawn->GetPawnViewLocation(),
       playContext.pawn->GetPawnViewLocation() + lookDirection * 100000.0,
