@@ -64,162 +64,14 @@ UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent() {
               TEXT("/Engine/EngineResources/DefaultVolumeTexture")) {}
   };
   static FConstructorStatics ConstructorStatics;
-  pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
-
-#if WITH_EDITOR
-  this->UpdateShaderPreview();
-#endif
+  _pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
 }
 
 #if WITH_EDITOR
-void UCesiumVoxelMetadataComponent::PostLoad() {
-  Super::PostLoad();
-  this->UpdateShaderPreview();
+void UCesiumVoxelMetadataComponent::BuildShader() {
+  ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  OnCesiumVoxelMetadataBuildShader.Broadcast(pOwner);
 }
-
-void UCesiumVoxelMetadataComponent::PostEditChangeProperty(
-    FPropertyChangedEvent& PropertyChangedEvent) {
-  Super::PostEditChangeProperty(PropertyChangedEvent);
-
-  if (!PropertyChangedEvent.Property) {
-    return;
-  }
-
-  FName PropName = PropertyChangedEvent.Property->GetFName();
-  FString PropNameAsString = PropertyChangedEvent.Property->GetName();
-
-  if (!PropertyChangedEvent.Property) {
-    return;
-  }
-
-  if (PropName == GET_MEMBER_NAME_CHECKED(
-                      UCesiumVoxelMetadataComponent,
-                      CustomShader) ||
-      PropName == GET_MEMBER_NAME_CHECKED(
-                      UCesiumVoxelMetadataComponent,
-                      AdditionalFunctions) ||
-      PropName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumVoxelMetadataComponent, Description)) {
-    this->UpdateShaderPreview();
-  }
-}
-
-void UCesiumVoxelMetadataComponent::PostEditChangeChainProperty(
-    FPropertyChangedChainEvent& PropertyChangedChainEvent) {
-  Super::PostEditChangeChainProperty(PropertyChangedChainEvent);
-  if (!PropertyChangedChainEvent.Property ||
-      PropertyChangedChainEvent.PropertyChain.IsEmpty()) {
-    return;
-  }
-  this->UpdateShaderPreview();
-}
-
-namespace {
-FCesiumMetadataValueType
-GetValueTypeFromClassProperty(const Cesium3DTiles::ClassProperty& Property) {
-  FCesiumMetadataValueType ValueType;
-  ValueType.Type = (ECesiumMetadataType)CesiumGltf::convertStringToPropertyType(
-      Property.type);
-  ValueType.ComponentType = (ECesiumMetadataComponentType)
-      CesiumGltf::convertStringToPropertyComponentType(
-          Property.componentType.value_or(""));
-  ValueType.bIsArray = Property.array;
-  return ValueType;
-}
-
-void AutoFillVoxelClassDescription(
-    FCesiumVoxelClassDescription& description,
-    const std::string& voxelClassID,
-    const Cesium3DTiles::Class& voxelClass) {
-  description.ID = voxelClassID.c_str();
-
-  for (const auto& propertyIt : voxelClass.properties) {
-    auto pExistingProperty = description.Properties.FindByPredicate(
-        [&propertyName = propertyIt.first](
-            const FCesiumPropertyAttributePropertyDescription&
-                existingProperty) {
-          return existingProperty.Name == propertyName.c_str();
-        });
-
-    if (pExistingProperty) {
-      // We have already accounted for this property.
-      continue;
-    }
-
-    FCesiumPropertyAttributePropertyDescription& property =
-        description.Properties.Emplace_GetRef();
-    property.Name = propertyIt.first.c_str();
-
-    property.PropertyDetails.SetValueType(
-        GetValueTypeFromClassProperty(propertyIt.second));
-    property.PropertyDetails.ArraySize = propertyIt.second.count.value_or(0);
-    property.PropertyDetails.bIsNormalized = propertyIt.second.normalized;
-
-    // These values are not actually validated until the material is generated.
-    property.PropertyDetails.bHasOffset = propertyIt.second.offset.has_value();
-    property.PropertyDetails.bHasScale = propertyIt.second.scale.has_value();
-    property.PropertyDetails.bHasNoDataValue =
-        propertyIt.second.noData.has_value();
-    property.PropertyDetails.bHasDefaultValue =
-        propertyIt.second.defaultProperty.has_value();
-
-    property.EncodingDetails =
-        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
-            property.PropertyDetails);
-  }
-}
-} // namespace
-
-//void UCesiumVoxelMetadataComponent::AutoFill() {
-//  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
-//  const Cesium3DTilesSelection::Tileset* pTileset =
-//      pOwner ? pOwner->GetTileset() : nullptr;
-//  if (!pTileset || !pTileset->getRootTile()) {
-//    return;
-//  }
-//
-//  const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
-//      pTileset->getRootTile()->getContent().getExternalContent();
-//  if (!pExternalContent) {
-//    return;
-//  }
-//
-//  const auto* pVoxelExtension =
-//      pExternalContent
-//          ->getExtension<Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
-//  if (!pVoxelExtension) {
-//    UE_LOG(
-//        LogCesium,
-//        Warning,
-//        TEXT(
-//            "Tileset %s does not contain voxel content, so CesiumVoxelMetadataComponent will have no effect."),
-//        *pOwner->GetName());
-//    return;
-//  }
-//
-//  const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
-//      pTileset->getMetadata();
-//  if (!pMetadata || !pMetadata->schema) {
-//    return;
-//  }
-//
-//  const std::string& voxelClassId = pVoxelExtension->classProperty;
-//  if (pMetadata->schema->classes.find(voxelClassId) ==
-//      pMetadata->schema->classes.end()) {
-//    return;
-//  }
-//
-//  Super::PreEditChange(NULL);
-//
-//  AutoFillVoxelClassDescription(
-//      this->Description,
-//      voxelClassId,
-//      pMetadata->schema->classes.at(voxelClassId));
-//
-//  Super::PostEditChange();
-//
-//  UpdateShaderPreview();
-//}
 
 namespace {
 struct VoxelMetadataClassification : public MaterialNodeClassification {
@@ -446,21 +298,23 @@ struct CustomShaderBuilder {
 };
 } // namespace
 
-/*static*/ const FString UCesiumVoxelMetadataComponent::ShaderPreviewTemplate =
+/*static*/ const FString UCesiumVoxelMetadataComponent::_shaderPreviewTemplate =
     "struct CustomShaderProperties {\n"
     "%s"
     "\n}\n\n"
     "struct CustomShader {\n"
+    "// Additional functions go here.\n"
     "%s\n\n"
     "\tfloat4 Shade(CustomShaderProperties Properties) {\n"
+    "// Custom shader code goes here.\n"
     "%s\n"
     "\t}\n}";
 
-void UCesiumVoxelMetadataComponent::UpdateShaderPreview() {
+FString UCesiumVoxelMetadataComponent::getCustomShaderPreview() const {
   // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
   // CesiumVoxelTemplate.ush contains "%s" formatters that should be replaced
   // with generated code.
-  FLazyPrintf LazyPrintf(*ShaderPreviewTemplate);
+  FLazyPrintf LazyPrintf(*_shaderPreviewTemplate);
   CustomShaderBuilder Builder;
 
   const TArray<FCesiumPropertyAttributePropertyDescription>& Properties =
@@ -490,7 +344,7 @@ void UCesiumVoxelMetadataComponent::UpdateShaderPreview() {
   LazyPrintf.PushParam(*this->AdditionalFunctions);
   LazyPrintf.PushParam(*this->CustomShader);
 
-  this->CustomShaderPreview = LazyPrintf.GetResultString();
+  return LazyPrintf.GetResultString();
 }
 
 static VoxelMetadataClassification
@@ -979,101 +833,104 @@ static void RemapUserConnections(
 }
 
 void UCesiumVoxelMetadataComponent::GenerateMaterial() {
-  //ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(this->GetOwner());
-  //if (!pTileset) {
-  //  return;
-  //}
+  // ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(this->GetOwner());
+  // if (!pTileset) {
+  //   return;
+  // }
 
-  //MaterialResourceLibrary ResourceLibrary;
-  //ResourceLibrary.pDefaultVolumeTexture = this->pDefaultVolumeTexture;
-  //if (!ResourceLibrary.isValid()) {
-  //  UE_LOG(
-  //      LogCesium,
-  //      Error,
-  //      TEXT(
-  //          "Can't find the material or shader templates necessary to generate voxel material. Aborting."));
-  //  return;
-  //}
+  // MaterialResourceLibrary ResourceLibrary;
+  // ResourceLibrary.pDefaultVolumeTexture = this->pDefaultVolumeTexture;
+  // if (!ResourceLibrary.isValid()) {
+  //   UE_LOG(
+  //       LogCesium,
+  //       Error,
+  //       TEXT(
+  //           "Can't find the material or shader templates necessary to
+  //           generate voxel material. Aborting."));
+  //   return;
+  // }
 
-  //if (this->TargetMaterialLayer &&
-  //    this->TargetMaterialLayer->GetPackage()->IsDirty()) {
-  //  UE_LOG(
-  //      LogCesium,
-  //      Error,
-  //      TEXT(
-  //          "Can't regenerate a material layer that has unsaved changes. Please save your changes and try again."));
-  //  return;
-  //}
+  // if (this->TargetMaterialLayer &&
+  //     this->TargetMaterialLayer->GetPackage()->IsDirty()) {
+  //   UE_LOG(
+  //       LogCesium,
+  //       Error,
+  //       TEXT(
+  //           "Can't regenerate a material layer that has unsaved changes.
+  //           Please save your changes and try again."));
+  //   return;
+  // }
 
-  //const FString MaterialName =
-  //    "ML_" + pTileset->GetFName().ToString() + "_VoxelMetadata";
-  //const FString PackageBaseName = "/Game/";
-  //const FString PackageName = PackageBaseName + MaterialName;
+  // const FString MaterialName =
+  //     "ML_" + pTileset->GetFName().ToString() + "_VoxelMetadata";
+  // const FString PackageBaseName = "/Game/";
+  // const FString PackageName = PackageBaseName + MaterialName;
 
-  //bool Overwriting = false;
-  //if (this->TargetMaterialLayer) {
-  //  // Overwriting an existing material layer.
-  //  Overwriting = true;
-  //  GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()
-  //      ->CloseAllEditorsForAsset(this->TargetMaterialLayer);
-  //} else {
-  //  this->TargetMaterialLayer = CreateMaterialLayer(PackageName, MaterialName);
-  //}
+  // bool Overwriting = false;
+  // if (this->TargetMaterialLayer) {
+  //   // Overwriting an existing material layer.
+  //   Overwriting = true;
+  //   GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()
+  //       ->CloseAllEditorsForAsset(this->TargetMaterialLayer);
+  // } else {
+  //   this->TargetMaterialLayer = CreateMaterialLayer(PackageName,
+  //   MaterialName);
+  // }
 
-  //this->TargetMaterialLayer->PreEditChange(NULL);
+  // this->TargetMaterialLayer->PreEditChange(NULL);
 
-  //MaterialGenerationState MaterialState;
+  // MaterialGenerationState MaterialState;
 
-  //ClearAutoGeneratedNodes(
-  //    this->TargetMaterialLayer,
-  //    MaterialState.ConnectionInputRemap,
-  //    MaterialState.ConnectionOutputRemap);
-  //GenerateMaterialNodes(this, MaterialState, ResourceLibrary);
-  //MoveNodesToMaterialLayer(MaterialState, this->TargetMaterialLayer);
+  // ClearAutoGeneratedNodes(
+  //     this->TargetMaterialLayer,
+  //     MaterialState.ConnectionInputRemap,
+  //     MaterialState.ConnectionOutputRemap);
+  // GenerateMaterialNodes(this, MaterialState, ResourceLibrary);
+  // MoveNodesToMaterialLayer(MaterialState, this->TargetMaterialLayer);
 
-  //RemapUserConnections(
-  //    this->TargetMaterialLayer,
-  //    MaterialState.ConnectionInputRemap,
-  //    MaterialState.ConnectionOutputRemap);
+  // RemapUserConnections(
+  //     this->TargetMaterialLayer,
+  //     MaterialState.ConnectionInputRemap,
+  //     MaterialState.ConnectionOutputRemap);
 
-  //this->TargetMaterialLayer->PreviewBlendMode =
-  //    TEnumAsByte<EBlendMode>(EBlendMode::BLEND_Translucent);
+  // this->TargetMaterialLayer->PreviewBlendMode =
+  //     TEnumAsByte<EBlendMode>(EBlendMode::BLEND_Translucent);
 
   //// Let the material update itself if necessary
-  //this->TargetMaterialLayer->PostEditChange();
+  // this->TargetMaterialLayer->PostEditChange();
 
   //// Make sure that any static meshes, etc using this material will stop
   //// using the FMaterialResource of the original material, and will use the
   //// new FMaterialResource created when we make a new UMaterial in place
-  //FGlobalComponentReregisterContext RecreateComponents;
+  // FGlobalComponentReregisterContext RecreateComponents;
 
   //// If this is a new material, open the content browser to the auto-generated
   //// material.
-  //if (!Overwriting) {
-  //  FContentBrowserModule* pContentBrowserModule =
-  //      FModuleManager::Get().GetModulePtr<FContentBrowserModule>(
-  //          "ContentBrowser");
-  //  if (pContentBrowserModule) {
-  //    TArray<UObject*> AssetsToHighlight;
-  //    AssetsToHighlight.Add(this->TargetMaterialLayer);
-  //    pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
-  //  }
-  //}
+  // if (!Overwriting) {
+  //   FContentBrowserModule* pContentBrowserModule =
+  //       FModuleManager::Get().GetModulePtr<FContentBrowserModule>(
+  //           "ContentBrowser");
+  //   if (pContentBrowserModule) {
+  //     TArray<UObject*> AssetsToHighlight;
+  //     AssetsToHighlight.Add(this->TargetMaterialLayer);
+  //     pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
+  //   }
+  // }
 
   //// Open the updated material in editor.
-  //if (GEditor) {
-  //  UAssetEditorSubsystem* pAssetEditor =
-  //      GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-  //  if (pAssetEditor) {
-  //    GEngine->EndTransaction();
-  //    pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
-  //    IMaterialEditor* pMaterialEditor = static_cast<IMaterialEditor*>(
-  //        pAssetEditor->FindEditorForAsset(this->TargetMaterialLayer, true));
-  //    if (pMaterialEditor) {
-  //      pMaterialEditor->UpdateMaterialAfterGraphChange();
-  //    }
-  //  }
-  //}
+  // if (GEditor) {
+  //   UAssetEditorSubsystem* pAssetEditor =
+  //       GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+  //   if (pAssetEditor) {
+  //     GEngine->EndTransaction();
+  //     pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
+  //     IMaterialEditor* pMaterialEditor = static_cast<IMaterialEditor*>(
+  //         pAssetEditor->FindEditorForAsset(this->TargetMaterialLayer, true));
+  //     if (pMaterialEditor) {
+  //       pMaterialEditor->UpdateMaterialAfterGraphChange();
+  //     }
+  //   }
+  // }
 }
 
 #endif // WITH_EDITOR

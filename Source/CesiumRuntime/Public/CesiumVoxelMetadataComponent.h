@@ -71,8 +71,8 @@ public:
    * Warning: Using Auto Fill may populate the description with a large amount
    * of metadata. Make sure to delete the properties that aren't relevant.
    */
-  //UFUNCTION(CallInEditor, Category = "Cesium")
-  //void BuildShader();
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void BuildShader();
 
   /**
    * This button can be used to create a boiler-plate material layer that
@@ -105,20 +105,6 @@ public:
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
 
   /**
-   * A preview of the generated custom shader.
-   */
-  UPROPERTY(
-      VisibleAnywhere,
-      Transient,
-      NonTransactional,
-      Category = "Cesium",
-      Meta =
-          (NoResetToDefault,
-           DisplayAfter = "TargetMaterialLayer",
-           MultiLine = true))
-  FString CustomShaderPreview;
-
-  /**
    * The custom shader code to apply to each voxel that is raymarched.
    */
   UPROPERTY(
@@ -126,7 +112,7 @@ public:
       Category = "Cesium",
       Meta =
           (TitleProperty = "Custom Shader",
-           DisplayAfter = "CustomShaderPreview",
+           DisplayAfter = "TargetMaterialLayer",
            MultiLine = true))
   FString CustomShader = TEXT("return float4(1, 1, 1, 0.02);");
 
@@ -155,21 +141,15 @@ public:
           (TitleProperty = "Voxel Class", DisplayAfter = "AdditionalFunctions"))
   FCesiumVoxelClassDescription Description;
 
-protected:
-#if WITH_EDITOR
-  virtual void PostLoad() override;
-
-  virtual void
-  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-  virtual void PostEditChangeChainProperty(
-      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
-#endif
+  /**
+   * Gets a preview of the generated custom shader.
+   */
+  FString getCustomShaderPreview() const;
 
 private:
-  TObjectPtr<UTexture> pDefaultVolumeTexture;
+  TObjectPtr<UTexture> _pDefaultVolumeTexture;
 
 #if WITH_EDITOR
-  static const FString ShaderPreviewTemplate;
-  void UpdateShaderPreview();
+  static const FString _shaderPreviewTemplate;
 #endif
 };

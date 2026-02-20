@@ -111,6 +111,7 @@ private:
   void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
   void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
   void OnFeaturesMetadataAddProperties(ACesium3DTileset* pTileset);
+  void OnVoxelMetadataBuildShader(ACesium3DTileset* pTileset);
 
   CesiumIonServerManager _serverManager;
   FDelegateHandle _tilesetLoadFailureSubscription;
@@ -118,6 +119,7 @@ private:
   FDelegateHandle _tilesetIonTroubleshootingSubscription;
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
   FDelegateHandle _featuresMetadataAddPropertiesSubscription;
+  FDelegateHandle _voxelMetadataBuildShaderSubscription;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
   CesiumEditorReparentHandler _reparentHandler;
