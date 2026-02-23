@@ -8,7 +8,7 @@
 
 ##### Additions :tada:
 
-- Added `UCesiumGlobeAnchor::HeightReference`. Setting this to `ECesiumHeightReferenceMode::Tileset` will cause the actor to maintain its height above the tileset or geometry during LOD transitions or object movement.
+- Added `UCesiumGlobeAnchorComponent::HeightReference`. Setting this to `ECesiumHeightReferenceMode::Tileset` will cause the actor to maintain its height above the tileset or geometry during LOD transitions or object movement.
 - Added `UCesiumGlobeAnchorComponent::TilesetHeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
 - Added support for loading tilesets with the `KHR_gaussian_splatting` extension.
 - Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
