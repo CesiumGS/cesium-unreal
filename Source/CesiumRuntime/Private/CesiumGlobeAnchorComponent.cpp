@@ -78,7 +78,7 @@ UCesiumGlobeAnchorComponent::GetGeoreference() const {
 }
 
 void UCesiumGlobeAnchorComponent::SetGeoreference(
-    TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
+    const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference) {
   ACesiumGeoreference* pOriginal = this->ResolvedGeoreference;
 
   if (IsValid(pOriginal)) {
@@ -843,11 +843,12 @@ bool UCesiumGlobeAnchorComponent::
   if (!IsValid(pGeoreference))
     return false;
 
+
   // Get the actor's current world position
   FVector startPosition =
-      alternateActorPosition.has_value()
+      alternateStartPosition.has_value()
           ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
-                alternateActorPosition.value())
+                alternateStartPosition.value())
           : GetOwner()->GetActorLocation();
 
   constexpr float traceDistance = 1000000.0f;
@@ -856,7 +857,6 @@ bool UCesiumGlobeAnchorComponent::
   FVector rayEnd = startPosition - FVector(0.0, 0.0, traceDistance);
 
   FCollisionQueryParams queryParams{};
-
   // Ignore the owner actor to avoid self collision
   queryParams.AddIgnoredActor(GetOwner());
   queryParams.bTraceComplex = true;

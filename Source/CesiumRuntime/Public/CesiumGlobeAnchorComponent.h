@@ -4,6 +4,7 @@
 
 #include "CesiumGeospatial/GlobeAnchor.h"
 #include "Components/ActorComponent.h"
+#include "Cesium3DTileset.h"
 #include "Delegates/IDelegateInstance.h"
 #include "CesiumGlobeAnchorComponent.generated.h"
 
@@ -212,7 +213,7 @@ public:
    * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
   UFUNCTION(BlueprintSetter)
-  void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
+  void SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
 
   UFUNCTION(BlueprintGetter)
   ECesiumHeightReferenceMode GetHeightReference() const;
