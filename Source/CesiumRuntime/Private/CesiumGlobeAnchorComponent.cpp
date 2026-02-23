@@ -833,7 +833,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
-        const std::optional<FVector>& alternateActorPosition) {
+        const std::optional<FVector>& alternateStartPosition) {
   if (!GetOwner() || !GetWorld()) {
     return false;
   }
