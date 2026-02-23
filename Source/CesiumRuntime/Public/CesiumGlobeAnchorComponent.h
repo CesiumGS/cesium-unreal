@@ -650,7 +650,7 @@ private:
    */
   bool _queryLongitudeLatitudeHeightPositionOnTileset(
       FVector& groundIntersection,
-      const std::optional<FVector>& alternateActorPosition = std::nullopt);
+      const std::optional<FVector>& alternateStartPosition = std::nullopt);
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 
