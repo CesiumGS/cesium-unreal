@@ -635,7 +635,7 @@ private:
   int _heightReferenceUpdateCounter = 0;
 
   /**
-   * When HeightReference is ::Tileset, this is the target height
+   * When HeightReference is Tileset, this is the target height
    * above the tileset to maintain.
    */
   UPROPERTY()
