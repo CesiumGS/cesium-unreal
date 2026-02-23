@@ -198,6 +198,11 @@ static void setupForCameras(SceneGenerationContext& context) {
   ACesium3DTileset* tileset = context.tilesets[0];
   ACesiumCameraManager* cameraManager = ACesiumCameraManager::GetDefaultCameraManager(tileset);
   cameraManager->UsePlayerCameras = false;
+  FCesiumCamera auxCamera(FVector2D(1080.0, 768.0),
+                          context.startPosition,
+                          context.startRotation,
+                          context.startFieldOfView);
+  cameraManager->AddCamera(auxCamera);
 }
 
 bool checkCameras(
@@ -209,7 +214,7 @@ bool checkCameras(
   FVector lookDirection =
       playContext.pawn->GetViewRotation().RotateVector(FVector::XAxisVector);
 
-  return !UKismetSystemLibrary::LineTraceSingle(
+  return UKismetSystemLibrary::LineTraceSingle(
       playContext.world,
       playContext.pawn->GetPawnViewLocation(),
       playContext.pawn->GetPawnViewLocation() + lookDirection * 100000.0,
