@@ -196,13 +196,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 static void setupForCameras(SceneGenerationContext& context) {
   setupForPhysicsWithSmallScale(context);
   ACesium3DTileset* tileset = context.tilesets[0];
-  ACesiumCameraManager* cameraManager = ACesiumCameraManager::GetDefaultCameraManager(tileset);
+  ACesiumCameraManager* cameraManager = tileset->ResolveCameraManager();
   cameraManager->UsePlayerCameras = false;
-  FCesiumCamera auxCamera(FVector2D(1080.0, 768.0),
-                          context.startPosition,
-                          context.startRotation,
-                          context.startFieldOfView);
-  cameraManager->AddCamera(auxCamera);
+  FCesiumCamera auxCamera(
+      FVector2D(1080.0, 768.0),
+      context.startPosition,
+      context.startRotation,
+      context.startFieldOfView);
+  cameraManager->AdditionalCameras.Add(auxCamera);
 }
 
 bool checkCameras(
