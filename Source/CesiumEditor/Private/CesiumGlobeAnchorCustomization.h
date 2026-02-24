@@ -132,10 +132,10 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium"
-      // ,meta=(EditCondition = "HeightReference ==
-      // ECesiumHeightReferenceMode::Tileset")
-  )
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "HeightReference == ECesiumHeightReferenceMode::Tileset"))
   TObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
 
   /**
@@ -146,11 +146,12 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium"
-      // meta=(EditCondition = "HeightReference ==
-      // ECesiumHeightReferenceMode::Tileset")
-  )
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "HeightReference == ECesiumHeightReferenceMode::Tileset"))
   int TilesetHeightUpdateInterval = 1;
+
   /**
    * The rotation around the right (Y) axis. Zero pitch means the look direction
    * (+X) is level with the horizon. Positive pitch is looking up, negative
