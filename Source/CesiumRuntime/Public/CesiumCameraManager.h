@@ -73,10 +73,12 @@ public:
    * @deprecated The AdditionalCameras array should be used for directly storing
    * and accessing cameras.
    */
-  UE_DEPRECATED(
-      "Cesium For Unreal v2.0",
-      "Use the AdditionalCameras array instead.")
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use the AdditionalCameras array instead."))
   int32 AddCamera(UPARAM(ref) const FCesiumCamera& Camera);
 
   /**
