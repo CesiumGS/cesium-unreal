@@ -32,6 +32,9 @@ private:
   void CreatePositionLongitudeLatitudeHeight(
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
+  void CreateHeightReferenceStuff(
+      IDetailLayoutBuilder& DetailBuilder,
+      IDetailCategoryBuilder& Category);
   void CreateRotationEastSouthUp(
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
@@ -122,6 +125,9 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  class ACesium3DTileset* HeightReferenceTileset;
 
   /**
    * Interval, in Ticks, to update object's height when HeightReference is set

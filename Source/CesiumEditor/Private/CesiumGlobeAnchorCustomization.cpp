@@ -75,6 +75,8 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
 
+  this->CreateHeightReferenceStuff(DetailBuilder, CesiumCategory);
+
   if (!bIsMultiSelect) {
     this->UpdateDerivedProperties();
     this->CreatePositionLongitudeLatitudeHeight(DetailBuilder, CesiumCategory);
@@ -168,14 +170,42 @@ void FCesiumGlobeAnchorCustomization::CreatePositionLongitudeLatitudeHeight(
 
   Group.AddPropertyRow(HeightProperty.ToSharedRef());
 
+
+}
+
+void FCesiumGlobeAnchorCustomization::CreateHeightReferenceStuff(
+    IDetailLayoutBuilder& DetailBuilder,
+    IDetailCategoryBuilder& Category) {
+
+  this->UpdateDerivedProperties();
+
+  IDetailGroup& Group = CesiumCustomization::CreateGroup(
+      Category,
+      "HeightReferenceStuff",
+      FText::FromString("Height Reference Stuff"),
+      false,
+      true);
+
+  TArrayView<UObject*> View = this->DerivedPointers;
+
   TSharedPtr<IPropertyHandle> HeightReferenceProperty =
+        DetailBuilder.AddObjectPropertyData(
+            View,
+            GET_MEMBER_NAME_CHECKED(
+                UCesiumGlobeAnchorDerivedProperties,
+                HeightReference));
+
+  Group.AddPropertyRow(HeightReferenceProperty.ToSharedRef());
+
+  TSharedPtr<IPropertyHandle> HeightReferenceTilesetProperty =
       DetailBuilder.AddObjectPropertyData(
           View,
           GET_MEMBER_NAME_CHECKED(
               UCesiumGlobeAnchorDerivedProperties,
-              HeightReference));
+              HeightReferenceTileset));
 
-  Group.AddPropertyRow(HeightReferenceProperty.ToSharedRef());
+  Group.AddPropertyRow(HeightReferenceTilesetProperty.ToSharedRef());
+
 
   TSharedPtr<IPropertyHandle> TilesetHeightUpdateIntervalProperty =
       DetailBuilder.AddObjectPropertyData(
@@ -186,6 +216,7 @@ void FCesiumGlobeAnchorCustomization::CreatePositionLongitudeLatitudeHeight(
 
   Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
 }
+
 
 void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
     IDetailLayoutBuilder& DetailBuilder,
@@ -259,6 +290,11 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Height)) {
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetHeight(this->Height);
+  } else if (propertyName == GET_MEMBER_NAME_CHECKED(
+                                UCesiumGlobeAnchorDerivedProperties,
+                                HeightReferenceTileset)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->SetHeightReferenceTileset(this->HeightReferenceTileset);
   } else if (true) {
     if (propertyName == GET_MEMBER_NAME_CHECKED(
                             UCesiumGlobeAnchorDerivedProperties,
@@ -268,7 +304,8 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
                             Latitude) ||
         propertyName == GET_MEMBER_NAME_CHECKED(
                             UCesiumGlobeAnchorDerivedProperties,
-                            HeightReference)) {
+                            HeightReference)
+                            ) {
       this->GlobeAnchor->Modify();
       this->GlobeAnchor->SetHeightReference(this->HeightReference);
       this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
@@ -339,6 +376,7 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->Latitude = llh.Y;
       this->Height = this->GlobeAnchor->GetHeight();
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
+      this->HeightReferenceTileset = this->GlobeAnchor->GetHeightReferenceTileset().Get();
       this->TilesetHeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
 

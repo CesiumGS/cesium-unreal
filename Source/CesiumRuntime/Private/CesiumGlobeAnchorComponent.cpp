@@ -95,6 +95,17 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   }
 }
 
+UFUNCTION(BlueprintGetter)
+TSoftObjectPtr<ACesium3DTileset> UCesiumGlobeAnchorComponent::GetHeightReferenceTileset() const {
+  return this->HeightReferenceTileset;
+}
+
+UFUNCTION(BlueprintSetter)
+void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(const TSoftObjectPtr<ACesium3DTileset>& NewValue) {
+  this->HeightReferenceTileset = NewValue;
+}
+
+
 void UCesiumGlobeAnchorComponent::SetHeightReference(
     ECesiumHeightReferenceMode NewHeightReference) {
   this->HeightReference = NewHeightReference;
@@ -834,7 +845,7 @@ bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
         const std::optional<FVector>& alternateStartPosition) {
-  if (!GetOwner() || !GetWorld()) {
+  if (!GetOwner() || !GetWorld() || !this->GetHeightReferenceTileset()) {
     return false;
   }
 
@@ -862,23 +873,20 @@ bool UCesiumGlobeAnchorComponent::
   queryParams.bTraceComplex = true;
   queryParams.bReturnPhysicalMaterial = false;
 
-  FHitResult rayIntersection;
-  bool hit = GetWorld()->LineTraceSingleByChannel(
-      rayIntersection,
-      rayStart,
-      rayEnd,
-      ECC_WorldStatic,
-      queryParams);
-
-  if (!hit) {
+  TArray<FHitResult> hitResults;
+  if (!GetWorld()->LineTraceMultiByChannel(hitResults, rayStart, rayEnd, ECC_Visibility, queryParams))
     return false;
+
+  for (const FHitResult& hit : hitResults) {
+    if (hit.GetActor() == this->HeightReferenceTileset) {
+      groundIntersection =
+          pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
+              hit.Location);
+      return true;
+    }
   }
 
-  groundIntersection =
-      pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
-          rayIntersection.Location);
-
-  return true;
+  return false;
 }
 
 void UCesiumGlobeAnchorComponent::_onActorTransformChanged(

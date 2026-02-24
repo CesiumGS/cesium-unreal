@@ -62,6 +62,15 @@ private:
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
+
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReferenceTileset,
+      BlueprintSetter = SetHeightReferenceTileset,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  TSoftObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
   /**
    * Reference used when updating height during movement or LOD transitions.
    *
@@ -214,6 +223,12 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
+
+  UFUNCTION(BlueprintGetter)
+  TSoftObjectPtr<ACesium3DTileset> GetHeightReferenceTileset() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetHeightReferenceTileset(const TSoftObjectPtr<ACesium3DTileset>& NewValue);
 
   UFUNCTION(BlueprintGetter)
   ECesiumHeightReferenceMode GetHeightReference() const;
