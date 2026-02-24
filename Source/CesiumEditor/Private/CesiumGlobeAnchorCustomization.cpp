@@ -308,11 +308,6 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetHeightReferenceTileset(
         this->HeightReferenceTileset.Get());
-    // } else if (
-    //   propertyName ==
-    //   GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Height)) {
-    //   this->GlobeAnchor->Modify();
-    //   this->GlobeAnchor->SetHeight(this->Height);
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
@@ -403,11 +398,7 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->TilesetHeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
 
-      if (!GIsTransacting) {
-        ACesium3DTileset* Resolved =
-            this->GlobeAnchor->GetHeightReferenceTileset().Get();
-        this->HeightReferenceTileset = Resolved;
-      }
+      this->HeightReferenceTileset = this->GlobeAnchor->GetHeightReferenceTileset().Get();
 
       FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
       FRotator rotator = rotation.Rotator();
