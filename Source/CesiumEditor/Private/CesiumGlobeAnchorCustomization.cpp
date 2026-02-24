@@ -314,33 +314,30 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
                           HeightReference)) {
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetHeightReference(this->HeightReference);
-  } else if (true) {
-    if (propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumGlobeAnchorDerivedProperties,
-                            Longitude) ||
-        propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumGlobeAnchorDerivedProperties,
-                            Latitude) ||
-        propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumGlobeAnchorDerivedProperties,
-                            Height)) {
-      this->GlobeAnchor->Modify();
-      this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
-          FVector(this->Longitude, this->Latitude, this->Height));
-      this->GlobeAnchor->SetHeight(Height);
-    } else if (
-        propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumGlobeAnchorDerivedProperties,
-                            Pitch) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Yaw) ||
-        propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumGlobeAnchorDerivedProperties,
-                            Roll)) {
-      this->GlobeAnchor->Modify();
-      this->GlobeAnchor->SetEastSouthUpRotation(
-          FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
-    }
+  } else if (
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          Longitude) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          Latitude) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          Height)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
+        FVector(this->Longitude, this->Latitude, this->Height));
+    this->GlobeAnchor->SetHeight(Height);
+  } else if (
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Pitch) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Yaw) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Roll)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->SetEastSouthUpRotation(
+        FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
   }
 }
 
@@ -398,7 +395,8 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->TilesetHeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
 
-      this->HeightReferenceTileset = this->GlobeAnchor->GetHeightReferenceTileset().Get();
+      this->HeightReferenceTileset =
+          this->GlobeAnchor->GetHeightReferenceTileset().Get();
 
       FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
       FRotator rotator = rotation.Rotator();
