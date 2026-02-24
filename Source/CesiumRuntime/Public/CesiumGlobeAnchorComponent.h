@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "Cesium3DTileset.h"
 #include "CesiumGeospatial/GlobeAnchor.h"
 #include "Components/ActorComponent.h"
-#include "Cesium3DTileset.h"
 #include "Delegates/IDelegateInstance.h"
 #include "CesiumGlobeAnchorComponent.generated.h"
 
@@ -78,10 +78,10 @@ private:
       ECesiumHeightReferenceMode::Ellipsoid;
 
   /**
-     * The tileset actor used as a height reference when moving or during LOD
-     * transitions. Only used when HeightReference is set to
-     * ECesiumHeightReferenceMode::Tileset.
-     */
+   * The tileset actor used as a height reference when moving or during LOD
+   * transitions. Only used when HeightReference is set to
+   * ECesiumHeightReferenceMode::Tileset.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -91,11 +91,9 @@ private:
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
 
-
-
   /**
-   * The interval, in Ticks, in which to update the object's height when HeightReference is set
-   * to Tileset.
+   * The interval, in Ticks, in which to update the object's height when
+   * HeightReference is set to Tileset.
    *
    * A value of 1 causes Height to be updated on every Tick.
    */
@@ -182,7 +180,6 @@ private:
       Meta = (AllowPrivateAccess))
   bool TeleportWhenUpdatingTransform = true;
 
-
   /**
    * The 4x4 transformation matrix from the Actor's local coordinate system to
    * the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
@@ -231,7 +228,8 @@ public:
    * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
   UFUNCTION(BlueprintSetter)
-  void SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
+  void
+  SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
 
   UFUNCTION(BlueprintGetter)
   ECesiumHeightReferenceMode GetHeightReference() const;

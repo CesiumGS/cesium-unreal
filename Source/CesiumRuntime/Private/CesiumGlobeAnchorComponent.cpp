@@ -845,7 +845,7 @@ bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
         const std::optional<FVector>& alternateStartPosition) {
-  if (!GetOwner() || !GetWorld()) {// || !this->GetHeightReferenceTileset()) {
+  if (!GetOwner() || !GetWorld() || !this->GetHeightReferenceTileset()) {
     return false;
   }
 
@@ -853,7 +853,6 @@ bool UCesiumGlobeAnchorComponent::
 
   if (!IsValid(pGeoreference))
     return false;
-
 
   // Get the actor's current world position
   FVector startPosition =
@@ -874,18 +873,22 @@ bool UCesiumGlobeAnchorComponent::
   queryParams.bReturnPhysicalMaterial = false;
 
   TArray<FHitResult> hitResults;
-  if (!GetWorld()->LineTraceMultiByChannel(hitResults, rayStart, rayEnd, ECC_Visibility, queryParams))
+  if (!GetWorld()->LineTraceMultiByChannel(
+          hitResults,
+          rayStart,
+          rayEnd,
+          ECC_Visibility,
+          queryParams))
     return false;
-  //
-  // for (const FHitResult& hit : hitResults) {
-  //   if (hit.GetActor() == this->HeightReferenceTileset) {
-  //     groundIntersection =
-  //         pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
-  //             hit.Location);
-  //     return true;
-  //   }
-  // }
 
+  for (const FHitResult& hit : hitResults) {
+    if (hit.GetActor() == this->HeightReferenceTileset.Get()) {
+      groundIntersection =
+          pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
+              hit.Location);
+      return true;
+    }
+  }
   return false;
 }
 
