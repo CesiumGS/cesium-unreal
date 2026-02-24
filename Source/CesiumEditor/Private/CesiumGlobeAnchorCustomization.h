@@ -10,6 +10,7 @@
 
 class IDetailCategoryBuilder;
 class UCesiumGlobeAnchorDerivedProperties;
+class ACesium3DTileset;
 
 /**
  * An implementation of the IDetailCustomization interface that customizes
@@ -32,12 +33,12 @@ private:
   void CreatePositionLongitudeLatitudeHeight(
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
-  void CreateHeightReferenceStuff(
-      IDetailLayoutBuilder& DetailBuilder,
-      IDetailCategoryBuilder& Category);
   void CreateRotationEastSouthUp(
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
+  void CreateHeightReferenceTileset(
+        IDetailLayoutBuilder& DetailBuilder,
+        IDetailCategoryBuilder& Category);
   void UpdateDerivedProperties();
 
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LongitudeEditor;
@@ -126,10 +127,15 @@ public:
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
 
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  class ACesium3DTileset* HeightReferenceTileset;
-
   /**
+     * The tileset actor used as a height reference.
+     */
+  UPROPERTY(EditAnywhere, Category = "Cesium"
+    // ,meta=(EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset")
+    )
+  TObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
+
+   /**
    * Interval, in Ticks, to update object's height when HeightReference is set
    * to Tileset.
    *
@@ -137,12 +143,9 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium",
-      meta =
-          (EditCondition =
-               "HeightReference == ECesiumHeightReferenceMode::Tileset",
-           EditConditionHides,
-           ClampMin = 1))
+      Category = "Cesium"
+    //meta=(EditCondition = "HeightReference == ECesiumHeightReferenceMode::Tileset")
+    )
   int TilesetHeightUpdateInterval = 1;
   /**
    * The rotation around the right (Y) axis. Zero pitch means the look direction

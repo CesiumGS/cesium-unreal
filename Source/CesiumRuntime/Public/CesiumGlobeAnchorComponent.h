@@ -9,6 +9,7 @@
 #include "CesiumGlobeAnchorComponent.generated.h"
 
 class ACesiumGeoreference;
+class ACesium3DTileset;
 
 /**
  * When updating actor's height during movement or LOD transitions, controls
@@ -62,15 +63,6 @@ private:
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
-
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      BlueprintGetter = GetHeightReferenceTileset,
-      BlueprintSetter = SetHeightReferenceTileset,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  TSoftObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
   /**
    * Reference used when updating height during movement or LOD transitions.
    *
@@ -84,6 +76,22 @@ private:
   UPROPERTY()
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
+
+  /**
+     * The tileset actor used as a height reference when moving or during LOD
+     * transitions. Only used when HeightReference is set to
+     * ECesiumHeightReferenceMode::Tileset.
+     */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReferenceTileset,
+      BlueprintSetter = SetHeightReferenceTileset,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  TSoftObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
+
+
 
   /**
    * The interval, in Ticks, in which to update the object's height when HeightReference is set
@@ -174,6 +182,7 @@ private:
       Meta = (AllowPrivateAccess))
   bool TeleportWhenUpdatingTransform = true;
 
+
   /**
    * The 4x4 transformation matrix from the Actor's local coordinate system to
    * the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
@@ -225,16 +234,16 @@ public:
   void SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
 
   UFUNCTION(BlueprintGetter)
-  TSoftObjectPtr<ACesium3DTileset> GetHeightReferenceTileset() const;
-
-  UFUNCTION(BlueprintSetter)
-  void SetHeightReferenceTileset(const TSoftObjectPtr<ACesium3DTileset>& NewValue);
-
-  UFUNCTION(BlueprintGetter)
   ECesiumHeightReferenceMode GetHeightReference() const;
 
   UFUNCTION(BlueprintSetter)
   void SetHeightReference(ECesiumHeightReferenceMode NewHeightReference);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  TSoftObjectPtr<ACesium3DTileset> GetHeightReferenceTileset() const;
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetHeightReferenceTileset(TSoftObjectPtr<ACesium3DTileset> NewTileset);
 
   UFUNCTION(BlueprintGetter)
   int GetTilesetHeightUpdateInterval() const;

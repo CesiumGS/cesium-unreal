@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGlobeAnchorComponent.h"
+#include "Cesium3DTileset.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGeoreference.h"
@@ -95,17 +96,6 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   }
 }
 
-UFUNCTION(BlueprintGetter)
-TSoftObjectPtr<ACesium3DTileset> UCesiumGlobeAnchorComponent::GetHeightReferenceTileset() const {
-  return this->HeightReferenceTileset;
-}
-
-UFUNCTION(BlueprintSetter)
-void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(const TSoftObjectPtr<ACesium3DTileset>& NewValue) {
-  this->HeightReferenceTileset = NewValue;
-}
-
-
 void UCesiumGlobeAnchorComponent::SetHeightReference(
     ECesiumHeightReferenceMode NewHeightReference) {
   this->HeightReference = NewHeightReference;
@@ -114,6 +104,16 @@ void UCesiumGlobeAnchorComponent::SetHeightReference(
 ECesiumHeightReferenceMode
 UCesiumGlobeAnchorComponent::GetHeightReference() const {
   return this->HeightReference;
+}
+
+TSoftObjectPtr<ACesium3DTileset>
+UCesiumGlobeAnchorComponent::GetHeightReferenceTileset() const {
+  return this->HeightReferenceTileset;
+}
+
+void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(
+    TSoftObjectPtr<ACesium3DTileset> NewTileset) {
+  this->HeightReferenceTileset = NewTileset;
 }
 
 void UCesiumGlobeAnchorComponent::SetTilesetHeightUpdateInterval(
@@ -845,7 +845,7 @@ bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
         const std::optional<FVector>& alternateStartPosition) {
-  if (!GetOwner() || !GetWorld() || !this->GetHeightReferenceTileset()) {
+  if (!GetOwner() || !GetWorld()) {// || !this->GetHeightReferenceTileset()) {
     return false;
   }
 
@@ -876,15 +876,15 @@ bool UCesiumGlobeAnchorComponent::
   TArray<FHitResult> hitResults;
   if (!GetWorld()->LineTraceMultiByChannel(hitResults, rayStart, rayEnd, ECC_Visibility, queryParams))
     return false;
-
-  for (const FHitResult& hit : hitResults) {
-    if (hit.GetActor() == this->HeightReferenceTileset) {
-      groundIntersection =
-          pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
-              hit.Location);
-      return true;
-    }
-  }
+  //
+  // for (const FHitResult& hit : hitResults) {
+  //   if (hit.GetActor() == this->HeightReferenceTileset) {
+  //     groundIntersection =
+  //         pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
+  //             hit.Location);
+  //     return true;
+  //   }
+  // }
 
   return false;
 }
