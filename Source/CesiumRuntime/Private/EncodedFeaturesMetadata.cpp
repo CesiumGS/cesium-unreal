@@ -27,7 +27,6 @@
 using namespace CesiumTextureUtility;
 
 namespace EncodedFeaturesMetadata {
-
 FString getNameForFeatureIDSet(
     const FCesiumFeatureIdSet& featureIDSet,
     int32& FeatureIdTextureCounter) {
@@ -891,6 +890,14 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {
       }
     }
   }
+}
+
+FString getNameForStatistic(
+    const FString& classId,
+    const FString& propertyId,
+    ECesiumMetadataStatisticSemantic semantic) {
+  return createHlslSafeName(classId + "_" + propertyId) +
+         MaterialPropertyStatisticSuffixes[semantic];
 }
 
 // The result should be a safe hlsl identifier, but any name clashes

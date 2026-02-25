@@ -77,6 +77,7 @@ public:
            ShowOnlyInnerProperties))
   FCesiumFeaturesMetadataDescription Description;
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Previously the properties of FCesiumFeaturesMetadataDescription were
   // deconstructed here in order to flatten the Details panel UI. However, the
   // ShowOnlyInnerProperties attribute accomplishes the same thing. These
@@ -130,8 +131,44 @@ public:
            DeprecationMessage =
                "Use PropertyTextures on the CesiumFeaturesMetadataDescription's ModelMetadata instead."))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
+   * Syncs this component's statistics description from its tileset owner,
+   * retrieving values for the corresponding semantics.
+   *
+   * If there are described statistics that are not present on the tileset
+   * owner, they will be left as null values.
+   */
+  void SyncStatistics();
+
+  /**
+   * Whether a sync is already in progress.
+   */
+  bool IsSyncing() const;
+
+  /**
+   * Interrupts any sync happening on this component. Usually called before
+   * destroying or refreshing a tileset.
+   */
+  void InterruptSync();
+
+  virtual void PostLoad() override;
+
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditChangeChainProperty(
+      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
+#endif
 
 protected:
-  /** PostLoad override. */
-  virtual void PostLoad() override;
+  // Called when a component is registered. This seems to be the best way to
+  // intercept when the component is pasted (to then update its statistics).
+  virtual void OnRegister() override;
+
+private:
+  void clearStatistics();
+
+  bool _syncInProgress;
 };

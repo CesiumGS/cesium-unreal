@@ -1,7 +1,8 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "UnrealMetadataConversions.h"
+
 #include <CesiumGltf/MetadataConversions.h>
 
 ECesiumMetadataBlueprintType
@@ -24,7 +25,7 @@ int64 UCesiumPropertyArrayBlueprintLibrary::GetArraySize(
 FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
     UPARAM(ref) const FCesiumPropertyArray& array,
     int64 index) {
-  return swl::visit(
+  FCesiumMetadataValue result = swl::visit(
       [index, &pEnumDefinition = array._pEnumDefinition](
           const auto& v) -> FCesiumMetadataValue {
         if (index < 0 || index >= v.size()) {
@@ -41,6 +42,30 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
         return FCesiumMetadataValue(v[index], pEnumDefinition);
       },
       array._value);
+
+  // Hack to avoid templating. Sometimes FCesiumPropertyArray is
+  // initialized with a component type that is meant to contain a smaller
+  // one, indicated by its _elementType. This overrides the type that is
+  // automatically deduced by FCesiumMetadataValue.
+  if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(result)) {
+    result._valueType.ComponentType = array._elementType.ComponentType;
+  }
+
+  return result;
+}
+
+FString UCesiumPropertyArrayBlueprintLibrary::ToString(
+    UPARAM(ref) const FCesiumPropertyArray& Array) {
+  TArray<FString> results;
+  const int64 size = UCesiumPropertyArrayBlueprintLibrary::GetArraySize(Array);
+  for (int64 i = 0; i < size; i++) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyArrayBlueprintLibrary::GetValue(Array, i);
+    results.Add(
+        UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
+  }
+
+  return "[" + FString::Join(results, TEXT(", ")) + "]";
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS

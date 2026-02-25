@@ -7,6 +7,7 @@
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -48,6 +49,7 @@
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
+#include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
@@ -168,7 +170,7 @@ void accumulateFeaturesMetadataAccessors(
               std::to_string(encodedProperty.textureCoordinateSetIndex),
           gltfToUnrealTexCoordMap);
 
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           fullPropertyName +
               EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           index);
@@ -188,10 +190,10 @@ void accumulateFeaturesMetadataAccessors(
       if (accessorIndex < 0)
         continue;
 
-      primitiveResult.AccessorToFeatureIdIndexMap.emplace(
+      primitiveResult.accessorToFeatureIdIndexMap.emplace(
           accessorIndex,
           encodedFeatureIDSet.index);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName,
           addAttributeAccessorToMap(
               primitive,
@@ -201,7 +203,7 @@ void accumulateFeaturesMetadataAccessors(
       int64 setIndex = encodedFeatureIDSet.texture->textureCoordinateSetIndex;
       std::string attributeName = "TEXCOORD_" + std::to_string(setIndex);
 
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName + EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           addAttributeAccessorToMap(
               primitive,
@@ -217,7 +219,7 @@ void accumulateFeaturesMetadataAccessors(
       // Use try_emplace to ensure a texture coordinate index is only assigned
       // the first time.
       gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName,
           gltfToUnrealTexCoordMap[-1]);
     }
@@ -244,7 +246,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
   for (const CesiumEncodedMetadataUtility::EncodedFeatureIdTexture&
            encodedFeatureIdTexture :
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
-    primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+    primitiveResult.featuresMetadataTexCoordParameters.Emplace(
         encodedFeatureIdTexture.baseName + "UV",
         addAttributeAccessorToMap(
             primitive,
@@ -266,7 +268,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
       if (pEncodedFeatureTexture) {
         for (const CesiumEncodedMetadataUtility::EncodedFeatureTextureProperty&
                  encodedProperty : pEncodedFeatureTexture->properties) {
-          primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+          primitiveResult.featuresMetadataTexCoordParameters.Emplace(
               encodedProperty.baseName + "UV",
               addAttributeAccessorToMap(
                   primitive,
@@ -299,10 +301,10 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
       if (accessor < 0)
         continue;
 
-      primitiveResult.AccessorToFeatureIdIndexMap.emplace(
+      primitiveResult.accessorToFeatureIdIndexMap.emplace(
           accessor,
           encodedFeatureIdAttribute.index);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           encodedFeatureIdAttribute.name,
           addAttributeAccessorToMap(
               primitive,
@@ -503,8 +505,8 @@ void populateUnrealTexCoords(
       result.GltfToUnrealTexCoordMap;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (modelOptions.pFeaturesMetadataDescription) {
-    for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
+  if (modelOptions.pFeaturesMetadata.IsValid()) {
+    for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds(
           result.Features,
           indexPair.second,
@@ -514,7 +516,7 @@ void populateUnrealTexCoords(
           duplicateVertices);
     }
   } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
-    for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
+    for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds_DEPRECATED(
           result.Metadata_DEPRECATED,
           indexPair.second,
@@ -527,7 +529,7 @@ void populateUnrealTexCoords(
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   for (const auto indexPair : gltfToUnrealTexCoordMap) {
-    if (result.AccessorToFeatureIdIndexMap.contains(indexPair.first)) {
+    if (result.accessorToFeatureIdIndexMap.contains(indexPair.first)) {
       continue;
     }
     copyTextureCoordinates(
@@ -1123,7 +1125,9 @@ static void loadPrimitiveFeaturesMetadata(
       primitiveResult.TexCoordAccessorMap);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      pModelOptions->pFeaturesMetadataDescription;
+      pModelOptions->pFeaturesMetadata.IsValid()
+          ? &pModelOptions->pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Check for deprecated metadata description
@@ -1475,207 +1479,6 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  TUniquePtr<FStaticMeshRenderData> RenderData =
-      MakeUnique<FStaticMeshRenderData>();
-  RenderData->AllocateLODResources(1);
-
-  FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
-
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
-
-    const std::vector<double>& min = positionAccessor.min;
-    const std::vector<double>& max = positionAccessor.max;
-
-    glm::dvec3 minPosition{std::numeric_limits<double>::max()};
-    glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
-
-    if (min.size() != 3 || max.size() != 3) {
-      for (int64_t i = 0; i < positionView.size(); ++i) {
-        minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
-        minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
-        minPosition.z = glm::min<double>(minPosition.z, positionView[i].Z);
-
-        maxPosition.x = glm::max<double>(maxPosition.x, positionView[i].X);
-        maxPosition.y = glm::max<double>(maxPosition.y, positionView[i].Y);
-        maxPosition.z = glm::max<double>(maxPosition.z, positionView[i].Z);
-      }
-    } else {
-      minPosition = glm::dvec3(min[0], min[1], min[2]);
-      maxPosition = glm::dvec3(max[0], max[1], max[2]);
-    }
-
-    minPosition *= CesiumPrimitiveData::positionScaleFactor;
-    maxPosition *= CesiumPrimitiveData::positionScaleFactor;
-
-    primitiveResult.dimensions =
-        glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
-
-    FBox aaBox(
-        FVector3d(minPosition.x, -minPosition.y, minPosition.z),
-        FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
-
-    aaBox.GetCenterAndExtents(
-        RenderData->Bounds.Origin,
-        RenderData->Bounds.BoxExtent);
-    RenderData->Bounds.SphereRadius = 0.0f;
-  }
-
-  TArray<uint32> indices = getIndices(indicesView, primitive.mode);
-
-  // If we don't have normals, the gltf spec prescribes that the client
-  // implementation must generate flat normals, which requires duplicating
-  // vertices shared by multiple triangles. If we don't have tangents, but
-  // need them, we need to use a tangent space generation algorithm which
-  // requires duplicated vertices.
-  bool normalsAreRequired = !primitiveResult.isUnlit && isTriangles;
-  bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
-  bool needToGenerateTangents = needsTangents && !hasTangents;
-  bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
-
-  // Some primitive modes may require duplication of vertices anyways due to
-  // the lack of support in Unreal.
-  switch (primitive.mode) {
-  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
-  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
-    duplicateVertices = true;
-    break;
-  default:
-    break;
-  }
-
-  uint32 numVertices =
-      duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
-
-  FPositionVertexBuffer& positionBuffer =
-      LODResources.VertexBuffers.PositionVertexBuffer;
-  positionBuffer.Init(numVertices, false);
-
-  {
-    // Note: scaling from glTF vertices to Unreal's must match
-    // UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        uint32 vertexIndex = indices[i];
-        const FVector3f& value = positionView[vertexIndex];
-        FVector3f& position = positionBuffer.VertexPosition(i);
-        position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
-        position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
-        position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector3f& value = positionView[i];
-        FVector3f& position = positionBuffer.VertexPosition(i);
-        position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
-        position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
-        position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
-      }
-    }
-  }
-
-  auto colorAccessorIt = primitive.attributes.find(
-      CesiumGltf::VertexAttributeSemantics::COLOR_n[0]);
-  if (colorAccessorIt != primitive.attributes.end()) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
-    LODResources.VertexBuffers.ColorVertexBuffer.Init(numVertices, false);
-    LODResources.bHasColorVertexData = createAccessorView(
-        model,
-        colorAccessorIt->second,
-        ColorVisitor{
-            duplicateVertices,
-            LODResources.VertexBuffers.ColorVertexBuffer,
-            indices});
-  }
-
-  // Encodes the `EXT_primitive_features` and `EXT_structural_metadata`
-  // extensions on the primitive, if present. This must be done before material
-  // textures are loaded, in case any of the material textures are also used for
-  // features + metadata.
-  loadPrimitiveFeaturesMetadata(primitiveResult, options, model, primitive);
-
-  const CreateModelOptions& modelOptions =
-      *options.pMeshOptions->pNodeOptions->pModelOptions;
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::AccumulateTextureCoordinates)
-    const LoadGltfResult::LoadedModelResult* pModelResult =
-        options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
-
-    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (modelOptions.pFeaturesMetadataDescription) {
-      accumulateFeaturesMetadataAccessors(
-          model,
-          primitive,
-          *pModelResult,
-          primitiveResult);
-    } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
-      accumulateFeaturesMetadataAccessors_DEPRECATED(
-          model,
-          primitive,
-          *pModelResult,
-          primitiveResult);
-    }
-    PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-    accumulateMaterialAndOverlayTextureCoordinates(
-        model,
-        primitive,
-        material,
-        pbrMetallicRoughness,
-        primitiveResult);
-  }
-
-  // We need to copy the texture coordinates associated with each texture (if
-  // any) into the appropriate UVs slot.
-  std::unordered_map<int32_t, uint32_t>& texCoordMap =
-      primitiveResult.GltfToUnrealTexCoordMap;
-
-  uint32 numberOfTextureCoordinates =
-      texCoordMap.size() == 0 ? 1 : uint32(texCoordMap.size());
-
-  FStaticMeshVertexBuffer& vertexBuffer =
-      LODResources.VertexBuffers.StaticMeshVertexBuffer;
-  // Set to full precision (32-bit) UVs. This is especially important for
-  // metadata because integer feature IDs can and will lose meaningful
-  // precision when using 16-bit floats.
-  vertexBuffer.SetUseFullPrecisionUVs(true);
-  vertexBuffer.Init(numVertices, numberOfTextureCoordinates, false);
-
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
-    primitiveResult.baseColorTexture =
-        loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
-    primitiveResult.metallicRoughnessTexture = loadTexture(
-        model,
-        pbrMetallicRoughness.metallicRoughnessTexture,
-        false);
-    primitiveResult.normalTexture =
-        loadTexture(model, material.normalTexture, false);
-    primitiveResult.occlusionTexture =
-        loadTexture(model, material.occlusionTexture, false);
-    primitiveResult.emissiveTexture =
-        loadTexture(model, material.emissiveTexture, true);
-  }
-
-  populateUnrealTexCoords(
-      model,
-      primitive,
-      modelOptions,
-      vertexBuffer,
-      indices,
-      duplicateVertices,
-      primitiveResult);
-
   double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
   glm::dmat4 scaleMatrix = glm::dmat4(
       glm::dvec4(scale, 0.0, 0.0, 0.0),
@@ -1683,133 +1486,341 @@ static void loadPrimitive(
       glm::dvec4(0.0, 0.0, scale, 0.0),
       glm::dvec4(0.0, 0.0, 0.0, 1.0));
 
-  // TangentX: Tangent
-  // TangentY: Bi-tangent
-  // TangentZ: Normal
-
-  if (hasNormals) {
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormalsForDuplicatedVertices)
-      for (int i = 0; i < indices.Num(); ++i) {
-        uint32 vertexIndex = indices[i];
-        const FVector3f& normal = normalAccessor[vertexIndex];
-
-        vertexBuffer.SetVertexTangents(
-            i,
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(normal.X, -normal.Y, normal.Z));
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector3f& normal = normalAccessor[i];
-
-        vertexBuffer.SetVertexTangents(
-            i,
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(0.0f, 0.0f, 0.0f),
-            FVector3f(normal.X, -normal.Y, normal.Z));
-      }
-    }
-  } else if (primitiveResult.isUnlit || !isTriangles) {
-    setUnlitNormals(
-        LODResources.VertexBuffers,
-        ellipsoid,
-        transform * yInvertMatrix * scaleMatrix);
-  } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-    computeFlatNormals(LODResources.VertexBuffers);
-  }
-
-  if (hasTangents) {
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangentsForDuplicatedVertices)
-      for (int i = 0; i < indices.Num(); ++i) {
-        uint32 vertexIndex = indices[i];
-        const FVector4f& tangent = tangentAccessor[vertexIndex];
-        FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
-        FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
-        FVector3f tangentY =
-            FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
-        vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
-      for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector4f& tangent = tangentAccessor[i];
-        FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
-        FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
-        FVector3f tangentY =
-            FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
-        vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
-      }
-    }
-  }
-
-  if (needsTangents && !hasTangents) {
-    // Use mikktspace to calculate the tangents.
-    // Note that this assumes normals and UVs are already populated.
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeTangents)
-    computeTangentSpace(LODResources.VertexBuffers);
-  }
-
-  FStaticMeshSectionArray& Sections = LODResources.Sections;
-  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  // This will be ignored if the primitive contains lines or points.
-  section.NumTriangles = indices.Num() / 3;
-  section.FirstIndex = 0;
-  section.MinVertexIndex = 0;
-  section.MaxVertexIndex = numVertices - 1;
-  section.bEnableCollision = isTriangles;
-  section.bCastShadow = true;
-  section.MaterialIndex = 0;
-
-  if (duplicateVertices) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 0; i < indices.Num(); i++) {
-      indices[i] = i;
-    }
-  }
-
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
-    LODResources.IndexBuffer.SetIndices(
-        indices,
-        numVertices >= std::numeric_limits<uint16>::max()
-            ? EIndexBufferStride::Type::Force32Bit
-            : EIndexBufferStride::Type::Force16Bit);
-  }
-
-  LODResources.bHasDepthOnlyIndices = false;
-  LODResources.bHasReversedIndices = false;
-  LODResources.bHasReversedDepthOnlyIndices = false;
-
-  if (isTriangles) {
-    // UE 5.5 requires that we do this in order to avoid a crash when ray
-    // tracing is enabled.
-    RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
-  }
-
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
-  primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.pCollisionMesh = nullptr;
-
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
-  if (isTriangles &&
-      options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
-    if (numVertices != 0 && indices.Num() != 0) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
-      primitiveResult.pCollisionMesh =
-          numVertices < TNumericLimits<uint16>::Max()
-              ? BuildChaosTriangleMeshes<uint16>(
-                    LODResources.VertexBuffers.PositionVertexBuffer,
-                    indices)
-              : BuildChaosTriangleMeshes<int32>(
-                    LODResources.VertexBuffers.PositionVertexBuffer,
-                    indices);
+  if (primitive.hasExtension<CesiumGltf::ExtensionKhrGaussianSplatting>()) {
+    // Data in a gaussian splat is handled differently from other mesh data.
+    primitiveResult.GaussianSplatData =
+        MakeUnique<FCesiumGltfGaussianSplatData>(model, primitive);
+  } else {
+    TUniquePtr<FStaticMeshRenderData> RenderData =
+        MakeUnique<FStaticMeshRenderData>();
+    RenderData->AllocateLODResources(1);
+
+    FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
+
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
+
+      const std::vector<double>& min = positionAccessor.min;
+      const std::vector<double>& max = positionAccessor.max;
+
+      glm::dvec3 minPosition{std::numeric_limits<double>::max()};
+      glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
+
+      if (min.size() != 3 || max.size() != 3) {
+        for (int64_t i = 0; i < positionView.size(); ++i) {
+          minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
+          minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
+          minPosition.z = glm::min<double>(minPosition.z, positionView[i].Z);
+
+          maxPosition.x = glm::max<double>(maxPosition.x, positionView[i].X);
+          maxPosition.y = glm::max<double>(maxPosition.y, positionView[i].Y);
+          maxPosition.z = glm::max<double>(maxPosition.z, positionView[i].Z);
+        }
+      } else {
+        minPosition = glm::dvec3(min[0], min[1], min[2]);
+        maxPosition = glm::dvec3(max[0], max[1], max[2]);
+      }
+
+      minPosition *= CesiumPrimitiveData::positionScaleFactor;
+      maxPosition *= CesiumPrimitiveData::positionScaleFactor;
+
+      primitiveResult.dimensions =
+          glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
+
+      FBox aaBox(
+          FVector3d(minPosition.x, -minPosition.y, minPosition.z),
+          FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
+
+      aaBox.GetCenterAndExtents(
+          RenderData->Bounds.Origin,
+          RenderData->Bounds.BoxExtent);
+      RenderData->Bounds.SphereRadius = 0.0f;
+    }
+
+    TArray<uint32> indices = getIndices(indicesView, primitive.mode);
+
+    // If we don't have normals, the gltf spec prescribes that the client
+    // implementation must generate flat normals, which requires duplicating
+    // vertices shared by multiple triangles. If we don't have tangents, but
+    // need them, we need to use a tangent space generation algorithm which
+    // requires duplicated vertices.
+    bool normalsAreRequired = !primitiveResult.isUnlit && isTriangles;
+    bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
+    bool needToGenerateTangents = needsTangents && !hasTangents;
+    bool duplicateVertices =
+        needToGenerateFlatNormals || needToGenerateTangents;
+
+    // Some primitive modes may require duplication of vertices anyways due to
+    // the lack of support in Unreal.
+    switch (primitive.mode) {
+    case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
+    case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+      duplicateVertices = true;
+      break;
+    default:
+      break;
+    }
+
+    uint32 numVertices =
+        duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
+
+    FPositionVertexBuffer& positionBuffer =
+        LODResources.VertexBuffers.PositionVertexBuffer;
+    positionBuffer.Init(numVertices, false);
+
+    {
+      // Note: scaling from glTF vertices to Unreal's must match
+      // UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor
+      if (duplicateVertices) {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
+        for (uint32 i = 0; i < numVertices; ++i) {
+          uint32 vertexIndex = indices[i];
+          const FVector3f& value = positionView[vertexIndex];
+          FVector3f& position = positionBuffer.VertexPosition(i);
+          position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
+          position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
+          position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
+          RenderData->Bounds.SphereRadius = FMath::Max(
+              (FVector(position) - RenderData->Bounds.Origin).Size(),
+              RenderData->Bounds.SphereRadius);
+        }
+      } else {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
+        for (uint32 i = 0; i < numVertices; ++i) {
+          const FVector3f& value = positionView[i];
+          FVector3f& position = positionBuffer.VertexPosition(i);
+          position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
+          position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
+          position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
+          RenderData->Bounds.SphereRadius = FMath::Max(
+              (FVector(position) - RenderData->Bounds.Origin).Size(),
+              RenderData->Bounds.SphereRadius);
+        }
+      }
+    }
+
+    auto colorAccessorIt = primitive.attributes.find(
+        CesiumGltf::VertexAttributeSemantics::COLOR_n[0]);
+    if (colorAccessorIt != primitive.attributes.end()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
+      LODResources.VertexBuffers.ColorVertexBuffer.Init(numVertices, false);
+      LODResources.bHasColorVertexData = createAccessorView(
+          model,
+          colorAccessorIt->second,
+          ColorVisitor{
+              duplicateVertices,
+              LODResources.VertexBuffers.ColorVertexBuffer,
+              indices});
+    }
+
+    // Encodes the `EXT_primitive_features` and `EXT_structural_metadata`
+    // extensions on the primitive, if present. This must be done before
+    // material textures are loaded, in case any of the material textures are
+    // also used for features + metadata.
+    loadPrimitiveFeaturesMetadata(primitiveResult, options, model, primitive);
+
+    const CreateModelOptions& modelOptions =
+        *options.pMeshOptions->pNodeOptions->pModelOptions;
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::AccumulateTextureCoordinates)
+      const LoadGltfResult::LoadedModelResult* pModelResult =
+          options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
+
+      PRAGMA_DISABLE_DEPRECATION_WARNINGS
+      if (modelOptions.pFeaturesMetadata.IsValid()) {
+        accumulateFeaturesMetadataAccessors(
+            model,
+            primitive,
+            *pModelResult,
+            primitiveResult);
+      } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
+        accumulateFeaturesMetadataAccessors_DEPRECATED(
+            model,
+            primitive,
+            *pModelResult,
+            primitiveResult);
+      }
+      PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+      accumulateMaterialAndOverlayTextureCoordinates(
+          model,
+          primitive,
+          material,
+          pbrMetallicRoughness,
+          primitiveResult);
+    }
+
+    // We need to copy the texture coordinates associated with each texture (if
+    // any) into the appropriate UVs slot.
+    std::unordered_map<int32_t, uint32_t>& texCoordMap =
+        primitiveResult.GltfToUnrealTexCoordMap;
+
+    uint32 numberOfTextureCoordinates =
+        texCoordMap.size() == 0 ? 1 : uint32(texCoordMap.size());
+
+    FStaticMeshVertexBuffer& vertexBuffer =
+        LODResources.VertexBuffers.StaticMeshVertexBuffer;
+    // Set to full precision (32-bit) UVs. This is especially important for
+    // metadata because integer feature IDs can and will lose meaningful
+    // precision when using 16-bit floats.
+    vertexBuffer.SetUseFullPrecisionUVs(true);
+    vertexBuffer.Init(numVertices, numberOfTextureCoordinates, false);
+
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
+      primitiveResult.baseColorTexture =
+          loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
+      primitiveResult.metallicRoughnessTexture = loadTexture(
+          model,
+          pbrMetallicRoughness.metallicRoughnessTexture,
+          false);
+      primitiveResult.normalTexture =
+          loadTexture(model, material.normalTexture, false);
+      primitiveResult.occlusionTexture =
+          loadTexture(model, material.occlusionTexture, false);
+      primitiveResult.emissiveTexture =
+          loadTexture(model, material.emissiveTexture, true);
+    }
+
+    populateUnrealTexCoords(
+        model,
+        primitive,
+        modelOptions,
+        vertexBuffer,
+        indices,
+        duplicateVertices,
+        primitiveResult);
+
+    // TangentX: Tangent
+    // TangentY: Bi-tangent
+    // TangentZ: Normal
+
+    if (hasNormals) {
+      if (duplicateVertices) {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormalsForDuplicatedVertices)
+        for (int i = 0; i < indices.Num(); ++i) {
+          uint32 vertexIndex = indices[i];
+          const FVector3f& normal = normalAccessor[vertexIndex];
+
+          vertexBuffer.SetVertexTangents(
+              i,
+              FVector3f(0.0f, 0.0f, 0.0f),
+              FVector3f(0.0f, 0.0f, 0.0f),
+              FVector3f(normal.X, -normal.Y, normal.Z));
+        }
+      } else {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
+        for (uint32 i = 0; i < numVertices; ++i) {
+          const FVector3f& normal = normalAccessor[i];
+
+          vertexBuffer.SetVertexTangents(
+              i,
+              FVector3f(0.0f, 0.0f, 0.0f),
+              FVector3f(0.0f, 0.0f, 0.0f),
+              FVector3f(normal.X, -normal.Y, normal.Z));
+        }
+      }
+    } else if (primitiveResult.isUnlit || !isTriangles) {
+      setUnlitNormals(
+          LODResources.VertexBuffers,
+          ellipsoid,
+          transform * yInvertMatrix * scaleMatrix);
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
+      computeFlatNormals(LODResources.VertexBuffers);
+    }
+
+    if (hasTangents) {
+      if (duplicateVertices) {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangentsForDuplicatedVertices)
+        for (int i = 0; i < indices.Num(); ++i) {
+          uint32 vertexIndex = indices[i];
+          const FVector4f& tangent = tangentAccessor[vertexIndex];
+          FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
+          FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
+          FVector3f tangentY =
+              FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
+          vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
+        }
+      } else {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
+        for (uint32 i = 0; i < numVertices; ++i) {
+          const FVector4f& tangent = tangentAccessor[i];
+          FVector3f tangentZ = vertexBuffer.VertexTangentZ(i);
+          FVector3f tangentX = FVector3f(tangent.X, -tangent.Y, tangent.Z);
+          FVector3f tangentY =
+              FVector3f::CrossProduct(tangentZ, tangentX) * tangent.W;
+          vertexBuffer.SetVertexTangents(i, tangentX, tangentY, tangentZ);
+        }
+      }
+    }
+
+    if (needsTangents && !hasTangents) {
+      // Use mikktspace to calculate the tangents.
+      // Note that this assumes normals and UVs are already populated.
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeTangents)
+      computeTangentSpace(LODResources.VertexBuffers);
+    }
+
+    FStaticMeshSectionArray& Sections = LODResources.Sections;
+    FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+    // This will be ignored if the primitive contains lines or points.
+    section.NumTriangles = indices.Num() / 3;
+    section.FirstIndex = 0;
+    section.MinVertexIndex = 0;
+    section.MaxVertexIndex = numVertices - 1;
+    section.bEnableCollision = isTriangles;
+    section.bCastShadow = true;
+    section.MaterialIndex = 0;
+
+    if (duplicateVertices) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
+      for (int32 i = 0; i < indices.Num(); i++) {
+        indices[i] = i;
+      }
+    }
+
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
+      LODResources.IndexBuffer.SetIndices(
+          indices,
+          numVertices >= std::numeric_limits<uint16>::max()
+              ? EIndexBufferStride::Type::Force32Bit
+              : EIndexBufferStride::Type::Force16Bit);
+    }
+
+    LODResources.bHasDepthOnlyIndices = false;
+    LODResources.bHasReversedIndices = false;
+    LODResources.bHasReversedDepthOnlyIndices = false;
+
+    if (isTriangles) {
+      // UE 5.5 requires that we do this in order to avoid a crash when ray
+      // tracing is enabled.
+      RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+    }
+
+    primitiveResult.RenderData = std::move(RenderData);
+
+    if (isTriangles && options.pMeshOptions->pNodeOptions->pModelOptions
+                           ->createPhysicsMeshes) {
+      if (numVertices != 0 && indices.Num() != 0) {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
+        primitiveResult.pCollisionMesh =
+            numVertices < TNumericLimits<uint16>::Max()
+                ? BuildChaosTriangleMeshes<uint16>(
+                      LODResources.VertexBuffers.PositionVertexBuffer,
+                      indices)
+                : BuildChaosTriangleMeshes<int32>(
+                      LODResources.VertexBuffers.PositionVertexBuffer,
+                      indices);
+      }
     }
   }
 }
@@ -1952,7 +1963,7 @@ static void loadMesh(
     loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.RenderData) {
+    if (!primitiveResult.HasRenderableData()) {
       result->primitiveResults.pop_back();
     }
   }
@@ -2335,7 +2346,9 @@ static void loadModelMetadata(
   result.Metadata = FCesiumModelMetadata(model, *pModelMetadata);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      options.pFeaturesMetadataDescription;
+      options.pFeaturesMetadata.IsValid()
+          ? &options.pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   const FMetadataDescription* pMetadataDescription_DEPRECATED =
@@ -2354,6 +2367,26 @@ static void loadModelMetadata(
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
+static void gatherStatistics(
+    LoadedModelResult& result,
+    const TArray<FCesiumMetadataClassStatisticsDescription>& statistics) {
+  for (const FCesiumMetadataClassStatisticsDescription& classStatistics :
+       statistics) {
+    for (const FCesiumMetadataPropertyStatisticsDescription&
+             propertyStatistics : classStatistics.Properties) {
+      for (const FCesiumMetadataPropertyStatisticValue& statisticValue :
+           propertyStatistics.Values) {
+        result.metadataStatistics.Add(
+            EncodedFeaturesMetadata::getNameForStatistic(
+                classStatistics.Id,
+                propertyStatistics.Id,
+                statisticValue.Semantic),
+            statisticValue.Value);
+      }
+    }
+  }
+}
+
 static CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 loadModelAnyThreadPart(
     const CesiumAsync::AsyncSystem& asyncSystem,
@@ -2369,6 +2402,12 @@ loadModelAnyThreadPart(
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
+
+            if (options.pFeaturesMetadata.IsValid()) {
+              gatherStatistics(
+                  pHalf->loadModelResult,
+                  options.pFeaturesMetadata->Description.Statistics);
+            }
 
             glm::dmat4x4 rootTransform = transform;
 
@@ -2729,16 +2768,16 @@ void SetWaterParameterValues(
 }
 
 static void SetFeaturesMetadataParameterValues(
-    const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
     LoadedPrimitiveResult& loadResult,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
   // This handles texture coordinate indices for both attribute feature ID
   // sets and property textures.
   for (const auto& textureCoordinateSet :
-       loadResult.FeaturesMetadataTexCoordParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -2789,6 +2828,29 @@ static void SetFeaturesMetadataParameterValues(
           association,
           index,
           propertyTable);
+    }
+  }
+
+  for (const auto& pair : metadataStatistics) {
+    FCesiumMetadataValueType valueType =
+        UCesiumMetadataValueBlueprintLibrary::GetValueType(pair.Value);
+    switch (valueType.Type) {
+    case ECesiumMetadataType::Scalar:
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(FName(pair.Key), association, index),
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(pair.Value, 0.0f));
+      break;
+    case ECesiumMetadataType::Vec2:
+    case ECesiumMetadataType::Vec3:
+    case ECesiumMetadataType::Vec4:
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(FName(pair.Key), association, index),
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              pair.Value,
+              FVector4::Zero()));
+      break;
+    default:
+      break;
     }
   }
 }
@@ -2847,7 +2909,7 @@ static void SetMetadataParameterValues_DEPRECATED(
   }
 
   for (const auto& textureCoordinateSet :
-       loadResult.FeaturesMetadataTexCoordParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -3023,7 +3085,8 @@ static void loadPrimitiveGameThreadPart(
     bool enableDoubleSidedCollisions,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
-    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
+    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -3040,8 +3103,29 @@ static void loadPrimitiveGameThreadPart(
 
   UStaticMeshComponent* pMesh = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
-
-  if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  bool createMesh = true;
+  if (meshPrimitive.hasExtension<CesiumGltf::ExtensionKhrGaussianSplatting>()) {
+    // UCesiumGltfGaussianSplatComponent works differently to other primitives -
+    // it just acts as a source of data for UCesiumGaussianSplatSystem to
+    // accumulate and render. We do not need to create a mesh from it.
+    if (!loadResult.GaussianSplatData) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Primitive with ExtensionKhrGaussianSplatting requires LoadedPrimitiveResult::GaussianSplatData != nullptr"));
+      return;
+    }
+    UCesiumGltfGaussianSplatComponent* pGaussianSplat =
+        NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
+    pGaussianSplat->Data = MoveTemp(*loadResult.GaussianSplatData.Release());
+    pGaussianSplat->SetupAttachment(pGltf);
+    pGaussianSplat->RegisterComponent();
+    pGaussianSplat->SetMobility(pGltf->Mobility);
+    pGaussianSplat->RegisterWithSubsystem();
+    pCesiumPrimitive = pGaussianSplat;
+    createMesh = false;
+  } else if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
@@ -3067,11 +3151,12 @@ static void loadPrimitiveGameThreadPart(
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
 
-    const std::optional<FCesiumFeaturesMetadataDescription>&
-        maybeFeaturesDescription =
-            pTilesetActor->getFeaturesMetadataDescription();
-    if (maybeFeaturesDescription) {
-      addInstanceFeatureIds(pInstancedComponent, *maybeFeaturesDescription);
+    const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+        pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+    if (pFeaturesMetadataComponent) {
+      addInstanceFeatureIds(
+          pInstancedComponent,
+          pFeaturesMetadataComponent->Description);
     }
 
     pCesiumPrimitive = pInstancedComponent;
@@ -3081,21 +3166,27 @@ static void loadPrimitiveGameThreadPart(
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
   }
+
   CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
+
+  primData.pTilesetActor = pTilesetActor;
+  primData.overlayTextureCoordinateIDToUVIndex =
+      loadResult.overlayTextureCoordinateIDToUVIndex;
+  primData.GltfToUnrealTexCoordMap =
+      std::move(loadResult.GltfToUnrealTexCoordMap);
+  primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+  primData.HighPrecisionNodeTransform = loadResult.transform;
+  pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+  if (!createMesh) {
+    return;
+  }
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    primData.pTilesetActor = pTilesetActor;
-    primData.overlayTextureCoordinateIDToUVIndex =
-        loadResult.overlayTextureCoordinateIDToUVIndex;
-    primData.GltfToUnrealTexCoordMap =
-        std::move(loadResult.GltfToUnrealTexCoordMap);
-    primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    primData.PositionAccessor = std::move(loadResult.PositionAccessor);
-    primData.IndexAccessor = std::move(loadResult.IndexAccessor);
-    primData.HighPrecisionNodeTransform = loadResult.transform;
-    pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
@@ -3312,9 +3403,9 @@ static void loadPrimitiveGameThreadPart(
       int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
       if (featuresMetadataIndex >= 0) {
         SetFeaturesMetadataParameterValues(
-            model,
             *pGltf,
             loadResult,
+            metadataStatistics,
             pMaterialForGltfPrimitive,
             EMaterialParameterAssociation::LayerParameter,
             featuresMetadataIndex);
@@ -3492,34 +3583,35 @@ UCesiumGltfComponent::CreateOffGameThread(
   //   return nullptr;
   // }
 
-  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
-  Gltf->pTile = &tile;
-  Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
-  Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  pGltf->pTile = &tile;
+  pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
+  pGltf->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
-  Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
-  Gltf->EncodedMetadata_DEPRECATED =
+  pGltf->Metadata = std::move(pReal->loadModelResult.Metadata);
+  pGltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
+  pGltf->EncodedMetadata_DEPRECATED =
       std::move(pReal->loadModelResult.EncodedMetadata_DEPRECATED);
 
   if (pBaseMaterial) {
-    Gltf->BaseMaterial = pBaseMaterial;
+    pGltf->BaseMaterial = pBaseMaterial;
   }
 
   if (pBaseTranslucentMaterial) {
-    Gltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
+    pGltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
   }
 
   if (pBaseWaterMaterial) {
-    Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
+    pGltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  Gltf->CustomDepthParameters = CustomDepthParameters;
+  pGltf->CustomDepthParameters = CustomDepthParameters;
 
-  encodeModelMetadataGameThreadPart(Gltf->EncodedMetadata);
+  encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
-  if (Gltf->EncodedMetadata_DEPRECATED) {
-    encodeMetadataGameThreadPart(*Gltf->EncodedMetadata_DEPRECATED);
+  if (pGltf->EncodedMetadata_DEPRECATED) {
+    encodeMetadataGameThreadPart(*pGltf->EncodedMetadata_DEPRECATED);
   }
 
   for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
@@ -3528,7 +3620,7 @@ UCesiumGltfComponent::CreateOffGameThread(
            node.meshResult->primitiveResults) {
         loadPrimitiveGameThreadPart(
             model,
-            Gltf,
+            pGltf,
             primitive,
             cesiumToUnrealTransform,
             tile,
@@ -3536,19 +3628,20 @@ UCesiumGltfComponent::CreateOffGameThread(
             enableDoubleSidedCollisions,
             pTilesetActor,
             node.InstanceTransforms,
-            node.pInstanceFeatures);
+            node.pInstanceFeatures,
+            pReal->loadModelResult.metadataStatistics);
       }
     }
   }
 
   if (ICesium3DTilesetLifecycleEventReceiver* Receiver =
           pTilesetActor->GetLifecycleEventReceiver()) {
-    Receiver->OnTileLoaded(*Gltf);
+    Receiver->OnTileLoaded(*pGltf);
   }
 
-  Gltf->SetVisibility(false, true);
-  Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-  return Gltf;
+  pGltf->SetVisibility(false, true);
+  pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  return pGltf;
 }
 
 void UCesiumGltfComponent::OnVisibilityChanged() {

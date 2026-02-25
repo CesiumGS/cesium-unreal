@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -52,6 +53,21 @@ struct LoadedPrimitiveResult {
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
 
   /**
+   * Data for rendering a gaussian splat. This will be used over `RenderData`
+   * when the primitive is a gaussian splat.
+   */
+  TUniquePtr<FCesiumGltfGaussianSplatData> GaussianSplatData = nullptr;
+
+  /**
+   * Returns whether or not this primitive has renderable data (either
+   * `RenderData` or `GaussianSplatData` are not nullptr). If this returns
+   * false, this primitive should be removed from consideration for rendering.
+   */
+  bool HasRenderableData() {
+    return RenderData != nullptr || GaussianSplatData != nullptr;
+  }
+
+  /**
    * The index of the material for this primitive within the parent model, or -1
    * if none.
    */
@@ -76,13 +92,13 @@ struct LoadedPrimitiveResult {
    * A map of feature ID set names to their corresponding texture coordinate
    * indices in the Unreal mesh.
    */
-  TMap<FString, uint32_t> FeaturesMetadataTexCoordParameters;
+  TMap<FString, uint32_t> featuresMetadataTexCoordParameters;
 
   /**
    * A map of accessors indices that point to feature ID attributes to the index
    * of the same feature ID set in CesiumPrimitiveFeatures.
    */
-  std::unordered_map<int32_t, int32_t> AccessorToFeatureIdIndexMap;
+  std::unordered_map<int32_t, int32_t> accessorToFeatureIdIndexMap;
 
   bool isUnlit = false;
 
@@ -210,5 +226,11 @@ struct LoadedModelResult {
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
+
+  /**
+   * Metadata statistics to pass to the Unreal material, mapped by generated
+   * parameter name.
+   */
+  TMap<FString, FCesiumMetadataValue> metadataStatistics;
 };
 } // namespace LoadGltfResult
