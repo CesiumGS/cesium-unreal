@@ -4,6 +4,7 @@
 
 ##### Breaking Changes :mega:
 
+- Deprecated `AddCamera`, `RemoveCamera`, `UpdateCamera`, and `GetCameras` on `ACesiumCameraManager`. Instead, use the new `AdditionalCameras` array to directly add or remove cameras.
 - Removed `Cesium3DTileset::getFeaturesMetadataDescription`. This can be directly retrieved from its attached `UCesiumFeaturesMetadataComponent` instead.
 
 ##### Additions :tada:
@@ -12,6 +13,8 @@
 - Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
 - Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
 - Added `DetectTransformChanges` to `UCesiumGlobeAnchorComponent` to toggle whether the globe anchor should update itself after changes in its Actor's transform.
+- Added `UsePlayerCameras`, `UseEditorCameras`, and `UseSceneCapturesInLevel` to `ACesiumCameraManager` to toggle the automatic detection of cameras in the level for tile selection.
+- Added `ACesiumCameraManager::SceneCaptures` for more explicit control over which `ASceneCapture2D`s are used for tile selection.
 
 ##### Fixes :wrench:
 
