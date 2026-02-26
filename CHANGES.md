@@ -15,6 +15,7 @@
 - Added `DetectTransformChanges` to `UCesiumGlobeAnchorComponent` to toggle whether the globe anchor should update itself after changes in its Actor's transform.
 - Added `UsePlayerCameras`, `UseEditorCameras`, and `UseSceneCapturesInLevel` to `ACesiumCameraManager` to toggle the automatic detection of cameras in the level for tile selection.
 - Added `ACesiumCameraManager::SceneCaptures` for more explicit control over which `ASceneCapture2D`s are used for tile selection.
+- Added the option for `FCesiumCamera` to use parameters from a given `UCameraComponent` assigned through C++ or Blueprints.
 
 ##### Fixes :wrench:
 

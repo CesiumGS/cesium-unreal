@@ -35,13 +35,21 @@ struct CESIUMRUNTIME_API FCesiumCamera {
 
 public:
   /**
-   * @brief Source of camera parameters
+   * @brief The desired source of camera parameters.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECameraParameterSource ParameterSource = ECameraParameterSource::Manual;
 
   /**
-   * @brief Source camera component, if any.
+   * @brief The pixel dimensions of the viewport.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FVector2D ViewportSize;
+
+  /**
+   * @brief The camera component from which to retrieve parameters. Due to
+   * UI limitations, this property must be set through Blueprints or C++. Used
+   * when ParameterSource is set to Camera Component.
    */
   UPROPERTY(
       EditAnywhere,
@@ -53,13 +61,8 @@ public:
   TSoftObjectPtr<UCameraComponent> CameraComponent;
 
   /**
-   * @brief The pixel dimensions of the viewport.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FVector2D ViewportSize;
-
-  /**
-   * @brief The Unreal location of the camera.
+   * @brief The Unreal location of the camera. Used when Parameter Source is set
+   * to Manual.
    */
   UPROPERTY(
       EditAnywhere,
@@ -70,7 +73,8 @@ public:
   FVector Location;
 
   /**
-   * @brief The Unreal rotation of the camera.
+   * @brief The Unreal rotation of the camera. Used when Parameter Source is set
+   * to Manual.
    */
   UPROPERTY(
       EditAnywhere,
@@ -81,7 +85,8 @@ public:
   FRotator Rotation;
 
   /**
-   * @brief The horizontal field of view of the camera in degrees.
+   * @brief The horizontal field of view of the camera in degrees. Used when
+   * Parameter Source is set to Manual.
    */
   UPROPERTY(
       EditAnywhere,
