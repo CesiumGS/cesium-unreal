@@ -324,10 +324,15 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
                           Height)) {
+    GEngine->AddOnScreenDebugMessage(
+        -1,
+        5.f,
+        FColor::Red,
+        FString::Printf(TEXT("Number: %d"), Height));
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
-        FVector(this->Longitude, this->Latitude, this->Height));
-    this->GlobeAnchor->SetHeight(Height);
+        FVector(this->Longitude, this->Latitude, this->Height),
+        true);
   } else if (
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Pitch) ||
@@ -389,7 +394,7 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       FVector llh = this->GlobeAnchor->GetLongitudeLatitudeHeight();
       this->Longitude = llh.X;
       this->Latitude = llh.Y;
-      this->Height = this->GlobeAnchor->GetHeight();
+      this->Height = llh.Z;
 
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
       this->TilesetHeightUpdateInterval =

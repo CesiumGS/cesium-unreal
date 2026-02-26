@@ -403,13 +403,16 @@ public:
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
+   *
+   * When HeightReference is Tileset, and a valid HeightReferenceTileset is
+   * set, the Z height value is the height above the reference tileset.
    */
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   FVector
-  GetLongitudeLatitudeHeight(const bool IgnoreHeightReference = false) const;
+  GetLongitudeLatitudeHeight(const bool HeightRelativeToReference = true) const;
 
   /**
    * Gets the longitude in degrees.
@@ -441,25 +444,27 @@ public:
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "Height"))
-  double GetHeight() const;
-
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetHeight(const double NewHeight);
+  double GetHeight(const bool HeightRelativeToReference) const;
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in
    * degrees (X), latitude in degrees (Y), and height in meters (Z).
    *
    * The Height (Z) is measured in meters above the ellipsoid. Do not
-   * confused an ellipsoidal height with a geoid height or height above mean sea
+   * confuse an ellipsoidal height with a geoid height or height above mean sea
    * level, which can be tens of meters higher or lower depending on where in
    * the world the object is located.
+   *
+   * When HeightReference is Tileset, and a valid HeightReferenceTileset is
+   * set, the Z height value is the desired height above the reference tileset.
    *
    * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
    * orientation will also be adjusted to account for globe curvature.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void MoveToLongitudeLatitudeHeight(const FVector& LongitudeLatitudeHeight);
+  void MoveToLongitudeLatitudeHeight(
+      const FVector& LongitudeLatitudeHeight,
+      const bool HeightRelativeToReference = true);
 
   /**
    * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in
@@ -664,6 +669,10 @@ private:
   UPROPERTY()
   float _fixedHeightAboveHeightReference = 0.0f;
 
+  /**
+   * Determines if HeightReference is Tileset and HeightReferenceTileset is set.
+   */
+  bool isUsingHeightReference() const;
   /**
    * Find the location of the component directly above or below the component.
    * Returns whether an intersection was found.

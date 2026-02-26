@@ -12,6 +12,7 @@
 #include "Engine/HitResult.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include "VecMath.h"
 #include <glm/gtc/quaternion.hpp>
 
@@ -366,34 +367,36 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
-    const bool IgnoreHeightReference) const {
+    const bool HeightRelativeToReference) const {
   ELLIPSOID_CHECK(this, FVector::ZeroVector);
   FVector position =
       this->GetEllipsoid()
           ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
               this->GetEarthCenteredEarthFixedPosition());
 
-  if (!IgnoreHeightReference &&
-      this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
+  // When using a height reference, the height reported back to the caller
+  // will always be the fixed height above the reference.
+  if (HeightRelativeToReference && this->isUsingHeightReference()) {
     position.Z = this->_fixedHeightAboveHeightReference;
   }
-
   return position;
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
-    const FVector& TargetLongitudeLatitudeHeight) {
+    const FVector& TargetLongitudeLatitudeHeight,
+    const bool HeightRelativeToReference) {
   ELLIPSOID_CHECK(this, );
 
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
+  FVector tilesetPosition{};
 
-  if (this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
-
-    if (_queryLongitudeLatitudeHeightPositionOnTileset(
-            realLongitudeLatitudeHeight,
-            TargetLongitudeLatitudeHeight)) {
-      realLongitudeLatitudeHeight.Z += this->_fixedHeightAboveHeightReference;
-    }
+  if (HeightRelativeToReference && isUsingHeightReference() &&
+      _queryLongitudeLatitudeHeightPositionOnTileset(
+          tilesetPosition,
+          TargetLongitudeLatitudeHeight)) {
+    _fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
+    realLongitudeLatitudeHeight.Z =
+        tilesetPosition.Z + _fixedHeightAboveHeightReference;
   }
 
   this->MoveToEarthCenteredEarthFixedPosition(
@@ -402,21 +405,9 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
               realLongitudeLatitudeHeight));
 }
 
-double UCesiumGlobeAnchorComponent::GetHeight() const {
-  return this->GetHeightReference() == ECesiumHeightReferenceMode::Ellipsoid
-             ? this->GetLongitudeLatitudeHeight().Z
-             : this->_fixedHeightAboveHeightReference;
-}
-
-void UCesiumGlobeAnchorComponent::SetHeight(const double NewHeight) {
-  FVector realLongitudeLatitudeHeight = this->GetLongitudeLatitudeHeight();
-  if (this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
-    this->_fixedHeightAboveHeightReference = NewHeight;
-    realLongitudeLatitudeHeight.Z = 0;
-  } else {
-    realLongitudeLatitudeHeight.Z = NewHeight;
-  }
-  this->MoveToLongitudeLatitudeHeight(realLongitudeLatitudeHeight);
+double UCesiumGlobeAnchorComponent::GetHeight(
+    const bool HeightRelativeToReference) const {
+  return this->GetLongitudeLatitudeHeight(HeightRelativeToReference).Z;
 }
 
 namespace {
@@ -841,6 +832,11 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
+bool UCesiumGlobeAnchorComponent::isUsingHeightReference() const {
+  return this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset &&
+         this->GetHeightReferenceTileset() != nullptr;
+}
+
 bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
@@ -905,12 +901,12 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
 #if WITH_EDITOR
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
-      this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset) {
+      this->isUsingHeightReference()) {
     // update the height-above-reference based on the new transform.
     FVector positionOnTileset;
     if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
             positionOnTileset)) {
-      FVector realLLH = this->GetLongitudeLatitudeHeight(true);
+      FVector realLLH = this->GetLongitudeLatitudeHeight(false);
       this->_fixedHeightAboveHeightReference = realLLH.Z - positionOnTileset.Z;
     }
   }
@@ -966,7 +962,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (this->HeightReference != ECesiumHeightReferenceMode::Tileset)
+  if (!this->isUsingHeightReference())
     return;
 
   if (--this->_heightReferenceUpdateCounter > 0) {
@@ -975,7 +971,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   this->_heightReferenceUpdateCounter = this->TilesetHeightUpdateInterval;
   FVector llh = this->GetLongitudeLatitudeHeight(true);
-  llh.Z = 0;
+  llh.Z = this->_fixedHeightAboveHeightReference;
 
   this->MoveToLongitudeLatitudeHeight(llh);
 }
