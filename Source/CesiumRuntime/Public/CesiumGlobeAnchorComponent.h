@@ -672,7 +672,7 @@ private:
   /**
    * Determines if HeightReference is Tileset and HeightReferenceTileset is set.
    */
-  bool isUsingHeightReference() const;
+  bool _isUsingHeightReference() const;
   /**
    * Find the location of the component directly above or below the component.
    * Returns whether an intersection was found.

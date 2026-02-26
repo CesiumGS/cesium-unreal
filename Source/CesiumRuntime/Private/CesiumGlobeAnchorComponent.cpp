@@ -6,13 +6,11 @@
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGeoreference.h"
 #include "CesiumRuntime.h"
-#include "CesiumWgs84Ellipsoid.h"
 #include "CollisionQueryParams.h"
 #include "Components/SceneComponent.h"
 #include "Engine/HitResult.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
-#include "SpdlogUnrealLoggerSink.h"
 #include "VecMath.h"
 #include <glm/gtc/quaternion.hpp>
 
@@ -376,7 +374,7 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
 
   // When using a height reference, the height reported back to the caller
   // will always be the fixed height above the reference.
-  if (!IgnoreHeightReference && this->isUsingHeightReference()) {
+  if (!IgnoreHeightReference && this->_isUsingHeightReference()) {
     position.Z = this->_fixedHeightAboveHeightReference;
   }
   return position;
@@ -390,7 +388,7 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
   FVector tilesetPosition{};
 
-  if (!IgnoreHeightReference && isUsingHeightReference() &&
+  if (!IgnoreHeightReference && this->_isUsingHeightReference() &&
       _queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {
@@ -832,7 +830,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
-bool UCesiumGlobeAnchorComponent::isUsingHeightReference() const {
+bool UCesiumGlobeAnchorComponent::_isUsingHeightReference() const {
   return this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset &&
          this->GetHeightReferenceTileset() != nullptr;
 }
@@ -901,7 +899,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
 #if WITH_EDITOR
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
-      this->isUsingHeightReference()) {
+      this->_isUsingHeightReference()) {
     // update the height-above-reference based on the new transform.
     FVector positionOnTileset;
     if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
@@ -966,7 +964,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
 
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (!this->isUsingHeightReference())
+  if (!this->_isUsingHeightReference())
     return;
 
   if (--this->_heightReferenceUpdateCounter > 0) {
