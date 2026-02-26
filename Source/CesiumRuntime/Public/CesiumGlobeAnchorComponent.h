@@ -674,8 +674,8 @@ private:
    */
   bool _isUsingHeightReference() const;
   /**
-   * Project the component's position onto the tileset specified by HeightReferenceTileset,
-   * Returns whether an intersection was found.
+   * Project the component's position onto the tileset specified by
+   * HeightReferenceTileset, Returns whether an intersection was found.
    *
    * alternateActorPosition, if specified, performs the intersection test
    * starting at a different location.

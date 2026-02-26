@@ -149,7 +149,8 @@ public:
       Category = "Cesium",
       meta =
           (EditCondition =
-               "HeightReference == ECesiumHeightReferenceMode::Tileset", ClampMin=1))
+               "HeightReference == ECesiumHeightReferenceMode::Tileset",
+           ClampMin = 1))
   int TilesetHeightUpdateInterval = 1;
 
   /**

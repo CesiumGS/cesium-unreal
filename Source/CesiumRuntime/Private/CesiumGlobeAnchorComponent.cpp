@@ -403,8 +403,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
               realLongitudeLatitudeHeight));
 }
 
-double UCesiumGlobeAnchorComponent::GetHeight(
-    const bool IgnoreHeightReference) const {
+double
+UCesiumGlobeAnchorComponent::GetHeight(const bool IgnoreHeightReference) const {
   return this->GetLongitudeLatitudeHeight(IgnoreHeightReference).Z;
 }
 
@@ -906,9 +906,9 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
             positionOnTileset)) {
 
       FVector realLLH =
-        this->GetEllipsoid()
-            ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
-                this->GetEarthCenteredEarthFixedPosition());
+          this->GetEllipsoid()
+              ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+                  this->GetEarthCenteredEarthFixedPosition());
       this->_fixedHeightAboveHeightReference = realLLH.Z - positionOnTileset.Z;
     }
   }
