@@ -5,7 +5,7 @@
 #include "CesiumGaussianSplatSubsystem.h"
 #include "CesiumRuntime.h"
 
-#include "Engine.h"
+#include "Engine/Engine.h"
 #include "Math/Box.h"
 #include "Misc/Optional.h"
 
