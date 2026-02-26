@@ -238,7 +238,6 @@ void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
   Group.AddPropertyRow(PitchProperty.ToSharedRef());
   Group.AddPropertyRow(YawProperty.ToSharedRef());
 }
-#if true
 void FCesiumGlobeAnchorCustomization::UpdateDerivedProperties() {
   this->DerivedObjects.SetNum(this->SelectedObjects.Num());
   this->DerivedPointers.SetNum(DerivedObjects.Num());
@@ -257,23 +256,6 @@ void FCesiumGlobeAnchorCustomization::UpdateDerivedProperties() {
     this->DerivedPointers[i] = this->DerivedObjects[i].Get();
   }
 }
-#else
-void FCesiumGlobeAnchorCustomization::UpdateDerivedProperties() {
-  this->DerivedObjects.SetNum(this->SelectedObjects.Num());
-  this->DerivedPointers.SetNum(DerivedObjects.Num());
-
-  for (int i = 0; i < this->SelectedObjects.Num(); ++i) {
-    if (!IsValid(this->DerivedObjects[i].Get())) {
-      this->DerivedObjects[i] =
-          NewObject<UCesiumGlobeAnchorDerivedProperties>();
-    }
-    UCesiumGlobeAnchorComponent* GlobeAnchor =
-        Cast<UCesiumGlobeAnchorComponent>(this->SelectedObjects[i]);
-    this->DerivedObjects[i]->Initialize(GlobeAnchor);
-    this->DerivedPointers[i] = this->DerivedObjects[i].Get();
-  }
-}
-#endif
 
 void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
