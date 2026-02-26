@@ -367,7 +367,7 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
-    const bool HeightRelativeToReference) const {
+    const bool IgnoreHeightReference) const {
   ELLIPSOID_CHECK(this, FVector::ZeroVector);
   FVector position =
       this->GetEllipsoid()
@@ -376,7 +376,7 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
 
   // When using a height reference, the height reported back to the caller
   // will always be the fixed height above the reference.
-  if (HeightRelativeToReference && this->isUsingHeightReference()) {
+  if (!IgnoreHeightReference && this->isUsingHeightReference()) {
     position.Z = this->_fixedHeightAboveHeightReference;
   }
   return position;
@@ -384,13 +384,13 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight,
-    const bool HeightRelativeToReference) {
+    const bool IgnoreHeightReference) {
   ELLIPSOID_CHECK(this, );
 
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
   FVector tilesetPosition{};
 
-  if (HeightRelativeToReference && isUsingHeightReference() &&
+  if (!IgnoreHeightReference && isUsingHeightReference() &&
       _queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {
@@ -406,8 +406,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
 }
 
 double UCesiumGlobeAnchorComponent::GetHeight(
-    const bool HeightRelativeToReference) const {
-  return this->GetLongitudeLatitudeHeight(HeightRelativeToReference).Z;
+    const bool IgnoreHeightReference) const {
+  return this->GetLongitudeLatitudeHeight(IgnoreHeightReference).Z;
 }
 
 namespace {
@@ -906,7 +906,11 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     FVector positionOnTileset;
     if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
             positionOnTileset)) {
-      FVector realLLH = this->GetLongitudeLatitudeHeight(false);
+
+      FVector realLLH =
+        this->GetEllipsoid()
+            ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+                this->GetEarthCenteredEarthFixedPosition());
       this->_fixedHeightAboveHeightReference = realLLH.Z - positionOnTileset.Z;
     }
   }
@@ -970,8 +974,8 @@ void UCesiumGlobeAnchorComponent::TickComponent(
   }
 
   this->_heightReferenceUpdateCounter = this->TilesetHeightUpdateInterval;
-  FVector llh = this->GetLongitudeLatitudeHeight(true);
-  llh.Z = this->_fixedHeightAboveHeightReference;
-
+  FVector llh = this->GetLongitudeLatitudeHeight();
+  // This seems pointless, but it causes the actor's position to be reset
+  // based on the _fixedHeightAboveTileset value.
   this->MoveToLongitudeLatitudeHeight(llh);
 }

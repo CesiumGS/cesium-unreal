@@ -412,7 +412,7 @@ public:
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   FVector
-  GetLongitudeLatitudeHeight(const bool HeightRelativeToReference = true) const;
+  GetLongitudeLatitudeHeight(const bool IgnoreHeightReference = false) const;
 
   /**
    * Gets the longitude in degrees.
@@ -444,7 +444,7 @@ public:
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "Height"))
-  double GetHeight(const bool HeightRelativeToReference) const;
+  double GetHeight(const bool IgnoreHeightReference = true) const;
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in
@@ -464,7 +464,7 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void MoveToLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeight,
-      const bool HeightRelativeToReference = true);
+      bool IgnoreHeightReference = false);
 
   /**
    * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in

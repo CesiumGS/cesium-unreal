@@ -324,15 +324,9 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
                           Height)) {
-    GEngine->AddOnScreenDebugMessage(
-        -1,
-        5.f,
-        FColor::Red,
-        FString::Printf(TEXT("Number: %d"), Height));
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
-        FVector(this->Longitude, this->Latitude, this->Height),
-        true);
+        FVector(this->Longitude, this->Latitude, this->Height));
   } else if (
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Pitch) ||
