@@ -469,6 +469,9 @@ std::optional<EPixelFormat> getPixelFormatForImageAsset(
   } else {
     switch (imageCesium.channels) {
     case 1:
+      if (imageCesium.bytesPerChannel == 4) {
+        return PF_R32_UINT;
+      }
       return PF_R8;
       break;
     case 2:
@@ -477,6 +480,9 @@ std::optional<EPixelFormat> getPixelFormatForImageAsset(
     case 3:
     case 4:
     default:
+      if (imageCesium.bytesPerChannel == 4 && imageCesium.channels == 4) {
+        return PF_A32B32G32R32F;
+      }
       return PF_R8G8B8A8;
     };
   }

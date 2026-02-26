@@ -38,9 +38,11 @@
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
+#include "VectorGpuLookupGen.h"
 #include "mikktspace.h"
 
 #include <CesiumGeometry/Axis.h>
+#include <CesiumGeometry/QuadtreeTileID.h>
 #include <CesiumGeometry/Rectangle.h>
 #include <CesiumGeometry/Transforms.h>
 #include <CesiumGltf/AccessorUtility.h>
@@ -61,6 +63,7 @@
 #include <CesiumRasterOverlays/RasterOverlayTile.h>
 #include <CesiumUtility/Tracing.h>
 #include <CesiumUtility/joinToString.h>
+#include <CesiumVectorData/GeoJsonDocument.h>
 #include <cstddef>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -2389,7 +2392,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3511,6 +3514,40 @@ static void loadPrimitiveGameThreadPart(
   }
 }
 
+namespace {
+template <typename Func>
+void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
+  for (USceneComponent* pSceneComponent : pGltf->GetAttachChildren()) {
+    UCesiumGltfPrimitiveComponent* pPrimitive =
+        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+    if (pPrimitive) {
+      UMaterialInstanceDynamic* pMaterial =
+          Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
+
+      if (!IsValid(pMaterial) || pMaterial->IsUnreachable()) {
+        // Don't try to update the material while it's in the process of
+        // being destroyed. This can lead to the render thread freaking out
+        // when it's asked to update a parameter for a material that has
+        // been marked for garbage collection.
+        continue;
+      }
+
+      UMaterialInterface* pBaseMaterial = pMaterial->Parent;
+      UMaterialInstance* pBaseAsMaterialInstance =
+          Cast<UMaterialInstance>(pBaseMaterial);
+      UCesiumMaterialUserData* pCesiumData =
+          pBaseAsMaterialInstance
+              ? pBaseAsMaterialInstance
+                    ->GetAssetUserData<UCesiumMaterialUserData>()
+              : nullptr;
+
+      f(pPrimitive, pMaterial, pCesiumData);
+    }
+  }
+} // namespace
+
+} // namespace
+
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumAsync::AsyncSystem& AsyncSystem,
@@ -3605,6 +3642,197 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   pGltf->SetVisibility(false, true);
   pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  const CesiumGeometry::QuadtreeTileID* pTileId =
+      std::get_if<CesiumGeometry::QuadtreeTileID>(&tile.getTileID());
+  if (!pTileId) {
+    const CesiumGeometry::UpsampledQuadtreeNode* pNode =
+        std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&tile.getTileID());
+    if (pNode) {
+      pTileId = &pNode->tileID;
+    }
+  }
+
+  Cesium3DTilesSelection::BoundingVolume volume = tile.getBoundingVolume();
+  std::optional<CesiumGeospatial::GlobeRectangle> bbox =
+      Cesium3DTilesSelection::estimateGlobeRectangle(volume);
+
+  if (pTileId) {
+    CesiumGeometry::QuadtreeTileID tileId = *pTileId;
+    while (tileId.level > 13) {
+      tileId = tileId.getParent();
+    }
+
+    CesiumVectorData::GeoJsonDocument::fromUrl(
+        getAsyncSystem(),
+        getAssetAccessor(),
+        fmt::format(
+            "http://localhost:8080/{}/tile_{}_{}.geojson",
+            tileId.level,
+            tileId.y,
+            tileId.x))
+        .thenInWorkerThread(
+            [tileId, pGltf,
+             asyncSystem = getAsyncSystem(),
+             bbox = std::move(bbox)](
+                CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&
+                    document) {
+              if (!document.value) {
+                UE_LOG(
+                    LogCesium,
+                    Warning,
+                    TEXT("Failed to load %d/%d/%d: %s"),
+                    tileId.level,
+                    tileId.y,
+                    tileId.x,
+                    UTF8_TO_TCHAR(document.errors.format("").c_str()));
+                return asyncSystem.createResolvedFuture<
+                    std::vector<LoadedTextureResult>>({});
+              }
+
+              const FCesiumVectorLookup Lookup = *FCesiumVectorLookup::Create(
+                  document.value->rootObject,
+                  *bbox);
+              CesiumGltf::ImageAsset coordsAsset;
+              coordsAsset.bytesPerChannel = 4;
+              coordsAsset.channels = 4;
+              coordsAsset.pixelData.resize(
+                  Lookup.coords.size() * sizeof(float));
+              coordsAsset.width = Lookup.textureSize.x;
+              coordsAsset.height = Lookup.textureSize.y;
+              std::memcpy(
+                  coordsAsset.pixelData.data(),
+                  Lookup.coords.data(),
+                  Lookup.coords.size() * sizeof(float));
+
+              CesiumGltf::ImageAsset indicesAsset;
+              indicesAsset.bytesPerChannel = 4;
+              indicesAsset.channels = 1;
+              indicesAsset.pixelData.resize(
+                  Lookup.indices.size() * sizeof(uint32_t));
+              indicesAsset.width = Lookup.indices.size();
+              indicesAsset.height = 1;
+              std::memcpy(
+                  indicesAsset.pixelData.data(),
+                  Lookup.indices.data(),
+                  Lookup.indices.size() * sizeof(uint32_t));
+
+              CesiumGltf::ImageAsset polygonsAsset;
+              polygonsAsset.bytesPerChannel = 1;
+              polygonsAsset.channels = 1;
+              polygonsAsset.pixelData.resize(Lookup.cutFlags.size());
+              polygonsAsset.width = Lookup.textureSize.x;
+              polygonsAsset.height = Lookup.textureSize.y;
+              std::memcpy(
+                  polygonsAsset.pixelData.data(),
+                  Lookup.cutFlags.data(),
+                  Lookup.cutFlags.size());
+
+              pGltf->_geojsonTextures.reserve(3);
+              pGltf->_geojsonTextures.emplace_back(std::move(coordsAsset));
+              pGltf->_geojsonTextures.emplace_back(std::move(indicesAsset));
+              pGltf->_geojsonTextures.emplace_back(std::move(polygonsAsset));
+
+              TUniquePtr<LoadedTextureResult> coordsResult =
+                  CesiumTextureUtility::loadTextureAnyThreadPart(
+                      pGltf->_geojsonTextures[0],
+                      TextureAddress::TA_Clamp,
+                      TextureAddress::TA_Clamp,
+                      TextureFilter::TF_Nearest,
+                      false,
+                      TextureGroup::TEXTUREGROUP_World,
+                      false,
+                      EPixelFormat::PF_A32B32G32R32F);
+              check(coordsResult);
+              TUniquePtr<LoadedTextureResult> indicesResult =
+                  CesiumTextureUtility::loadTextureAnyThreadPart(
+                      pGltf->_geojsonTextures[1],
+                      TextureAddress::TA_Clamp,
+                      TextureAddress::TA_Clamp,
+                      TextureFilter::TF_Nearest,
+                      false,
+                      TextureGroup::TEXTUREGROUP_World,
+                      false,
+                      EPixelFormat::PF_R32_UINT);
+              check(indicesResult);
+              TUniquePtr<LoadedTextureResult> polygonsResult =
+                  CesiumTextureUtility::loadTextureAnyThreadPart(
+                      pGltf->_geojsonTextures[2],
+                      TextureAddress::TA_Clamp,
+                      TextureAddress::TA_Clamp,
+                      TextureFilter::TF_Nearest,
+                      false,
+                      TextureGroup::TEXTUREGROUP_World,
+                      false,
+                      EPixelFormat::PF_R8_UINT);
+              check(polygonsResult);
+
+              std::vector<LoadedTextureResult> textures{
+                  std::move(*coordsResult.Release()),
+                  std::move(*indicesResult.Release()),
+                  std::move(*polygonsResult.Release())};
+              return asyncSystem.createResolvedFuture(std::move(textures));
+            })
+        .thenInMainThread(
+            [pGltf](std::vector<LoadedTextureResult>&& results) {
+              if (results.empty()) {
+                return;
+              }
+              std::vector<CesiumUtility::IntrusivePointer<
+                  CesiumTextureUtility::ReferenceCountedUnrealTexture>>
+                  textures;
+              for (LoadedTextureResult& result : results) {
+                CesiumUtility::IntrusivePointer<CesiumTextureUtility::ReferenceCountedUnrealTexture> pTexture = 
+                    CesiumTextureUtility::loadTextureGameThreadPart(
+                        &result);
+                pTexture->addReference();
+                textures.emplace_back(pTexture);
+              }
+
+              if (!IsValid(pGltf)) {
+                return;
+              }
+
+              check(textures.size() == 3);
+
+              forEachPrimitiveComponent(
+                  pGltf,
+                  [textures](
+                      UCesiumGltfPrimitiveComponent* pPrimitive,
+                      UMaterialInstanceDynamic* pMaterial,
+                      UCesiumMaterialUserData* pCesiumData) {
+                    CesiumPrimitiveData& primData =
+                        pPrimitive->getPrimitiveData();
+                    FString name(TEXT("Vector"));
+
+                    for (int32 i = 0; i < pCesiumData->LayerNames.Num();
+                          ++i) {
+                      if (pCesiumData->LayerNames[i] != name) {
+                        continue;
+                      }
+
+                      pMaterial->SetTextureParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "LineTexture",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          textures[0]->getUnrealTexture());
+                      pMaterial->SetTextureParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "IndicesTexture",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          textures[1]->getUnrealTexture());
+                      pMaterial->SetTextureParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "CutFlagsTexture",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          textures[2]->getUnrealTexture());
+                    }
+                  });
+            });
+  }
+
   return pGltf;
 }
 
@@ -3683,40 +3911,6 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
     }
   }
 }
-
-namespace {
-template <typename Func>
-void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
-  for (USceneComponent* pSceneComponent : pGltf->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
-    if (pPrimitive) {
-      UMaterialInstanceDynamic* pMaterial =
-          Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
-
-      if (!IsValid(pMaterial) || pMaterial->IsUnreachable()) {
-        // Don't try to update the material while it's in the process of
-        // being destroyed. This can lead to the render thread freaking out
-        // when it's asked to update a parameter for a material that has
-        // been marked for garbage collection.
-        continue;
-      }
-
-      UMaterialInterface* pBaseMaterial = pMaterial->Parent;
-      UMaterialInstance* pBaseAsMaterialInstance =
-          Cast<UMaterialInstance>(pBaseMaterial);
-      UCesiumMaterialUserData* pCesiumData =
-          pBaseAsMaterialInstance
-              ? pBaseAsMaterialInstance
-                    ->GetAssetUserData<UCesiumMaterialUserData>()
-              : nullptr;
-
-      f(pPrimitive, pMaterial, pCesiumData);
-    }
-  }
-} // namespace
-
-} // namespace
 
 void UCesiumGltfComponent::AttachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,

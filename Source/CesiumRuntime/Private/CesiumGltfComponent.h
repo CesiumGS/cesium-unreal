@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTilesSelection/Tile.h"
+#include <CesiumAsync/Future.h>
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumLoadedTile.h"
@@ -150,4 +151,6 @@ public:
 private:
   UPROPERTY()
   UTexture2D* Transparent1x1 = nullptr;
+
+  std::vector<CesiumGltf::ImageAsset> _geojsonTextures;
 };
