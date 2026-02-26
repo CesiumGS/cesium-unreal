@@ -92,6 +92,25 @@ private:
   bool AdjustOrientationForGlobeWhenMoving = true;
 
   /**
+   * Whether to automatically detect changes in the Actor's root transform and
+   * update the precise globe coordinates accordingly.
+   *
+   * When this is property is false, the precise coordinates may become out of
+   * sync with the Actor's root transform. However, you can still directly set
+   * the precise coordinates, and its transform will update accordingly. You can
+   * also call Sync after changing the Actor's transform  to manually update the
+   * precise coordinates.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetDetectTransformChanges,
+      BlueprintSetter = SetDetectTransformChanges,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  bool DetectTransformChanges = true;
+
+  /**
    * Using the teleport flag will move objects to the updated transform
    * immediately and without affecting their velocity. This is useful when
    * working with physics actors that maintain an internal velocity which we do
@@ -107,7 +126,7 @@ private:
   bool TeleportWhenUpdatingTransform = true;
 
   /**
-   * The 4x4 transformation matrix from the Actors's local coordinate system to
+   * The 4x4 transformation matrix from the Actor's local coordinate system to
    * the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
    * The ECEF coordinate system is a right-handed system located at the center
@@ -186,7 +205,7 @@ public:
   UCesiumEllipsoid* GetEllipsoid() const;
 
   /**
-   * Gets the 4x4 transformation matrix from the Actors's local coordinate
+   * Gets the 4x4 transformation matrix from the Actor's local coordinate
    * system to the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
    * The ECEF coordinate system is a right-handed system located at the center
@@ -199,7 +218,7 @@ public:
   FMatrix GetActorToEarthCenteredEarthFixedMatrix() const;
 
   /**
-   * Sets the 4x4 transformation matrix from the Actors's local coordinate
+   * Sets the 4x4 transformation matrix from the Actor's local coordinate
    * system to the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
    * The ECEF coordinate system is a right-handed system located at the center
@@ -275,6 +294,27 @@ public:
    */
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetAdjustOrientationForGlobeWhenMoving(bool Value);
+
+  /**
+   * Gets a flag indicating whether to update the globe anchor when the Actor's
+   * transform changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * for performance reasons.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetDetectTransformChanges() const;
+
+  /**
+   * Sets a flag indicating whether to update the globe anchor when the Actor's
+   * transform changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * for performance reasons.
+   */
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetDetectTransformChanges(bool Value);
 
 #pragma endregion
 
@@ -451,6 +491,7 @@ public:
    *   - If the origin of the CesiumGeoreference has changed, the Actor's root
    * transform is updated based on the ActorToEarthCenteredEarthFixedMatrix and
    * the new georeference origin.
+   *   - This synchronization works even if DetectTransformChanges is false.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Sync();

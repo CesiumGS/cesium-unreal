@@ -247,7 +247,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
   if (scaleIt == meshPrimitive.attributes.end()) {
     UE_LOG(
         LogCesium,
-        Warning,
+        Error,
         TEXT("Mesh primitive has no 'KHR_gaussian_splatting:SCALE' attribute"));
     return;
   }
@@ -256,7 +256,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
   if (scaleView.status() != CesiumGltf::AccessorViewStatus::Valid) {
     UE_LOG(
         LogCesium,
-        Warning,
+        Error,
         TEXT(
             "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
         scaleView.status());

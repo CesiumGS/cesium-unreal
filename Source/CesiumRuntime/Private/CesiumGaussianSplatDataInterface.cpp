@@ -159,10 +159,10 @@ FNDIGaussianSplatProxy::FNDIGaussianSplatProxy(
     UCesiumGaussianSplatDataInterface* InOwner)
     : Owner(InOwner) {}
 
-int32 FNDIGaussianSplatProxy::UploadToGPU(
+void FNDIGaussianSplatProxy::UploadToGPU(
     UCesiumGaussianSplatSubsystem* SplatSystem) {
   if (this->Owner == nullptr || !IsValid(SplatSystem)) {
-    return 0;
+    return;
   }
 
   UWorld* World = this->Owner->GetWorld();
@@ -197,7 +197,7 @@ int32 FNDIGaussianSplatProxy::UploadToGPU(
   }
 
   if (!this->bNeedsUpdate) {
-    return NumSplats;
+    return;
   }
 
   this->bNeedsUpdate = false;
@@ -220,7 +220,7 @@ int32 FNDIGaussianSplatProxy::UploadToGPU(
         this->ColorsBuffer.Release();
         this->SHNonZeroCoeffsBuffer.Release();
         this->SplatSHDegreesBuffer.Release();
-        this->SplatIndicesBuffer.Release();
+        this->TileIndicesBuffer.Release();
       }
 
       if (TotalSplatComponentsCount == 0) {
@@ -265,7 +265,7 @@ int32 FNDIGaussianSplatProxy::UploadToGPU(
               EPixelFormat::PF_A32B32G32R32F,
               BUF_Static);
         }
-        this->SplatIndicesBuffer.Initialize(
+        this->TileIndicesBuffer.Initialize(
             RHICmdList,
             TEXT("FNDIGaussianSplatProxy_SplatIndicesBuffer"),
             sizeof(uint32),
@@ -312,7 +312,7 @@ int32 FNDIGaussianSplatProxy::UploadToGPU(
                                        EResourceLockMode::RLM_WriteOnly))
                                  : nullptr;
         uint32* pIndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
-            this->SplatIndicesBuffer.Buffer,
+            this->TileIndicesBuffer.Buffer,
             0,
             NumSplats * sizeof(uint32),
             EResourceLockMode::RLM_WriteOnly));
@@ -382,13 +382,11 @@ int32 FNDIGaussianSplatProxy::UploadToGPU(
         if (TotalCoeffsCount > 0) {
           RHICmdList.UnlockBuffer(this->SHNonZeroCoeffsBuffer.Buffer);
         }
-        RHICmdList.UnlockBuffer(this->SplatIndicesBuffer.Buffer);
+        RHICmdList.UnlockBuffer(this->TileIndicesBuffer.Buffer);
         RHICmdList.UnlockBuffer(this->SplatSHDegreesBuffer.Buffer);
       }
     }
   });
-
-  return NumSplats;
 }
 
 UCesiumGaussianSplatDataInterface::UCesiumGaussianSplatDataInterface(
@@ -404,13 +402,9 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
   UNiagaraDataInterface::GetParameterDefinitionHLSL(ParamInfo, OutHLSL);
 
   OutHLSL.Appendf(
-      TEXT("int %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatsCount"));
-  OutHLSL.Appendf(
       TEXT("Buffer<uint> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatIndices"));
+      TEXT("_TileIndices"));
   OutHLSL.Appendf(
       TEXT("Buffer<float4> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
@@ -473,7 +467,7 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
         {TEXT("IndicesBuffer"),
          FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatIndices"))},
+             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileIndices"))},
         {TEXT("TileTransformsBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileTransforms"))},
@@ -483,9 +477,6 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
         {TEXT("SHDegrees"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatSHDegrees"))},
-        {TEXT("SplatCount"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatsCount"))},
         {TEXT("ScalesBuffer"),
          FStringFormatArg(ParamInfo.DataInterfaceHLSLSymbol + TEXT("_Scales"))},
         {TEXT("OrientationsBuffer"),
@@ -562,11 +553,10 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
   if (Params) {
     UCesiumGaussianSplatSubsystem* SplatSystem = this->GetSubsystem();
 
-    int32 NumSplats = DIProxy.UploadToGPU(SplatSystem);
+    DIProxy.UploadToGPU(SplatSystem);
 
-    Params->SplatsCount = NumSplats;
-    Params->SplatIndices =
-        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatIndicesBuffer.SRV);
+    Params->TileIndices =
+        FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.TileIndicesBuffer.SRV);
     Params->TileTransforms = FNiagaraRenderer::GetSrvOrDefaultFloat4(
         DIProxy.TileTransformsBuffer.SRV);
     Params->Positions =

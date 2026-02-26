@@ -142,6 +142,29 @@ void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
 #endif
 }
 
+bool UCesiumGlobeAnchorComponent::GetDetectTransformChanges() const {
+  return DetectTransformChanges;
+}
+
+void UCesiumGlobeAnchorComponent::SetDetectTransformChanges(bool Value) {
+  if (DetectTransformChanges == Value) {
+    return;
+  }
+  DetectTransformChanges = Value;
+  USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
+  if (!IsValid(pOwnerRoot)) {
+    return;
+  }
+  if (Value) {
+    pOwnerRoot->TransformUpdated.AddUObject(
+        this,
+        &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
+    this->_setNewActorToECEFFromRelativeTransform();
+  } else {
+    pOwnerRoot->TransformUpdated.RemoveAll(this);
+  }
+}
+
 bool UCesiumGlobeAnchorComponent::GetTeleportWhenUpdatingTransform() const {
   return this->TeleportWhenUpdatingTransform;
 }
@@ -558,7 +581,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (pOwnerRoot) {
+  if (pOwnerRoot && DetectTransformChanges) {
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);

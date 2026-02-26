@@ -70,6 +70,9 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       AdjustOrientationForGlobeWhenMoving));
   CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
       UCesiumGlobeAnchorComponent,
+      DetectTransformChanges));
+  CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
+      UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
 
   if (!bIsMultiSelect) {

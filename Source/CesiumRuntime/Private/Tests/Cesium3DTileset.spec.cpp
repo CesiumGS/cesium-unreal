@@ -3,6 +3,7 @@
 #if WITH_EDITOR
 
 #include "Cesium3DTileset.h"
+#include "CesiumCameraManager.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumLoadTestCore.h"
@@ -182,6 +183,57 @@ bool FCesium3DTilesetPhysicsWithSmallScale::RunTest(const FString& Parameters) {
   return RunLoadTest(
       GetBeautifiedTestName(),
       setupForPhysicsWithSmallScale,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesium3DTilesetCameraManagerCameras,
+    "Cesium.Unit.3DTileset.CameraManagerCameras",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter);
+
+static void setupForCameras(SceneGenerationContext& context) {
+  setupForPhysicsWithSmallScale(context);
+  ACesium3DTileset* tileset = context.tilesets[0];
+  ACesiumCameraManager* cameraManager = tileset->ResolveCameraManager();
+  cameraManager->UsePlayerCameras = false;
+  FCesiumCamera auxCamera(
+      FVector2D(1080.0, 768.0),
+      context.startPosition,
+      context.startRotation,
+      context.startFieldOfView);
+  cameraManager->AdditionalCameras.Add(auxCamera);
+}
+
+bool checkCameras(
+    SceneGenerationContext& creationContext,
+    SceneGenerationContext& playContext,
+    TestPass::TestingParameter parameter) {
+  FHitResult hit;
+
+  FVector lookDirection =
+      playContext.pawn->GetViewRotation().RotateVector(FVector::XAxisVector);
+
+  return UKismetSystemLibrary::LineTraceSingle(
+      playContext.world,
+      playContext.pawn->GetPawnViewLocation(),
+      playContext.pawn->GetPawnViewLocation() + lookDirection * 100000.0,
+      ETraceTypeQuery::TraceTypeQuery1,
+      true,
+      {},
+      EDrawDebugTrace::Persistent,
+      hit,
+      true);
+}
+
+bool FCesium3DTilesetCameraManagerCameras::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{"Refresh Pass", tilesetPass, checkCameras});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      setupForCameras,
       testPasses,
       TEST_SCREEN_WIDTH,
       TEST_SCREEN_HEIGHT);

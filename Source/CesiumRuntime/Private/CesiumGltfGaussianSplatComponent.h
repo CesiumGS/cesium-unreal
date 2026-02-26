@@ -41,19 +41,18 @@ struct FCesiumGltfGaussianSplatData {
   TArray<float> Orientations;
 
   /**
-   * The orientation data of this gaussian splat. This will have `NumSplats * 4`
+   * The color data of this gaussian splat. This will have `NumSplats * 4`
    * values, laid out in sequential RGBA order.
    */
   TArray<float> Colors;
 
   /**
-   * The orientation data of this gaussian splat. This will have `NumSplats *
-   * NumCoefficients * 4` values, laid out in sequential XYZW order. For
-   * example, for a splat with second degree spherical harmonics, the data will
-   * be laid out like:
-   * [ shd1_0, shd1_1, shd1_2, shd2_0, shd2_1, shd2_2, shd2_3, shd2_4 ]
-   * where each `shdX_X` value is a set of four XYZW values. This order then
-   * repeats for the next splat, and so on
+   * The spherical harmonic data of this gaussian splat. This will have
+   * `NumSplats * NumCoefficients * 4` values, laid out in sequential XYZW
+   * order. For example, for a splat with second degree spherical harmonics, the
+   * data will be laid out like: [ shd1_0, shd1_1, shd1_2, shd2_0, shd2_1,
+   * shd2_2, shd2_3, shd2_4 ] where each `shdX_X` value is a set of four XYZW
+   * values. This order then repeats for the next splat, and so on
    */
   TArray<float> SphericalHarmonics;
 
