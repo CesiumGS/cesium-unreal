@@ -464,7 +464,7 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void MoveToLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeight,
-      bool IgnoreHeightReference = false);
+      const bool IgnoreHeightReference = false);
 
   /**
    * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in
@@ -674,7 +674,7 @@ private:
    */
   bool _isUsingHeightReference() const;
   /**
-   * Find the location of the component directly above or below the component.
+   * Project the component's position onto the tileset specified by HeightReferenceTileset,
    * Returns whether an intersection was found.
    *
    * alternateActorPosition, if specified, performs the intersection test
