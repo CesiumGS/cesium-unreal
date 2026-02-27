@@ -410,8 +410,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
               realLongitudeLatitudeHeight));
 }
 
-double
-UCesiumGlobeAnchorComponent::GetHeight(const bool OverrideHeightReference) const {
+double UCesiumGlobeAnchorComponent::GetHeight(
+    const bool OverrideHeightReference) const {
   return this->GetLongitudeLatitudeHeight(OverrideHeightReference).Z;
 }
 
@@ -840,7 +840,9 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
   FVector llh = this->GetLongitudeLatitudeHeight(true);
   FVector groundPosition{};
-  if (this->_queryLongitudeLatitudeHeightPositionOnTileset(groundPosition, llh)) {
+  if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
+          groundPosition,
+          llh)) {
     this->_fixedHeightAboveHeightReference = llh.Z - groundPosition.Z;
     return true;
   } else {

@@ -116,7 +116,9 @@ public:
   /**
    * The frame of reference in which to interpret the object's height.
    *
-   * "Ellipsoid" indicates the object's height above the ellipsoid set on the CesiumGeoreference. The object will remain at this height unless it is otherwise changed.
+   * "Ellipsoid" indicates the object's height above the ellipsoid set on the
+   * CesiumGeoreference. The object will remain at this height unless it is
+   * otherwise changed.
    *
    * "Tileset" indicates a height above a given tileset. The
    * object will move vertically to maintain the specified height.
