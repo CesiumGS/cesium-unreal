@@ -24,6 +24,7 @@
 #include "EncodedFeaturesMetadata.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
+#include "ExtensionImageAssetUnreal.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "LoadGltfResult.h"
@@ -3662,6 +3663,8 @@ UCesiumGltfComponent::CreateOffGameThread(
       tileId = tileId.getParent();
     }
 
+    check(bbox);
+
     CesiumVectorData::GeoJsonDocument::fromUrl(
         getAsyncSystem(),
         getAssetAccessor(),
@@ -3671,7 +3674,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             tileId.y,
             tileId.x))
         .thenInWorkerThread(
-            [tileId, pGltf,
+            [tileId,
+             pGltf,
              asyncSystem = getAsyncSystem(),
              bbox = std::move(bbox)](
                 CesiumUtility::Result<CesiumVectorData::GeoJsonDocument>&&
@@ -3685,32 +3689,43 @@ UCesiumGltfComponent::CreateOffGameThread(
                     tileId.y,
                     tileId.x,
                     UTF8_TO_TCHAR(document.errors.format("").c_str()));
-                return asyncSystem.createResolvedFuture<
-                    std::vector<LoadedTextureResult>>({});
+                return asyncSystem
+                    .createResolvedFuture<std::vector<LoadedTextureResult>>(
+                        {});
               }
 
-              const FCesiumVectorLookup Lookup = *FCesiumVectorLookup::Create(
+              check(bbox);
+              const std::optional<FCesiumVectorLookup> MaybeLookup =
+                  FCesiumVectorLookup::Create(
                   document.value->rootObject,
-                  *bbox);
+                      *bbox);
+              check(MaybeLookup);
+              const FCesiumVectorLookup Lookup = *MaybeLookup;
               CesiumGltf::ImageAsset coordsAsset;
               coordsAsset.bytesPerChannel = 4;
               coordsAsset.channels = 4;
-              coordsAsset.pixelData.resize(
-                  Lookup.coords.size() * sizeof(float));
               coordsAsset.width = Lookup.textureSize.x;
               coordsAsset.height = Lookup.textureSize.y;
+              coordsAsset.pixelData.resize(
+                  coordsAsset.bytesPerChannel * coordsAsset.channels *
+                  coordsAsset.width * coordsAsset.height);
               std::memcpy(
                   coordsAsset.pixelData.data(),
                   Lookup.coords.data(),
                   Lookup.coords.size() * sizeof(float));
 
+              check(
+                  (coordsAsset.width * coordsAsset.height * 4 *
+                   sizeof(float)) >= coordsAsset.pixelData.size());
+
               CesiumGltf::ImageAsset indicesAsset;
               indicesAsset.bytesPerChannel = 4;
               indicesAsset.channels = 1;
-              indicesAsset.pixelData.resize(
-                  Lookup.indices.size() * sizeof(uint32_t));
               indicesAsset.width = Lookup.indices.size();
               indicesAsset.height = 1;
+              indicesAsset.pixelData.resize(
+                  indicesAsset.bytesPerChannel * indicesAsset.channels *
+                  indicesAsset.width * indicesAsset.height);
               std::memcpy(
                   indicesAsset.pixelData.data(),
                   Lookup.indices.data(),
@@ -3719,9 +3734,11 @@ UCesiumGltfComponent::CreateOffGameThread(
               CesiumGltf::ImageAsset polygonsAsset;
               polygonsAsset.bytesPerChannel = 1;
               polygonsAsset.channels = 1;
-              polygonsAsset.pixelData.resize(Lookup.cutFlags.size());
               polygonsAsset.width = Lookup.textureSize.x;
               polygonsAsset.height = Lookup.textureSize.y;
+              polygonsAsset.pixelData.resize(
+                  polygonsAsset.bytesPerChannel * polygonsAsset.channels *
+                  polygonsAsset.width * polygonsAsset.height);
               std::memcpy(
                   polygonsAsset.pixelData.data(),
                   Lookup.cutFlags.data(),
@@ -3772,65 +3789,66 @@ UCesiumGltfComponent::CreateOffGameThread(
                   std::move(*polygonsResult.Release())};
               return asyncSystem.createResolvedFuture(std::move(textures));
             })
-        .thenInMainThread(
-            [pGltf](std::vector<LoadedTextureResult>&& results) {
-              if (results.empty()) {
-                return;
-              }
-              std::vector<CesiumUtility::IntrusivePointer<
-                  CesiumTextureUtility::ReferenceCountedUnrealTexture>>
-                  textures;
-              for (LoadedTextureResult& result : results) {
-                CesiumUtility::IntrusivePointer<CesiumTextureUtility::ReferenceCountedUnrealTexture> pTexture = 
-                    CesiumTextureUtility::loadTextureGameThreadPart(
-                        &result);
-                pTexture->addReference();
-                textures.emplace_back(pTexture);
-              }
+        .thenInMainThread([pGltf](std::vector<LoadedTextureResult>&& results) {
+          if (results.empty()) {
+            return;
+          }
 
-              if (!IsValid(pGltf)) {
-                return;
-              }
+          std::vector<CesiumUtility::IntrusivePointer<
+              CesiumTextureUtility::ReferenceCountedUnrealTexture>>
+              textures;
+          pGltf->_rcTextures.reserve(3);
+          for (LoadedTextureResult& result : results) {
+            CesiumUtility::IntrusivePointer<
+                CesiumTextureUtility::ReferenceCountedUnrealTexture>
+                pTexture =
+                    CesiumTextureUtility::loadTextureGameThreadPart(&result);
+            check(IsValid(pTexture->getUnrealTexture()));
+            textures.emplace_back(pTexture);
+            pGltf->_rcTextures.emplace_back(pTexture);
+          }
 
-              check(textures.size() == 3);
+          if (!IsValid(pGltf)) {
+            return;
+          }
 
-              forEachPrimitiveComponent(
-                  pGltf,
-                  [textures](
-                      UCesiumGltfPrimitiveComponent* pPrimitive,
-                      UMaterialInstanceDynamic* pMaterial,
-                      UCesiumMaterialUserData* pCesiumData) {
-                    CesiumPrimitiveData& primData =
-                        pPrimitive->getPrimitiveData();
-                    FString name(TEXT("Vector"));
+          check(textures.size() == 3);
 
-                    for (int32 i = 0; i < pCesiumData->LayerNames.Num();
-                          ++i) {
-                      if (pCesiumData->LayerNames[i] != name) {
-                        continue;
-                      }
+          forEachPrimitiveComponent(
+              pGltf,
+              [textures](
+                  UCesiumGltfPrimitiveComponent* pPrimitive,
+                  UMaterialInstanceDynamic* pMaterial,
+                  UCesiumMaterialUserData* pCesiumData) {
+                CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
+                FString name(TEXT("Vector"));
 
-                      pMaterial->SetTextureParameterValueByInfo(
-                          FMaterialParameterInfo(
-                              "LineTexture",
-                              EMaterialParameterAssociation::LayerParameter,
-                              i),
-                          textures[0]->getUnrealTexture());
-                      pMaterial->SetTextureParameterValueByInfo(
-                          FMaterialParameterInfo(
-                              "IndicesTexture",
-                              EMaterialParameterAssociation::LayerParameter,
-                              i),
-                          textures[1]->getUnrealTexture());
-                      pMaterial->SetTextureParameterValueByInfo(
-                          FMaterialParameterInfo(
-                              "CutFlagsTexture",
-                              EMaterialParameterAssociation::LayerParameter,
-                              i),
-                          textures[2]->getUnrealTexture());
-                    }
-                  });
-            });
+                for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+                  if (pCesiumData->LayerNames[i] != name) {
+                    continue;
+                  }
+
+                  pMaterial->SetTextureParameterValueByInfo(
+                      FMaterialParameterInfo(
+                          "LineTexture",
+                          EMaterialParameterAssociation::LayerParameter,
+                          i),
+                      textures[0]->getUnrealTexture());
+                  pMaterial->SetTextureParameterValueByInfo(
+                      FMaterialParameterInfo(
+                          "IndicesTexture",
+                          EMaterialParameterAssociation::LayerParameter,
+                          i),
+                      textures[1]->getUnrealTexture());
+                  pMaterial->SetTextureParameterValueByInfo(
+                      FMaterialParameterInfo(
+                          "CutFlagsTexture",
+                          EMaterialParameterAssociation::LayerParameter,
+                          i),
+                      textures[2]->getUnrealTexture());
+                }
+              });
+        });
   }
 
   return pGltf;

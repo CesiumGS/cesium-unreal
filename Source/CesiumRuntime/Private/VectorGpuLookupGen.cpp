@@ -2,16 +2,34 @@
 
 #include <CesiumGeospatial/GlobeRectangle.h>
 #include <CesiumUtility/JsonValue.h>
+#include <CesiumUtility/Math.h>
 #include <CesiumVectorData/GeoJsonObject.h>
 
 #include "CesiumRuntime.h"
 #include "Misc/Optional.h"
 
 using namespace CesiumVectorData;
+using namespace CesiumUtility;
 
 // TODO:: FIX FOR DEGREES VS RADIANS!!
 
 namespace {
+glm::dvec3 deg2rad(const glm::dvec3& v) {
+  return glm::dvec3(
+      Math::degreesToRadians(v.x),
+      Math::degreesToRadians(v.y),
+      Math::degreesToRadians(v.z));
+}
+
+std::vector<glm::dvec3> deg2rad(const std::vector<glm::dvec3>& positions) {
+  std::vector<glm::dvec3> result;
+  result.reserve(positions.size());
+  for (const glm::dvec3& v : positions) {
+    result.emplace_back(deg2rad(v));
+  }
+  return result;
+}
+
 std::optional<std::vector<std::vector<bool>>>
 getCutFlagsMember(const GeoJsonPolygon& polygon) {
   CesiumUtility::JsonValue::Object::const_iterator it =
@@ -187,9 +205,7 @@ std::tuple<std::vector<glm::dvec3>, std::vector<bool>> clipPolygonToBoundingBox(
   return {clippedRing, clippingFlags};
 }
 
-
 } // namespace
-
 
 std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
     GeoJsonObject& rootObject,
@@ -207,10 +223,12 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
   const size_t gridSizeY = (size_t)std::ceil(
       std::sqrt(lineSegmentsCount / (double)targetLinePerCell));
   // console.log("Grid size (auto computed):", gridSizeX, gridSizeY);
+  UE_LOG(LogCesium, Display, TEXT("Grid size: %d, %d"), gridSizeX, gridSizeY);
 
   // chop into grid cells
   const double cellWidth = bbox.computeWidth() / (double)gridSizeX;
   const double cellHeight = bbox.computeHeight() / (double)gridSizeY;
+  UE_LOG(LogCesium, Display, TEXT("Cell size: %f, %f"), cellWidth, cellHeight);
   // console.log("Cell size:", cellWidth, cellHeight);
 
   // get a 2D array to hold line segments in each cell
@@ -239,7 +257,7 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
       const std::optional<std::vector<std::vector<bool>>> ringCutFlags =
           getCutFlagsMember(feature.geometry->get<GeoJsonPolygon>());
       for (size_t j = 0; j < coords.size(); j++) {
-        const std::vector<glm::dvec3>& ring = coords[j];
+        const std::vector<glm::dvec3>& ring = deg2rad(coords[j]);
 
         double minX = ring[0].x;
         double maxX = ring[0].x;
@@ -286,14 +304,14 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
             std::vector<bool> flags;
             if (inGridClip) {
               auto [p, flags] = clipPolygonToBoundingBox(
-                  coords[j],
+                  deg2rad(coords[j]),
                   (*ringCutFlags)[j],
                   cellMinX,
                   cellMaxX,
                   cellMinY,
                   cellMaxY);
             } else {
-              p = coords[j];
+              p = deg2rad(coords[j]);
               flags = ringCutFlags ? ringCutFlags->at(j)
                                    : std::vector<bool>(coords[j].size(), false);
             }
@@ -305,7 +323,9 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
                 const bool flag0 = flags[k];
                 const bool flag1 = flags[k + 1];
                 const bool flagLine = flag0 && flag1 ? 1 : 0;
+                check(c < grid.size() && r < grid[c].size());
                 grid[c][r].push_back(glm::dvec4(p1.x, p1.y, p2.x, p2.y));
+                check(c < gridCutFlags.size() && r < gridCutFlags[c].size());
                 gridCutFlags[c][r].push_back(flagLine);
               }
               numOfLineSegmentsGeoJSON +=
@@ -318,7 +338,7 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
 
     if (feature.geometry->isType<GeoJsonLineString>()) {
       const std::vector<glm::dvec3>& coords =
-          feature.geometry->get<GeoJsonLineString>().coordinates;
+          deg2rad(feature.geometry->get<GeoJsonLineString>().coordinates);
       // iterate through line segments
       // duplicate line segments that cross cell boundaries
       for (size_t j = 0; j < coords.size() - 1; j++) {
@@ -352,11 +372,14 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
         // which is not always true. This is for convenience here.
         if (cellX1 == cellX2 && cellY1 == cellY2) {
           // endpoints in the same cell
+          check(cellX1 < grid.size() && cellY1 < grid[cellX1].size());
           grid[cellX1][cellY1].push_back(glm::dvec4(p1.x, p1.y, p2.x, p2.y));
           numOfLineSegmentsGeoJSON += 1;
         } else {
           // endpoints in different cells
+          check(cellX1 < grid.size() && cellY1 < grid[cellX1].size());
           grid[cellX1][cellY1].push_back(glm::dvec4(p1.x, p1.y, p2.x, p2.y));
+          check(cellX2 < grid.size() && cellY1 < grid[cellX2].size());
           grid[cellX2][cellY2].push_back(glm::dvec4(p1.x, p1.y, p2.x, p2.y));
           numOfLineSegmentsGeoJSON +=
               2; // account for the duplicated line segment
@@ -364,6 +387,12 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
       }
     }
   }
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Num line segments after grid assignment: %d"),
+      numOfLineSegmentsGeoJSON);
 
   // console.log(
   //   "Number of line segments after grid assignment:",
@@ -386,7 +415,7 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
       std::ceil(std::log2(std::ceil(std::sqrt(numOfLineSegmentsGeoJSON)))));
   const size_t textureHeight = std::pow(
       2,
-      std::ceil(std::log2(std::ceil(numOfLineSegmentsGeoJSON / textureWidth))));
+      std::ceil(std::log2(std::ceil(numOfLineSegmentsGeoJSON / (double)textureWidth))));
   const size_t numOfLineSegments = textureWidth * textureHeight;
 
   UE_LOG(
@@ -410,6 +439,7 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
   int index = 0;
   for (size_t j = 0; j < gridSizeY; j++) {
     for (size_t i = 0; i < gridSizeX; i++) {
+      check(i < grid.size() && j < grid[i].size());
       std::vector<glm::dvec4>& cellLines = grid[i][j];
       for (size_t k = 0; k < cellLines.size(); k++) {
         double x1, y1, x2, y2;
@@ -430,14 +460,19 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
         coords[index * 4 + 2] = x2; // x2
         coords[index * 4 + 3] = y2; // y2
 
+        check(index * 4 < coords.size() && index * 4 + 3 < coords.size());
+
         if (gridCutFlags[i][j].size() > k) {
+          check(k < gridCutFlags[i][j].size());
           cutFlags[index] = gridCutFlags[i][j][k];
+          check(index < cutFlags.size());
         }
 
         index++;
       }
       // record the end index of this cell
       indices[2 + j * gridSizeX + i] = index;
+      check(2 + j * gridSizeX + i < indices.size());
     }
   }
 
@@ -448,7 +483,9 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
     coords[index * 4 + 1] = -1.0;
     coords[index * 4 + 2] = -1.0;
     coords[index * 4 + 3] = -1.0;
+    check(index * 4 < coords.size() && index * 4 + 3 < coords.size());
     cutFlags[index] = 2;
+    check(index < cutFlags.size());
   }
 
   return FCesiumVectorLookup{

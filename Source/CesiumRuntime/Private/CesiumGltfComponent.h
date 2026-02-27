@@ -153,4 +153,7 @@ private:
   UTexture2D* Transparent1x1 = nullptr;
 
   std::vector<CesiumGltf::ImageAsset> _geojsonTextures;
+  std::vector<CesiumUtility::IntrusivePointer<
+      CesiumTextureUtility::ReferenceCountedUnrealTexture>>
+      _rcTextures;
 };
