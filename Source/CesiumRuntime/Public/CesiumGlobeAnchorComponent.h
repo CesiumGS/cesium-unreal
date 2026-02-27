@@ -17,7 +17,7 @@ class ACesium3DTileset;
 UENUM(BlueprintType)
 enum class ECesiumHeightReferenceMode : uint8 {
   /**
-   * Height is interpreted relative to ellipsoid.
+   * Height is interpreted relative to the ellipsoid.
    */
   Ellipsoid UMETA(DisplayName = "Ellipsoid"),
   /**
