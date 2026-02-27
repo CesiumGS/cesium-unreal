@@ -97,7 +97,11 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
 
 void UCesiumGlobeAnchorComponent::SetHeightReference(
     ECesiumHeightReferenceMode NewHeightReference) {
-  this->HeightReference = NewHeightReference;
+
+  if (this->HeightReference != NewHeightReference) {
+    this->HeightReference = NewHeightReference;
+    this->_setHeightFromReference();
+  }
 }
 
 ECesiumHeightReferenceMode
@@ -111,8 +115,11 @@ UCesiumGlobeAnchorComponent::GetHeightReferenceTileset() const {
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(
-    TSoftObjectPtr<ACesium3DTileset> NewTileset) {
-  this->HeightReferenceTileset = NewTileset;
+    const TSoftObjectPtr<ACesium3DTileset>& NewTileset) {
+  if (this->HeightReferenceTileset != NewTileset) {
+    this->HeightReferenceTileset = NewTileset;
+    this->_setHeightFromReference();
+  }
 }
 
 void UCesiumGlobeAnchorComponent::SetTilesetHeightUpdateInterval(
@@ -830,6 +837,17 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
+bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
+  FVector llh = this->GetLongitudeLatitudeHeight(true);
+  FVector groundPosition{};
+  if (_queryLongitudeLatitudeHeightPositionOnTileset(groundPosition, llh)) {
+    _fixedHeightAboveHeightReference = llh.Z - groundPosition.Z;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool UCesiumGlobeAnchorComponent::_isUsingHeightReference() const {
   return this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset &&
          this->GetHeightReferenceTileset() != nullptr;
@@ -900,17 +918,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 #if WITH_EDITOR
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
       this->_isUsingHeightReference()) {
-    // update the height-above-reference based on the new transform.
-    FVector positionOnTileset;
-    if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
-            positionOnTileset)) {
-
-      FVector realLLH =
-          this->GetEllipsoid()
-              ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
-                  this->GetEarthCenteredEarthFixedPosition());
-      this->_fixedHeightAboveHeightReference = realLLH.Z - positionOnTileset.Z;
-    }
+    _setHeightFromReference();
   }
 #endif
 }

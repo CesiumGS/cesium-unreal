@@ -241,7 +241,7 @@ public:
   TSoftObjectPtr<ACesium3DTileset> GetHeightReferenceTileset() const;
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetHeightReferenceTileset(TSoftObjectPtr<ACesium3DTileset> NewTileset);
+  void SetHeightReferenceTileset(const TSoftObjectPtr<ACesium3DTileset>& NewTileset);
 
   UFUNCTION(BlueprintGetter)
   int GetTilesetHeightUpdateInterval() const;
@@ -670,9 +670,15 @@ private:
   float _fixedHeightAboveHeightReference = 0.0f;
 
   /**
+   * Calculate correct Height from the actor's position based on the HeightReference and tileset.
+   */
+  bool _setHeightFromReference();
+
+  /**
    * Determines if HeightReference is Tileset and HeightReferenceTileset is set.
    */
   bool _isUsingHeightReference() const;
+
   /**
    * Project the component's position onto the tileset specified by
    * HeightReferenceTileset, Returns whether an intersection was found.
