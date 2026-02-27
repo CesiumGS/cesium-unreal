@@ -12,8 +12,7 @@ class ACesiumGeoreference;
 class ACesium3DTileset;
 
 /**
- * When updating actor's height during movement or LOD transitions, controls
- * whether to maintain height relative to the ellipsoid or tileset.
+ * The frame of reference from which to interpret a given height value.
  */
 UENUM(BlueprintType)
 enum class ECesiumHeightReferenceMode : uint8 {
