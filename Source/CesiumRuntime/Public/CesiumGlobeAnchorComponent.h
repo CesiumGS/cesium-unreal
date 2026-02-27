@@ -12,13 +12,12 @@ class ACesiumGeoreference;
 class ACesium3DTileset;
 
 /**
- * When updating actor's height during movement or LOD transitions, controls
- * whether to maintain height relative to the ellipsoid or tileset.
+ * The frame of reference from which to interpret a given height value.
  */
 UENUM(BlueprintType)
 enum class ECesiumHeightReferenceMode : uint8 {
   /**
-   * Height is interpreted relative to ellipsoid.
+   * Height is interpreted relative to the ellipsoid.
    */
   Ellipsoid UMETA(DisplayName = "Ellipsoid"),
   /**
@@ -64,14 +63,12 @@ private:
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
   /**
-   * Reference used when updating height during movement or LOD transitions.
+   * The frame of reference in which to interpret the object's height.
    *
-   * ELLIPSOID indicates that the object will maintain a fixed height above the
-   * ellipsoid. No special handling is performed.
+   * "Ellipsoid" indicates the object's height above the ellipsoid set on the CesiumGeoreference. The object will remain at this height unless it is otherwise changed.
    *
-   * TILESET causes the object to maintain its height above the tileset. The
-   * object may move vertically to maintain a fixed height above the terrain or
-   * other geometry below the object.
+   * "Tileset" indicates a height above a given tileset. The
+   * object will move vertically to maintain the specified height.
    */
   UPROPERTY()
   ECesiumHeightReferenceMode HeightReference =
