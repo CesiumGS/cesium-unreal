@@ -396,7 +396,7 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   FVector tilesetPosition{};
 
   if (!IgnoreHeightReference && this->_isUsingHeightReference() &&
-      _queryLongitudeLatitudeHeightPositionOnTileset(
+      this->_queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {
     this->_fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
@@ -840,8 +840,8 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
   FVector llh = this->GetLongitudeLatitudeHeight(true);
   FVector groundPosition{};
-  if (_queryLongitudeLatitudeHeightPositionOnTileset(groundPosition, llh)) {
-    _fixedHeightAboveHeightReference = llh.Z - groundPosition.Z;
+  if (this->_queryLongitudeLatitudeHeightPositionOnTileset(groundPosition, llh)) {
+    this->_fixedHeightAboveHeightReference = llh.Z - groundPosition.Z;
     return true;
   } else {
     return false;
@@ -918,7 +918,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 #if WITH_EDITOR
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
       this->_isUsingHeightReference()) {
-    _setHeightFromReference();
+    this->_setHeightFromReference();
   }
 #endif
 }

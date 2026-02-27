@@ -433,6 +433,10 @@ public:
    * Gets the height in meters above the ellipsoid or tileset, depending on
    * the value of HeightReference.
    *
+   * When OverrideHeightReference is true, this returns the height above the
+   * reference tileset, if set. Otherwise, it will return the height above
+   * the ellipsoid.
+   *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
