@@ -399,9 +399,9 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
       _queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {
-    _fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
+    this->_fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
     realLongitudeLatitudeHeight.Z =
-        tilesetPosition.Z + _fixedHeightAboveHeightReference;
+        tilesetPosition.Z + this->_fixedHeightAboveHeightReference;
   }
 
   this->MoveToEarthCenteredEarthFixedPosition(
@@ -411,8 +411,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
 }
 
 double
-UCesiumGlobeAnchorComponent::GetHeight(const bool IgnoreHeightReference) const {
-  return this->GetLongitudeLatitudeHeight(IgnoreHeightReference).Z;
+UCesiumGlobeAnchorComponent::GetHeight(const bool OverrideHeightReference) const {
+  return this->GetLongitudeLatitudeHeight(OverrideHeightReference).Z;
 }
 
 namespace {

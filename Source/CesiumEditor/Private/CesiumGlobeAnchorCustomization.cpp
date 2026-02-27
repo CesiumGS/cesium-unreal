@@ -126,15 +126,6 @@ void FCesiumGlobeAnchorCustomization::CreateHeightReferencePropertyEditor(
 
   Group.AddPropertyRow(HeightReferenceProperty.ToSharedRef());
 
-  TSharedPtr<IPropertyHandle> TilesetHeightUpdateIntervalProperty =
-      DetailBuilder.AddObjectPropertyData(
-          View,
-          GET_MEMBER_NAME_CHECKED(
-              UCesiumGlobeAnchorDerivedProperties,
-              TilesetHeightUpdateInterval));
-
-  Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
-
   TSharedPtr<IPropertyHandle> TilesetProperty =
       DetailBuilder.AddObjectPropertyData(
           View,
@@ -143,6 +134,15 @@ void FCesiumGlobeAnchorCustomization::CreateHeightReferencePropertyEditor(
               HeightReferenceTileset));
 
   Group.AddPropertyRow(TilesetProperty.ToSharedRef());
+
+  TSharedPtr<IPropertyHandle> TilesetHeightUpdateIntervalProperty =
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(
+              UCesiumGlobeAnchorDerivedProperties,
+              TilesetHeightUpdateInterval));
+
+  Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
 }
 
 void FCesiumGlobeAnchorCustomization::CreatePositionEarthCenteredEarthFixed(
