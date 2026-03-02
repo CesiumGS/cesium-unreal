@@ -25,6 +25,7 @@
 #include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SSplitter.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 
@@ -188,9 +189,12 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
                           .Margin(FMargin(0.f, 10.f))]];
   pRight->AddSlot()[this->_pShaderPreview.ToSharedRef()];
 
-  TSharedRef<SHorizontalBox> content = SNew(SHorizontalBox);
-  content->AddSlot()[pLeft];
-  content->AddSlot()[pRight];
+  TSharedRef<SSplitter> content =
+      SNew(SSplitter)
+          .Orientation(EOrientation::Orient_Horizontal)
+          .PhysicalSplitterHandleSize(2.0f);
+  content->AddSlot().Value(0.6f)[pLeft];
+  content->AddSlot().Value(0.4f)[pRight];
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -199,7 +203,7 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
           .ClientSize(FVector2D(
-              1000,
+              1200,
               800))[SNew(SBorder)
                         .Visibility(EVisibility::Visible)
                         .BorderImage(FAppStyle::GetBrush("Menu.Background"))
@@ -210,8 +214,8 @@ void CesiumVoxelShaderBuilder::SyncAndRebuildUI() {
   this->_pVoxelClass.Reset();
   this->_stringMap.Empty();
 
-  /* TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
-   pContent->ClearChildren();*/
+  TSharedRef<SScrollBox> pContent = this->_pVoxelClassContent.ToSharedRef();
+  pContent->ClearChildren();
 
   this->gatherVoxelPropertiesAndStatistics();
   this->createVoxelClassDropdown();
@@ -220,93 +224,6 @@ void CesiumVoxelShaderBuilder::SyncAndRebuildUI() {
       this->_pVoxelMetadataComponent.IsValid()
           ? this->_pVoxelMetadataComponent->getCustomShaderPreview()
           : FString();
-
-  /*
-
-
-   TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
-
-   pVerticalBox->AddSlot().AutoHeight()
-       [SNew(SHeader)
-            .Content()[SNew(STextBlock)
-                           .TextStyle(FCesiumEditorModule::GetStyle(),
- "Heading") .Text(FText::FromString(TEXT("glTF Features")))
-                           .Margin(FMargin(0.f, 10.f))]];
-
-   if (!this->_featureIdSets.IsEmpty()) {
-     TSharedRef<SScrollBox> pGltfFeatures = SNew(SScrollBox);
-     for (const FeatureIdSetView& featureIdSet : this->_featureIdSets) {
-       this->createGltfFeatureIdSetDropdown(pGltfFeatures, featureIdSet);
-     }
-     pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
-   } else {
-     pVerticalBox->AddSlot().AutoHeight()
-         [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
-          SHorizontalBox::Slot()
-              [SNew(STextBlock)
-                   .AutoWrapText(true)
-                   .Text(FText::FromString(TEXT(
-                       "This tileset does not contain any glTF features in this
- view.")))]];
-   }
-
-   pVerticalBox->AddSlot().AutoHeight()
-       [SNew(SHeader)
-            .Content()[SNew(STextBlock)
-                           .TextStyle(FCesiumEditorModule::GetStyle(),
- "Heading") .Text(FText::FromString(TEXT("glTF Metadata")))
-                           .Margin(FMargin(0.f, 10.f))]];
-
-   if (!this->_metadataSources.IsEmpty()) {
-     TSharedRef<SScrollBox> pGltfContent = SNew(SScrollBox);
-     for (const PropertySourceView& source : this->_metadataSources) {
-       this->createGltfPropertySourceDropdown(pGltfContent, source);
-     }
-     pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
-   } else {
-     pVerticalBox->AddSlot().AutoHeight()
-         [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
-          SHorizontalBox::Slot()
-              [SNew(STextBlock)
-                   .AutoWrapText(true)
-                   .Text(FText::FromString(TEXT(
-                       "This tileset does not contain any glTF metadata in this
- view.")))]];
-   }
-
-   if (!this->_statisticsClasses.IsEmpty()) {
-     pVerticalBox->AddSlot().AutoHeight()
-         [SNew(SHeader).Content()
-              [SNew(STextBlock)
-                   .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                   .Text(FText::FromString(TEXT("Tileset Statistics")))
-                   .Margin(FMargin(0.f, 10.f))]];
-     TSharedRef<SScrollBox> pStatisticsContent = SNew(SScrollBox);
-     for (const ClassStatisticsView& theClass : this->_statisticsClasses) {
-       this->createClassStatisticsDropdown(pStatisticsContent, theClass);
-     }
-     pVerticalBox->AddSlot().AutoHeight()[pStatisticsContent];
-   }
-
- pVerticalBox->AddSlot()
- .Padding(0.0f, 10.0f)
- .VAlign(VAlign_Bottom)
- .HAlign(HAlign_Center)
- [SNew(SButton)
- .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
- .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
- .ContentPadding(FMargin(1.0, 1.0))
- .HAlign(EHorizontalAlignment::HAlign_Center)
- .Text(FText::FromString(TEXT("Refresh with Current View")))
- .ToolTipText(FText::FromString(TEXT(
- "Refreshes the lists with the feature ID sets and metadata from currently
- loaded tiles in the ACesium3DTileset."))) .OnClicked_Lambda([this]() {
- this->SyncAndRebuildUI();
- return FReply::Handled();
- })];
-
- pContent->AddSlot()[pVerticalBox];
- */
 }
 
 void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
@@ -370,7 +287,7 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
   }
 
   TSharedRef<FString> pClassId = getSharedRef(FString(voxelClassId.c_str()));
-  TArray<TSharedRef<VoxelPropertyView>> properties;
+  TArray<TSharedRef<VoxelProperty>> properties;
 
   for (const auto& propertyIt : voxelClass.properties) {
     FCesiumMetadataValueType valueType =
@@ -378,7 +295,7 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
 
     FString propertyId = propertyIt.first.c_str();
 
-    VoxelPropertyView property{.pId = getSharedRef(propertyId)};
+    VoxelProperty property{.pId = getSharedRef(propertyId)};
 
     FCesiumMetadataPropertyDetails& propertyDetails = property.propertyDetails;
     propertyDetails.SetValueType(valueType);
@@ -446,15 +363,13 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
           propertyStatistics.sum);
       property.statistics = std::move(statisticsView);
 
-      properties.Add(MakeShared<VoxelPropertyView>(std::move(property)));
+      properties.Add(MakeShared<VoxelProperty>(std::move(property)));
     }
   }
 
-  VoxelClassView classView{
-      .pId = pClassId,
-      .properties = std::move(properties)};
+  VoxelClass classView{.pId = pClassId, .properties = std::move(properties)};
 
-  this->_pVoxelClass = MakeUnique<VoxelClassView>(std::move(classView));
+  this->_pVoxelClass = MakeUnique<VoxelClass>(std::move(classView));
 }
 
 void CesiumVoxelShaderBuilder::syncPropertyEncodingDetails() {
@@ -469,17 +384,17 @@ void CesiumVoxelShaderBuilder::syncPropertyEncodingDetails() {
 
   for (const FCesiumPropertyAttributePropertyDescription& property :
        description.Properties) {
-    const TSharedRef<VoxelPropertyView>* ppPropertyView =
+    const TSharedRef<VoxelProperty>* ppPropertyView =
         this->_pVoxelClass->properties.FindByPredicate(
             [&name = property.Name](
-                const TSharedRef<VoxelPropertyView>& pPropertyView) {
+                const TSharedRef<VoxelProperty>& pPropertyView) {
               return *pPropertyView->pId == name;
             });
     if (!ppPropertyView) {
       continue;
     }
 
-    VoxelPropertyView& propertyView = **ppPropertyView;
+    VoxelProperty& propertyView = **ppPropertyView;
     auto& conversionMethods = propertyView.encodingDetails.conversionMethods;
     int32 conversionIndex = INDEX_NONE;
     for (int32 i = 0; i < conversionMethods.Num(); i++) {
@@ -519,18 +434,16 @@ TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createStatisticRow(
       FText::FromString(TEXT(
           "Add this property statistic to the tileset's CesiumVoxelMetadataComponent.")),
       TAttribute<bool>::Create([this, pItem]() {
-        return false; // return this->findOnComponent(pItem) ==
-                      // ComponentSearchResult::NoMatch;
+        return this->findOnComponent(pItem) == ComponentSearchResult::NoMatch;
       }));
 
   TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
       FSimpleDelegate::CreateLambda(
           [this, pItem]() { this->removeStatistic(pItem); }),
       FText::FromString(TEXT(
-          "Remove this property statistic from the tileset's CesiumFeaturesMetadataComponent.")),
+          "Remove this property statistic from the tileset's CesiumVoxelMetadataComponent")),
       TAttribute<bool>::Create([this, pItem]() {
-        return false; // return this->findOnComponent(pItem) !=
-                      // ComponentSearchResult::NoMatch;
+        return this->findOnComponent(pItem) != ComponentSearchResult::NoMatch;
       }));
 
   return SNew(STableRow<TSharedRef<StatisticView>>, list)
@@ -565,232 +478,284 @@ TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createStatisticRow(
                             EVerticalAlignment::VAlign_Center)[pRemoveButton]]];
 }
 
-// TSharedRef<ITableRow>
-// CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
-//     TSharedRef<PropertyInstance> pItem,
-//     const TSharedRef<STableViewBase>& list) {
-//   FString typeString = pItem->propertyDetails.GetValueType().ToString();
-//   if (pItem->propertyDetails.bIsNormalized) {
-//     typeString += TEXT(" (Normalized)");
-//   }
-//
-//   if (pItem->propertyDetails.bIsArray) {
-//     int64 arraySize = pItem->propertyDetails.ArraySize;
-//     typeString += arraySize > 0
-//                       ? FString::Printf(TEXT(" with %d elements"), arraySize)
-//                       : TEXT(" of variable size");
-//   }
-//
-//   TArray<FString> qualifierList;
-//   if (pItem->propertyDetails.bHasOffset) {
-//     qualifierList.Add("Offset");
-//   }
-//   if (pItem->propertyDetails.bHasScale) {
-//     qualifierList.Add("Scale");
-//   }
-//   if (pItem->propertyDetails.bHasNoDataValue) {
-//     qualifierList.Add("'No Data' Value");
-//   }
-//   if (pItem->propertyDetails.bHasDefaultValue) {
-//     qualifierList.Add("Default Value");
-//   }
-//
-//   FString qualifierString =
-//       qualifierList.IsEmpty()
-//           ? FString()
-//           : "Contains " + FString::Join(qualifierList, TEXT(", "));
-//
-//   TSharedRef<SHorizontalBox> content =
-//       SNew(SHorizontalBox) +
-//       SHorizontalBox::Slot().FillWidth(0.45f).Padding(5.0f).VAlign(
-//           EVerticalAlignment::VAlign_Center)
-//           [SNew(STextBlock)
-//                .AutoWrapText(true)
-//                .Text(FText::FromString(typeString))
-//                .ToolTipText(FText::FromString(FString(
-//                    "The type of the property as defined in the
-//                    EXT_structural_metadata extension.")))] +
-//       SHorizontalBox::Slot()
-//           .AutoWidth()
-//           .MaxWidth(200.0f)
-//           .Padding(5.0f)
-//           .HAlign(EHorizontalAlignment::HAlign_Left)
-//           .VAlign(EVerticalAlignment::VAlign_Center)
-//               [SNew(STextBlock)
-//                    .AutoWrapText(true)
-//                    .Text(FText::FromString(qualifierString))
-//                    .ToolTipText(FText::FromString(
-//                        "Notable qualities of the property that require
-//                        additional nodes to be generated for the
-//                        material."))];
-//
-//   if (pItem->encodingDetails) {
-//     FCesiumMetadataEncodingDetails bestFitEncodingDetails =
-//         FCesiumMetadataEncodingDetails::GetBestFitForProperty(
-//             pItem->propertyDetails);
-//
-//     createEnumComboBox<ECesiumEncodedMetadataConversion>(
-//         pItem->encodingDetails->pConversionCombo,
-//         pItem->encodingDetails->conversionMethods,
-//         pItem->encodingDetails->pConversionSelection
-//             ? *pItem->encodingDetails->pConversionSelection
-//             : bestFitEncodingDetails.Conversion,
-//         FString());
-//
-//     createEnumComboBox<ECesiumEncodedMetadataType>(
-//         pItem->encodingDetails->pEncodedTypeCombo,
-//         this->_encodedTypeOptions,
-//         pItem->encodingDetails->pEncodedTypeSelection
-//             ? *pItem->encodingDetails->pEncodedTypeSelection
-//             : bestFitEncodingDetails.Type,
-//         TEXT(
-//             "The type to which to coerce the property's data. Affects the
-//             texture format that is used to encode the data."));
-//
-//     createEnumComboBox<ECesiumEncodedMetadataComponentType>(
-//         pItem->encodingDetails->pEncodedComponentTypeCombo,
-//         this->_encodedComponentTypeOptions,
-//         pItem->encodingDetails->pEncodedComponentTypeSelection
-//             ? *pItem->encodingDetails->pEncodedComponentTypeSelection
-//             : bestFitEncodingDetails.ComponentType,
-//         TEXT(
-//             "The component type to which to coerce the property's data.
-//             Affects the texture format that is used to encode the data."));
-//
-//     if (pItem->encodingDetails->pConversionCombo.IsValid()) {
-//       content->AddSlot().FillWidth(0.6).Padding(5.0f).VAlign(
-//           EVerticalAlignment::VAlign_Center)
-//           [pItem->encodingDetails->pConversionCombo->AsShared()];
-//     }
-//
-//     auto visibilityLambda = TAttribute<EVisibility>::Create([pItem]() {
-//       if (!pItem->encodingDetails) {
-//         return EVisibility::Hidden;
-//       }
-//
-//       bool show = false;
-//       if (pItem->encodingDetails->pConversionCombo.IsValid()) {
-//         show = pItem->encodingDetails->pConversionCombo->GetSelectedItem()
-//                    .IsValid();
-//       }
-//       return show ? EVisibility::Visible : EVisibility::Hidden;
-//     });
-//
-//     if (pItem->encodingDetails->pEncodedTypeCombo.IsValid()) {
-//       pItem->encodingDetails->pEncodedTypeCombo->SetVisibility(
-//           visibilityLambda);
-//       content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
-//           EVerticalAlignment::VAlign_Center)
-//           [pItem->encodingDetails->pEncodedTypeCombo->AsShared()];
-//     }
-//
-//     if (pItem->encodingDetails->pEncodedComponentTypeCombo.IsValid()) {
-//       pItem->encodingDetails->pEncodedComponentTypeCombo->SetVisibility(
-//           visibilityLambda);
-//       content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
-//           EVerticalAlignment::VAlign_Center)
-//           [pItem->encodingDetails->pEncodedComponentTypeCombo->AsShared()];
-//     }
-//   }
-//
-//   TSharedRef<SWidget> pAddButton =
-//   PropertyCustomizationHelpers::MakeAddButton(
-//       FSimpleDelegate::CreateLambda(
-//           [this, pItem]() { this->registerPropertyInstance(pItem); }),
-//       FText::FromString(TEXT(
-//           "Add this property to the tileset's
-//           CesiumFeaturesMetadataComponent.")),
-//       TAttribute<bool>::Create([this, pItem]() {
-//         FCesiumMetadataEncodingDetails selectedEncodingDetails =
-//             getSelectedEncodingDetails(
-//                 pItem->encodingDetails->pConversionCombo,
-//                 pItem->encodingDetails->pEncodedTypeCombo,
-//                 pItem->encodingDetails->pEncodedComponentTypeCombo);
-//         return this->findOnComponent(pItem, false) ==
-//                    ComponentSearchResult::NoMatch &&
-//                validateEncodingDetails(selectedEncodingDetails);
-//       }));
-//   pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
-//     return this->findOnComponent(pItem, false) ==
-//     ComponentSearchResult::NoMatch
-//                ? EVisibility::Visible
-//                : EVisibility::Collapsed;
-//   }));
-//
-//   TSharedRef<SWidget> pOverwriteButton =
-//       PropertyCustomizationHelpers::MakeEditButton(
-//           FSimpleDelegate::CreateLambda(
-//               [this, pItem]() { this->registerPropertyInstance(pItem); }),
-//           FText::FromString(TEXT(
-//               "Overwrites the existing property on the tileset's
-//               CesiumFeaturesMetadataComponent " "with the same name.")),
-//           TAttribute<bool>::Create([this, pItem]() {
-//             FCesiumMetadataEncodingDetails selectedEncodingDetails =
-//                 getSelectedEncodingDetails(
-//                     pItem->encodingDetails->pConversionCombo,
-//                     pItem->encodingDetails->pEncodedTypeCombo,
-//                     pItem->encodingDetails->pEncodedComponentTypeCombo);
-//             return this->findOnComponent(pItem, true) ==
-//                        ComponentSearchResult::PartialMatch &&
-//                    validateEncodingDetails(selectedEncodingDetails);
-//           }));
-//   pOverwriteButton->SetVisibility(TAttribute<EVisibility>::Create([this,
-//                                                                    pItem]() {
-//     return this->findOnComponent(pItem, true) !=
-//     ComponentSearchResult::NoMatch
-//                ? EVisibility::Visible
-//                : EVisibility::Collapsed;
-//   }));
-//
-//   TSharedRef<SWidget> pRemoveButton =
-//   PropertyCustomizationHelpers::MakeRemoveButton(
-//       FSimpleDelegate::CreateLambda(
-//           [this, pItem]() { this->removePropertyInstance(pItem); }),
-//       FText::FromString(TEXT(
-//           "Remove this property from the tileset's
-//           CesiumFeaturesMetadataComponent.")),
-//       TAttribute<bool>::Create([this, pItem]() {
-//         return this->findOnComponent(pItem, false) ==
-//                ComponentSearchResult::ExactMatch;
-//       }));
-//
-//   content->AddSlot()
-//       .AutoWidth()
-//       .HAlign(EHorizontalAlignment::HAlign_Right)
-//       .VAlign(EVerticalAlignment::VAlign_Center)[pAddButton];
-//   content->AddSlot()
-//       .AutoWidth()
-//       .HAlign(EHorizontalAlignment::HAlign_Right)
-//       .VAlign(EVerticalAlignment::VAlign_Center)[pOverwriteButton];
-//   content->AddSlot()
-//       .AutoWidth()
-//       .HAlign(EHorizontalAlignment::HAlign_Right)
-//       .VAlign(EVerticalAlignment::VAlign_Center)[pRemoveButton];
-//
-//   return SNew(STableRow<TSharedRef<PropertyInstance>>, list)
-//       .Content()[SNew(SBox)
-//                      .HAlign(EHorizontalAlignment::HAlign_Fill)
-//                      .Content()[content]];
-// }
+TSharedRef<SExpandableArea>
+CesiumVoxelShaderBuilder::createPropertyStatisticsDropdown(
+    TSharedRef<VoxelProperty> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  return SNew(SExpandableArea)
+      .InitiallyCollapsed(true)
+      .HeaderContent()[SNew(STextBlock).Text(FText::FromString(*pItem->pId))]
+      .BodyContent()[SNew(SListView<TSharedRef<StatisticView>>)
+                         .ListItemsSource(&pItem->statistics)
+                         .SelectionMode(ESelectionMode::None)
+                         .OnGenerateRow(
+                             this,
+                             &CesiumVoxelShaderBuilder::createStatisticRow)];
+}
+
+template <typename TEnum>
+TSharedRef<SWidget>
+CesiumVoxelShaderBuilder::createEnumDropdownOption(TSharedRef<TEnum> pOption) {
+  return SNew(STextBlock)
+      .Text(MetadataEnumUtility<TEnum>::getEnumDisplayNameText(*pOption));
+}
+
+template <typename TEnum>
+void CesiumVoxelShaderBuilder::createEnumComboBox(
+    TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
+    const TArray<TSharedRef<TEnum>>& options,
+    TEnum initialValue,
+    const FString& tooltip) {
+
+  CESIUM_ASSERT(options.Num() > 0);
+
+  int32 initialIndex = 0;
+  for (int32 i = 0; i < options.Num(); i++) {
+    if (initialValue == *options[i]) {
+      initialIndex = i;
+      break;
+    }
+  }
+  SAssignNew(pComboBox, SComboBox<TSharedRef<TEnum>>)
+      .OptionsSource(&options)
+      .InitiallySelectedItem(options[initialIndex])
+      .OnGenerateWidget(
+          this,
+          &CesiumVoxelShaderBuilder::createEnumDropdownOption<TEnum>)
+      .Content()[SNew(STextBlock)
+                     .MinDesiredWidth(50.0f)
+                     .Text_Lambda([&pComboBox]() {
+                       return pComboBox->GetSelectedItem().IsValid()
+                                  ? MetadataEnumUtility<TEnum>::
+                                        getEnumDisplayNameText(
+                                            *pComboBox->GetSelectedItem())
+                                  : FText::FromString(FString());
+                     })
+                     .ToolTipText_Lambda([&pComboBox, tooltip]() {
+                       if constexpr (std::is_same_v<
+                                         TEnum,
+                                         ECesiumEncodedMetadataConversion>) {
+                         UEnum* pEnum =
+                             StaticEnum<ECesiumEncodedMetadataConversion>();
+                         if (pEnum) {
+                           return pComboBox->GetSelectedItem().IsValid()
+                                      ? pEnum->GetToolTipTextByIndex(int64(
+                                            *pComboBox->GetSelectedItem()))
+                                      : FText::FromString(FString());
+                         }
+                       }
+                       return FText::FromString(tooltip);
+                     })];
+}
+
+TSharedRef<SBox>
+CesiumVoxelShaderBuilder::createPropertyRow(TSharedRef<VoxelProperty> pItem) {
+  FString typeString = pItem->propertyDetails.GetValueType().ToString();
+  if (pItem->propertyDetails.bIsNormalized) {
+    typeString += TEXT(" (Normalized)");
+  }
+
+  if (pItem->propertyDetails.bIsArray) {
+    int64 arraySize = pItem->propertyDetails.ArraySize;
+    typeString += arraySize > 0
+                      ? FString::Printf(TEXT(" with %d elements"), arraySize)
+                      : TEXT(" of variable size");
+  }
+
+  TArray<FString> qualifierList;
+  if (pItem->propertyDetails.bHasOffset) {
+    qualifierList.Add("Offset");
+  }
+  if (pItem->propertyDetails.bHasScale) {
+    qualifierList.Add("Scale");
+  }
+  if (pItem->propertyDetails.bHasNoDataValue) {
+    qualifierList.Add("'No Data' Value");
+  }
+  if (pItem->propertyDetails.bHasDefaultValue) {
+    qualifierList.Add("Default Value");
+  }
+
+  FString qualifierString =
+      qualifierList.IsEmpty()
+          ? FString()
+          : "Contains " + FString::Join(qualifierList, TEXT(", "));
+
+  TSharedRef<SHorizontalBox> content =
+      SNew(SHorizontalBox) +
+      SHorizontalBox::Slot().FillWidth(0.45f).Padding(5.0f).VAlign(
+          EVerticalAlignment::VAlign_Center)
+          [SNew(STextBlock)
+               .AutoWrapText(true)
+               .Text(FText::FromString(typeString))
+               .ToolTipText(FText::FromString(FString(
+                   "The type of the property as defined in the metadata schema.")))] +
+      SHorizontalBox::Slot()
+          .AutoWidth()
+          .MaxWidth(200.0f)
+          .Padding(5.0f)
+          .HAlign(EHorizontalAlignment::HAlign_Left)
+          .VAlign(EVerticalAlignment::VAlign_Center)
+              [SNew(STextBlock)
+                   .AutoWrapText(true)
+                   .Text(FText::FromString(qualifierString))
+                   .ToolTipText(FText::FromString(
+                       "Notable qualities of the property that require additional nodes to be generated for the material."))];
+
+  FCesiumMetadataEncodingDetails bestFitEncodingDetails =
+      FCesiumMetadataEncodingDetails::GetBestFitForProperty(
+          pItem->propertyDetails);
+
+  this->createEnumComboBox(
+      pItem->encodingDetails.pConversionCombo,
+      ConversionEnum.options,
+      pItem->encodingDetails.pConversionSelection
+          ? *pItem->encodingDetails.pConversionSelection
+          : bestFitEncodingDetails.Conversion,
+      FString());
+
+  this->createEnumComboBox(
+      pItem->encodingDetails.pEncodedTypeCombo,
+      EncodedTypeEnum.options,
+      pItem->encodingDetails.pEncodedTypeSelection
+          ? *pItem->encodingDetails.pEncodedTypeSelection
+          : bestFitEncodingDetails.Type,
+      TEXT(
+          "The type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
+
+  this->createEnumComboBox<ECesiumEncodedMetadataComponentType>(
+      pItem->encodingDetails.pEncodedComponentTypeCombo,
+      EncodedComponentTypeEnum.options,
+      pItem->encodingDetails.pEncodedComponentTypeSelection
+          ? *pItem->encodingDetails.pEncodedComponentTypeSelection
+          : bestFitEncodingDetails.ComponentType,
+      TEXT(
+          "The component type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
+
+  if (pItem->encodingDetails.pConversionCombo.IsValid()) {
+    content->AddSlot().FillWidth(0.6).Padding(5.0f).VAlign(
+        EVerticalAlignment::VAlign_Center)[pItem->encodingDetails
+                                               .pConversionCombo->AsShared()];
+  }
+
+  auto visibilityLambda = TAttribute<EVisibility>::Create([pItem]() {
+    bool show = false;
+    if (pItem->encodingDetails.pConversionCombo.IsValid()) {
+      show =
+          pItem->encodingDetails.pConversionCombo->GetSelectedItem().IsValid();
+    }
+    return show ? EVisibility::Visible : EVisibility::Hidden;
+  });
+
+  if (pItem->encodingDetails.pEncodedTypeCombo.IsValid()) {
+    pItem->encodingDetails.pEncodedTypeCombo->SetVisibility(visibilityLambda);
+    content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
+        EVerticalAlignment::VAlign_Center)[pItem->encodingDetails
+                                               .pEncodedTypeCombo->AsShared()];
+  }
+
+  if (pItem->encodingDetails.pEncodedComponentTypeCombo.IsValid()) {
+    pItem->encodingDetails.pEncodedComponentTypeCombo->SetVisibility(
+        visibilityLambda);
+    content->AddSlot().AutoWidth().Padding(5.0f).VAlign(
+        EVerticalAlignment::VAlign_Center)
+        [pItem->encodingDetails.pEncodedComponentTypeCombo->AsShared()];
+  }
+
+  TSharedRef<SWidget> pAddButton = PropertyCustomizationHelpers::MakeAddButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->registerProperty(pItem); }),
+      FText::FromString(TEXT(
+          "Add this property to the tileset's CesiumVoxelMetadataComponent.")),
+      TAttribute<bool>::Create([this, pItem]() {
+        FCesiumMetadataEncodingDetails selectedEncodingDetails =
+            getSelectedEncodingDetails(
+                pItem->encodingDetails.pConversionCombo,
+                pItem->encodingDetails.pEncodedTypeCombo,
+                pItem->encodingDetails.pEncodedComponentTypeCombo);
+        return this->findOnComponent(pItem, false) ==
+                   ComponentSearchResult::NoMatch &&
+               validateEncodingDetails(selectedEncodingDetails);
+      }));
+  pAddButton->SetVisibility(TAttribute<EVisibility>::Create([this, pItem]() {
+    return this->findOnComponent(pItem, false) == ComponentSearchResult::NoMatch
+               ? EVisibility::Visible
+               : EVisibility::Collapsed;
+  }));
+
+  TSharedRef<SWidget> pOverwriteButton =
+      PropertyCustomizationHelpers::MakeEditButton(
+          FSimpleDelegate::CreateLambda(
+              [this, pItem]() { this->registerProperty(pItem); }),
+          FText::FromString(TEXT(
+              "Overwrites the existing property on the tileset's CesiumVoxelMetadataComponent "
+              "with the same name.")),
+          TAttribute<bool>::Create([this, pItem]() {
+            FCesiumMetadataEncodingDetails selectedEncodingDetails =
+                getSelectedEncodingDetails(
+                    pItem->encodingDetails.pConversionCombo,
+                    pItem->encodingDetails.pEncodedTypeCombo,
+                    pItem->encodingDetails.pEncodedComponentTypeCombo);
+            return this->findOnComponent(pItem, true) ==
+                       ComponentSearchResult::PartialMatch &&
+                   validateEncodingDetails(selectedEncodingDetails);
+          }));
+  pOverwriteButton->SetVisibility(TAttribute<EVisibility>::Create([this,
+                                                                   pItem]() {
+    return this->findOnComponent(pItem, true) != ComponentSearchResult::NoMatch
+               ? EVisibility::Visible
+               : EVisibility::Collapsed;
+  }));
+
+  TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->removeProperty(pItem); }),
+      FText::FromString(TEXT(
+          "Remove this property from the tileset's CesiumVoxelMetadataComponent.")),
+      TAttribute<bool>::Create([this, pItem]() {
+        return this->findOnComponent(pItem, false) ==
+               ComponentSearchResult::ExactMatch;
+      }));
+
+  content->AddSlot()
+      .AutoWidth()
+      .HAlign(EHorizontalAlignment::HAlign_Right)
+      .VAlign(EVerticalAlignment::VAlign_Center)[pAddButton];
+  content->AddSlot()
+      .AutoWidth()
+      .HAlign(EHorizontalAlignment::HAlign_Right)
+      .VAlign(EVerticalAlignment::VAlign_Center)[pOverwriteButton];
+  content->AddSlot()
+      .AutoWidth()
+      .HAlign(EHorizontalAlignment::HAlign_Right)
+      .VAlign(EVerticalAlignment::VAlign_Center)[pRemoveButton];
+
+  return SNew(SBox)
+      .HAlign(EHorizontalAlignment::HAlign_Fill)
+      .Content()[content];
+}
 
 TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createVoxelPropertyDropdown(
-    TSharedRef<VoxelPropertyView> pItem,
+    TSharedRef<VoxelProperty> pItem,
     const TSharedRef<STableViewBase>& list) {
-  return SNew(STableRow<TSharedRef<VoxelPropertyView>>, list)
-      .Content()[SNew(SExpandableArea)
-                     .InitiallyCollapsed(true)
-                     .HeaderContent()[SNew(STextBlock)
-                                          .Text(FText::FromString(
-                                              *pItem->pId))] /*
-  .BodyContent()[SNew(
-                     SListView<TSharedRef<PropertyInstance>>)
-                     .ListItemsSource(&pItem->instances)
-                     .SelectionMode(ESelectionMode::None)
-                     .OnGenerateRow(
-                         this,
-                         &CesiumFeaturesMetadataViewer::
-                             createPropertyInstanceRow)]*/
-  ];
+  TSharedRef<SVerticalBox> pPropertyRow = SNew(SVerticalBox);
+  pPropertyRow->AddSlot()[createPropertyRow(pItem)];
+
+  return SNew(STableRow<TSharedRef<VoxelProperty>>, list)
+      .Content()
+          [SNew(SExpandableArea)
+               .InitiallyCollapsed(true)
+               .HeaderContent()[SNew(STextBlock)
+                                    .Text(FText::FromString(*pItem->pId))]
+               .BodyContent()[pPropertyRow /*SNew(
+                                   SListView<TSharedRef<PropertyInstance>>)
+                                   .ListItemsSource(&pItem->instances)
+                                   .SelectionMode(ESelectionMode::None)
+                                   .OnGenerateRow(
+                                       this,
+                                       &CesiumFeaturesMetadataViewer::
+                                           createPropertyInstanceRow)*/
+  ]];
 }
 
 void CesiumVoxelShaderBuilder::createVoxelClassDropdown() {
@@ -814,7 +779,7 @@ void CesiumVoxelShaderBuilder::createVoxelClassDropdown() {
            .BodyContent()
                [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
                 SHorizontalBox::Slot()
-                    [SNew(SListView<TSharedRef<VoxelPropertyView>>)
+                    [SNew(SListView<TSharedRef<VoxelProperty>>)
                          .ListItemsSource(&this->_pVoxelClass->properties)
                          .SelectionMode(ESelectionMode::None)
                          .OnGenerateRow(
@@ -866,100 +831,70 @@ FCesiumPropertyAttributePropertyDescription* findProperty(
 
 } // namespace
 
-// CesiumFeaturesMetadataViewer::ComponentSearchResult
-// CesiumFeaturesMetadataViewer::findOnComponent(
-//     TSharedRef<StatisticView> pItem) const {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     return ComponentSearchResult::NoMatch;
-//   }
-//
-//   UCesiumFeaturesMetadataComponent& featuresMetadata =
-//       *this->_pFeaturesMetadataComponent;
-//
-//   TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
-//       featuresMetadata.Description.Statistics;
-//
-//   FCesiumMetadataPropertyStatisticsDescription* pProperty =
-//       findPropertyStatistic(
-//           statistics,
-//           *pItem->pClassId,
-//           *pItem->pPropertyId,
-//           false);
-//   FCesiumMetadataPropertyStatisticValue* pValue = nullptr;
-//
-//   if (pProperty) {
-//     pValue = pProperty->Values.FindByPredicate(
-//         [semantic = pItem->semantic](
-//             const FCesiumMetadataPropertyStatisticValue& existingValue) {
-//           return existingValue.Semantic == semantic;
-//         });
-//   }
-//
-//   return pValue ? ComponentSearchResult::ExactMatch
-//                 : ComponentSearchResult::NoMatch;
-// }
-//
-// CesiumFeaturesMetadataViewer::ComponentSearchResult
-// CesiumFeaturesMetadataViewer::findOnComponent(
-//     TSharedRef<PropertyInstance> pItem,
-//     bool compareEncodingDetails) const {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     return ComponentSearchResult::NoMatch;
-//   }
-//   UCesiumFeaturesMetadataComponent& featuresMetadata =
-//       *this->_pFeaturesMetadataComponent;
-//
-//   if (pItem->encodingDetails) {
-//     // Check whether the property already exists.
-//     const FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
-//         FCesiumPropertyTableDescription,
-//         FCesiumPropertyTablePropertyDescription>(
-//         featuresMetadata.Description.ModelMetadata.PropertyTables,
-//         *pItem->pSourceName,
-//         *pItem->pPropertyId,
-//         false);
-//
-//     if (!pProperty) {
-//       return ComponentSearchResult::NoMatch;
-//     }
-//
-//     if (pProperty->PropertyDetails != pItem->propertyDetails) {
-//       return ComponentSearchResult::PartialMatch;
-//     }
-//
-//     if (compareEncodingDetails) {
-//
-//       FCesiumMetadataEncodingDetails selectedEncodingDetails =
-//           getSelectedEncodingDetails(
-//               pItem->encodingDetails->pConversionCombo,
-//               pItem->encodingDetails->pEncodedTypeCombo,
-//               pItem->encodingDetails->pEncodedComponentTypeCombo);
-//
-//       return pProperty->EncodingDetails == selectedEncodingDetails
-//                  ? ComponentSearchResult::ExactMatch
-//                  : ComponentSearchResult::PartialMatch;
-//     } else {
-//       return ComponentSearchResult::ExactMatch;
-//     }
-//   } else {
-//     const FCesiumPropertyTexturePropertyDescription* pProperty =
-//     findProperty<
-//         FCesiumPropertyTextureDescription,
-//         FCesiumPropertyTexturePropertyDescription>(
-//         featuresMetadata.Description.ModelMetadata.PropertyTextures,
-//         *pItem->pSourceName,
-//         *pItem->pPropertyId,
-//         false);
-//
-//     if (!pProperty) {
-//       return ComponentSearchResult::NoMatch;
-//     }
-//
-//     return pProperty->PropertyDetails == pItem->propertyDetails
-//                ? ComponentSearchResult::ExactMatch
-//                : ComponentSearchResult::PartialMatch;
-//   }
-// }
+ComponentSearchResult CesiumVoxelShaderBuilder::findOnComponent(
+    TSharedRef<StatisticView> pItem) const {
+  if (!this->_pVoxelMetadataComponent.IsValid()) {
+    return ComponentSearchResult::NoMatch;
+  }
+
+  UCesiumVoxelMetadataComponent& voxelMetadata =
+      *this->_pVoxelMetadataComponent;
+
+  TArray<FCesiumMetadataPropertyStatisticsDescription>& statistics =
+      voxelMetadata.Description.Statistics;
+
+  FCesiumMetadataPropertyStatisticsDescription* pProperty =
+      findPropertyStatistic(statistics, *pItem->pPropertyId, false);
+  FCesiumMetadataPropertyStatisticValue* pValue = nullptr;
+
+  if (pProperty) {
+    pValue = pProperty->Values.FindByPredicate(
+        [semantic = pItem->semantic](
+            const FCesiumMetadataPropertyStatisticValue& existingValue) {
+          return existingValue.Semantic == semantic;
+        });
+  }
+
+  return pValue ? ComponentSearchResult::ExactMatch
+                : ComponentSearchResult::NoMatch;
+}
+
+ComponentSearchResult CesiumVoxelShaderBuilder::findOnComponent(
+    TSharedRef<VoxelProperty> pItem,
+    bool compareEncodingDetails) const {
+  if (!this->_pVoxelMetadataComponent.IsValid()) {
+    return ComponentSearchResult::NoMatch;
+  }
+
+  UCesiumVoxelMetadataComponent& voxelMetadata =
+      *this->_pVoxelMetadataComponent;
+
+  // Check whether the property already exists.
+  const FCesiumPropertyAttributePropertyDescription* pProperty =
+      findProperty(voxelMetadata.Description.Properties, *pItem->pId, false);
+
+  if (!pProperty) {
+    return ComponentSearchResult::NoMatch;
+  }
+
+  if (pProperty->PropertyDetails != pItem->propertyDetails) {
+    return ComponentSearchResult::PartialMatch;
+  }
+
+  if (compareEncodingDetails) {
+    FCesiumMetadataEncodingDetails selectedEncodingDetails =
+        getSelectedEncodingDetails(
+            pItem->encodingDetails.pConversionCombo,
+            pItem->encodingDetails.pEncodedTypeCombo,
+            pItem->encodingDetails.pEncodedComponentTypeCombo);
+
+    return pProperty->EncodingDetails == selectedEncodingDetails
+               ? ComponentSearchResult::ExactMatch
+               : ComponentSearchResult::PartialMatch;
+  } else {
+    return ComponentSearchResult::ExactMatch;
+  }
+}
 
 void CesiumVoxelShaderBuilder::registerStatistic(
     TSharedRef<StatisticView> pItem) {
@@ -978,6 +913,11 @@ void CesiumVoxelShaderBuilder::registerStatistic(
       findPropertyStatistic(statistics, *pItem->pPropertyId, true);
   CESIUM_ASSERT(pProperty != nullptr);
 
+  UKismetSystemLibrary::BeginTransaction(
+      TEXT("Cesium Voxel Shader Builder"),
+      FText::FromString(FString("Add voxel statistic to ACesium3DTileset")),
+      this->_pVoxelMetadataComponent.Get());
+  this->_pVoxelMetadataComponent->PreEditChange(NULL);
   this->_pVoxelMetadataComponent->PreEditChange(NULL);
 
   if (FCesiumMetadataPropertyStatisticValue* pValue =
@@ -994,75 +934,57 @@ void CesiumVoxelShaderBuilder::registerStatistic(
   }
 
   this->_pVoxelMetadataComponent->PostEditChange();
+  UKismetSystemLibrary::EndTransaction();
+
+  // Make sure to update the shader preview for the new statistic.
+  _pExistingWindow->_customShaderPreview =
+      this->_pVoxelMetadataComponent->getCustomShaderPreview();
 }
 
-// void CesiumFeaturesMetadataViewer::registerPropertyInstance(
-//     TSharedRef<PropertyInstance> pItem) {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     UE_LOG(
-//         LogCesiumEditor,
-//         Error,
-//         TEXT(
-//             "This window was opened for a now invalid
-//             CesiumFeaturesMetadataComponent."))
-//     return;
-//   }
-//
-//   UKismetSystemLibrary::BeginTransaction(
-//       TEXT("Cesium Features / Metadata Viewer"),
-//       FText::FromString(
-//           FString("Register property instance with ACesium3DTileset")),
-//       this->_pFeaturesMetadataComponent.Get());
-//   this->_pFeaturesMetadataComponent->PreEditChange(NULL);
-//
-//   FCesiumFeaturesMetadataDescription& description =
-//       this->_pFeaturesMetadataComponent->Description;
-//
-//   if (pItem->encodingDetails) {
-//     CESIUM_ASSERT(
-//         pItem->encodingDetails->pConversionCombo &&
-//         pItem->encodingDetails->pEncodedTypeCombo &&
-//         pItem->encodingDetails->pEncodedComponentTypeCombo);
-//
-//     FCesiumPropertyTablePropertyDescription* pProperty = findProperty<
-//         FCesiumPropertyTableDescription,
-//         FCesiumPropertyTablePropertyDescription>(
-//         description.ModelMetadata.PropertyTables,
-//         *pItem->pSourceName,
-//         *pItem->pPropertyId,
-//         true);
-//
-//     CESIUM_ASSERT(pProperty != nullptr);
-//
-//     FCesiumPropertyTablePropertyDescription& property = *pProperty;
-//     property.PropertyDetails = pItem->propertyDetails;
-//     property.EncodingDetails = getSelectedEncodingDetails(
-//         pItem->encodingDetails->pConversionCombo,
-//         pItem->encodingDetails->pEncodedTypeCombo,
-//         pItem->encodingDetails->pEncodedComponentTypeCombo);
-//   } else {
-//     FCesiumPropertyTexturePropertyDescription* pProperty = findProperty<
-//         FCesiumPropertyTextureDescription,
-//         FCesiumPropertyTexturePropertyDescription>(
-//         description.ModelMetadata.PropertyTextures,
-//         *pItem->pSourceName,
-//         *pItem->pPropertyId,
-//         true);
-//
-//     CESIUM_ASSERT(pProperty != nullptr);
-//
-//     FCesiumPropertyTexturePropertyDescription& property = *pProperty;
-//     property.PropertyDetails = pItem->propertyDetails;
-//
-//     if (!this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
-//       description.PrimitiveMetadata.PropertyTextureNames.Add(
-//           *pItem->pSourceName);
-//     }
-//   }
-//
-//   this->_pFeaturesMetadataComponent->PostEditChange();
-//   UKismetSystemLibrary::EndTransaction();
-// }
+void CesiumVoxelShaderBuilder::registerProperty(
+    TSharedRef<VoxelProperty> pItem) {
+  if (!this->_pVoxelMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumVoxelMetadataComponent."))
+    return;
+  }
+
+  UKismetSystemLibrary::BeginTransaction(
+      TEXT("Cesium Voxel Shader Builder"),
+      FText::FromString(
+          FString("Register voxel property with ACesium3DTileset")),
+      this->_pVoxelMetadataComponent.Get());
+  this->_pVoxelMetadataComponent->PreEditChange(NULL);
+
+  FCesiumVoxelClassDescription& description =
+      this->_pVoxelMetadataComponent->Description;
+  CESIUM_ASSERT(
+      pItem->encodingDetails->pConversionCombo &&
+      pItem->encodingDetails->pEncodedTypeCombo &&
+      pItem->encodingDetails->pEncodedComponentTypeCombo);
+
+  FCesiumPropertyAttributePropertyDescription* pProperty =
+      findProperty(description.Properties, *pItem->pId, true);
+
+  CESIUM_ASSERT(pProperty != nullptr);
+
+  FCesiumPropertyAttributePropertyDescription& property = *pProperty;
+  property.PropertyDetails = pItem->propertyDetails;
+  property.EncodingDetails = getSelectedEncodingDetails(
+      pItem->encodingDetails.pConversionCombo,
+      pItem->encodingDetails.pEncodedTypeCombo,
+      pItem->encodingDetails.pEncodedComponentTypeCombo);
+
+  this->_pVoxelMetadataComponent->PostEditChange();
+  UKismetSystemLibrary::EndTransaction();
+
+  // Make sure to update the shader preview for the new property.
+  _pExistingWindow->_customShaderPreview =
+      this->_pVoxelMetadataComponent->getCustomShaderPreview();
+}
 
 void CesiumVoxelShaderBuilder::removeStatistic(
     TSharedRef<StatisticView> pItem) {
@@ -1115,113 +1037,51 @@ void CesiumVoxelShaderBuilder::removeStatistic(
     this->_pVoxelMetadataComponent->PostEditChange();
     UKismetSystemLibrary::EndTransaction();
   }
+
+  // Make sure to update the shader preview for the removed statistic.
+  _pExistingWindow->_customShaderPreview =
+      this->_pVoxelMetadataComponent->getCustomShaderPreview();
 }
 
-// void CesiumFeaturesMetadataViewer::removePropertyInstance(
-//     TSharedRef<PropertyInstance> pItem) {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     UE_LOG(
-//         LogCesiumEditor,
-//         Error,
-//         TEXT(
-//             "This window was opened for a now invalid
-//             CesiumFeaturesMetadataComponent."))
-//     return;
-//   }
-//
-//   FCesiumFeaturesMetadataDescription& description =
-//       this->_pFeaturesMetadataComponent->Description;
-//
-//   if (pItem->encodingDetails) {
-//     TArray<FCesiumPropertyTableDescription>& propertyTables =
-//         description.ModelMetadata.PropertyTables;
-//
-//     int32 tableIndex = INDEX_NONE;
-//     for (int32 i = 0; i < propertyTables.Num(); i++) {
-//       if (propertyTables[i].Name == *pItem->pSourceName) {
-//         tableIndex = i;
-//         break;
-//       }
-//     }
-//     if (tableIndex == INDEX_NONE) {
-//       return;
-//     }
-//     FCesiumPropertyTableDescription& propertyTable =
-//     propertyTables[tableIndex];
-//
-//     int32 propertyIndex = INDEX_NONE;
-//     for (int32 i = 0; i < propertyTable.Properties.Num(); i++) {
-//       if (propertyTable.Properties[i].Name == *pItem->pPropertyId) {
-//         propertyIndex = i;
-//         break;
-//       }
-//     }
-//
-//     if (propertyIndex != INDEX_NONE) {
-//       UKismetSystemLibrary::BeginTransaction(
-//           TEXT("Cesium Features / Metadata Viewer"),
-//           FText::FromString(
-//               FString("Remove property instance from ACesium3DTileset")),
-//           this->_pFeaturesMetadataComponent.Get());
-//       this->_pFeaturesMetadataComponent->PreEditChange(NULL);
-//
-//       propertyTable.Properties.RemoveAt(propertyIndex);
-//
-//       if (propertyTable.Properties.IsEmpty()) {
-//         propertyTables.RemoveAt(tableIndex);
-//       }
-//
-//       this->_pFeaturesMetadataComponent->PostEditChange();
-//       UKismetSystemLibrary::EndTransaction();
-//     }
-//   } else {
-//     TArray<FCesiumPropertyTextureDescription>& propertyTextures =
-//         description.ModelMetadata.PropertyTextures;
-//     int32 textureIndex = INDEX_NONE;
-//     for (int32 i = 0; i < propertyTextures.Num(); i++) {
-//       if (propertyTextures[i].Name == *pItem->pSourceName) {
-//         textureIndex = i;
-//         break;
-//       }
-//     }
-//     if (textureIndex == INDEX_NONE) {
-//       return;
-//     }
-//     FCesiumPropertyTextureDescription& propertyTexture =
-//         propertyTextures[textureIndex];
-//
-//     int32 propertyIndex = INDEX_NONE;
-//     for (int32 i = 0; i < propertyTexture.Properties.Num(); i++) {
-//       if (propertyTexture.Properties[i].Name == *pItem->pPropertyId) {
-//         propertyIndex = i;
-//         break;
-//       }
-//     }
-//
-//     if (propertyIndex != INDEX_NONE) {
-//       UKismetSystemLibrary::BeginTransaction(
-//           TEXT("Cesium Features / Metadata Viewer"),
-//           FText::FromString(
-//               FString("Remove property instance from ACesium3DTileset")),
-//           this->_pFeaturesMetadataComponent.Get());
-//       this->_pFeaturesMetadataComponent->PreEditChange(NULL);
-//
-//       propertyTexture.Properties.RemoveAt(propertyIndex);
-//
-//       if (propertyTexture.Properties.IsEmpty()) {
-//         propertyTextures.RemoveAt(textureIndex);
-//         if (this->_propertyTextureNames.Contains(*pItem->pSourceName)) {
-//           description.PrimitiveMetadata.PropertyTextureNames.Remove(
-//               *pItem->pSourceName);
-//         }
-//       }
-//
-//       this->_pFeaturesMetadataComponent->PostEditChange();
-//       UKismetSystemLibrary::EndTransaction();
-//     }
-//   }
-// }
-//
+void CesiumVoxelShaderBuilder::removeProperty(TSharedRef<VoxelProperty> pItem) {
+  if (!this->_pVoxelMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumVoxelMetadataComponent."))
+    return;
+  }
+
+  FCesiumVoxelClassDescription& description =
+      this->_pVoxelMetadataComponent->Description;
+
+  int32 propertyIndex = INDEX_NONE;
+  for (int32 i = 0; i < description.Properties.Num(); i++) {
+    if (description.Properties[i].Name == *pItem->pId) {
+      propertyIndex = i;
+      break;
+    }
+  }
+
+  if (propertyIndex != INDEX_NONE) {
+    UKismetSystemLibrary::BeginTransaction(
+        TEXT("Cesium Features / Metadata Viewer"),
+        FText::FromString(
+            FString("Remove property instance from ACesium3DTileset")),
+        this->_pVoxelMetadataComponent.Get());
+    this->_pVoxelMetadataComponent->PreEditChange(NULL);
+
+    description.Properties.RemoveAt(propertyIndex);
+
+    this->_pVoxelMetadataComponent->PostEditChange();
+    UKismetSystemLibrary::EndTransaction();
+  }
+
+  // Make sure to update the shader preview for the removed property.
+  _pExistingWindow->_customShaderPreview =
+      this->_pVoxelMetadataComponent->getCustomShaderPreview();
+}
 
 TSharedRef<FString>
 CesiumVoxelShaderBuilder::getSharedRef(const FString& string) {

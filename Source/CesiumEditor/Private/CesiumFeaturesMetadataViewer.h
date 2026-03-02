@@ -23,6 +23,8 @@ class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
 enum class ECesiumMetadataStatisticSemantic;
 
+enum class ComponentSearchResult;
+
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
   /**
@@ -295,8 +297,6 @@ private:
   void createGltfFeatureIdSetDropdown(
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
-
-  enum ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
 
   ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
   ComponentSearchResult findOnComponent(

@@ -21,6 +21,8 @@ class ACesium3DTileset;
 class UCesiumVoxelMetadataComponent;
 class FHLSLSyntaxHighlighterMarshaller;
 
+enum class ComponentSearchResult;
+
 class CesiumVoxelShaderBuilder : public SWindow {
   SLATE_BEGIN_ARGS(CesiumVoxelShaderBuilder) {}
   /**
@@ -39,7 +41,7 @@ public:
   void SyncAndRebuildUI();
 
 private:
-  struct VoxelPropertyView {
+  struct VoxelProperty {
     /**
      * The ID of the property.
      */
@@ -64,7 +66,7 @@ private:
     // bool operator!=(const PropertyInstance& rhs) const;
   };
 
-  struct VoxelClassView {
+  struct VoxelClass {
     /**
      * The ID of the voxel class.
      */
@@ -73,7 +75,7 @@ private:
     /**
      * The properties belonging to the voxel class.
      */
-    TArray<TSharedRef<VoxelPropertyView>> properties;
+    TArray<TSharedRef<VoxelProperty>> properties;
   };
 
   void gatherVoxelPropertiesAndStatistics();
@@ -87,23 +89,35 @@ private:
   TSharedRef<ITableRow> createStatisticRow(
       TSharedRef<StatisticView> pItem,
       const TSharedRef<STableViewBase>& list);
+  TSharedRef<SExpandableArea> createPropertyStatisticsDropdown(
+      TSharedRef<VoxelProperty> pItem,
+      const TSharedRef<STableViewBase>& list);
+
+  TSharedRef<SBox> createPropertyRow(TSharedRef<VoxelProperty> pItem);
   TSharedRef<ITableRow> createVoxelPropertyDropdown(
-      TSharedRef<VoxelPropertyView> pItem,
+      TSharedRef<VoxelProperty> pItem,
       const TSharedRef<STableViewBase>& list);
   void createVoxelClassDropdown();
 
-  // enum ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
+  template <typename TEnum>
+  TSharedRef<SWidget> createEnumDropdownOption(TSharedRef<TEnum> pOption);
+  template <typename TEnum>
+  void createEnumComboBox(
+      TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
+      const TArray<TSharedRef<TEnum>>& options,
+      TEnum initialValue,
+      const FString& tooltip);
 
-  // ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem)
-  // const; ComponentSearchResult findOnComponent(
-  //     TSharedRef<PropertyInstance> pItem,
-  //     bool compareEncodingDetails) const;
+  ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
+  ComponentSearchResult findOnComponent(
+      TSharedRef<VoxelProperty> pItem,
+      bool compareEncodingDetails) const;
 
   void registerStatistic(TSharedRef<StatisticView> pItem);
-  // void registerPropertyInstance(TSharedRef<PropertyInstance> pItem);
+  void registerProperty(TSharedRef<VoxelProperty> pItem);
 
   void removeStatistic(TSharedRef<StatisticView> pItem);
-  // void removePropertyInstance(TSharedRef<PropertyInstance> pItem);
+  void removeProperty(TSharedRef<VoxelProperty> pItem);
 
   static TSharedRef<FString> getSharedRef(const FString& string);
 
@@ -113,7 +127,7 @@ private:
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumVoxelMetadataComponent> _pVoxelMetadataComponent;
 
-  TUniquePtr<VoxelClassView> _pVoxelClass;
+  TUniquePtr<VoxelClass> _pVoxelClass;
   FString _customShaderPreview;
 
   // Lookup map to reduce the number of strings allocated for duplicate property

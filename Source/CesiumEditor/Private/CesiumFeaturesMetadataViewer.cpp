@@ -1320,8 +1320,7 @@ FCesiumFeatureIdSetDescription* findFeatureIdSet(
 }
 } // namespace
 
-CesiumFeaturesMetadataViewer::ComponentSearchResult
-CesiumFeaturesMetadataViewer::findOnComponent(
+ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<StatisticView> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return ComponentSearchResult::NoMatch;
@@ -1353,8 +1352,7 @@ CesiumFeaturesMetadataViewer::findOnComponent(
                 : ComponentSearchResult::NoMatch;
 }
 
-CesiumFeaturesMetadataViewer::ComponentSearchResult
-CesiumFeaturesMetadataViewer::findOnComponent(
+ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<PropertyInstance> pItem,
     bool compareEncodingDetails) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
@@ -1414,8 +1412,7 @@ CesiumFeaturesMetadataViewer::findOnComponent(
   }
 }
 
-CesiumFeaturesMetadataViewer::ComponentSearchResult
-CesiumFeaturesMetadataViewer::findOnComponent(
+ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<FeatureIdSetInstance> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return ComponentSearchResult::NoMatch;

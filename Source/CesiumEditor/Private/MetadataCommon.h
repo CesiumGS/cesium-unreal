@@ -31,38 +31,6 @@ struct StatisticView {
 };
 
 /**
- * A view of an instance of Cesium3DTileset::PropertyStatistics.
- */
-struct PropertyStatisticsView {
-  /**
-   * The ID of the class to which the property belongs.
-   */
-  TSharedRef<FString> pClassId;
-  /**
-   * The ID of the property to which these statistics apply.
-   */
-  TSharedRef<FString> pId;
-  /**
-   * The statistics of the property.
-   */
-  TArray<TSharedRef<StatisticView>> statistics;
-};
-
-/**
- * A view of an instance of Cesium3DTileset::ClassStatistics.
- */
-struct ClassStatisticsView {
-  /**
-   * The ID of the class to which these statistics apply.
-   */
-  TSharedRef<FString> pId;
-  /**
-   * The properties belonging to the class.
-   */
-  TArray<TSharedRef<PropertyStatisticsView>> properties;
-};
-
-/**
  * Encoding details for a `CesiumGltf::PropertyTableProperty` or
  * `CesiumGltf::PropertyAttributeProperty` instance.
  */
@@ -105,6 +73,8 @@ struct PropertyInstanceEncodingDetails {
   TSharedPtr<ECesiumEncodedMetadataComponentType>
       pEncodedComponentTypeSelection;
 };
+
+enum class ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
 
 template <typename TEnum> struct MetadataEnumUtility {
   // Avoid allocating numerous instances of simple enum values (because shared
