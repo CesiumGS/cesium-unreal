@@ -372,7 +372,7 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
-    const bool IgnoreHeightReference) const {
+    const bool OverrideHeightReference) const {
   ELLIPSOID_CHECK(this, FVector::ZeroVector);
   FVector position =
       this->GetEllipsoid()
@@ -381,7 +381,7 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
 
   // When using a height reference, the height reported back to the caller
   // will always be the fixed height above the reference.
-  if (!IgnoreHeightReference && this->_isUsingHeightReference()) {
+  if (!OverrideHeightReference && this->_isUsingHeightReference()) {
     position.Z = this->_fixedHeightAboveHeightReference;
   }
   return position;
@@ -389,13 +389,13 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight,
-    const bool IgnoreHeightReference) {
+    const bool OverrideHeightReference) {
   ELLIPSOID_CHECK(this, );
 
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
   FVector tilesetPosition{};
 
-  if (!IgnoreHeightReference && this->_isUsingHeightReference() &&
+  if (!OverrideHeightReference && this->_isUsingHeightReference() &&
       this->_queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {

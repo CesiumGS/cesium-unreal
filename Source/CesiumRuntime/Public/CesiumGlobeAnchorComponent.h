@@ -77,8 +77,9 @@ private:
       ECesiumHeightReferenceMode::Ellipsoid;
 
   /**
-   * The tileset actor used as a height reference when moving or during LOD
-   * transitions. Only used when HeightReference is set to
+   * The tileset actor to use as a height reference for the object. The object
+   * will maintain its height relative to this tileset even through movement or
+   * level-of-detail transitions. Only used when HeightReference is set to
    * ECesiumHeightReferenceMode::Tileset.
    */
   UPROPERTY(
@@ -412,7 +413,7 @@ public:
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   FVector
-  GetLongitudeLatitudeHeight(const bool IgnoreHeightReference = false) const;
+  GetLongitudeLatitudeHeight(const bool OverrideHeightReference = false) const;
 
   /**
    * Gets the longitude in degrees.
@@ -468,7 +469,7 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void MoveToLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeight,
-      const bool IgnoreHeightReference = false);
+      const bool OverrideHeightReference = false);
 
   /**
    * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in
