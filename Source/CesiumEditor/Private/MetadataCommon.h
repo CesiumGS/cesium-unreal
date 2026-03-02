@@ -106,81 +106,79 @@ struct PropertyInstanceEncodingDetails {
       pEncodedComponentTypeSelection;
 };
 
-/**
- * An instance of a CesiumGltf::PropertyTableProperty or
- * CesiumGltf::PropertyTextureProperty for a particular glTF in the tileset.
- *
- * It is technically possible for a tileset to have models with the same
- * property, but different schema definitions. This attempts to capture each
- * different instance so the user can make an informed choice about the
- * behavior.
- */
-struct PropertyInstance {
-  /**
-   * The ID of the property of which this is an instance.
-   */
-  TSharedRef<FString> pPropertyId;
-  /**
-   * The type and other details of this property instance.
-   */
-  FCesiumMetadataPropertyDetails propertyDetails;
-  /**
-   * The name of the source with which this property is associated.
-   */
-  TSharedRef<FString> pSourceName;
-  /**
-   * Additional details encoding this property instance. Only used for
-   * `CesiumGltf::PropertyTableProperty`.
-   */
-  std::optional<PropertyInstanceEncodingDetails> encodingDetails;
+template <typename TEnum> struct MetadataEnumUtility {
+  // Avoid allocating numerous instances of simple enum values (because shared
+  // pointers /refs are required for SComboBox).
+  TArray<TSharedRef<TEnum>> options;
 
-  bool operator==(const PropertyInstance& rhs) const;
-  bool operator!=(const PropertyInstance& rhs) const;
+  MetadataEnumUtility();
+  TArray<TSharedRef<TEnum>> getSharedRefs(const TArray<TEnum>& selection);
+
+  static FString enumToNameString(TEnum value);
+  static FText getEnumDisplayNameText(TEnum value);
 };
 
-/**
- * A view of a class property in EXT_structural_metadata.
- */
-struct PropertyView {
-  /**
-   * The ID of the property.
-   */
-  TSharedRef<FString> pId;
-  /**
-   * The instances of this property.
-   */
-  TArray<TSharedRef<PropertyInstance>> instances;
-};
+template <typename TEnum>
+MetadataEnumUtility<TEnum>::MetadataEnumUtility() : options() {
+  UEnum* pEnum = StaticEnum<TEnum>();
+  if (pEnum) {
+    // "NumEnums" also includes the "_MAX" value, which indicates the number of
+    // different values in the enum. Exclude it here.
+    const int32 num = pEnum->NumEnums() - 1;
+    options.Reserve(num);
 
-enum EPropertySource { PropertyTable, PropertyTexture, PropertyAttribute };
+    for (int32 i = 0; i < num; i++) {
+      TEnum value = TEnum(pEnum->GetValueByIndex(i));
+      options.Emplace(MakeShared<TEnum>(value));
+    }
+  }
+}
 
-/**
- * A view of either a CesiumGltf::PropertyTable or
- * CesiumGltf::PropertyTexture.
- */
-struct PropertySourceView {
-  /**
-   * The name generated for this property source.
-   */
-  TSharedRef<FString> pName;
-  /**
-   * The type of this source.
-   */
-  EPropertySource type;
-  /**
-   * The properties belonging to this source.
-   */
-  TArray<TSharedRef<PropertyView>> properties;
-};
+template <typename TEnum>
+/*static*/ FString MetadataEnumUtility<TEnum>::enumToNameString(TEnum value) {
+  const UEnum* pEnum = StaticEnum<TEnum>();
+  return pEnum ? pEnum->GetNameStringByValue((int64)value) : FString();
+}
 
-// Avoid allocating numerous instances of simple enum values (because shared
-// pointers /refs are required for SComboBox).
+template <typename TEnum>
+/*static*/ FText
+MetadataEnumUtility<TEnum>::getEnumDisplayNameText(TEnum value) {
+  UEnum* pEnum = StaticEnum<TEnum>();
+  return pEnum ? pEnum->GetDisplayNameTextByValue(int64(value))
+               : FText::FromString(FString());
+}
 
-struct MetadataUI {
-  static TArray<TSharedRef<ECesiumEncodedMetadataConversion>> conversionOptions;
-  static TArray<TSharedRef<ECesiumEncodedMetadataType>> encodedTypeOptions;
-  static TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
-      encodedComponentTypeOptions;
-};
+template <typename TEnum>
+/*static*/ TArray<TSharedRef<TEnum>>
+MetadataEnumUtility<TEnum>::getSharedRefs(const TArray<TEnum>& selection) {
+  TArray<TSharedRef<TEnum>> result;
+  UEnum* pEnum = StaticEnum<TEnum>();
+  if (!pEnum) {
+    return result;
+  }
 
-static MetadataUI ui;
+  // Assumes options will be initialized in enum order!
+  for (TEnum value : selection) {
+    int32 index = pEnum->GetIndexByValue(int64(value));
+    CESIUM_ASSERT(index >= 0 && index < options.Num());
+    result.Add(options[index]);
+  }
+
+  return result;
+}
+
+static MetadataEnumUtility<ECesiumEncodedMetadataConversion> ConversionEnum;
+static MetadataEnumUtility<ECesiumEncodedMetadataType> EncodedTypeEnum;
+static MetadataEnumUtility<ECesiumEncodedMetadataComponentType>
+    EncodedComponentTypeEnum;
+
+FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
+    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>&
+        pConversionCombo,
+    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>&
+        pEncodedTypeCombo,
+    const TSharedPtr<
+        SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>&
+        pEncodedComponentTypeCombo);
+
+bool validateEncodingDetails(const FCesiumMetadataEncodingDetails& details);

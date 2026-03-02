@@ -22,10 +22,7 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
   /**
    * @brief The ID of the class in the tileset's metadata schema.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Metadata",
-      Meta = (TitleProperty = "Name"))
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
   FString ID;
 
   /**
@@ -33,7 +30,7 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Metadata",
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyAttributePropertyDescription> Properties;
 
@@ -42,9 +39,9 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
-      Meta = (TitleProperty = "Name"))
-  FCesiumMetadataClassStatisticsDescription Statistics;
+      Category = "Cesium|Metadata|Statistics",
+      Meta = (TitleProperty = "Id"))
+  TArray<FCesiumMetadataPropertyStatisticsDescription> Statistics;
 };
 
 /**
@@ -71,7 +68,10 @@ public:
    * Warning: Using Auto Fill may populate the description with a large amount
    * of metadata. Make sure to delete the properties that aren't relevant.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Build Shader"))
   void BuildShader();
 
   /**
@@ -81,7 +81,10 @@ public:
    * exists. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Generate Material"))
   void GenerateMaterial();
 #endif
 

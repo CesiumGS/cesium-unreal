@@ -314,7 +314,6 @@ private:
   void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
   static TSharedRef<FString> getSharedRef(const FString& string);
-  static void initializeStaticVariables();
 
   static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
   TSharedPtr<SScrollBox> _pContent;

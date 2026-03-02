@@ -39,21 +39,24 @@ THIRD_PARTY_INCLUDES_END
 /*static*/ TSharedPtr<CesiumVoxelShaderBuilder>
     CesiumVoxelShaderBuilder::_pExistingWindow = nullptr;
 
+/*static*/ TMap<FString, TSharedRef<FString>>
+    CesiumVoxelShaderBuilder::_stringMap = {};
+
 /*static*/ void
 CesiumVoxelShaderBuilder::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
   if (_pExistingWindow.IsValid()) {
     _pExistingWindow->_pTileset = pTileset;
   } else {
     // Open a new panel
-    TSharedRef<CesiumVoxelShaderBuilder> viewer =
+    TSharedRef<CesiumVoxelShaderBuilder> pWindow =
         SNew(CesiumVoxelShaderBuilder).Tileset(pTileset);
 
-    _pExistingWindow = viewer;
+    _pExistingWindow = pWindow;
     _pExistingWindow->GetOnWindowClosedEvent().AddLambda(
         [&pExistingWindow = CesiumVoxelShaderBuilder::_pExistingWindow](
             const TSharedRef<SWindow>& pWindow) { pExistingWindow = nullptr; });
 
-    FSlateApplication::Get().AddWindow(viewer);
+    FSlateApplication::Get().AddWindow(pWindow);
   }
 
   if (pTileset.IsValid()) {
@@ -91,6 +94,7 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
           "SyntaxHighlight.SourceCode.Error"));
   this->_pSyntaxHighlighter = FHLSLSyntaxHighlighterMarshaller::Create(style);
 
+  SAssignNew(this->_pVoxelClassContent, SScrollBox);
   SAssignNew(this->_pCustomShader, SMultiLineEditableTextBox)
       .AutoWrapText(false)
       .Margin(FMargin(5, 5, 5, 5))
@@ -144,6 +148,13 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
       [SNew(SHeader)
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                          .Text(FText::FromString(TEXT("Voxel Class")))
+                          .Margin(FMargin(0.f, 10.f))]];
+  pLeft->AddSlot()[this->_pVoxelClassContent.ToSharedRef()];
+  pLeft->AddSlot()
+      [SNew(SHeader)
+           .Content()[SNew(STextBlock)
+                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                           .Text(FText::FromString(TEXT("Custom Shader")))
                           .Margin(FMargin(0.f, 10.f))]];
   pLeft->AddSlot()[this->_pCustomShader.ToSharedRef()];
@@ -167,6 +178,7 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
         }
       })
       .Marshaller(this->_pSyntaxHighlighter);
+
   TSharedRef<SScrollBox> pRight = SNew(SScrollBox);
   pRight->AddSlot()
       [SNew(SHeader)
@@ -176,9 +188,9 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
                           .Margin(FMargin(0.f, 10.f))]];
   pRight->AddSlot()[this->_pShaderPreview.ToSharedRef()];
 
-  SAssignNew(this->_pContent, SHorizontalBox);
-  this->_pContent->AddSlot()[pLeft];
-  this->_pContent->AddSlot()[pRight];
+  TSharedRef<SHorizontalBox> content = SNew(SHorizontalBox);
+  content->AddSlot()[pLeft];
+  content->AddSlot()[pRight];
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -191,14 +203,18 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
               800))[SNew(SBorder)
                         .Visibility(EVisibility::Visible)
                         .BorderImage(FAppStyle::GetBrush("Menu.Background"))
-                        .Padding(FMargin(10.0f))[this->_pContent->AsShared()]]);
+                        .Padding(FMargin(10.0f))[content]]);
 }
 
 void CesiumVoxelShaderBuilder::SyncAndRebuildUI() {
-  this->_voxelClass.id = FString();
-  this->_voxelClass.properties.Empty();
+  this->_pVoxelClass.Reset();
+  this->_stringMap.Empty();
+
+  /* TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
+   pContent->ClearChildren();*/
 
   this->gatherVoxelPropertiesAndStatistics();
+  this->createVoxelClassDropdown();
 
   this->_customShaderPreview =
       this->_pVoxelMetadataComponent.IsValid()
@@ -207,17 +223,6 @@ void CesiumVoxelShaderBuilder::SyncAndRebuildUI() {
 
   /*
 
-   this->_metadataSources.Empty();
-   this->_statisticsClasses.Empty();
-   this->_stringMap.Empty();
-   this->_propertyTextureNames.Empty();
-
-   this->gatherTilesetStatistics();
-   this->gatherGltfFeaturesMetadata();
-   this->syncPropertyEncodingDetails();
-
-   TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
-   pContent->ClearChildren();
 
    TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
 
@@ -358,51 +363,53 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
   const Cesium3DTiles::Class& voxelClass =
       pMetadata->schema->classes.at(voxelClassId);
 
-  std::optional<Cesium3DTiles::ClassStatistics> voxelStatistics = std::nullopt;
+  std::optional<Cesium3DTiles::ClassStatistics> statistics = std::nullopt;
   if (pMetadata->statistics &&
       pMetadata->statistics->classes.contains(voxelClassId)) {
-    voxelStatistics = pMetadata->statistics->classes.at(voxelClassId);
+    statistics = pMetadata->statistics->classes.at(voxelClassId);
   }
 
+  TSharedRef<FString> pClassId = getSharedRef(FString(voxelClassId.c_str()));
   TArray<TSharedRef<VoxelPropertyView>> properties;
 
   for (const auto& propertyIt : voxelClass.properties) {
     FCesiumMetadataValueType valueType =
         FCesiumMetadataValueType::fromClassProperty(propertyIt.second);
 
-    VoxelPropertyView property;
-    property.id = FString(propertyIt.first.c_str());
-    property.propertyDetails.SetValueType(valueType);
-    property.propertyDetails.ArraySize = propertyIt.second.count.value_or(0);
-    property.propertyDetails.bIsNormalized = propertyIt.second.normalized;
+    FString propertyId = propertyIt.first.c_str();
+
+    VoxelPropertyView property{.pId = getSharedRef(propertyId)};
+
+    FCesiumMetadataPropertyDetails& propertyDetails = property.propertyDetails;
+    propertyDetails.SetValueType(valueType);
+    propertyDetails.ArraySize = propertyIt.second.count.value_or(0);
+    propertyDetails.bIsNormalized = propertyIt.second.normalized;
 
     // These values are not actually validated until the material is generated.
-    property.propertyDetails.bHasOffset = propertyIt.second.offset.has_value();
-    property.propertyDetails.bHasScale = propertyIt.second.scale.has_value();
-    property.propertyDetails.bHasNoDataValue =
-        propertyIt.second.noData.has_value();
-    property.propertyDetails.bHasDefaultValue =
+    propertyDetails.bHasOffset = propertyIt.second.offset.has_value();
+    propertyDetails.bHasScale = propertyIt.second.scale.has_value();
+    propertyDetails.bHasNoDataValue = propertyIt.second.noData.has_value();
+    propertyDetails.bHasDefaultValue =
         propertyIt.second.defaultProperty.has_value();
 
-    property.encodingDetails =
-        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
-            property.propertyDetails);
+    FCesiumMetadataEncodingDetails bestFitEncodingDetails =
+        FCesiumMetadataEncodingDetails::GetBestFitForProperty(propertyDetails);
 
-    if (voxelStatistics &&
-        voxelStatistics->properties.contains(propertyIt.first)) {
-      TArray<TSharedRef<StatisticView>> propertyStatistics;
+    // Do some silly TSharedRef lookup since it's required by SComboBox.
+    TArray<TSharedRef<ECesiumEncodedMetadataConversion>> supportedConversions =
+        ConversionEnum.getSharedRefs(
+            FCesiumMetadataEncodingDetails::GetSupportedConversionsForProperty(
+                property.propertyDetails));
+    property.encodingDetails.conversionMethods =
+        std::move(supportedConversions);
 
-      FString propertyId = propertyIt.first.c_str();
-      TSharedRef<FString> pPropertyId = getSharedRef(propertyId);
-
-      PropertyStatisticsView propertyStatistics{
-          pClassId,
-          pPropertyId,};
-      TSharedRef<PropertyStatisticsView> pProperty =
-          MakeShared<PropertyStatisticsView>(std::move(propertyStatistics));
+    if (statistics && statistics->properties.contains(propertyIt.first)) {
+      const Cesium3DTiles::PropertyStatistics& propertyStatistics =
+          statistics->properties.at(propertyIt.first);
+      TArray<TSharedRef<StatisticView>> statisticsView;
 
       auto syncStatistic =
-          [&pProperty, &pClassId, &pPropertyId, &valueType](
+          [&statisticsView, &pClassId, &pPropertyId = property.pId, &valueType](
               ECesiumMetadataStatisticSemantic semantic,
               const std::optional<CesiumUtility::JsonValue>& maybeValue) {
             if (maybeValue) {
@@ -411,703 +418,153 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
                   pPropertyId,
                   semantic,
                   FCesiumMetadataValue(*maybeValue, valueType)};
-              pProperty->statistics.Emplace(
+              statisticsView.Emplace(
                   MakeShared<StatisticView>(std::move(statistic)));
             }
           };
 
       syncStatistic(
           ECesiumMetadataStatisticSemantic::Min,
-          propertyIt.second.min);
+          propertyStatistics.min);
       syncStatistic(
           ECesiumMetadataStatisticSemantic::Max,
-          propertyIt.second.max);
+          propertyStatistics.max);
       syncStatistic(
           ECesiumMetadataStatisticSemantic::Mean,
-          propertyIt.second.mean);
+          propertyStatistics.mean);
       syncStatistic(
           ECesiumMetadataStatisticSemantic::Median,
-          propertyIt.second.median);
+          propertyStatistics.median);
       syncStatistic(
           ECesiumMetadataStatisticSemantic::StandardDeviation,
-          propertyIt.second.standardDeviation);
+          propertyStatistics.standardDeviation);
       syncStatistic(
           ECesiumMetadataStatisticSemantic::Variance,
-          propertyIt.second.variance);
+          propertyStatistics.variance);
       syncStatistic(
           ECesiumMetadataStatisticSemantic::Sum,
-          propertyIt.second.sum);
+          propertyStatistics.sum);
+      property.statistics = std::move(statisticsView);
 
-      properties.Add(std::move(pProperty));
+      properties.Add(MakeShared<VoxelPropertyView>(std::move(property)));
     }
   }
 
-  this->_voxelClass.id = FString(voxelClassId.c_str());
-  this->_voxelClass.properties = std::move(properties);
+  VoxelClassView classView{
+      .pId = pClassId,
+      .properties = std::move(properties)};
+
+  this->_pVoxelClass = MakeUnique<VoxelClassView>(std::move(classView));
 }
 
-void AutoFillVoxelClassDescription(
-    FCesiumVoxelClassDescription& description,
-    const std::string& voxelClassID,
-    const Cesium3DTiles::Class& voxelClass) {
-  description.ID = voxelClassID.c_str();
+void CesiumVoxelShaderBuilder::syncPropertyEncodingDetails() {
+  if (!this->_pVoxelMetadataComponent.IsValid() ||
+      !this->_pVoxelClass.IsValid())
+    return;
 
-  for (const auto& propertyIt : voxelClass.properties) {
-    auto pExistingProperty = description.Properties.FindByPredicate(
-        [&propertyName = propertyIt.first](
-            const FCesiumPropertyAttributePropertyDescription&
-                existingProperty) {
-          return existingProperty.Name == propertyName.c_str();
-        });
+  const FCesiumVoxelClassDescription& description =
+      this->_pVoxelMetadataComponent->Description;
+  if (description.ID != *this->_pVoxelClass->pId)
+    return;
 
-    if (pExistingProperty) {
-      // We have already accounted for this property.
+  for (const FCesiumPropertyAttributePropertyDescription& property :
+       description.Properties) {
+    const TSharedRef<VoxelPropertyView>* ppPropertyView =
+        this->_pVoxelClass->properties.FindByPredicate(
+            [&name = property.Name](
+                const TSharedRef<VoxelPropertyView>& pPropertyView) {
+              return *pPropertyView->pId == name;
+            });
+    if (!ppPropertyView) {
       continue;
     }
 
-    FCesiumPropertyAttributePropertyDescription& property =
-        description.Properties.Emplace_GetRef();
-    property.Name = propertyIt.first.c_str();
+    VoxelPropertyView& propertyView = **ppPropertyView;
+    auto& conversionMethods = propertyView.encodingDetails.conversionMethods;
+    int32 conversionIndex = INDEX_NONE;
+    for (int32 i = 0; i < conversionMethods.Num(); i++) {
+      if (*conversionMethods[i] == property.EncodingDetails.Conversion) {
+        conversionIndex = i;
+        break;
+      }
+    }
 
-    property.PropertyDetails.SetValueType(
-        GetValueTypeFromClassProperty(propertyIt.second));
-    property.PropertyDetails.ArraySize = propertyIt.second.count.value_or(0);
-    property.PropertyDetails.bIsNormalized = propertyIt.second.normalized;
+    if (conversionIndex == INDEX_NONE) {
+      // This conversion method isn't supported for the property;
+      continue;
+    }
 
-    // These values are not actually validated until the material is generated.
-    property.PropertyDetails.bHasOffset = propertyIt.second.offset.has_value();
-    property.PropertyDetails.bHasScale = propertyIt.second.scale.has_value();
-    property.PropertyDetails.bHasNoDataValue =
-        propertyIt.second.noData.has_value();
-    property.PropertyDetails.bHasDefaultValue =
-        propertyIt.second.defaultProperty.has_value();
+    int64 typeIndex = int64(property.EncodingDetails.Type);
+    int64 componentTypeIndex = int64(property.EncodingDetails.ComponentType);
 
-    property.EncodingDetails =
-        FCesiumMetadataEncodingDetails::GetBestFitForProperty(
-            property.PropertyDetails);
+    // Here the combo boxes will still be nullptr because
+    // OnGenerateRow is not executed right away, so save the selected
+    // options.
+    propertyView.encodingDetails.pConversionSelection =
+        conversionMethods[conversionIndex].ToSharedPtr();
+    propertyView.encodingDetails.pEncodedTypeSelection =
+        EncodedTypeEnum.options[typeIndex].ToSharedPtr();
+    propertyView.encodingDetails.pEncodedComponentTypeSelection =
+        EncodedComponentTypeEnum.options[componentTypeIndex].ToSharedPtr();
   }
 }
-// namespace {
-//// These are copies of functions in EncodedFeaturesMetadata.h. The file is
-//// unfortunately too entangled in Private code to pull into Public.
-// FString getNameForPropertySource(const FCesiumPropertyTable& propertyTable) {
-//   FString propertyTableName =
-//       UCesiumPropertyTableBlueprintLibrary::GetPropertyTableName(propertyTable);
-//
-//   if (propertyTableName.IsEmpty()) {
-//     // Substitute the name with the property table's class.
-//     propertyTableName = propertyTable.getClassName();
-//   }
-//
-//   return propertyTableName;
-// }
-//
-// FString
-// getNameForPropertySource(const FCesiumPropertyTexture& propertyTexture) {
-//   FString propertyTextureName =
-//       UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
-//           propertyTexture);
-//
-//   if (propertyTextureName.IsEmpty()) {
-//     // Substitute the name with the property texture's class.
-//     propertyTextureName = propertyTexture.getClassName();
-//   }
-//
-//   return propertyTextureName;
-// }
-//
-// FString getNameForFeatureIdSet(
-//     const FCesiumFeatureIdSet& featureIDSet,
-//     int32& featureIdTextureCounter) {
-//   FString label =
-//   UCesiumFeatureIdSetBlueprintLibrary::GetLabel(featureIDSet); if
-//   (!label.IsEmpty()) {
-//     return label;
-//   }
-//
-//   ECesiumFeatureIdSetType type =
-//       UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet);
-//
-//   if (type == ECesiumFeatureIdSetType::Attribute) {
-//     FCesiumFeatureIdAttribute attribute =
-//         UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
-//             featureIDSet);
-//     ECesiumFeatureIdAttributeStatus status =
-//         UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
-//             attribute);
-//     if (status == ECesiumFeatureIdAttributeStatus::Valid) {
-//       std::string generatedName =
-//           "_FEATURE_ID_" + std::to_string(attribute.getAttributeIndex());
-//       return FString(generatedName.c_str());
-//     }
-//   }
-//
-//   if (type == ECesiumFeatureIdSetType::Instance) {
-//     FCesiumFeatureIdAttribute attribute =
-//         UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
-//             featureIDSet);
-//     ECesiumFeatureIdAttributeStatus status =
-//         UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
-//             attribute);
-//     if (status == ECesiumFeatureIdAttributeStatus::Valid) {
-//       std::string generatedName = "_FEATURE_INSTANCE_ID_" +
-//                                   std::to_string(attribute.getAttributeIndex());
-//       return FString(generatedName.c_str());
-//     }
-//   }
-//
-//   if (type == ECesiumFeatureIdSetType::Texture) {
-//     std::string generatedName =
-//         "_FEATURE_ID_TEXTURE_" + std::to_string(featureIdTextureCounter);
-//     featureIdTextureCounter++;
-//     return FString(generatedName.c_str());
-//   }
-//
-//   if (type == ECesiumFeatureIdSetType::Implicit) {
-//     return FString("_IMPLICIT_FEATURE_ID");
-//   }
-//
-//   if (type == ECesiumFeatureIdSetType::InstanceImplicit) {
-//     return FString("_IMPLICIT_FEATURE_INSTANCE_ID");
-//   }
-//
-//   // If for some reason an empty / invalid feature ID set was constructed,
-//   // return an empty name.
-//   return FString();
-// }
-// } // namespace
-//
-// void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
-//   if (!this->_pTileset.IsValid()) {
-//     return;
-//   }
-//
-//   ACesium3DTileset& tileset = *this->_pTileset;
-//
-//   for (const UActorComponent* pComponent : tileset.GetComponents()) {
-//     const auto* pPrimitive = Cast<UPrimitiveComponent>(pComponent);
-//     if (!pPrimitive) {
-//       continue;
-//     }
-//
-//     const FCesiumModelMetadata& modelMetadata =
-//         UCesiumModelMetadataBlueprintLibrary::GetModelMetadata(pPrimitive);
-//
-//     const TArray<FCesiumPropertyTable>& propertyTables =
-//         UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(modelMetadata);
-//     this->gatherGltfPropertySources<
-//         FCesiumPropertyTable,
-//         UCesiumPropertyTableBlueprintLibrary,
-//         FCesiumPropertyTableProperty,
-//         UCesiumPropertyTablePropertyBlueprintLibrary>(propertyTables);
-//
-//     const TArray<FCesiumPropertyTexture>& propertyTextures =
-//         UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
-//             modelMetadata);
-//     this->gatherGltfPropertySources<
-//         FCesiumPropertyTexture,
-//         UCesiumPropertyTextureBlueprintLibrary,
-//         FCesiumPropertyTextureProperty,
-//         UCesiumPropertyTexturePropertyBlueprintLibrary>(propertyTextures);
-//
-//     const FCesiumPrimitiveMetadata& primitiveMetadata =
-//         UCesiumPrimitiveMetadataBlueprintLibrary::GetPrimitiveMetadata(
-//             pPrimitive);
-//
-//     const TArray<int64> propertyTextureIndices =
-//         UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
-//             primitiveMetadata);
-//     for (int64 propertyTextureIndex : propertyTextureIndices) {
-//       if (!propertyTextures.IsValidIndex(propertyTextureIndex)) {
-//         continue;
-//       }
-//
-//       const FCesiumPropertyTexture& propertyTexture =
-//           propertyTextures[propertyTextureIndex];
-//       FString propertyTextureName =
-//       getNameForPropertySource(propertyTexture);
-//       this->_propertyTextureNames.Emplace(propertyTextureName);
-//     }
-//
-//     const FCesiumPrimitiveFeatures& primitiveFeatures =
-//         UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
-//             pPrimitive);
-//
-//     const TArray<FCesiumFeatureIdSet>& featureIdSets =
-//         UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-//             primitiveFeatures);
-//
-//     int32 featureIdTextureCounter = 0;
-//
-//     for (const FCesiumFeatureIdSet& featureIdSet : featureIdSets) {
-//       ECesiumFeatureIdSetType type =
-//           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
-//               featureIdSet);
-//       if (type == ECesiumFeatureIdSetType::None) {
-//         // Invalid feature ID set. Skip.
-//         continue;
-//       }
-//
-//       FString name =
-//           getNameForFeatureIdSet(featureIdSet, featureIdTextureCounter);
-//
-//       FeatureIdSetView* pFeatureIdSetView =
-//           this->_featureIdSets.FindByPredicate(
-//               [&name](const FeatureIdSetView& existing) {
-//                 return *existing.pName == name;
-//               });
-//
-//       if (!pFeatureIdSetView) {
-//         int32 index = this->_featureIdSets.Emplace(
-//             FeatureIdSetView{.pName = getSharedRef(name)});
-//         pFeatureIdSetView = &this->_featureIdSets[index];
-//       }
-//
-//       const int64 propertyTableIndex =
-//           UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
-//               featureIdSet);
-//       FString propertyTableName;
-//       if (propertyTables.IsValidIndex(propertyTableIndex)) {
-//         propertyTableName =
-//             getNameForPropertySource(propertyTables[propertyTableIndex]);
-//       }
-//
-//       FeatureIdSetInstance Instance{
-//           .pFeatureIdSetName = pFeatureIdSetView->pName,
-//           .type = type,
-//           .pPropertyTableName = getSharedRef(propertyTableName)};
-//
-//       TSharedRef<FeatureIdSetInstance>* pExistingInstance =
-//           pFeatureIdSetView->instances.FindByPredicate(
-//               [&Instance](const TSharedRef<FeatureIdSetInstance>& pExisting)
-//               {
-//                 return Instance == *pExisting;
-//               });
-//       if (!pExistingInstance) {
-//         pFeatureIdSetView->instances.Emplace(
-//             MakeShared<FeatureIdSetInstance>(std::move(Instance)));
-//       }
-//     }
-//   }
-// }
-//
-// void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     return;
-//   }
-//
-//   const TArray<FCesiumPropertyTableDescription>& propertyTables =
-//       this->_pFeaturesMetadataComponent->Description.ModelMetadata
-//           .PropertyTables;
-//
-//   for (const FCesiumPropertyTableDescription& propertyTable : propertyTables)
-//   {
-//     const PropertySourceView* pSourceView =
-//         this->_metadataSources.FindByPredicate(
-//             [&name = propertyTable.Name](const PropertySourceView& source) {
-//               return *source.pName == name;
-//             });
-//     if (!pSourceView) {
-//       continue;
-//     }
-//
-//     for (const FCesiumPropertyTablePropertyDescription& property :
-//          propertyTable.Properties) {
-//       const TSharedRef<PropertyView>* ppPropertyView =
-//           pSourceView->properties.FindByPredicate(
-//               [&name = property.Name](
-//                   const TSharedRef<PropertyView>& pPropertyView) {
-//                 return *pPropertyView->pId == name;
-//               });
-//       if (!ppPropertyView) {
-//         continue;
-//       }
-//
-//       const PropertyView& propertyView = **ppPropertyView;
-//       for (const TSharedRef<PropertyInstance>& pInstance :
-//            propertyView.instances) {
-//         if (!pInstance->encodingDetails) {
-//           // This is a property texture property; continue.
-//           continue;
-//         }
-//
-//         auto& conversionMethods =
-//         pInstance->encodingDetails->conversionMethods; int32 conversionIndex
-//         = INDEX_NONE; for (int32 i = 0; i < conversionMethods.Num(); i++) {
-//           if (*pInstance->encodingDetails->conversionMethods[i] ==
-//               property.EncodingDetails.Conversion) {
-//             conversionIndex = i;
-//             break;
-//           }
-//         }
-//
-//         if (conversionIndex == INDEX_NONE) {
-//           // This conversion method isn't supported for the property;
-//           continue. continue;
-//         }
-//
-//         int64 typeIndex = int64(property.EncodingDetails.Type);
-//         int64 componentTypeIndex =
-//             int64(property.EncodingDetails.ComponentType);
-//
-//         // Here the combo boxes will still be nullptr because
-//         // OnGenerateRow is not executed right away, so save the selected
-//         // options.
-//         pInstance->encodingDetails->pConversionSelection =
-//             conversionMethods[conversionIndex].ToSharedPtr();
-//         pInstance->encodingDetails->pEncodedTypeSelection =
-//             this->_encodedTypeOptions[typeIndex].ToSharedPtr();
-//         pInstance->encodingDetails->pEncodedComponentTypeSelection =
-//             this->_encodedComponentTypeOptions[componentTypeIndex]
-//                 .ToSharedPtr();
-//       }
-//     }
-//   }
-// }
-//
-// bool CesiumFeaturesMetadataViewer::PropertyInstance::operator==(
-//     const PropertyInstance& rhs) const {
-//   if (*pPropertyId != *rhs.pPropertyId ||
-//       propertyDetails != rhs.propertyDetails) {
-//     return false;
-//   }
-//
-//   if (encodingDetails.has_value() != rhs.encodingDetails.has_value()) {
-//     return false;
-//   } else if (encodingDetails) {
-//     return encodingDetails->conversionMethods ==
-//            rhs.encodingDetails->conversionMethods;
-//   }
-//
-//   return true;
-// }
-//
-// bool CesiumFeaturesMetadataViewer::PropertyInstance::operator!=(
-//     const PropertyInstance& property) const {
-//   return !operator==(property);
-// }
-//
-// bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator==(
-//     const FeatureIdSetInstance& rhs) const {
-//   return *pFeatureIdSetName == *rhs.pFeatureIdSetName && type == rhs.type &&
-//          *pPropertyTableName == *rhs.pPropertyTableName;
-// }
-//
-// bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator!=(
-//     const FeatureIdSetInstance& property) const {
-//   return !operator==(property);
-// }
-//
-// namespace {
-//
-// template <typename TEnum>
-// TArray<TSharedRef<TEnum>> getSharedRefs(
-//     const TArray<TSharedRef<TEnum>>& options,
-//     const TArray<TEnum>& selection) {
-//   TArray<TSharedRef<TEnum>> result;
-//   UEnum* pEnum = StaticEnum<TEnum>();
-//   if (!pEnum) {
-//     return result;
-//   }
-//
-//   // Assumes populateEnumOptions will be initialized in enum order!
-//   for (TEnum value : selection) {
-//     int32 index = pEnum->GetIndexByValue(int64(value));
-//     CESIUM_ASSERT(index >= 0 && index < options.Num());
-//     result.Add(options[index]);
-//   }
-//
-//   return result;
-// }
-//
-// TArray<ECesiumEncodedMetadataConversion> getSupportedConversionsForProperty(
-//     const FCesiumMetadataPropertyDetails& PropertyDetails) {
-//   TArray<ECesiumEncodedMetadataConversion> result;
-//   if (PropertyDetails.Type == ECesiumMetadataType::Invalid) {
-//     return result;
-//   }
-//
-//   result.Reserve(2);
-//   result.Add(ECesiumEncodedMetadataConversion::Coerce);
-//
-//   if (PropertyDetails.Type == ECesiumMetadataType::String) {
-//     result.Add(ECesiumEncodedMetadataConversion::ParseColorFromString);
-//   }
-//
-//   return result;
-// }
-// } // namespace
-//
-// template <
-//     typename TSource,
-//     typename TSourceBlueprintLibrary,
-//     typename TSourceProperty,
-//     typename TSourcePropertyBlueprintLibrary>
-// void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
-//     const TArray<TSource>& sources) {
-//
-//   for (const TSource& source : sources) {
-//     FString sourceName = getNameForPropertySource(source);
-//     TSharedRef<FString> pSourceName = this->getSharedRef(sourceName);
-//
-//     constexpr EPropertySource sourceType =
-//         std::is_same_v<TSource, FCesiumPropertyTable>
-//             ? EPropertySource::PropertyTable
-//             : EPropertySource::PropertyTexture;
-//
-//     PropertySourceView* pSource = this->_metadataSources.FindByPredicate(
-//         [&sourceName, sourceType](const PropertySourceView& existingSource) {
-//           return *existingSource.pName == sourceName &&
-//                  existingSource.type == sourceType;
-//         });
-//
-//     if (!pSource) {
-//       int32 index = this->_metadataSources.Emplace(
-//           PropertySourceView{.pName = pSourceName, .type = sourceType});
-//       pSource = &this->_metadataSources[index];
-//     }
-//
-//     const TMap<FString, TSourceProperty>& properties =
-//         TSourceBlueprintLibrary::GetProperties(source);
-//     for (const auto& propertyIt : properties) {
-//       TSharedRef<FString> pPropertyId = this->getSharedRef(propertyIt.Key);
-//       TSharedRef<PropertyView>* pProperty =
-//       pSource->properties.FindByPredicate(
-//           [&pPropertyId](const TSharedRef<PropertyView>& pExistingProperty) {
-//             return **pExistingProperty->pId == *pPropertyId;
-//           });
-//
-//       if (!pProperty) {
-//         PropertyView newProperty{.pId = pPropertyId, .instances = {}};
-//         int32 index = pSource->properties.Emplace(
-//             MakeShared<PropertyView>(std::move(newProperty)));
-//         pProperty = &pSource->properties[index];
-//       }
-//
-//       PropertyView& property = **pProperty;
-//
-//       FCesiumMetadataPropertyDetails propertyDetails;
-//
-//       const FCesiumMetadataValueType valueType =
-//           TSourcePropertyBlueprintLibrary::GetValueType(propertyIt.Value);
-//
-//       // Skip any invalid type properties.
-//       if (valueType.Type == ECesiumMetadataType::Invalid)
-//         continue;
-//
-//       propertyDetails.Type = valueType.Type;
-//       propertyDetails.ComponentType = valueType.ComponentType;
-//       propertyDetails.bIsArray = valueType.bIsArray;
-//       propertyDetails.ArraySize =
-//           TSourcePropertyBlueprintLibrary::GetArraySize(propertyIt.Value);
-//       propertyDetails.bIsNormalized =
-//           TSourcePropertyBlueprintLibrary::IsNormalized(propertyIt.Value);
-//
-//       FCesiumMetadataValue offset =
-//           TSourcePropertyBlueprintLibrary::GetOffset(propertyIt.Value);
-//       propertyDetails.bHasOffset =
-//           !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
-//
-//       FCesiumMetadataValue scale =
-//           TSourcePropertyBlueprintLibrary::GetScale(propertyIt.Value);
-//       propertyDetails.bHasScale =
-//           !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-//
-//       FCesiumMetadataValue noData =
-//           TSourcePropertyBlueprintLibrary::GetNoDataValue(propertyIt.Value);
-//       propertyDetails.bHasNoDataValue =
-//           !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-//
-//       FCesiumMetadataValue defaultValue =
-//           TSourcePropertyBlueprintLibrary::GetDefaultValue(propertyIt.Value);
-//       propertyDetails.bHasDefaultValue =
-//           !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
-//
-//       PropertyInstance instance{
-//           .pPropertyId = pPropertyId,
-//           .propertyDetails = std::move(propertyDetails),
-//           .pSourceName = pSourceName};
-//
-//       if constexpr (std::is_same_v<
-//                         TSourceProperty,
-//                         FCesiumPropertyTableProperty>) {
-//         // Do some silly TSharedRef lookup since it's required by SComboBox.
-//         TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
-//             supportedConversions = getSharedRefs(
-//                 this->_conversionOptions,
-//                 getSupportedConversionsForProperty(propertyDetails));
-//         instance.encodingDetails = PropertyInstanceEncodingDetails{
-//             .conversionMethods = std::move(supportedConversions)};
-//       }
-//
-//       TSharedRef<PropertyInstance>* pExistingInstance =
-//           property.instances.FindByPredicate(
-//               [&instance](
-//                   const TSharedRef<PropertyInstance>& existingInstance) {
-//                 return instance == *existingInstance;
-//               });
-//       if (!pExistingInstance) {
-//         property.instances.Emplace(
-//             MakeShared<PropertyInstance>(std::move(instance)));
-//       }
-//     }
-//   }
-// }
-//
-// namespace {
-// template <typename TEnum> FString enumToNameString(TEnum value) {
-//   const UEnum* pEnum = StaticEnum<TEnum>();
-//   return pEnum ? pEnum->GetNameStringByValue((int64)value) : FString();
-// }
-//
-// template <typename TEnum> FText getEnumDisplayNameText(TEnum value) {
-//   UEnum* pEnum = StaticEnum<TEnum>();
-//   if (pEnum) {
-//     return pEnum->GetDisplayNameTextByValue(int64(value));
-//   }
-//
-//   return FText::FromString(FString());
-// }
-//
-// FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
-//     const
-//     TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>&
-//         pConversionCombo,
-//     const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>&
-//         pEncodedTypeCombo,
-//     const TSharedPtr<
-//         SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>&
-//         pEncodedComponentTypeCombo) {
-//   if (!pConversionCombo || !pEncodedTypeCombo || !pEncodedComponentTypeCombo)
-//     return FCesiumMetadataEncodingDetails();
-//
-//   TSharedPtr<ECesiumEncodedMetadataConversion> pConversion =
-//       pConversionCombo->GetSelectedItem();
-//   TSharedPtr<ECesiumEncodedMetadataType> pEncodedType =
-//       pEncodedTypeCombo->GetSelectedItem();
-//   TSharedPtr<ECesiumEncodedMetadataComponentType> pEncodedComponentType =
-//       pEncodedComponentTypeCombo->GetSelectedItem();
-//
-//   return FCesiumMetadataEncodingDetails(
-//       pEncodedType.IsValid() ? *pEncodedType :
-//       ECesiumEncodedMetadataType::None, pEncodedComponentType.IsValid()
-//           ? *pEncodedComponentType
-//           : ECesiumEncodedMetadataComponentType::None,
-//       pConversion.IsValid() ? *pConversion
-//                             : ECesiumEncodedMetadataConversion::None);
-// }
-//
-// bool validateEncodingDetails(const FCesiumMetadataEncodingDetails& details) {
-//   switch (details.Conversion) {
-//   case ECesiumEncodedMetadataConversion::Coerce:
-//   case ECesiumEncodedMetadataConversion::ParseColorFromString:
-//     return details.HasValidType();
-//   case ECesiumEncodedMetadataConversion::None:
-//   default:
-//     return false;
-//   }
-// }
-// } // namespace
-//
-// TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createStatisticRow(
-//     TSharedRef<StatisticView> pItem,
-//     const TSharedRef<STableViewBase>& list) {
-//
-//   TSharedRef<SWidget> pAddButton =
-//   PropertyCustomizationHelpers::MakeAddButton(
-//       FSimpleDelegate::CreateLambda(
-//           [this, pItem]() { this->registerStatistic(pItem); }),
-//       FText::FromString(TEXT(
-//           "Add this property statistic to the tileset's
-//           CesiumFeaturesMetadataComponent.")),
-//       TAttribute<bool>::Create([this, pItem]() {
-//         return this->findOnComponent(pItem) ==
-//         ComponentSearchResult::NoMatch;
-//       }));
-//
-//   TSharedRef<SWidget> pRemoveButton =
-//   PropertyCustomizationHelpers::MakeRemoveButton(
-//       FSimpleDelegate::CreateLambda(
-//           [this, pItem]() { this->removeStatistic(pItem); }),
-//       FText::FromString(TEXT(
-//           "Remove this property statistic from the tileset's
-//           CesiumFeaturesMetadataComponent.")),
-//       TAttribute<bool>::Create([this, pItem]() {
-//         return this->findOnComponent(pItem) !=
-//         ComponentSearchResult::NoMatch;
-//       }));
-//
-//   return SNew(STableRow<TSharedRef<StatisticView>>, list)
-//       .Content()
-//           [SNew(SBox)
-//                .HAlign(EHorizontalAlignment::HAlign_Fill)
-//                .Content()
-//                    [SNew(SHorizontalBox) +
-//                     SHorizontalBox::Slot().FillWidth(0.5f).Padding(5.0f).VAlign(
-//                         EVerticalAlignment::VAlign_Center)
-//                         [SNew(STextBlock)
-//                              .AutoWrapText(true)
-//                              .Text(FText::FromString(
-//                                  enumToNameString(pItem->semantic)))] +
-//                     SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
-//                         EVerticalAlignment::VAlign_Center)
-//                         [SNew(STextBlock)
-//                              .AutoWrapText(true)
-//                              .Text(FText::FromString(
-//                                  UCesiumMetadataValueBlueprintLibrary::
-//                                      GetString(pItem->value, FString())))] +
-//                     SHorizontalBox::Slot()
-//                         .AutoWidth()
-//                         .HAlign(EHorizontalAlignment::HAlign_Right)
-//                         .VAlign(EVerticalAlignment::VAlign_Center)[pAddButton]
-//                         +
-//                     SHorizontalBox::Slot()
-//                         .AutoWidth()
-//                         .HAlign(EHorizontalAlignment::HAlign_Right)
-//                         .VAlign(
-//                             EVerticalAlignment::VAlign_Center)[pRemoveButton]]];
-// }
-//
-// TSharedRef<ITableRow>
-// CesiumFeaturesMetadataViewer::createPropertyStatisticsDropdown(
-//     TSharedRef<PropertyStatisticsView> pItem,
-//     const TSharedRef<STableViewBase>& list) {
-//   return SNew(STableRow<TSharedRef<PropertyStatisticsView>>, list)
-//       .Content()[SNew(SExpandableArea)
-//                      .InitiallyCollapsed(true)
-//                      .HeaderContent()[SNew(STextBlock)
-//                                           .Text(FText::FromString(*pItem->pId))]
-//                      .BodyContent()[SNew(SListView<TSharedRef<StatisticView>>)
-//                                         .ListItemsSource(&pItem->statistics)
-//                                         .SelectionMode(ESelectionMode::None)
-//                                         .OnGenerateRow(
-//                                             this,
-//                                             &CesiumFeaturesMetadataViewer::
-//                                                 createStatisticRow)]];
-// }
-//
-// void CesiumFeaturesMetadataViewer::createClassStatisticsDropdown(
-//     TSharedRef<SScrollBox>& pContent,
-//     const ClassStatisticsView& classStatistics) {
-//
-//   pContent->AddSlot()
-//       [SNew(SExpandableArea)
-//            .InitiallyCollapsed(false)
-//            .HeaderContent()[SNew(STextBlock)
-//                                 .Text(FText::FromString(*classStatistics.pId))]
-//            .BodyContent()
-//                [SNew(SHorizontalBox) +
-//                SHorizontalBox::Slot().FillWidth(0.05f) +
-//                 SHorizontalBox::Slot()
-//                     [SNew(SListView<TSharedRef<PropertyStatisticsView>>)
-//                          .ListItemsSource(&classStatistics.properties)
-//                          .SelectionMode(ESelectionMode::None)
-//                          .OnGenerateRow(
-//                              this,
-//                              &CesiumFeaturesMetadataViewer::
-//                                  createPropertyStatisticsDropdown)]]];
-// }
-//
+
+TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createStatisticRow(
+    TSharedRef<StatisticView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+
+  TSharedRef<SWidget> pAddButton = PropertyCustomizationHelpers::MakeAddButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->registerStatistic(pItem); }),
+      FText::FromString(TEXT(
+          "Add this property statistic to the tileset's CesiumVoxelMetadataComponent.")),
+      TAttribute<bool>::Create([this, pItem]() {
+        return false; // return this->findOnComponent(pItem) ==
+                      // ComponentSearchResult::NoMatch;
+      }));
+
+  TSharedRef<SWidget> pRemoveButton = PropertyCustomizationHelpers::MakeRemoveButton(
+      FSimpleDelegate::CreateLambda(
+          [this, pItem]() { this->removeStatistic(pItem); }),
+      FText::FromString(TEXT(
+          "Remove this property statistic from the tileset's CesiumFeaturesMetadataComponent.")),
+      TAttribute<bool>::Create([this, pItem]() {
+        return false; // return this->findOnComponent(pItem) !=
+                      // ComponentSearchResult::NoMatch;
+      }));
+
+  return SNew(STableRow<TSharedRef<StatisticView>>, list)
+      .Content()
+          [SNew(SBox)
+               .HAlign(EHorizontalAlignment::HAlign_Fill)
+               .Content()
+                   [SNew(SHorizontalBox) +
+                    SHorizontalBox::Slot().FillWidth(0.5f).Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(
+                                 MetadataEnumUtility<
+                                     ECesiumMetadataStatisticSemantic>::
+                                     enumToNameString(pItem->semantic)))] +
+                    SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
+                        EVerticalAlignment::VAlign_Center)
+                        [SNew(STextBlock)
+                             .AutoWrapText(true)
+                             .Text(FText::FromString(
+                                 UCesiumMetadataValueBlueprintLibrary::
+                                     GetString(pItem->value, FString())))] +
+                    SHorizontalBox::Slot()
+                        .AutoWidth()
+                        .HAlign(EHorizontalAlignment::HAlign_Right)
+                        .VAlign(EVerticalAlignment::VAlign_Center)[pAddButton] +
+                    SHorizontalBox::Slot()
+                        .AutoWidth()
+                        .HAlign(EHorizontalAlignment::HAlign_Right)
+                        .VAlign(
+                            EVerticalAlignment::VAlign_Center)[pRemoveButton]]];
+}
+
 // TSharedRef<ITableRow>
 // CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
 //     TSharedRef<PropertyInstance> pItem,
@@ -1315,220 +772,100 @@ void AutoFillVoxelClassDescription(
 //                      .HAlign(EHorizontalAlignment::HAlign_Fill)
 //                      .Content()[content]];
 // }
-//
-// TSharedRef<ITableRow>
-// CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
-//     TSharedRef<PropertyView> pItem,
-//     const TSharedRef<STableViewBase>& list) {
-//   return SNew(STableRow<TSharedRef<PropertyView>>, list)
-//       .Content()[SNew(SExpandableArea)
-//                      .InitiallyCollapsed(true)
-//                      .HeaderContent()[SNew(STextBlock)
-//                                           .Text(FText::FromString(*pItem->pId))]
-//                      .BodyContent()[SNew(
-//                                         SListView<TSharedRef<PropertyInstance>>)
-//                                         .ListItemsSource(&pItem->instances)
-//                                         .SelectionMode(ESelectionMode::None)
-//                                         .OnGenerateRow(
-//                                             this,
-//                                             &CesiumFeaturesMetadataViewer::
-//                                                 createPropertyInstanceRow)]];
-// }
-//
-// void CesiumFeaturesMetadataViewer::createGltfPropertySourceDropdown(
-//     TSharedRef<SScrollBox>& pContent,
-//     const PropertySourceView& source) {
-//   FString sourceDisplayName = FString::Printf(TEXT("\"%s\""),
-//   **source.pName); switch (source.type) { case
-//   EPropertySource::PropertyTable:
-//     sourceDisplayName += " (Property Table)";
-//     break;
-//   case EPropertySource::PropertyTexture:
-//     sourceDisplayName += " (Property Texture)";
-//     break;
-//   }
-//
-//   pContent->AddSlot()
-//       [SNew(SExpandableArea)
-//            .InitiallyCollapsed(false)
-//            .HeaderContent()[SNew(STextBlock)
-//                                 .Text(FText::FromString(sourceDisplayName))]
-//            .BodyContent()
-//                [SNew(SHorizontalBox) +
-//                SHorizontalBox::Slot().FillWidth(0.05f) +
-//                 SHorizontalBox::Slot()
-//                     [SNew(SListView<TSharedRef<PropertyView>>)
-//                          .ListItemsSource(&source.properties)
-//                          .SelectionMode(ESelectionMode::None)
-//                          .OnGenerateRow(
-//                              this,
-//                              &CesiumFeaturesMetadataViewer::
-//                                  createGltfPropertyDropdown)]]];
-// }
-//
-// template <typename TEnum>
-// TSharedRef<SWidget> CesiumFeaturesMetadataViewer::createEnumDropdownOption(
-//     TSharedRef<TEnum> pOption) {
-//   return SNew(STextBlock).Text(getEnumDisplayNameText(*pOption));
-// }
-//
-// template <typename TEnum>
-// void CesiumFeaturesMetadataViewer::createEnumComboBox(
-//     TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
-//     const TArray<TSharedRef<TEnum>>& options,
-//     TEnum initialValue,
-//     const FString& tooltip) {
-//   CESIUM_ASSERT(options.Num() > 0);
-//
-//   int32 initialIndex = 0;
-//   for (int32 i = 0; i < options.Num(); i++) {
-//     if (initialValue == *options[i]) {
-//       initialIndex = i;
-//       break;
-//     }
-//   }
-//
-//   SAssignNew(pComboBox, SComboBox<TSharedRef<TEnum>>)
-//       .OptionsSource(&options)
-//       .InitiallySelectedItem(options[initialIndex])
-//       .OnGenerateWidget(
-//           this,
-//           &CesiumFeaturesMetadataViewer::createEnumDropdownOption<TEnum>)
-//       .Content()[SNew(STextBlock)
-//                      .MinDesiredWidth(50.0f)
-//                      .Text_Lambda([&pComboBox]() {
-//                        return pComboBox->GetSelectedItem().IsValid()
-//                                   ? getEnumDisplayNameText<TEnum>(
-//                                         *pComboBox->GetSelectedItem())
-//                                   : FText::FromString(FString());
-//                      })
-//                      .ToolTipText_Lambda([&pComboBox, tooltip]() {
-//                        if constexpr (std::is_same_v<
-//                                          TEnum,
-//                                          ECesiumEncodedMetadataConversion>) {
-//                          UEnum* pEnum =
-//                              StaticEnum<ECesiumEncodedMetadataConversion>();
-//                          if (pEnum) {
-//                            return pComboBox->GetSelectedItem().IsValid()
-//                                       ? pEnum->GetToolTipTextByIndex(int64(
-//                                             *pComboBox->GetSelectedItem()))
-//                                       : FText::FromString(FString());
-//                          }
-//                        }
-//                        return FText::FromString(tooltip);
-//                      })];
-// }
-//
-// void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
-//     TSharedRef<SScrollBox>& pContent,
-//     const FeatureIdSetView& featureIdSet) {
-//   pContent->AddSlot()
-//       [SNew(SExpandableArea)
-//            .InitiallyCollapsed(false)
-//            .HeaderContent()[SNew(STextBlock)
-//                                 .Text(FText::FromString(*featureIdSet.pName))]
-//            .BodyContent()[SNew(SListView<TSharedRef<FeatureIdSetInstance>>)
-//                               .ListItemsSource(&featureIdSet.instances)
-//                               .SelectionMode(ESelectionMode::None)
-//                               .OnGenerateRow(
-//                                   this,
-//                                   &CesiumFeaturesMetadataViewer::
-//                                       createFeatureIdSetInstanceRow)]];
-// }
-//
-// namespace {
-// FCesiumMetadataPropertyStatisticsDescription* findPropertyStatistic(
-//     TArray<FCesiumMetadataClassStatisticsDescription>& statistics,
-//     const FString& classId,
-//     const FString& propertyId,
-//     bool createIfMissing) {
-//   FCesiumMetadataClassStatisticsDescription* pClass =
-//       statistics.FindByPredicate(
-//           [&classId](
-//               const FCesiumMetadataClassStatisticsDescription& existingClass)
-//               {
-//             return existingClass.Id == classId;
-//           });
-//   if (!pClass && !createIfMissing) {
-//     return nullptr;
-//   }
-//
-//   if (!pClass) {
-//     int32 index =
-//         statistics.Emplace(FCesiumMetadataClassStatisticsDescription{classId});
-//     pClass = &statistics[index];
-//   }
-//
-//   FCesiumMetadataPropertyStatisticsDescription* pProperty =
-//       pClass->Properties.FindByPredicate(
-//           [&propertyId](const FCesiumMetadataPropertyStatisticsDescription&
-//                             existingProperty) {
-//             return existingProperty.Id == propertyId;
-//           });
-//
-//   if (!pProperty && createIfMissing) {
-//     int32 index = pClass->Properties.Emplace(
-//         FCesiumMetadataPropertyStatisticsDescription{propertyId});
-//     pProperty = &pClass->Properties[index];
-//   }
-//
-//   return pProperty;
-// }
-//
-// template <typename TPropertySource, typename TProperty>
-// TProperty* findProperty(
-//     TArray<TPropertySource>& sources,
-//     const FString& sourceName,
-//     const FString& propertyName,
-//     bool createIfMissing) {
-//   TPropertySource* pPropertySource = sources.FindByPredicate(
-//       [&sourceName](const TPropertySource& existingSource) {
-//         return sourceName == existingSource.Name;
-//       });
-//   if (!pPropertySource && !createIfMissing) {
-//     return nullptr;
-//   }
-//
-//   if (!pPropertySource) {
-//     int32 index =
-//         sources.Emplace(TPropertySource{sourceName, TArray<TProperty>()});
-//     pPropertySource = &sources[index];
-//   }
-//
-//   TProperty* pProperty = pPropertySource->Properties.FindByPredicate(
-//       [&propertyName](const TProperty& existingProperty) {
-//         return propertyName == existingProperty.Name;
-//       });
-//
-//   if (!pProperty && createIfMissing) {
-//     int32 index = pPropertySource->Properties.Emplace();
-//     pProperty = &pPropertySource->Properties[index];
-//     pProperty->Name = propertyName;
-//   }
-//
-//   return pProperty;
-// }
-//
-// FCesiumFeatureIdSetDescription* findFeatureIdSet(
-//     TArray<FCesiumFeatureIdSetDescription>& featureIdSets,
-//     const FString& name,
-//     bool createIfMissing) {
-//   FCesiumFeatureIdSetDescription* pFeatureIdSet =
-//   featureIdSets.FindByPredicate(
-//       [&name](const FCesiumFeatureIdSetDescription& existingSet) {
-//         return name == existingSet.Name;
-//       });
-//
-//   if (!pFeatureIdSet && createIfMissing) {
-//     int32 index = featureIdSets.Emplace();
-//     pFeatureIdSet = &featureIdSets[index];
-//     pFeatureIdSet->Name = name;
-//   }
-//
-//   return pFeatureIdSet;
-// }
-// } // namespace
-//
+
+TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createVoxelPropertyDropdown(
+    TSharedRef<VoxelPropertyView> pItem,
+    const TSharedRef<STableViewBase>& list) {
+  return SNew(STableRow<TSharedRef<VoxelPropertyView>>, list)
+      .Content()[SNew(SExpandableArea)
+                     .InitiallyCollapsed(true)
+                     .HeaderContent()[SNew(STextBlock)
+                                          .Text(FText::FromString(
+                                              *pItem->pId))] /*
+  .BodyContent()[SNew(
+                     SListView<TSharedRef<PropertyInstance>>)
+                     .ListItemsSource(&pItem->instances)
+                     .SelectionMode(ESelectionMode::None)
+                     .OnGenerateRow(
+                         this,
+                         &CesiumFeaturesMetadataViewer::
+                             createPropertyInstanceRow)]*/
+  ];
+}
+
+void CesiumVoxelShaderBuilder::createVoxelClassDropdown() {
+  if (!this->_pVoxelClass.IsValid()) {
+    this->_pVoxelClassContent->AddSlot()
+        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+         SHorizontalBox::Slot()
+             [SNew(STextBlock)
+                  .AutoWrapText(true)
+                  .Text(FText::FromString(TEXT(
+                      "This tileset does not contain a valid voxel class.")))]];
+    return;
+  }
+
+  this->_pVoxelClassContent->AddSlot()
+      [SNew(SExpandableArea)
+           .InitiallyCollapsed(false)
+           .HeaderContent()[SNew(STextBlock)
+                                .Text(FText::FromString(
+                                    *this->_pVoxelClass->pId))]
+           .BodyContent()
+               [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+                SHorizontalBox::Slot()
+                    [SNew(SListView<TSharedRef<VoxelPropertyView>>)
+                         .ListItemsSource(&this->_pVoxelClass->properties)
+                         .SelectionMode(ESelectionMode::None)
+                         .OnGenerateRow(
+                             this,
+                             &CesiumVoxelShaderBuilder::
+                                 createVoxelPropertyDropdown)]]];
+}
+
+namespace {
+FCesiumMetadataPropertyStatisticsDescription* findPropertyStatistic(
+    TArray<FCesiumMetadataPropertyStatisticsDescription>& statistics,
+    const FString& propertyId,
+    bool createIfMissing) {
+  FCesiumMetadataPropertyStatisticsDescription* pProperty =
+      statistics.FindByPredicate(
+          [&propertyId](const FCesiumMetadataPropertyStatisticsDescription&
+                            existingProperty) {
+            return existingProperty.Id == propertyId;
+          });
+
+  if (!pProperty && createIfMissing) {
+    int32 index = statistics.Emplace(
+        FCesiumMetadataPropertyStatisticsDescription{propertyId});
+    pProperty = &statistics[index];
+  }
+
+  return pProperty;
+}
+
+FCesiumPropertyAttributePropertyDescription* findProperty(
+    TArray<FCesiumPropertyAttributePropertyDescription>& properties,
+    const FString& propertyName,
+    bool createIfMissing) {
+  FCesiumPropertyAttributePropertyDescription* pProperty =
+      properties.FindByPredicate(
+          [&propertyName](const FCesiumPropertyAttributePropertyDescription&
+                              existingProperty) {
+            return propertyName == existingProperty.Name;
+          });
+
+  if (!pProperty && createIfMissing) {
+    int32 index = properties.Emplace();
+    pProperty = &properties[index];
+    pProperty->Name = propertyName;
+  }
+
+  return pProperty;
+}
+
+} // namespace
+
 // CesiumFeaturesMetadataViewer::ComponentSearchResult
 // CesiumFeaturesMetadataViewer::findOnComponent(
 //     TSharedRef<StatisticView> pItem) const {
@@ -1623,50 +960,42 @@ void AutoFillVoxelClassDescription(
 //                : ComponentSearchResult::PartialMatch;
 //   }
 // }
-//
-// void CesiumFeaturesMetadataViewer::registerStatistic(
-//     TSharedRef<StatisticView> pItem) {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     UE_LOG(
-//         LogCesiumEditor,
-//         Error,
-//         TEXT(
-//             "This window was opened for a now invalid
-//             CesiumFeaturesMetadataComponent."))
-//     return;
-//   }
-//
-//   TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
-//       this->_pFeaturesMetadataComponent->Description.Statistics;
-//
-//   FCesiumMetadataPropertyStatisticsDescription* pProperty =
-//       findPropertyStatistic(
-//           statistics,
-//           *pItem->pClassId,
-//           *pItem->pPropertyId,
-//           true);
-//   CESIUM_ASSERT(pProperty != nullptr);
-//
-//   this->_pFeaturesMetadataComponent->PreEditChange(NULL);
-//
-//   if (FCesiumMetadataPropertyStatisticValue* pValue =
-//           pProperty->Values.FindByPredicate(
-//               [semantic = pItem->semantic](
-//                   const FCesiumMetadataPropertyStatisticValue& existingValue)
-//                   {
-//                 return existingValue.Semantic == semantic;
-//               });
-//       pValue != nullptr) {
-//     pValue->Value = pItem->value;
-//   } else {
-//     pProperty->Values.Emplace(
-//         FCesiumMetadataPropertyStatisticValue{pItem->semantic,
-//         pItem->value});
-//   }
-//
-//   this->_pFeaturesMetadataComponent->PostEditChange();
-// }
-//
+
+void CesiumVoxelShaderBuilder::registerStatistic(
+    TSharedRef<StatisticView> pItem) {
+  if (!this->_pVoxelMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumVoxelMetadataComponent."))
+    return;
+  }
+  TArray<FCesiumMetadataPropertyStatisticsDescription>& statistics =
+      this->_pVoxelMetadataComponent->Description.Statistics;
+
+  FCesiumMetadataPropertyStatisticsDescription* pProperty =
+      findPropertyStatistic(statistics, *pItem->pPropertyId, true);
+  CESIUM_ASSERT(pProperty != nullptr);
+
+  this->_pVoxelMetadataComponent->PreEditChange(NULL);
+
+  if (FCesiumMetadataPropertyStatisticValue* pValue =
+          pProperty->Values.FindByPredicate(
+              [semantic = pItem->semantic](
+                  const FCesiumMetadataPropertyStatisticValue& existingValue) {
+                return existingValue.Semantic == semantic;
+              });
+      pValue != nullptr) {
+    pValue->Value = pItem->value;
+  } else {
+    pProperty->Values.Emplace(
+        FCesiumMetadataPropertyStatisticValue{pItem->semantic, pItem->value});
+  }
+
+  this->_pVoxelMetadataComponent->PostEditChange();
+}
+
 // void CesiumFeaturesMetadataViewer::registerPropertyInstance(
 //     TSharedRef<PropertyInstance> pItem) {
 //   if (!this->_pFeaturesMetadataComponent.IsValid()) {
@@ -1734,78 +1063,60 @@ void AutoFillVoxelClassDescription(
 //   this->_pFeaturesMetadataComponent->PostEditChange();
 //   UKismetSystemLibrary::EndTransaction();
 // }
-//
-// void CesiumFeaturesMetadataViewer::removeStatistic(
-//     TSharedRef<StatisticView> pItem) {
-//   if (!this->_pFeaturesMetadataComponent.IsValid()) {
-//     UE_LOG(
-//         LogCesiumEditor,
-//         Error,
-//         TEXT(
-//             "This window was opened for a now invalid
-//             CesiumFeaturesMetadataComponent."))
-//     return;
-//   }
-//
-//   TArray<FCesiumMetadataClassStatisticsDescription>& statistics =
-//       this->_pFeaturesMetadataComponent->Description.Statistics;
-//   int32 classIndex = INDEX_NONE;
-//   for (int32 i = 0; i < statistics.Num(); i++) {
-//     if (statistics[i].Id == *pItem->pClassId) {
-//       classIndex = i;
-//       break;
-//     }
-//   }
-//
-//   if (classIndex == INDEX_NONE) {
-//     return;
-//   }
-//   FCesiumMetadataClassStatisticsDescription& classStatistics =
-//       statistics[classIndex];
-//
-//   int32 propertyIndex = INDEX_NONE;
-//   for (int32 i = 0; i < classStatistics.Properties.Num(); i++) {
-//     if (classStatistics.Properties[i].Id == *pItem->pPropertyId) {
-//       propertyIndex = i;
-//       break;
-//     }
-//   }
-//   if (propertyIndex == INDEX_NONE) {
-//     return;
-//   }
-//   FCesiumMetadataPropertyStatisticsDescription& propertyStatistics =
-//       classStatistics.Properties[propertyIndex];
-//
-//   int32 valueIndex = INDEX_NONE;
-//   for (int32 i = 0; i < propertyStatistics.Values.Num(); i++) {
-//     if (propertyStatistics.Values[i].Semantic == pItem->semantic) {
-//       valueIndex = i;
-//       break;
-//     }
-//   }
-//
-//   if (valueIndex != INDEX_NONE) {
-//     UKismetSystemLibrary::BeginTransaction(
-//         TEXT("Cesium Features / Metadata Viewer"),
-//         FText::FromString(FString("Remove statistic from ACesium3DTileset")),
-//         this->_pFeaturesMetadataComponent.Get());
-//     this->_pFeaturesMetadataComponent->PreEditChange(NULL);
-//
-//     propertyStatistics.Values.RemoveAt(valueIndex);
-//
-//     if (propertyStatistics.Values.IsEmpty()) {
-//       classStatistics.Properties.RemoveAt(propertyIndex);
-//     }
-//
-//     if (classStatistics.Properties.IsEmpty()) {
-//       statistics.RemoveAt(classIndex);
-//     }
-//
-//     this->_pFeaturesMetadataComponent->PostEditChange();
-//     UKismetSystemLibrary::EndTransaction();
-//   }
-// }
-//
+
+void CesiumVoxelShaderBuilder::removeStatistic(
+    TSharedRef<StatisticView> pItem) {
+  if (!this->_pVoxelMetadataComponent.IsValid()) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "This window was opened for a now invalid CesiumVoxelMetadataComponent."))
+    return;
+  }
+
+  TArray<FCesiumMetadataPropertyStatisticsDescription>& statistics =
+      this->_pVoxelMetadataComponent->Description.Statistics;
+
+  int32 propertyIndex = INDEX_NONE;
+  for (int32 i = 0; i < statistics.Num(); i++) {
+    if (statistics[i].Id == *pItem->pPropertyId) {
+      propertyIndex = i;
+      break;
+    }
+  }
+  if (propertyIndex == INDEX_NONE) {
+    return;
+  }
+  FCesiumMetadataPropertyStatisticsDescription& propertyStatistics =
+      statistics[propertyIndex];
+
+  int32 valueIndex = INDEX_NONE;
+  for (int32 i = 0; i < propertyStatistics.Values.Num(); i++) {
+    if (propertyStatistics.Values[i].Semantic == pItem->semantic) {
+      valueIndex = i;
+      break;
+    }
+  }
+
+  if (valueIndex != INDEX_NONE) {
+    UKismetSystemLibrary::BeginTransaction(
+        TEXT("Cesium Voxel Shader Builder"),
+        FText::FromString(FString("Remove statistic from ACesium3DTileset")),
+        this->_pVoxelMetadataComponent.Get());
+    this->_pVoxelMetadataComponent->PreEditChange(NULL);
+
+    propertyStatistics.Values.RemoveAt(valueIndex);
+
+    if (propertyStatistics.Values.IsEmpty()) {
+      statistics.RemoveAt(propertyIndex);
+    }
+
+    this->_pVoxelMetadataComponent->PostEditChange();
+    UKismetSystemLibrary::EndTransaction();
+  }
+}
+
 // void CesiumFeaturesMetadataViewer::removePropertyInstance(
 //     TSharedRef<PropertyInstance> pItem) {
 //   if (!this->_pFeaturesMetadataComponent.IsValid()) {
@@ -1911,22 +1222,10 @@ void AutoFillVoxelClassDescription(
 //   }
 // }
 //
-// TSharedRef<FString>
-// CesiumFeaturesMetadataViewer::getSharedRef(const FString& string) {
-//   return _stringMap.Contains(string)
-//              ? _stringMap[string]
-//              : _stringMap.Emplace(string, MakeShared<FString>(string));
-// }
-//
-// void CesiumFeaturesMetadataViewer::initializeStaticVariables() {
-//   if (_conversionOptions.IsEmpty()) {
-//     populateEnumOptions<ECesiumEncodedMetadataConversion>(_conversionOptions);
-//   }
-//   if (_encodedTypeOptions.IsEmpty()) {
-//     populateEnumOptions<ECesiumEncodedMetadataType>(_encodedTypeOptions);
-//   }
-//   if (_encodedComponentTypeOptions.IsEmpty()) {
-//     populateEnumOptions<ECesiumEncodedMetadataComponentType>(
-//         _encodedComponentTypeOptions);
-//   }
-// }
+
+TSharedRef<FString>
+CesiumVoxelShaderBuilder::getSharedRef(const FString& string) {
+  return _stringMap.Contains(string)
+             ? _stringMap[string]
+             : _stringMap.Emplace(string, MakeShared<FString>(string));
+}
