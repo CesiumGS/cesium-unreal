@@ -128,7 +128,9 @@ public:
       ECesiumHeightReferenceMode::Ellipsoid;
 
   /**
-   * The tileset actor used as a height reference.
+   * The tileset actor used as a height reference when moving or during LOD
+   * transitions. Only used when HeightReference is set to
+   * ECesiumHeightReferenceMode::Tileset.
    */
   UPROPERTY(
       EditAnywhere,
@@ -136,7 +138,7 @@ public:
       meta =
           (EditCondition =
                "HeightReference == ECesiumHeightReferenceMode::Tileset"))
-  TObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
+  TObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
 
   /**
    * Interval, in Ticks, to update object's height when HeightReference is set
@@ -151,7 +153,7 @@ public:
           (EditCondition =
                "HeightReference == ECesiumHeightReferenceMode::Tileset",
            ClampMin = 1))
-  int TilesetHeightUpdateInterval = 1;
+  int HeightUpdateInterval = 1;
 
   /**
    * The rotation around the right (Y) axis. Zero pitch means the look direction

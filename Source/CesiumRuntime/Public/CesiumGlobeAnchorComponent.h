@@ -88,7 +88,7 @@ private:
       BlueprintSetter = SetHeightReferenceTileset,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
-  TSoftObjectPtr<ACesium3DTileset> HeightReferenceTileset = nullptr;
+  TSoftObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
 
   /**
    * The interval, in Ticks, in which to update the object's height when
@@ -97,7 +97,7 @@ private:
    * A value of 1 causes Height to be updated on every Tick.
    */
   UPROPERTY()
-  int TilesetHeightUpdateInterval = 1;
+  int HeightUpdateInterval = 1;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -404,7 +404,7 @@ public:
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
    *
-   * When HeightReference is Tileset, and a valid HeightReferenceTileset is
+   * When HeightReference is Tileset, and a valid ReferencedTileset is
    * set, the Z height value is the height above the reference tileset.
    */
   UFUNCTION(
@@ -459,7 +459,7 @@ public:
    * level, which can be tens of meters higher or lower depending on where in
    * the world the object is located.
    *
-   * When HeightReference is Tileset, and a valid HeightReferenceTileset is
+   * When HeightReference is Tileset, and a valid ReferencedTileset is
    * set, the Z height value is the desired height above the reference tileset.
    *
    * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
@@ -680,16 +680,17 @@ private:
   bool _setHeightFromReference();
 
   /**
-   * Determines if HeightReference is Tileset and HeightReferenceTileset is set.
+   * Determines if HeightReference is Tileset and ReferencedTileset is set.
    */
   bool _isUsingHeightReference() const;
 
   /**
    * Project the component's position onto the tileset specified by
-   * HeightReferenceTileset, Returns whether an intersection was found.
+   * ReferencedTileset, Returns whether an intersection was found.
    *
-   * alternateActorPosition, if specified, performs the intersection test
-   * starting at a different location.
+   * alternateActorPosition optionally specifies an alternate position from
+   * which to start the intersection test in Longitude/Latitude/Height
+   * coordinates.
    */
   bool _queryLongitudeLatitudeHeightPositionOnTileset(
       FVector& groundIntersection,

@@ -111,24 +111,24 @@ UCesiumGlobeAnchorComponent::GetHeightReference() const {
 
 TSoftObjectPtr<ACesium3DTileset>
 UCesiumGlobeAnchorComponent::GetHeightReferenceTileset() const {
-  return this->HeightReferenceTileset;
+  return this->ReferencedTileset;
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(
     const TSoftObjectPtr<ACesium3DTileset>& NewTileset) {
-  if (this->HeightReferenceTileset != NewTileset) {
-    this->HeightReferenceTileset = NewTileset;
+  if (this->ReferencedTileset != NewTileset) {
+    this->ReferencedTileset = NewTileset;
     this->_setHeightFromReference();
   }
 }
 
 void UCesiumGlobeAnchorComponent::SetTilesetHeightUpdateInterval(
     int NewTilesetHeightUpdateInterval) {
-  this->TilesetHeightUpdateInterval = NewTilesetHeightUpdateInterval;
+  this->HeightUpdateInterval = NewTilesetHeightUpdateInterval;
 }
 
 int UCesiumGlobeAnchorComponent::GetTilesetHeightUpdateInterval() const {
-  return this->TilesetHeightUpdateInterval;
+  return this->HeightUpdateInterval;
 }
 
 ACesiumGeoreference*
@@ -875,10 +875,24 @@ bool UCesiumGlobeAnchorComponent::
                 alternateStartPosition.value())
           : GetOwner()->GetActorLocation();
 
-  constexpr float traceDistance = 1000000.0f;
-  // Set up the line trace start and end points
-  FVector rayStart = startPosition + FVector(0.0, 0.0, traceDistance);
-  FVector rayEnd = startPosition - FVector(0.0, 0.0, traceDistance);
+  // Compute the local "down" direction using the geodetic surface normal
+  FVector ecefPosition =
+      pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
+          startPosition);
+  // get the surface normal at the actor's position.
+  glm::dvec3 glmPosition = VecMath::createVector3D(ecefPosition);
+  glm::dvec3 glmNormal =
+      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(glmPosition);
+  FVector ecefUp = VecMath::createVector(glmNormal);
+
+  FVector localUp =
+      pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(ecefUp);
+  FVector localDown = -localUp;
+
+  constexpr double traceDistance = 1000000.0;
+  // Set up the line trace start and end points along the local down direction
+  FVector rayStart = startPosition + localUp * traceDistance;
+  FVector rayEnd = startPosition + localDown * traceDistance;
 
   FCollisionQueryParams queryParams{};
   // Ignore the owner actor to avoid self collision
@@ -896,7 +910,7 @@ bool UCesiumGlobeAnchorComponent::
     return false;
 
   for (const FHitResult& hit : hitResults) {
-    if (hit.GetActor() == this->HeightReferenceTileset.Get()) {
+    if (hit.GetActor() == this->ReferencedTileset.Get()) {
       groundIntersection =
           pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
               hit.Location);
@@ -981,7 +995,7 @@ void UCesiumGlobeAnchorComponent::TickComponent(
     return;
   }
 
-  this->_heightReferenceUpdateCounter = this->TilesetHeightUpdateInterval;
+  this->_heightReferenceUpdateCounter = this->HeightUpdateInterval;
   FVector llh = this->GetLongitudeLatitudeHeight();
   // This seems pointless, but it causes the actor's position to be reset
   // based on the _fixedHeightAboveTileset value.

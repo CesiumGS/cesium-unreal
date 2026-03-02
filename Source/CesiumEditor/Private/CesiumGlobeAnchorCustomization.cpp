@@ -75,9 +75,8 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
 
-  DetailBuilder.HideProperty(GET_MEMBER_NAME_CHECKED(
-      UCesiumGlobeAnchorComponent,
-      HeightReferenceTileset));
+  DetailBuilder.HideProperty(
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ReferencedTileset));
 
   if (!bIsMultiSelect) {
     this->UpdateDerivedProperties();
@@ -110,7 +109,7 @@ void FCesiumGlobeAnchorCustomization::CreateHeightReferencePropertyEditor(
     IDetailCategoryBuilder& Category) {
   IDetailGroup& Group = CesiumCustomization::CreateGroup(
       Category,
-      "HeightReferenceTileset",
+      "ReferencedTileset",
       FText::FromString("Height Reference"),
       false,
       true);
@@ -131,7 +130,7 @@ void FCesiumGlobeAnchorCustomization::CreateHeightReferencePropertyEditor(
           View,
           GET_MEMBER_NAME_CHECKED(
               UCesiumGlobeAnchorDerivedProperties,
-              HeightReferenceTileset));
+              ReferencedTileset));
 
   Group.AddPropertyRow(TilesetProperty.ToSharedRef());
 
@@ -140,7 +139,7 @@ void FCesiumGlobeAnchorCustomization::CreateHeightReferencePropertyEditor(
           View,
           GET_MEMBER_NAME_CHECKED(
               UCesiumGlobeAnchorDerivedProperties,
-              TilesetHeightUpdateInterval));
+              HeightUpdateInterval));
 
   Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
 }
@@ -279,17 +278,16 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
-                          TilesetHeightUpdateInterval)) {
+                          HeightUpdateInterval)) {
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetTilesetHeightUpdateInterval(
-        this->TilesetHeightUpdateInterval);
+        this->HeightUpdateInterval);
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
-                          HeightReferenceTileset)) {
+                          ReferencedTileset)) {
     this->GlobeAnchor->Modify();
-    this->GlobeAnchor->SetHeightReferenceTileset(
-        this->HeightReferenceTileset.Get());
+    this->GlobeAnchor->SetHeightReferenceTileset(this->ReferencedTileset.Get());
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
@@ -373,10 +371,10 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->Height = llh.Z;
 
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
-      this->TilesetHeightUpdateInterval =
+      this->HeightUpdateInterval =
           this->GlobeAnchor->GetTilesetHeightUpdateInterval();
 
-      this->HeightReferenceTileset =
+      this->ReferencedTileset =
           this->GlobeAnchor->GetHeightReferenceTileset().Get();
 
       FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
