@@ -449,7 +449,7 @@ public:
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "Height"))
-  double GetHeight(const bool OverrideHeightReference = true) const;
+  double GetHeight(const bool OverrideHeightReference = false) const;
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in
