@@ -123,7 +123,7 @@ public:
    * "Tileset" indicates a height above a given tileset. The
    * object will move vertically to maintain the specified height.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (InvalidateWidgets))
   ECesiumHeightReferenceMode HeightReference =
       ECesiumHeightReferenceMode::Ellipsoid;
 
@@ -135,7 +135,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      meta =
+      Meta =
           (EditCondition =
                "HeightReference == ECesiumHeightReferenceMode::Tileset"))
   TObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
@@ -149,7 +149,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      meta =
+      Meta =
           (EditCondition =
                "HeightReference == ECesiumHeightReferenceMode::Tileset",
            ClampMin = 1))
