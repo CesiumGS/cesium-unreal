@@ -294,6 +294,11 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
                           HeightReference)) {
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetHeightReference(this->HeightReference);
+    // Notify that the struct has changed, forcing a details panel rebuild
+    FPropertyEditorModule& editor =
+        FModuleManager::GetModuleChecked<FPropertyEditorModule>(
+            "PropertyEditor");
+    editor.NotifyCustomizationModuleChanged();
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
