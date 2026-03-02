@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### v2.24.1 - 2026-03-2
+
+##### Fixes :wrench:
+
+- Fixed an invalid Cesium ion test token.
+
 ### v2.24.0 - 2026-03-02
 
 ##### Breaking Changes :mega:
