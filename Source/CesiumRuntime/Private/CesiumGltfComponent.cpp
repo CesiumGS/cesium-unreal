@@ -3690,14 +3690,13 @@ UCesiumGltfComponent::CreateOffGameThread(
                     tileId.x,
                     UTF8_TO_TCHAR(document.errors.format("").c_str()));
                 return asyncSystem
-                    .createResolvedFuture<std::vector<LoadedTextureResult>>(
-                        {});
+                    .createResolvedFuture<std::vector<LoadedTextureResult>>({});
               }
 
               check(bbox);
               const std::optional<FCesiumVectorLookup> MaybeLookup =
                   FCesiumVectorLookup::Create(
-                  document.value->rootObject,
+                      document.value->rootObject,
                       *bbox);
               check(MaybeLookup);
               const FCesiumVectorLookup Lookup = *MaybeLookup;
@@ -3730,6 +3729,16 @@ UCesiumGltfComponent::CreateOffGameThread(
                   indicesAsset.pixelData.data(),
                   Lookup.indices.data(),
                   Lookup.indices.size() * sizeof(uint32_t));
+              /*indicesAsset.width = 2;
+              indicesAsset.height = 2;
+              indicesAsset.pixelData.resize(2 * 2 * sizeof(uint32_t) * 4);
+              uint32_t max = TNumericLimits<uint32_t>::Max();
+              for (size_t i = 0; i < 16; i++) {
+                std::memcpy(
+                    indicesAsset.pixelData.data() + i * sizeof(uint32_t),
+                    &max,
+                    sizeof(uint32_t));
+              }*/
 
               CesiumGltf::ImageAsset polygonsAsset;
               polygonsAsset.bytesPerChannel = 1;
@@ -3769,7 +3778,7 @@ UCesiumGltfComponent::CreateOffGameThread(
                       false,
                       TextureGroup::TEXTUREGROUP_World,
                       false,
-                      EPixelFormat::PF_R32_UINT);
+                      EPixelFormat::PF_R32_FLOAT);
               check(indicesResult);
               TUniquePtr<LoadedTextureResult> polygonsResult =
                   CesiumTextureUtility::loadTextureAnyThreadPart(
@@ -3789,7 +3798,8 @@ UCesiumGltfComponent::CreateOffGameThread(
                   std::move(*polygonsResult.Release())};
               return asyncSystem.createResolvedFuture(std::move(textures));
             })
-        .thenInMainThread([pGltf](std::vector<LoadedTextureResult>&& results) {
+        .thenInMainThread([pGltf,
+                           tileId](std::vector<LoadedTextureResult>&& results) {
           if (results.empty()) {
             return;
           }

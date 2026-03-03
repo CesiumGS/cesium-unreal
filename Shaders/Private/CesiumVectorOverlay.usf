@@ -1,0 +1,275 @@
+#pragma once
+
+//#if defined(HAS_GPU_LOOKUP_POLYLINES) || defined(HAS_GPU_LOOKUP_POLYGONS)
+// Calculate the distance between a point and a line segment
+float distanceToLine(float2 p, float4 l) {
+    float2 a = float2(l.x, l.y); // Start point of the line
+    float2 b = float2(l.z, l.w); // End point of the line
+
+    // Vector from point `a` to point `b`
+    float2 ab = b - a;
+
+    // Handle degenerate case: if the line segment is a point
+    float abLengthSquared = dot(ab, ab);
+    if (abLengthSquared < 1e-8) { // Small threshold to avoid division by zero
+        return length(p - a); // Distance to the single point
+    }
+
+    // Vector from point `a` to the test point `p`
+    float2 ap = p - a;
+
+    // Project `ap` onto `ab` to find the closest point on the infinite line
+    float t = clamp(dot(ap, ab) / abLengthSquared, 0.0, 1.0);
+
+    // Closest point on the line segment
+    float2 closestPoint = a + t * ab;
+
+    // Return the distance between the point and the closest point on the line
+    return length(p - closestPoint);
+}
+
+
+// Calculate the distance between a point and a line segment with projected point info
+float3 distanceToLineWithT(float2 p, float4 l) {
+    float2 a = float2(l.x, l.y); // Start point of the line
+    float2 b = float2(l.z, l.w); // End point of the line
+
+    // Vector from point `a` to point `b`
+    float2 ab = b - a;
+
+    // Handle degenerate case: if the line segment is a point
+    float abLengthSquared = dot(ab, ab);
+    if (abLengthSquared < 1e-8) { // Small threshold to avoid division by zero
+        return float3(length(p - a), 0.0, 0.0); // Distance to the single point
+    }
+
+    // Vector from point `a` to the test point `p`
+    float2 ap = p - a;
+
+    // Project `ap` onto `ab` to find the closest point on the infinite line
+    float t = clamp(dot(ap, ab) / abLengthSquared, 0.0, 1.0);
+
+    // Closest point on the line segment
+    float2 closestPoint = a + t * ab;
+
+    // Return the distance between the point and the closest point on the line
+    return float3(length(p - closestPoint), t, length(ab));
+}
+
+// Convert a 1D index to a 2D index (x, y) in a width x height texture
+int2 indexTo2D(int index, int width, int height) {
+    // Calculate the y-coordinate (row) by dividing the index by the width
+    int y = index / width;
+
+    // Calculate the x-coordinate (column) as the remainder of the division
+    int x = index - y * width;
+
+    // Normalize the coordinates to the range [0, 1] for texture sampling
+    return int2(x, y);
+}
+
+// Approximation of local derivative behaviors on texel coord in pixel space
+// Ideally this should happen per distance check such that x and y are scaled respectively
+float scaleDistFragToTex(float val, float2 uvCoordinate) {
+
+    // Calculate the texel area of this fragment
+    float2x2 pixelFootprint = float2x2(ddx(uvCoordinate), ddy(uvCoordinate));
+    float pixelFootprintDiameterSqr = abs(determinant(pixelFootprint));
+
+    // Get pixel radii in texel space (approximated)
+    float pixelFootprintRadii = sqrt(pixelFootprintDiameterSqr);
+
+    return val*pixelFootprintRadii;
+}
+
+float scaleDistTexToFrag(float val, float2 uvCoordinate) {
+
+    // Calculate the texel area of this fragment
+    float2x2 pixelFootprint = float2x2(ddx(uvCoordinate), ddy(uvCoordinate));
+    float pixelFootprintDiameterSqr = abs(determinant(pixelFootprint));
+
+    // Get pixel radii in texel space (approximated)
+    float pixelFootprintRadii = sqrt(pixelFootprintDiameterSqr);
+
+    return val/pixelFootprintRadii;
+}
+
+// Calculate the grid cell indices (i, j) for a grid
+int2 getGridCell(float2 coord, int gridWidth, int gridHeight) {
+    // Scale the texture coordinates to the grid dimensions
+    int i = int(coord.x * float(gridWidth));  // Column index
+    int j = int(coord.y * float(gridHeight)); // Row index
+
+    // Clamp the indices to ensure they are within bounds
+    i = clamp(i, 0, gridWidth - 1);
+    j = clamp(j, 0, gridHeight - 1);
+
+    return int2(i, j);
+}
+
+uint sampleIndicesTexture(Texture2D indicesTexture, int index) {
+    return asuint(indicesTexture.Load(int3(index, 0, 0)).r);
+}
+//#endif
+
+float4 sampleVectorOverlay(
+    float2 uv,
+    Texture2D lineTexture, 
+    SamplerState lineTextureSampler, 
+    Texture2D indicesTexture,
+    SamplerState indicesTextureSampler) {
+    //return float4((float)sampleIndicesTexture(indicesTexture, 0), 1.0, 1.0, 1.0);
+    //return lineTexture.Sample(lineTextureSampler, uv);
+    //#ifdef HAS_GPU_LOOKUP_POLYLINES
+    // Get the width of the texture using textureSize
+    uint lineTextureWidth, lineTextureHeight;
+    lineTexture.GetDimensions(lineTextureWidth, lineTextureHeight);
+    float tsizeX = float(lineTextureWidth);
+    float tsizeY = float(lineTextureHeight);
+
+    // Define a threshold for coloring the fragment in screenspace
+    // Approximated 1 pixel length (0.5 dist each side with 0.3 padding for smoothness)
+    float threshold = 0.8;
+    threshold = scaleDistFragToTex(threshold, uv);
+
+    // Initialize the minimum distance to a large value
+    float minDist = 1.0; // Assume normalized coordinates (0 to 1)
+
+    int subGridSizeX = int(sampleIndicesTexture(indicesTexture, 0));
+    int subGridSizeY = int(sampleIndicesTexture(indicesTexture, 1));
+    int2 cell = getGridCell(uv, subGridSizeX, subGridSizeY);
+    int cellIndex = cell.x + cell.y * subGridSizeX;
+    int cellStart = 0;
+    int cellEnd = int(sampleIndicesTexture(indicesTexture, cellIndex + 2));
+    if (cellIndex > 0){
+        cellStart = int(sampleIndicesTexture(indicesTexture, cellIndex + 1));
+    }
+    //cellEnd = 1024;
+
+    // Iterate over the texels of the line texture
+    LOOP
+    for (int k = cellStart; k < cellEnd; k++) {
+        int j = k / int(tsizeX);
+        int i = k - j * int(tsizeX);
+
+        // Calculate the texture coordinate for the current texel
+        float texCoordX = (float(i) + 0.5) / tsizeX;
+        float texCoordY = (float(j) + 0.5) / tsizeY;
+
+        // Sample the current texel
+        float4 texel = lineTexture.Sample(lineTextureSampler, float2(texCoordX, texCoordY));
+        // skip if reaches end, marked by -1 as this should be normalized to [0, 1]
+        if (texel.r == -1.0){
+            break;
+        }
+
+        // Calculate the distance to the current line segment
+        // TODO: for better line rendering on steep slopes, scale by x and y derivatives respectively
+        float dist = distanceToLine(uv, texel);
+
+        // Update the minimum distance
+        minDist = min(minDist, dist);
+
+        if (minDist < threshold){
+            break;
+        }
+    }
+
+    // Color the fragment based on the minimum distance
+    if (minDist < threshold) {
+        return float4(1.0, 0.0, 0.0, 1.0); // Red for close fragments
+    }
+    
+    return float4(0.0, 0.0, 0.0, 0.0);
+}
+
+/*#elif defined(HAS_GPU_LOOKUP_POLYGONS)
+// Get the width of the texture using textureSize
+float2 texSize = float2(textureSize(u_lineTexture, 0));
+float tsizeX = float(texSize.x);
+float tsizeY = float(texSize.y);
+
+// Define a threshold for coloring the fragment in screenspace
+// Approximated 1 pixel length (0.5 dist each side with 0.3 padding for smoothness)
+float threshold = 0.8;
+threshold = scaleDistFragToTex(threshold, v_textureCoordinates.xy);
+
+// Initialize the minimum distance to a large value
+float minDist = 1.0; // Assume normalized coordinates (0 to 1)
+float minDistSign = 1.0; // init to inside
+float minDistT = 0.0;
+float minDistTLen = 0.0;
+int cutFlag = 1;
+
+int subGridSizeX = int(texelFetch(u_gridCellIndicesTexture, int2(0, 0), 0).r);
+int subGridSizeY = int(texelFetch(u_gridCellIndicesTexture, int2(1, 0), 0).r);
+int2 cell = getGridCell(v_textureCoordinates.xy, subGridSizeX, subGridSizeY);
+int cellIndex = cell.x + cell.y * subGridSizeX;
+int cellStart = 0;
+int cellEnd = int(texelFetch(u_gridCellIndicesTexture, int2(cellIndex+2, 0), 0).r);
+if (cellIndex > 0){
+    cellStart = int(texelFetch(u_gridCellIndicesTexture, int2(cellIndex+1, 0), 0).r);
+}
+
+// Iterate over the texels of the line texture
+for (int k = cellStart; k < cellEnd; k++) {
+    int j = k / int(tsizeX);
+    int i = k - j * int(tsizeX);
+
+    // Calculate the texture coordinate for the current texel
+    float texCoordX = (float(i) + 0.5) / tsizeX;
+    float texCoordY = (float(j) + 0.5) / tsizeY;
+
+    // Sample the current texel
+    float4 texel = texture(u_lineTexture, float2(texCoordX, texCoordY));
+    // skip if reaches end, marked by -1 as this should be normalized to [0, 1]
+    if (texel.r == -1.0){
+        break;
+    }
+
+    // Calculate the distance to the current line segment
+    // TODO: for better line rendering on steep slopes, scale by x and y derivatives respectively
+    float3 distV = distanceToLineWithT(v_textureCoordinates.xy, texel);
+    float dist = distV.x;
+
+    // Update the minimum distance
+    if (minDist > dist){
+        minDist = dist;
+        cutFlag = int(texture(u_cutFlagsTexture, float2(texCoordX, texCoordY)).r*255.0);
+        minDistT = distV.y;
+        minDistTLen = distV.z;
+    }
+
+    if ((minDist < threshold) && (cutFlag == 0)){
+        break;
+    }
+
+    // Check if the ray intersects the current line segment
+    // Ray casting
+    // https://autogis-site.readthedocs.io/en/latest/lessons/lesson-3/point-in-polygon-queries.html
+    if ((v_textureCoordinates.y > texel.y && v_textureCoordinates.y <= texel.w) || (v_textureCoordinates.y > texel.w && v_textureCoordinates.y <= texel.y)) {
+        // Compute the x-coordinate of the intersection point
+        float t = (v_textureCoordinates.y - texel.y) / (texel.w - texel.y);
+        float intersectionX = texel.x + t * (texel.z - texel.x);
+
+        // Check if the intersection point is to the right of the ray's origin
+        if (intersectionX > v_textureCoordinates.x) {
+            minDistSign = minDistSign*-1.0;
+        }
+
+    }
+}
+
+// color all inside pixels
+if (minDistSign < 0.0){
+    out_FragColor = float4(0.0, 0.0, 1.0, 1.0); // Blue for close fragments
+}
+float dashedLine = scaleDistTexToFrag(minDistT*minDistTLen, v_textureCoordinates.xy);
+float dashedSegLen = 10.0;
+float dashedSegSolid = 5.0;
+bool dashedSolid = mod(dashedLine, dashedSegLen) < dashedSegSolid; // set to true for solid lines
+// Color the fragment based on the minimum distance
+if ((minDist < threshold) && (cutFlag == 0) && dashedSolid) {
+    out_FragColor = float4(1.0, 0.0, 1.0, 1.0); // Purple for close fragments
+}
+#endif*/
