@@ -1,6 +1,12 @@
 # Change Log {#changes}
 
-### ???
+### v2.24.1 - 2026-03-2
+
+##### Fixes :wrench:
+
+- Fixed an invalid Cesium ion test token.
+
+### v2.24.0 - 2026-03-02
 
 ##### Breaking Changes :mega:
 
@@ -21,6 +27,8 @@
 
 - Added a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
 - Build now uses the tinyxml2 library from Unreal's SDK on Linux and Windows if it is available. This eliminate a source of conflicts with other plugins that also use tinyxml2.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.57.0 to v0.58.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.23.0 - 2026-02-02
 
