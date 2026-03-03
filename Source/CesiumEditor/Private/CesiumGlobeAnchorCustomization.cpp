@@ -280,14 +280,13 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
                           UCesiumGlobeAnchorDerivedProperties,
                           HeightUpdateInterval)) {
     this->GlobeAnchor->Modify();
-    this->GlobeAnchor->SetTilesetHeightUpdateInterval(
-        this->HeightUpdateInterval);
+    this->GlobeAnchor->SetHeightUpdateInterval(this->HeightUpdateInterval);
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
                           ReferencedTileset)) {
     this->GlobeAnchor->Modify();
-    this->GlobeAnchor->SetHeightReferenceTileset(this->ReferencedTileset.Get());
+    this->GlobeAnchor->SetReferencedTileset(this->ReferencedTileset.Get());
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
@@ -376,11 +375,9 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->Height = llh.Z;
 
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
-      this->HeightUpdateInterval =
-          this->GlobeAnchor->GetTilesetHeightUpdateInterval();
+      this->HeightUpdateInterval = this->GlobeAnchor->GetHeightUpdateInterval();
 
-      this->ReferencedTileset =
-          this->GlobeAnchor->GetHeightReferenceTileset().Get();
+      this->ReferencedTileset = this->GlobeAnchor->GetReferencedTileset().Get();
 
       FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
       FRotator rotator = rotation.Rotator();

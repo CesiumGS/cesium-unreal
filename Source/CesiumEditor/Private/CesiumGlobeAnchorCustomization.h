@@ -124,20 +124,19 @@ public:
    * object will move vertically to maintain the specified height.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (InvalidateWidgets))
-  ECesiumHeightReferenceMode HeightReference =
-      ECesiumHeightReferenceMode::Ellipsoid;
+  ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
 
   /**
    * The tileset actor used as a height reference when moving or during LOD
    * transitions. Only used when HeightReference is set to
-   * ECesiumHeightReferenceMode::Tileset.
+   * ECesiumHeightReference::Tileset.
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "HeightReference == ECesiumHeightReferenceMode::Tileset"))
+               "HeightReference == ECesiumHeightReference::Tileset"))
   TObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
 
   /**
@@ -150,8 +149,7 @@ public:
       EditAnywhere,
       Category = "Cesium",
       Meta =
-          (EditCondition =
-               "HeightReference == ECesiumHeightReferenceMode::Tileset",
+          (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
            ClampMin = 1))
   int HeightUpdateInterval = 1;
 

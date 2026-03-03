@@ -15,15 +15,20 @@ class ACesium3DTileset;
  * The frame of reference from which to interpret a given height value.
  */
 UENUM(BlueprintType)
-enum class ECesiumHeightReferenceMode : uint8 {
+enum class ECesiumHeightReference : uint8 {
   /**
    * Height is interpreted relative to the ellipsoid.
    */
-  Ellipsoid UMETA(DisplayName = "Ellipsoid"),
+  Ellipsoid,
   /**
    * Height is interpreted relative to the surface of a 3D tileset.
    */
-  Tileset UMETA(DisplayName = "Tileset")
+  Tileset,
+  /**
+   * Height is interpreted based on the HeightReference and ReferencedTileset
+   * values of the associated CesiumGlobeAnchor component.
+   */
+  None,
 };
 
 /**
@@ -72,21 +77,26 @@ private:
    * "Tileset" indicates a height above a given tileset. The
    * object will move vertically to maintain the specified height.
    */
-  UPROPERTY()
-  ECesiumHeightReferenceMode HeightReference =
-      ECesiumHeightReferenceMode::Ellipsoid;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReference,
+      BlueprintSetter = SetHeightReference,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess, ReturnDisplayName = "Height Reference"))
+  ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
 
   /**
    * The tileset actor to use as a height reference for the object. The object
    * will maintain its height relative to this tileset even through movement or
    * level-of-detail transitions. Only used when HeightReference is set to
-   * ECesiumHeightReferenceMode::Tileset.
+   * ECesiumHeightReference::Tileset.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      BlueprintGetter = GetHeightReferenceTileset,
-      BlueprintSetter = SetHeightReferenceTileset,
+      BlueprintGetter = GetReferencedTileset,
+      BlueprintSetter = SetReferencedTileset,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
@@ -97,7 +107,13 @@ private:
    *
    * A value of 1 causes Height to be updated on every Tick.
    */
-  UPROPERTY()
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightUpdateInterval,
+      BlueprintSetter = SetHeightUpdateInterval,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess, ReturnDisplayName = "Height Update Interval"))
   int HeightUpdateInterval = 1;
 
   /**
@@ -231,24 +247,26 @@ public:
   void
   SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
 
-  UFUNCTION(BlueprintGetter)
-  ECesiumHeightReferenceMode GetHeightReference() const;
-
-  UFUNCTION(BlueprintSetter)
-  void SetHeightReference(ECesiumHeightReferenceMode NewHeightReference);
-
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  TSoftObjectPtr<ACesium3DTileset> GetHeightReferenceTileset() const;
+  ECesiumHeightReference GetHeightReference() const;
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void
-  SetHeightReferenceTileset(const TSoftObjectPtr<ACesium3DTileset>& NewTileset);
+  void SetHeightReference(ECesiumHeightReference NewHeightReference);
 
-  UFUNCTION(BlueprintGetter)
-  int GetTilesetHeightUpdateInterval() const;
+  UFUNCTION(
+      BlueprintGetter,
+      Category = "Cesium",
+      Meta = (ReturnDisplayName = "Referenced Tileset"))
+  TSoftObjectPtr<ACesium3DTileset> GetReferencedTileset() const;
 
-  UFUNCTION(BlueprintSetter)
-  void SetTilesetHeightUpdateInterval(int NewHeightReferenceUpdateInterval);
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetReferencedTileset(const TSoftObjectPtr<ACesium3DTileset>& NewTileset);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  int GetHeightUpdateInterval() const;
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetHeightUpdateInterval(int NewHeightReferenceUpdateInterval);
 
   /**
    * Gets the resolved georeference used by this component. This is not
@@ -259,7 +277,7 @@ public:
    * This property will be null before ResolveGeoreference is called, which
    * happens automatically when the component is registered.
    */
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ACesiumGeoreference* GetResolvedGeoreference() const;
 
   /**
@@ -405,15 +423,16 @@ public:
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
    *
-   * When HeightReference is Tileset, and a valid ReferencedTileset is
+   * When HeightReferenceOverride is Tileset, and a valid ReferencedTileset is
    * set, the Z height value is the height above the reference tileset.
    */
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
-  FVector
-  GetLongitudeLatitudeHeight(const bool OverrideHeightReference = false) const;
+  FVector GetLongitudeLatitudeHeight(
+      const ECesiumHeightReference HeightReferenceOverride =
+          ECesiumHeightReference::None) const;
 
   /**
    * Gets the longitude in degrees.
@@ -435,11 +454,11 @@ public:
 
   /**
    * Gets the height in meters above the ellipsoid or tileset, depending on
-   * the value of HeightReference.
+   * the value of HeightReferenceOverride.
    *
-   * When OverrideHeightReference is true, this returns the height above the
-   * reference tileset, if set. Otherwise, it will return the height above
-   * the ellipsoid.
+   * When HeightReferenceOverride is Tileset or None, this returns the height
+   * above the reference tileset, if set. Otherwise, it will return the height
+   * above the ellipsoid.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
@@ -449,7 +468,9 @@ public:
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "Height"))
-  double GetHeight(const bool OverrideHeightReference = false) const;
+  double GetHeight(
+      const ECesiumHeightReference HeightReferenceOverride =
+          ECesiumHeightReference::None) const;
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in
@@ -460,7 +481,7 @@ public:
    * level, which can be tens of meters higher or lower depending on where in
    * the world the object is located.
    *
-   * When HeightReference is Tileset, and a valid ReferencedTileset is
+   * When HeightReferenceOverride is Tileset, and a valid ReferencedTileset is
    * set, the Z height value is the desired height above the reference tileset.
    *
    * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
@@ -469,7 +490,8 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void MoveToLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeight,
-      const bool OverrideHeightReference = false);
+      const ECesiumHeightReference HeightReferenceOverride =
+          ECesiumHeightReference::None);
 
   /**
    * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in
@@ -683,7 +705,16 @@ private:
   /**
    * Determines if HeightReference is Tileset and ReferencedTileset is set.
    */
-  bool _isUsingHeightReference() const;
+  bool _isUsingHeightReference(
+      const ECesiumHeightReference heightReferenceOverride =
+          ECesiumHeightReference::None) const;
+
+  /**
+   * Compute a down vector at the specified position in Unreal coordinates
+   */
+  FVector _computeLocalDown(
+      const ACesiumGeoreference* pGeoreference,
+      const FVector& unrealWorldPosition) const;
 
   /**
    * Project the component's position onto the tileset specified by

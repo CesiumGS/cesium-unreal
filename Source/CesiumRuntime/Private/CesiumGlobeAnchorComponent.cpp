@@ -96,7 +96,7 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightReference(
-    ECesiumHeightReferenceMode NewHeightReference) {
+    ECesiumHeightReference NewHeightReference) {
 
   if (this->HeightReference != NewHeightReference) {
     this->HeightReference = NewHeightReference;
@@ -104,17 +104,16 @@ void UCesiumGlobeAnchorComponent::SetHeightReference(
   }
 }
 
-ECesiumHeightReferenceMode
-UCesiumGlobeAnchorComponent::GetHeightReference() const {
+ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
   return this->HeightReference;
 }
 
 TSoftObjectPtr<ACesium3DTileset>
-UCesiumGlobeAnchorComponent::GetHeightReferenceTileset() const {
+UCesiumGlobeAnchorComponent::GetReferencedTileset() const {
   return this->ReferencedTileset;
 }
 
-void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(
+void UCesiumGlobeAnchorComponent::SetReferencedTileset(
     const TSoftObjectPtr<ACesium3DTileset>& NewTileset) {
   if (this->ReferencedTileset != NewTileset) {
     this->ReferencedTileset = NewTileset;
@@ -122,12 +121,12 @@ void UCesiumGlobeAnchorComponent::SetHeightReferenceTileset(
   }
 }
 
-void UCesiumGlobeAnchorComponent::SetTilesetHeightUpdateInterval(
+void UCesiumGlobeAnchorComponent::SetHeightUpdateInterval(
     int NewTilesetHeightUpdateInterval) {
   this->HeightUpdateInterval = NewTilesetHeightUpdateInterval;
 }
 
-int UCesiumGlobeAnchorComponent::GetTilesetHeightUpdateInterval() const {
+int UCesiumGlobeAnchorComponent::GetHeightUpdateInterval() const {
   return this->HeightUpdateInterval;
 }
 
@@ -372,16 +371,15 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
-    const bool OverrideHeightReference) const {
+    const ECesiumHeightReference HeightReferenceOverride) const {
   ELLIPSOID_CHECK(this, FVector::ZeroVector);
   FVector position =
       this->GetEllipsoid()
           ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
               this->GetEarthCenteredEarthFixedPosition());
-
   // When using a height reference, the height reported back to the caller
   // will always be the fixed height above the reference.
-  if (!OverrideHeightReference && this->_isUsingHeightReference()) {
+  if (this->_isUsingHeightReference(HeightReferenceOverride)) {
     position.Z = this->_fixedHeightAboveHeightReference;
   }
   return position;
@@ -389,13 +387,13 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight,
-    const bool OverrideHeightReference) {
+    const ECesiumHeightReference HeightReferenceOverride) {
   ELLIPSOID_CHECK(this, );
 
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
   FVector tilesetPosition{};
 
-  if (!OverrideHeightReference && this->_isUsingHeightReference() &&
+  if (this->_isUsingHeightReference(HeightReferenceOverride) &&
       this->_queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {
@@ -411,8 +409,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
 }
 
 double UCesiumGlobeAnchorComponent::GetHeight(
-    const bool OverrideHeightReference) const {
-  return this->GetLongitudeLatitudeHeight(OverrideHeightReference).Z;
+    const ECesiumHeightReference HeightReferenceOverride) const {
+  return this->GetLongitudeLatitudeHeight(HeightReferenceOverride).Z;
 }
 
 namespace {
@@ -838,7 +836,8 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 }
 
 bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
-  FVector llh = this->GetLongitudeLatitudeHeight(true);
+  FVector llh =
+      this->GetLongitudeLatitudeHeight(ECesiumHeightReference::Ellipsoid);
   FVector groundPosition{};
   if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
           groundPosition,
@@ -850,55 +849,53 @@ bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
   }
 }
 
-bool UCesiumGlobeAnchorComponent::_isUsingHeightReference() const {
-  return this->GetHeightReference() == ECesiumHeightReferenceMode::Tileset &&
-         this->GetHeightReferenceTileset() != nullptr;
+bool UCesiumGlobeAnchorComponent::_isUsingHeightReference(
+    const ECesiumHeightReference heightReferenceOverride) const {
+  return (heightReferenceOverride == ECesiumHeightReference::Tileset ||
+          (heightReferenceOverride == ECesiumHeightReference::None &&
+           this->HeightReference == ECesiumHeightReference::Tileset)) &&
+         this->GetReferencedTileset() != nullptr;
+}
+
+FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
+    const ACesiumGeoreference* pGeoreference,
+    const FVector& unrealWorldPosition) const {
+  FVector ecefPosition =
+      pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
+          unrealWorldPosition);
+  glm::dvec3 glmNormal =
+      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+          VecMath::createVector3D(ecefPosition));
+  FVector localUp =
+      pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(
+          VecMath::createVector(glmNormal));
+  return -1 * localUp;
 }
 
 bool UCesiumGlobeAnchorComponent::
     _queryLongitudeLatitudeHeightPositionOnTileset(
         FVector& groundIntersection,
         const std::optional<FVector>& alternateStartPosition) {
-  if (!GetOwner() || !GetWorld() || !this->GetHeightReferenceTileset()) {
-    return false;
-  }
-
   ACesiumGeoreference* pGeoreference = ResolveGeoreference();
-
-  if (!IsValid(pGeoreference))
+  if (!GetOwner() || !GetWorld() || !this->GetReferencedTileset() ||
+      !IsValid(pGeoreference))
     return false;
 
-  // Get the actor's current world position
   FVector startPosition =
       alternateStartPosition.has_value()
           ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
-                alternateStartPosition.value())
+                *alternateStartPosition)
           : GetOwner()->GetActorLocation();
 
-  // Compute the local "down" direction using the geodetic surface normal
-  FVector ecefPosition =
-      pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
-          startPosition);
-  // get the surface normal at the actor's position.
-  glm::dvec3 glmPosition = VecMath::createVector3D(ecefPosition);
-  glm::dvec3 glmNormal =
-      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(glmPosition);
-  FVector ecefUp = VecMath::createVector(glmNormal);
-
-  FVector localUp =
-      pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(ecefUp);
-  FVector localDown = -localUp;
+  FVector localDown = _computeLocalDown(pGeoreference, startPosition);
 
   constexpr double traceDistance = 1000000.0;
-  // Set up the line trace start and end points along the local down direction
-  FVector rayStart = startPosition + localUp * traceDistance;
+  FVector rayStart = startPosition - localDown * traceDistance;
   FVector rayEnd = startPosition + localDown * traceDistance;
 
   FCollisionQueryParams queryParams{};
-  // Ignore the owner actor to avoid self collision
   queryParams.AddIgnoredActor(GetOwner());
   queryParams.bTraceComplex = true;
-  queryParams.bReturnPhysicalMaterial = false;
 
   TArray<FHitResult> hitResults;
   if (!GetWorld()->LineTraceMultiByChannel(
@@ -917,6 +914,7 @@ bool UCesiumGlobeAnchorComponent::
       return true;
     }
   }
+
   return false;
 }
 
