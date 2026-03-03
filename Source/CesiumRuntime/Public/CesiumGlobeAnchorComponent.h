@@ -462,7 +462,7 @@ public:
   double GetLatitude() const { return this->GetLongitudeLatitudeHeight().Y; }
 
   /**
-  * Gets the height in meters relative to the height reference.
+  * Gets the height in meters above the specified height reference.
   *
   * When HeightReferenceOverride is None, this function will use the
   HeightReference that is set on the component.
