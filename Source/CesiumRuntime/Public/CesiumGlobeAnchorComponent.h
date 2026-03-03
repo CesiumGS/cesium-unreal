@@ -25,8 +25,8 @@ enum class ECesiumHeightReference : uint8 {
    */
   Tileset,
   /**
-   * Height is interpreted based on the HeightReference and ReferencedTileset
-   * values of the associated CesiumGlobeAnchor component.
+   * No specified Height Reference. Used only for HeightReferenceOverride
+   * in the CesiumGlobeAnchor Blueprints.  Do not use otherwise.
    */
   None,
 };
@@ -83,14 +83,17 @@ private:
       BlueprintGetter = GetHeightReference,
       BlueprintSetter = SetHeightReference,
       Category = "Cesium",
-      Meta = (AllowPrivateAccess, ReturnDisplayName = "Height Reference"))
+      Meta =
+          (AllowPrivateAccess,
+           ReturnDisplayName = "Height Reference",
+           InvalidEnumValues = "None"))
   ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
 
   /**
    * The tileset actor to use as a height reference for the object. The object
    * will maintain its height relative to this tileset even through movement or
    * level-of-detail transitions. Only used when HeightReference is set to
-   * ECesiumHeightReference::Tileset.
+   * Tileset.
    */
   UPROPERTY(
       EditAnywhere,
@@ -291,7 +294,7 @@ public:
   ACesiumGeoreference* ResolveGeoreference(bool bForceReresolve = false);
 
   /**
-   * Obtains the {@link UCesiumEllipsoid} set on the georeference used by this
+   * Obtains the (@ref UCesiumEllipsoid) set on the georeference used by this
    * component.
    */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
@@ -417,14 +420,20 @@ public:
 public:
   /**
    * Gets the longitude in degrees (X), latitude in degrees (Y),
-   * and height in meters above the ellipsoid (Z) of the actor.
+   * and height in meters relative to the specified height reference.
+   *
+   * When HeightReferenceOverride is None, this function will use the
+   * HeightReference that is set on the component.
+   *
+   * Otherwise, when HeightReference is Tileset and a valid ReferencedTileset is
+   * set, the returned value is the height above the reference tileset.
+   *
+   * Likewise, when HeightReferenceOverride is Ellipsoid, the returned value is
+   * the height above the ellipsoid in meters.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
-   *
-   * When HeightReferenceOverride is Tileset, and a valid ReferencedTileset is
-   * set, the Z height value is the height above the reference tileset.
    */
   UFUNCTION(
       BlueprintPure,
@@ -453,17 +462,21 @@ public:
   double GetLatitude() const { return this->GetLongitudeLatitudeHeight().Y; }
 
   /**
-   * Gets the height in meters above the ellipsoid or tileset, depending on
-   * the value of HeightReferenceOverride.
-   *
-   * When HeightReferenceOverride is Tileset or None, this returns the height
-   * above the reference tileset, if set. Otherwise, it will return the height
-   * above the ellipsoid.
-   *
-   * Do not confuse the ellipsoid height with a geoid height or height above
-   * mean sea level, which can be tens of meters higher or lower depending on
-   * where in the world the object is located.
-   */
+  * Gets the height in meters relative to the height reference.
+  *
+  * When HeightReferenceOverride is None, this function will use the
+  HeightReference that is set on the component.
+  *
+  * Otherwise, when HeightReference is Tileset and a valid ReferencedTileset is
+  set, the returned value is the height above the reference tileset.
+  *
+  * Likewise, when HeightReferenceOverride is Ellipsoid, the returned value is
+  the height above the ellipsoid in meters.
+
+  * Do not confuse the ellipsoid height with a geoid height or height above
+  * mean sea level, which can be tens of meters higher or lower depending on
+  * where in the world the object is located.
+  */
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
@@ -476,13 +489,20 @@ public:
    * Moves the Actor to which this component is attached to a given longitude in
    * degrees (X), latitude in degrees (Y), and height in meters (Z).
    *
-   * The Height (Z) is measured in meters above the ellipsoid. Do not
+   * When HeightReferenceOverride is None, this function will use the
+   * HeightReference that is set on the component.
+   *
+   * Otherwise, when HeightReferenceOverride is Tileset and a valid
+   * ReferencedTileset is set, the height is the height in meters above the
+   * referenced tileset.
+   *
+   * Likewise, when HeightReferenceOverride is Ellipsoid, the height value is
+   * the height in meters above the ellipsoid in meters.
+   *
+   * The Height is measured in meters above the reference. Do not
    * confuse an ellipsoidal height with a geoid height or height above mean sea
    * level, which can be tens of meters higher or lower depending on where in
    * the world the object is located.
-   *
-   * When HeightReferenceOverride is Tileset, and a valid ReferencedTileset is
-   * set, the Z height value is the desired height above the reference tileset.
    *
    * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
    * orientation will also be adjusted to account for globe curvature.

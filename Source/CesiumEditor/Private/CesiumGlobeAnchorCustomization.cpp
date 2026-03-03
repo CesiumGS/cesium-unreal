@@ -77,6 +77,11 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
 
   DetailBuilder.HideProperty(
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ReferencedTileset));
+  DetailBuilder.HideProperty(
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, HeightReference));
+  DetailBuilder.HideProperty(GET_MEMBER_NAME_CHECKED(
+      UCesiumGlobeAnchorComponent,
+      HeightUpdateInterval));
 
   if (!bIsMultiSelect) {
     this->UpdateDerivedProperties();
@@ -375,9 +380,8 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->Height = llh.Z;
 
       this->HeightReference = this->GlobeAnchor->GetHeightReference();
-      this->HeightUpdateInterval = this->GlobeAnchor->GetHeightUpdateInterval();
-
       this->ReferencedTileset = this->GlobeAnchor->GetReferencedTileset().Get();
+      this->HeightUpdateInterval = this->GlobeAnchor->GetHeightUpdateInterval();
 
       FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
       FRotator rotator = rotation.Rotator();

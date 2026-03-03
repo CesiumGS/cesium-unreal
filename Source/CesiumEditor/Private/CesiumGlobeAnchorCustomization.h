@@ -104,7 +104,7 @@ public:
   double Longitude = 0.0;
 
   /**
-   * The height in meters above the ellipsoid.
+   * The height in meters above the ellipsoid or referenced tileset.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
@@ -116,27 +116,29 @@ public:
   /**
    * The frame of reference in which to interpret the object's height.
    *
-   * "Ellipsoid" indicates the object's height above the ellipsoid set on the
+   * Ellipsoid indicates the object's height above the ellipsoid set on the
    * CesiumGeoreference. The object will remain at this height unless it is
    * otherwise changed.
    *
-   * "Tileset" indicates a height above a given tileset. The
+   * Tileset indicates height above the referenced tileset. The
    * object will move vertically to maintain the specified height.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (InvalidateWidgets))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (InvalidateWidgets, HideInDetailPanel, InvalidEnumValues = "None"))
   ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
 
   /**
    * The tileset actor used as a height reference when moving or during LOD
-   * transitions. Only used when HeightReference is set to
-   * ECesiumHeightReference::Tileset.
+   * transitions. Only used when HeightReference is set to Tileset.
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       Meta =
-          (EditCondition =
-               "HeightReference == ECesiumHeightReference::Tileset"))
+          (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
+           HideInDetailPanel))
   TObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
 
   /**
@@ -150,7 +152,8 @@ public:
       Category = "Cesium",
       Meta =
           (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
-           ClampMin = 1))
+           ClampMin = 1,
+           HideInDetailPanel))
   int HeightUpdateInterval = 1;
 
   /**
