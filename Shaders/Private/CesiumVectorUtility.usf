@@ -34,3 +34,21 @@ int ConstructInt(in float2 value)
 {
   return int(value.x * 255.0) + (256 * int(value.y * 255.0));
 }
+
+/**
+* Converts a position from Unit Shape Space coordinates to UV Space.
+* [-1, -1] => [0, 1]
+*/
+float3 UnitToUV(float3 UnitPosition)
+{
+  return 0.5 * UnitPosition + 0.5;
+}
+
+/**
+* Converts a position from UV Space coordinates to Unit Shape Space.
+* [0, 1] => [-1, -1]
+*/
+float3 UVToUnit(float3 UVPosition)
+{
+  return 2.0 * UVPosition - 1.0;
+}

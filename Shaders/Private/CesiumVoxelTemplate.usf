@@ -96,12 +96,21 @@ struct VoxelMegatextures
   MAIN FUNCTION BODY
 =============================*/
 
+// HLSL does not like array struct members, so the data has to be stored at the top-level.
+// The size is also hardcoded because dynamically sized arrays are not allowed.
+float4 miss = float4(0, 0, 0, NO_HIT);
+float4 IntersectionList[INTERSECTIONS_LENGTH] =
+{
+  miss, miss, miss, miss, miss, miss, miss,
+  miss, miss, miss, miss, miss, miss, miss,
+};
+
 #define STEP_COUNT_MAX 1000
 #define ALPHA_ACCUMULATION_MAX 0.98 // Must be > 0.0 and <= 1.0
 
 VoxelOctree Octree;
 Octree.GridShape = (Shape) 0;
-Octree.GridShape.Initialize(ShapeConstant);
+Octree.GridShape.Initialize(ShapeConstant, ShapeMinBounds, ShapeMaxBounds, PackedData0, PackedData1, PackedData2, PackedData3, PackedData4, PackedData5);
 
 Ray R = (Ray) 0;
 R.Origin = RayOrigin;
@@ -132,7 +141,7 @@ R.Direction = RayDirection;
 // Shape UV Space: Voxel space from [0, 1] conforming to the actual voxel volume. The volume could be a box, a part of a cylinder, or a region on an ellipsoid.
 // (Vanilla) UV Space: Voxel space within an untransformed voxel octree. This can be envisioned as a simple cube spanning [0, 1] in three dimensions.
 
-RayIntersections Intersections = Octree.GridShape.Intersect(R);
+RayIntersections Intersections = Octree.GridShape.Intersect(R, IntersectionList);
 if (Intersections.Entry.t == NO_HIT) {
   return 0;
 }
@@ -157,6 +166,7 @@ switch (ShapeConstant) {
     DataTextures.PaddingBefore = round(PaddingBefore.xzy);
     DataTextures.PaddingAfter = round(PaddingAfter.xzy);
     break;
+  case ELLIPSOID:
   default:
     DataTextures.GridDimensions = round(GridDimensions);
     DataTextures.PaddingBefore = round(PaddingBefore);
@@ -174,7 +184,13 @@ float3 PositionUV = R.Origin + CurrentT * R.Direction;
 float3x3 JacobianT;
 float3 PositionShapeUVSpace = Octree.GridShape.ConvertUVToShapeUVSpace(PositionUV, JacobianT);
 
+// For ellipsoids, the UV direction has been scaled to a space where the ellipsoid is a sphere.
+// Undo this scaling to get the raw direction.
 float3 RawDirection = R.Direction;
+if (ShapeConstant == ELLIPSOID)
+{
+  RawDirection *= Octree.GridShape.RegionShape.RadiiUV;
+}
 
 OctreeTraversal Traversal;
 TileSample Sample;
@@ -209,7 +225,19 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
   // Keep raymarching
   CurrentT += NextIntersection.t;
   if (CurrentT > EndT) {
-    break;
+    if (ShapeConstant == ELLIPSOID) {
+      // For CYLINDER: once clipping / exaggeration is supported, this must be done for cylinders too.
+      Intersections = Octree.GridShape.ListState.GetNextIntersections(IntersectionList);
+      if (Intersections.Entry.t == NO_HIT) {
+        break;
+      } else {
+        // Found another intersection. Resume raymarching there
+        CurrentT = Intersections.Entry.t;
+        EndT = Intersections.Exit.t;
+      } 
+    } else {
+        break;
+    }
   }
 
   PositionUV = R.Origin + CurrentT * R.Direction;
