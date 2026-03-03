@@ -926,10 +926,10 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     return;
   }
 
-  UWorld* pWorld = GetWorld();
   this->_setNewActorToECEFFromRelativeTransform();
 
 #if WITH_EDITOR
+  UWorld* pWorld = GetWorld();
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
       this->_isUsingHeightReference()) {
     this->_setHeightFromReference();

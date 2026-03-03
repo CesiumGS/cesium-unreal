@@ -8,9 +8,9 @@
 
 ##### Additions :tada:
 
-- Added `UCesiumGlobeAnchorComponent::HeightReferenceTileset`. Set this field to a `ACesium3DTileset` actor reference to maintain a fixed height relative to the tileset.
-- Added `UCesiumGlobeAnchorComponent::HeightReference`. Setting this to `ECesiumHeightReferenceMode::Tileset` will cause the actor to maintain its height above the specified tileset LOD transitions or object movement.
-- Added `UCesiumGlobeAnchorComponent::TilesetHeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
+- Added `UCesiumGlobeAnchorComponent::HeightReference`. Setting this to `ECesiumHeightReference::Tileset` will cause the actor to maintain its height above the specified tileset during LOD transitions or object movement.
+- Added `UCesiumGlobeAnchorComponent::ReferencedTileset`. Set this field to a `ACesium3DTileset` actor reference to maintain a fixed height above the tileset.
+- Added `UCesiumGlobeAnchorComponent::HeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
 - Added support for loading tilesets with the `KHR_gaussian_splatting` extension.
 - Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
 - Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
