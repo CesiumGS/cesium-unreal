@@ -129,7 +129,7 @@ public class CesiumEditor : ModuleRules
 #if UE_5_7_OR_LATER
         IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 #else
-        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_2;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 #endif
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         CppStandard = CppStandardVersion.Cpp20;
