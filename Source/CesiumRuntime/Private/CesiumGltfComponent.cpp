@@ -2071,10 +2071,6 @@ static void loadPrimitive(
       model.meshes[options.pMeshOptions->meshIndex]
           .primitives[options.primitiveIndex];
 
-  if (primitive.attributes.empty()) {
-    return;
-  }
-
   if (const auto* pGaussianSplattingExtension =
           primitive.getExtension<CesiumGltf::ExtensionKhrGaussianSplatting>();
       pGaussianSplattingExtension) {
@@ -2086,12 +2082,14 @@ static void loadPrimitive(
         options);
     return;
   }
+
   if (const auto* pVoxelExtension =
           primitive.getExtension<CesiumGltf::ExtensionExtPrimitiveVoxels>();
       pVoxelExtension) {
     loadVoxels(result, primitive, *pVoxelExtension, transform, options);
     return;
   }
+
   auto positionAccessorIt =
       primitive.attributes.find(CesiumGltf::VertexAttributeSemantics::POSITION);
   if (positionAccessorIt == primitive.attributes.end()) {
