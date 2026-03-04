@@ -322,7 +322,7 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
  * @brief Supported statistic semantics from the 3D Tiles specification.
  */
 UENUM()
-enum class ECesiumMetadataStatisticSemantic {
+enum class ECesiumMetadataStatisticSemantic : uint8 {
   None = 0 UMETA(Hidden),
   /**
    * The minimum property value occurring in the tileset.

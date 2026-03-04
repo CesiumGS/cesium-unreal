@@ -21,7 +21,7 @@ class SScrollBox;
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
-enum class ECesiumMetadataStatisticSemantic;
+enum class ECesiumMetadataStatisticSemantic : uint8;
 
 enum class ComponentSearchResult;
 

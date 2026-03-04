@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumFeaturesMetadataDescription.h"
+#include "CesiumMetadataComponent.h"
 #include "Templates/UniquePtr.h"
 
 #if WITH_EDITOR
@@ -53,7 +54,8 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
  * "Generate Material" button.
  */
 UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumVoxelMetadataComponent : public UActorComponent {
+class CESIUMRUNTIME_API UCesiumVoxelMetadataComponent
+    : public UCesiumMetadataComponent {
   GENERATED_BODY()
 
 public:
@@ -143,15 +145,19 @@ public:
       Meta =
           (TitleProperty = "Voxel Class", DisplayAfter = "AdditionalFunctions"))
   FCesiumVoxelClassDescription Description;
-
   /**
    * Gets a preview of the generated custom shader.
    */
   FString getCustomShaderPreview() const;
 
+protected:
+  virtual void OnFetchMetadata(
+      ACesium3DTileset* pActor,
+      const Cesium3DTilesSelection::TilesetMetadata* pMetadata);
+  virtual void ClearStatistics();
+
 private:
   TObjectPtr<UTexture> _pDefaultVolumeTexture;
-
 #if WITH_EDITOR
   static const FString _shaderPreviewTemplate;
 #endif

@@ -478,19 +478,13 @@ TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createStatisticRow(
                             EVerticalAlignment::VAlign_Center)[pRemoveButton]]];
 }
 
-TSharedRef<SExpandableArea>
-CesiumVoxelShaderBuilder::createPropertyStatisticsDropdown(
-    TSharedRef<VoxelProperty> pItem,
-    const TSharedRef<STableViewBase>& list) {
-  return SNew(SExpandableArea)
-      .InitiallyCollapsed(true)
-      .HeaderContent()[SNew(STextBlock).Text(FText::FromString(*pItem->pId))]
-      .BodyContent()[SNew(SListView<TSharedRef<StatisticView>>)
-                         .ListItemsSource(&pItem->statistics)
-                         .SelectionMode(ESelectionMode::None)
-                         .OnGenerateRow(
-                             this,
-                             &CesiumVoxelShaderBuilder::createStatisticRow)];
+TSharedRef<SListView<TSharedRef<StatisticView>>>
+CesiumVoxelShaderBuilder::createPropertyStatisticsList(
+    TSharedRef<VoxelProperty> pItem) {
+  return SNew(SListView<TSharedRef<StatisticView>>)
+      .ListItemsSource(&pItem->statistics)
+      .SelectionMode(ESelectionMode::None)
+      .OnGenerateRow(this, &CesiumVoxelShaderBuilder::createStatisticRow);
 }
 
 template <typename TEnum>
@@ -740,22 +734,14 @@ TSharedRef<ITableRow> CesiumVoxelShaderBuilder::createVoxelPropertyDropdown(
     const TSharedRef<STableViewBase>& list) {
   TSharedRef<SVerticalBox> pPropertyRow = SNew(SVerticalBox);
   pPropertyRow->AddSlot()[createPropertyRow(pItem)];
+  pPropertyRow->AddSlot()[createPropertyStatisticsList(pItem)].AutoHeight();
 
   return SNew(STableRow<TSharedRef<VoxelProperty>>, list)
-      .Content()
-          [SNew(SExpandableArea)
-               .InitiallyCollapsed(true)
-               .HeaderContent()[SNew(STextBlock)
-                                    .Text(FText::FromString(*pItem->pId))]
-               .BodyContent()[pPropertyRow /*SNew(
-                                   SListView<TSharedRef<PropertyInstance>>)
-                                   .ListItemsSource(&pItem->instances)
-                                   .SelectionMode(ESelectionMode::None)
-                                   .OnGenerateRow(
-                                       this,
-                                       &CesiumFeaturesMetadataViewer::
-                                           createPropertyInstanceRow)*/
-  ]];
+      .Content()[SNew(SExpandableArea)
+                     .InitiallyCollapsed(true)
+                     .HeaderContent()[SNew(STextBlock)
+                                          .Text(FText::FromString(*pItem->pId))]
+                     .BodyContent()[pPropertyRow]];
 }
 
 void CesiumVoxelShaderBuilder::createVoxelClassDropdown() {

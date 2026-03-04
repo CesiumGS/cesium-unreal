@@ -89,9 +89,8 @@ private:
   TSharedRef<ITableRow> createStatisticRow(
       TSharedRef<StatisticView> pItem,
       const TSharedRef<STableViewBase>& list);
-  TSharedRef<SExpandableArea> createPropertyStatisticsDropdown(
-      TSharedRef<VoxelProperty> pItem,
-      const TSharedRef<STableViewBase>& list);
+  TSharedRef<SListView<TSharedRef<StatisticView>>>
+  createPropertyStatisticsList(TSharedRef<VoxelProperty> pItem);
 
   TSharedRef<SBox> createPropertyRow(TSharedRef<VoxelProperty> pItem);
   TSharedRef<ITableRow> createVoxelPropertyDropdown(

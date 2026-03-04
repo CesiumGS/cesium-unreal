@@ -1,8 +1,11 @@
 #include "GenerateMaterialUtility.h"
 
 #include "CesiumMetadataEncodingDetails.h"
+#include "CesiumMetadataValue.h"
 #include "Containers/Map.h"
 #include "EncodedFeaturesMetadata.h"
+
+#include <Cesium3DTiles/PropertyStatistics.h>
 
 #if WITH_EDITOR
 
@@ -27,9 +30,11 @@
 #include "UObject/Package.h"
 
 extern UNREALED_API class UEditorEngine* GEditor;
+#endif
 
 namespace GenerateMaterialUtility {
 
+#if WITH_EDITOR
 UMaterialFunctionMaterialLayer*
 CreateMaterialLayer(const FString& PackageName, const FString& MaterialName) {
   UPackage* Package = CreatePackage(*PackageName);
@@ -181,6 +186,46 @@ UMaterialExpressionParameter* GenerateParameterNode(
 
   return Parameter;
 }
-} // namespace GenerateMaterialUtility
-
 #endif
+
+FCesiumMetadataValue getValueForSemantic(
+    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const FCesiumMetadataValueType& propertyType,
+    ECesiumMetadataStatisticSemantic semantic) {
+  CesiumUtility::JsonValue nullValue;
+
+  switch (semantic) {
+  case ECesiumMetadataStatisticSemantic::Min:
+    return FCesiumMetadataValue(
+        propertyStatistics.min.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Max:
+    return FCesiumMetadataValue(
+        propertyStatistics.max.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Mean:
+    return FCesiumMetadataValue(
+        propertyStatistics.mean.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Median:
+    return FCesiumMetadataValue(
+        propertyStatistics.median.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::StandardDeviation:
+    return FCesiumMetadataValue(
+        propertyStatistics.standardDeviation.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Variance:
+    return FCesiumMetadataValue(
+        propertyStatistics.variance.value_or(nullValue),
+        propertyType);
+  case ECesiumMetadataStatisticSemantic::Sum:
+    return FCesiumMetadataValue(
+        propertyStatistics.sum.value_or(nullValue),
+        propertyType);
+  default:
+    return FCesiumMetadataValue();
+  }
+}
+
+} // namespace GenerateMaterialUtility
