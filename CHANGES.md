@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Added a call to `AsyncSystem::dispatchMainThreadTasks` to account for a change in Cesium Native, which no longer calls that function itself.
+
 ### v2.24.1 - 2026-03-2
 
 ##### Fixes :wrench:
