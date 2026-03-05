@@ -896,7 +896,8 @@ FString getNameForStatistic(
     const FString& classId,
     const FString& propertyId,
     ECesiumMetadataStatisticSemantic semantic) {
-  return createHlslSafeName(classId + "_" + propertyId) +
+  FString sourceName = classId.Len() ? classId + "_" + propertyId : propertyId;
+  return createHlslSafeName(sourceName) +
          MaterialPropertyStatisticSuffixes[semantic];
 }
 

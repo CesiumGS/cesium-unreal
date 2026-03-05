@@ -11,17 +11,18 @@
   BEGIN CUSTOM SHADER
 =========================*/
 
-struct CustomShader
+struct CustomShaderProperties
 {
 
- // Properties
+ // Declare properties and statistics
 %s
 
- // Additional Functions
+ // Additional functions.
 %s
   
   float4 Shade()
   {
+    // Custom shader code.
 %s
   }
 };
@@ -36,6 +37,7 @@ struct CustomShader
 
 struct VoxelMegatextures
 {
+  // Property data textures.
   %s
   int ShapeConstant;
   uint3 TileCount; // Number of tiles in the texture, in three dimensions.
@@ -59,7 +61,7 @@ struct VoxelMegatextures
     return int3(X, Y, Z) * (GridDimensions + PaddingBefore + PaddingAfter);
   }
   
-  CustomShaderProperties GetProperties(in TileSample Sample)
+  void GetProperties(in TileSample Sample, inout CustomShaderProperties Properties)
   {
     // Compute the tile location within the texture.
     float3 TileCoords = TileIndexToCoords(Sample.Index);
@@ -80,11 +82,9 @@ struct VoxelMegatextures
     VoxelCoords = clamp(VoxelCoords + float3(PaddingBefore), 0, float3(DataDimensions - 1u));
     
     int3 Coords = TileCoords + VoxelCoords;
-    
-    CustomShaderProperties Properties = (CustomShaderProperties) 0;
- %s
 
-    return Properties;
+    // Set the properties based on the voxel sample.
+    %s
   }
 };
 
@@ -164,6 +164,7 @@ switch (ShapeConstant) {
     break;
 }
 
+// Pass textures to the VoxelMegatextures struct.
 %s
 
 float CurrentT = Intersections.Entry.t;
@@ -184,11 +185,13 @@ Intersection NextIntersection = Octree.GetNextVoxelIntersection(Sample, RawDirec
 float4 AccumulatedResult = float4(0, 0, 0, 0);
 
 CustomShaderProperties Properties;
-CustomShader CS;
+
+// Set statistic values, if any.
+%s
 
 for (int step = 0; step < STEP_COUNT_MAX; step++) {
   if (Sample.Index >= 0) {
-    Properties = DataTextures.GetProperties(Sample);
+    DataTextures.GetProperties(Sample, Properties);
     // TODO: expose additional properties?
     float4 result = CS.Shade(Properties);
     AccumulatedResult += result;
