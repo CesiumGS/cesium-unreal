@@ -2116,6 +2116,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
+  getAsyncSystem().dispatchMainThreadTasks();
   if (this->_captureMovieMode) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
     pResult = &this->_pTileset->updateViewGroupOffline(
