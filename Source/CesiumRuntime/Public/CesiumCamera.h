@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Camera/CameraComponent.h"
 #include "Math/Rotator.h"
 #include "Math/Vector.h"
 #include "Math/Vector2D.h"
@@ -10,6 +11,19 @@
 #include "Cesium3DTilesSelection/ViewState.h"
 
 #include "CesiumCamera.generated.h"
+
+UENUM(BlueprintType)
+enum class ECameraParameterSource : uint8 {
+  /**
+   * Camera parameters are set explicitly by the user.
+   */
+  Manual UMETA(DisplayName = "Set Manually"),
+
+  /**
+   * Camera parameters come from a camera component
+   */
+  CameraComponent UMETA(DisplayName = "From Camera Component")
+};
 
 /**
  * @brief A camera description that {@link ACesium3DTileset}s can use to decide
@@ -21,27 +35,65 @@ struct CESIUMRUNTIME_API FCesiumCamera {
 
 public:
   /**
+   * @brief The desired source of camera parameters.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  ECameraParameterSource ParameterSource = ECameraParameterSource::Manual;
+
+  /**
    * @brief The pixel dimensions of the viewport.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FVector2D ViewportSize;
 
   /**
-   * @brief The Unreal location of the camera.
+   * @brief The camera component from which to retrieve parameters. Due to
+   * UI limitations, this property must be set through Blueprints or C++. Used
+   * when ParameterSource is set to Camera Component.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "ParameterSource == ECameraParameterSource::CameraComponent"))
+  TSoftObjectPtr<UCameraComponent> CameraComponent;
+
+  /**
+   * @brief The Unreal location of the camera. Used when Parameter Source is set
+   * to Manual.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "ParameterSource == ECameraParameterSource::Manual"))
   FVector Location;
 
   /**
-   * @brief The Unreal rotation of the camera.
+   * @brief The Unreal rotation of the camera. Used when Parameter Source is set
+   * to Manual.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "ParameterSource == ECameraParameterSource::Manual"))
   FRotator Rotation;
 
   /**
-   * @brief The horizontal field of view of the camera in degrees.
+   * @brief The horizontal field of view of the camera in degrees. Used when
+   * Parameter Source is set to Manual.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "ParameterSource == ECameraParameterSource::Manual"))
   double FieldOfViewDegrees;
 
   /**

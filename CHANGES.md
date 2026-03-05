@@ -1,9 +1,16 @@
 # Change Log {#changes}
 
-### ???
+### v2.24.1 - 2026-03-2
+
+##### Fixes :wrench:
+
+- Fixed an invalid Cesium ion test token.
+
+### v2.24.0 - 2026-03-02
 
 ##### Breaking Changes :mega:
 
+- Deprecated `AddCamera`, `RemoveCamera`, `UpdateCamera`, and `GetCameras` on `ACesiumCameraManager`. Instead, use the new `AdditionalCameras` array to directly add or remove cameras.
 - Removed `Cesium3DTileset::getFeaturesMetadataDescription`. This can be directly retrieved from its attached `UCesiumFeaturesMetadataComponent` instead.
 
 ##### Additions :tada:
@@ -15,11 +22,16 @@
 - Added support for styling with tileset statistics on `UCesiumFeaturesMetadataComponent`.
 - Added `UCesiumPropertyArrayBlueprintLibrary::ToString` to print the contents of a `FCesiumPropertyArray` as a string.
 - Added `DetectTransformChanges` to `UCesiumGlobeAnchorComponent` to toggle whether the globe anchor should update itself after changes in its Actor's transform.
+- Added `UsePlayerCameras`, `UseEditorCameras`, and `UseSceneCapturesInLevel` to `ACesiumCameraManager` to toggle the automatic detection of cameras in the level for tile selection.
+- Added `ACesiumCameraManager::SceneCaptures` for more explicit control over which `ASceneCapture2D`s are used for tile selection.
+- Added the option for `FCesiumCamera` to use parameters from a given `UCameraComponent` assigned through C++ or Blueprints.
 
 ##### Fixes :wrench:
 
 - Added a missing includes in `CesiumCartographicPolygon.cpp` and `CesiumMetadataValue.h`, introduced in `v2.23.0`.
 - Build now uses the tinyxml2 library from Unreal's SDK on Linux and Windows if it is available. This eliminate a source of conflicts with other plugins that also use tinyxml2.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.57.0 to v0.58.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.23.0 - 2026-02-02
 
