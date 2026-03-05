@@ -188,14 +188,16 @@ void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
 }
 
 bool UCesiumGlobeAnchorComponent::GetDetectTransformChanges() const {
-  return DetectTransformChanges;
+  return this->DetectTransformChanges;
 }
 
 void UCesiumGlobeAnchorComponent::SetDetectTransformChanges(bool Value) {
-  if (DetectTransformChanges == Value) {
+  this->DetectTransformChanges = Value;
+
+  if (this->HeightReference == ECesiumHeightReference::Tileset) {
     return;
   }
-  DetectTransformChanges = Value;
+
   USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
   if (!IsValid(pOwnerRoot)) {
     return;
@@ -652,8 +654,20 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
     return;
   }
 
+  bool detectTransformChanges =
+      this->DetectTransformChanges &&
+      this->HeightReference != ECesiumHeightReference::Tileset;
+
+#if WITH_EDITOR
+  UWorld* pWorld = GetWorld();
+  if (pWorld && pWorld->WorldType == EWorldType::Editor) {
+    // Always detect transform changes in the Editor.
+    detectTransformChanges = true;
+  }
+#endif
+
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (pOwnerRoot && DetectTransformChanges) {
+  if (pOwnerRoot && detectTransformChanges) {
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
@@ -851,10 +865,13 @@ bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
 
 bool UCesiumGlobeAnchorComponent::_isUsingHeightReference(
     const ECesiumHeightReference heightReferenceOverride) const {
-  return (heightReferenceOverride == ECesiumHeightReference::Tileset ||
-          (heightReferenceOverride == ECesiumHeightReference::None &&
-           this->HeightReference == ECesiumHeightReference::Tileset)) &&
-         this->GetReferencedTileset() != nullptr;
+  ECesiumHeightReference trueReference =
+      heightReferenceOverride != ECesiumHeightReference::None
+          ? heightReferenceOverride
+          : this->HeightReference;
+
+  return trueReference == ECesiumHeightReference::Tileset &&
+         this->GetReferencedTileset().IsValid();
 }
 
 FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
