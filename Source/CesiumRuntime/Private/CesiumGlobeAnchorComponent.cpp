@@ -100,7 +100,7 @@ void UCesiumGlobeAnchorComponent::SetHeightReference(
 
   if (this->HeightReference != NewHeightReference) {
     this->HeightReference = NewHeightReference;
-    this->_setHeightFromReference();
+    this->_setHeightFromTilesetReference();
   }
 }
 
@@ -117,7 +117,7 @@ void UCesiumGlobeAnchorComponent::SetReferencedTileset(
     const TSoftObjectPtr<ACesium3DTileset>& NewTileset) {
   if (this->ReferencedTileset != NewTileset) {
     this->ReferencedTileset = NewTileset;
-    this->_setHeightFromReference();
+    this->_setHeightFromTilesetReference();
   }
 }
 
@@ -381,7 +381,7 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
               this->GetEarthCenteredEarthFixedPosition());
   // When using a height reference, the height reported back to the caller
   // will always be the fixed height above the reference.
-  if (this->_isUsingHeightReference(HeightReferenceOverride)) {
+  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride)) {
     position.Z = this->_fixedHeightAboveHeightReference;
   }
   return position;
@@ -395,7 +395,7 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
   FVector tilesetPosition{};
 
-  if (this->_isUsingHeightReference(HeightReferenceOverride) &&
+  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride) &&
       this->_queryLongitudeLatitudeHeightPositionOnTileset(
           tilesetPosition,
           TargetLongitudeLatitudeHeight)) {
@@ -659,7 +659,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
       this->HeightReference != ECesiumHeightReference::Tileset;
 
 #if WITH_EDITOR
-  UWorld* pWorld = GetWorld();
+  UWorld* pWorld = this->GetWorld();
   if (pWorld && pWorld->WorldType == EWorldType::Editor) {
     // Always detect transform changes in the Editor.
     detectTransformChanges = true;
@@ -778,6 +778,11 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
 
   this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
   this->_lastRelativeTransformIsValid = true;
+
+  if (this->_isUsingTilesetHeightReference()) {
+    // Make sure to update the tileset-relative height, too.
+    this->_setHeightFromTilesetReference();
+  }
 }
 
 CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
@@ -849,7 +854,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
-bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
+bool UCesiumGlobeAnchorComponent::_setHeightFromTilesetReference() {
   FVector llh =
       this->GetLongitudeLatitudeHeight(ECesiumHeightReference::Ellipsoid);
   FVector groundPosition{};
@@ -863,7 +868,7 @@ bool UCesiumGlobeAnchorComponent::_setHeightFromReference() {
   }
 }
 
-bool UCesiumGlobeAnchorComponent::_isUsingHeightReference(
+bool UCesiumGlobeAnchorComponent::_isUsingTilesetHeightReference(
     const ECesiumHeightReference heightReferenceOverride) const {
   ECesiumHeightReference trueReference =
       heightReferenceOverride != ECesiumHeightReference::None
@@ -946,10 +951,10 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   this->_setNewActorToECEFFromRelativeTransform();
 
 #if WITH_EDITOR
-  UWorld* pWorld = GetWorld();
+  UWorld* pWorld = this->GetWorld();
   if (pWorld && pWorld->WorldType == EWorldType::Editor &&
-      this->_isUsingHeightReference()) {
-    this->_setHeightFromReference();
+      this->_isUsingTilesetHeightReference()) {
+    this->_setHeightFromTilesetReference();
   }
 #endif
 }
@@ -1000,17 +1005,16 @@ void UCesiumGlobeAnchorComponent::TickComponent(
     float DeltaTime,
     ELevelTick TickType,
     FActorComponentTickFunction* ThisTickFunction) {
-
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (!this->_isUsingHeightReference())
+  if (!this->_isUsingTilesetHeightReference())
     return;
 
   if (--this->_heightReferenceUpdateCounter > 0) {
     return;
   }
-
   this->_heightReferenceUpdateCounter = this->HeightUpdateInterval;
+
   FVector llh = this->GetLongitudeLatitudeHeight();
   // This seems pointless, but it causes the actor's position to be reset
   // based on the _fixedHeightAboveTileset value.

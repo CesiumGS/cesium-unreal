@@ -718,12 +718,12 @@ private:
    * Calculate correct Height from the actor's position based on the
    * HeightReference and tileset.
    */
-  bool _setHeightFromReference();
+  bool _setHeightFromTilesetReference();
 
   /**
    * Determines if HeightReference is Tileset and ReferencedTileset is set.
    */
-  bool _isUsingHeightReference(
+  bool _isUsingTilesetHeightReference(
       const ECesiumHeightReference heightReferenceOverride =
           ECesiumHeightReference::None) const;
 
