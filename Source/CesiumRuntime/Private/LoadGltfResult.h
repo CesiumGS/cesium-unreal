@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltfGaussianSplatComponent.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -64,7 +66,8 @@ struct LoadedPrimitiveResult {
    * false, this primitive should be removed from consideration for rendering.
    */
   bool HasRenderableData() {
-    return RenderData != nullptr || GaussianSplatData != nullptr;
+    return RenderData != nullptr || voxelPropertyAttributeIndex ||
+           GaussianSplatData != nullptr;
   }
 
   /**
@@ -172,6 +175,11 @@ struct LoadedPrimitiveResult {
    */
   CesiumGltf::IndexAccessorType IndexAccessor;
 #pragma endregion
+
+  /**
+   * The index of the property attribute that is used by voxels.
+   */
+  std::optional<int32_t> voxelPropertyAttributeIndex;
 };
 
 /**

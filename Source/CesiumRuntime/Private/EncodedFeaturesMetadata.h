@@ -538,6 +538,9 @@ FString createHlslSafeName(const FString& rawName);
 bool isSupportedPropertyTextureProperty(
     const FCesiumMetadataPropertyDetails& PropertyDetails);
 
+bool isSupportedPropertyAttributeProperty(
+    const FCesiumMetadataPropertyDetails& PropertyDetails);
+
 void SetPropertyParameterValue(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,

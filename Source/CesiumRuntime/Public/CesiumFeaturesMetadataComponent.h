@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CesiumFeaturesMetadataDescription.h"
-#include "Components/ActorComponent.h"
+#include "CesiumMetadataComponent.h"
 
 #if WITH_EDITOR
 #include "Materials/MaterialFunctionMaterialLayer.h"
@@ -21,7 +21,7 @@
  */
 UCLASS(ClassGroup = Cesium, Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
-    : public UActorComponent {
+    : public UCesiumMetadataComponent {
   GENERATED_BODY()
 
 public:
@@ -133,26 +133,6 @@ public:
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  /**
-   * Syncs this component's statistics description from its tileset owner,
-   * retrieving values for the corresponding semantics.
-   *
-   * If there are described statistics that are not present on the tileset
-   * owner, they will be left as null values.
-   */
-  void SyncStatistics();
-
-  /**
-   * Whether a sync is already in progress.
-   */
-  bool IsSyncing() const;
-
-  /**
-   * Interrupts any sync happening on this component. Usually called before
-   * destroying or refreshing a tileset.
-   */
-  void InterruptSync();
-
   virtual void PostLoad() override;
 
 #if WITH_EDITOR
@@ -163,12 +143,8 @@ public:
 #endif
 
 protected:
-  // Called when a component is registered. This seems to be the best way to
-  // intercept when the component is pasted (to then update its statistics).
-  virtual void OnRegister() override;
-
-private:
-  void clearStatistics();
-
-  bool _syncInProgress;
+  virtual void OnFetchMetadata(
+      ACesium3DTileset* pActor,
+      const Cesium3DTilesSelection::TilesetMetadata* pMetadata) override;
+  virtual void ClearStatistics() override;
 };

@@ -16,6 +16,13 @@ enum ECustomMaterialOutputType : int;
 
 enum class ECesiumEncodedMetadataType : uint8;
 enum class ECesiumEncodedMetadataComponentType : uint8;
+enum class ECesiumMetadataStatisticSemantic : uint8;
+struct FCesiumMetadataValue;
+struct FCesiumMetadataValueType;
+
+namespace Cesium3DTiles {
+struct PropertyStatistics;
+}
 
 class UMaterialExpressionParameter;
 #endif
@@ -150,5 +157,10 @@ UMaterialExpressionParameter* GenerateParameterNode(
     int32 NodeX,
     int32 NodeY);
 #endif
+
+FCesiumMetadataValue getValueForSemantic(
+    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const FCesiumMetadataValueType& propertyType,
+    ECesiumMetadataStatisticSemantic semantic);
 
 } // namespace GenerateMaterialUtility

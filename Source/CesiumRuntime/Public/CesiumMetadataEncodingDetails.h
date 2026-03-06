@@ -134,4 +134,14 @@ struct CESIUMRUNTIME_API FCesiumMetadataEncodingDetails {
    */
   static FCesiumMetadataEncodingDetails
   GetBestFitForProperty(const FCesiumMetadataPropertyDetails& PropertyDetails);
+
+  /**
+   * @brief Gets the possible conversion methods for a given metadata type.
+   * Returns an empty array if no conversions are possible.
+   *
+   * @param PropertyDetails The metadata property details
+   */
+  static TArray<ECesiumEncodedMetadataConversion>
+  GetSupportedConversionsForProperty(
+      const FCesiumMetadataPropertyDetails& PropertyDetails);
 };

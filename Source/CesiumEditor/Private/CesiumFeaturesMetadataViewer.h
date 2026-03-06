@@ -21,7 +21,9 @@ class SScrollBox;
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
-enum class ECesiumMetadataStatisticSemantic;
+enum class ECesiumMetadataStatisticSemantic : uint8;
+
+enum class ComponentSearchResult;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
@@ -296,8 +298,6 @@ private:
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
 
-  enum ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
-
   ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
   ComponentSearchResult findOnComponent(
       TSharedRef<PropertyInstance> pItem,
@@ -314,7 +314,6 @@ private:
   void removeFeatureIdSetInstance(TSharedRef<FeatureIdSetInstance> pItem);
 
   static TSharedRef<FString> getSharedRef(const FString& string);
-  static void initializeStaticVariables();
 
   static TSharedPtr<CesiumFeaturesMetadataViewer> _pExistingWindow;
   TSharedPtr<SScrollBox> _pContent;
@@ -331,13 +330,6 @@ private:
   TArray<FeatureIdSetView> _featureIdSets;
   TSet<FString> _propertyTextureNames;
 
-  // Avoid allocating numerous instances of simple enum values (because shared
-  // pointers /refs are required for SComboBox).
-  static TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
-      _conversionOptions;
-  static TArray<TSharedRef<ECesiumEncodedMetadataType>> _encodedTypeOptions;
-  static TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
-      _encodedComponentTypeOptions;
   // Lookup map to reduce the number of strings allocated for duplicate property
   // names.
   static TMap<FString, TSharedRef<FString>> _stringMap;

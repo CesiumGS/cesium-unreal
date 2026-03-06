@@ -896,7 +896,8 @@ FString getNameForStatistic(
     const FString& classId,
     const FString& propertyId,
     ECesiumMetadataStatisticSemantic semantic) {
-  return createHlslSafeName(classId + "_" + propertyId) +
+  FString sourceName = classId.Len() ? classId + "_" + propertyId : propertyId;
+  return createHlslSafeName(sourceName) +
          MaterialPropertyStatisticSuffixes[semantic];
 }
 
@@ -974,6 +975,33 @@ bool isSupportedPropertyTextureProperty(
   }
 
   return byteSize > 0 && byteSize <= 4;
+}
+
+bool isSupportedPropertyAttributeProperty(
+    const FCesiumMetadataPropertyDetails& PropertyDetails) {
+  if (PropertyDetails.bIsArray) {
+    // Only types corresponding to glTF accessors are allowed.
+    return false;
+  }
+
+  if (PropertyDetails.Type == ECesiumMetadataType::Mat2 ||
+      PropertyDetails.Type == ECesiumMetadataType::Mat3 ||
+      PropertyDetails.Type == ECesiumMetadataType::Mat4) {
+    // Matrix attributes are not (yet) supported.
+    return false;
+  }
+
+  switch (PropertyDetails.ComponentType) {
+  case ECesiumMetadataComponentType::Uint8:
+  case ECesiumMetadataComponentType::Int8:
+  case ECesiumMetadataComponentType::Uint16:
+  case ECesiumMetadataComponentType::Int16:
+  case ECesiumMetadataComponentType::Uint32:
+  case ECesiumMetadataComponentType::Float32:
+    return true;
+  default:
+    return false;
+  }
 }
 
 void SetPropertyParameterValue(

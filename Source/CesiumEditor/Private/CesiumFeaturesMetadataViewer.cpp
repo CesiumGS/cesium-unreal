@@ -13,6 +13,7 @@
 #include "CesiumRuntimeSettings.h"
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
+#include "MetadataCommon.h"
 #include "PropertyCustomizationHelpers.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SImage.h"
@@ -34,12 +35,6 @@ THIRD_PARTY_INCLUDES_END
 
 /*static*/ TSharedPtr<CesiumFeaturesMetadataViewer>
     CesiumFeaturesMetadataViewer::_pExistingWindow = nullptr;
-/*static*/ TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
-    CesiumFeaturesMetadataViewer::_conversionOptions = {};
-/*static*/ TArray<TSharedRef<ECesiumEncodedMetadataType>>
-    CesiumFeaturesMetadataViewer::_encodedTypeOptions = {};
-/*static*/ TArray<TSharedRef<ECesiumEncodedMetadataComponentType>>
-    CesiumFeaturesMetadataViewer::_encodedComponentTypeOptions = {};
 /*static*/ TMap<FString, TSharedRef<FString>>
     CesiumFeaturesMetadataViewer::_stringMap = {};
 
@@ -70,8 +65,6 @@ CesiumFeaturesMetadataViewer::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
 }
 
 void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
-  CesiumFeaturesMetadataViewer::initializeStaticVariables();
-
   SAssignNew(this->_pContent, SScrollBox);
 
   const TWeakObjectPtr<ACesium3DTileset>& pTileset = InArgs._Tileset;
@@ -94,24 +87,6 @@ void CesiumFeaturesMetadataViewer::Construct(const FArguments& InArgs) {
                         .BorderImage(FAppStyle::GetBrush("Menu.Background"))
                         .Padding(FMargin(10.0f))[this->_pContent->AsShared()]]);
 }
-
-namespace {
-template <typename TEnum>
-void populateEnumOptions(TArray<TSharedRef<TEnum>>& options) {
-  UEnum* pEnum = StaticEnum<TEnum>();
-  if (pEnum) {
-    // "NumEnums" also includes the "_MAX" value, which indicates the number of
-    // different values in the enum. Exclude it here.
-    const int32 num = pEnum->NumEnums() - 1;
-    options.Reserve(num);
-
-    for (int32 i = 0; i < num; i++) {
-      TEnum value = TEnum(pEnum->GetValueByIndex(i));
-      options.Emplace(MakeShared<TEnum>(value));
-    }
-  }
-}
-} // namespace
 
 void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   this->_metadataSources.Empty();
@@ -579,8 +554,7 @@ void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
         auto& conversionMethods = pInstance->encodingDetails->conversionMethods;
         int32 conversionIndex = INDEX_NONE;
         for (int32 i = 0; i < conversionMethods.Num(); i++) {
-          if (*pInstance->encodingDetails->conversionMethods[i] ==
-              property.EncodingDetails.Conversion) {
+          if (*conversionMethods[i] == property.EncodingDetails.Conversion) {
             conversionIndex = i;
             break;
           }
@@ -601,10 +575,9 @@ void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
         pInstance->encodingDetails->pConversionSelection =
             conversionMethods[conversionIndex].ToSharedPtr();
         pInstance->encodingDetails->pEncodedTypeSelection =
-            this->_encodedTypeOptions[typeIndex].ToSharedPtr();
+            EncodedTypeEnum.options[typeIndex].ToSharedPtr();
         pInstance->encodingDetails->pEncodedComponentTypeSelection =
-            this->_encodedComponentTypeOptions[componentTypeIndex]
-                .ToSharedPtr();
+            EncodedComponentTypeEnum.options[componentTypeIndex].ToSharedPtr();
       }
     }
   }
@@ -642,46 +615,6 @@ bool CesiumFeaturesMetadataViewer::FeatureIdSetInstance::operator!=(
     const FeatureIdSetInstance& property) const {
   return !operator==(property);
 }
-
-namespace {
-
-template <typename TEnum>
-TArray<TSharedRef<TEnum>> getSharedRefs(
-    const TArray<TSharedRef<TEnum>>& options,
-    const TArray<TEnum>& selection) {
-  TArray<TSharedRef<TEnum>> result;
-  UEnum* pEnum = StaticEnum<TEnum>();
-  if (!pEnum) {
-    return result;
-  }
-
-  // Assumes populateEnumOptions will be initialized in enum order!
-  for (TEnum value : selection) {
-    int32 index = pEnum->GetIndexByValue(int64(value));
-    CESIUM_ASSERT(index >= 0 && index < options.Num());
-    result.Add(options[index]);
-  }
-
-  return result;
-}
-
-TArray<ECesiumEncodedMetadataConversion> getSupportedConversionsForProperty(
-    const FCesiumMetadataPropertyDetails& PropertyDetails) {
-  TArray<ECesiumEncodedMetadataConversion> result;
-  if (PropertyDetails.Type == ECesiumMetadataType::Invalid) {
-    return result;
-  }
-
-  result.Reserve(2);
-  result.Add(ECesiumEncodedMetadataConversion::Coerce);
-
-  if (PropertyDetails.Type == ECesiumMetadataType::String) {
-    result.Add(ECesiumEncodedMetadataConversion::ParseColorFromString);
-  }
-
-  return result;
-}
-} // namespace
 
 template <
     typename TSource,
@@ -777,9 +710,9 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
                         FCesiumPropertyTableProperty>) {
         // Do some silly TSharedRef lookup since it's required by SComboBox.
         TArray<TSharedRef<ECesiumEncodedMetadataConversion>>
-            supportedConversions = getSharedRefs(
-                this->_conversionOptions,
-                getSupportedConversionsForProperty(propertyDetails));
+            supportedConversions = ConversionEnum.getSharedRefs(
+                FCesiumMetadataEncodingDetails::
+                    GetSupportedConversionsForProperty(propertyDetails));
         instance.encodingDetails = PropertyInstanceEncodingDetails{
             .conversionMethods = std::move(supportedConversions)};
       }
@@ -797,60 +730,6 @@ void CesiumFeaturesMetadataViewer::gatherGltfPropertySources(
     }
   }
 }
-
-namespace {
-template <typename TEnum> FString enumToNameString(TEnum value) {
-  const UEnum* pEnum = StaticEnum<TEnum>();
-  return pEnum ? pEnum->GetNameStringByValue((int64)value) : FString();
-}
-
-template <typename TEnum> FText getEnumDisplayNameText(TEnum value) {
-  UEnum* pEnum = StaticEnum<TEnum>();
-  if (pEnum) {
-    return pEnum->GetDisplayNameTextByValue(int64(value));
-  }
-
-  return FText::FromString(FString());
-}
-
-FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
-    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>&
-        pConversionCombo,
-    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>&
-        pEncodedTypeCombo,
-    const TSharedPtr<
-        SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>&
-        pEncodedComponentTypeCombo) {
-  if (!pConversionCombo || !pEncodedTypeCombo || !pEncodedComponentTypeCombo)
-    return FCesiumMetadataEncodingDetails();
-
-  TSharedPtr<ECesiumEncodedMetadataConversion> pConversion =
-      pConversionCombo->GetSelectedItem();
-  TSharedPtr<ECesiumEncodedMetadataType> pEncodedType =
-      pEncodedTypeCombo->GetSelectedItem();
-  TSharedPtr<ECesiumEncodedMetadataComponentType> pEncodedComponentType =
-      pEncodedComponentTypeCombo->GetSelectedItem();
-
-  return FCesiumMetadataEncodingDetails(
-      pEncodedType.IsValid() ? *pEncodedType : ECesiumEncodedMetadataType::None,
-      pEncodedComponentType.IsValid()
-          ? *pEncodedComponentType
-          : ECesiumEncodedMetadataComponentType::None,
-      pConversion.IsValid() ? *pConversion
-                            : ECesiumEncodedMetadataConversion::None);
-}
-
-bool validateEncodingDetails(const FCesiumMetadataEncodingDetails& details) {
-  switch (details.Conversion) {
-  case ECesiumEncodedMetadataConversion::Coerce:
-  case ECesiumEncodedMetadataConversion::ParseColorFromString:
-    return details.HasValidType();
-  case ECesiumEncodedMetadataConversion::None:
-  default:
-    return false;
-  }
-}
-} // namespace
 
 TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createStatisticRow(
     TSharedRef<StatisticView> pItem,
@@ -885,7 +764,9 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createStatisticRow(
                         [SNew(STextBlock)
                              .AutoWrapText(true)
                              .Text(FText::FromString(
-                                 enumToNameString(pItem->semantic)))] +
+                                 MetadataEnumUtility<
+                                     ECesiumMetadataStatisticSemantic>::
+                                     enumToNameString(pItem->semantic)))] +
                     SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
                         EVerticalAlignment::VAlign_Center)
                         [SNew(STextBlock)
@@ -1003,26 +884,26 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
         FCesiumMetadataEncodingDetails::GetBestFitForProperty(
             pItem->propertyDetails);
 
-    createEnumComboBox<ECesiumEncodedMetadataConversion>(
+    this->createEnumComboBox(
         pItem->encodingDetails->pConversionCombo,
-        pItem->encodingDetails->conversionMethods,
+        ConversionEnum.options,
         pItem->encodingDetails->pConversionSelection
             ? *pItem->encodingDetails->pConversionSelection
             : bestFitEncodingDetails.Conversion,
         FString());
 
-    createEnumComboBox<ECesiumEncodedMetadataType>(
+    this->createEnumComboBox(
         pItem->encodingDetails->pEncodedTypeCombo,
-        this->_encodedTypeOptions,
+        EncodedTypeEnum.options,
         pItem->encodingDetails->pEncodedTypeSelection
             ? *pItem->encodingDetails->pEncodedTypeSelection
             : bestFitEncodingDetails.Type,
         TEXT(
             "The type to which to coerce the property's data. Affects the texture format that is used to encode the data."));
 
-    createEnumComboBox<ECesiumEncodedMetadataComponentType>(
+    this->createEnumComboBox(
         pItem->encodingDetails->pEncodedComponentTypeCombo,
-        this->_encodedComponentTypeOptions,
+        EncodedComponentTypeEnum.options,
         pItem->encodingDetails->pEncodedComponentTypeSelection
             ? *pItem->encodingDetails->pEncodedComponentTypeSelection
             : bestFitEncodingDetails.ComponentType,
@@ -1139,6 +1020,61 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
                      .Content()[content]];
 }
 
+template <typename TEnum>
+TSharedRef<SWidget> CesiumFeaturesMetadataViewer::createEnumDropdownOption(
+    TSharedRef<TEnum> pOption) {
+  return SNew(STextBlock)
+      .Text(MetadataEnumUtility<TEnum>::getEnumDisplayNameText(*pOption));
+}
+
+template <typename TEnum>
+void CesiumFeaturesMetadataViewer::createEnumComboBox(
+    TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
+    const TArray<TSharedRef<TEnum>>& options,
+    TEnum initialValue,
+    const FString& tooltip) {
+
+  CESIUM_ASSERT(options.Num() > 0);
+
+  int32 initialIndex = 0;
+  for (int32 i = 0; i < options.Num(); i++) {
+    if (initialValue == *options[i]) {
+      initialIndex = i;
+      break;
+    }
+  }
+  SAssignNew(pComboBox, SComboBox<TSharedRef<TEnum>>)
+      .OptionsSource(&options)
+      .InitiallySelectedItem(options[initialIndex])
+      .OnGenerateWidget(
+          this,
+          &CesiumFeaturesMetadataViewer::createEnumDropdownOption<TEnum>)
+      .Content()[SNew(STextBlock)
+                     .MinDesiredWidth(50.0f)
+                     .Text_Lambda([&pComboBox]() {
+                       return pComboBox->GetSelectedItem().IsValid()
+                                  ? MetadataEnumUtility<TEnum>::
+                                        getEnumDisplayNameText(
+                                            *pComboBox->GetSelectedItem())
+                                  : FText::FromString(FString());
+                     })
+                     .ToolTipText_Lambda([&pComboBox, tooltip]() {
+                       if constexpr (std::is_same_v<
+                                         TEnum,
+                                         ECesiumEncodedMetadataConversion>) {
+                         UEnum* pEnum =
+                             StaticEnum<ECesiumEncodedMetadataConversion>();
+                         if (pEnum) {
+                           return pComboBox->GetSelectedItem().IsValid()
+                                      ? pEnum->GetToolTipTextByIndex(int64(
+                                            *pComboBox->GetSelectedItem()))
+                                      : FText::FromString(FString());
+                         }
+                       }
+                       return FText::FromString(tooltip);
+                     })];
+}
+
 TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createGltfPropertyDropdown(
     TSharedRef<PropertyView> pItem,
     const TSharedRef<STableViewBase>& list) {
@@ -1187,59 +1123,6 @@ void CesiumFeaturesMetadataViewer::createGltfPropertySourceDropdown(
                                  createGltfPropertyDropdown)]]];
 }
 
-template <typename TEnum>
-TSharedRef<SWidget> CesiumFeaturesMetadataViewer::createEnumDropdownOption(
-    TSharedRef<TEnum> pOption) {
-  return SNew(STextBlock).Text(getEnumDisplayNameText(*pOption));
-}
-
-template <typename TEnum>
-void CesiumFeaturesMetadataViewer::createEnumComboBox(
-    TSharedPtr<SComboBox<TSharedRef<TEnum>>>& pComboBox,
-    const TArray<TSharedRef<TEnum>>& options,
-    TEnum initialValue,
-    const FString& tooltip) {
-  CESIUM_ASSERT(options.Num() > 0);
-
-  int32 initialIndex = 0;
-  for (int32 i = 0; i < options.Num(); i++) {
-    if (initialValue == *options[i]) {
-      initialIndex = i;
-      break;
-    }
-  }
-
-  SAssignNew(pComboBox, SComboBox<TSharedRef<TEnum>>)
-      .OptionsSource(&options)
-      .InitiallySelectedItem(options[initialIndex])
-      .OnGenerateWidget(
-          this,
-          &CesiumFeaturesMetadataViewer::createEnumDropdownOption<TEnum>)
-      .Content()[SNew(STextBlock)
-                     .MinDesiredWidth(50.0f)
-                     .Text_Lambda([&pComboBox]() {
-                       return pComboBox->GetSelectedItem().IsValid()
-                                  ? getEnumDisplayNameText<TEnum>(
-                                        *pComboBox->GetSelectedItem())
-                                  : FText::FromString(FString());
-                     })
-                     .ToolTipText_Lambda([&pComboBox, tooltip]() {
-                       if constexpr (std::is_same_v<
-                                         TEnum,
-                                         ECesiumEncodedMetadataConversion>) {
-                         UEnum* pEnum =
-                             StaticEnum<ECesiumEncodedMetadataConversion>();
-                         if (pEnum) {
-                           return pComboBox->GetSelectedItem().IsValid()
-                                      ? pEnum->GetToolTipTextByIndex(int64(
-                                            *pComboBox->GetSelectedItem()))
-                                      : FText::FromString(FString());
-                         }
-                       }
-                       return FText::FromString(tooltip);
-                     })];
-}
-
 TSharedRef<ITableRow>
 CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
     TSharedRef<FeatureIdSetInstance> pItem,
@@ -1250,7 +1133,9 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
           EVerticalAlignment::VAlign_Center)
           [SNew(STextBlock)
                .AutoWrapText(true)
-               .Text(FText::FromString(enumToNameString(pItem->type)))];
+               .Text(FText::FromString(
+                   MetadataEnumUtility<ECesiumFeatureIdSetType>::
+                       enumToNameString(pItem->type)))];
 
   if (!pItem->pPropertyTableName->IsEmpty()) {
     FString sourceString = FString::Printf(
@@ -1435,8 +1320,7 @@ FCesiumFeatureIdSetDescription* findFeatureIdSet(
 }
 } // namespace
 
-CesiumFeaturesMetadataViewer::ComponentSearchResult
-CesiumFeaturesMetadataViewer::findOnComponent(
+ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<StatisticView> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return ComponentSearchResult::NoMatch;
@@ -1468,8 +1352,7 @@ CesiumFeaturesMetadataViewer::findOnComponent(
                 : ComponentSearchResult::NoMatch;
 }
 
-CesiumFeaturesMetadataViewer::ComponentSearchResult
-CesiumFeaturesMetadataViewer::findOnComponent(
+ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<PropertyInstance> pItem,
     bool compareEncodingDetails) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
@@ -1529,8 +1412,7 @@ CesiumFeaturesMetadataViewer::findOnComponent(
   }
 }
 
-CesiumFeaturesMetadataViewer::ComponentSearchResult
-CesiumFeaturesMetadataViewer::findOnComponent(
+ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<FeatureIdSetInstance> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return ComponentSearchResult::NoMatch;
@@ -1907,17 +1789,4 @@ CesiumFeaturesMetadataViewer::getSharedRef(const FString& string) {
   return _stringMap.Contains(string)
              ? _stringMap[string]
              : _stringMap.Emplace(string, MakeShared<FString>(string));
-}
-
-void CesiumFeaturesMetadataViewer::initializeStaticVariables() {
-  if (_conversionOptions.IsEmpty()) {
-    populateEnumOptions<ECesiumEncodedMetadataConversion>(_conversionOptions);
-  }
-  if (_encodedTypeOptions.IsEmpty()) {
-    populateEnumOptions<ECesiumEncodedMetadataType>(_encodedTypeOptions);
-  }
-  if (_encodedComponentTypeOptions.IsEmpty()) {
-    populateEnumOptions<ECesiumEncodedMetadataComponentType>(
-        _encodedComponentTypeOptions);
-  }
 }
