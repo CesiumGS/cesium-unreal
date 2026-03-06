@@ -66,7 +66,8 @@ struct LoadedPrimitiveResult {
    * false, this primitive should be removed from consideration for rendering.
    */
   bool HasRenderableData() {
-    return RenderData != nullptr || GaussianSplatData != nullptr;
+    return RenderData != nullptr || voxelPropertyAttributeIndex ||
+           GaussianSplatData != nullptr;
   }
 
   /**
