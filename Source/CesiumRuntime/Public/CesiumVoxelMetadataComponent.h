@@ -24,7 +24,7 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
    * @brief The ID of the class in the tileset's metadata schema.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
-  FString ID;
+  FString ClassId;
 
   /**
    * @brief Descriptions of properties to pass to the Unreal material.

@@ -2189,18 +2189,17 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   updateLastViewUpdateResultState(*pResult);
 
+  removeCollisionForTiles(pResult->tilesFadingOut);
   removeVisibleTilesFromList(
       this->_tilesToHideNextFrame,
       pResult->tilesToRenderThisFrame);
+  hideTiles(this->_tilesToHideNextFrame);
 
   if (this->_pVoxelRendererComponent) {
     this->_pVoxelRendererComponent->UpdateTiles(
         pResult->tilesToRenderThisFrame,
         pResult->tileScreenSpaceErrorThisFrame);
   }
-
-  removeCollisionForTiles(pResult->tilesFadingOut);
-  hideTiles(this->_tilesToHideNextFrame);
 
   _tilesToHideNextFrame.clear();
   for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile :

@@ -379,7 +379,7 @@ void CesiumVoxelShaderBuilder::syncPropertyEncodingDetails() {
 
   const FCesiumVoxelClassDescription& description =
       this->_pVoxelMetadataComponent->Description;
-  if (description.ID != *this->_pVoxelClass->pId)
+  if (description.ClassId != *this->_pVoxelClass->pId)
     return;
 
   for (const FCesiumPropertyAttributePropertyDescription& property :
@@ -892,8 +892,11 @@ void CesiumVoxelShaderBuilder::registerStatistic(
             "This window was opened for a now invalid CesiumVoxelMetadataComponent."))
     return;
   }
+
+  FCesiumVoxelClassDescription& description =
+      this->_pVoxelMetadataComponent->Description;
   TArray<FCesiumMetadataPropertyStatisticsDescription>& statistics =
-      this->_pVoxelMetadataComponent->Description.Statistics;
+      description.Statistics;
 
   FCesiumMetadataPropertyStatisticsDescription* pProperty =
       findPropertyStatistic(statistics, *pItem->pPropertyId, true);
@@ -903,7 +906,6 @@ void CesiumVoxelShaderBuilder::registerStatistic(
       TEXT("Cesium Voxel Shader Builder"),
       FText::FromString(FString("Add voxel statistic to ACesium3DTileset")),
       this->_pVoxelMetadataComponent.Get());
-  this->_pVoxelMetadataComponent->PreEditChange(NULL);
   this->_pVoxelMetadataComponent->PreEditChange(NULL);
 
   if (FCesiumMetadataPropertyStatisticValue* pValue =
@@ -918,6 +920,8 @@ void CesiumVoxelShaderBuilder::registerStatistic(
     pProperty->Values.Emplace(
         FCesiumMetadataPropertyStatisticValue{pItem->semantic, pItem->value});
   }
+
+  description.ClassId = *this->_pVoxelClass->pId;
 
   this->_pVoxelMetadataComponent->PostEditChange();
   UKismetSystemLibrary::EndTransaction();
@@ -963,6 +967,8 @@ void CesiumVoxelShaderBuilder::registerProperty(
       pItem->encodingDetails.pConversionCombo,
       pItem->encodingDetails.pEncodedTypeCombo,
       pItem->encodingDetails.pEncodedComponentTypeCombo);
+
+  description.ClassId = *this->_pVoxelClass->pId;
 
   this->_pVoxelMetadataComponent->PostEditChange();
   UKismetSystemLibrary::EndTransaction();
@@ -1052,9 +1058,9 @@ void CesiumVoxelShaderBuilder::removeProperty(TSharedRef<VoxelProperty> pItem) {
 
   if (propertyIndex != INDEX_NONE) {
     UKismetSystemLibrary::BeginTransaction(
-        TEXT("Cesium Features / Metadata Viewer"),
+        TEXT("Cesium Voxel Shader Builder"),
         FText::FromString(
-            FString("Remove property instance from ACesium3DTileset")),
+            FString("Remove voxel property instance from ACesium3DTileset")),
         this->_pVoxelMetadataComponent.Get());
     this->_pVoxelMetadataComponent->PreEditChange(NULL);
 

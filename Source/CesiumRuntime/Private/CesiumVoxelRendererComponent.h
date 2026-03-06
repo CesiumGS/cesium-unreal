@@ -61,7 +61,7 @@ public:
   /**
    * The mesh used to render the voxels.
    */
-  UStaticMeshComponent* MeshComponent = nullptr;
+  UStaticMeshComponent* pMeshComponent = nullptr;
 
   /**
    * The options for creating voxel primitives based on the tileset's
@@ -91,8 +91,10 @@ public:
           VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
+  void syncStatistics(const FCesiumVoxelClassDescription& description);
+
 private:
-  static UMaterialInstanceDynamic* CreateVoxelMaterial(
+  static UMaterialInstanceDynamic* createVoxelMaterial(
       UCesiumVoxelRendererComponent* pVoxelComponent,
       const FVector& dimensions,
       const FVector& paddingBefore,

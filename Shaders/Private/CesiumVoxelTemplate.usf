@@ -193,7 +193,7 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
   if (Sample.Index >= 0) {
     DataTextures.GetProperties(Sample, Properties);
     // TODO: expose additional properties?
-    float4 result = CS.Shade(Properties);
+    float4 result = Properties.Shade();
     AccumulatedResult += result;
 
     // Stop traversing if the alpha has been fully saturated.
