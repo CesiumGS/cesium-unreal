@@ -37,9 +37,7 @@
 #include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionIf.h"
 #include "Materials/MaterialExpressionMaterialFunctionCall.h"
-#include "Materials/MaterialExpressionReroute.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
-#include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionTextureObjectParameter.h"
 #include "Materials/MaterialExpressionTextureProperty.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
@@ -664,10 +662,12 @@ static void GenerateMaterialNodes(
 
   UMaterialExpressionCustom* pRaymarchNode = nullptr;
   UMaterialExpressionMaterialFunctionCall* pBreakFloat4Node = nullptr;
+  UMaterialExpression* pEyeAdaptationInverse = nullptr;
 
   for (const UMaterialExpression* pSrcExpression : SrcCollection.Expressions) {
     // Much of the code below is derived from
-    // UMaterialExpression::CopyMaterialExpressions().
+    // UMaterialExpression::CopyMaterialExpressions(), without some extra
+    // modifications.
     UMaterialExpression* pNewExpression =
         Cast<UMaterialExpression>(StaticDuplicateObject(
             pSrcExpression,
@@ -715,6 +715,14 @@ static void GenerateMaterialNodes(
         pVectorParameterNode->ParameterName.ToString() == "Tile Count") {
       DataSectionX = pVectorParameterNode->MaterialExpressionEditorX;
       DataSectionY = pVectorParameterNode->MaterialExpressionEditorY;
+      continue;
+    }
+
+    // For some reason using UMaterialExpressionEyeAdaptationInverse results in
+    // a linker error, even when its .h file is included.
+    if (pNewExpression->GetName().Contains("EyeAdaptationInverse")) {
+      pEyeAdaptationInverse = pNewExpression;
+      continue;
     }
   }
 
@@ -722,7 +730,8 @@ static void GenerateMaterialNodes(
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("Unable to generate material from ML_CesiumVoxels template."))
+        TEXT(
+            "Unable to generate material from M_CesiumVoxelMaterial template."))
     return;
   }
 
@@ -878,8 +887,8 @@ static void GenerateMaterialNodes(
   UMaterialEditorOnlyData* pEditorOnlyData = pMaterial->GetEditorOnlyData();
   CESIUM_ASSERT(pEditorOnlyData);
 
-  if (!pEditorOnlyData->BaseColor.Expression) {
-    pEditorOnlyData->BaseColor.Connect(0, pRaymarchNode);
+  if (!pEditorOnlyData->EmissiveColor.Expression) {
+    pEditorOnlyData->EmissiveColor.Connect(0, pEyeAdaptationInverse);
   }
 
   if (!pEditorOnlyData->Opacity.Expression) {
@@ -987,6 +996,7 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
 
   this->TargetMaterial->BlendMode =
       TEnumAsByte<EBlendMode>(EBlendMode::BLEND_Translucent);
+  this->TargetMaterial->SetShadingModel(EMaterialShadingModel::MSM_Unlit);
 
   // Let the material update itself if necessary
   this->TargetMaterial->PostEditChange();
