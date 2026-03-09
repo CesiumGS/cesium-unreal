@@ -2353,7 +2353,7 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
       FunctionLibrary);
 
   GenerateMaterialNodes(this, MaterialState, FunctionLibrary);
-  MoveNodesToMaterialLayer(MaterialState, this->TargetMaterialLayer);
+  MoveNodesToMaterial(MaterialState, this->TargetMaterialLayer);
 
   RemapUserConnections(
       this->TargetMaterialLayer,

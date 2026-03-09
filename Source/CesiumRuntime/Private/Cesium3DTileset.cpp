@@ -1169,9 +1169,6 @@ void ACesium3DTileset::LoadTileset() {
 
   this->_pVoxelMetadataComponent =
       this->FindComponentByClass<UCesiumVoxelMetadataComponent>();
-  if (this->_pVoxelMetadataComponent.IsValid()) {
-    this->_pVoxelMetadataComponent->SyncStatistics();
-  }
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   FString dbDirectory = FPaths::Combine(
@@ -1208,6 +1205,10 @@ void ACesium3DTileset::LoadTileset() {
         Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
       this->createVoxelRenderer(*pVoxelExtension);
+    }
+
+    if (this->_pVoxelMetadataComponent.IsValid()) {
+      this->_pVoxelMetadataComponent->SyncStatistics();
     }
   });
 
@@ -2144,11 +2145,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  bool requiresMetadataSync = this->_pFeaturesMetadataComponent.IsValid() &&
-                              this->_pFeaturesMetadataComponent->IsSyncing();
-  requiresMetadataSync |= this->_pVoxelMetadataComponent.IsValid() &&
-                          this->_pVoxelMetadataComponent->IsSyncing();
-  if (requiresMetadataSync) {
+  bool awaitingMainThreadTasks = this->_pFeaturesMetadataComponent.IsValid() &&
+                                 this->_pFeaturesMetadataComponent->IsSyncing();
+  awaitingMainThreadTasks |= this->_pVoxelMetadataComponent.IsValid() &&
+                             this->_pVoxelMetadataComponent->IsSyncing();
+
+  if (awaitingMainThreadTasks) {
     // Styling may require the tileset's metadata to be loaded first (for schema
     // and/or statistics) before streaming tiles. But continue to dispatch tasks
     // so that the metadata future resolves.

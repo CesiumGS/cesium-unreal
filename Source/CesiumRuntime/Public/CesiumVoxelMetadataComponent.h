@@ -92,22 +92,13 @@ public:
 
 #if WITH_EDITORONLY_DATA
   /**
-   * This is the target UMaterialInstance that the boiler-plate material
-   * generation will use. When pressing "Generate Material", nodes will be added
-   * to this material to enable access to the requested metadata. If this is
-   * left blank, a new material layer will be created in the /Game/ folder.
+   * This is the target UMaterial that the boiler-plate material generation will
+   * use. When pressing "Generate Material", nodes will be added to this
+   * material to enable access to the requested metadata. If this is left blank,
+   * a new material will be created in the /Game/ folder.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInstance* TargetMaterial = nullptr;
-
-  /**
-   * This is the target UMaterialInstance that the boiler-plate material
-   * generation will use. When pressing "Generate Material", nodes will be added
-   * to this material to enable access to the requested metadata. If this is
-   * left blank, a new material layer will be created in the /Game/ folder.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
+  UMaterial* TargetMaterial = nullptr;
 
   /**
    * The custom shader code to apply to each voxel that is raymarched.
@@ -145,6 +136,7 @@ public:
       Meta =
           (TitleProperty = "Voxel Class", DisplayAfter = "AdditionalFunctions"))
   FCesiumVoxelClassDescription Description;
+
   /**
    * Gets a preview of the generated custom shader.
    */

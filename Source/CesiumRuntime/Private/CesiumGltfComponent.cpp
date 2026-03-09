@@ -1482,11 +1482,11 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  TUniquePtr<FStaticMeshRenderData> RenderData =
+  TUniquePtr<FStaticMeshRenderData> pRenderData =
       MakeUnique<FStaticMeshRenderData>();
-  RenderData->AllocateLODResources(1);
+  pRenderData->AllocateLODResources(1);
 
-  FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
+  FStaticMeshLODResources& LODResources = pRenderData->LODResources[0];
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
@@ -1523,9 +1523,9 @@ static void loadPrimitive(
         FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
 
     aaBox.GetCenterAndExtents(
-        RenderData->Bounds.Origin,
-        RenderData->Bounds.BoxExtent);
-    RenderData->Bounds.SphereRadius = 0.0f;
+        pRenderData->Bounds.Origin,
+        pRenderData->Bounds.BoxExtent);
+    pRenderData->Bounds.SphereRadius = 0.0f;
   }
 
   TArray<uint32> indices = getIndices(indicesView, primitive.mode);
@@ -1572,9 +1572,9 @@ static void loadPrimitive(
         position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
         position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
         position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
+        pRenderData->Bounds.SphereRadius = FMath::Max(
+            (FVector(position) - pRenderData->Bounds.Origin).Size(),
+            pRenderData->Bounds.SphereRadius);
       }
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
@@ -1584,9 +1584,9 @@ static void loadPrimitive(
         position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
         position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
         position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
+        pRenderData->Bounds.SphereRadius = FMath::Max(
+            (FVector(position) - pRenderData->Bounds.Origin).Size(),
+            pRenderData->Bounds.SphereRadius);
       }
     }
   }
@@ -1795,12 +1795,12 @@ static void loadPrimitive(
   if (isTriangles) {
     // UE 5.5 requires that we do this in order to avoid a crash when ray
     // tracing is enabled.
-    RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+    pRenderData->InitializeRayTracingRepresentationFromRenderingLODs();
   }
 
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
-  primitiveResult.RenderData = std::move(RenderData);
+  primitiveResult.pRenderData = std::move(pRenderData);
   primitiveResult.pCollisionMesh = nullptr;
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
 
@@ -2054,7 +2054,7 @@ static void loadGaussianSplats(
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
-  primitiveResult.GaussianSplatData =
+  primitiveResult.pGaussianSplatData =
       MakeUnique<FCesiumGltfGaussianSplatData>(model, primitive);
 }
 
@@ -3391,7 +3391,7 @@ static void loadPrimitiveGameThreadPart(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     pStaticMesh->NeverStream = true;
 
-    pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
+    pStaticMesh->SetRenderData(std::move(loadResult.pRenderData));
   }
 
   const CesiumGltf::Material& material =
@@ -3662,7 +3662,7 @@ static void loadPrimitiveGameThreadPart(
     pStaticMesh->InitResources();
   }
 
-  // Set up RenderData bounds and LOD data
+  // Set up pRenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
   pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
 
@@ -3764,7 +3764,7 @@ static void loadGaussianSplatsGameThreadPart(
     LoadedPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
     ACesium3DTileset* pTilesetActor) {
-  if (!loadResult.GaussianSplatData) {
+  if (!loadResult.pGaussianSplatData) {
     UE_LOG(
         LogCesium,
         Error,
@@ -3781,7 +3781,7 @@ static void loadGaussianSplatsGameThreadPart(
 
   UCesiumGltfGaussianSplatComponent* pGaussianSplat =
       NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
-  pGaussianSplat->Data = MoveTemp(*loadResult.GaussianSplatData.Release());
+  pGaussianSplat->Data = MoveTemp(*loadResult.pGaussianSplatData.Release());
   pGaussianSplat->SetupAttachment(pGltf);
   pGaussianSplat->SetMobility(pGltf->Mobility);
 
@@ -3871,7 +3871,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
-        if (primitive.GaussianSplatData) {
+        if (primitive.pGaussianSplatData) {
           loadGaussianSplatsGameThreadPart(
               model,
               pGltf,

@@ -543,9 +543,7 @@ bool isSupportedPropertyAttributeProperty(
 
 void SetPropertyParameterValue(
     UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation association,
-    int32 index,
-    const FString& name,
+    const FMaterialParameterInfo& info,
     ECesiumEncodedMetadataType type,
     const FCesiumMetadataValue& value,
     float defaultValue);

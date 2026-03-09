@@ -59,11 +59,6 @@ public:
   UStaticMesh* CubeMesh = nullptr;
 
   /**
-   * The mesh used to render the voxels.
-   */
-  UStaticMeshComponent* pMeshComponent = nullptr;
-
-  /**
    * The options for creating voxel primitives based on the tileset's
    * 3DTILES_content_voxels extension. This is referenced during the glTF load
    * process.
@@ -91,7 +86,7 @@ public:
           VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
-  void syncStatistics(const FCesiumVoxelClassDescription& description);
+  void SyncStatistics(const FCesiumVoxelClassDescription& description);
 
 private:
   static UMaterialInstanceDynamic* createVoxelMaterial(
@@ -124,6 +119,10 @@ private:
       std::vector<VoxelTileUpdateInfo>,
       PriorityLessComparator>;
 
+  /**
+   * The mesh used to render the voxels.
+   */
+  UStaticMeshComponent* _pMeshComponent = nullptr;
   TUniquePtr<FVoxelOctree> _pOctree;
   TUniquePtr<FVoxelMegatextures> _pDataTextures;
   std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;
