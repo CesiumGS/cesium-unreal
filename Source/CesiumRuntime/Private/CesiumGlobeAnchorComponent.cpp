@@ -944,13 +944,17 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
   this->_setNewActorToECEFFromRelativeTransform();
 
-#if WITH_EDITOR
   UWorld* pWorld = this->GetWorld();
-  if (pWorld && pWorld->WorldType == EWorldType::Editor &&
-      this->_isUsingTilesetHeightReference()) {
+  bool updateHeight =
+#if WITH_EDITOR
+  (pWorld && pWorld->WorldType == EWorldType::Editor &&
+      this->_isUsingTilesetHeightReference()) ||
+#endif
+        !this->_isUsingTilesetHeightReference();
+
+  if (updateHeight) {
     this->_setHeightFromTilesetReference();
   }
-#endif
 }
 
 void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
