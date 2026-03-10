@@ -2447,7 +2447,7 @@ void UCesiumFeaturesMetadataComponent::OnFetchMetadata(
 
         for (FCesiumMetadataPropertyStatisticValue& statisticValue :
              propertyStatistics.Values) {
-          statisticValue.Value = getValueForSemantic(
+          statisticValue.Value = GenerateMaterialUtility::getValueForSemantic(
               propertyStatisticsIt->second,
               type,
               statisticValue.Semantic);

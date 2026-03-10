@@ -14,6 +14,7 @@
 #include "CesiumRuntime.h"
 #include "Containers/Map.h"
 #include "EncodedMetadataConversions.h"
+#include "MaterialTypes.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"

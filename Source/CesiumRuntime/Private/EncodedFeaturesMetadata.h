@@ -25,6 +25,7 @@ struct FCesiumPropertyTableProperty;
 struct FCesiumPropertyTexture;
 
 struct FCesiumMetadataPropertyDetails;
+struct FMaterialParameterInfo;
 class UMaterialInstanceDynamic;
 enum EMaterialParameterAssociation : int;
 
