@@ -5,6 +5,7 @@
 #include "CesiumGltfVoxelComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMetadataPropertyDetails.h"
+#include "CesiumPropertyAttributeProperty.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
 #include "CesiumVoxelMetadataComponent.h"

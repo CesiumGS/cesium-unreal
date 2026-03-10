@@ -12,6 +12,7 @@
 #include <unordered_set>
 
 struct FCesiumVoxelClassDescription;
+struct FCesiumPropertyAttributeProperty;
 class FCesiumTextureResource;
 class UCesiumGltfVoxelComponent;
 
