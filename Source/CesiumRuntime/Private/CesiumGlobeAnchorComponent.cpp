@@ -947,10 +947,10 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   UWorld* pWorld = this->GetWorld();
   bool updateHeight =
 #if WITH_EDITOR
-  (pWorld && pWorld->WorldType == EWorldType::Editor &&
-      this->_isUsingTilesetHeightReference()) ||
+      (pWorld && pWorld->WorldType == EWorldType::Editor &&
+       this->_isUsingTilesetHeightReference()) ||
 #endif
-        !this->_isUsingTilesetHeightReference();
+      !this->_isUsingTilesetHeightReference();
 
   if (updateHeight) {
     this->_setHeightFromTilesetReference();
