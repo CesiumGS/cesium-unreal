@@ -820,8 +820,6 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
   FString debugName = TEXT("CesiumTextureUtility");
 
   FRHIResourceCreateInfo createInfo{*debugName};
-  createInfo.BulkData = nullptr;
-  createInfo.ExtData = this->_platformExtData;
 
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
   if (this->bSRGB) {
@@ -839,9 +837,7 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
             .SetNumSamples(1)
             .SetFlags(textureFlags)
             .SetInitialState(ERHIAccess::Unknown)
-            .SetExtData(createInfo.ExtData)
-            .SetGPUMask(createInfo.GPUMask)
-            .SetClearValue(createInfo.ClearValueBinding));
+            .SetExtData(this->_platformExtData));
   }
 
   // Create a new empty RHI texture (2D).
@@ -853,7 +849,5 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
           .SetNumSamples(1)
           .SetFlags(textureFlags)
           .SetInitialState(ERHIAccess::Unknown)
-          .SetExtData(createInfo.ExtData)
-          .SetGPUMask(createInfo.GPUMask)
-          .SetClearValue(createInfo.ClearValueBinding));
+          .SetExtData(this->_platformExtData));
 }

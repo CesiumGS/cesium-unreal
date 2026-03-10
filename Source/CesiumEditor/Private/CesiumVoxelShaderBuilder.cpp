@@ -69,6 +69,28 @@ CesiumVoxelShaderBuilder::Open(TWeakObjectPtr<ACesium3DTileset> pTileset) {
   _pExistingWindow->BringToFront();
 }
 
+const FString voxelClassTooltip =
+    TEXT("The class used by the 3DTILES_content_voxels extension on the "
+         "Cesium3DTileset, if present.\n\n"
+         "This displays any available properties and statistics, which can "
+         "then be added for use in the tileset's custom material.");
+const FString customShaderTooltip =
+    TEXT("The custom shader for styling the voxel metadata.\n\n"
+         "Voxels are rendered by raycasting through visible cells, "
+         "accumulating color until the result is opaque. This will be "
+         "the code that is executed for each iteration, returning a "
+         "color computed based on the metadata at a given cell.");
+const FString additionalFunctionsTooltip =
+    TEXT("Any additional functions to include with the custom shader to style "
+         "the voxel metadata.\n\n"
+         "This is best suited for helper functions that are repeatedly used "
+         "in the custom shader, such as statistics-based operations or "
+         "color ramps.");
+const FString shaderPreviewTooltip =
+    TEXT("A preview of how the custom shader will appear in the "
+         "generated material, based on the fields on the left.\n\n"
+         "Use Generate Material to apply your changes to the acutal material.");
+
 void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
   const TWeakObjectPtr<ACesium3DTileset>& pTileset = InArgs._Tileset;
   FString label =
@@ -150,6 +172,7 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                           .Text(FText::FromString(TEXT("Voxel Class")))
+                          .ToolTipText(FText::FromString(voxelClassTooltip))
                           .Margin(FMargin(0.f, 10.f))]];
   pLeft->AddSlot()[this->_pVoxelClassContent.ToSharedRef()];
   pLeft->AddSlot()
@@ -157,15 +180,33 @@ void CesiumVoxelShaderBuilder::Construct(const FArguments& InArgs) {
            .Content()[SNew(STextBlock)
                           .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                           .Text(FText::FromString(TEXT("Custom Shader")))
+                          .ToolTipText(FText::FromString(customShaderTooltip))
                           .Margin(FMargin(0.f, 10.f))]];
   pLeft->AddSlot()[this->_pCustomShader.ToSharedRef()];
   pLeft->AddSlot()
-      [SNew(SHeader)
-           .Content()[SNew(STextBlock)
-                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                          .Text(FText::FromString(TEXT("Additional Functions")))
-                          .Margin(FMargin(0.f, 10.f))]];
+      [SNew(SHeader).Content()
+           [SNew(STextBlock)
+                .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                .Text(FText::FromString(TEXT("Additional Functions")))
+                .ToolTipText(FText::FromString(additionalFunctionsTooltip))
+                .Margin(FMargin(0.f, 10.f))]];
   pLeft->AddSlot()[this->_pAdditionalFunctions.ToSharedRef()];
+  pLeft->AddSlot()
+      .Padding(0.0f, 10.0f)
+      .VAlign(VAlign_Bottom)
+      .HAlign(HAlign_Center)
+          [SNew(SButton)
+               .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+               .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+               .ContentPadding(FMargin(1.0, 1.0))
+               .HAlign(EHorizontalAlignment::HAlign_Center)
+               .Text(FText::FromString(TEXT("Refresh")))
+               .ToolTipText(FText::FromString(TEXT(
+                   "Refreshes for the voxel class on the ACesium3DTileset, if present.")))
+               .OnClicked_Lambda([this]() {
+                 this->SyncAndRebuildUI();
+                 return FReply::Handled();
+               })];
 
   SAssignNew(this->_pShaderPreview, SMultiLineEditableTextBox)
       .AutoWrapText(true)

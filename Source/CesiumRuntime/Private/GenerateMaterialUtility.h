@@ -27,6 +27,10 @@ struct PropertyStatistics;
 class UMaterialExpressionParameter;
 #endif
 
+namespace Cesium3DTiles {
+struct PropertyStatistics;
+}
+
 namespace GenerateMaterialUtility {
 #if WITH_EDITOR
 template <typename ObjClass>

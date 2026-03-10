@@ -427,19 +427,13 @@ struct CustomShaderBuilder {
 
 /*static*/ const FString UCesiumVoxelMetadataComponent::_shaderPreviewTemplate =
     "struct CustomShaderProperties {\n"
-    "//////////////////////////////\n"
-    "// Properties and statistics go here.\n"
-    "//////////////////////////////\n"
+    "/* Properties and statistics go here. */\n"
     "%s"
     "\n\n"
-    "//////////////////////////////\n"
-    "// Additional helper functions go here.\n"
-    "//////////////////////////////\n"
+    "/* Additional helper functions go here.*/\n"
     "%s\n\n"
     "float4 Shade() {\n"
-    "//////////////////////////////\n"
-    "// Custom shader code goes here.\n"
-    "//////////////////////////////\n"
+    "/* Custom shader code goes here.*/\n"
     "%s\n"
     "\t}\n}";
 
