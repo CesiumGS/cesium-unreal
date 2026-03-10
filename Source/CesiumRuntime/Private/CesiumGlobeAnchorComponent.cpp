@@ -192,11 +192,10 @@ bool UCesiumGlobeAnchorComponent::GetDetectTransformChanges() const {
 }
 
 void UCesiumGlobeAnchorComponent::SetDetectTransformChanges(bool Value) {
-  this->DetectTransformChanges = Value;
-
-  if (this->HeightReference == ECesiumHeightReference::Tileset) {
+  if (Value == this->DetectTransformChanges) {
     return;
   }
+  this->DetectTransformChanges = Value;
 
   USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
   if (!IsValid(pOwnerRoot)) {
@@ -667,7 +666,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 #endif
 
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (pOwnerRoot && detectTransformChanges) {
+  if (pOwnerRoot && DetectTransformChanges) {
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
@@ -778,11 +777,6 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
 
   this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
   this->_lastRelativeTransformIsValid = true;
-
-  if (this->_isUsingTilesetHeightReference()) {
-    // Make sure to update the tileset-relative height, too.
-    this->_setHeightFromTilesetReference();
-  }
 }
 
 CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
