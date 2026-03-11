@@ -616,7 +616,6 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
         GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
       this->SetGeoreference(this->Georeference);
     }
-
   }
 
   // Call the base class implementation last, because it will call OnRegister,
