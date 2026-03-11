@@ -657,7 +657,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 
   bool detectTransformChanges =
       this->DetectTransformChanges &&
-      this->HeightReference != ECesiumHeightReference::Tileset;
+      this->HeightReference == ECesiumHeightReference::Tileset;
 
 #if WITH_EDITOR
   UWorld* pWorld = this->GetWorld();
@@ -668,7 +668,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 #endif
 
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (pOwnerRoot && DetectTransformChanges) {
+  if (pOwnerRoot && detectTransformChanges) {
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
