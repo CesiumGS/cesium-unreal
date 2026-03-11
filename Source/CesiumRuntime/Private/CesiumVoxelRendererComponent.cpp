@@ -4,6 +4,7 @@
 #include "CalcBounds.h"
 #include "Cesium3DTileset.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumMetadataEncodingDetails.h"

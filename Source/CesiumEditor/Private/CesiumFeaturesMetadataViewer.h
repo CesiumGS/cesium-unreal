@@ -8,6 +8,7 @@
 #include "CesiumMetadataValue.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
+#include "MetadataInterfaceCommon.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
 #include "UObject/WeakObjectPtr.h"
@@ -20,8 +21,6 @@ class SScrollBox;
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
-struct StatisticView;
-struct PropertyInstanceEncodingDetails;
 enum class ECesiumMetadataStatisticSemantic : uint8;
 enum class ComponentSearchResult;
 
