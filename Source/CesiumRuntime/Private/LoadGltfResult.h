@@ -5,7 +5,6 @@
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltfGaussianSplatComponent.h"
-#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -55,13 +54,14 @@ struct LoadedPrimitiveResult {
   TUniquePtr<FStaticMeshRenderData> pRenderData = nullptr;
 
   /**
-   * Data for rendering a gaussian splat. This will be used over `RenderData`
-   * when the primitive is a gaussian splat.
+   * Data for rendering a Gaussian splats. Used instead of `RenderData` when the
+   * primitive is a Gaussian splat.
    */
   TUniquePtr<FCesiumGltfGaussianSplatData> pGaussianSplatData = nullptr;
 
   /**
-   * The index of the property attribute that is used by voxels.
+   * The index of the property attribute that is used by voxels, if the
+   * primitive contains them.
    */
   std::optional<int32_t> voxelPropertyAttributeIndex;
 
@@ -74,6 +74,9 @@ struct LoadedPrimitiveResult {
     return pRenderData || pGaussianSplatData || voxelPropertyAttributeIndex;
   }
 
+  /**
+   * The name of the glTF primitive for debugging purposes.
+   */
   std::string name{};
 
   /**

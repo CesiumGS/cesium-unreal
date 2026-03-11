@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "VoxelMegatextures.h"
 
@@ -179,11 +179,6 @@ UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
   return pProperty ? pProperty->pTexture : nullptr;
 }
 
-/**
- * NOTE: This function assumes that the data being read from pData is the same
- * type that the texture expects. Coercive encoding behavior (similar to what
- * is done for CesiumPropertyTableProperty) could be added in the future.
- */
 /*static*/ void FVoxelMegatextures::directCopyToTexture(
     const FCesiumPropertyAttributeProperty& property,
     const FVoxelMegatextures::TextureData& data,

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -17,18 +17,18 @@ class FCesiumTextureResource;
 class UCesiumGltfVoxelComponent;
 
 /**
- * Data texture resources for a voxel dataset, with one texture per voxel
- * attribute. A data texture is a "megatexture" containing numerous slots, each
- * of which can store the data of one voxel primitive. This is responsible for
+ * Data texture resources for a voxel dataset, with one "megatexture" per voxel
+ * attribute. A megatexture contains numerous slots, each of which can store the
+ * data of one voxel primitive. FVoxelMegatextures is responsible for
  * synchronizing which slots are occupied across all data textures.
  *
  * Due to the requirements of voxel rendering (primarily, sampling voxels from
  * neighboring tiles), the voxels within a tileset are drawn in a single pass.
- * This texture manages all of the currently-loaded voxel data and is itself
- * passed to the material.
+ * This manages all of the currently-loaded voxel data that is passed to the
+ * material.
  *
- * Counterpart to Megatexture.js in CesiumJS, except this takes advantage of 3D
- * textures to simplify some of the texture read/write math.
+ * This is the counterpart to Megatexture.js in CesiumJS, but this takes
+ * advantage of 3D textures to simplify some of the texture read/write math.
  */
 class FVoxelMegatextures {
 public:
@@ -37,7 +37,7 @@ public:
    *
    * @param description The voxel class description, indicating which metadata
    * attributes to encode.
-   * @param slotDimensions The dimensions of each slot (i.e, the voxel grid
+   * @param slotDimensions The dimensions of each slot (the voxel grid
    * dimensions, including padding).
    * @param featureLevel The RHI feature level associated with the scene.
    * @param knownTileCount The number of known tiles in the tileset. This
@@ -116,7 +116,7 @@ private:
   /**
    * @brief Represents a slot in the voxel data texture that contains a single
    * tile's data. Slots function like nodes in a linked list in order to track
-   * which slots are occupied with data, while preventing the need for 2 vectors
+   * which slots are occupied with data, removing the need for two slot vectors
    * with maximum tile capacity.
    */
   struct Slot {

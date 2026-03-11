@@ -13,18 +13,13 @@
 
 #if WITH_EDITOR
 enum ECustomMaterialOutputType : int;
+class UMaterialExpressionParameter;
 
 enum class ECesiumEncodedMetadataType : uint8;
 enum class ECesiumEncodedMetadataComponentType : uint8;
 enum class ECesiumMetadataStatisticSemantic : uint8;
 struct FCesiumMetadataValue;
 struct FCesiumMetadataValueType;
-
-namespace Cesium3DTiles {
-struct PropertyStatistics;
-}
-
-class UMaterialExpressionParameter;
 #endif
 
 namespace Cesium3DTiles {

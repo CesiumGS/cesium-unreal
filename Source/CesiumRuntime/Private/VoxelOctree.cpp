@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "VoxelOctree.h"
 #include "CesiumLifetime.h"
@@ -82,8 +82,8 @@ void UVoxelOctreeTexture::update(
       0, /* octreeIndex */
       0, /* textureIndex */
       0, /* parentOctreeIndex */
-      0,
-      result); /* parentTextureIndex */
+      0, /* parentTextureIndex */
+      result);
 
   // Pad the data as necessary for the texture copy.
   uint32 regionWidth = this->_tilesPerRow * TexelsPerNode * sizeof(uint32);
@@ -322,11 +322,7 @@ bool FVoxelOctree::createNode(const CesiumGeometry::OctreeTileID& TileID) {
 }
 
 bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& tileId) {
-  if (tileId.level == 0) {
-    return false;
-  }
-
-  if (isNodeRenderable(tileId)) {
+  if (tileId.level == 0 || isNodeRenderable(tileId)) {
     return false;
   }
 
@@ -368,13 +364,9 @@ bool FVoxelOctree::removeNode(const CesiumGeometry::OctreeTileID& tileId) {
 }
 
 bool FVoxelOctree::isNodeRenderable(
-    const CesiumGeometry::OctreeTileID& TileID) const {
-  const FVoxelOctree::Node* pNode = this->getNode(TileID);
-  if (!pNode) {
-    return false;
-  }
-
-  return pNode->dataIndex > 0 || pNode->hasChildren;
+    const CesiumGeometry::OctreeTileID& tileId) const {
+  const FVoxelOctree::Node* pNode = this->getNode(tileId);
+  return pNode && (pNode->dataIndex > 0 || pNode->hasChildren);
 }
 
 bool FVoxelOctree::updateTexture() {
