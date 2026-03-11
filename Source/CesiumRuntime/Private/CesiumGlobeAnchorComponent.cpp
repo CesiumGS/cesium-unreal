@@ -656,7 +656,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   bool detectTransformChanges =
-      this->DetectTransformChanges &&
+      this->DetectTransformChanges ||
       this->HeightReference == ECesiumHeightReference::Tileset;
 
 #if WITH_EDITOR
