@@ -37,10 +37,10 @@ public:
   void AddProperties();
 
   /**
-   * This button can be used to create a boiler-plate material layer that
-   * exposes the requested metadata properties in the current description. The
-   * nodes to access the metadata will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Content/
+   * Creates or overwrites a boiler-plate material layer that exposes the
+   * requested metadata properties in the current description. The nodes to
+   * access the metadata will be added to TargetMaterialLayer if it is already
+   * specified. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
   UFUNCTION(
@@ -56,7 +56,7 @@ public:
    * boiler-plate material generation will use. When pressing
    * "Generate Material", nodes will be added to this material to enable access
    * to the requested metadata. If this is left blank, a new material layer
-   * will be created in the /Game/ folder.
+   * will be created in the /Content/ folder.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;

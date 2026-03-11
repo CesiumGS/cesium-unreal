@@ -5,7 +5,7 @@
 #include "CesiumVoxelMetadataComponent.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
-#include "MetadataCommon.h"
+#include "MetadataInterfaceCommon.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
 #include "UObject/WeakObjectPtr.h"

@@ -1,4 +1,4 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -9,7 +9,7 @@
 #include <optional>
 
 /**
- * A view of a statistic value.
+ * A view of a statistic value in 3D Tiles metadata.
  */
 struct StatisticView {
   /**
@@ -74,8 +74,26 @@ struct PropertyInstanceEncodingDetails {
       pEncodedComponentTypeSelection;
 };
 
+FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
+    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>&
+        pConversionCombo,
+    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>&
+        pEncodedTypeCombo,
+    const TSharedPtr<
+        SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>&
+        pEncodedComponentTypeCombo);
+
+bool validateEncodingDetails(const FCesiumMetadataEncodingDetails& details);
+
+/**
+ * An enum describing whether a property matches an existing one on the target
+ * UMetadataComponent.
+ */
 enum class ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
 
+/**
+ * Utility for interacting with enums to more easily build user interfaces.
+ */
 template <typename TEnum> struct MetadataEnumUtility {
   // Avoid allocating numerous instances of simple enum values (because shared
   // pointers /refs are required for SComboBox).
@@ -141,14 +159,3 @@ static MetadataEnumUtility<ECesiumEncodedMetadataConversion> ConversionEnum;
 static MetadataEnumUtility<ECesiumEncodedMetadataType> EncodedTypeEnum;
 static MetadataEnumUtility<ECesiumEncodedMetadataComponentType>
     EncodedComponentTypeEnum;
-
-FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
-    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>&
-        pConversionCombo,
-    const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>&
-        pEncodedTypeCombo,
-    const TSharedPtr<
-        SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>&
-        pEncodedComponentTypeCombo);
-
-bool validateEncodingDetails(const FCesiumMetadataEncodingDetails& details);

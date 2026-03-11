@@ -1,6 +1,6 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
-#include "MetadataCommon.h"
+#include "MetadataInterfaceCommon.h"
 
 FCesiumMetadataEncodingDetails getSelectedEncodingDetails(
     const TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>&

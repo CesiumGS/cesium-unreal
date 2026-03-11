@@ -13,7 +13,7 @@
 #include "CesiumRuntimeSettings.h"
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
-#include "MetadataCommon.h"
+#include "MetadataInterfaceCommon.h"
 #include "PropertyCustomizationHelpers.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SImage.h"

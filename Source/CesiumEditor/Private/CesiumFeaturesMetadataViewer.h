@@ -17,12 +17,12 @@
 #include <optional>
 
 class SScrollBox;
-
 class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
+struct StatisticView;
+struct PropertyInstanceEncodingDetails;
 enum class ECesiumMetadataStatisticSemantic : uint8;
-
 enum class ComponentSearchResult;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
@@ -43,28 +43,6 @@ public:
   void SyncAndRebuildUI();
 
 private:
-  /**
-   * A view of a statistic value.
-   */
-  struct StatisticView {
-    /**
-     * The ID of the class to which the property for this statistic belongs.
-     */
-    TSharedRef<FString> pClassId;
-    /**
-     * The ID of the property to which this statistic applies.
-     */
-    TSharedRef<FString> pPropertyId;
-    /**
-     * The semantic of this statistic.
-     */
-    ECesiumMetadataStatisticSemantic semantic;
-    /**
-     * The value of this statistic.
-     */
-    FCesiumMetadataValue value;
-  };
-
   /**
    * A view of an instance of Cesium3DTileset::PropertyStatistics.
    */
@@ -95,49 +73,6 @@ private:
      * The properties belonging to the class.
      */
     TArray<TSharedRef<PropertyStatisticsView>> properties;
-  };
-
-  /**
-   * Encoding details for a `CesiumGltf::PropertyTableProperty` instance.
-   */
-  struct PropertyInstanceEncodingDetails {
-    /**
-     * The possible conversion methods for this property. Contains a subset of
-     * the values in ECesiumEncodedMetadataConversion.
-     */
-    TArray<TSharedRef<ECesiumEncodedMetadataConversion>> conversionMethods;
-    /**
-     * The combo box widget for selecting the conversion method.
-     */
-    TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataConversion>>>
-        pConversionCombo;
-    /**
-     * The option to set as the selected conversion, if previously specified
-     * (e.g., by details queried from UCesiumFeatureMetadataComponent).
-     */
-    TSharedPtr<ECesiumEncodedMetadataConversion> pConversionSelection;
-    /**
-     * The combo box widget for selecting the encoded type.
-     */
-    TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataType>>>
-        pEncodedTypeCombo;
-    /**
-     * The option to set as the selected encoded type, if previously specified
-     * (e.g., by details queried from UCesiumFeatureMetadataComponent).
-     */
-    TSharedPtr<ECesiumEncodedMetadataType> pEncodedTypeSelection;
-    /**
-     * The combo box widget for selecting the encoded component type.
-     */
-    TSharedPtr<SComboBox<TSharedRef<ECesiumEncodedMetadataComponentType>>>
-        pEncodedComponentTypeCombo;
-    /**
-     * The option to set as the selected encoded component type, if previously
-     * specified (e.g., by details queried from
-     * UCesiumFeatureMetadataComponent).
-     */
-    TSharedPtr<ECesiumEncodedMetadataComponentType>
-        pEncodedComponentTypeSelection;
   };
 
   /**

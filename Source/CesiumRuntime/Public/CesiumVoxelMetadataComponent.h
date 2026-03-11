@@ -47,11 +47,11 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
 
 /**
  * @brief A component that can be added to Cesium3DTileset actors to
- * view and style metadata embedded in voxels. The properties can be
- * automatically populated by clicking the "Auto Fill" button. Once a selection
- * of desired metadata is made, the boiler-plate material code to access the
- * selected properties and apply custom shaders can be auto-generated using the
- * "Generate Material" button.
+ * view and style metadata embedded in voxel content. "Build Shader" allows
+ * users to view the voxel metadata properties available in the tileset and
+ * write custom code to style them. Then, the boiler-plate material code to
+ * access the selected properties and apply custom shaders can be auto-generated
+ * using the "Generate Material" button.
  */
 UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumVoxelMetadataComponent
@@ -63,12 +63,8 @@ public:
 
 #if WITH_EDITOR
   /**
-   * Populate the description of metadata and feature IDs using the current view
-   * of the tileset. This determines what to encode to the GPU based on the
-   * existing metadata.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
+   * Opens a window to build a custom shader for the tileset using its available
+   * voxel properties.
    */
   UFUNCTION(
       CallInEditor,
@@ -77,11 +73,11 @@ public:
   void BuildShader();
 
   /**
-   * This button can be used to create a boiler-plate material layer that
-   * exposes the requested metadata properties in the current description. The
-   * nodes to access the metadata will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Content/
-   * folder and TargetMaterialLayer will be set to the new material layer.
+   * Creates or overwrites a boiler-plate material that exposes the requested
+   * metadata properties in the current description and writes out the custom
+   * shader. The changes will be applied to TargetMaterial if it is already
+   * specified. Otherwise a new material layer will be created in the /Content/
+   * folder and TargetMaterial will be set to the new material.
    */
   UFUNCTION(
       CallInEditor,
@@ -95,7 +91,7 @@ public:
    * This is the target UMaterial that the boiler-plate material generation will
    * use. When pressing "Generate Material", nodes will be added to this
    * material to enable access to the requested metadata. If this is left blank,
-   * a new material will be created in the /Game/ folder.
+   * a new material will be created in the /Content/ folder.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterial* TargetMaterial = nullptr;

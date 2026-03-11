@@ -1,4 +1,4 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 /*=============================================================================
 	CesiumVoxelTemplate.usf: Template for creating custom shaders to style voxel data.
