@@ -12,6 +12,7 @@
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfTextures.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
