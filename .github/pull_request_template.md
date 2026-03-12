@@ -48,9 +48,9 @@ Thank you for taking the time to review this PR. By approving a PR you are takin
 As you review, please go through the checklist below:
 
 - [ ] Review and run all parts of the test plan on this branch and verify it matches expectations.
-- [ ] Review the code and make sure you do not have any remaining questions or concerns. You should understand the code change and with the approach. If you are not confident or have doubts about the code please do not hesitate to ask questions.
+- [ ] Review the code and make sure you do not have any remaining questions or concerns. You should understand the code change and the chosen approach. If you are not confident or have doubts about the code, please do not hesitate to ask questions.
     - [ ] Code should follow the [C++ Style Guide](https://cesium.com/learn/cesium-native/ref-doc/style-guide.html)
 - [ ] Review the unit tests and make sure there are no missing tests or edge cases.
 - [ ] If the issue is a bug please make sure you can reproduce the bug in the main branch and then checkout this branch to make sure it actually solved the issue.
-- [ ] Review documentation changes and updates to `CHANGES.md` to make sure they accurately cover the work in this PR
-- [ ] Review that the [Contributor License Agreement](https://github.com/CesiumGS/community/tree/main/CLAs) has been submitted, if needed
+- [ ] Review documentation changes and updates to `CHANGES.md` to make sure they accurately cover the work in this PR.
+- [ ] Verify that the [Contributor License Agreement](https://github.com/CesiumGS/community/tree/main/CLAs) has been submitted, if needed.
