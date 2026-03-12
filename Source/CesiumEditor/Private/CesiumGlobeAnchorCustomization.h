@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CesiumDegreesMinutesSecondsEditor.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "IDetailCustomization.h"
 #include "TickableEditorObject.h"
 #include "CesiumGlobeAnchorCustomization.generated.h"
 
 class IDetailCategoryBuilder;
 class UCesiumGlobeAnchorDerivedProperties;
+class ACesium3DTileset;
 
 /**
  * An implementation of the IDetailCustomization interface that customizes
@@ -32,6 +34,9 @@ private:
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
   void CreateRotationEastSouthUp(
+      IDetailLayoutBuilder& DetailBuilder,
+      IDetailCategoryBuilder& Category);
+  void CreateHeightReferencePropertyEditor(
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
   void UpdateDerivedProperties();
@@ -99,7 +104,13 @@ public:
   double Longitude = 0.0;
 
   /**
-   * The height in meters above the ellipsoid.
+   * The height in meters above the specified height reference.
+   *
+   * When `HeightReference` is `Tileset` and a valid `ReferencedTileset` is set,
+   * the returned value is the height above the reference tileset.
+   *
+   * Otherwise, when `HeightReference` is `Ellipsoid`, the returned value
+   * is the height above the ellipsoid.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
@@ -107,6 +118,51 @@ public:
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Height = 0.0;
+
+  /**
+   * The frame of reference in which to interpret the object's height.
+   *
+   * `Ellipsoid` indicates the object's height above the ellipsoid set on the
+   * CesiumGeoreference. The object will remain at this height unless it is
+   * otherwise changed.
+   *
+   * `Tileset` indicates height above a given tileset. The object will move
+   * vertically to maintain the specified height.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (InvalidateWidgets, HideInDetailPanel, InvalidEnumValues = "None"))
+  ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
+
+  /**
+   * The tileset actor to use as a height reference for the object. The object
+   * will maintain its height relative to this tileset even through movement or
+   * level-of-detail transitions. Only used when `HeightReference` is set to
+   * `Tileset`.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
+           HideInDetailPanel))
+  TObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
+
+  /**
+   * The interval, in Ticks, in which to update the object's height when
+   * `HeightReference` is set to `Tileset`.
+   *
+   * A value of 1 causes `Height` to be updated on every Tick.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
+           ClampMin = 1,
+           HideInDetailPanel))
+  int HeightUpdateInterval = 1;
 
   /**
    * The rotation around the right (Y) axis. Zero pitch means the look direction
