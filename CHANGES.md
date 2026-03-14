@@ -7,6 +7,7 @@
 - Added `UCesiumGlobeAnchorComponent::HeightReference`. Setting this to `ECesiumHeightReference::Tileset` will cause the actor to maintain its height above the specified tileset during LOD transitions or object movement.
 - Added `UCesiumGlobeAnchorComponent::ReferencedTileset`. Set this field to a `ACesium3DTileset` actor reference to maintain a fixed height above the tileset.
 - Added `UCesiumGlobeAnchorComponent::HeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
+- Added `ReceiveDecals` property to `ACesium3DTileset` to allow toggling decal reception per tileset.
 
 ### v2.24.1 - 2026-03-02
 
