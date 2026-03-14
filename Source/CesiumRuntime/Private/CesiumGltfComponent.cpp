@@ -3199,6 +3199,7 @@ static void loadPrimitiveGameThreadPart(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
     pMesh->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
+    pMesh->bReceivesDecals = pGltf->ReceiveDecals;
     if (loadResult.isUnlit) {
       pMesh->bCastDynamicShadow = false;
     }
@@ -3569,6 +3570,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
+    bool ReceiveDecals,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
     bool enableDoubleSidedCollisions) {
@@ -3607,7 +3609,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
 
   pGltf->CustomDepthParameters = CustomDepthParameters;
-
+  pGltf->ReceiveDecals = ReceiveDecals;
   encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
   if (pGltf->EncodedMetadata_DEPRECATED) {

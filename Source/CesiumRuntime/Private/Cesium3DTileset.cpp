@@ -576,6 +576,13 @@ void ACesium3DTileset::SetCustomDepthParameters(
   }
 }
 
+void ACesium3DTileset::SetReceiveDecals(bool bReceiveDecals) {
+  if (this->ReceiveDecals != bReceiveDecals) {
+    this->ReceiveDecals = bReceiveDecals;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetPointCloudShading(
     FCesiumPointCloudShading InPointCloudShading) {
   if (PointCloudShading != InPointCloudShading) {
@@ -2267,7 +2274,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
       PropNameAsString == TEXT("CustomDepthStencilValue") ||
-      PropNameAsString == TEXT("CustomDepthStencilWriteMask")) {
+      PropNameAsString == TEXT("CustomDepthStencilWriteMask") ||
+      PropNameAsString == TEXT("ReceiveDecals")) {
     this->DestroyTileset();
   } else if (
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
