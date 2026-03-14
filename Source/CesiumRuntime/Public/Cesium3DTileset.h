@@ -954,6 +954,16 @@ private:
       meta = (ShowOnlyInnerProperties))
   FCustomDepthParameters CustomDepthParameters;
 
+/**
+ * Whether this tileset should receive decals.
+ */
+UPROPERTY(
+    EditAnywhere,
+    BlueprintGetter = GetReceiveDecals,
+    BlueprintSetter = SetReceiveDecals,
+    Category = "Cesium|Rendering")
+bool ReceiveDecals = true;
+
   /**
    * If this tileset contains points, their appearance can be configured with
    * these point cloud shading parameters.
@@ -1174,6 +1184,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Rendering")
   void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);
+
+  UFUNCTION(BlueprintGetter, Category = "Rendering")
+  bool GetReceiveDecals() const { return ReceiveDecals; }
+
+  UFUNCTION(BlueprintSetter, Category = "Rendering")
+  void SetReceiveDecals(bool bReceiveDecals);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   FCesiumPointCloudShading GetPointCloudShading() const {
