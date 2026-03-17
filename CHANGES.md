@@ -2,11 +2,18 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added `UCesiumGlobeAnchorComponent::HeightReference`. Setting this to `ECesiumHeightReference::Tileset` will cause the actor to maintain its height above the specified tileset during LOD transitions or object movement.
+- Added `UCesiumGlobeAnchorComponent::ReferencedTileset`. Set this field to a `ACesium3DTileset` actor reference to maintain a fixed height above the tileset.
+- Added `UCesiumGlobeAnchorComponent::HeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
+
 ##### Fixes :wrench:
 
 - Added a call to `AsyncSystem::dispatchMainThreadTasks` to account for a change in Cesium Native, which no longer calls that function itself.
 
-### v2.24.1 - 2026-03-2
+### v2.24.1 - 2026-03-02
+>>>>>>> main
 
 ##### Fixes :wrench:
 
