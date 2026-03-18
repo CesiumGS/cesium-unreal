@@ -156,8 +156,9 @@ FVoxelMegatextures::FVoxelMegatextures(
     ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
     ([pTexture, pResource = pTexture->GetResource()](
          FRHICommandListImmediate& RHICmdList) {
-      if (!pResource)
+      if (!pResource) {
         return;
+      }
 
       pResource->SetTextureReference(
           pTexture->TextureReference.TextureReferenceRHI);
@@ -183,8 +184,9 @@ UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
     const FCesiumPropertyAttributeProperty& property,
     const FVoxelMegatextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
-  if (!data.pTexture)
+  if (!data.pTexture) {
     return;
+  }
 
   const uint8* pData =
       reinterpret_cast<const uint8*>(property.getAccessorData());

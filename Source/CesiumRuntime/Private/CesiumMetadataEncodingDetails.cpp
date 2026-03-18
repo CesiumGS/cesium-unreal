@@ -158,7 +158,6 @@ FCesiumMetadataEncodingDetails::GetSupportedConversionsForProperty(
     return result;
   }
 
-  result.Reserve(2);
   result.Add(ECesiumEncodedMetadataConversion::Coerce);
 
   if (PropertyDetails.Type == ECesiumMetadataType::String) {

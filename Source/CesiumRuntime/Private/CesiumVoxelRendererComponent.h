@@ -99,18 +99,16 @@ private:
       const FCesiumVoxelClassDescription* pDescription,
       const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
-  static double computePriority(double sse);
-
   struct VoxelTileUpdateInfo {
     const UCesiumGltfVoxelComponent* pComponent;
     double sse;
-    double priority;
   };
 
   struct PriorityLessComparator {
     bool
     operator()(const VoxelTileUpdateInfo& lhs, const VoxelTileUpdateInfo& rhs) {
-      return lhs.priority < rhs.priority;
+      // For now, priority is solely based on SSE.
+      return lhs.sse < rhs.sse;
     }
   };
 

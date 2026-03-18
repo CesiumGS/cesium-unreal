@@ -116,13 +116,13 @@ void setVoxelBoxProperties(
   // explicit cube mesh. In other words, this scale must be applied in-shader
   // to account for the actual mesh's bounds.
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      makeVoxelParameterInfo(UTF8_TO_TCHAR("Shape TransformToUnit Row 0")),
+      makeVoxelParameterInfo(TEXT("Shape TransformToUnit Row 0")),
       FVector4(0.02, 0, 0, 0));
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      makeVoxelParameterInfo(UTF8_TO_TCHAR("Shape TransformToUnit Row 1")),
+      makeVoxelParameterInfo(TEXT("Shape TransformToUnit Row 1")),
       FVector4(0, 0.02, 0, 0));
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      makeVoxelParameterInfo(UTF8_TO_TCHAR("Shape TransformToUnit Row 2")),
+      makeVoxelParameterInfo(TEXT("Shape TransformToUnit Row 2")),
       FVector4(0, 0, 0.02, 0));
 }
 } // namespace
@@ -182,32 +182,32 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
 
   pVoxelMaterial->SetTextureParameterValueByInfo(
       FMaterialParameterInfo{
-          UTF8_TO_TCHAR("Octree"),
+          TEXT("Octree"),
           EMaterialParameterAssociation::GlobalParameter,
           INDEX_NONE},
       pVoxelComponent->_pOctree->getTexture());
   pVoxelMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo{
-          UTF8_TO_TCHAR("Shape Constant"),
+          TEXT("Shape Constant"),
           EMaterialParameterAssociation::GlobalParameter,
           INDEX_NONE},
       uint8(shape));
 
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo{
-          UTF8_TO_TCHAR("Grid Dimensions"),
+          TEXT("Grid Dimensions"),
           EMaterialParameterAssociation::GlobalParameter,
           INDEX_NONE},
       dimensions);
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo{
-          UTF8_TO_TCHAR("Padding Before"),
+          TEXT("Padding Before"),
           EMaterialParameterAssociation::GlobalParameter,
           INDEX_NONE},
       paddingBefore);
   pVoxelMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo{
-          UTF8_TO_TCHAR("Padding After"),
+          TEXT("Padding After"),
           EMaterialParameterAssociation::GlobalParameter,
           INDEX_NONE},
       paddingAfter);
@@ -224,7 +224,7 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
         pVoxelComponent->_pDataTextures->getTileCountAlongAxes();
     pVoxelMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo{
-            UTF8_TO_TCHAR("Tile Count"),
+            TEXT("Tile Count"),
             EMaterialParameterAssociation::GlobalParameter,
             INDEX_NONE},
         FVector(tileCount.x, tileCount.y, tileCount.z));
@@ -544,9 +544,9 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
           pNode->lastKnownScreenSpaceError = sse;
         }
 
-        // Don't create the missing node just yet? It may not be added to the
+        // Don't create the missing node just yet; it may not be added to the
         // tree depending on the priority of other nodes.
-        priorityQueue.push({pVoxel, sse, computePriority(sse)});
+        priorityQueue.push({pVoxel, sse});
       });
 
   if (this->_visibleTileQueue.empty()) {
@@ -568,8 +568,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
         if (!pRight) {
           return true;
         }
-        return computePriority(pLeft->lastKnownScreenSpaceError) >
-               computePriority(pRight->lastKnownScreenSpaceError);
+        return pLeft->lastKnownScreenSpaceError >
+               pRight->lastKnownScreenSpaceError;
       });
 
   size_t existingNodeCount = this->_loadedNodeIds.size();
@@ -690,8 +690,4 @@ void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
     this->_pMeshComponent->UpdateComponentToWorld();
     this->_pMeshComponent->MarkRenderTransformDirty();
   }
-}
-
-double UCesiumVoxelRendererComponent::computePriority(double sse) {
-  return 10.0 * sse / (sse + 1.0);
 }

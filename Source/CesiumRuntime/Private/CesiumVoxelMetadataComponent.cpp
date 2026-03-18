@@ -61,7 +61,7 @@ UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent() {
               TEXT("/Engine/EngineResources/DefaultVolumeTexture")) {}
   };
   static FConstructorStatics ConstructorStatics;
-  _pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
+  this->_pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
 }
 
 void UCesiumVoxelMetadataComponent::OnFetchMetadata(
@@ -223,33 +223,38 @@ struct CustomShaderBuilder {
       // If the property is normalized, the encoded type actually corresponds to
       // the raw data values. A second line for the normalized value is added.
       // e.g., "uint8 myProperty_RAW; float myProperty;"
-      // clang-format off
-      DeclareShaderProperties += "\t" + encodedHlslType + " " + rawPropertyName +
-                                 ";\n\t" +
-                                 normalizedHlslType + " " + PropertyName + ";";
-      // clang-format on
+      DeclareShaderProperties.Appendf(
+          TEXT("\t%s %s;\n\t%s = %s;"),
+          *encodedHlslType,
+          *rawPropertyName,
+          *normalizedHlslType,
+          *PropertyName);
     } else {
       // e.g., "float temperature;"
-      DeclareShaderProperties +=
-          "\t" + encodedHlslType + " " + PropertyName + ";";
+      DeclareShaderProperties.Appendf(
+          TEXT("\t%s %s;"),
+          *encodedHlslType,
+          *PropertyName);
     }
 
     if (Property.PropertyDetails.bHasNoDataValue) {
       // Expose "no data" value to the shader so the user can act on it.
       // "No data" values are always given in the raw value type.
       FString NoDataName = PropertyName + MaterialPropertyNoDataSuffix;
-      DeclareShaderProperties +=
-          "\n\t" + encodedHlslType + " " + NoDataName + ";";
+      DeclareShaderProperties.Appendf(
+          TEXT("\n\t%s %s;"),
+          *encodedHlslType,
+          *NoDataName);
     }
 
     if (Property.PropertyDetails.bHasDefaultValue) {
       // Expose default value to the shader so the user can act on it.
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
-      DeclareShaderProperties +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareShaderProperties += " " + DefaultValueName + ";";
+      DeclareShaderProperties.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *DefaultValueName);
     }
   }
 
@@ -264,14 +269,16 @@ struct CustomShaderBuilder {
       DeclareDataTextureVariables += "\n\t";
     }
     // e.g., "Texture3D temperature;"
-    DeclareDataTextureVariables += "Texture3D " + PropertyName + ";";
+    DeclareDataTextureVariables.Appendf(TEXT("Texture3D %s;"), *PropertyName);
 
     if (!SetDataTextures.IsEmpty()) {
       SetDataTextures += "\n";
     }
     // e.g., "DataTextures.temperature = temperature_DATA;"
-    SetDataTextures +=
-        "DataTextures." + PropertyName + " = " + TextureParameterName + ";";
+    SetDataTextures.Appendf(
+        TEXT("DataTextures.%s = %s;"),
+        *PropertyName,
+        *TextureParameterName);
   }
 
   /**
@@ -296,30 +303,37 @@ struct CustomShaderBuilder {
     FString swizzle = GetSwizzleForEncodedType(Property.EncodingDetails.Type);
     bool isNormalizedProperty = Property.PropertyDetails.bIsNormalized;
     if (isNormalizedProperty) {
-      SamplePropertiesFromTexture += "Properties." + rawPropertyName + " = " +
-                                     PropertyName + ".Load(int4(Coords, 0))" +
-                                     swizzle + ";";
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("Properties.%s = %s.Load(int4(Coords, 0))%s;"),
+          *rawPropertyName,
+          *PropertyName,
+          *swizzle);
       // Normalization can be hardcoded because only normalized uint8s are
       // supported.
-      SamplePropertiesFromTexture += "\n\t\tProperties." + PropertyName +
-                                     " = (Properties." + rawPropertyName +
-                                     " / 255.0)";
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("\n\t\tProperties.%s = (Properties.%s / 255.0)"),
+          *PropertyName,
+          *rawPropertyName);
     } else {
-      SamplePropertiesFromTexture += "Properties." + PropertyName + " = " +
-                                     PropertyName + ".Load(int4(Coords, 0))" +
-                                     swizzle;
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("Properties.%s = %s.Load(int4(Coords, 0))%s;"),
+          *PropertyName,
+          *PropertyName,
+          *swizzle);
     }
 
     if (Property.PropertyDetails.bHasScale) {
       FString ScaleName = PropertyName + MaterialPropertyScaleSuffix;
       // Declare the value transforms underneath the corresponding data texture
       // variable. e.g., float myProperty_SCALE;
-      DeclareDataTextureVariables +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareDataTextureVariables += " " + ScaleName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + ScaleName + " = " + ScaleName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *ScaleName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *ScaleName,
+          *ScaleName);
 
       // e.g., " * myProperty_SCALE"
       SamplePropertiesFromTexture += " * " + ScaleName;
@@ -327,12 +341,14 @@ struct CustomShaderBuilder {
 
     if (Property.PropertyDetails.bHasOffset) {
       FString OffsetName = PropertyName + MaterialPropertyOffsetSuffix;
-      DeclareDataTextureVariables +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareDataTextureVariables += " " + OffsetName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + OffsetName + " = " + OffsetName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *OffsetName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *OffsetName,
+          *OffsetName);
 
       // e.g., " + myProperty_OFFSET"
       SamplePropertiesFromTexture += " + " + OffsetName;
@@ -342,27 +358,35 @@ struct CustomShaderBuilder {
 
     if (Property.PropertyDetails.bHasNoDataValue) {
       FString NoDataName = PropertyName + MaterialPropertyNoDataSuffix;
-      DeclareDataTextureVariables +=
-          "\n\t" + encodedHlslType + " " + NoDataName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + NoDataName + " = " + NoDataName + ";";
-
-      SamplePropertiesFromTexture +=
-          "\n\tProperties." + NoDataName + " = " + NoDataName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *encodedHlslType,
+          *NoDataName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *NoDataName,
+          *NoDataName);
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("\n\t\tProperties.%s = %s;"),
+          *NoDataName,
+          *NoDataName);
     }
 
     if (Property.PropertyDetails.bHasDefaultValue) {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
-      DeclareDataTextureVariables +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareDataTextureVariables += " " + DefaultValueName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + DefaultValueName + " = " + DefaultValueName + ";";
-
-      SamplePropertiesFromTexture +=
-          "\n\tProperties." + DefaultValueName + " = " + DefaultValueName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *DefaultValueName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *DefaultValueName,
+          *DefaultValueName);
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("\n\t\tProperties.%s = %s;"),
+          *DefaultValueName,
+          *DefaultValueName);
     }
   }
 
@@ -399,14 +423,16 @@ struct CustomShaderBuilder {
     }
 
     // e.g., "float temperature_MIN;"
-    DeclareShaderProperties += "\t" + type + " " + statisticName + ";";
+    DeclareShaderProperties.Appendf(TEXT("\t%s %s;"), *type, *statisticName);
 
     if (!SetStatistics.IsEmpty()) {
       SetStatistics += "\n";
     }
     // e.g., "Properties.temperature_MIN = temperature_MIN;
-    SetStatistics +=
-        "Properties." + statisticName + " = " + statisticName + ";";
+    SetStatistics.Appendf(
+        TEXT("Properties.%s = %s;"),
+        *statisticName,
+        *statisticName);
   }
 
   /**
