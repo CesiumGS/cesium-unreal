@@ -97,7 +97,6 @@ struct VoxelMegatextures
 =============================*/
 
 #define STEP_COUNT_MAX 1000
-#define ALPHA_ACCUMULATION_MAX 0.98 // Must be > 0.0 and <= 1.0
 
 VoxelOctree Octree;
 Octree.GridShape = (Shape) 0;
@@ -197,8 +196,7 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
     AccumulatedResult += result;
 
     // Stop traversing if the alpha has been fully saturated.
-    if (AccumulatedResult.w > ALPHA_ACCUMULATION_MAX) {
-      AccumulatedResult.w = ALPHA_ACCUMULATION_MAX;
+    if (AccumulatedResult.w >= 1.0) {
       break;
     }
   }
@@ -220,8 +218,5 @@ for (int step = 0; step < STEP_COUNT_MAX; step++) {
   Octree.ResumeTraversal(PositionShapeUVSpace, Traversal, Sample);
   NextIntersection = Octree.GetNextVoxelIntersection(Sample, RawDirection, Intersections, JacobianT, CurrentT);
 }
-
-// Convert the alpha from [0,ALPHA_ACCUMULATION_MAX] to [0,1]
-AccumulatedResult.a /= ALPHA_ACCUMULATION_MAX;
 
 return AccumulatedResult;

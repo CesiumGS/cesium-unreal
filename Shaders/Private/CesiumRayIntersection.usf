@@ -10,19 +10,28 @@
 #define NO_HIT -CZM_INFINITY
 #define INF_HIT (CZM_INFINITY * 0.5)
 
+
 struct Ray
 {
   float3 Origin;
   float3 Direction;
 };
 
+/**
+* An intersection derived from a Ray. Rather than storing the actual
+* intersection point, this stores the t value that plugs into
+* P = Origin + t * Direction because it may be modified later. This
+* also captures the normal of the surface at the found intersection.
+*/
 struct Intersection
 {
   float t;
   float3 Normal;
 };
 
-// Represents where a ray enters and leaves a volume.
+/**
+* Represents where a ray enters and leaves a volume.
+*/
 struct RayIntersections
 {
   Intersection Entry;
