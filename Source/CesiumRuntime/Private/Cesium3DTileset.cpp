@@ -2094,14 +2094,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
+  getAsyncSystem().dispatchMainThreadTasks();
+
   if (this->_pFeaturesMetadataComponent.IsValid() &&
       this->_pFeaturesMetadataComponent->IsSyncing()) {
     // Styling may require the tileset's metadata to be loaded first (for schema
-    // and/or statistics) before streaming tiles. But continue to dispatch tasks
-    // so that the metadata future resolves.
-    // This will not add much overhead since tilesets will have no metadata or
-    // otherwise embed it in the tileset.json anyway.
-    getAsyncSystem().dispatchMainThreadTasks();
+    // and/or statistics) before streaming tiles.
     return;
   }
 
@@ -2116,7 +2114,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
-  getAsyncSystem().dispatchMainThreadTasks();
   if (this->_captureMovieMode) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
     pResult = &this->_pTileset->updateViewGroupOffline(
