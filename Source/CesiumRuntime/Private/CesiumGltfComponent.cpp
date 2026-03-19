@@ -99,8 +99,6 @@ public:
 };
 } // namespace
 
-const int32_t VoxelPrimitiveMode = 2147483647;
-
 template <class... T> struct IsAccessorView;
 
 template <class T> struct IsAccessorView<T> : std::false_type {};
@@ -1928,13 +1926,14 @@ static void loadVoxels(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadVoxels)
-  if (primitive.mode != VoxelPrimitiveMode) {
+  if (primitive.mode != CesiumGltf::ExtensionExtPrimitiveVoxels::MODE) {
     UE_LOG(
         LogCesium,
         Warning,
         TEXT(
-            "Primitive mode %d does not match the voxel constant for EXT_primitive_voxels (2147483647). Skipped."),
-        primitive.mode);
+            "Primitive mode %d does not match the voxel constant for EXT_primitive_voxels (%d). Skipped."),
+        primitive.mode,
+        CesiumGltf::ExtensionExtPrimitiveVoxels::MODE);
     return;
   }
 

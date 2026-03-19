@@ -53,7 +53,7 @@ public:
   bool IsReadyForFinishDestroy() override;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* DefaultMaterial = nullptr;
+  UMaterial* DefaultMaterial = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UStaticMesh* CubeMesh = nullptr;

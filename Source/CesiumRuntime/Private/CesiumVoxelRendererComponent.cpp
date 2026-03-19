@@ -31,7 +31,7 @@ UCesiumVoxelRendererComponent::UCesiumVoxelRendererComponent()
     : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UMaterialInstance> DefaultMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterial> DefaultMaterial;
     ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh;
     FConstructorStatics()
         : DefaultMaterial(TEXT(
