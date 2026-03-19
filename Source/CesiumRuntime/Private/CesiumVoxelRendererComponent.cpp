@@ -14,6 +14,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/Material.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "SceneInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -171,7 +172,6 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
     const FCesiumVoxelClassDescription* pDescription,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
   UMaterialInterface* pMaterial = pTilesetActor->GetMaterial();
-
   UMaterialInstanceDynamic* pVoxelMaterial = UMaterialInstanceDynamic::Create(
       pMaterial ? pMaterial : pVoxelComponent->DefaultMaterial,
       nullptr,
