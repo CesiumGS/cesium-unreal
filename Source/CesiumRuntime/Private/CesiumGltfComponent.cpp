@@ -1684,13 +1684,6 @@ static void loadPrimitive(
       duplicateVertices,
       primitiveResult);
 
-  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
-  glm::dmat4 scaleMatrix = glm::dmat4(
-      glm::dvec4(scale, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, scale, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, scale, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
-
   // TangentX: Tangent
   // TangentY: Bi-tangent
   // TangentZ: Normal
@@ -1724,7 +1717,7 @@ static void loadPrimitive(
     setUnlitNormals(
         LODResources.VertexBuffers,
         ellipsoid,
-        transform * yInvertMatrix * scaleMatrix);
+        transform * yInvertMatrix * CesiumPrimitiveData::positionScaleMatrix);
   } else {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
     computeFlatNormals(LODResources.VertexBuffers);
@@ -1803,7 +1796,8 @@ static void loadPrimitive(
   primitiveResult.primitiveIndex = options.primitiveIndex;
   primitiveResult.pRenderData = std::move(pRenderData);
   primitiveResult.pCollisionMesh = nullptr;
-  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
+  primitiveResult.transform =
+      transform * yInvertMatrix * CesiumPrimitiveData::positionScaleMatrix;
 
   if (isTriangles &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
@@ -2043,18 +2037,12 @@ static void loadGaussianSplats(
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
 
-  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
-  glm::dmat4 scaleMatrix = glm::dmat4(
-      glm::dvec4(scale, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, scale, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, scale, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
-
   const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
-  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
+  primitiveResult.transform =
+      transform * yInvertMatrix * CesiumPrimitiveData::positionScaleMatrix;
   primitiveResult.pGaussianSplatData =
       MakeUnique<FCesiumGltfGaussianSplatData>(model, primitive);
 }

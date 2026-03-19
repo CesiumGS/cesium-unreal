@@ -15,15 +15,15 @@ struct CustomShaderProperties
 {
 
  // Declare properties and statistics
-%s
+{0}
 
  // Additional functions.
-%s
+{1}
   
   float4 Shade()
   {
     // Custom shader code.
-%s
+{2}
   }
 };
 
@@ -38,7 +38,7 @@ struct CustomShaderProperties
 struct VoxelMegatextures
 {
   // Property data textures.
-  %s
+  {3}
   int ShapeConstant;
   uint3 TileCount; // Number of tiles in the texture, in three dimensions.
 
@@ -84,7 +84,7 @@ struct VoxelMegatextures
     int3 Coords = TileCoords + VoxelCoords;
 
     // Set the properties based on the voxel sample.
-    %s
+    {4}
   }
 };
 
@@ -164,7 +164,7 @@ switch (ShapeConstant) {
 }
 
 // Pass textures to the VoxelMegatextures struct.
-%s
+{5}
 
 float CurrentT = Intersections.Entry.t;
 float EndT = Intersections.Exit.t;
@@ -186,7 +186,7 @@ float4 AccumulatedResult = float4(0, 0, 0, 0);
 CustomShaderProperties Properties;
 
 // Set statistic values, if any.
-%s
+{6}
 
 for (int step = 0; step < STEP_COUNT_MAX; step++) {
   if (Sample.Index >= 0) {

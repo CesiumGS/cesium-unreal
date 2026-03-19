@@ -22,7 +22,6 @@
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "ComponentReregisterContext.h"
-#include "Containers/LazyPrintf.h"
 #include "Containers/Map.h"
 #include "ContentBrowserModule.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
@@ -454,20 +453,19 @@ struct CustomShaderBuilder {
 /*static*/ const FString UCesiumVoxelMetadataComponent::_shaderPreviewTemplate =
     "struct CustomShaderProperties {\n"
     "/* Properties and statistics go here. */\n"
-    "%s"
+    "{0}"
     "\n\n"
     "/* Additional helper functions go here.*/\n"
-    "%s\n\n"
+    "{1}\n\n"
     "float4 Shade() {\n"
     "/* Custom shader code goes here.*/\n"
-    "%s\n"
+    "{2}\n"
     "\t}\n}";
 
 FString UCesiumVoxelMetadataComponent::getCustomShaderPreview() const {
   // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
   // CesiumVoxelTemplate.ush contains "%s" formatters that should be replaced
   // with generated code.
-  FLazyPrintf LazyPrintf(*_shaderPreviewTemplate);
   CustomShaderBuilder Builder;
 
   for (const FCesiumPropertyAttributePropertyDescription& Property :
@@ -499,11 +497,11 @@ FString UCesiumVoxelMetadataComponent::getCustomShaderPreview() const {
     }
   }
 
-  LazyPrintf.PushParam(*Builder.DeclareShaderProperties);
-  LazyPrintf.PushParam(*this->AdditionalFunctions);
-  LazyPrintf.PushParam(*this->CustomShader);
-
-  return LazyPrintf.GetResultString();
+  return FString::Format(
+      *_shaderPreviewTemplate,
+      {Builder.DeclareShaderProperties,
+       this->AdditionalFunctions,
+       this->CustomShader});
 }
 
 static VoxelMetadataClassification ClassifyNodes(UMaterial* pMaterial) {
@@ -778,10 +776,6 @@ static void GenerateMaterialNodes(
   NodeX = DataSectionX;
   NodeY = DataSectionY;
 
-  // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
-  // CesiumVoxelTemplate.usf contains "%s" formatters that will be replaced
-  // with generated code.
-  FLazyPrintf LazyPrintf(*ResourceLibrary.ShaderTemplate);
   CustomShaderBuilder Builder;
 
   const TArray<FCesiumPropertyAttributePropertyDescription>& Properties =
@@ -895,14 +889,15 @@ static void GenerateMaterialNodes(
     }
   }
 
-  LazyPrintf.PushParam(*Builder.DeclareShaderProperties);
-  LazyPrintf.PushParam(*pComponent->AdditionalFunctions);
-  LazyPrintf.PushParam(*pComponent->CustomShader);
-  LazyPrintf.PushParam(*Builder.DeclareDataTextureVariables);
-  LazyPrintf.PushParam(*Builder.SamplePropertiesFromTexture);
-  LazyPrintf.PushParam(*Builder.SetDataTextures);
-  LazyPrintf.PushParam(*Builder.SetStatistics);
-  pRaymarchNode->Code = LazyPrintf.GetResultString();
+  pRaymarchNode->Code = FString::Format(
+      *ResourceLibrary.ShaderTemplate,
+      {Builder.DeclareShaderProperties,
+       pComponent->AdditionalFunctions,
+       pComponent->CustomShader,
+       Builder.DeclareDataTextureVariables,
+       Builder.SamplePropertiesFromTexture,
+       Builder.SetDataTextures,
+       Builder.SetStatistics});
 
   UMaterialEditorOnlyData* pEditorOnlyData = pMaterial->GetEditorOnlyData();
   CESIUM_ASSERT(pEditorOnlyData);

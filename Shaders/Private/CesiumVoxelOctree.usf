@@ -207,7 +207,9 @@ struct VoxelOctree
     }
 
     // Otherwise, go up tree until we find a parent tile containing the position.
-    for (int i = 0; i < OCTREE_MAX_LEVELS; ++i)
+    int levels = Traversal.Coords.w;
+    [loop]
+    for (int i = 0; i < levels; ++i)
     {
       Traversal.Coords.w -= 1; // Up one level
       Traversal.Coords.xyz /= 2; // Get coordinates of the parent tile.
