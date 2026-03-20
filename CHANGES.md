@@ -9,7 +9,6 @@
 - Added `UCesiumGlobeAnchorComponent::HeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
 
 ### v2.24.1 - 2026-03-02
->>>>>>> main
 
 ##### Fixes :wrench:
 
