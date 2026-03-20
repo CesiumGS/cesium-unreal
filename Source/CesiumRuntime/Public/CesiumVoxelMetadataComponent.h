@@ -12,6 +12,8 @@
 
 #include "CesiumVoxelMetadataComponent.generated.h"
 
+class UTexture;
+
 /**
  * @brief Description of the metadata properties available in the class used by
  * the 3DTILES_content_voxels extension. Exposes what properties are available

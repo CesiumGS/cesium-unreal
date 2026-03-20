@@ -1,6 +1,7 @@
 // Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumVoxelRendererComponent.h"
+
 #include "CalcBounds.h"
 #include "Cesium3DTileset.h"
 #include "CesiumGltfComponent.h"
@@ -13,8 +14,8 @@
 #include "EncodedFeaturesMetadata.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "SceneInterface.h"
 #include "UObject/ConstructorHelpers.h"
