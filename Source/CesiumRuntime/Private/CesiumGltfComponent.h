@@ -89,10 +89,10 @@ public:
       UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
-      bool ReceiveDecals,
       const Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision,
-      bool doubleSidedCollisions);
+      bool doubleSidedCollisions,
+      bool receiveDecals);
 
   UCesiumGltfComponent();
 
@@ -107,9 +107,6 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
-
-  UPROPERTY(EditAnywhere, Category = "Rendering")
-  bool ReceiveDecals = true;
 
   const Cesium3DTilesSelection::Tile* pTile = nullptr;
 
