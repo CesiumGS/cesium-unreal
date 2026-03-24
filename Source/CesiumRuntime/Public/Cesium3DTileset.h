@@ -898,15 +898,15 @@ private:
       meta = (DisplayName = "Ignore KHR_materials_unlit"))
   bool IgnoreKhrMaterialsUnlit = false;
 
-/**
- * Whether this tileset should receive decals.
- */
-UPROPERTY(
-    EditAnywhere,
-    BlueprintGetter = GetReceiveDecals,
-    BlueprintSetter = SetReceiveDecals,
-    Category = "Cesium|Rendering")
-bool ReceiveDecals = true;
+  /**
+   * Whether this tileset should receive decals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetReceiveDecals,
+      BlueprintSetter = SetReceiveDecals,
+      Category = "Cesium|Rendering")
+  bool ReceiveDecals = true;
 
   /**
    * A custom Material to use to render opaque elements in this tileset, in
@@ -963,7 +963,6 @@ bool ReceiveDecals = true;
       Category = "Rendering",
       meta = (ShowOnlyInnerProperties))
   FCustomDepthParameters CustomDepthParameters;
-
 
   /**
    * If this tileset contains points, their appearance can be configured with
@@ -1190,7 +1189,6 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Rendering")
   void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);
-
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   FCesiumPointCloudShading GetPointCloudShading() const {
