@@ -58,6 +58,18 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 CESIUMRUNTIME_API extern FCesiumFeaturesMetadataAddProperties
     OnCesiumFeaturesMetadataAddProperties;
 
+/**
+ * The delegate for the OnCesiumVoxelMetadataBuildShader, which is
+ * triggered when "Build Shader" is clicked on
+ * UCesiumVoxelMetadataComponent.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesiumVoxelMetadataBuildShader,
+    ACesium3DTileset*);
+
+CESIUMRUNTIME_API extern FCesiumVoxelMetadataBuildShader
+    OnCesiumVoxelMetadataBuildShader;
+
 CESIUMRUNTIME_API CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
 CESIUMRUNTIME_API const std::shared_ptr<CesiumAsync::IAssetAccessor>&
 getAssetAccessor();

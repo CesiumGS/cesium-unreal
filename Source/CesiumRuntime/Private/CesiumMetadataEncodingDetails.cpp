@@ -149,3 +149,20 @@ FCesiumMetadataEncodingDetails::GetBestFitForProperty(
       componentType,
       ECesiumEncodedMetadataConversion::Coerce);
 }
+
+TArray<ECesiumEncodedMetadataConversion>
+FCesiumMetadataEncodingDetails::GetSupportedConversionsForProperty(
+    const FCesiumMetadataPropertyDetails& PropertyDetails) {
+  TArray<ECesiumEncodedMetadataConversion> result;
+  if (PropertyDetails.Type == ECesiumMetadataType::Invalid) {
+    return result;
+  }
+
+  result.Add(ECesiumEncodedMetadataConversion::Coerce);
+
+  if (PropertyDetails.Type == ECesiumMetadataType::String) {
+    result.Add(ECesiumEncodedMetadataConversion::ParseColorFromString);
+  }
+
+  return result;
+}

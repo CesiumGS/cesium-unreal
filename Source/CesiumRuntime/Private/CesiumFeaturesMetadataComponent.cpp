@@ -12,6 +12,8 @@
 #include "GenerateMaterialUtility.h"
 #include "UnrealMetadataConversions.h"
 
+#include <Cesium3DTiles/Statistics.h>
+
 #if WITH_EDITOR
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -2351,7 +2353,7 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
       FunctionLibrary);
 
   GenerateMaterialNodes(this, MaterialState, FunctionLibrary);
-  MoveNodesToMaterialLayer(MaterialState, this->TargetMaterialLayer);
+  MoveNodesToMaterial(MaterialState, this->TargetMaterialLayer);
 
   RemapUserConnections(
       this->TargetMaterialLayer,
@@ -2397,73 +2399,31 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
 
 #endif
 
-namespace {
-FCesiumMetadataValue getValueForSemantic(
-    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
-    const FCesiumMetadataValueType& propertyType,
-    ECesiumMetadataStatisticSemantic semantic) {
-  CesiumUtility::JsonValue nullValue;
-
-  switch (semantic) {
-  case ECesiumMetadataStatisticSemantic::Min:
-    return FCesiumMetadataValue(
-        propertyStatistics.min.value_or(nullValue),
-        propertyType);
-  case ECesiumMetadataStatisticSemantic::Max:
-    return FCesiumMetadataValue(
-        propertyStatistics.max.value_or(nullValue),
-        propertyType);
-  case ECesiumMetadataStatisticSemantic::Mean:
-    return FCesiumMetadataValue(
-        propertyStatistics.mean.value_or(nullValue),
-        propertyType);
-  case ECesiumMetadataStatisticSemantic::Median:
-    return FCesiumMetadataValue(
-        propertyStatistics.median.value_or(nullValue),
-        propertyType);
-  case ECesiumMetadataStatisticSemantic::StandardDeviation:
-    return FCesiumMetadataValue(
-        propertyStatistics.standardDeviation.value_or(nullValue),
-        propertyType);
-  case ECesiumMetadataStatisticSemantic::Variance:
-    return FCesiumMetadataValue(
-        propertyStatistics.variance.value_or(nullValue),
-        propertyType);
-  case ECesiumMetadataStatisticSemantic::Sum:
-    return FCesiumMetadataValue(
-        propertyStatistics.sum.value_or(nullValue),
-        propertyType);
-  default:
-    return FCesiumMetadataValue();
-  }
-}
-
-void syncStatisticsFromMetadata(
-    ACesium3DTileset& tilesetActor,
-    UCesiumFeaturesMetadataComponent& metadataComponent,
-    const Cesium3DTilesSelection::TilesetMetadata& metadata) {
-  if (!metadata.statistics) {
+void UCesiumFeaturesMetadataComponent::OnFetchMetadata(
+    ACesium3DTileset* pActor,
+    const Cesium3DTilesSelection::TilesetMetadata* pMetadata) {
+  if (!IsValid(pActor) || !pMetadata || !pMetadata->statistics) {
     // Tilesets may not contain any statistics...
     return;
   }
 
   // ...however, if statistics are present, then there must be a schema.
-  if (!metadata.schema) {
+  if (!pMetadata->schema) {
     UE_LOG(
         LogCesium,
         Error,
         TEXT(
             "Tileset %s has incomplete metadata and cannot sync its statistics with "
             "UCesiumFeaturesMetadataComponent."),
-        *tilesetActor.GetName());
+        *pActor->GetName());
     return;
   }
 
-  const Cesium3DTiles::Schema& schema = *metadata.schema;
-  const Cesium3DTiles::Statistics& statistics = *metadata.statistics;
+  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
+  const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
 
   for (FCesiumMetadataClassStatisticsDescription& classStatistics :
-       metadataComponent.Description.Statistics) {
+       this->Description.Statistics) {
     std::string classId = TCHAR_TO_UTF8(*classStatistics.Id);
     const Cesium3DTiles::Class* pClass = schema.classes.contains(classId)
                                              ? &schema.classes.at(classId)
@@ -2487,7 +2447,7 @@ void syncStatisticsFromMetadata(
 
         for (FCesiumMetadataPropertyStatisticValue& statisticValue :
              propertyStatistics.Values) {
-          statisticValue.Value = getValueForSemantic(
+          statisticValue.Value = GenerateMaterialUtility::getValueForSemantic(
               propertyStatisticsIt->second,
               type,
               statisticValue.Semantic);
@@ -2499,7 +2459,7 @@ void syncStatisticsFromMetadata(
             TEXT(
                 "Tileset %s does not contain statistics for property %s from class %s "
                 "on UCesiumFeaturesMetadataComponent."),
-            *tilesetActor.GetName(),
+            *pActor->GetName(),
             *propertyStatistics.Id,
             *classStatistics.Id);
 
@@ -2512,55 +2472,7 @@ void syncStatisticsFromMetadata(
   }
 }
 
-} // namespace
-
-void UCesiumFeaturesMetadataComponent::SyncStatistics() {
-  if (this->_syncInProgress)
-    return;
-
-  this->clearStatistics();
-
-  ACesium3DTileset* pActor = this->GetOwner<ACesium3DTileset>();
-  Cesium3DTilesSelection::Tileset* pTileset =
-      pActor ? pActor->GetTileset() : nullptr;
-
-  if (pTileset && pTileset->getMetadata()) {
-    syncStatisticsFromMetadata(*pActor, *this, *pTileset->getMetadata());
-  } else if (pTileset) {
-    this->_syncInProgress = true;
-
-    pTileset->loadMetadata()
-        .thenInMainThread(
-            [this,
-             pActor](const Cesium3DTilesSelection::TilesetMetadata* pMetadata) {
-              if (!IsValid(pActor) || !IsValid(this) ||
-                  !this->_syncInProgress) {
-                // _syncInProgress can be set to false if the sync is
-                // intentionally interrupted.
-                return;
-              }
-
-              if (pMetadata) {
-                syncStatisticsFromMetadata(*pActor, *this, *pMetadata);
-              }
-
-              this->_syncInProgress = false;
-            })
-        .catchInMainThread(
-            [this](std::exception&& e) { this->_syncInProgress = false; });
-  }
-}
-
-bool UCesiumFeaturesMetadataComponent::IsSyncing() const {
-  return this->_syncInProgress;
-}
-
-void UCesiumFeaturesMetadataComponent::InterruptSync() {
-  this->_syncInProgress = false;
-  this->clearStatistics();
-}
-
-void UCesiumFeaturesMetadataComponent::clearStatistics() {
+void UCesiumFeaturesMetadataComponent::ClearStatistics() {
   for (FCesiumMetadataClassStatisticsDescription& classStatistics :
        this->Description.Statistics) {
     for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
@@ -2643,10 +2555,4 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   Super::PostLoad();
-}
-
-void UCesiumFeaturesMetadataComponent::OnRegister() {
-  Super::OnRegister();
-
-  this->SyncStatistics();
 }
