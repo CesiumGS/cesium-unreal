@@ -2145,6 +2145,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
+  getAsyncSystem().dispatchMainThreadTasks();
+
   bool awaitingMainThreadTasks = this->_pFeaturesMetadataComponent.IsValid() &&
                                  this->_pFeaturesMetadataComponent->IsSyncing();
   awaitingMainThreadTasks |= this->_pVoxelMetadataComponent.IsValid() &&
@@ -2152,11 +2154,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   if (awaitingMainThreadTasks) {
     // Styling may require the tileset's metadata to be loaded first (for schema
-    // and/or statistics) before streaming tiles. But continue to dispatch tasks
-    // so that the metadata future resolves.
-    // This will not add much overhead since tilesets will have no metadata or
-    // otherwise embed it in the tileset.json anyway.
-    getAsyncSystem().dispatchMainThreadTasks();
+    // and/or statistics) before streaming tiles.
     return;
   }
 
