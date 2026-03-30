@@ -3260,6 +3260,7 @@ static void loadPrimitiveGameThreadPart(
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
     bool enableDoubleSidedCollisions,
+    bool receiveDecals,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
@@ -3350,6 +3351,7 @@ static void loadPrimitiveGameThreadPart(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
     pMesh->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
+    pMesh->bReceivesDecals = receiveDecals;
     if (loadResult.isUnlit) {
       pMesh->bCastDynamicShadow = false;
     }
@@ -3812,7 +3814,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
-    bool enableDoubleSidedCollisions) {
+    bool enableDoubleSidedCollisions,
+    bool receiveDecals) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3848,7 +3851,6 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
 
   pGltf->CustomDepthParameters = CustomDepthParameters;
-
   encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
   if (pGltf->EncodedMetadata_DEPRECATED) {
@@ -3882,6 +3884,7 @@ UCesiumGltfComponent::CreateOffGameThread(
               tile,
               createNavCollision,
               enableDoubleSidedCollisions,
+              receiveDecals,
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures,

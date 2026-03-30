@@ -906,6 +906,16 @@ private:
   bool IgnoreKhrMaterialsUnlit = false;
 
   /**
+   * Whether this tileset should receive decals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetReceiveDecals,
+      BlueprintSetter = SetReceiveDecals,
+      Category = "Cesium|Rendering")
+  bool ReceiveDecals = true;
+
+  /**
    * A custom Material to use to render opaque elements in this tileset, in
    * order to implement custom visual effects.
    *
@@ -1153,6 +1163,11 @@ public:
   bool GetIgnoreKhrMaterialsUnlit() const { return IgnoreKhrMaterialsUnlit; }
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetReceiveDecals() const { return ReceiveDecals; }
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetReceiveDecals(bool bReceiveDecals);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }
