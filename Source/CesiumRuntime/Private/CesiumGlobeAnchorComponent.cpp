@@ -839,6 +839,23 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
       VecMath::createMatrix(nativeAnchor.getAnchorToFixedTransform());
   this->_actorToECEFIsValid = true;
 
+  // Check if this actor is attached to a parent actor that also has a UCesiumGlobeAnchorComponent.
+  // If so, return early because the parent's globe anchor will handle the transform update
+  // for the entire hierarchy. This avoids redundant transform calculations and potential
+  // conflicts between multiple globe anchors in the same hierarchy.
+  USceneComponent* pOwnerRoot = this->_getRootComponent(true);
+  if (!IsValid(pOwnerRoot)) {
+    return;
+  }
+
+  AActor* pParent = pOwnerRoot->GetAttachParentActor();
+  while (IsValid(pParent)) {
+    if (pParent->FindComponent<UCesiumGlobeAnchorComponent>() != nullptr) {
+      return;
+    }
+    pParent = pParent->GetAttachParentActor();
+  }
+
   // Update the Unreal relative transform
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (IsValid(pGeoreference)) {
