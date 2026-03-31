@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ? 
+### v2.25.0 - 2026-04-01
 
 ##### Additions :tada:
 
@@ -9,6 +9,8 @@
 - Added `UCesiumGlobeAnchorComponent::ReferencedTileset`. Set this field to a `ACesium3DTileset` actor reference to maintain a fixed height above the tileset.
 - Added `UCesiumGlobeAnchorComponent::HeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
 - Added `ReceiveDecals` property to `ACesium3DTileset` to allow toggling decal reception per tileset.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.58.0 to v0.59.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.24.1 - 2026-03-02
 
