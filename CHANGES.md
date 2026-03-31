@@ -10,6 +10,10 @@
 - Added `UCesiumGlobeAnchorComponent::HeightUpdateInterval` to specify how often the actor's height is updated when `HeightReference` is `Tileset`.
 - Added `ReceiveDecals` property to `ACesium3DTileset` to allow toggling decal reception per tileset.
 
+##### Fixes :wrench:
+
+- Fixed coordinate anomalies in nested `UCesiumGlobeAnchorComponent` instances when Cesium origin coordinates change. Added a parent actor check to avoid redundant transform updates when a parent actor already has a `UCesiumGlobeAnchorComponent`.
+
 ### v2.24.1 - 2026-03-02
 
 ##### Fixes :wrench:
