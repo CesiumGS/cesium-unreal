@@ -12,8 +12,13 @@
 class UCesiumGaussianSplatSubsystem;
 class UCesiumGltfGaussianSplatComponent;
 
-struct FNDICesiumGaussianSplats_InstanceData_RenderThread {
-  ~FNDICesiumGaussianSplats_InstanceData_RenderThread();
+struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
+    : public FNiagaraDataInterfaceProxy {
+  virtual ~FNiagaraDataInterfaceProxyCesiumGaussianSplats();
+
+  virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
+    return 0;
+  }
 
   FReadBuffer TileIndicesBuffer;
   FReadBuffer TileTransformsBuffer;
@@ -24,6 +29,25 @@ struct FNDICesiumGaussianSplats_InstanceData_RenderThread {
   FReadBuffer ColorsBuffer;
   FReadBuffer SHNonZeroCoeffsBuffer;
 };
+
+struct FNDICesiumGaussianSplats_InstanceData {
+  TArray<const UCesiumGltfGaussianSplatComponent*> Components;
+  int32 ShCoefficientCount;
+  int32 SplatCount;
+
+  void Reset();
+};
+
+BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
+SHADER_PARAMETER_SRV(Buffer<uint>, TileIndices)
+SHADER_PARAMETER_SRV(Buffer<float4>, TileTransforms)
+SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
+SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
+SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)
+SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
+SHADER_PARAMETER_SRV(Buffer<uint>, SplatSHDegrees)
+SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)
+END_SHADER_PARAMETER_STRUCT();
 
 UCLASS()
 class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
@@ -78,4 +102,7 @@ protected:
 private:
   bool _splatsDirty = true;
   bool _matricesDirty = true;
+
+  TMap<FNiagaraSystemInstanceID, FNDICesiumGaussianSplats_InstanceData*>
+      _systemInstancesToProxyData_GT;
 };

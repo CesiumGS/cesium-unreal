@@ -27,8 +27,8 @@
 
 const FString ComputeSplatFunctionName = TEXT("ComputeSplat");
 
-FNDICesiumGaussianSplats_InstanceData_RenderThread::
-    ~FNDICesiumGaussianSplats_InstanceData_RenderThread() {
+FNiagaraDataInterfaceProxyCesiumGaussianSplats::
+    ~FNiagaraDataInterfaceProxyCesiumGaussianSplats() {
   this->TileIndicesBuffer.Release();
   this->TileTransformsBuffer.Release();
   this->SplatSHDegreesBuffer.Release();
@@ -37,6 +37,12 @@ FNDICesiumGaussianSplats_InstanceData_RenderThread::
   this->OrientationsBuffer.Release();
   this->ColorsBuffer.Release();
   this->SHNonZeroCoeffsBuffer.Release();
+}
+
+void FNDICesiumGaussianSplats_InstanceData::Reset() {
+  this->Components.Reset();
+  this->ShCoefficientCount = 0;
+  this->SplatCount = 0;
 }
 
 namespace {
@@ -85,7 +91,7 @@ void updateTileTransforms(
 
   for (int32 i = 0; i < Components.Num(); i++) {
     const UCesiumGltfGaussianSplatComponent* pComponent = Components[i];
-    check(IsValid(pComponent));
+    check(pComponent);
 
     const int32 Offset = i * VectorsPerComponent;
 
@@ -161,15 +167,15 @@ void updatePerSplatData(
     const TArray<const UCesiumGltfGaussianSplatComponent*>& Components,
     int32 ShCoefficientCount,
     int32 SplatCount,
-    FNDICesiumGaussianSplats_InstanceData_RenderThread& RT_Data) {
+    FNiagaraDataInterfaceProxyCesiumGaussianSplats& Proxy) {
   if (Components.IsEmpty()) {
-    RT_Data.PositionsBuffer.Release();
-    RT_Data.ScalesBuffer.Release();
-    RT_Data.OrientationsBuffer.Release();
-    RT_Data.ColorsBuffer.Release();
-    RT_Data.TileIndicesBuffer.Release();
-    RT_Data.SHNonZeroCoeffsBuffer.Release();
-    RT_Data.SplatSHDegreesBuffer.Release();
+    Proxy.PositionsBuffer.Release();
+    Proxy.ScalesBuffer.Release();
+    Proxy.OrientationsBuffer.Release();
+    Proxy.ColorsBuffer.Release();
+    Proxy.TileIndicesBuffer.Release();
+    Proxy.SHNonZeroCoeffsBuffer.Release();
+    Proxy.SplatSHDegreesBuffer.Release();
     return;
   }
 
@@ -177,35 +183,35 @@ void updatePerSplatData(
   const int32 requiredDegreesBytes = Components.Num() * 3 * sizeof(uint32);
   const int32 requiredShCoeffBytes = ShCoefficientCount * 2 * sizeof(float);
 
-  if (RT_Data.PositionsBuffer.NumBytes != requiredPositionBytes) {
-    RT_Data.PositionsBuffer.Release();
-    RT_Data.ScalesBuffer.Release();
-    RT_Data.OrientationsBuffer.Release();
-    RT_Data.ColorsBuffer.Release();
-    RT_Data.TileIndicesBuffer.Release();
+  if (Proxy.PositionsBuffer.NumBytes != requiredPositionBytes) {
+    Proxy.PositionsBuffer.Release();
+    Proxy.ScalesBuffer.Release();
+    Proxy.OrientationsBuffer.Release();
+    Proxy.ColorsBuffer.Release();
+    Proxy.TileIndicesBuffer.Release();
 
-    RT_Data.PositionsBuffer.Initialize(
+    Proxy.PositionsBuffer.Initialize(
         RHICmdList,
         TEXT("FNiagaraDataInterfaceProxyCesiumGaussianSplat_Positions"),
         sizeof(FVector4f),
         SplatCount,
         EPixelFormat::PF_A32B32G32R32F,
         BUF_Static);
-    RT_Data.ScalesBuffer.Initialize(
+    Proxy.ScalesBuffer.Initialize(
         RHICmdList,
         TEXT("FNiagaraDataInterfaceProxyCesiumGaussianSplat_Scales"),
         sizeof(FVector4f),
         SplatCount,
         EPixelFormat::PF_A32B32G32R32F,
         BUF_Static);
-    RT_Data.OrientationsBuffer.Initialize(
+    Proxy.OrientationsBuffer.Initialize(
         RHICmdList,
         TEXT("FNiagaraDataInterfaceProxyCesiumGaussianSplat_Orientations"),
         sizeof(FVector4f),
         SplatCount,
         EPixelFormat::PF_A32B32G32R32F,
         BUF_Static);
-    RT_Data.ColorsBuffer.Initialize(
+    Proxy.ColorsBuffer.Initialize(
         RHICmdList,
         TEXT("FNiagaraDataInterfaceProxyCesiumGaussianSplat_Colors"),
         sizeof(FVector4f),
@@ -214,7 +220,7 @@ void updatePerSplatData(
         BUF_Static);
 
     if (ShCoefficientCount > 0) {
-      RT_Data.SHNonZeroCoeffsBuffer.Initialize(
+      Proxy.SHNonZeroCoeffsBuffer.Initialize(
           RHICmdList,
           TEXT(
               "FNiagaraDataInterfaceProxyCesiumGaussianSplat_SHNonZeroCoeffsBuffer"),
@@ -223,7 +229,7 @@ void updatePerSplatData(
           EPixelFormat::PF_A32B32G32R32F,
           BUF_Static);
     }
-    RT_Data.TileIndicesBuffer.Initialize(
+    Proxy.TileIndicesBuffer.Initialize(
         RHICmdList,
         TEXT(
             "FNiagaraDataInterfaceProxyCesiumGaussianSplat_SplatIndicesBuffer"),
@@ -233,9 +239,9 @@ void updatePerSplatData(
         BUF_Static);
   }
 
-  if (RT_Data.SplatSHDegreesBuffer.NumBytes != requiredDegreesBytes) {
-    RT_Data.SplatSHDegreesBuffer.Release();
-    RT_Data.SplatSHDegreesBuffer.Initialize(
+  if (Proxy.SplatSHDegreesBuffer.NumBytes != requiredDegreesBytes) {
+    Proxy.SplatSHDegreesBuffer.Release();
+    Proxy.SplatSHDegreesBuffer.Initialize(
         RHICmdList,
         TEXT("FNiagaraDataInterfaceProxyCesiumGaussianSplat_SplatSHDegrees"),
         sizeof(uint32),
@@ -244,10 +250,10 @@ void updatePerSplatData(
         BUF_Static);
   }
 
-  if (RT_Data.SHNonZeroCoeffsBuffer.NumBytes != requiredShCoeffBytes) {
-    RT_Data.SHNonZeroCoeffsBuffer.Release();
+  if (Proxy.SHNonZeroCoeffsBuffer.NumBytes != requiredShCoeffBytes) {
+    Proxy.SHNonZeroCoeffsBuffer.Release();
     if (ShCoefficientCount > 0) {
-      RT_Data.SHNonZeroCoeffsBuffer.Initialize(
+      Proxy.SHNonZeroCoeffsBuffer.Initialize(
           RHICmdList,
           TEXT(
               "FNiagaraDataInterfaceProxyCesiumGaussianSplat_SHNonZeroCoeffsBuffer"),
@@ -259,46 +265,45 @@ void updatePerSplatData(
   }
 
   float* pPositionsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-      RT_Data.PositionsBuffer.Buffer,
+      Proxy.PositionsBuffer.Buffer,
       0,
       requiredPositionBytes,
       EResourceLockMode::RLM_WriteOnly));
   float* pScalesBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-      RT_Data.ScalesBuffer.Buffer,
+      Proxy.ScalesBuffer.Buffer,
       0,
       requiredPositionBytes,
       EResourceLockMode::RLM_WriteOnly));
   float* pOrientationsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-      RT_Data.OrientationsBuffer.Buffer,
+      Proxy.OrientationsBuffer.Buffer,
       0,
       requiredPositionBytes,
       EResourceLockMode::RLM_WriteOnly));
   float* pColorsBuffer = static_cast<float*>(RHICmdList.LockBuffer(
-      RT_Data.ColorsBuffer.Buffer,
+      Proxy.ColorsBuffer.Buffer,
       0,
       requiredPositionBytes,
       EResourceLockMode::RLM_WriteOnly));
   float* pSHNonZeroCoeffsBuffer =
       ShCoefficientCount > 0 ? static_cast<float*>(RHICmdList.LockBuffer(
-                                   RT_Data.SHNonZeroCoeffsBuffer.Buffer,
+                                   Proxy.SHNonZeroCoeffsBuffer.Buffer,
                                    0,
                                    ShCoefficientCount * 4 * sizeof(float),
                                    EResourceLockMode::RLM_WriteOnly))
                              : nullptr;
   uint32* pIndexBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
-      RT_Data.TileIndicesBuffer.Buffer,
+      Proxy.TileIndicesBuffer.Buffer,
       0,
       SplatCount * sizeof(uint32),
       EResourceLockMode::RLM_WriteOnly));
   uint32* pSHDegreesBuffer = static_cast<uint32*>(RHICmdList.LockBuffer(
-      RT_Data.SplatSHDegreesBuffer.Buffer,
+      Proxy.SplatSHDegreesBuffer.Buffer,
       0,
       Components.Num() * sizeof(uint32) * 3,
       EResourceLockMode::RLM_WriteOnly));
 
   int32 CoeffCountWritten = 0;
   int32 SplatCountWritten = 0;
-  int32 CurrentIdx = 0;
   for (int32 i = 0; i < Components.Num(); i++) {
     const UCesiumGltfGaussianSplatComponent* Component = Components[i];
     check(Component);
@@ -327,64 +332,36 @@ void updatePerSplatData(
           Component->Data.SphericalHarmonics.Num() * sizeof(float));
     }
     for (int32 j = 0; j < Component->Data.NumSplats; j++) {
-      pIndexBuffer[SplatCountWritten + j] = static_cast<uint32>(CurrentIdx);
+      pIndexBuffer[SplatCountWritten + j] = static_cast<uint32>(i);
     }
 
-    pSHDegreesBuffer[CurrentIdx * 3] =
+    pSHDegreesBuffer[i * 3] =
         static_cast<uint32>(Component->Data.NumCoefficients);
-    pSHDegreesBuffer[CurrentIdx * 3 + 1] =
-        static_cast<uint32>(CoeffCountWritten);
-    pSHDegreesBuffer[CurrentIdx * 3 + 2] =
-        static_cast<uint32>(SplatCountWritten);
+    pSHDegreesBuffer[i * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
+    pSHDegreesBuffer[i * 3 + 2] = static_cast<uint32>(SplatCountWritten);
 
     SplatCountWritten += Component->Data.NumSplats;
     CoeffCountWritten +=
         Component->Data.NumSplats * Component->Data.NumCoefficients;
-    CurrentIdx++;
   }
 
-  RHICmdList.UnlockBuffer(RT_Data.PositionsBuffer.Buffer);
-  RHICmdList.UnlockBuffer(RT_Data.ScalesBuffer.Buffer);
-  RHICmdList.UnlockBuffer(RT_Data.OrientationsBuffer.Buffer);
-  RHICmdList.UnlockBuffer(RT_Data.ColorsBuffer.Buffer);
+  RHICmdList.UnlockBuffer(Proxy.PositionsBuffer.Buffer);
+  RHICmdList.UnlockBuffer(Proxy.ScalesBuffer.Buffer);
+  RHICmdList.UnlockBuffer(Proxy.OrientationsBuffer.Buffer);
+  RHICmdList.UnlockBuffer(Proxy.ColorsBuffer.Buffer);
   if (ShCoefficientCount > 0) {
-    RHICmdList.UnlockBuffer(RT_Data.SHNonZeroCoeffsBuffer.Buffer);
+    RHICmdList.UnlockBuffer(Proxy.SHNonZeroCoeffsBuffer.Buffer);
   }
-  RHICmdList.UnlockBuffer(RT_Data.TileIndicesBuffer.Buffer);
-  RHICmdList.UnlockBuffer(RT_Data.SplatSHDegreesBuffer.Buffer);
+  RHICmdList.UnlockBuffer(Proxy.TileIndicesBuffer.Buffer);
+  RHICmdList.UnlockBuffer(Proxy.SplatSHDegreesBuffer.Buffer);
 }
 } // namespace
-
-struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
-    : public FNiagaraDataInterfaceProxy {
-  virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
-    return 0;
-  }
-
-  // List of proxy data for each system instance
-  TMap<
-      FNiagaraSystemInstanceID,
-      FNDICesiumGaussianSplats_InstanceData_RenderThread>
-      SystemInstancesToProxyData_RT;
-};
 
 UCesiumGaussianSplatDataInterface::UCesiumGaussianSplatDataInterface(
     const FObjectInitializer& Initializer)
     : UNiagaraDataInterface(Initializer) {
-  this->Proxy =
-      MakeUnique<FNiagaraDataInterfaceProxyCesiumGaussianSplats>(this);
+  this->Proxy = MakeUnique<FNiagaraDataInterfaceProxyCesiumGaussianSplats>();
 }
-
-BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
-SHADER_PARAMETER_SRV(Buffer<uint>, TileIndices)
-SHADER_PARAMETER_SRV(Buffer<float4>, TileTransforms)
-SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
-SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
-SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)
-SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
-SHADER_PARAMETER_SRV(Buffer<uint>, SplatSHDegrees)
-SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)
-END_SHADER_PARAMETER_STRUCT()
 
 #if WITH_EDITORONLY_DATA
 
@@ -392,10 +369,6 @@ void UCesiumGaussianSplatDataInterface::GetParameterDefinitionHLSL(
     const FNiagaraDataInterfaceGPUParamInfo& ParamInfo,
     FString& OutHLSL) {
   UNiagaraDataInterface::GetParameterDefinitionHLSL(ParamInfo, OutHLSL);
-  OutHLSL.Appendf(
-      TEXT("uint %s%s;\n"),
-      *ParamInfo.DataInterfaceHLSLSymbol,
-      TEXT("_SplatCount"));
   OutHLSL.Appendf(
       TEXT("Buffer<uint> %s%s;\n"),
       *ParamInfo.DataInterfaceHLSLSymbol,
@@ -460,9 +433,6 @@ bool UCesiumGaussianSplatDataInterface::GetFunctionHLSL(
 
     const TMap<FString, FStringFormatArg> ArgsBounds = {
         {TEXT("FunctionName"), FStringFormatArg(FunctionInfo.InstanceName)},
-        {TEXT("SplatCount"),
-         FStringFormatArg(
-             ParamInfo.DataInterfaceHLSLSymbol + TEXT("_SplatCount"))},
         {TEXT("IndicesBuffer"),
          FStringFormatArg(
              ParamInfo.DataInterfaceHLSLSymbol + TEXT("_TileIndices"))},
@@ -552,35 +522,22 @@ void UCesiumGaussianSplatDataInterface::SetShaderParameters(
 
   auto& DIProxy =
       Context.GetProxy<FNiagaraDataInterfaceProxyCesiumGaussianSplats>();
-  if (FNDICesiumGaussianSplats_InstanceData_RenderThread* pInstanceData_RT =
-          DIProxy.SystemInstancesToProxyData_RT.Find(
-              Context.GetSystemInstanceID())) {
-    Params->TileIndices = FNiagaraRenderer::GetSrvOrDefaultUInt(
-        pInstanceData_RT->PositionsBuffer.SRV);
-    Params->TileTransforms = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        pInstanceData_RT->TileTransformsBuffer.SRV);
-    Params->Positions = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        pInstanceData_RT->PositionsBuffer.SRV);
-    Params->Scales = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        pInstanceData_RT->ScalesBuffer.SRV);
-    Params->Orientations = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        pInstanceData_RT->OrientationsBuffer.SRV);
-    Params->Colors = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        pInstanceData_RT->ColorsBuffer.SRV);
-    Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(
-        pInstanceData_RT->SHNonZeroCoeffsBuffer.SRV);
-    Params->SplatSHDegrees = FNiagaraRenderer::GetSrvOrDefaultUInt(
-        pInstanceData_RT->SplatSHDegreesBuffer.SRV);
-  } else {
-    Params->TileIndices = FNiagaraRenderer::GetDummyUIntBuffer();
-    Params->TileTransforms = FNiagaraRenderer::GetDummyFloat4Buffer();
-    Params->Positions = FNiagaraRenderer::GetDummyFloat4Buffer();
-    Params->Scales = FNiagaraRenderer::GetDummyFloat4Buffer();
-    Params->Orientations = FNiagaraRenderer::GetDummyFloat4Buffer();
-    Params->Colors = FNiagaraRenderer::GetDummyFloat4Buffer();
-    Params->SHNonZeroCoeffs = FNiagaraRenderer::GetDummyFloat4Buffer();
-    Params->SplatSHDegrees = FNiagaraRenderer::GetDummyUIntBuffer();
-  }
+  Params->TileIndices =
+      FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.TileIndicesBuffer.SRV);
+  Params->TileTransforms =
+      FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.TileTransformsBuffer.SRV);
+  Params->Positions =
+      FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.PositionsBuffer.SRV);
+  Params->Scales =
+      FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ScalesBuffer.SRV);
+  Params->Orientations =
+      FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.OrientationsBuffer.SRV);
+  Params->Colors =
+      FNiagaraRenderer::GetSrvOrDefaultFloat4(DIProxy.ColorsBuffer.SRV);
+  Params->SHNonZeroCoeffs = FNiagaraRenderer::GetSrvOrDefaultFloat4(
+      DIProxy.SHNonZeroCoeffsBuffer.SRV);
+  Params->SplatSHDegrees =
+      FNiagaraRenderer::GetSrvOrDefaultUInt(DIProxy.SplatSHDegreesBuffer.SRV);
 }
 
 void UCesiumGaussianSplatDataInterface::PostInitProperties() {
@@ -597,19 +554,23 @@ void UCesiumGaussianSplatDataInterface::PostInitProperties() {
 bool UCesiumGaussianSplatDataInterface::InitPerInstanceData(
     void* PerInstanceData,
     FNiagaraSystemInstance* SystemInstance) {
+  FNDICesiumGaussianSplats_InstanceData* pInstData =
+      new (PerInstanceData) FNDICesiumGaussianSplats_InstanceData();
+  this->_systemInstancesToProxyData_GT.Emplace(
+      SystemInstance->GetId(),
+      pInstData);
+  pInstData->Reset();
   return true;
 }
 
 void UCesiumGaussianSplatDataInterface::DestroyPerInstanceData(
     void* PerInstanceData,
     FNiagaraSystemInstance* SystemInstance) {
-  FNiagaraDataInterfaceProxyCesiumGaussianSplats* RT_Proxy =
-      GetProxyAs<FNiagaraDataInterfaceProxyCesiumGaussianSplats>();
-  ENQUEUE_RENDER_COMMAND(FNiagaraDIDestroyInstanceData)
-  ([RT_Proxy,
-    InstanceID = SystemInstance->GetId()](FRHICommandListImmediate& CmdList) {
-    RT_Proxy->SystemInstancesToProxyData_RT.Remove(InstanceID);
-  });
+  this->_systemInstancesToProxyData_GT.Remove(SystemInstance->GetId());
+
+  FNDICesiumGaussianSplats_InstanceData* pInstData =
+      static_cast<FNDICesiumGaussianSplats_InstanceData*>(PerInstanceData);
+  pInstData->~FNDICesiumGaussianSplats_InstanceData();
 }
 
 bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
@@ -617,20 +578,24 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     FNiagaraSystemInstance* SystemInstance,
     float DeltaSeconds) {
   check(SystemInstance);
-  if (!this->_matricesDirty && !this->_matricesDirty) {
-    return false;
+  FNDICesiumGaussianSplats_InstanceData* pInstData =
+      (FNDICesiumGaussianSplats_InstanceData*)PerInstanceData;
+  if (!SystemInstance || !pInstData) {
+    return true;
+  }
+
+  if (!this->_matricesDirty && !this->_splatsDirty) {
+    return true;
   }
 
   UCesiumGaussianSplatSubsystem* pSplatSystem =
       UCesiumGaussianSplatSubsystem::Get();
   UWorld* pWorld = this->GetWorld();
   if (!IsValid(pSplatSystem) || !IsValid(pWorld)) {
-    return false;
+    return true;
   }
 
-  TArray<const UCesiumGltfGaussianSplatComponent*> componentsInWorld;
-  int32 shCoefficientCount = 0;
-  int32 splatCount = 0;
+  pInstData->Reset();
 
   // In PIE mode, components can belong to different worlds; this pre-counts
   // components to measure how much should actually be allocated.
@@ -641,10 +606,10 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
       continue;
     }
 
-    componentsInWorld.Add(pSplatComponent);
-    shCoefficientCount +=
+    pInstData->Components.Add(pSplatComponent);
+    pInstData->ShCoefficientCount +=
         pSplatComponent->Data.NumCoefficients * pSplatComponent->Data.NumSplats;
-    splatCount += pSplatComponent->Data.NumSplats;
+    pInstData->SplatCount += pSplatComponent->Data.NumSplats;
   }
 
   FNiagaraDataInterfaceProxyCesiumGaussianSplats* RT_Proxy =
@@ -656,14 +621,12 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     ENQUEUE_RENDER_COMMAND(FUpdateCesiumGaussianSplatMatrices)
     ([RT_Proxy,
       InstanceId = SystemInstance->GetId(),
-      Components = componentsInWorld](FRHICommandListImmediate& RHICmdList) {
-      FNDICesiumGaussianSplats_InstanceData_RenderThread* pTargetData =
-          &RT_Proxy->SystemInstancesToProxyData_RT.FindOrAdd(InstanceId);
-      check(pTargetData);
+      Components =
+          pInstData->Components](FRHICommandListImmediate& RHICmdList) {
       updateTileTransforms(
           RHICmdList,
           Components,
-          pTargetData->TileTransformsBuffer);
+          RT_Proxy->TileTransformsBuffer);
     });
   }
 
@@ -672,26 +635,24 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
     ([RT_Proxy,
       InstanceId = SystemInstance->GetId(),
-      Components = componentsInWorld,
-      shCoefficientCount,
-      splatCount](FRHICommandListImmediate& RHICmdList) {
-      FNDICesiumGaussianSplats_InstanceData_RenderThread* pTargetData =
-          &RT_Proxy->SystemInstancesToProxyData_RT.FindOrAdd(InstanceId);
-      check(pTargetData);
+      Components = pInstData->Components,
+      ShCoefficientCount = pInstData->ShCoefficientCount,
+      SplatCount =
+          pInstData->SplatCount](FRHICommandListImmediate& RHICmdList) {
       updatePerSplatData(
           RHICmdList,
           Components,
-          shCoefficientCount,
-          splatCount,
-          *pTargetData);
+          ShCoefficientCount,
+          SplatCount,
+          *RT_Proxy);
     });
   }
 
-  return true;
+  return false;
 }
 
 int32 UCesiumGaussianSplatDataInterface::PerInstanceDataSize() const {
-  return 0;
+  return sizeof(FNDICesiumGaussianSplats_InstanceData);
 }
 
 bool UCesiumGaussianSplatDataInterface::CanExecuteOnTarget(

@@ -255,7 +255,6 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
       pDataInterface->MarkDirty();
     }
 
-    this->_pNiagaraComponent->MarkRenderStateDirty();
     this->_needsReset = true;
     this->_resetFrameCounter = RESET_FRAME_COUNT;
   }
