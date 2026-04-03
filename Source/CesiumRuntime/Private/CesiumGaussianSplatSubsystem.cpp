@@ -115,6 +115,7 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
     this->_pNiagaraActor = Actor;
     this->_pNiagaraComponent =
         this->_pNiagaraActor->FindComponentByClass<UNiagaraComponent>();
+
     this->RecomputeBounds();
     this->UpdateNiagaraComponent();
     return;
@@ -173,14 +174,21 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("Unable to create gaussian splat Niagara component"));
+        TEXT("Unable to create Niagara component to render Gaussian Splats."));
     return;
   }
+
   this->_pNiagaraComponent->Activate();
   this->_pNiagaraActor = SplatActor;
   SplatActor->AddInstanceComponent(this->_pNiagaraComponent);
 
   this->UpdateNiagaraComponent();
+}
+
+/*static*/ UCesiumGaussianSplatSubsystem* UCesiumGaussianSplatSubsystem::Get() {
+  return IsValid(GEngine)
+             ? GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>()
+             : nullptr;
 }
 
 void UCesiumGaussianSplatSubsystem::Initialize(
@@ -209,16 +217,8 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
     UCesiumGltfGaussianSplatComponent* Component) {
   check(Component);
 
-  if (IsValid(this->_pNiagaraComponent)) {
-    // Lock buffers when adding components to avoid adding components while
-    // uploading previous components to GPU
-    FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
-    this->SplatComponents.Add(Component);
-    this->_numSplats += Component->Data.NumSplats;
-  } else {
-    this->SplatComponents.Add(Component);
-    this->_numSplats += Component->Data.NumSplats;
-  }
+  this->SplatComponents.Add(Component);
+  this->_numSplats += Component->Data.NumSplats;
 
   this->UpdateNiagaraComponent();
 }
@@ -227,14 +227,8 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
     UCesiumGltfGaussianSplatComponent* Component) {
   check(Component);
 
-  if (IsValid(this->_pNiagaraComponent)) {
-    FScopeLock ScopeLock = this->GetSplatInterface()->LockGaussianBuffers();
-    this->SplatComponents.Remove(Component);
-    this->_numSplats -= Component->Data.NumSplats;
-  } else {
-    this->SplatComponents.Remove(Component);
-    this->_numSplats -= Component->Data.NumSplats;
-  }
+  this->SplatComponents.Remove(Component);
+  this->_numSplats -= Component->Data.NumSplats;
 
   this->UpdateNiagaraComponent();
 }
@@ -243,8 +237,10 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
   if (IsValid(this->_pNiagaraComponent)) {
     const FBox Bounds = CalculateBounds(this->SplatComponents);
     this->_pNiagaraComponent->SetSystemFixedBounds(Bounds);
-    UE_LOG(LogCesium, Log, TEXT("Setting bounds: %s"), *Bounds.ToString());
-    GetSplatInterface()->RefreshMatrices();
+    if (UCesiumGaussianSplatDataInterface* pDataInterface =
+            this->GetDataInterface()) {
+      pDataInterface->MarkMatricesDirty();
+    }
   }
 }
 
@@ -253,14 +249,20 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
     this->_pNiagaraComponent->SetVariableInt(
         FName(TEXT("GridSize")),
         (int32)std::ceil(std::cbrt((double)this->_numSplats)));
-    GetSplatInterface()->Refresh();
+
+    if (UCesiumGaussianSplatDataInterface* pDataInterface =
+            this->GetDataInterface()) {
+      pDataInterface->MarkDirty();
+    }
+
+    this->_pNiagaraComponent->MarkRenderStateDirty();
     this->_needsReset = true;
     this->_resetFrameCounter = RESET_FRAME_COUNT;
   }
 }
 
 UCesiumGaussianSplatDataInterface*
-UCesiumGaussianSplatSubsystem::GetSplatInterface() const {
+UCesiumGaussianSplatSubsystem::GetDataInterface() const {
   return UNiagaraFunctionLibrary::GetDataInterface<
       UCesiumGaussianSplatDataInterface>(
       this->_pNiagaraComponent,

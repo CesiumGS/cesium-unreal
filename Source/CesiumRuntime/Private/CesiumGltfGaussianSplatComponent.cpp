@@ -118,7 +118,6 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
 }
 
@@ -129,23 +128,15 @@ void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
-  const FTransform& Transform = this->GetComponentTransform();
   check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
-  UE_LOG(
-      LogCesium,
-      Log,
-      TEXT("Transform visible: %s"),
-      this->IsVisible() ? TEXT("true") : TEXT("false"));
 }
 
 glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {

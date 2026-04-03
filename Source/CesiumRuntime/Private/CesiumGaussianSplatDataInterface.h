@@ -10,12 +10,10 @@
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
 class UCesiumGaussianSplatSubsystem;
+class UCesiumGltfGaussianSplatComponent;
 
-struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
-  FNDIGaussianSplatProxy(class UCesiumGaussianSplatDataInterface* InOwner);
-
-  TObjectPtr<class UCesiumGaussianSplatDataInterface> Owner = nullptr;
-  FCriticalSection BufferLock;
+struct FNDICesiumGaussianSplats_InstanceData_RenderThread {
+  ~FNDICesiumGaussianSplats_InstanceData_RenderThread();
 
   FReadBuffer TileIndicesBuffer;
   FReadBuffer TileTransformsBuffer;
@@ -25,27 +23,7 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
   FReadBuffer OrientationsBuffer;
   FReadBuffer ColorsBuffer;
   FReadBuffer SHNonZeroCoeffsBuffer;
-
-  bool bNeedsUpdate = true;
-  bool bMatricesNeedUpdate = true;
-
-  virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
-    return 0;
-  }
-
-  void UploadToGPU(UCesiumGaussianSplatSubsystem* SplatSystem);
 };
-
-BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
-SHADER_PARAMETER_SRV(Buffer<uint>, TileIndices)
-SHADER_PARAMETER_SRV(Buffer<float4>, TileTransforms)
-SHADER_PARAMETER_SRV(Buffer<float4>, Positions)
-SHADER_PARAMETER_SRV(Buffer<float3>, Scales)
-SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)
-SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
-SHADER_PARAMETER_SRV(Buffer<uint>, SplatSHDegrees)
-SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)
-END_SHADER_PARAMETER_STRUCT()
 
 UCLASS()
 class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
@@ -53,8 +31,26 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 
   UCesiumGaussianSplatDataInterface(const FObjectInitializer& Initializer);
 
+public:
+  virtual bool InitPerInstanceData(
+      void* PerInstanceData,
+      FNiagaraSystemInstance* SystemInstance) override;
+  virtual void DestroyPerInstanceData(
+      void* PerInstanceData,
+      FNiagaraSystemInstance* SystemInstance) override;
+  virtual bool PerInstanceTick(
+      void* PerInstanceData,
+      FNiagaraSystemInstance* SystemInstance,
+      float DeltaSeconds) override;
+  virtual int32 PerInstanceDataSize() const override;
+
+  virtual bool HasPreSimulateTick() const override { return true; }
   virtual bool CanExecuteOnTarget(ENiagaraSimTarget target) const override;
 
+  void MarkDirty();
+  void MarkMatricesDirty();
+
+protected:
 #if WITH_EDITORONLY_DATA
   virtual void GetParameterDefinitionHLSL(
       const FNiagaraDataInterfaceGPUParamInfo& ParamInfo,
@@ -79,11 +75,7 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 
   virtual void PostInitProperties() override;
 
-  UCesiumGaussianSplatSubsystem* GetSubsystem() const;
-
-public:
-  void Refresh();
-  void RefreshMatrices();
-
-  FScopeLock LockGaussianBuffers();
+private:
+  bool _splatsDirty = true;
+  bool _matricesDirty = true;
 };

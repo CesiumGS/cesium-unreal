@@ -31,6 +31,8 @@ class UCesiumGaussianSplatSubsystem : public UEngineSubsystem,
   GENERATED_BODY()
 
 public:
+  static UCesiumGaussianSplatSubsystem* Get();
+
   virtual void Initialize(FSubsystemCollectionBase& Collection) override;
   virtual void Deinitialize() override;
 
@@ -63,11 +65,13 @@ public:
   virtual bool IsTickableInEditor() const override;
   virtual bool IsTickable() const override;
 
+  int32 getTotalSplatCount() const { return this->_numSplats; }
+
 private:
   void InitializeForWorld(UWorld& InWorld);
 
   void UpdateNiagaraComponent();
-  UCesiumGaussianSplatDataInterface* GetSplatInterface() const;
+  UCesiumGaussianSplatDataInterface* GetDataInterface() const;
 
   UNiagaraComponent* _pNiagaraComponent = nullptr;
 
