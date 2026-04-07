@@ -86,6 +86,7 @@ public class CesiumRuntime : ModuleRules
             new string[]
             {
                 "Core",
+                "CesiumCgal",
                 "RHI",
                 "CoreUObject",
                 "Engine",

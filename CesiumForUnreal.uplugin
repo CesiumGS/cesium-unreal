@@ -18,6 +18,12 @@
 	"SupportedTargetPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS" ],
 	"Modules": [
 		{
+			"Name": "CesiumCgal",
+			"Type": "Runtime",
+			"LoadingPhase": "PostConfigInit",
+			"WhitelistPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS" ]
+		},
+		{
 			"Name": "CesiumRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit",
