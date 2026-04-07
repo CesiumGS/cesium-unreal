@@ -31,4 +31,32 @@ bool ClipMesh(
     std::vector<std::array<float, 3>>& outPositions,
     std::vector<uint32_t>& outIndices);
 
+enum class BooleanOp : uint8_t {
+  Union,
+  Intersection,
+  Difference
+};
+
+/**
+ * Perform a boolean operation between two closed triangle meshes.
+ * Uses CGAL's corefine_and_compute_boolean_operations internally.
+ *
+ * @param positionsA     Vertex positions of mesh A.
+ * @param indicesA       Triangle indices of mesh A.
+ * @param positionsB     Vertex positions of mesh B.
+ * @param indicesB       Triangle indices of mesh B.
+ * @param op             The boolean operation to perform.
+ * @param outPositions   Receives the result vertex positions.
+ * @param outIndices     Receives the result triangle indices.
+ * @return true on success, false if the operation failed.
+ */
+bool BooleanOperation(
+    const std::vector<std::array<float, 3>>& positionsA,
+    const std::vector<uint32_t>& indicesA,
+    const std::vector<std::array<float, 3>>& positionsB,
+    const std::vector<uint32_t>& indicesB,
+    BooleanOp op,
+    std::vector<std::array<float, 3>>& outPositions,
+    std::vector<uint32_t>& outIndices);
+
 } // namespace CesiumCgal

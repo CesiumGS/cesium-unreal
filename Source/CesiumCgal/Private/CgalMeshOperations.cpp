@@ -11,6 +11,7 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/clip.h>
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
 
 using Kernel = CGAL::Exact_predicates_inexact_constructions_kernel;
 using Point3 = Kernel::Point_3;
@@ -95,6 +96,43 @@ bool CesiumCgal::ClipMesh(
   }
 
   ExtractMeshData(inputMesh, outPositions, outIndices);
+  return true;
+}
+
+bool CesiumCgal::BooleanOperation(
+    const std::vector<std::array<float, 3>>& positionsA,
+    const std::vector<uint32_t>& indicesA,
+    const std::vector<std::array<float, 3>>& positionsB,
+    const std::vector<uint32_t>& indicesB,
+    BooleanOp op,
+    std::vector<std::array<float, 3>>& outPositions,
+    std::vector<uint32_t>& outIndices) {
+
+  Mesh meshA = BuildSurfaceMesh(positionsA, indicesA);
+  Mesh meshB = BuildSurfaceMesh(positionsB, indicesB);
+  Mesh result;
+
+  bool ok = false;
+  switch (op) {
+  case BooleanOp::Union:
+    ok = CGAL::Polygon_mesh_processing::corefine_and_compute_union(
+        meshA, meshB, result);
+    break;
+  case BooleanOp::Intersection:
+    ok = CGAL::Polygon_mesh_processing::corefine_and_compute_intersection(
+        meshA, meshB, result);
+    break;
+  case BooleanOp::Difference:
+    ok = CGAL::Polygon_mesh_processing::corefine_and_compute_difference(
+        meshA, meshB, result);
+    break;
+  }
+
+  if (!ok) {
+    return false;
+  }
+
+  ExtractMeshData(result, outPositions, outIndices);
   return true;
 }
 
