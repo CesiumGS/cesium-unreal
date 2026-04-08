@@ -31,6 +31,11 @@ void ACgalGltfModifierActor::PostEditChangeProperty(
   if (PropertyName == GET_MEMBER_NAME_CHECKED(ACgalGltfModifierActor, Tileset)) {
     AttachModifierToTileset();
   }
+  if (PropertyName == GET_MEMBER_NAME_CHECKED(ACgalGltfModifierActor, StaticMeshActor)) {
+    if (Modifier) {
+      Modifier->SetStaticMeshActor(StaticMeshActor);
+    }
+  }
 }
 #endif
 
@@ -52,6 +57,7 @@ void ACgalGltfModifierActor::AttachModifierToTileset() {
     Modifier = std::make_shared<CgalGltfModifier>();
   }
 
+  Modifier->SetStaticMeshActor(StaticMeshActor);
   Tileset->SetGltfModifier(Modifier);
   Modifier->trigger();
 }

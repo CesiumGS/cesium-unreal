@@ -8,6 +8,14 @@
 CgalGltfModifier::CgalGltfModifier() = default;
 CgalGltfModifier::~CgalGltfModifier() = default;
 
+void CgalGltfModifier::SetStaticMeshActor(AStaticMeshActor* InStaticMeshActor) {
+  StaticMeshActor = InStaticMeshActor;
+}
+
+AStaticMeshActor* CgalGltfModifier::GetStaticMeshActor() const {
+  return StaticMeshActor;
+}
+
 CesiumAsync::Future<void> CgalGltfModifier::onRegister(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor,
@@ -21,6 +29,9 @@ CesiumAsync::Future<void> CgalGltfModifier::onRegister(
 CesiumAsync::Future<std::optional<Cesium3DTilesSelection::GltfModifierOutput>>
 CgalGltfModifier::apply(
     Cesium3DTilesSelection::GltfModifierInput&& input) {
+
+  static int invocations = 0;
+  ++invocations;
 
   const auto& model = input.previousModel;
   const auto& t = input.tileTransform;
@@ -45,9 +56,10 @@ CgalGltfModifier::apply(
   UE_LOG(
       LogTemp,
       Log,
-      TEXT("CgalGltfModifier::apply — version=%lld, vertices=%lld, "
+      TEXT("CgalGltfModifier::apply #%lld — version=%lld, vertices=%lld, "
            "indices=%lld, attributes=%d, accessors=%d, buffers=%d, "
            "bufferViews=%d, tilePos=(%.2f, %.2f, %.2f)"),
+      static_cast<long long>(invocations),
       static_cast<long long>(input.version),
       static_cast<long long>(vertexCount),
       static_cast<long long>(indexCount),
