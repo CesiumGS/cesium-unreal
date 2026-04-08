@@ -30,12 +30,12 @@ struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
   FReadBuffer SHNonZeroCoeffsBuffer;
 };
 
+/**
+ * This isn't actually needed, but `PerInstanceTick` won't fire otherwise.
+ */
 struct FNDICesiumGaussianSplats_InstanceData {
-  TArray<const UCesiumGltfGaussianSplatComponent*> Components;
   int32 ShCoefficientCount;
   int32 SplatCount;
-
-  void Reset();
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )

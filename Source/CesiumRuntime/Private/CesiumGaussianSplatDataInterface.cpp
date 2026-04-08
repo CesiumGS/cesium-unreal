@@ -39,12 +39,6 @@ FNiagaraDataInterfaceProxyCesiumGaussianSplats::
   this->SHNonZeroCoeffsBuffer.Release();
 }
 
-void FNDICesiumGaussianSplats_InstanceData::Reset() {
-  this->Components.Reset();
-  this->ShCoefficientCount = 0;
-  this->SplatCount = 0;
-}
-
 namespace {
 void updateTileTransforms(
     FRHICommandListImmediate& RHICmdList,
@@ -559,7 +553,6 @@ bool UCesiumGaussianSplatDataInterface::InitPerInstanceData(
   this->_systemInstancesToProxyData_GT.Emplace(
       SystemInstance->GetId(),
       pInstData);
-  pInstData->Reset();
   return true;
 }
 
@@ -578,15 +571,6 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     FNiagaraSystemInstance* SystemInstance,
     float DeltaSeconds) {
   check(SystemInstance);
-  FNDICesiumGaussianSplats_InstanceData* pInstData =
-      (FNDICesiumGaussianSplats_InstanceData*)PerInstanceData;
-  if (!SystemInstance || !pInstData) {
-    return true;
-  }
-
-  if (!this->_matricesDirty && !this->_splatsDirty) {
-    return true;
-  }
 
   UCesiumGaussianSplatSubsystem* pSplatSystem =
       UCesiumGaussianSplatSubsystem::Get();
@@ -595,7 +579,13 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     return true;
   }
 
-  pInstData->Reset();
+  if (!this->_matricesDirty && !this->_splatsDirty) {
+    return true;
+  }
+
+  TArray<const UCesiumGltfGaussianSplatComponent*> Components;
+  int32 ShCoefficientCount = 0;
+  int32 SplatCount = 0;
 
   // In PIE mode, components can belong to different worlds; this pre-counts
   // components to measure how much should actually be allocated.
@@ -606,23 +596,20 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
       continue;
     }
 
-    pInstData->Components.Add(pSplatComponent);
-    pInstData->ShCoefficientCount +=
+    Components.Add(pSplatComponent);
+    ShCoefficientCount +=
         pSplatComponent->Data.NumCoefficients * pSplatComponent->Data.NumSplats;
-    pInstData->SplatCount += pSplatComponent->Data.NumSplats;
+    SplatCount += pSplatComponent->Data.NumSplats;
   }
 
   FNiagaraDataInterfaceProxyCesiumGaussianSplats* RT_Proxy =
       this->GetProxyAs<FNiagaraDataInterfaceProxyCesiumGaussianSplats>();
-
   if (this->_matricesDirty) {
     this->_matricesDirty = false;
 
     ENQUEUE_RENDER_COMMAND(FUpdateCesiumGaussianSplatMatrices)
-    ([RT_Proxy,
-      InstanceId = SystemInstance->GetId(),
-      Components =
-          pInstData->Components](FRHICommandListImmediate& RHICmdList) {
+    ([RT_Proxy, InstanceId = SystemInstance->GetId(), Components](
+         FRHICommandListImmediate& RHICmdList) {
       updateTileTransforms(
           RHICmdList,
           Components,
@@ -632,13 +619,13 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
 
   if (this->_splatsDirty) {
     this->_splatsDirty = false;
+
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
     ([RT_Proxy,
       InstanceId = SystemInstance->GetId(),
-      Components = pInstData->Components,
-      ShCoefficientCount = pInstData->ShCoefficientCount,
-      SplatCount =
-          pInstData->SplatCount](FRHICommandListImmediate& RHICmdList) {
+      Components,
+      ShCoefficientCount,
+      SplatCount](FRHICommandListImmediate& RHICmdList) {
       updatePerSplatData(
           RHICmdList,
           Components,

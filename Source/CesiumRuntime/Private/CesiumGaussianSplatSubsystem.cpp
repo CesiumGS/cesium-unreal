@@ -12,6 +12,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "NiagaraSystemInstance.h"
 
 /**
  * An entirely arbitrary number of frames to wait between resetting the Niagara
@@ -29,9 +30,9 @@ const int32 RESET_FRAME_COUNT = 5;
 
 namespace {
 FBox CalculateBounds(
-    const TArray<UCesiumGltfGaussianSplatComponent*>& Components) {
+    const TSet<const UCesiumGltfGaussianSplatComponent*>& Components) {
   std::optional<FBox> Bounds;
-  for (UCesiumGltfGaussianSplatComponent* Component : Components) {
+  for (const UCesiumGltfGaussianSplatComponent* Component : Components) {
     check(Component);
     const FTransform& ComponentTransform = Component->GetComponentTransform();
     const FBox& ActorBounds = Component->Data.Bounds;
@@ -122,7 +123,7 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   }
 
   FActorSpawnParameters ActorParams;
-  ActorParams.Name = FName(TEXT("GaussianSplatSystemActor"));
+  ActorParams.Name = FName(TEXT("CesiumGaussianSplatSystemActor"));
   ActorParams.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 #if WITH_EDITOR
   ActorParams.bTemporaryEditorActor = true;
@@ -130,38 +131,38 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   // help with debugging.
   ActorParams.bHideFromSceneOutliner = true;
 #endif
-  ACesiumGaussianSplatActor* SplatActor =
+
+  ACesiumGaussianSplatActor* pActor =
       InWorld.SpawnActor<ACesiumGaussianSplatActor>(ActorParams);
-  SplatActor->SetFlags(
+  check(pActor);
+  pActor->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  USceneComponent* SceneComponent =
-      CastChecked<USceneComponent>(SplatActor->AddComponentByClass(
+  USceneComponent* pSceneComponent =
+      CastChecked<USceneComponent>(pActor->AddComponentByClass(
           USceneComponent::StaticClass(),
           false,
           FTransform(),
           false));
-  SplatActor->AddInstanceComponent(SceneComponent);
+  pActor->AddInstanceComponent(pSceneComponent);
 
-  UObject* MaybeSplatNiagaraSystem = StaticLoadObject(
+  UObject* pNiagaraSystem = StaticLoadObject(
       UNiagaraSystem::StaticClass(),
       nullptr,
-      TEXT(
-          "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'"));
-  if (!IsValid(MaybeSplatNiagaraSystem)) {
+      NiagaraSystemAssetPath);
+  if (!IsValid(pNiagaraSystem)) {
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("Unable to initialize gaussian splat Niagara system."));
+        TEXT("Unable to initialize Niagara system for Gaussian splats."));
     return;
   }
 
   FFXSystemSpawnParameters SpawnParams;
   SpawnParams.WorldContextObject = &InWorld;
-  SpawnParams.SystemTemplate =
-      CastChecked<UNiagaraSystem>(MaybeSplatNiagaraSystem);
+  SpawnParams.SystemTemplate = CastChecked<UNiagaraSystem>(pNiagaraSystem);
   SpawnParams.bAutoDestroy = false;
-  SpawnParams.AttachToComponent = SceneComponent;
+  SpawnParams.AttachToComponent = pSceneComponent;
   SpawnParams.bAutoActivate = true;
 
   this->_pLastCreatedWorld = &InWorld;
@@ -179,8 +180,9 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
   }
 
   this->_pNiagaraComponent->Activate();
-  this->_pNiagaraActor = SplatActor;
-  SplatActor->AddInstanceComponent(this->_pNiagaraComponent);
+  this->_pNiagaraActor = pActor;
+
+  pActor->AddInstanceComponent(this->_pNiagaraComponent);
 
   this->UpdateNiagaraComponent();
 }
@@ -245,19 +247,21 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
 }
 
 void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
-  if (IsValid(this->_pNiagaraComponent)) {
-    this->_pNiagaraComponent->SetVariableInt(
-        FName(TEXT("GridSize")),
-        (int32)std::ceil(std::cbrt((double)this->_numSplats)));
-
-    if (UCesiumGaussianSplatDataInterface* pDataInterface =
-            this->GetDataInterface()) {
-      pDataInterface->MarkDirty();
-    }
-
-    this->_needsReset = true;
-    this->_resetFrameCounter = RESET_FRAME_COUNT;
+  if (!IsValid(this->_pNiagaraComponent)) {
+    return;
   }
+
+  this->_pNiagaraComponent->SetVariableInt(
+      FName(TEXT("SplatCount")),
+      this->_numSplats);
+
+  if (UCesiumGaussianSplatDataInterface* pDataInterface =
+          this->GetDataInterface()) {
+    pDataInterface->MarkDirty();
+  }
+
+  this->_needsReset = true;
+  this->_resetFrameCounter = RESET_FRAME_COUNT;
 }
 
 UCesiumGaussianSplatDataInterface*
@@ -273,13 +277,16 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     return;
   }
 
-  if (this->_needsReset) {
-    this->_resetFrameCounter -= 1;
+  UWorld* pWorld = GetPrimaryWorld();
+  // Gaussian splats are purely visual, so we don't need to initialize them if
+  // we can't render anything. Besides, even if we'd *want* to, we will fail to
+  // spawn the Niagara component if either of these conditions are false (they
+  // are checked in UNiagaraFunctionLibrary::CreateNiagaraSystem).
+  if (!FApp::CanEverRender() || pWorld->IsNetMode(NM_DedicatedServer)) {
+    return;
   }
 
-  UWorld* World = GetPrimaryWorld();
-
-  if (!IsValid(World)) {
+  if (!IsValid(pWorld)) {
     if (IsValid(this->_pNiagaraActor)) {
       this->_pNiagaraActor->Destroy();
     }
@@ -290,12 +297,12 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     return;
   }
 
-  // Gaussian splats are purely visual, so we don't need to initialize them if
-  // we can't render anything. Besides, even if we'd *want* to, we will fail to
-  // spawn the Niagara component if either of these conditions are false (they
-  // are checked in UNiagaraFunctionLibrary::CreateNiagaraSystem).
-  if (!FApp::CanEverRender() || World->IsNetMode(NM_DedicatedServer)) {
-    return;
+  if (!IsValid(this->_pNiagaraActor) || pWorld != this->_pLastCreatedWorld) {
+    this->InitializeForWorld(*pWorld);
+  }
+
+  if (this->_needsReset) {
+    this->_resetFrameCounter -= 1;
   }
 
   if (IsValid(this->_pNiagaraActor)) {
@@ -306,12 +313,6 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
       this->_pNiagaraComponent->ResetSystem();
     }
   }
-
-  if (IsValid(this->_pNiagaraActor) && World == this->_pLastCreatedWorld) {
-    return;
-  }
-
-  this->InitializeForWorld(*World);
 }
 
 ETickableTickType UCesiumGaussianSplatSubsystem::GetTickableTickType() const {

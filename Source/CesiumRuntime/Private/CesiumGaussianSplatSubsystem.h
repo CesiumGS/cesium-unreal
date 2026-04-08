@@ -42,8 +42,8 @@ public:
    */
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   /**
-   * Unregisters a previously-registered splat component, removing it from the
-   * list of splat components to render.
+   * Unregisters a splat component (assuming it was previously registered),
+   * removing it from the list of splat components to render.
    */
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
   /**
@@ -54,9 +54,9 @@ public:
   void RecomputeBounds();
 
   /**
-   * The currently-registerd splat components.
+   * The currently registered splat components.
    */
-  TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
+  TSet<const UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
   virtual void Tick(float DeltaTime) override;
   virtual ETickableTickType GetTickableTickType() const override;
@@ -74,7 +74,6 @@ private:
   UCesiumGaussianSplatDataInterface* GetDataInterface() const;
 
   UNiagaraComponent* _pNiagaraComponent = nullptr;
-
   ACesiumGaussianSplatActor* _pNiagaraActor = nullptr;
 
   UWorld* _pLastCreatedWorld = nullptr;
@@ -84,4 +83,7 @@ private:
   // Dirty way to avoid running too many resets too quickly.
   int32 _resetFrameCounter = 0;
   bool _needsReset = false;
+
+  static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(
+      "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'");
 };
