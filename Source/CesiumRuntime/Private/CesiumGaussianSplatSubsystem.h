@@ -41,11 +41,13 @@ public:
    * of splat components to render.
    */
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+
   /**
    * Unregisters a splat component (assuming it was previously registered),
    * removing it from the list of splat components to render.
    */
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+
   /**
    * Recomputes the bounds of the Niagara system that renders the splats. This
    * should be called when the transforms of any of the registered components
@@ -68,10 +70,9 @@ public:
   int32 getTotalSplatCount() const { return this->_numSplats; }
 
 private:
-  void InitializeForWorld(UWorld& InWorld);
-
-  void UpdateNiagaraComponent();
-  UCesiumGaussianSplatDataInterface* GetDataInterface() const;
+  void initializeForWorld(UWorld& InWorld);
+  void updateNiagaraComponent();
+  UCesiumGaussianSplatDataInterface* getDataInterface() const;
 
   UNiagaraComponent* _pNiagaraComponent = nullptr;
   ACesiumGaussianSplatActor* _pNiagaraActor = nullptr;
@@ -79,10 +80,6 @@ private:
   UWorld* _pLastCreatedWorld = nullptr;
   bool _isTickEnabled = false;
   int32 _numSplats = 0;
-
-  // Dirty way to avoid running too many resets too quickly.
-  int32 _resetFrameCounter = 0;
-  bool _needsReset = false;
 
   static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(
       "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'");

@@ -14,20 +14,6 @@
 #include "NiagaraSystem.h"
 #include "NiagaraSystemInstance.h"
 
-/**
- * An entirely arbitrary number of frames to wait between resetting the Niagara
- * system. This helps avoid a gratuitous number of GPU uploads that can cause an
- * assertion failure due to an Unreal bug.
- *
- * If you are still encountering this issue and an official fix has not yet been
- * released for the Unreal version you are using, make the following change: In
- * `Source/Niagara/Private/NiagaraGpuComputeDispatch.cpp`, line 2315 should be
- * changed to
- * `FComputeShaderUtils::GetGroupCountWrapped(FMath::DivideAndRoundUp(SortInfo.ParticleCount,
- * NIAGARA_KEY_GEN_THREAD_COUNT))`.
- */
-const int32 RESET_FRAME_COUNT = 5;
-
 namespace {
 FBox CalculateBounds(
     const TSet<const UCesiumGltfGaussianSplatComponent*>& Components) {
@@ -107,7 +93,7 @@ UWorld* GetPrimaryWorld() {
 }
 } // namespace
 
-void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
+void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
   for (ACesiumGaussianSplatActor* Actor :
        TActorRange<ACesiumGaussianSplatActor>(&InWorld)) {
     // Actor singleton already exists in the world (usually means we stopped a
@@ -118,7 +104,7 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
         this->_pNiagaraActor->FindComponentByClass<UNiagaraComponent>();
 
     this->RecomputeBounds();
-    this->UpdateNiagaraComponent();
+    this->updateNiagaraComponent();
     return;
   }
 
@@ -184,7 +170,7 @@ void UCesiumGaussianSplatSubsystem::InitializeForWorld(UWorld& InWorld) {
 
   pActor->AddInstanceComponent(this->_pNiagaraComponent);
 
-  this->UpdateNiagaraComponent();
+  this->updateNiagaraComponent();
 }
 
 /*static*/ UCesiumGaussianSplatSubsystem* UCesiumGaussianSplatSubsystem::Get() {
@@ -222,7 +208,7 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
   this->SplatComponents.Add(Component);
   this->_numSplats += Component->Data.NumSplats;
 
-  this->UpdateNiagaraComponent();
+  this->updateNiagaraComponent();
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
@@ -232,7 +218,7 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
   this->SplatComponents.Remove(Component);
   this->_numSplats -= Component->Data.NumSplats;
 
-  this->UpdateNiagaraComponent();
+  this->updateNiagaraComponent();
 }
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
@@ -240,23 +226,29 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
     const FBox Bounds = CalculateBounds(this->SplatComponents);
     this->_pNiagaraComponent->SetSystemFixedBounds(Bounds);
     if (UCesiumGaussianSplatDataInterface* pDataInterface =
-            this->GetDataInterface()) {
+            this->getDataInterface()) {
       pDataInterface->MarkMatricesDirty();
     }
   }
 }
 
-void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
+void UCesiumGaussianSplatSubsystem::updateNiagaraComponent() {
   if (!IsValid(this->_pNiagaraComponent)) {
     return;
   }
 
-  this->_needsReset = true;
-  this->_resetFrameCounter = RESET_FRAME_COUNT;
+  this->_pNiagaraComponent->SetVariableInt(
+      FName(TEXT("SplatCount")),
+      this->_numSplats);
+
+  if (UCesiumGaussianSplatDataInterface* pDataInterface =
+          this->getDataInterface()) {
+    pDataInterface->MarkDirty();
+  }
 }
 
 UCesiumGaussianSplatDataInterface*
-UCesiumGaussianSplatSubsystem::GetDataInterface() const {
+UCesiumGaussianSplatSubsystem::getDataInterface() const {
   return UNiagaraFunctionLibrary::GetDataInterface<
       UCesiumGaussianSplatDataInterface>(
       this->_pNiagaraComponent,
@@ -289,29 +281,7 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
   }
 
   if (!IsValid(this->_pNiagaraActor) || pWorld != this->_pLastCreatedWorld) {
-    this->InitializeForWorld(*pWorld);
-  }
-
-  if (this->_needsReset) {
-    this->_resetFrameCounter -= 1;
-  }
-
-  if (IsValid(this->_pNiagaraActor)) {
-    if (this->_needsReset && this->_resetFrameCounter <= 0) {
-      // We want to avoid calling ResetSystem multiple times a frame, so we
-      // combine the calls into one.
-      this->_needsReset = false;
-
-      this->_pNiagaraComponent->SetVariableInt(
-          FName(TEXT("SplatCount")),
-          this->_numSplats);
-      this->_pNiagaraComponent->ResetSystem();
-
-      if (UCesiumGaussianSplatDataInterface* pDataInterface =
-              this->GetDataInterface()) {
-        pDataInterface->MarkDirty();
-      }
-    }
+    this->initializeForWorld(*pWorld);
   }
 }
 
