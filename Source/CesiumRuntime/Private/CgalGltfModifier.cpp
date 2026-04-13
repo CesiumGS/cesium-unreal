@@ -33,14 +33,37 @@ CgalGltfModifier::apply(
   static int invocations = 0;
   ++invocations;
 
+  auto countTriangles = [](const CesiumGltf::Model& model) {
+    int64_t total = 0;
+    for (const auto& mesh : model.meshes) {
+      for (const auto& prim : mesh.primitives) {
+        if (prim.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES)
+          continue;
+        if (prim.indices >= 0 &&
+            prim.indices < static_cast<int32_t>(model.accessors.size())) {
+          total += model.accessors[prim.indices].count / 3;
+        }
+      }
+    }
+    return total;
+  };
+
+  int64_t inputTriangles = countTriangles(input.previousModel);
+
   CesiumGltf::Model modifiedModel = input.previousModel;
+
+  // TODO: actual modification logic goes here
+
+  int64_t outputTriangles = countTriangles(modifiedModel);
 
   UE_LOG(
       LogTemp,
       Log,
-      TEXT("CgalGltfModifier::apply #%d — meshes=%d"),
+      TEXT("CgalGltfModifier::apply #%d — input triangles=%lld, "
+           "output triangles=%lld"),
       invocations,
-      static_cast<int>(modifiedModel.meshes.size()));
+      static_cast<long long>(inputTriangles),
+      static_cast<long long>(outputTriangles));
 
   Cesium3DTilesSelection::GltfModifierOutput output;
   output.modifiedModel = std::move(modifiedModel);
