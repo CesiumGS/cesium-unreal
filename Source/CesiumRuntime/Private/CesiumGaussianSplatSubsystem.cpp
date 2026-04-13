@@ -251,15 +251,6 @@ void UCesiumGaussianSplatSubsystem::UpdateNiagaraComponent() {
     return;
   }
 
-  this->_pNiagaraComponent->SetVariableInt(
-      FName(TEXT("SplatCount")),
-      this->_numSplats);
-
-  if (UCesiumGaussianSplatDataInterface* pDataInterface =
-          this->GetDataInterface()) {
-    pDataInterface->MarkDirty();
-  }
-
   this->_needsReset = true;
   this->_resetFrameCounter = RESET_FRAME_COUNT;
 }
@@ -310,7 +301,16 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
       // We want to avoid calling ResetSystem multiple times a frame, so we
       // combine the calls into one.
       this->_needsReset = false;
+
+      this->_pNiagaraComponent->SetVariableInt(
+          FName(TEXT("SplatCount")),
+          this->_numSplats);
       this->_pNiagaraComponent->ResetSystem();
+
+      if (UCesiumGaussianSplatDataInterface* pDataInterface =
+              this->GetDataInterface()) {
+        pDataInterface->MarkDirty();
+      }
     }
   }
 }
