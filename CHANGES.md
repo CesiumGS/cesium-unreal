@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### v2.25.1 - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug where Gaussian splats would continually accumulate in the scene, eventually causing the application to crash.
+
 ### v2.25.0 - 2026-04-01
 
 ##### Additions :tada:

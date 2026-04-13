@@ -16,7 +16,7 @@
 
 namespace {
 FBox CalculateBounds(
-    const TSet<const UCesiumGltfGaussianSplatComponent*>& Components) {
+    const TArray<const UCesiumGltfGaussianSplatComponent*>& Components) {
   std::optional<FBox> Bounds;
   for (const UCesiumGltfGaussianSplatComponent* Component : Components) {
     check(Component);
@@ -205,7 +205,7 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
     UCesiumGltfGaussianSplatComponent* Component) {
   check(Component);
 
-  this->SplatComponents.Add(Component);
+  this->SplatComponents.AddUnique(Component);
   this->_numSplats += Component->Data.NumSplats;
 
   this->updateNiagaraComponent();
@@ -237,13 +237,14 @@ void UCesiumGaussianSplatSubsystem::updateNiagaraComponent() {
     return;
   }
 
-  this->_pNiagaraComponent->SetVariableInt(
-      FName(TEXT("SplatCount")),
-      this->_numSplats);
-
   if (UCesiumGaussianSplatDataInterface* pDataInterface =
           this->getDataInterface()) {
     pDataInterface->MarkDirty();
+
+    // Defer updating the Niagara System until after the GPU buffers have been
+    // updated to avoid flickering artifacts.
+    this->_pNiagaraComponent->SetPaused(true);
+    this->_splatCountDirty = true;
   }
 }
 
@@ -282,6 +283,19 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
 
   if (!IsValid(this->_pNiagaraActor) || pWorld != this->_pLastCreatedWorld) {
     this->initializeForWorld(*pWorld);
+  }
+
+  UCesiumGaussianSplatDataInterface* pDataInterface = this->getDataInterface();
+  if (!pDataInterface) {
+    return;
+  }
+
+  if (this->_splatCountDirty && !pDataInterface->isUpdatingForWorld(pWorld)) {
+    this->_splatCountDirty = false;
+    this->_pNiagaraComponent->SetVariableInt(
+        FName(TEXT("SplatCount")),
+        this->_numSplats);
+    this->_pNiagaraComponent->SetPaused(false);
   }
 }
 

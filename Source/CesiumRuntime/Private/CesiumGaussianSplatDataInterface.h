@@ -6,11 +6,12 @@
 #include "NiagaraDataInterface.h"
 #include "NiagaraDataInterfaceBase.h"
 #include "RHIUtilities.h"
+#include <optional>
 
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
+class FRenderCommandFence;
 class UCesiumGaussianSplatSubsystem;
-class UCesiumGltfGaussianSplatComponent;
 
 struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
     : public FNiagaraDataInterfaceProxy {
@@ -30,12 +31,9 @@ struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
   FReadBuffer SHNonZeroCoeffsBuffer;
 };
 
-/**
- * This isn't actually needed, but `PerInstanceTick` won't fire otherwise.
- */
 struct FNDICesiumGaussianSplats_InstanceData {
-  int32 ShCoefficientCount;
-  int32 SplatCount;
+  std::optional<FRenderCommandFence> UpdateSplatsFence;
+  std::optional<FRenderCommandFence> UpdateMatricesFence;
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
@@ -74,6 +72,8 @@ public:
   void MarkDirty();
   void MarkMatricesDirty();
 
+  bool isUpdatingForWorld(UWorld* pWorld) const;
+
 protected:
 #if WITH_EDITORONLY_DATA
   virtual void GetParameterDefinitionHLSL(
@@ -103,6 +103,6 @@ private:
   bool _splatsDirty = true;
   bool _matricesDirty = true;
 
-  TMap<FNiagaraSystemInstanceID, FNDICesiumGaussianSplats_InstanceData*>
+  TMap<UWorld*, FNDICesiumGaussianSplats_InstanceData*>
       _systemInstancesToProxyData_GT;
 };
