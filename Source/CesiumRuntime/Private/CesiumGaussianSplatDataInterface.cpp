@@ -630,10 +630,8 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
 
     pData->SplatsFence.reset();
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
-    ([RT_Proxy,
-      Components,
-      ShCoefficientCount,
-      SplatCount](FRHICommandListImmediate& RHICmdList) {
+    ([RT_Proxy, Components, ShCoefficientCount, SplatCount](
+         FRHICommandListImmediate& RHICmdList) {
       updatePerSplatData(
           RHICmdList,
           Components,
