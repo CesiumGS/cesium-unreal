@@ -32,8 +32,8 @@ class UCesiumGaussianSplatSubsystem : public UEngineSubsystem,
 
 public:
   /**
-  * Gets the active UCesiumGaussianSplatSubsystem instance.
-  */
+   * Gets the active UCesiumGaussianSplatSubsystem instance.
+   */
   static UCesiumGaussianSplatSubsystem* Get();
 
   virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -57,11 +57,6 @@ public:
    */
   void RecomputeBounds();
 
-  /**
-   * The currently registered splat components.
-   */
-  TArray<const UCesiumGltfGaussianSplatComponent*> SplatComponents;
-
   virtual void Tick(float DeltaTime) override;
   virtual ETickableTickType GetTickableTickType() const override;
   virtual TStatId GetStatId() const override;
@@ -69,19 +64,25 @@ public:
   virtual bool IsTickableInEditor() const override;
   virtual bool IsTickable() const override;
 
+  /**
+   * The currently registered splat components.
+   */
+  TArray<const UCesiumGltfGaussianSplatComponent*> SplatComponents;
+
 private:
+  void reset();
   void initializeForWorld(UWorld& InWorld);
-  void updateNiagaraComponent();
+  void makeInterfaceDirty(bool tilesOnly = false);
+
   UCesiumGaussianSplatDataInterface* getDataInterface() const;
 
   UNiagaraComponent* _pNiagaraComponent = nullptr;
   ACesiumGaussianSplatActor* _pNiagaraActor = nullptr;
-
   UWorld* _pLastCreatedWorld = nullptr;
   bool _isTickEnabled = false;
 
-  int32 _numSplats = 0;
-  bool _splatCountDirty = false;
+  int32 _splatCount = 0;
+  bool _splatInterfaceDirty = true;
 
   static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(
       "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'");

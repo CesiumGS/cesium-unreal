@@ -19,7 +19,6 @@
 #include "NiagaraShaderParametersBuilder.h"
 #include "NiagaraSystemInstance.h"
 #include "RHICommandList.h"
-#include "RenderCommandFence.h"
 #include "ShaderCore.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -553,24 +552,31 @@ bool UCesiumGaussianSplatDataInterface::InitPerInstanceData(
   FNDICesiumGaussianSplats_InstanceData* pInstData =
       new (PerInstanceData) FNDICesiumGaussianSplats_InstanceData();
 
-  check(!this->_systemInstancesToProxyData_GT.Contains(
-      SystemInstance->GetWorld()));
-  this->_systemInstancesToProxyData_GT.Emplace(
-      SystemInstance->GetWorld(),
-      pInstData);
+  // By design, only one Niagara system for rendering splats should exist per
+  // world. If this check fails, something went wrong.
+  check(!this->_worldToProxyData.Contains(SystemInstance->GetWorld()));
+  this->_worldToProxyData.Emplace(SystemInstance->GetWorld(), pInstData);
   return true;
 }
 
 void UCesiumGaussianSplatDataInterface::DestroyPerInstanceData(
     void* PerInstanceData,
     FNiagaraSystemInstance* SystemInstance) {
-  this->_systemInstancesToProxyData_GT.Remove(SystemInstance->GetWorld());
+  this->_worldToProxyData.Remove(SystemInstance->GetWorld());
 
   FNDICesiumGaussianSplats_InstanceData* pInstData =
       static_cast<FNDICesiumGaussianSplats_InstanceData*>(PerInstanceData);
   pInstData->~FNDICesiumGaussianSplats_InstanceData();
 }
 
+/**
+ * When this function returns true, the per-instance data is destroyed and
+ * reinitialized. (see NiagaraSystemInstance.cpp)
+ *
+ * Most DataInterface implementations return false unless something went wrong
+ * (e.g. null pointers, uninitialized instance data), in which case it returns
+ * true.
+ */
 bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     void* PerInstanceData,
     FNiagaraSystemInstance* SystemInstance,
@@ -587,26 +593,21 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     return true;
   }
 
-  if (!this->_matricesDirty && !this->_splatsDirty) {
-    return true;
-  }
-
-  bool isUpdatingMatrices = pData->UpdateMatricesFence &&
-                            !pData->UpdateMatricesFence->IsFenceComplete();
+  bool isUpdatingMatrices =
+      pData->MatricesFence && !pData->MatricesFence->IsFenceComplete();
   bool isUpdatingSplats =
-      pData->UpdateSplatsFence && !pData->UpdateSplatsFence->IsFenceComplete();
-
-  if (isUpdatingMatrices && isUpdatingSplats) {
+      pData->SplatsFence && !pData->SplatsFence->IsFenceComplete();
+  if (!this->IsDirty() || isUpdatingMatrices || isUpdatingSplats) {
     // Skip early if the render commands from a previous Tick are still in
-    // progress.
-    return true;
+    // progress, or if there is otherwise nothing to be done.
+    return false;
   }
 
   TArray<const UCesiumGltfGaussianSplatComponent*> Components;
   int32 ShCoefficientCount = 0;
   int32 SplatCount = 0;
 
-  // In PIE mode, components can belong to different worlds; this pre-counts
+  // In PIE mode, components can belong to different worlds. This pre-counts
   // components to measure how much should actually be allocated.
   for (const UCesiumGltfGaussianSplatComponent* pSplatComponent :
        pSplatSystem->SplatComponents) {
@@ -623,28 +624,13 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
 
   FNiagaraDataInterfaceProxyCesiumGaussianSplats* RT_Proxy =
       this->GetProxyAs<FNiagaraDataInterfaceProxyCesiumGaussianSplats>();
-  if (this->_matricesDirty && !isUpdatingMatrices) {
-    this->_matricesDirty = false;
-
-    pData->UpdateMatricesFence.reset();
-    ENQUEUE_RENDER_COMMAND(FUpdateCesiumGaussianSplatMatrices)
-    ([RT_Proxy, InstanceId = SystemInstance->GetId(), Components](
-         FRHICommandListImmediate& RHICmdList) {
-      updateTileTransforms(
-          RHICmdList,
-          Components,
-          RT_Proxy->TileTransformsBuffer);
-    });
-    pData->UpdateMatricesFence.emplace().BeginFence();
-  }
 
   if (this->_splatsDirty && !isUpdatingSplats) {
     this->_splatsDirty = false;
 
-    pData->UpdateSplatsFence.reset();
+    pData->SplatsFence.reset();
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
     ([RT_Proxy,
-      InstanceId = SystemInstance->GetId(),
       Components,
       ShCoefficientCount,
       SplatCount](FRHICommandListImmediate& RHICmdList) {
@@ -655,7 +641,22 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
           SplatCount,
           *RT_Proxy);
     });
-    pData->UpdateSplatsFence.emplace().BeginFence();
+    pData->SplatsFence.emplace().BeginFence();
+  }
+
+  if (this->_tilesDirty && !isUpdatingMatrices) {
+    this->_tilesDirty = false;
+
+    pData->MatricesFence.reset();
+    ENQUEUE_RENDER_COMMAND(FUpdateCesiumGaussianSplatMatrices)
+    ([RT_Proxy,
+      Components = MoveTemp(Components)](FRHICommandListImmediate& RHICmdList) {
+      updateTileTransforms(
+          RHICmdList,
+          Components,
+          RT_Proxy->TileTransformsBuffer);
+    });
+    pData->MatricesFence.emplace().BeginFence();
   }
 
   return false;
@@ -672,23 +673,22 @@ bool UCesiumGaussianSplatDataInterface::CanExecuteOnTarget(
 
 void UCesiumGaussianSplatDataInterface::MarkDirty() {
   this->_splatsDirty = true;
-  this->_matricesDirty = true;
+  this->_tilesDirty = true;
 }
 
-void UCesiumGaussianSplatDataInterface::MarkMatricesDirty() {
-  this->_matricesDirty = true;
+void UCesiumGaussianSplatDataInterface::MarkTilesDirty() {
+  this->_tilesDirty = true;
 }
 
-bool UCesiumGaussianSplatDataInterface::isUpdatingForWorld(
+bool UCesiumGaussianSplatDataInterface::IsUpdatingForWorld(
     UWorld* pWorld) const {
-  if (!this->_systemInstancesToProxyData_GT.Contains(pWorld))
+  if (!this->_worldToProxyData.Contains(pWorld)) {
     return false;
+  }
 
-  const auto& updateMatricesFence =
-      this->_systemInstancesToProxyData_GT[pWorld]->UpdateMatricesFence;
-  const auto& updateSplatsFence =
-      this->_systemInstancesToProxyData_GT[pWorld]->UpdateSplatsFence;
+  const auto& MatricesFence = this->_worldToProxyData[pWorld]->MatricesFence;
+  const auto& SplatsFence = this->_worldToProxyData[pWorld]->SplatsFence;
 
-  return (updateMatricesFence && !updateMatricesFence->IsFenceComplete()) ||
-         (updateSplatsFence && !updateSplatsFence->IsFenceComplete());
+  return (MatricesFence && !MatricesFence->IsFenceComplete()) ||
+         (SplatsFence && !SplatsFence->IsFenceComplete());
 }

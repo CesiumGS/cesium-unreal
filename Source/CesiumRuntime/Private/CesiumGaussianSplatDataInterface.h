@@ -6,11 +6,11 @@
 #include "NiagaraDataInterface.h"
 #include "NiagaraDataInterfaceBase.h"
 #include "RHIUtilities.h"
+#include "RenderCommandFence.h"
 #include <optional>
 
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
-class FRenderCommandFence;
 class UCesiumGaussianSplatSubsystem;
 
 struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
@@ -32,8 +32,8 @@ struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
 };
 
 struct FNDICesiumGaussianSplats_InstanceData {
-  std::optional<FRenderCommandFence> UpdateSplatsFence;
-  std::optional<FRenderCommandFence> UpdateMatricesFence;
+  std::optional<FRenderCommandFence> SplatsFence;
+  std::optional<FRenderCommandFence> MatricesFence;
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
@@ -54,6 +54,9 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
   UCesiumGaussianSplatDataInterface(const FObjectInitializer& Initializer);
 
 public:
+  /**
+   * UNiagaraDataInterface overrides.
+   */
   virtual bool InitPerInstanceData(
       void* PerInstanceData,
       FNiagaraSystemInstance* SystemInstance) override;
@@ -69,10 +72,26 @@ public:
   virtual bool HasPreSimulateTick() const override { return true; }
   virtual bool CanExecuteOnTarget(ENiagaraSimTarget target) const override;
 
+  /**
+   * Marks all render data dirty so it can be rewritten to the GPU at the next
+   * opportunity.
+   */
   void MarkDirty();
-  void MarkMatricesDirty();
 
-  bool isUpdatingForWorld(UWorld* pWorld) const;
+  /**
+   * Marks only the tile information dirty. This is more efficient when tiles
+   * remain loaded but their information is dynamically changed, such as their
+   * visibility or transform.
+   */
+  void MarkTilesDirty();
+
+  bool IsDirty() const { return this->_tilesDirty || this->_splatsDirty; }
+
+  /**
+   * Whether any render command updates are currently in progress for the given
+   * world.
+   */
+  bool IsUpdatingForWorld(UWorld* pWorld) const;
 
 protected:
 #if WITH_EDITORONLY_DATA
@@ -101,8 +120,7 @@ protected:
 
 private:
   bool _splatsDirty = true;
-  bool _matricesDirty = true;
+  bool _tilesDirty = true;
 
-  TMap<UWorld*, FNDICesiumGaussianSplats_InstanceData*>
-      _systemInstancesToProxyData_GT;
+  TMap<UWorld*, FNDICesiumGaussianSplats_InstanceData*> _worldToProxyData;
 };

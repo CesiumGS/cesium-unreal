@@ -93,6 +93,59 @@ UWorld* GetPrimaryWorld() {
 }
 } // namespace
 
+/*static*/ UCesiumGaussianSplatSubsystem* UCesiumGaussianSplatSubsystem::Get() {
+  return IsValid(GEngine)
+             ? GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>()
+             : nullptr;
+}
+
+void UCesiumGaussianSplatSubsystem::Initialize(
+    FSubsystemCollectionBase& Collection) {
+  // Unreal will call `Tick` on the Class Default Object for this subsystem.
+  // Since this is supposed to be a singleton, we prevent this from happening;
+  // otherwise, multiple actors will be spawned.
+  //
+  // Because `Initialize` is never called on the CDO, we can use this as a
+  // marker of whether we're in the *true* singleton instance of this subsystem.
+  this->_isTickEnabled = true;
+}
+
+void UCesiumGaussianSplatSubsystem::Deinitialize() {
+  this->_isTickEnabled = false;
+
+  if (IsValid(this->_pNiagaraActor)) {
+    this->_pNiagaraActor->Destroy();
+  }
+
+  this->reset();
+}
+
+void UCesiumGaussianSplatSubsystem::RegisterSplat(
+    UCesiumGltfGaussianSplatComponent* Component) {
+  check(Component);
+  this->SplatComponents.Add(Component);
+  this->_splatCount += Component->Data.NumSplats;
+  this->makeInterfaceDirty();
+}
+
+void UCesiumGaussianSplatSubsystem::UnregisterSplat(
+    UCesiumGltfGaussianSplatComponent* Component) {
+  check(Component);
+  this->SplatComponents.Remove(Component);
+  this->_splatCount -= Component->Data.NumSplats;
+  this->makeInterfaceDirty();
+}
+
+void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
+  if (!IsValid(this->_pNiagaraComponent)) {
+    return;
+  }
+
+  const FBox Bounds = CalculateBounds(this->SplatComponents);
+  this->_pNiagaraComponent->SetSystemFixedBounds(Bounds);
+  this->makeInterfaceDirty(true /* tilesOnly */);
+}
+
 void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
   for (ACesiumGaussianSplatActor* Actor :
        TActorRange<ACesiumGaussianSplatActor>(&InWorld)) {
@@ -104,7 +157,6 @@ void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
         this->_pNiagaraActor->FindComponentByClass<UNiagaraComponent>();
 
     this->RecomputeBounds();
-    this->updateNiagaraComponent();
     return;
   }
 
@@ -169,91 +221,7 @@ void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
   this->_pNiagaraActor = pActor;
 
   pActor->AddInstanceComponent(this->_pNiagaraComponent);
-
-  this->updateNiagaraComponent();
-}
-
-/*static*/ UCesiumGaussianSplatSubsystem* UCesiumGaussianSplatSubsystem::Get() {
-  return IsValid(GEngine)
-             ? GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>()
-             : nullptr;
-}
-
-void UCesiumGaussianSplatSubsystem::Initialize(
-    FSubsystemCollectionBase& Collection) {
-  // Unreal will call `Tick` on the Class Default Object for this subsystem. We
-  // don't want that to happen, because this is supposed to be a singleton, and
-  // doing so will result in multiple actors being spawned.
-  //
-  // Because `Initialize` is never called on the CDO, we can use this as a
-  // marker of whether we're in the *true* singleton instance of this subsystem.
-  _isTickEnabled = true;
-}
-
-void UCesiumGaussianSplatSubsystem::Deinitialize() {
-  _isTickEnabled = false;
-  if (IsValid(this->_pNiagaraActor)) {
-    this->_pNiagaraActor->Destroy();
-  }
-
-  this->_pNiagaraActor = nullptr;
-  this->_pNiagaraComponent = nullptr;
-  this->_pLastCreatedWorld = nullptr;
-}
-
-void UCesiumGaussianSplatSubsystem::RegisterSplat(
-    UCesiumGltfGaussianSplatComponent* Component) {
-  check(Component);
-
-  this->SplatComponents.AddUnique(Component);
-  this->_numSplats += Component->Data.NumSplats;
-
-  this->updateNiagaraComponent();
-}
-
-void UCesiumGaussianSplatSubsystem::UnregisterSplat(
-    UCesiumGltfGaussianSplatComponent* Component) {
-  check(Component);
-
-  this->SplatComponents.Remove(Component);
-  this->_numSplats -= Component->Data.NumSplats;
-
-  this->updateNiagaraComponent();
-}
-
-void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
-  if (IsValid(this->_pNiagaraComponent)) {
-    const FBox Bounds = CalculateBounds(this->SplatComponents);
-    this->_pNiagaraComponent->SetSystemFixedBounds(Bounds);
-    if (UCesiumGaussianSplatDataInterface* pDataInterface =
-            this->getDataInterface()) {
-      pDataInterface->MarkMatricesDirty();
-    }
-  }
-}
-
-void UCesiumGaussianSplatSubsystem::updateNiagaraComponent() {
-  if (!IsValid(this->_pNiagaraComponent)) {
-    return;
-  }
-
-  if (UCesiumGaussianSplatDataInterface* pDataInterface =
-          this->getDataInterface()) {
-    pDataInterface->MarkDirty();
-
-    // Defer updating the Niagara System until after the GPU buffers have been
-    // updated to avoid flickering artifacts.
-    this->_pNiagaraComponent->SetPaused(true);
-    this->_splatCountDirty = true;
-  }
-}
-
-UCesiumGaussianSplatDataInterface*
-UCesiumGaussianSplatSubsystem::getDataInterface() const {
-  return UNiagaraFunctionLibrary::GetDataInterface<
-      UCesiumGaussianSplatDataInterface>(
-      this->_pNiagaraComponent,
-      FName(TEXT("SplatInterface")));
+  this->makeInterfaceDirty();
 }
 
 void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
@@ -263,9 +231,9 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
 
   UWorld* pWorld = GetPrimaryWorld();
   // Gaussian splats are purely visual, so we don't need to initialize them if
-  // we can't render anything. Besides, even if we'd *want* to, we will fail to
-  // spawn the Niagara component if either of these conditions are false (they
-  // are checked in UNiagaraFunctionLibrary::CreateNiagaraSystem).
+  // we can't render anything. Besides, the Niagara component will fail to
+  // spawn if either of these conditions are false (they are checked in
+  // UNiagaraFunctionLibrary::CreateNiagaraSystem).
   if (!FApp::CanEverRender() || pWorld->IsNetMode(NM_DedicatedServer)) {
     return;
   }
@@ -274,10 +242,7 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     if (IsValid(this->_pNiagaraActor)) {
       this->_pNiagaraActor->Destroy();
     }
-
-    this->_pNiagaraActor = nullptr;
-    this->_pNiagaraComponent = nullptr;
-    this->_pLastCreatedWorld = nullptr;
+    this->reset();
     return;
   }
 
@@ -286,15 +251,21 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
   }
 
   UCesiumGaussianSplatDataInterface* pDataInterface = this->getDataInterface();
-  if (!pDataInterface) {
+  if (!pDataInterface || !this->_splatInterfaceDirty) {
     return;
   }
 
-  if (this->_splatCountDirty && !pDataInterface->isUpdatingForWorld(pWorld)) {
-    this->_splatCountDirty = false;
+  // If the splats didn't change this frame, but the interface is still dirty,
+  // then we're waiting on the interface to make an update.
+  if (pDataInterface->IsUpdatingForWorld(pWorld)) {
+    // Pausing the Niagara system prevents excessive holes and incorrect LOD
+    // pop-ins.
+    this->_pNiagaraComponent->SetPaused(true);
+  } else {
+    this->_splatInterfaceDirty = false;
     this->_pNiagaraComponent->SetVariableInt(
         FName(TEXT("SplatCount")),
-        this->_numSplats);
+        this->_splatCount);
     this->_pNiagaraComponent->SetPaused(false);
   }
 }
@@ -317,4 +288,37 @@ bool UCesiumGaussianSplatSubsystem::IsTickableInEditor() const { return true; }
 
 bool UCesiumGaussianSplatSubsystem::IsTickable() const {
   return this->_isTickEnabled;
+}
+
+void UCesiumGaussianSplatSubsystem::reset() {
+  this->_pNiagaraActor = nullptr;
+  this->_pNiagaraComponent = nullptr;
+  this->_pLastCreatedWorld = nullptr;
+
+  this->SplatComponents.Empty();
+  this->_splatCount = 0;
+  this->makeInterfaceDirty();
+}
+
+void UCesiumGaussianSplatSubsystem::makeInterfaceDirty(bool tilesOnly) {
+  UCesiumGaussianSplatDataInterface* pDataInterface = this->getDataInterface();
+  if (!pDataInterface) {
+    return;
+  }
+
+  if (tilesOnly) {
+    pDataInterface->MarkTilesDirty();
+  } else {
+    pDataInterface->MarkDirty();
+  }
+
+  this->_splatInterfaceDirty = true;
+}
+
+UCesiumGaussianSplatDataInterface*
+UCesiumGaussianSplatSubsystem::getDataInterface() const {
+  return UNiagaraFunctionLibrary::GetDataInterface<
+      UCesiumGaussianSplatDataInterface>(
+      this->_pNiagaraComponent,
+      FName(TEXT("SplatInterface")));
 }
