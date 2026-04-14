@@ -155,7 +155,6 @@ void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
     this->_pNiagaraActor = Actor;
     this->_pNiagaraComponent =
         this->_pNiagaraActor->FindComponentByClass<UNiagaraComponent>();
-
     this->RecomputeBounds();
     return;
   }
