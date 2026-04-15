@@ -147,12 +147,12 @@ void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
 }
 
 void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
-  for (ACesiumGaussianSplatActor* Actor :
+  for (ACesiumGaussianSplatActor* pActor :
        TActorRange<ACesiumGaussianSplatActor>(&InWorld)) {
     // Actor singleton already exists in the world (usually means we stopped a
     // PIE session and returned to the editor world).
     this->_pLastCreatedWorld = &InWorld;
-    this->_pNiagaraActor = Actor;
+    this->_pNiagaraActor = pActor;
     this->_pNiagaraComponent =
         this->_pNiagaraActor->FindComponentByClass<UNiagaraComponent>();
     this->RecomputeBounds();
@@ -254,11 +254,11 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     return;
   }
 
-  // If the splats didn't change this frame, but the interface is still dirty,
-  // then we're waiting on the interface to make an update.
+  // If no splats changed this frame, but the interface is still dirty, then
+  // we're waiting on the interface to complete its update.
   if (pDataInterface->IsUpdatingForWorld(pWorld)) {
-    // Pausing the Niagara system prevents excessive holes and incorrect LOD
-    // pop-ins.
+    // Pausing the Niagara system prevents incorrect LOD pop-ins as the buffers
+    // update.
     this->_pNiagaraComponent->SetPaused(true);
   } else {
     this->_splatInterfaceDirty = false;

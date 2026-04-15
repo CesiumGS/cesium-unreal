@@ -45,7 +45,7 @@ SHADER_PARAMETER_SRV(Buffer<float4>, Orientations)
 SHADER_PARAMETER_SRV(Buffer<float4>, Colors)
 SHADER_PARAMETER_SRV(Buffer<uint>, SplatSHDegrees)
 SHADER_PARAMETER_SRV(Buffer<float3>, SHNonZeroCoeffs)
-END_SHADER_PARAMETER_STRUCT();
+END_SHADER_PARAMETER_STRUCT()
 
 UCLASS()
 class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {

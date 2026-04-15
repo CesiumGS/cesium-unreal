@@ -562,6 +562,7 @@ bool UCesiumGaussianSplatDataInterface::InitPerInstanceData(
 void UCesiumGaussianSplatDataInterface::DestroyPerInstanceData(
     void* PerInstanceData,
     FNiagaraSystemInstance* SystemInstance) {
+  check(SystemInstance);
   this->_worldToProxyData.Remove(SystemInstance->GetWorld());
 
   FNDICesiumGaussianSplats_InstanceData* pInstData =
@@ -598,8 +599,8 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
   bool isUpdatingSplats =
       pData->SplatsFence && !pData->SplatsFence->IsFenceComplete();
   if (!this->IsDirty() || isUpdatingMatrices || isUpdatingSplats) {
-    // Skip early if the render commands from a previous Tick are still in
-    // progress, or if there is otherwise nothing to be done.
+    // Skip early if render commands from a previous tick are still in progress,
+    // or if there is otherwise nothing to be done.
     return false;
   }
 
