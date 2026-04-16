@@ -3,8 +3,12 @@
 #include <Cesium3DTilesSelection/GltfModifier.h>
 #include <CesiumAsync/Future.h>
 
+#include <array>
 #include <memory>
 #include <optional>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 class AStaticMeshActor;
 
@@ -25,6 +29,12 @@ public:
   void SetStaticMeshActor(AStaticMeshActor* InStaticMeshActor);
   AStaticMeshActor* GetStaticMeshActor() const;
 
+  /**
+   * Extract the StaticMeshActor's mesh data and transform vertices to ECEF.
+   * Must be called on the game thread before apply() will perform clipping.
+   */
+  void CacheClipMeshData(const glm::dmat4& unrealToEcef);
+
 protected:
   CesiumAsync::Future<void> onRegister(
       const CesiumAsync::AsyncSystem& asyncSystem,
@@ -34,4 +44,9 @@ protected:
       const Cesium3DTilesSelection::Tile& rootTile) override;
 
   AStaticMeshActor* StaticMeshActor = nullptr;
+
+  // Clip mesh data cached on the game thread for use in apply().
+  std::vector<std::array<float, 3>> ClipMeshPositionsECEF;
+  std::vector<uint32_t> ClipMeshIndices;
+  bool bClipMeshReady = false;
 };

@@ -1,6 +1,8 @@
 #include "CgalGltfModifierActor.h"
 #include "CgalGltfModifier.h"
 #include "Cesium3DTileset.h"
+#include "CesiumGeoreference.h"
+#include "VecMath.h"
 #include "Engine/StaticMeshActor.h"
 
 ACgalGltfModifierActor::ACgalGltfModifierActor()
@@ -34,6 +36,16 @@ void ACgalGltfModifierActor::PostEditChangeProperty(
   if (PropertyName == GET_MEMBER_NAME_CHECKED(ACgalGltfModifierActor, StaticMeshActor)) {
     if (Modifier) {
       Modifier->SetStaticMeshActor(StaticMeshActor);
+      if (Tileset) {
+        ACesiumGeoreference* Georeference = Tileset->ResolveGeoreference();
+        if (Georeference) {
+          glm::dmat4 unrealToEcef = VecMath::createMatrix4D(
+              Georeference
+                  ->ComputeUnrealToEarthCenteredEarthFixedTransformation());
+          Modifier->CacheClipMeshData(unrealToEcef);
+        }
+      }
+      Modifier->trigger();
     }
   }
 }
@@ -58,6 +70,15 @@ void ACgalGltfModifierActor::AttachModifierToTileset() {
   }
 
   Modifier->SetStaticMeshActor(StaticMeshActor);
+
+  // Cache the clip mesh geometry transformed to ECEF.
+  ACesiumGeoreference* Georeference = Tileset->ResolveGeoreference();
+  if (Georeference) {
+    glm::dmat4 unrealToEcef = VecMath::createMatrix4D(
+        Georeference->ComputeUnrealToEarthCenteredEarthFixedTransformation());
+    Modifier->CacheClipMeshData(unrealToEcef);
+  }
+
   Tileset->SetGltfModifier(Modifier);
   Modifier->trigger();
 }

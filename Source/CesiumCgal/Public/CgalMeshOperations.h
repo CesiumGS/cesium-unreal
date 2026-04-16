@@ -1,5 +1,7 @@
 #pragma once
 
+#include "HAL/Platform.h"
+
 #include <vector>
 #include <array>
 #include <cstdint>
@@ -23,7 +25,7 @@ namespace CesiumCgal {
  * @param outIndices     Receives the clipped triangle indices.
  * @return true on success, false if the operation failed.
  */
-bool ClipMesh(
+CESIUMCGAL_API bool ClipMesh(
     const std::vector<std::array<float, 3>>& positions,
     const std::vector<uint32_t>& indices,
     const std::vector<std::array<float, 3>>& clipPositions,
@@ -50,7 +52,7 @@ enum class BooleanOp : uint8_t {
  * @param outIndices     Receives the result triangle indices.
  * @return true on success, false if the operation failed.
  */
-bool BooleanOperation(
+CESIUMCGAL_API bool BooleanOperation(
     const std::vector<std::array<float, 3>>& positionsA,
     const std::vector<uint32_t>& indicesA,
     const std::vector<std::array<float, 3>>& positionsB,
