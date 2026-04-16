@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added `ACesium3DTileset::UnloadEditorTilesInPlayMode`, which toggles whether in-editor tileset instances should unload their tiles before Play-in-Editor begins. This can prevent the Editor from duplicating resources for the same tileset and potentially consuming too much memory.
+
 ### v2.25.0 - 2026-04-01
 
 ##### Additions :tada:
