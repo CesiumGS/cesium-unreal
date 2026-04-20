@@ -2712,7 +2712,7 @@ loadModelAnyThreadPart(
             const glm::dmat4x4 cesiumToUnrealTransform =
                 pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform();
 
-            std::vector<CesiumAsync::Promise<void>> promises;
+            std::vector<CesiumAsync::SharedFuture<void>> futures;
             for (auto& nodeResult : pHalfReal->loadModelResult.nodeResults) {
               if (!nodeResult.meshResult) {
                 continue;
@@ -2732,19 +2732,19 @@ loadModelAnyThreadPart(
                           cesiumToUnrealTransform,
                           pTilesetActor);
                   check(pSplatComponent);
-                  promises.emplace_back(
-                      pSplatComponent->registerWithSubsystemPromise);
+                  futures.emplace_back(
+                      pSplatComponent->registerWithSubsystemPromise.getFuture()
+                          .share());
                 }
               }
             }
-            return asyncSystem.all(std::move(promises))
-                .thenImmediately([halfResult = std::move(result)]() {
-                  return std::move(halfResult);
-                });
-          })
-      .thenImmediately(
-          [](UCesiumGltfComponent::CreateOffGameThreadResult&& result) {
-            return result;
+
+            return asyncSystem.all(std::move(futures))
+                .thenImmediately(
+                    [result = std::move(result)]()
+                        -> UCesiumGltfComponent::CreateOffGameThreadResult&& {
+                      return std::move(result);
+                    });
           });
 }
 
