@@ -143,10 +143,14 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
+  check(IsInGameThread());
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
+
   pSplatSubsystem->RegisterSplat(this);
+  this->registerWithSubsystemPromise.emplace(
+      getAsyncSystem().createPromise<void>());
 }
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {

@@ -275,7 +275,8 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
 
     for (UCesiumGltfGaussianSplatComponent* pComponent :
          this->_uploadingComponents) {
-      pComponent->registerWithSubsystemPromise.resolve();
+      check(pComponent->registerWithSubsystemPromise);
+      pComponent->registerWithSubsystemPromise->resolve();
     }
     this->_uploadingComponents.Empty();
   }

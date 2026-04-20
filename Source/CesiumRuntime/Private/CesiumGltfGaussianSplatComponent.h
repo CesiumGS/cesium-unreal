@@ -125,5 +125,5 @@ public:
    */
   FCesiumGltfGaussianSplatData Data;
   
-  CesiumAsync::Promise<void> registerWithSubsystemPromise;
+  std::optional<CesiumAsync::Promise<void>> registerWithSubsystemPromise;
 };

@@ -196,12 +196,6 @@ struct LoadedMeshResult {
   LoadedMeshResult(LoadedMeshResult&& other) = default;
   LoadedMeshResult& operator=(LoadedMeshResult&& other) = default;
 
-  /**
-   * Used if a mesh required preconstruction of a UCesiumGltfComponent while
-   * loading (e.g., for Gaussian splats).
-   */
-  UCesiumGltfComponent* pGltfComponent = nullptr;
-
   std::vector<LoadedPrimitiveResult> primitiveResults{};
 };
 
@@ -258,5 +252,11 @@ struct LoadedModelResult {
    * generated parameter name.
    */
   TMap<FString, FCesiumMetadataValue> metadataStatistics;
+
+  /**
+   * Used if a mesh required preconstruction of a UCesiumGltfComponent while
+   * loading (e.g., for Gaussian splats).
+   */
+  UCesiumGltfComponent* pGltfComponent = nullptr;
 };
 } // namespace LoadGltfResult

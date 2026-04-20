@@ -2602,9 +2602,8 @@ loadModelAnyThreadPart(
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
-      .thenPassThrough(options)
       .thenInWorkerThread(
-          [tileTransform, ellipsoid](CreateModelOptions&& options) mutable
+          [tileTransform, ellipsoid, options = std::move(options)]() mutable
           -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
@@ -2694,58 +2693,70 @@ loadModelAnyThreadPart(
             UCesiumGltfComponent::CreateOffGameThreadResult result;
             result.HalfConstructed = std::move(pHalf);
             result.TileLoadResult = std::move(options.tileLoadResult);
-            return std::move(result);
+            return result;
           })
-      .thenInMainThread(
-          [&asyncSystem, pTilesetActor](
-              UCesiumGltfComponent::CreateOffGameThreadResult&& result) {
-            if (!IsValid(pTilesetActor) || !result.HalfConstructed) {
+      .thenInMainThread([&asyncSystem, pTilesetActor](
+                            UCesiumGltfComponent::CreateOffGameThreadResult&&
+                                result) mutable {
+        if (!IsValid(pTilesetActor) || !result.HalfConstructed) {
+          return std::move(result);
+        }
+
+        HalfConstructedReal* pHalfReal =
+            static_cast<HalfConstructedReal*>(result.HalfConstructed.Get());
+        if (!pHalfReal->requiresMainThreadContinuation) {
+          return std::move(result);
+        }
+
+        UCesiumGltfComponent* pGltf =
+            NewObject<UCesiumGltfComponent>(pTilesetActor);
+        pHalfReal->loadModelResult.pGltfComponent = pGltf;
+
+        const glm::dmat4x4 cesiumToUnrealTransform =
+            pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform();
+        std::vector<CesiumAsync::SharedFuture<void>> futures;
+        for (auto& nodeResult : pHalfReal->loadModelResult.nodeResults) {
+          if (!nodeResult.meshResult) {
+            continue;
+          }
+          std::vector<LoadedPrimitiveResult>& primitiveResults =
+              nodeResult.meshResult->primitiveResults;
+          std::vector<size_t> primitiveIndicesWithGaussianSplats;
+          for (size_t i = 0; i < primitiveResults.size(); i++) {
+            LoadedPrimitiveResult& primitiveResult =
+                nodeResult.meshResult->primitiveResults[i];
+            if (!primitiveResult.pGaussianSplatData) {
+              continue;
+            }
+
+            UCesiumGltfGaussianSplatComponent* pSplatComponent =
+                loadGaussianSplatsGameThreadPart(
+                    pGltf,
+                    primitiveResult,
+                    cesiumToUnrealTransform,
+                    pTilesetActor);
+            if (pSplatComponent) {
+              futures.emplace_back(
+                  pSplatComponent->registerWithSubsystemPromise->getFuture()
+                      .share());
+            }
+            primitiveIndicesWithGaussianSplats.emplace_back(i);
+          }
+
+          for (size_t i = primitiveIndicesWithGaussianSplats.size() - 1; i >= 0;
+               i--) {
+            // Erase in backwards order to avoid messing up other indices.
+            primitiveResults.erase(
+                primitiveResults.begin() +
+                primitiveIndicesWithGaussianSplats[i]);
+          }
+        }
+
+        return asyncSystem.all(std::move(futures))
+            .thenImmediately([result = std::move(result)]() mutable {
               return std::move(result);
-            }
-
-            HalfConstructedReal* pHalfReal =
-                static_cast<HalfConstructedReal*>(result.HalfConstructed.Get());
-            if (!pHalfReal->requiresMainThreadContinuation) {
-              return std::move(result);
-            }
-
-            const glm::dmat4x4 cesiumToUnrealTransform =
-                pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform();
-
-            std::vector<CesiumAsync::SharedFuture<void>> futures;
-            for (auto& nodeResult : pHalfReal->loadModelResult.nodeResults) {
-              if (!nodeResult.meshResult) {
-                continue;
-              }
-
-              UCesiumGltfComponent* pGltf =
-                  NewObject<UCesiumGltfComponent>(pTilesetActor);
-              nodeResult.meshResult->pGltfComponent = pGltf;
-
-              for (auto& primitiveResult :
-                   nodeResult.meshResult->primitiveResults) {
-                if (primitiveResult.pGaussianSplatData) {
-                  UCesiumGltfGaussianSplatComponent* pSplatComponent =
-                      loadGaussianSplatsGameThreadPart(
-                          pGltf,
-                          primitiveResult,
-                          cesiumToUnrealTransform,
-                          pTilesetActor);
-                  check(pSplatComponent);
-                  futures.emplace_back(
-                      pSplatComponent->registerWithSubsystemPromise.getFuture()
-                          .share());
-                }
-              }
-            }
-
-            return asyncSystem.all(std::move(futures))
-                .thenImmediately(
-                    [result = std::move(result)]()
-                        -> UCesiumGltfComponent::CreateOffGameThreadResult&& {
-                      return std::move(result);
-                    });
-          });
+            });
+      });
 }
 
 bool applyTexture(
@@ -3841,7 +3852,7 @@ static UCesiumGltfGaussianSplatComponent* loadGaussianSplatsGameThreadPart(
         Error,
         TEXT(
             "Primitive with KHR_gaussian_splatting did not contain valid data."));
-    return;
+    return nullptr;
   }
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -3906,7 +3917,10 @@ UCesiumGltfComponent::CreateOffGameThread(
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
-  UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  UCesiumGltfComponent* pGltf =
+      pReal->loadModelResult.pGltfComponent
+          ? pReal->loadModelResult.pGltfComponent
+          : NewObject<UCesiumGltfComponent>(pTilesetActor);
   pGltf->pTile = &tile;
   pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   pGltf->SetFlags(
@@ -3941,7 +3955,7 @@ UCesiumGltfComponent::CreateOffGameThread(
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
         if (primitive.pGaussianSplatData) {
-          return;
+          // Do nothing.
         } else if (primitive.voxelPropertyAttributeIndex) {
           loadVoxelsGameThreadPart(pGltf, primitive, tile, pTilesetActor);
         } else {
