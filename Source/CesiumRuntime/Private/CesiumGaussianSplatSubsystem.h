@@ -12,6 +12,7 @@
 
 #include "CesiumGaussianSplatDataInterface.h"
 #include "CesiumGltfGaussianSplatComponent.h"
+#include <CesiumAsync/Promise.h>
 
 #include "CesiumGaussianSplatSubsystem.generated.h"
 
@@ -67,7 +68,7 @@ public:
   /**
    * The currently registered splat components.
    */
-  TArray<const UCesiumGltfGaussianSplatComponent*> SplatComponents;
+  TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
 private:
   void reset();
@@ -83,6 +84,7 @@ private:
 
   int32 _splatCount = 0;
   bool _splatInterfaceDirty = true;
+  TSet<UCesiumGltfGaussianSplatComponent*> _uploadingComponents;
 
   static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(
       "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'");

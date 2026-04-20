@@ -95,7 +95,15 @@ static uint32_t nextMaterialId = 0;
 namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
+  /**
+   * The result of asynchronously loading a glTF model.
+   */
   LoadedModelResult loadModelResult{};
+  /**
+   * Whether the worker thread that generated the LoadedModelResult needs to do
+   * main thread work as well.
+   */
+  bool requiresMainThreadContinuation = false;
 };
 } // namespace
 
@@ -2125,7 +2133,8 @@ static void loadMesh(
     std::optional<LoadedMeshResult>& result,
     const glm::dmat4x4& transform,
     CreateMeshOptions& options,
-    const CesiumGeospatial::Ellipsoid& ellipsoid) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    bool& requiresMainThreadContinuation) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
@@ -2139,8 +2148,11 @@ static void loadMesh(
     auto& primitiveResult = result->primitiveResults.emplace_back();
     loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
-    // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.HasRenderableData()) {
+    if (primitiveResult.pGaussianSplatData) {
+      // Gaussian splats require special handling on the main thread.
+      requiresMainThreadContinuation = true;
+    } else if (!primitiveResult.HasRenderableData()) {
+      // if it doesn't have render data, then it can't be loaded
       result->primitiveResults.pop_back();
     }
   }
@@ -2302,7 +2314,8 @@ static void loadNode(
     std::vector<LoadedNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     CreateNodeOptions& options,
-    const CesiumGeospatial::Ellipsoid& ellipsoid) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    bool& requiresMainThreadContinuation) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
@@ -2387,7 +2400,12 @@ static void loadNode(
           node.getExtension<CesiumGltf::ExtensionExtInstanceFeatures>());
     }
     CreateMeshOptions meshOptions = {&options, &result, meshId};
-    loadMesh(result.meshResult, nodeTransform, meshOptions, ellipsoid);
+    loadMesh(
+        result.meshResult,
+        nodeTransform,
+        meshOptions,
+        ellipsoid,
+        requiresMainThreadContinuation);
   }
 
   for (int childNodeId : node.children) {
@@ -2396,7 +2414,12 @@ static void loadNode(
           options.pModelOptions,
           options.pHalfConstructedModelResult,
           &model.nodes[childNodeId]};
-      loadNode(loadNodeResults, nodeTransform, childNodeOptions, ellipsoid);
+      loadNode(
+          loadNodeResults,
+          nodeTransform,
+          childNodeOptions,
+          ellipsoid,
+          requiresMainThreadContinuation);
     }
   }
 }
@@ -2564,17 +2587,24 @@ static void gatherStatistics(
   }
 }
 
+static UCesiumGltfGaussianSplatComponent* loadGaussianSplatsGameThreadPart(
+    UCesiumGltfComponent* pGltf,
+    LoadedPrimitiveResult& loadResult,
+    const glm::dmat4x4& cesiumToUnrealTransform,
+    ACesium3DTileset* pTilesetActor);
+
 static CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 loadModelAnyThreadPart(
     const CesiumAsync::AsyncSystem& asyncSystem,
-    const glm::dmat4x4& transform,
+    const glm::dmat4x4& tileTransform,
     CreateModelOptions&& options,
+    ACesium3DTileset* pTilesetActor,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
-
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
+      .thenPassThrough(options)
       .thenInWorkerThread(
-          [transform, ellipsoid, options = std::move(options)]() mutable
+          [tileTransform, ellipsoid](CreateModelOptions&& options) mutable
           -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
@@ -2586,16 +2616,16 @@ loadModelAnyThreadPart(
                   options.pFeaturesMetadata->Description.Statistics);
             }
 
-            glm::dmat4x4 rootTransform = transform;
-
             CesiumGltf::Model& model = *options.pModel;
-
+            glm::dmat4x4 rootTransform = tileTransform;
             {
               rootTransform = CesiumGltfContent::GltfUtilities::applyRtcCenter(
                   model,
                   rootTransform);
               applyGltfUpAxisTransform(model, rootTransform);
             }
+
+            bool requiresMainThreadContinuation = false;
 
             if (model.scene >= 0 && model.scene < model.scenes.size()) {
               // Show the default scene
@@ -2609,7 +2639,8 @@ loadModelAnyThreadPart(
                     pHalf->loadModelResult.nodeResults,
                     rootTransform,
                     nodeOptions,
-                    ellipsoid);
+                    ellipsoid,
+                    pHalf->requiresMainThreadContinuation);
               }
             } else if (model.scenes.size() > 0) {
               // There's no default, so show the first scene
@@ -2623,7 +2654,8 @@ loadModelAnyThreadPart(
                     pHalf->loadModelResult.nodeResults,
                     rootTransform,
                     nodeOptions,
-                    ellipsoid);
+                    ellipsoid,
+                    pHalf->requiresMainThreadContinuation);
               }
             } else if (model.nodes.size() > 0) {
               // No scenes at all, use the first node as the root node.
@@ -2635,7 +2667,8 @@ loadModelAnyThreadPart(
                   pHalf->loadModelResult.nodeResults,
                   rootTransform,
                   nodeOptions,
-                  ellipsoid);
+                  ellipsoid,
+                  pHalf->requiresMainThreadContinuation);
             } else if (model.meshes.size() > 0) {
               // No nodes either, show all the meshes.
               for (size_t i = 0; i < model.meshes.size(); i++) {
@@ -2653,14 +2686,64 @@ loadModelAnyThreadPart(
                     dummyNodeResult.meshResult,
                     rootTransform,
                     meshOptions,
-                    ellipsoid);
+                    ellipsoid,
+                    pHalf->requiresMainThreadContinuation);
               }
             }
 
             UCesiumGltfComponent::CreateOffGameThreadResult result;
             result.HalfConstructed = std::move(pHalf);
             result.TileLoadResult = std::move(options.tileLoadResult);
+            return std::move(result);
+          })
+      .thenInMainThread(
+          [&asyncSystem, pTilesetActor](
+              UCesiumGltfComponent::CreateOffGameThreadResult&& result) {
+            if (!IsValid(pTilesetActor) || !result.HalfConstructed) {
+              return std::move(result);
+            }
 
+            HalfConstructedReal* pHalfReal =
+                static_cast<HalfConstructedReal*>(result.HalfConstructed.Get());
+            if (!pHalfReal->requiresMainThreadContinuation) {
+              return std::move(result);
+            }
+
+            const glm::dmat4x4 cesiumToUnrealTransform =
+                pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform();
+
+            std::vector<CesiumAsync::Promise<void>> promises;
+            for (auto& nodeResult : pHalfReal->loadModelResult.nodeResults) {
+              if (!nodeResult.meshResult) {
+                continue;
+              }
+
+              UCesiumGltfComponent* pGltf =
+                  NewObject<UCesiumGltfComponent>(pTilesetActor);
+              nodeResult.meshResult->pGltfComponent = pGltf;
+
+              for (auto& primitiveResult :
+                   nodeResult.meshResult->primitiveResults) {
+                if (primitiveResult.pGaussianSplatData) {
+                  UCesiumGltfGaussianSplatComponent* pSplatComponent =
+                      loadGaussianSplatsGameThreadPart(
+                          pGltf,
+                          primitiveResult,
+                          cesiumToUnrealTransform,
+                          pTilesetActor);
+                  check(pSplatComponent);
+                  promises.emplace_back(
+                      pSplatComponent->registerWithSubsystemPromise);
+                }
+              }
+            }
+            return asyncSystem.all(std::move(promises))
+                .thenImmediately([halfResult = std::move(result)]() {
+                  return std::move(halfResult);
+                });
+          })
+      .thenImmediately(
+          [](UCesiumGltfComponent::CreateOffGameThreadResult&& result) {
             return result;
           });
 }
@@ -2907,8 +2990,8 @@ static void SetGltfParameterValues(
             material.emissiveFactor[2]));
   } else if (hasEmissiveTexture) {
     // When we have an emissive texture but not a factor, we need to use a
-    // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
-    // from the texture.
+    // factor of vec3(1.0). The default, vec3(0.0), would disable the
+    // emission from the texture.
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("emissiveFactor", association, index),
         FVector(1.0f, 1.0f, 1.0f));
@@ -3421,9 +3504,9 @@ static void loadPrimitiveGameThreadPart(
 
     UMaterialInstanceDynamic* pUserDesignatedMaterialAsDynamic =
         Cast<UMaterialInstanceDynamic>(pUserDesignatedMaterial);
-    // If the user-designated material is a UMaterialInstanceDynamic, Create()
-    // will reject it as a valid instance parent.  Defer to its non-dynamic
-    // parent instead.
+    // If the user-designated material is a UMaterialInstanceDynamic,
+    // Create() will reject it as a valid instance parent.  Defer to its
+    // non-dynamic parent instead.
     UMaterialInterface* pBaseMaterial =
         pUserDesignatedMaterialAsDynamic
             ? pUserDesignatedMaterialAsDynamic->Parent.Get()
@@ -3672,9 +3755,9 @@ static void loadPrimitiveGameThreadPart(
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
-    // Mark physics meshes created, no matter if we actually have a collision
-    // mesh or not. We don't want the editor creating collision meshes itself
-    // in the game thread, because that would be slow.
+    // Mark physics meshes created, no matter if we actually have a
+    // collision mesh or not. We don't want the editor creating collision
+    // meshes itself in the game thread, because that would be slow.
     pBodySetup->bCreatedPhysicsMeshes = true;
     pBodySetup->bSupportUVsAndFaceRemap =
         UPhysicsSettings::Get()->bSupportUVFromHitResults;
@@ -3701,7 +3784,6 @@ static void loadPrimitiveGameThreadPart(
 }
 
 static void loadVoxelsGameThreadPart(
-    CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadedPrimitiveResult& loadResult,
     const Cesium3DTilesSelection::Tile& tile,
@@ -3748,8 +3830,7 @@ static void loadVoxelsGameThreadPart(
   }
 }
 
-static void loadGaussianSplatsGameThreadPart(
-    CesiumGltf::Model& model,
+static UCesiumGltfGaussianSplatComponent* loadGaussianSplatsGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadedPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
@@ -3788,19 +3869,23 @@ static void loadGaussianSplatsGameThreadPart(
   primData.IndexAccessor = std::move(loadResult.IndexAccessor);
   primData.HighPrecisionNodeTransform = loadResult.transform;
   pGaussianSplat->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+  return pGaussianSplat;
 }
 
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 UCesiumGltfComponent::CreateOffGameThread(
-    const CesiumAsync::AsyncSystem& AsyncSystem,
-    const glm::dmat4x4& Transform,
-    CreateModelOptions&& Options,
-    const CesiumGeospatial::Ellipsoid& Ellipsoid) {
+    const CesiumAsync::AsyncSystem& asyncSystem,
+    const glm::dmat4x4& tileTransform,
+    CreateModelOptions&& options,
+    ACesium3DTileset* pTilesetActor,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   return loadModelAnyThreadPart(
-      AsyncSystem,
-      Transform,
-      std::move(Options),
-      Ellipsoid);
+      asyncSystem,
+      tileTransform,
+      std::move(options),
+      pTilesetActor,
+      ellipsoid);
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
@@ -3820,12 +3905,6 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
-
-  // TODO: was this a common case before?
-  // (This code checked if there were no loaded primitives in the model)
-  // if (result.size() == 0) {
-  //   return nullptr;
-  // }
 
   UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
   pGltf->pTile = &tile;
@@ -3862,19 +3941,9 @@ UCesiumGltfComponent::CreateOffGameThread(
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
         if (primitive.pGaussianSplatData) {
-          loadGaussianSplatsGameThreadPart(
-              model,
-              pGltf,
-              primitive,
-              cesiumToUnrealTransform,
-              pTilesetActor);
+          return;
         } else if (primitive.voxelPropertyAttributeIndex) {
-          loadVoxelsGameThreadPart(
-              model,
-              pGltf,
-              primitive,
-              tile,
-              pTilesetActor);
+          loadVoxelsGameThreadPart(pGltf, primitive, tile, pTilesetActor);
         } else {
           loadPrimitiveGameThreadPart(
               model,
@@ -4030,9 +4099,9 @@ void UCesiumGltfComponent::AttachRasterTile(
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
         CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
-        // If this material uses material layers and has the Cesium user data,
-        // set the parameters on each material layer that maps to this overlay
-        // tile.
+        // If this material uses material layers and has the Cesium user
+        // data, set the parameters on each material layer that maps to this
+        // overlay tile.
         if (pCesiumData) {
           FString name(
               UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
@@ -4095,9 +4164,9 @@ void UCesiumGltfComponent::DetachRasterTile(
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
-        // If this material uses material layers and has the Cesium user data,
-        // clear the parameters on each material layer that maps to this
-        // overlay tile.
+        // If this material uses material layers and has the Cesium user
+        // data, clear the parameters on each material layer that maps to
+        // this overlay tile.
         if (pCesiumData) {
           FString name(
               UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
@@ -4232,7 +4301,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
       MoveTemp(materials),
       MoveTemp(pFaceRemap),
       nullptr,
-      // The value passed in for bInCullsBackFaceRaycast will be overridden by
-      // UBodySetup::bDoubleSidedGeometry, so it doesn't matter here.
+      // The value passed in for bInCullsBackFaceRaycast will be overridden
+      // by UBodySetup::bDoubleSidedGeometry, so it doesn't matter here.
       /*bInCullsBackFaceRaycast*/ false);
 }

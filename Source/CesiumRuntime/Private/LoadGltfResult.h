@@ -30,6 +30,8 @@
 #include <unordered_map>
 #include <vector>
 
+class UCesiumGltfComponent;
+
 namespace LoadGltfResult {
 /**
  * Represents the result of loading a glTF primitive on a load thread.
@@ -194,6 +196,12 @@ struct LoadedMeshResult {
   LoadedMeshResult(LoadedMeshResult&& other) = default;
   LoadedMeshResult& operator=(LoadedMeshResult&& other) = default;
 
+  /**
+   * Used if a mesh required preconstruction of a UCesiumGltfComponent while
+   * loading (e.g., for Gaussian splats).
+   */
+  UCesiumGltfComponent* pGltfComponent = nullptr;
+
   std::vector<LoadedPrimitiveResult> primitiveResults{};
 };
 
@@ -207,6 +215,12 @@ struct LoadedNodeResult {
   LoadedNodeResult(LoadedNodeResult&& other) = default;
 
   std::optional<LoadedMeshResult> meshResult = std::nullopt;
+  /**
+   * Whether the mesh of this node requires additional operation on the main
+   * thread. This avoids rendering desyncs between cesium-native and
+   * CesiumGaussianSplatSubsystem.
+   */
+  bool requiresMainThreadContinuation;
   /**
    * Array of instance transforms, if any.
    */
@@ -233,13 +247,15 @@ struct LoadedModelResult {
   /** Encodes the EXT_structural_metadata on a glTF model. */
   EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
-   * Metadata statistics to pass to the Unreal material, mapped by generated
-   * parameter name.
+   * Metadata statistics to pass to the Unreal material, if any, mapped by
+   * generated parameter name.
    */
   TMap<FString, FCesiumMetadataValue> metadataStatistics;
 };

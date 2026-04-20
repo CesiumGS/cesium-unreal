@@ -55,21 +55,21 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   const CesiumGeospatial::Ellipsoid& ellipsoid = tileLoadResult.ellipsoid;
 
-  CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
-      pHalfFuture = UCesiumGltfComponent::CreateOffGameThread(
+  CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult> future =
+      UCesiumGltfComponent::CreateOffGameThread(
           asyncSystem,
           transform,
           std::move(options),
+          this->_pActor,
           ellipsoid);
 
-  return MoveTemp(pHalfFuture)
-      .thenImmediately(
-          [](UCesiumGltfComponent::CreateOffGameThreadResult&& result)
-              -> Cesium3DTilesSelection::TileLoadResultAndRenderResources {
-            return Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-                std::move(result.TileLoadResult),
-                result.HalfConstructed.Release()};
-          });
+  return MoveTemp(future).thenImmediately(
+      [](UCesiumGltfComponent::CreateOffGameThreadResult&& result)
+          -> Cesium3DTilesSelection::TileLoadResultAndRenderResources {
+        return Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+            std::move(result.TileLoadResult),
+            result.HalfConstructed.Release()};
+      });
 }
 
 void* UnrealPrepareRendererResources::prepareInMainThread(

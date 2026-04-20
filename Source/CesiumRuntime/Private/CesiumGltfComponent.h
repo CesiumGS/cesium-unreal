@@ -74,21 +74,22 @@ public:
   };
 
   static CesiumAsync::Future<CreateOffGameThreadResult> CreateOffGameThread(
-      const CesiumAsync::AsyncSystem& AsyncSystem,
-      const glm::dmat4x4& Transform,
-      CreateGltfOptions::CreateModelOptions&& Options,
-      const CesiumGeospatial::Ellipsoid& Ellipsoid =
+      const CesiumAsync::AsyncSystem& asyncSystem,
+      const glm::dmat4x4& tileTransform,
+      CreateGltfOptions::CreateModelOptions&& options,
+      ACesium3DTileset* pTilesetActor,
+      const CesiumGeospatial::Ellipsoid& ellipsoid =
           CesiumGeospatial::Ellipsoid::WGS84);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       CesiumGltf::Model& model,
-      ACesium3DTileset* ParentActor,
-      TUniquePtr<HalfConstructed> HalfConstructed,
-      const glm::dmat4x4& CesiumToUnrealTransform,
-      UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseTranslucentMaterial,
-      UMaterialInterface* BaseWaterMaterial,
-      FCustomDepthParameters CustomDepthParameters,
+      ACesium3DTileset* pTilesetActor,
+      TUniquePtr<HalfConstructed> pHalfConstructed,
+      const glm::dmat4x4& cesiumToUnrealTransform,
+      UMaterialInterface* pBaseMaterial,
+      UMaterialInterface* pBaseTranslucentMaterial,
+      UMaterialInterface* pBaseWaterMaterial,
+      FCustomDepthParameters customDepthParameters,
       const Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision,
       bool doubleSidedCollisions,

@@ -124,4 +124,6 @@ public:
    * The gaussian splat data that will be used to render this component.
    */
   FCesiumGltfGaussianSplatData Data;
+  
+  CesiumAsync::Promise<void> registerWithSubsystemPromise;
 };

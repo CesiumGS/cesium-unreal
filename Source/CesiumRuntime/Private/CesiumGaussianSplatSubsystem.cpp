@@ -16,7 +16,7 @@
 
 namespace {
 FBox CalculateBounds(
-    const TArray<const UCesiumGltfGaussianSplatComponent*>& Components) {
+    const TArray<UCesiumGltfGaussianSplatComponent*>& Components) {
   std::optional<FBox> Bounds;
   for (const UCesiumGltfGaussianSplatComponent* Component : Components) {
     check(Component);
@@ -121,19 +121,25 @@ void UCesiumGaussianSplatSubsystem::Deinitialize() {
 }
 
 void UCesiumGaussianSplatSubsystem::RegisterSplat(
-    UCesiumGltfGaussianSplatComponent* Component) {
-  check(Component);
-  this->SplatComponents.Add(Component);
-  this->_splatCount += Component->Data.NumSplats;
+    UCesiumGltfGaussianSplatComponent* pComponent) {
+  check(pComponent);
+  this->SplatComponents.Add(pComponent);
+  this->_splatCount += pComponent->Data.NumSplats;
   this->makeInterfaceDirty();
+
+  this->_uploadingComponents.Add(pComponent);
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
-    UCesiumGltfGaussianSplatComponent* Component) {
-  check(Component);
-  this->SplatComponents.Remove(Component);
-  this->_splatCount -= Component->Data.NumSplats;
+    UCesiumGltfGaussianSplatComponent* pComponent) {
+  check(pComponent);
+  this->SplatComponents.Remove(pComponent);
+  this->_splatCount -= pComponent->Data.NumSplats;
   this->makeInterfaceDirty();
+
+  if (this->_uploadingComponents.Contains(pComponent)) {
+    this->_uploadingComponents.Remove(pComponent);
+  }
 }
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
@@ -266,6 +272,12 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
         FName(TEXT("SplatCount")),
         this->_splatCount);
     this->_pNiagaraComponent->SetPaused(false);
+
+    for (UCesiumGltfGaussianSplatComponent* pComponent :
+         this->_uploadingComponents) {
+      pComponent->registerWithSubsystemPromise.resolve();
+    }
+    this->_uploadingComponents.Empty();
   }
 }
 
