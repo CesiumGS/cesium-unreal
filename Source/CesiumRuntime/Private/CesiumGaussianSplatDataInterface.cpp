@@ -604,7 +604,7 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     return false;
   }
 
-  TArray<const UCesiumGltfGaussianSplatComponent*> Components;
+  pData->Components.Empty();
   int32 ShCoefficientCount = 0;
   int32 SplatCount = 0;
 
@@ -617,7 +617,7 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
       continue;
     }
 
-    Components.Add(pSplatComponent);
+    pData->Components.Add(pSplatComponent);
     ShCoefficientCount +=
         pSplatComponent->Data.NumCoefficients * pSplatComponent->Data.NumSplats;
     SplatCount += pSplatComponent->Data.NumSplats;
@@ -631,8 +631,10 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
 
     pData->SplatsFence.reset();
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
-    ([RT_Proxy, Components, ShCoefficientCount, SplatCount](
-         FRHICommandListImmediate& RHICmdList) {
+    ([RT_Proxy,
+      &Components = pData->Components,
+      ShCoefficientCount,
+      SplatCount](FRHICommandListImmediate& RHICmdList) {
       updatePerSplatData(
           RHICmdList,
           Components,
@@ -649,7 +651,7 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     pData->MatricesFence.reset();
     ENQUEUE_RENDER_COMMAND(FUpdateCesiumGaussianSplatMatrices)
     ([RT_Proxy,
-      Components = MoveTemp(Components)](FRHICommandListImmediate& RHICmdList) {
+      &Components = pData->Components](FRHICommandListImmediate& RHICmdList) {
       updateTileTransforms(
           RHICmdList,
           Components,
@@ -690,4 +692,16 @@ bool UCesiumGaussianSplatDataInterface::IsUpdatingForWorld(
 
   return (MatricesFence && !MatricesFence->IsFenceComplete()) ||
          (SplatsFence && !SplatsFence->IsFenceComplete());
+}
+
+TSet<const UCesiumGltfGaussianSplatComponent*>
+UCesiumGaussianSplatDataInterface::GetComponentsInUpdateForWorld(
+    UWorld* pWorld) const {
+  if (!this->_worldToProxyData.Contains(pWorld)) {
+    return TSet<const UCesiumGltfGaussianSplatComponent*>();
+  }
+  FNDICesiumGaussianSplats_InstanceData* pInstanceData =
+      this->_worldToProxyData.FindRef(pWorld);
+  return TSet<const UCesiumGltfGaussianSplatComponent*>(
+      pInstanceData->Components);
 }

@@ -12,6 +12,7 @@
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
 class UCesiumGaussianSplatSubsystem;
+class UCesiumGltfGaussianSplatComponent;
 
 struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
     : public FNiagaraDataInterfaceProxy {
@@ -32,6 +33,7 @@ struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
 };
 
 struct FNDICesiumGaussianSplats_InstanceData {
+  TArray<const UCesiumGltfGaussianSplatComponent*> Components;
   std::optional<FRenderCommandFence> SplatsFence;
   std::optional<FRenderCommandFence> MatricesFence;
 };
@@ -92,6 +94,12 @@ public:
    * world.
    */
   bool IsUpdatingForWorld(UWorld* pWorld) const;
+
+  /**
+   * Gets the set of components that were included in the last GPU update.
+   */
+  TSet<const UCesiumGltfGaussianSplatComponent*>
+  GetComponentsInUpdateForWorld(UWorld* pWorld) const;
 
 protected:
 #if WITH_EDITORONLY_DATA

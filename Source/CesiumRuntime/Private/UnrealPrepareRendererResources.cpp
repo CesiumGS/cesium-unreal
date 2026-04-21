@@ -86,17 +86,8 @@ void* UnrealPrepareRendererResources::prepareInMainThread(
         renderContent.getModel(),
         this->_pActor,
         std::move(pHalf),
-        _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
-        this->_pActor->GetMaterial(),
-        this->_pActor->GetTranslucentMaterial(),
-        this->_pActor->GetWaterMaterial(),
-        this->_pActor->GetCustomDepthParameters(),
-        tile,
-        this->_pActor->GetCreateNavCollision(),
-        this->_pActor->GetEnableDoubleSidedCollisions(),
-        this->_pActor->GetReceiveDecals());
+        tile);
   }
-  // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
   return nullptr;
 }
 

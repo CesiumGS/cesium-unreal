@@ -84,7 +84,7 @@ private:
 
   int32 _splatCount = 0;
   bool _splatInterfaceDirty = true;
-  TSet<UCesiumGltfGaussianSplatComponent*> _uploadingComponents;
+  TSet<UCesiumGltfGaussianSplatComponent*> _newComponents;
 
   static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(
       "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'");

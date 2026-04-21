@@ -127,7 +127,7 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
   this->_splatCount += pComponent->Data.NumSplats;
   this->makeInterfaceDirty();
 
-  this->_uploadingComponents.Add(pComponent);
+  this->_newComponents.Add(pComponent);
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
@@ -137,9 +137,7 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
   this->_splatCount -= pComponent->Data.NumSplats;
   this->makeInterfaceDirty();
 
-  if (this->_uploadingComponents.Contains(pComponent)) {
-    this->_uploadingComponents.Remove(pComponent);
-  }
+  this->_newComponents.Remove(pComponent);
 }
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
@@ -268,17 +266,26 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     this->_pNiagaraComponent->SetPaused(true);
   } else {
     this->_splatInterfaceDirty = false;
+
+    if (this->_newComponents.Num()) {
+      TSet<const UCesiumGltfGaussianSplatComponent*> componentsInUpdate =
+          pDataInterface->GetComponentsInUpdateForWorld(pWorld);
+
+      for (UCesiumGltfGaussianSplatComponent* pComponent :
+           this->_newComponents) {
+        if (componentsInUpdate.Contains(pComponent)) {
+          componentsInUpdate.Remove(pComponent);
+
+          check(pComponent->registerWithSubsystemPromise);
+          pComponent->registerWithSubsystemPromise->resolve(true);
+        }
+      }
+    }
+
     this->_pNiagaraComponent->SetVariableInt(
         FName(TEXT("SplatCount")),
         this->_splatCount);
     this->_pNiagaraComponent->SetPaused(false);
-
-    for (UCesiumGltfGaussianSplatComponent* pComponent :
-         this->_uploadingComponents) {
-      check(pComponent->registerWithSubsystemPromise);
-      pComponent->registerWithSubsystemPromise->resolve();
-    }
-    this->_uploadingComponents.Empty();
   }
 }
 
@@ -306,6 +313,7 @@ void UCesiumGaussianSplatSubsystem::reset() {
   this->_pNiagaraActor = nullptr;
   this->_pNiagaraComponent = nullptr;
   this->_pLastCreatedWorld = nullptr;
+  this->_newComponents.Empty();
 
   this->SplatComponents.Empty();
   this->_splatCount = 0;

@@ -143,14 +143,16 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
-  check(IsInGameThread());
+  check(!this->registerWithSubsystemPromise);
+
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
 
   pSplatSubsystem->RegisterSplat(this);
+
   this->registerWithSubsystemPromise.emplace(
-      getAsyncSystem().createPromise<void>());
+      getAsyncSystem().createPromise<bool>());
 }
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
@@ -160,6 +162,11 @@ void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
       UCesiumGaussianSplatSubsystem::Get();
   if (IsValid(pSplatSubsystem)) {
     pSplatSubsystem->UnregisterSplat(this);
+  }
+
+  if (this->registerWithSubsystemPromise) {
+    this->registerWithSubsystemPromise->resolve(false);
+    this->registerWithSubsystemPromise.reset();
   }
 }
 
@@ -193,7 +200,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
   this->Positions.SetNum(positionView.size() * 4, EAllowShrinking::Yes);
   this->NumSplats = positionView.size();
 
-  TOptional<FBox> Bounds;
+  FBox bounds;
   for (int32 i = 0; i < positionView.size(); i++) {
     FVector Position(
         positionView[i].x * CesiumPrimitiveData::positionScaleFactor,
@@ -207,23 +214,22 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     this->Positions[i * 4 + 3] = 0.0;
 
     // Take this opportunity to update the bounds.
-    if (Bounds) {
-      Bounds->Min = FVector(
-          std::min(Bounds->Min.X, Position.X),
-          std::min(Bounds->Min.Y, Position.Y),
-          std::min(Bounds->Min.Z, Position.Z));
-      Bounds->Max = FVector(
-          std::max(Bounds->Max.X, Position.X),
-          std::max(Bounds->Max.Y, Position.Y),
-          std::max(Bounds->Max.Z, Position.Z));
+    if (i == 0) {
+      bounds.Min = FVector(Position.X, Position.Y, Position.Z);
+      bounds.Max = bounds.Min;
     } else {
-      Bounds = FBox();
-      Bounds->Min = FVector(Position.X, Position.Y, Position.Z);
-      Bounds->Max = Bounds->Min;
+      bounds.Min = FVector(
+          std::min(bounds.Min.X, Position.X),
+          std::min(bounds.Min.Y, Position.Y),
+          std::min(bounds.Min.Z, Position.Z));
+      Bounds.Max = FVector(
+          std::max(bounds.Max.X, Position.X),
+          std::max(bounds.Max.Y, Position.Y),
+          std::max(bounds.Max.Z, Position.Z));
     }
   }
 
-  this->Bounds = Bounds.Get(FBox());
+  this->Bounds = bounds;
 
   const std::unordered_map<std::string, int32_t>::const_iterator scaleIt =
       meshPrimitive.attributes.find("KHR_gaussian_splatting:SCALE");

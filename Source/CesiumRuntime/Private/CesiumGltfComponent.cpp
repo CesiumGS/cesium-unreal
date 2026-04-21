@@ -2696,26 +2696,31 @@ loadModelAnyThreadPart(
             return result;
           })
       .thenInMainThread(
-          [&asyncSystem, pTilesetActor](
+          [pTilesetActor](
               UCesiumGltfComponent::CreateOffGameThreadResult result) mutable {
-            if (!IsValid(pTilesetActor) || !result.HalfConstructed) {
-              return asyncSystem.createResolvedFuture(std::move(result));
+            // Not safe to capture asyncSystem here.
+            if (!IsValid(pTilesetActor) || !result.HalfConstructed.IsValid()) {
+              return getAsyncSystem().createResolvedFuture(std::move(result));
             }
 
-            HalfConstructedReal* pHalfReal =
+            HalfConstructedReal* pReal =
                 static_cast<HalfConstructedReal*>(result.HalfConstructed.Get());
-            if (!pHalfReal->requiresMainThreadContinuation) {
-              return asyncSystem.createResolvedFuture(std::move(result));
+            if (!pReal->requiresMainThreadContinuation) {
+              return getAsyncSystem().createResolvedFuture(std::move(result));
             }
 
             UCesiumGltfComponent* pGltf =
                 NewObject<UCesiumGltfComponent>(pTilesetActor);
-            pHalfReal->loadModelResult.pGltfComponent = pGltf;
+            pGltf->SetFlags(
+                RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+            pGltf->SetVisibility(false, true);
+
+            pReal->loadModelResult.pGltfComponent = pGltf;
 
             const glm::dmat4x4 cesiumToUnrealTransform =
                 pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform();
-            std::vector<CesiumAsync::SharedFuture<void>> futures;
-            for (auto& nodeResult : pHalfReal->loadModelResult.nodeResults) {
+            std::vector<CesiumAsync::SharedFuture<bool>> futures;
+            for (auto& nodeResult : pReal->loadModelResult.nodeResults) {
               if (!nodeResult.meshResult) {
                 continue;
               }
@@ -2734,6 +2739,7 @@ loadModelAnyThreadPart(
                         primitiveResult,
                         cesiumToUnrealTransform,
                         pTilesetActor);
+
                 if (pSplatComponent) {
                   futures.emplace_back(
                       pSplatComponent->registerWithSubsystemPromise->getFuture()
@@ -2742,12 +2748,21 @@ loadModelAnyThreadPart(
               }
             }
 
-            return asyncSystem.all(std::move(futures))
-                .thenImmediately([result = std::move(result)]() mutable {
-                  return std::move(result);
-                });
+            return getAsyncSystem()
+                .all(std::move(futures))
+                .thenInWorkerThread(
+                    [result = std::move(result)](
+                        std::vector<bool> promiseResults) mutable {
+                      for (bool success : promiseResults) {
+                        if (!success) {
+                          result.HalfConstructed.Reset();
+                          break;
+                        }
+                      }
+                      return std::move(result);
+                    });
           })
-      .thenImmediately(
+      .thenInWorkerThread(
           [](UCesiumGltfComponent::CreateOffGameThreadResult&& result) mutable {
             return result;
           });
@@ -3344,11 +3359,7 @@ static void loadPrimitiveGameThreadPart(
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadedPrimitiveResult& loadResult,
-    const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision,
-    bool enableDoubleSidedCollisions,
-    bool receiveDecals,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
@@ -3422,7 +3433,8 @@ static void loadPrimitiveGameThreadPart(
   primData.PositionAccessor = std::move(loadResult.PositionAccessor);
   primData.IndexAccessor = std::move(loadResult.IndexAccessor);
   primData.HighPrecisionNodeTransform = loadResult.transform;
-  pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+  pCesiumPrimitive->UpdateTransformFromCesium(
+      pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
   UStaticMesh* pStaticMesh;
   {
@@ -3439,7 +3451,7 @@ static void loadPrimitiveGameThreadPart(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
     pMesh->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
-    pMesh->bReceivesDecals = receiveDecals;
+    pMesh->bReceivesDecals = pTilesetActor->GetReceiveDecals();
     if (loadResult.isUnlit) {
       pMesh->bCastDynamicShadow = false;
     }
@@ -3756,7 +3768,8 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
-      pBodySetup->bDoubleSidedGeometry = enableDoubleSidedCollisions;
+      pBodySetup->bDoubleSidedGeometry =
+          pTilesetActor->GetEnableDoubleSidedCollisions();
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
@@ -3768,7 +3781,7 @@ static void loadPrimitiveGameThreadPart(
         UPhysicsSettings::Get()->bSupportUVFromHitResults;
   }
 
-  if (createNavCollision) {
+  if (pTilesetActor->GetCreateNavCollision()) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateNavCollision)
     pStaticMesh->CreateNavCollision(true);
   }
@@ -3897,33 +3910,35 @@ UCesiumGltfComponent::CreateOffGameThread(
     CesiumGltf::Model& model,
     ACesium3DTileset* pTilesetActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
-    const glm::dmat4x4& cesiumToUnrealTransform,
-    UMaterialInterface* pBaseMaterial,
-    UMaterialInterface* pBaseTranslucentMaterial,
-    UMaterialInterface* pBaseWaterMaterial,
-    FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision,
-    bool enableDoubleSidedCollisions,
-    bool receiveDecals) {
+    const Cesium3DTilesSelection::Tile& tile) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
+  if (!IsValid(pTilesetActor) || !pHalfConstructed.IsValid()) {
+    // Don't do any processing for a tileset that has been destroyed.
+    return nullptr;
+  }
 
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
+  LoadGltfResult::LoadedModelResult& modelResult = pReal->loadModelResult;
 
   UCesiumGltfComponent* pGltf =
-      pReal->loadModelResult.pGltfComponent
-          ? pReal->loadModelResult.pGltfComponent
+      modelResult.pGltfComponent
+          ? modelResult.pGltfComponent
           : NewObject<UCesiumGltfComponent>(pTilesetActor);
   pGltf->pTile = &tile;
   pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   pGltf->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  pGltf->Metadata = std::move(pReal->loadModelResult.Metadata);
-  pGltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
+  pGltf->Metadata = std::move(modelResult.Metadata);
+  pGltf->EncodedMetadata = std::move(modelResult.EncodedMetadata);
   pGltf->EncodedMetadata_DEPRECATED =
-      std::move(pReal->loadModelResult.EncodedMetadata_DEPRECATED);
+      std::move(modelResult.EncodedMetadata_DEPRECATED);
+
+  UMaterialInterface* pBaseMaterial = pTilesetActor->GetMaterial();
+  UMaterialInterface* pBaseTranslucentMaterial =
+      pTilesetActor->GetTranslucentMaterial();
+  UMaterialInterface* pBaseWaterMaterial = pTilesetActor->GetWaterMaterial();
 
   if (pBaseMaterial) {
     pGltf->BaseMaterial = pBaseMaterial;
@@ -3937,14 +3952,14 @@ UCesiumGltfComponent::CreateOffGameThread(
     pGltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  pGltf->CustomDepthParameters = CustomDepthParameters;
+  pGltf->CustomDepthParameters = pTilesetActor->GetCustomDepthParameters();
   encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
   if (pGltf->EncodedMetadata_DEPRECATED) {
     encodeMetadataGameThreadPart(*pGltf->EncodedMetadata_DEPRECATED);
   }
 
-  for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
+  for (LoadedNodeResult& node : modelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
@@ -3963,11 +3978,7 @@ UCesiumGltfComponent::CreateOffGameThread(
               model,
               pGltf,
               primitive,
-              cesiumToUnrealTransform,
               tile,
-              createNavCollision,
-              enableDoubleSidedCollisions,
-              receiveDecals,
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures,

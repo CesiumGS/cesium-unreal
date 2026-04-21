@@ -85,15 +85,7 @@ public:
       CesiumGltf::Model& model,
       ACesium3DTileset* pTilesetActor,
       TUniquePtr<HalfConstructed> pHalfConstructed,
-      const glm::dmat4x4& cesiumToUnrealTransform,
-      UMaterialInterface* pBaseMaterial,
-      UMaterialInterface* pBaseTranslucentMaterial,
-      UMaterialInterface* pBaseWaterMaterial,
-      FCustomDepthParameters customDepthParameters,
-      const Cesium3DTilesSelection::Tile& tile,
-      bool createNavCollision,
-      bool doubleSidedCollisions,
-      bool receiveDecals);
+      const Cesium3DTilesSelection::Tile& tile);
 
   UCesiumGltfComponent();
 
