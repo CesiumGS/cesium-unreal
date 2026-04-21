@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added a "Clear Request Cache" button to `UCesiumRuntimeSettings` (Project Settings -> Plugins -> Cesium) that clears all entries from the SQLite request cache database.
+
 ### v2.25.0 - 2026-04-01
 
 ##### Additions :tada:
