@@ -254,39 +254,45 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
   }
 
   UCesiumGaussianSplatDataInterface* pDataInterface = this->getDataInterface();
-  if (!pDataInterface || !this->_splatInterfaceDirty) {
+  if (!pDataInterface) {
     return;
   }
+  UCesiumGaussianSplatDataInterface::ResourceState state =
+      pDataInterface->GetResourceState(pWorld);
 
-  // If no splats changed this frame, but the interface is still dirty, then
-  // we're waiting on the interface to complete its update.
-  if (pDataInterface->IsUpdatingForWorld(pWorld)) {
+  if (state == UCesiumGaussianSplatDataInterface::ResourceState::
+                   ExecutingRenderCommand) {
     // Pausing the Niagara system prevents incorrect LOD pop-ins as the buffers
     // update.
     this->_pNiagaraComponent->SetPaused(true);
-  } else {
-    this->_splatInterfaceDirty = false;
+    return;
+  }
 
-    if (this->_newComponents.Num()) {
-      TSet<const UCesiumGltfGaussianSplatComponent*> componentsInUpdate =
-          pDataInterface->GetComponentsInUpdateForWorld(pWorld);
+  this->_pNiagaraComponent->SetPaused(false);
 
-      for (UCesiumGltfGaussianSplatComponent* pComponent :
-           this->_newComponents) {
-        if (componentsInUpdate.Contains(pComponent)) {
-          componentsInUpdate.Remove(pComponent);
+  if (state == UCesiumGaussianSplatDataInterface::ResourceState::Dirty) {
+    check(!this->_pNiagaraComponent->IsPaused());
+    return;
+  }
 
-          check(pComponent->registerWithSubsystemPromise);
-          pComponent->registerWithSubsystemPromise->resolve(true);
-        }
+  if (this->_newComponents.Num()) {
+    TSet<const UCesiumGltfGaussianSplatComponent*> componentsInUpdate =
+        pDataInterface->GetComponentsInUpdateForWorld(pWorld);
+
+    for (UCesiumGltfGaussianSplatComponent* pComponent : this->_newComponents) {
+      if (componentsInUpdate.Contains(pComponent)) {
+        componentsInUpdate.Remove(pComponent);
+
+        check(pComponent->registerWithSubsystemPromise);
+        pComponent->registerWithSubsystemPromise->resolve(true);
       }
     }
-
-    this->_pNiagaraComponent->SetVariableInt(
-        FName(TEXT("SplatCount")),
-        this->_splatCount);
-    this->_pNiagaraComponent->SetPaused(false);
   }
+
+  this->_pNiagaraComponent->SetVariableInt(
+      FName(TEXT("SplatCount")),
+      this->_splatCount);
+  this->_pNiagaraComponent->SetPaused(false);
 }
 
 ETickableTickType UCesiumGaussianSplatSubsystem::GetTickableTickType() const {
@@ -331,8 +337,6 @@ void UCesiumGaussianSplatSubsystem::makeInterfaceDirty(bool tilesOnly) {
   } else {
     pDataInterface->MarkDirty();
   }
-
-  this->_splatInterfaceDirty = true;
 }
 
 UCesiumGaussianSplatDataInterface*

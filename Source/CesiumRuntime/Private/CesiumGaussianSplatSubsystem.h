@@ -83,7 +83,6 @@ private:
   bool _isTickEnabled = false;
 
   int32 _splatCount = 0;
-  bool _splatInterfaceDirty = true;
   TSet<UCesiumGltfGaussianSplatComponent*> _newComponents;
 
   static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(

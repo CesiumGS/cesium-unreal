@@ -34,8 +34,11 @@ struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
 
 struct FNDICesiumGaussianSplats_InstanceData {
   TArray<const UCesiumGltfGaussianSplatComponent*> Components;
+  int32 SplatCount;
   std::optional<FRenderCommandFence> SplatsFence;
   std::optional<FRenderCommandFence> MatricesFence;
+
+  void reset();
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
@@ -56,6 +59,8 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
   UCesiumGaussianSplatDataInterface(const FObjectInitializer& Initializer);
 
 public:
+  enum class ResourceState { Invalid, Idle, Dirty, ExecutingRenderCommand };
+
   /**
    * UNiagaraDataInterface overrides.
    */
@@ -87,19 +92,19 @@ public:
    */
   void MarkTilesDirty();
 
-  bool IsDirty() const { return this->_tilesDirty || this->_splatsDirty; }
-
   /**
-   * Whether any render command updates are currently in progress for the given
-   * world.
+   * Gets the state of the GPU resources necessary to render splats for the
+   * given world.
    */
-  bool IsUpdatingForWorld(UWorld* pWorld) const;
+  ResourceState GetResourceState(UWorld* pWorld) const;
 
   /**
    * Gets the set of components that were included in the last GPU update.
    */
   TSet<const UCesiumGltfGaussianSplatComponent*>
   GetComponentsInUpdateForWorld(UWorld* pWorld) const;
+
+  int32 GetSplatCountInUpdateForWorld(UWorld* pWorld) const;
 
 protected:
 #if WITH_EDITORONLY_DATA

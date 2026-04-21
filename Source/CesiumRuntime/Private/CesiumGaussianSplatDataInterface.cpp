@@ -39,6 +39,13 @@ FNiagaraDataInterfaceProxyCesiumGaussianSplats::
   this->SHNonZeroCoeffsBuffer.Release();
 }
 
+void FNDICesiumGaussianSplats_InstanceData::reset() {
+  this->Components.Empty();
+  this->SplatCount = 0;
+  this->SplatsFence.reset();
+  this->MatricesFence.reset();
+}
+
 namespace {
 void updateTileTransforms(
     FRHICommandListImmediate& RHICmdList,
@@ -594,19 +601,22 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     return true;
   }
 
-  bool isUpdatingMatrices =
-      pData->MatricesFence && !pData->MatricesFence->IsFenceComplete();
-  bool isUpdatingSplats =
-      pData->SplatsFence && !pData->SplatsFence->IsFenceComplete();
-  if (!this->IsDirty() || isUpdatingMatrices || isUpdatingSplats) {
+  switch (this->GetResourceState(pWorld)) {
+  case ResourceState::Invalid:
+    return true;
+  case ResourceState::ExecutingRenderCommand:
     // Skip early if render commands from a previous tick are still in progress,
     // or if there is otherwise nothing to be done.
     return false;
+  case ResourceState::Dirty:
+    break;
+  case ResourceState::Idle:
+  default:
+    return false;
   }
 
-  pData->Components.Empty();
-  int32 ShCoefficientCount = 0;
-  int32 SplatCount = 0;
+  pData->reset();
+  int32 shCoefficientCount = 0;
 
   // In PIE mode, components can belong to different worlds. This pre-counts
   // components to measure how much should actually be allocated.
@@ -618,37 +628,35 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     }
 
     pData->Components.Add(pSplatComponent);
-    ShCoefficientCount +=
+    pData->SplatCount += pSplatComponent->Data.NumSplats;
+    shCoefficientCount +=
         pSplatComponent->Data.NumCoefficients * pSplatComponent->Data.NumSplats;
-    SplatCount += pSplatComponent->Data.NumSplats;
   }
 
   FNiagaraDataInterfaceProxyCesiumGaussianSplats* RT_Proxy =
       this->GetProxyAs<FNiagaraDataInterfaceProxyCesiumGaussianSplats>();
 
-  if (this->_splatsDirty && !isUpdatingSplats) {
+  if (this->_splatsDirty) {
     this->_splatsDirty = false;
 
-    pData->SplatsFence.reset();
     ENQUEUE_RENDER_COMMAND(FUpdateGaussianSplatBuffers)
     ([RT_Proxy,
-      &Components = pData->Components,
-      ShCoefficientCount,
-      SplatCount](FRHICommandListImmediate& RHICmdList) {
+      &components = pData->Components,
+      shCoefficientCount,
+      splatCount = pData->SplatCount](FRHICommandListImmediate& RHICmdList) {
       updatePerSplatData(
           RHICmdList,
-          Components,
-          ShCoefficientCount,
-          SplatCount,
+          components,
+          shCoefficientCount,
+          splatCount,
           *RT_Proxy);
     });
     pData->SplatsFence.emplace().BeginFence();
   }
 
-  if (this->_tilesDirty && !isUpdatingMatrices) {
+  if (this->_tilesDirty) {
     this->_tilesDirty = false;
 
-    pData->MatricesFence.reset();
     ENQUEUE_RENDER_COMMAND(FUpdateCesiumGaussianSplatMatrices)
     ([RT_Proxy,
       &Components = pData->Components](FRHICommandListImmediate& RHICmdList) {
@@ -681,17 +689,25 @@ void UCesiumGaussianSplatDataInterface::MarkTilesDirty() {
   this->_tilesDirty = true;
 }
 
-bool UCesiumGaussianSplatDataInterface::IsUpdatingForWorld(
-    UWorld* pWorld) const {
+UCesiumGaussianSplatDataInterface::ResourceState
+UCesiumGaussianSplatDataInterface::GetResourceState(UWorld* pWorld) const {
   if (!this->_worldToProxyData.Contains(pWorld)) {
-    return false;
+    return ResourceState::Invalid;
   }
 
-  const auto& MatricesFence = this->_worldToProxyData[pWorld]->MatricesFence;
-  const auto& SplatsFence = this->_worldToProxyData[pWorld]->SplatsFence;
+  const auto& matricesFence = this->_worldToProxyData[pWorld]->MatricesFence;
+  const auto& splatsFence = this->_worldToProxyData[pWorld]->SplatsFence;
 
-  return (MatricesFence && !MatricesFence->IsFenceComplete()) ||
-         (SplatsFence && !SplatsFence->IsFenceComplete());
+  if ((matricesFence && !matricesFence->IsFenceComplete()) ||
+      (splatsFence && !splatsFence->IsFenceComplete())) {
+    return ResourceState::ExecutingRenderCommand;
+  }
+
+  if (this->_tilesDirty || this->_splatsDirty) {
+    return ResourceState::Dirty;
+  }
+
+  return ResourceState::Idle;
 }
 
 TSet<const UCesiumGltfGaussianSplatComponent*>
@@ -704,4 +720,11 @@ UCesiumGaussianSplatDataInterface::GetComponentsInUpdateForWorld(
       this->_worldToProxyData.FindRef(pWorld);
   return TSet<const UCesiumGltfGaussianSplatComponent*>(
       pInstanceData->Components);
+}
+
+int32 UCesiumGaussianSplatDataInterface::GetSplatCountInUpdateForWorld(
+    UWorld* pWorld) const {
+  return this->_worldToProxyData.Contains(pWorld)
+             ? this->_worldToProxyData.FindRef(pWorld)->SplatCount
+             : 0;
 }
