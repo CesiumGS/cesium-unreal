@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumRuntimeSettings.h"
+#include "CesiumAsync/SqliteCache.h"
 #include "CesiumRuntime.h"
 
 UCesiumRuntimeSettings::UCesiumRuntimeSettings(
@@ -9,7 +10,7 @@ UCesiumRuntimeSettings::UCesiumRuntimeSettings(
   CategoryName = FName(TEXT("Plugins"));
 }
 
-void UCesiumRuntimeSettings::ClearRequestCache() {
+/*static*/ void UCesiumRuntimeSettings::ClearRequestCache() {
   getCacheDatabase()->clearAll();
-  UE_LOG(LogCesium, Info, TEXT("Cesium request cache cleared."));
+  UE_LOG(LogCesium, Display, TEXT("Cesium request cache cleared."));
 }

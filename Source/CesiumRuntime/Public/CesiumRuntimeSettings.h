@@ -70,6 +70,6 @@ public:
   /**
    * Clears all entries from the request cache database.
    */
-  UFUNCTION()
-  void ClearRequestCache();
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static void ClearRequestCache();
 };
