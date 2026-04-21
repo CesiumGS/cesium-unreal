@@ -29,8 +29,7 @@ FCesiumRuntimeSettingsCustomization::MakeInstance() {
 
 void FCesiumRuntimeSettingsCustomization::CustomizeDetails(
     IDetailLayoutBuilder& DetailBuilder) {
-  IDetailCategoryBuilder& CacheCategory =
-      DetailBuilder.EditCategory("Cache");
+  IDetailCategoryBuilder& CacheCategory = DetailBuilder.EditCategory("Cache");
 
   UFunction* ClearFunction =
       UCesiumRuntimeSettings::StaticClass()->FindFunctionByName(
