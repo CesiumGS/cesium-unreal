@@ -114,38 +114,26 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
   UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       CesiumToUnrealTransform);
 
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
     EUpdateTransformFlags /*UpdateTransformFlags*/,
     ETeleportType /*Teleport*/) {
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
-  const FTransform& Transform = this->GetComponentTransform();
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
-  UE_LOG(
-      LogCesium,
-      Log,
-      TEXT("Transform visible: %s"),
-      this->IsVisible() ? TEXT("true") : TEXT("false"));
 }
 
 glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
@@ -155,29 +143,20 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RegisterSplat(this);
 }
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
   Super::BeginDestroy();
 
-  if (!IsValid(GEngine)) {
-    return;
-  }
-
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-
-  if (!IsValid(pSplatSubsystem)) {
-    return;
+      UCesiumGaussianSplatSubsystem::Get();
+  if (IsValid(pSplatSubsystem)) {
+    pSplatSubsystem->UnregisterSplat(this);
   }
-
-  pSplatSubsystem->UnregisterSplat(this);
 }
 
 FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(

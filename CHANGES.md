@@ -6,6 +6,10 @@
 
 - Added a "Clear Request Cache" Blueprint-callable function to `UCesiumRuntimeSettings` and a button to Project Settings -> Plugins -> Cesium that clears all entries from the SQLite request cache database.
 
+##### Fixes :wrench:
+
+- Fixed a bug where Gaussian splats would continually accumulate in the scene, eventually causing the application to crash.
+
 ### v2.25.0 - 2026-04-01
 
 ##### Additions :tada:
