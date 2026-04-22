@@ -82,6 +82,10 @@ private:
   UWorld* _pLastCreatedWorld = nullptr;
   bool _isTickEnabled = false;
 
+  UCesiumGaussianSplatDataInterface::ResourceState _lastResourceState =
+      UCesiumGaussianSplatDataInterface::ResourceState::Invalid;
+  bool _shouldRecreateSplats = true;
+  bool _shouldRecomputeBounds = true;
   int32 _splatCount = 0;
   TSet<UCesiumGltfGaussianSplatComponent*> _newComponents;
 

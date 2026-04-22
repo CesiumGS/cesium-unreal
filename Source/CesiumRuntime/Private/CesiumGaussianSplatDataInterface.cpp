@@ -623,7 +623,8 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
   for (const UCesiumGltfGaussianSplatComponent* pSplatComponent :
        pSplatSystem->SplatComponents) {
     check(pSplatComponent);
-    if (pSplatComponent->GetWorld() != pWorld) {
+    if (pSplatComponent->GetWorld() != pWorld ||
+        pSplatComponent->IsBeingDestroyed()) {
       continue;
     }
 
@@ -667,7 +668,7 @@ bool UCesiumGaussianSplatDataInterface::PerInstanceTick(
     });
     pData->MatricesFence.emplace().BeginFence();
   }
-
+  UE_LOG(LogCesium, Warning, TEXT("Sent render commands"));
   return false;
 }
 

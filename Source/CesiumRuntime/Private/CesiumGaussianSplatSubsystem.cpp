@@ -125,9 +125,11 @@ void UCesiumGaussianSplatSubsystem::RegisterSplat(
   check(pComponent);
   this->SplatComponents.Add(pComponent);
   this->_splatCount += pComponent->Data.NumSplats;
-  this->makeInterfaceDirty();
+  // this->makeInterfaceDirty();
+  this->_shouldRecreateSplats = true;
 
   this->_newComponents.Add(pComponent);
+  UE_LOG(LogCesium, Warning, TEXT("Register"));
 }
 
 void UCesiumGaussianSplatSubsystem::UnregisterSplat(
@@ -135,19 +137,15 @@ void UCesiumGaussianSplatSubsystem::UnregisterSplat(
   check(pComponent);
   this->SplatComponents.Remove(pComponent);
   this->_splatCount -= pComponent->Data.NumSplats;
-  this->makeInterfaceDirty();
+  // this->makeInterfaceDirty();
+  this->_shouldRecreateSplats = true;
 
+  UE_LOG(LogCesium, Warning, TEXT("Unregister"));
   this->_newComponents.Remove(pComponent);
 }
 
 void UCesiumGaussianSplatSubsystem::RecomputeBounds() {
-  if (!IsValid(this->_pNiagaraComponent)) {
-    return;
-  }
-
-  const FBox Bounds = CalculateBounds(this->SplatComponents);
-  this->_pNiagaraComponent->SetSystemFixedBounds(Bounds);
-  this->makeInterfaceDirty(true /* tilesOnly */);
+  this->_shouldRecomputeBounds = true;
 }
 
 void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
@@ -224,7 +222,8 @@ void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
   this->_pNiagaraActor = pActor;
 
   pActor->AddInstanceComponent(this->_pNiagaraComponent);
-  this->makeInterfaceDirty();
+  this->_shouldRecreateSplats = true;
+  // this->makeInterfaceDirty();
 }
 
 void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
@@ -265,14 +264,28 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     // Pausing the Niagara system prevents incorrect LOD pop-ins as the buffers
     // update.
     this->_pNiagaraComponent->SetPaused(true);
+    UE_LOG(LogCesium, Warning, TEXT("Paused"));
+    this->_lastResourceState = state;
     return;
   }
 
   this->_pNiagaraComponent->SetPaused(false);
 
   if (state == UCesiumGaussianSplatDataInterface::ResourceState::Dirty) {
+    UE_LOG(LogCesium, Warning, TEXT("Unpaused; dirty"));
     check(!this->_pNiagaraComponent->IsPaused());
+    this->_lastResourceState = state;
     return;
+  }
+
+  UE_LOG(LogCesium, Warning, TEXT("Unpaused; idle"));
+
+  if (_lastResourceState == UCesiumGaussianSplatDataInterface::ResourceState::
+                                ExecutingRenderCommand) {
+    this->_pNiagaraComponent->SetVariableInt(
+        FName(TEXT("SplatCount")),
+        this->_splatCount);
+    this->_pNiagaraComponent->SetPaused(false);
   }
 
   if (this->_newComponents.Num()) {
@@ -289,10 +302,21 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     }
   }
 
-  this->_pNiagaraComponent->SetVariableInt(
-      FName(TEXT("SplatCount")),
-      this->_splatCount);
-  this->_pNiagaraComponent->SetPaused(false);
+  if (this->_shouldRecomputeBounds) {
+    const FBox Bounds = CalculateBounds(this->SplatComponents);
+    this->_pNiagaraComponent->SetSystemFixedBounds(Bounds);
+    this->makeInterfaceDirty(true /* tilesOnly */);
+    UE_LOG(LogCesium, Warning, TEXT("RecomputeBounds"));
+    this->_shouldRecomputeBounds = false;
+  }
+
+  if (this->_shouldRecreateSplats) {
+    this->makeInterfaceDirty();
+    UE_LOG(LogCesium, Warning, TEXT("RecreateSplats"));
+    this->_shouldRecreateSplats = false;
+  }
+
+  this->_lastResourceState = state;
 }
 
 ETickableTickType UCesiumGaussianSplatSubsystem::GetTickableTickType() const {
@@ -323,7 +347,11 @@ void UCesiumGaussianSplatSubsystem::reset() {
 
   this->SplatComponents.Empty();
   this->_splatCount = 0;
-  this->makeInterfaceDirty();
+  this->_shouldRecreateSplats = true;
+  this->_shouldRecomputeBounds = true;
+  this->_lastResourceState =
+      UCesiumGaussianSplatDataInterface::ResourceState::Invalid;
+  //  this->makeInterfaceDirty();
 }
 
 void UCesiumGaussianSplatSubsystem::makeInterfaceDirty(bool tilesOnly) {

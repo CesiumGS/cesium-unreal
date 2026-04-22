@@ -117,6 +117,7 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
+  UE_LOG(LogCesium, Warning, TEXT("UpdateTransformFromCesium"));
   pSplatSubsystem->RecomputeBounds();
 }
 
@@ -126,6 +127,7 @@ void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
+  UE_LOG(LogCesium, Warning, TEXT("OnUpdateTransform"));
   pSplatSubsystem->RecomputeBounds();
 }
 
@@ -133,6 +135,7 @@ void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
       UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
+  UE_LOG(LogCesium, Warning, TEXT("OnVisibilityChanged"));
   pSplatSubsystem->RecomputeBounds();
 }
 
