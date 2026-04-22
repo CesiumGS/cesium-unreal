@@ -6,16 +6,20 @@
 #include "NiagaraDataInterface.h"
 #include "NiagaraDataInterfaceBase.h"
 #include "RHIUtilities.h"
+#include "RenderCommandFence.h"
+#include <optional>
 
 #include "CesiumGaussianSplatDataInterface.generated.h"
 
 class UCesiumGaussianSplatSubsystem;
 
-struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
-  FNDIGaussianSplatProxy(class UCesiumGaussianSplatDataInterface* InOwner);
+struct FNiagaraDataInterfaceProxyCesiumGaussianSplats
+    : public FNiagaraDataInterfaceProxy {
+  virtual ~FNiagaraDataInterfaceProxyCesiumGaussianSplats();
 
-  TObjectPtr<class UCesiumGaussianSplatDataInterface> Owner = nullptr;
-  FCriticalSection BufferLock;
+  virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
+    return 0;
+  }
 
   FReadBuffer TileIndicesBuffer;
   FReadBuffer TileTransformsBuffer;
@@ -25,15 +29,11 @@ struct FNDIGaussianSplatProxy : public FNiagaraDataInterfaceProxy {
   FReadBuffer OrientationsBuffer;
   FReadBuffer ColorsBuffer;
   FReadBuffer SHNonZeroCoeffsBuffer;
+};
 
-  bool bNeedsUpdate = true;
-  bool bMatricesNeedUpdate = true;
-
-  virtual int32 PerInstanceDataPassedToRenderThreadSize() const override {
-    return 0;
-  }
-
-  void UploadToGPU(UCesiumGaussianSplatSubsystem* SplatSystem);
+struct FNDICesiumGaussianSplats_InstanceData {
+  std::optional<FRenderCommandFence> SplatsFence;
+  std::optional<FRenderCommandFence> MatricesFence;
 };
 
 BEGIN_SHADER_PARAMETER_STRUCT(FGaussianSplatShaderParams, )
@@ -53,8 +53,47 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 
   UCesiumGaussianSplatDataInterface(const FObjectInitializer& Initializer);
 
+public:
+  /**
+   * UNiagaraDataInterface overrides.
+   */
+  virtual bool InitPerInstanceData(
+      void* PerInstanceData,
+      FNiagaraSystemInstance* SystemInstance) override;
+  virtual void DestroyPerInstanceData(
+      void* PerInstanceData,
+      FNiagaraSystemInstance* SystemInstance) override;
+  virtual bool PerInstanceTick(
+      void* PerInstanceData,
+      FNiagaraSystemInstance* SystemInstance,
+      float DeltaSeconds) override;
+  virtual int32 PerInstanceDataSize() const override;
+
+  virtual bool HasPreSimulateTick() const override { return true; }
   virtual bool CanExecuteOnTarget(ENiagaraSimTarget target) const override;
 
+  /**
+   * Marks all render data dirty so it can be rewritten to the GPU at the next
+   * opportunity.
+   */
+  void MarkDirty();
+
+  /**
+   * Marks only the tile information dirty. This is more efficient when tiles
+   * remain loaded but their information is dynamically changed, such as their
+   * visibility or transform.
+   */
+  void MarkTilesDirty();
+
+  bool IsDirty() const { return this->_tilesDirty || this->_splatsDirty; }
+
+  /**
+   * Whether any render command updates are currently in progress for the given
+   * world.
+   */
+  bool IsUpdatingForWorld(UWorld* pWorld) const;
+
+protected:
 #if WITH_EDITORONLY_DATA
   virtual void GetParameterDefinitionHLSL(
       const FNiagaraDataInterfaceGPUParamInfo& ParamInfo,
@@ -79,11 +118,9 @@ class UCesiumGaussianSplatDataInterface : public UNiagaraDataInterface {
 
   virtual void PostInitProperties() override;
 
-  UCesiumGaussianSplatSubsystem* GetSubsystem() const;
+private:
+  bool _splatsDirty = true;
+  bool _tilesDirty = true;
 
-public:
-  void Refresh();
-  void RefreshMatrices();
-
-  FScopeLock LockGaussianBuffers();
+  TMap<UWorld*, FNDICesiumGaussianSplats_InstanceData*> _worldToProxyData;
 };

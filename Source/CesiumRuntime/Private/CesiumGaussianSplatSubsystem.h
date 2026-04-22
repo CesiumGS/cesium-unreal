@@ -31,6 +31,11 @@ class UCesiumGaussianSplatSubsystem : public UEngineSubsystem,
   GENERATED_BODY()
 
 public:
+  /**
+   * Gets the active UCesiumGaussianSplatSubsystem instance.
+   */
+  static UCesiumGaussianSplatSubsystem* Get();
+
   virtual void Initialize(FSubsystemCollectionBase& Collection) override;
   virtual void Deinitialize() override;
 
@@ -39,22 +44,18 @@ public:
    * of splat components to render.
    */
   void RegisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+
   /**
-   * Unregisters a previously-registered splat component, removing it from the
-   * list of splat components to render.
+   * Unregisters a splat component so that it is no longer rendered.
    */
   void UnregisterSplat(UCesiumGltfGaussianSplatComponent* Component);
+
   /**
    * Recomputes the bounds of the Niagara system that renders the splats. This
    * should be called when the transforms of any of the registered components
    * changes.
    */
   void RecomputeBounds();
-
-  /**
-   * The currently-registerd splat components.
-   */
-  TArray<UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
   virtual void Tick(float DeltaTime) override;
   virtual ETickableTickType GetTickableTickType() const override;
@@ -63,21 +64,26 @@ public:
   virtual bool IsTickableInEditor() const override;
   virtual bool IsTickable() const override;
 
-private:
-  void InitializeForWorld(UWorld& InWorld);
+  /**
+   * The currently registered splat components.
+   */
+  TArray<const UCesiumGltfGaussianSplatComponent*> SplatComponents;
 
-  void UpdateNiagaraComponent();
-  UCesiumGaussianSplatDataInterface* GetSplatInterface() const;
+private:
+  void reset();
+  void initializeForWorld(UWorld& InWorld);
+  void makeInterfaceDirty(bool tilesOnly = false);
+
+  UCesiumGaussianSplatDataInterface* getDataInterface() const;
 
   UNiagaraComponent* _pNiagaraComponent = nullptr;
-
   ACesiumGaussianSplatActor* _pNiagaraActor = nullptr;
-
   UWorld* _pLastCreatedWorld = nullptr;
   bool _isTickEnabled = false;
-  int32 _numSplats = 0;
 
-  // Dirty way to avoid running too many resets too quickly.
-  int32 _resetFrameCounter = 0;
-  bool _needsReset = false;
+  int32 _splatCount = 0;
+  bool _splatInterfaceDirty = true;
+
+  static constexpr TCHAR NiagaraSystemAssetPath[] = TEXT(
+      "/Script/Niagara.NiagaraSystem'/CesiumForUnreal/GaussianSplatting/GaussianSplatSystem.GaussianSplatSystem'");
 };
