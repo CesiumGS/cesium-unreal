@@ -67,9 +67,9 @@ void updateTileTransforms(
   // 7: Inverse tile transform row 3
   // 8: Tile scale (xyz), visibility (w)
   // 9: Tile rotation
-  const int32 VectorsPerComponent = 10;
+  const int32 vectorsPerComponent = 10;
 
-  const int32 totalVectorCount = Components.Num() * VectorsPerComponent;
+  const int32 totalVectorCount = Components.Num() * vectorsPerComponent;
   const uint32 requiredByteLength = totalVectorCount * sizeof(FVector4f);
 
   if (Buffer.NumBytes != requiredByteLength) {
@@ -94,35 +94,35 @@ void updateTileTransforms(
     const UCesiumGltfGaussianSplatComponent* pComponent = Components[i];
     check(pComponent);
 
-    const int32 Offset = i * VectorsPerComponent;
+    const int32 Offset = i * vectorsPerComponent;
 
-    glm::mat4 TileMatrix(pComponent->GetMatrix());
-    const FTransform& ComponentToWorld = pComponent->GetComponentToWorld();
-    FVector TileScale = ComponentToWorld.GetScale3D();
-    FQuat TileRotation = ComponentToWorld.GetRotation();
-    TileRotation.Normalize();
+    glm::mat4 tileMatrix(pComponent->GetMatrix());
+    const FTransform& componentToWorld = pComponent->GetComponentToWorld();
+    FVector tileScale = componentToWorld.GetScale3D();
+    FQuat tileRotation = componentToWorld.GetRotation();
+    tileRotation.Normalize();
 
     // Write in row-order for easy access in HLSL.
     pBufferData[Offset + 0] = FVector4f(
-        TileMatrix[0][0],
-        TileMatrix[1][0],
-        TileMatrix[2][0],
-        TileMatrix[3][0]);
+        tileMatrix[0][0],
+        tileMatrix[1][0],
+        tileMatrix[2][0],
+        tileMatrix[3][0]);
     pBufferData[Offset + 1] = FVector4f(
-        TileMatrix[0][1],
-        TileMatrix[1][1],
-        TileMatrix[2][1],
-        TileMatrix[3][1]);
+        tileMatrix[0][1],
+        tileMatrix[1][1],
+        tileMatrix[2][1],
+        tileMatrix[3][1]);
     pBufferData[Offset + 2] = FVector4f(
-        TileMatrix[0][2],
-        TileMatrix[1][2],
-        TileMatrix[2][2],
-        TileMatrix[3][2]);
+        tileMatrix[0][2],
+        tileMatrix[1][2],
+        tileMatrix[2][2],
+        tileMatrix[3][2]);
     pBufferData[Offset + 3] = FVector4f(
-        TileMatrix[0][3],
-        TileMatrix[1][3],
-        TileMatrix[2][3],
-        TileMatrix[3][3]);
+        tileMatrix[0][3],
+        tileMatrix[1][3],
+        tileMatrix[2][3],
+        tileMatrix[3][3]);
 
     glm::dmat4 inverseTileMatrix(glm::inverse(pComponent->GetMatrix()));
     pBufferData[Offset + 4] = FVector4f(
@@ -148,16 +148,16 @@ void updateTileTransforms(
 
     float visibility = pComponent->IsVisible() ? 1.0f : 0.0f;
     pBufferData[Offset + 8] = FVector4f(
-        static_cast<float>(TileScale.X),
-        static_cast<float>(TileScale.Y),
-        static_cast<float>(TileScale.Z),
+        static_cast<float>(tileScale.X),
+        static_cast<float>(tileScale.Y),
+        static_cast<float>(tileScale.Z),
         visibility);
 
     pBufferData[Offset + 9] = FVector4f(
-        static_cast<float>(TileRotation.X),
-        static_cast<float>(TileRotation.Y),
-        static_cast<float>(TileRotation.Z),
-        static_cast<float>(TileRotation.W));
+        static_cast<float>(tileRotation.X),
+        static_cast<float>(tileRotation.Y),
+        static_cast<float>(tileRotation.Z),
+        static_cast<float>(tileRotation.W));
   }
 
   RHICmdList.UnlockBuffer(Buffer.Buffer);
@@ -303,47 +303,47 @@ void updatePerSplatData(
       Components.Num() * sizeof(uint32) * 3,
       EResourceLockMode::RLM_WriteOnly));
 
-  int32 CoeffCountWritten = 0;
-  int32 SplatCountWritten = 0;
+  int32 coeffCountWritten = 0;
+  int32 splatCountWritten = 0;
   for (int32 i = 0; i < Components.Num(); i++) {
-    const UCesiumGltfGaussianSplatComponent* Component = Components[i];
-    check(Component);
+    const UCesiumGltfGaussianSplatComponent* pComponent = Components[i];
+    check(pComponent);
 
     FPlatformMemory::Memcpy(
-        reinterpret_cast<void*>(pPositionsBuffer + SplatCountWritten * 4),
-        Component->Data.Positions.GetData(),
-        Component->Data.Positions.Num() * sizeof(float));
+        reinterpret_cast<void*>(pPositionsBuffer + splatCountWritten * 4),
+        pComponent->Data.Positions.GetData(),
+        pComponent->Data.Positions.Num() * sizeof(float));
     FPlatformMemory::Memcpy(
-        reinterpret_cast<void*>(pScalesBuffer + SplatCountWritten * 4),
-        Component->Data.Scales.GetData(),
-        Component->Data.Scales.Num() * sizeof(float));
+        reinterpret_cast<void*>(pScalesBuffer + splatCountWritten * 4),
+        pComponent->Data.Scales.GetData(),
+        pComponent->Data.Scales.Num() * sizeof(float));
     FPlatformMemory::Memcpy(
-        reinterpret_cast<void*>(pOrientationsBuffer + SplatCountWritten * 4),
-        Component->Data.Orientations.GetData(),
-        Component->Data.Orientations.Num() * sizeof(float));
+        reinterpret_cast<void*>(pOrientationsBuffer + splatCountWritten * 4),
+        pComponent->Data.Orientations.GetData(),
+        pComponent->Data.Orientations.Num() * sizeof(float));
     FPlatformMemory::Memcpy(
-        reinterpret_cast<void*>(pColorsBuffer + SplatCountWritten * 4),
-        Component->Data.Colors.GetData(),
-        Component->Data.Colors.Num() * sizeof(float));
+        reinterpret_cast<void*>(pColorsBuffer + splatCountWritten * 4),
+        pComponent->Data.Colors.GetData(),
+        pComponent->Data.Colors.Num() * sizeof(float));
     if (ShCoefficientCount > 0) {
       FPlatformMemory::Memcpy(
           reinterpret_cast<void*>(
-              pSHNonZeroCoeffsBuffer + CoeffCountWritten * 4),
-          Component->Data.SphericalHarmonics.GetData(),
-          Component->Data.SphericalHarmonics.Num() * sizeof(float));
+              pSHNonZeroCoeffsBuffer + coeffCountWritten * 4),
+          pComponent->Data.SphericalHarmonics.GetData(),
+          pComponent->Data.SphericalHarmonics.Num() * sizeof(float));
     }
-    for (int32 j = 0; j < Component->Data.NumSplats; j++) {
-      pIndexBuffer[SplatCountWritten + j] = static_cast<uint32>(i);
+    for (int32 j = 0; j < pComponent->Data.NumSplats; j++) {
+      pIndexBuffer[splatCountWritten + j] = static_cast<uint32>(i);
     }
 
     pSHDegreesBuffer[i * 3] =
-        static_cast<uint32>(Component->Data.NumCoefficients);
-    pSHDegreesBuffer[i * 3 + 1] = static_cast<uint32>(CoeffCountWritten);
-    pSHDegreesBuffer[i * 3 + 2] = static_cast<uint32>(SplatCountWritten);
+        static_cast<uint32>(pComponent->Data.NumCoefficients);
+    pSHDegreesBuffer[i * 3 + 1] = static_cast<uint32>(coeffCountWritten);
+    pSHDegreesBuffer[i * 3 + 2] = static_cast<uint32>(splatCountWritten);
 
-    SplatCountWritten += Component->Data.NumSplats;
-    CoeffCountWritten +=
-        Component->Data.NumSplats * Component->Data.NumCoefficients;
+    splatCountWritten += pComponent->Data.NumSplats;
+    coeffCountWritten +=
+        pComponent->Data.NumSplats * pComponent->Data.NumCoefficients;
   }
 
   RHICmdList.UnlockBuffer(Proxy.PositionsBuffer.Buffer);

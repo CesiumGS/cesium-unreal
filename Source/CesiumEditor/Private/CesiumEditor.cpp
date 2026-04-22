@@ -15,6 +15,7 @@
 #include "CesiumMetadataValueCustomization.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettingsCustomization.h"
 #include "CesiumSunSky.h"
 #include "CesiumVoxelShaderBuilder.h"
 #include "Editor.h"
@@ -122,6 +123,7 @@ void registerDetailCustomization() {
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
   FCesium3DTilesetCustomization::Register(PropertyEditorModule);
   FCesiumMetadataValueCustomization::Register(PropertyEditorModule);
+  FCesiumRuntimeSettingsCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -139,6 +141,7 @@ void unregisterDetailCustomization() {
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
     FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
     FCesiumMetadataValueCustomization::Unregister(PropertyEditorModule);
+    FCesiumRuntimeSettingsCustomization::Unregister(PropertyEditorModule);
   }
 }
 
