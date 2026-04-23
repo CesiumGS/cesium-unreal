@@ -4,6 +4,7 @@
 
 #include "Cesium3DTileset.h"
 #include "CesiumCommon.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "Runtime/Launch/Resources/Version.h"
 
 using namespace Cesium3DTilesSelection;
@@ -12,6 +13,39 @@ CesiumViewExtension::CesiumViewExtension(const FAutoRegister& autoRegister)
     : FSceneViewExtensionBase(autoRegister) {}
 
 CesiumViewExtension::~CesiumViewExtension() = default;
+
+void CesiumViewExtension::PreRenderView_RenderThread(
+    FRDGBuilder& GraphBuilder,
+    FSceneView& InView) {
+  /*GraphBuilder.AddPass(
+      FRDGEventName(TEXT("EXT_mesh_primitive_edge_visibility Prepass")),
+      ERDGPassFlags::Raster,
+      [&InView, components = this->_componentsWithEdgeVisibility](
+          FRDGAsyncTask,
+          FRHICommandList& RHICmdList) {
+        for (UCesiumGltfPrimitiveComponent* pComponent : components) {
+          if (!IsValid(pComponent) || pComponent->IsBeingDestroyed() ||
+              !pComponent->IsVisible()) {
+            continue;
+          }
+
+          TObjectPtr<UStaticMesh> pMesh =
+              pComponent->GetMeshComponent().GetStaticMesh();
+          if (!IsValid(pMesh)) {
+            continue;
+          }
+
+          RHICmdList.DrawIndexedPrimitive(
+              pMesh->GetRenderData()->LODResources[0].IndexBuffer.GetRHI(),
+              0,
+              0,
+              0,
+              0,
+              0,
+              0);
+        }
+      });*/
+}
 
 TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
     const FPrimitiveComponentId& id,
@@ -65,7 +99,7 @@ void CesiumViewExtension::SetupView(
     FSceneView& InView) {}
 
 void CesiumViewExtension::BeginRenderViewFamily(
-    FSceneViewFamily& InViewFamily) {
+    FSceneViewFamily& /*InViewFamily*/) {
   if (!this->_isEnabled)
     return;
 

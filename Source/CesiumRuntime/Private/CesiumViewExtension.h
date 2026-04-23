@@ -13,9 +13,40 @@
 #include <unordered_set>
 
 class ACesium3DTileset;
+class UCesiumGltfPrimitiveComponent;
 
+/**
+ * @brief A view extension that enables Cesium for Unreal to hook into the
+ * Unreal rendering passes. This enables occlusion culling.
+ */
 class CesiumViewExtension : public FSceneViewExtensionBase {
+public:
+  CesiumViewExtension(const FAutoRegister& autoRegister);
+  ~CesiumViewExtension();
+
+  Cesium3DTilesSelection::TileOcclusionState getPrimitiveOcclusionState(
+      const FPrimitiveComponentId& id,
+      bool previouslyOccluded,
+      float frameTimeCutoff) const;
+
+  void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
+  void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
+  void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override;
+  void PostRenderViewFamily_RenderThread(
+      FRDGBuilder& GraphBuilder,
+      FSceneViewFamily& InViewFamily) override;
+
+  /**
+   * Called on render thread at the start of rendering, for each view, after
+   * PreRenderViewFamily_RenderThread call.
+   */
+  void PreRenderView_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView)
+      override;
+
+  void SetEnabled(bool enabled);
+
 private:
+#pragma region Occlusion Culling
   // Occlusion results for a single view.
   struct PrimitiveOcclusionResult {
     PrimitiveOcclusionResult(
@@ -93,24 +124,13 @@ private:
   // The last known frame number. This is used to determine when an occlusion
   // results aggregation is complete.
   int64_t _frameNumber_renderThread = -1;
+#pragma endregion
+
+#pragma region EXT_mesh_primitive_edge_visibility
+
+  TArray<UCesiumGltfPrimitiveComponent*> _componentsWithEdgeVisibility;
+
+#pragma endregion
 
   std::atomic<bool> _isEnabled = false;
-
-public:
-  CesiumViewExtension(const FAutoRegister& autoRegister);
-  ~CesiumViewExtension();
-
-  Cesium3DTilesSelection::TileOcclusionState getPrimitiveOcclusionState(
-      const FPrimitiveComponentId& id,
-      bool previouslyOccluded,
-      float frameTimeCutoff) const;
-
-  void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
-  void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
-  void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override;
-  void PostRenderViewFamily_RenderThread(
-      FRDGBuilder& GraphBuilder,
-      FSceneViewFamily& InViewFamily) override;
-
-  void SetEnabled(bool enabled);
 };
