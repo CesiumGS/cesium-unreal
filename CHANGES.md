@@ -4,6 +4,7 @@
 
 ##### Additions :tada:
 
+- Added `ACesium3DTileset::UnloadEditorTilesInPlayMode`, which toggles whether in-editor tileset instances should unload their tiles before Play-in-Editor begins. This can prevent the Editor from duplicating resources for the same tileset and potentially consuming too much memory.
 - Added a "Clear Request Cache" Blueprint-callable function to `UCesiumRuntimeSettings` and a button to Project Settings -> Plugins -> Cesium that clears all entries from the SQLite request cache database.
 
 ##### Fixes :wrench:
