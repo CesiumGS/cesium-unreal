@@ -25,6 +25,7 @@ struct FCesiumPropertyTableProperty;
 struct FCesiumPropertyTexture;
 
 struct FCesiumMetadataPropertyDetails;
+struct FMaterialParameterInfo;
 class UMaterialInstanceDynamic;
 enum EMaterialParameterAssociation : int;
 
@@ -538,11 +539,12 @@ FString createHlslSafeName(const FString& rawName);
 bool isSupportedPropertyTextureProperty(
     const FCesiumMetadataPropertyDetails& PropertyDetails);
 
+bool isSupportedPropertyAttributeProperty(
+    const FCesiumMetadataPropertyDetails& PropertyDetails);
+
 void SetPropertyParameterValue(
     UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation association,
-    int32 index,
-    const FString& name,
+    const FMaterialParameterInfo& info,
     ECesiumEncodedMetadataType type,
     const FCesiumMetadataValue& value,
     float defaultValue);

@@ -8,11 +8,12 @@
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumEncodedMetadataComponent.h"
-#include "CesiumFeaturesMetadataComponent.h"
+#include "CesiumFeaturesMetadataDescription.h"
 #include "CesiumGeoreference.h"
 #include "CesiumIonServer.h"
 #include "CesiumPointCloudShading.h"
 #include "CesiumSampleHeightResult.h"
+#include "CesiumVoxelMetadataComponent.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
@@ -36,9 +37,15 @@ class UMaterialInterface;
 class ACesiumCartographicSelection;
 class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
+class UCesiumFeaturesMetadataComponent;
+class UCesiumVoxelRendererComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
 class ICesium3DTilesetLifecycleEventReceiver;
+
+namespace Cesium3DTiles {
+struct ExtensionContent3dTilesContentVoxels;
+}
 
 namespace Cesium3DTilesSelection {
 class GltfModifier;
@@ -899,6 +906,16 @@ private:
   bool IgnoreKhrMaterialsUnlit = false;
 
   /**
+   * Whether this tileset should receive decals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetReceiveDecals,
+      BlueprintSetter = SetReceiveDecals,
+      Category = "Cesium|Rendering")
+  bool ReceiveDecals = true;
+
+  /**
    * A custom Material to use to render opaque elements in this tileset, in
    * order to implement custom visual effects.
    *
@@ -1148,6 +1165,11 @@ public:
   void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetReceiveDecals() const { return ReceiveDecals; }
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetReceiveDecals(bool bReceiveDecals);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
@@ -1321,6 +1343,14 @@ private:
       UCesiumEllipsoid* NewEllpisoid);
 
   /**
+   * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering
+   * voxel data.
+   */
+  void
+  createVoxelRenderer(const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
+                          VoxelExtension);
+
+  /**
    * Writes the values of all properties of this actor into the
    * TilesetOptions, to take them into account during the next
    * traversal.
@@ -1375,6 +1405,7 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
+  TWeakObjectPtr<UCesiumVoxelMetadataComponent> _pVoxelMetadataComponent;
 
   bool _destroyOnNextTick;
 
@@ -1385,6 +1416,12 @@ private:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   std::optional<FMetadataDescription> _metadataDescription_DEPRECATED;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
+   * The voxel renderer component used to render voxel data. Only used for voxel
+   * tilesets.
+   */
+  UCesiumVoxelRendererComponent* _pVoxelRendererComponent = nullptr;
 
   // For debug output
   uint32_t _lastTilesRendered;

@@ -119,6 +119,16 @@ public:
    */
   static constexpr double positionScaleFactor = 1024.0;
 
+  /**
+   * The scale matrix to apply to positions in the glTF primitive, derived from
+   * positionScaleFactor.
+   */
+  static constexpr glm::dmat4 positionScaleMatrix = glm::dmat4(
+      glm::dvec4(1.0 / positionScaleFactor, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, 1.0 / positionScaleFactor, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, 1.0 / positionScaleFactor, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
   void destroy();
 };
 

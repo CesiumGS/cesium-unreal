@@ -13,12 +13,18 @@
 
 #if WITH_EDITOR
 enum ECustomMaterialOutputType : int;
+class UMaterialExpressionParameter;
 
 enum class ECesiumEncodedMetadataType : uint8;
 enum class ECesiumEncodedMetadataComponentType : uint8;
-
-class UMaterialExpressionParameter;
+enum class ECesiumMetadataStatisticSemantic : uint8;
+struct FCesiumMetadataValue;
+struct FCesiumMetadataValueType;
 #endif
+
+namespace Cesium3DTiles {
+struct PropertyStatistics;
+}
 
 namespace GenerateMaterialUtility {
 #if WITH_EDITOR
@@ -115,12 +121,32 @@ UMaterialFunctionMaterialLayer*
 CreateMaterialLayer(const FString& PackageName, const FString& MaterialName);
 
 /**
- * Moves the generated nodes from the material state into the given material
- * layer.
+ * Creates a new material asset with the given name. If the specified package
+ * doesn't exist, this function creates it.
  */
-void MoveNodesToMaterialLayer(
+UMaterial*
+CreateMaterial(const FString& PackageName, const FString& MaterialName);
+
+typedef std::variant<UMaterial*, UMaterialFunctionMaterialLayer*>
+    MaterialPointer;
+
+/**
+ * Moves the generated nodes from the material state into the given material.
+ */
+void MoveNodesToMaterial(
     MaterialGenerationState& MaterialState,
-    UMaterialFunctionMaterialLayer* pMaterialLayer);
+    const MaterialPointer& Material);
+
+/**
+ * @brief Generates a parameter node corresponding to the given encoded
+ * metadata type.
+ */
+UMaterialExpressionParameter* GenerateParameterNode(
+    const MaterialPointer& Material,
+    const ECesiumEncodedMetadataType Type,
+    const FString& Name,
+    int32 NodeX,
+    int32 NodeY);
 
 /**
  * Computes a scalar for spacing out material nodes. The actual computation is
@@ -138,17 +164,11 @@ FString GetHlslTypeForEncodedType(
     ECesiumEncodedMetadataComponentType ComponentType);
 
 FString GetSwizzleForEncodedType(ECesiumEncodedMetadataType Type);
-
-/**
- * @brief Generates a parameter node corresponding to the given encoded
- * metadata type.
- */
-UMaterialExpressionParameter* GenerateParameterNode(
-    UMaterialFunctionMaterialLayer* TargetMaterialLayer,
-    const ECesiumEncodedMetadataType Type,
-    const FString& Name,
-    int32 NodeX,
-    int32 NodeY);
 #endif
+
+FCesiumMetadataValue getValueForSemantic(
+    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const FCesiumMetadataValueType& propertyType,
+    ECesiumMetadataStatisticSemantic semantic);
 
 } // namespace GenerateMaterialUtility

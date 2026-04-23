@@ -63,6 +63,7 @@ FCesium3DTilesetIonTroubleshooting OnCesium3DTilesetIonTroubleshooting{};
 FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting{};
 FCesiumFeaturesMetadataAddProperties OnCesiumFeaturesMetadataAddProperties{};
+FCesiumVoxelMetadataBuildShader OnCesiumVoxelMetadataBuildShader{};
 
 CesiumAsync::AsyncSystem& getAsyncSystem() noexcept {
   static CesiumAsync::AsyncSystem asyncSystem(

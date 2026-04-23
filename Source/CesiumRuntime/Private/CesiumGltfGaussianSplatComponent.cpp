@@ -20,7 +20,7 @@
 #include <fmt/format.h>
 
 namespace {
-int32 countShCoeffsOnPrimitive(CesiumGltf::MeshPrimitive& primitive) {
+int32 countShCoeffsOnPrimitive(const CesiumGltf::MeshPrimitive& primitive) {
   if (primitive.attributes.contains(
           "KHR_gaussian_splatting:SH_DEGREE_3_COEF_6")) {
     return 15;
@@ -40,8 +40,8 @@ int32 countShCoeffsOnPrimitive(CesiumGltf::MeshPrimitive& primitive) {
 }
 
 bool writeShCoeffs(
-    CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& meshPrimitive,
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& meshPrimitive,
     TArray<float>& data,
     int32 stride,
     int32 offset,
@@ -90,7 +90,7 @@ bool writeShCoeffs(
 
 template <typename T, typename ComponentT>
 void writeConvertedAccessor(
-    CesiumGltf::AccessorView<T>& accessorView,
+    const CesiumGltf::AccessorView<T>& accessorView,
     TArray<float>& data,
     int32 stride) {
   for (int32 i = 0; i < accessorView.size(); i++) {
@@ -114,38 +114,26 @@ void UCesiumGltfGaussianSplatComponent::UpdateTransformFromCesium(
   UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       CesiumToUnrealTransform);
 
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnUpdateTransform(
     EUpdateTransformFlags /*UpdateTransformFlags*/,
     ETeleportType /*Teleport*/) {
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
 }
 
 void UCesiumGltfGaussianSplatComponent::OnVisibilityChanged() {
-  const FTransform& Transform = this->GetComponentTransform();
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RecomputeBounds();
-  UE_LOG(
-      LogCesium,
-      Log,
-      TEXT("Transform visible: %s"),
-      this->IsVisible() ? TEXT("true") : TEXT("false"));
 }
 
 glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
@@ -155,34 +143,25 @@ glm::mat4x4 UCesiumGltfGaussianSplatComponent::GetMatrix() const {
 }
 
 void UCesiumGltfGaussianSplatComponent::RegisterWithSubsystem() {
-  check(GEngine);
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
+      UCesiumGaussianSplatSubsystem::Get();
   ensure(pSplatSubsystem);
-
   pSplatSubsystem->RegisterSplat(this);
 }
 
 void UCesiumGltfGaussianSplatComponent::BeginDestroy() {
   Super::BeginDestroy();
 
-  if (!IsValid(GEngine)) {
-    return;
-  }
-
   UCesiumGaussianSplatSubsystem* pSplatSubsystem =
-      GEngine->GetEngineSubsystem<UCesiumGaussianSplatSubsystem>();
-
-  if (!IsValid(pSplatSubsystem)) {
-    return;
+      UCesiumGaussianSplatSubsystem::Get();
+  if (IsValid(pSplatSubsystem)) {
+    pSplatSubsystem->UnregisterSplat(this);
   }
-
-  pSplatSubsystem->UnregisterSplat(this);
 }
 
 FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
-    CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& meshPrimitive) {
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& meshPrimitive) {
   const int32 numShCoeffs = countShCoeffsOnPrimitive(meshPrimitive);
   this->NumCoefficients = numShCoeffs;
 
@@ -327,7 +306,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     return;
   }
 
-  CesiumGltf::Accessor& colorAccessor = model.accessors[colorIt->second];
+  const CesiumGltf::Accessor& colorAccessor = model.accessors[colorIt->second];
   if (colorAccessor.componentType ==
       CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE) {
     CesiumGltf::AccessorView<glm::u8vec4> accessorView(model, colorIt->second);

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
@@ -50,22 +51,33 @@ struct LoadedPrimitiveResult {
    * The render data. This is populated so it can be set on the static mesh
    * created on the main thread.
    */
-  TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
+  TUniquePtr<FStaticMeshRenderData> pRenderData = nullptr;
 
   /**
-   * Data for rendering a gaussian splat. This will be used over `RenderData`
-   * when the primitive is a gaussian splat.
+   * Data for rendering a Gaussian splats. Used instead of `RenderData` when the
+   * primitive is a Gaussian splat.
    */
-  TUniquePtr<FCesiumGltfGaussianSplatData> GaussianSplatData = nullptr;
+  TUniquePtr<FCesiumGltfGaussianSplatData> pGaussianSplatData = nullptr;
 
   /**
-   * Returns whether or not this primitive has renderable data (either
-   * `RenderData` or `GaussianSplatData` are not nullptr). If this returns
-   * false, this primitive should be removed from consideration for rendering.
+   * The index of the property attribute that is used by voxels, if the
+   * primitive contains them.
+   */
+  std::optional<int32_t> voxelPropertyAttributeIndex;
+
+  /**
+   * Returns whether or not this primitive has renderable data (typical mesh
+   * data, Gaussian splats, or voxels). If this returns false, this primitive
+   * should be removed from consideration for rendering.
    */
   bool HasRenderableData() {
-    return RenderData != nullptr || GaussianSplatData != nullptr;
+    return pRenderData || pGaussianSplatData || voxelPropertyAttributeIndex;
   }
+
+  /**
+   * The name of the glTF primitive for debugging purposes.
+   */
+  std::string name{};
 
   /**
    * The index of the material for this primitive within the parent model, or -1
@@ -76,8 +88,6 @@ struct LoadedPrimitiveResult {
   glm::dmat4x4 transform{1.0};
 
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
-
-  std::string name{};
 
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult>

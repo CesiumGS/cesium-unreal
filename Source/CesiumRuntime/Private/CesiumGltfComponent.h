@@ -91,7 +91,8 @@ public:
       FCustomDepthParameters CustomDepthParameters,
       const Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision,
-      bool doubleSidedCollisions);
+      bool doubleSidedCollisions,
+      bool receiveDecals);
 
   UCesiumGltfComponent();
 

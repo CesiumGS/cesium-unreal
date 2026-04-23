@@ -15,7 +15,9 @@
 #include "CesiumMetadataValueCustomization.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettingsCustomization.h"
 #include "CesiumSunSky.h"
+#include "CesiumVoxelShaderBuilder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
@@ -121,6 +123,7 @@ void registerDetailCustomization() {
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
   FCesium3DTilesetCustomization::Register(PropertyEditorModule);
   FCesiumMetadataValueCustomization::Register(PropertyEditorModule);
+  FCesiumRuntimeSettingsCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -138,6 +141,7 @@ void unregisterDetailCustomization() {
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
     FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
     FCesiumMetadataValueCustomization::Unregister(PropertyEditorModule);
+    FCesiumRuntimeSettingsCustomization::Unregister(PropertyEditorModule);
   }
 }
 
@@ -376,6 +380,11 @@ void FCesiumEditorModule::StartupModule() {
       OnCesiumFeaturesMetadataAddProperties.AddRaw(
           this,
           &FCesiumEditorModule::OnFeaturesMetadataAddProperties);
+
+  this->_voxelMetadataBuildShaderSubscription =
+      OnCesiumVoxelMetadataBuildShader.AddRaw(
+          this,
+          &FCesiumEditorModule::OnVoxelMetadataBuildShader);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
@@ -402,6 +411,11 @@ void FCesiumEditorModule::ShutdownModule() {
     OnCesiumFeaturesMetadataAddProperties.Remove(
         this->_featuresMetadataAddPropertiesSubscription);
     this->_featuresMetadataAddPropertiesSubscription.Reset();
+  }
+  if (this->_voxelMetadataBuildShaderSubscription.IsValid()) {
+    OnCesiumVoxelMetadataBuildShader.Remove(
+        this->_voxelMetadataBuildShaderSubscription);
+    this->_voxelMetadataBuildShaderSubscription.Reset();
   }
 
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
@@ -498,6 +512,11 @@ void FCesiumEditorModule::OnRasterOverlayIonTroubleshooting(
 void FCesiumEditorModule::OnFeaturesMetadataAddProperties(
     ACesium3DTileset* pTileset) {
   CesiumFeaturesMetadataViewer::Open(pTileset);
+}
+
+void FCesiumEditorModule::OnVoxelMetadataBuildShader(
+    ACesium3DTileset* pTileset) {
+  CesiumVoxelShaderBuilder::Open(pTileset);
 }
 
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }
