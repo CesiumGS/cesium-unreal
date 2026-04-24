@@ -52,6 +52,7 @@
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
+#include <CesiumGeometry/QuadtreeTilingScheme.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
@@ -3657,13 +3658,21 @@ UCesiumGltfComponent::CreateOffGameThread(
   std::optional<CesiumGeospatial::GlobeRectangle> bbox =
       Cesium3DTilesSelection::estimateGlobeRectangle(volume);
 
-  if (pTileId) {
+  if (pTileId && pTileId->level <= 13) {
     CesiumGeometry::QuadtreeTileID tileId = *pTileId;
     while (tileId.level > 13) {
       tileId = tileId.getParent();
     }
 
-    check(bbox);
+    CesiumGeospatial::Ellipsoid ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
+    CesiumGeospatial::GeographicProjection projection;
+    CesiumGeometry::Rectangle rectangle(
+        glm::radians(-180.0),
+        glm::radians(-90.0),
+        glm::radians(180.0),
+        glm::radians(90.0));
+    CesiumGeometry::QuadtreeTilingScheme tilingScheme(rectangle, 2, 1);
+
 
     CesiumVectorData::GeoJsonDocument::fromUrl(
         getAsyncSystem(),
@@ -3683,21 +3692,37 @@ UCesiumGltfComponent::CreateOffGameThread(
               if (!document.value) {
                 UE_LOG(
                     LogCesium,
-                    Warning,
+                    Error,
                     TEXT("Failed to load %d/%d/%d: %s"),
                     tileId.level,
                     tileId.y,
                     tileId.x,
                     UTF8_TO_TCHAR(document.errors.format("").c_str()));
-                return asyncSystem
-                    .createResolvedFuture<std::vector<LoadedTextureResult>>({});
+                return asyncSystem.createResolvedFuture<
+                    std::pair<std::vector<LoadedTextureResult>, bool>>(
+                    {{}, false});
               }
 
-              check(bbox);
+              if (!document.errors.warnings.empty()) {
+                UE_LOG(
+                    LogCesium,
+                    Warning,
+                    TEXT("Warning when loading %d/%d/%d: %s"),
+                    tileId.level,
+                    tileId.y,
+                    tileId.x,
+                    UTF8_TO_TCHAR(document.errors.format("").c_str()));
+              }
+
               const std::optional<FCesiumVectorLookup> MaybeLookup =
                   FCesiumVectorLookup::Create(
                       document.value->rootObject,
                       *bbox);
+              if (!MaybeLookup) {
+                return asyncSystem.createResolvedFuture<
+                    std::pair<std::vector<LoadedTextureResult>, bool>>(
+                    {{}, false});
+              }
               check(MaybeLookup);
               const FCesiumVectorLookup Lookup = *MaybeLookup;
               CesiumGltf::ImageAsset coordsAsset;
@@ -3729,16 +3754,6 @@ UCesiumGltfComponent::CreateOffGameThread(
                   indicesAsset.pixelData.data(),
                   Lookup.indices.data(),
                   Lookup.indices.size() * sizeof(uint32_t));
-              /*indicesAsset.width = 2;
-              indicesAsset.height = 2;
-              indicesAsset.pixelData.resize(2 * 2 * sizeof(uint32_t) * 4);
-              uint32_t max = TNumericLimits<uint32_t>::Max();
-              for (size_t i = 0; i < 16; i++) {
-                std::memcpy(
-                    indicesAsset.pixelData.data() + i * sizeof(uint32_t),
-                    &max,
-                    sizeof(uint32_t));
-              }*/
 
               CesiumGltf::ImageAsset polygonsAsset;
               polygonsAsset.bytesPerChannel = 1;
@@ -3789,76 +3804,87 @@ UCesiumGltfComponent::CreateOffGameThread(
                       false,
                       TextureGroup::TEXTUREGROUP_World,
                       false,
-                      EPixelFormat::PF_R8_UINT);
+                      EPixelFormat::PF_R8);
               check(polygonsResult);
 
               std::vector<LoadedTextureResult> textures{
                   std::move(*coordsResult.Release()),
                   std::move(*indicesResult.Release()),
                   std::move(*polygonsResult.Release())};
-              return asyncSystem.createResolvedFuture(std::move(textures));
+              return asyncSystem.createResolvedFuture<
+                  std::pair<std::vector<LoadedTextureResult>, bool>>(
+                  {std::move(textures), Lookup.hasPolygons});
             })
-        .thenInMainThread([pGltf,
-                           tileId](std::vector<LoadedTextureResult>&& results) {
-          if (results.empty()) {
-            return;
-          }
+        .thenInMainThread(
+            [pGltf, tileId](
+                std::pair<std::vector<LoadedTextureResult>, bool>&& results) {
+              auto [textureResults, hasPolygons] = results;
+              if (textureResults.empty()) {
+                return;
+              }
 
-          std::vector<CesiumUtility::IntrusivePointer<
-              CesiumTextureUtility::ReferenceCountedUnrealTexture>>
-              textures;
-          pGltf->_rcTextures.reserve(3);
-          for (LoadedTextureResult& result : results) {
-            CesiumUtility::IntrusivePointer<
-                CesiumTextureUtility::ReferenceCountedUnrealTexture>
-                pTexture =
-                    CesiumTextureUtility::loadTextureGameThreadPart(&result);
-            check(IsValid(pTexture->getUnrealTexture()));
-            textures.emplace_back(pTexture);
-            pGltf->_rcTextures.emplace_back(pTexture);
-          }
+              std::vector<CesiumUtility::IntrusivePointer<
+                  CesiumTextureUtility::ReferenceCountedUnrealTexture>>
+                  textures;
+              pGltf->_rcTextures.reserve(3);
+              for (LoadedTextureResult& result : textureResults) {
+                CesiumUtility::IntrusivePointer<
+                    CesiumTextureUtility::ReferenceCountedUnrealTexture>
+                    pTexture = CesiumTextureUtility::loadTextureGameThreadPart(
+                        &result);
+                check(IsValid(pTexture->getUnrealTexture()));
+                textures.emplace_back(pTexture);
+                pGltf->_rcTextures.emplace_back(pTexture);
+              }
 
-          if (!IsValid(pGltf)) {
-            return;
-          }
+              if (!IsValid(pGltf)) {
+                return;
+              }
 
-          check(textures.size() == 3);
+              check(textures.size() == 3);
 
-          forEachPrimitiveComponent(
-              pGltf,
-              [textures](
-                  UCesiumGltfPrimitiveComponent* pPrimitive,
-                  UMaterialInstanceDynamic* pMaterial,
-                  UCesiumMaterialUserData* pCesiumData) {
-                CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
-                FString name(TEXT("Vector"));
+              forEachPrimitiveComponent(
+                  pGltf,
+                  [textures, hasPolygons](
+                      UCesiumGltfPrimitiveComponent* pPrimitive,
+                      UMaterialInstanceDynamic* pMaterial,
+                      UCesiumMaterialUserData* pCesiumData) {
+                    CesiumPrimitiveData& primData =
+                        pPrimitive->getPrimitiveData();
+                    FString name(TEXT("Vector"));
 
-                for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
-                  if (pCesiumData->LayerNames[i] != name) {
-                    continue;
-                  }
+                    for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+                      if (pCesiumData->LayerNames[i] != name) {
+                        continue;
+                      }
 
-                  pMaterial->SetTextureParameterValueByInfo(
-                      FMaterialParameterInfo(
-                          "LineTexture",
-                          EMaterialParameterAssociation::LayerParameter,
-                          i),
-                      textures[0]->getUnrealTexture());
-                  pMaterial->SetTextureParameterValueByInfo(
-                      FMaterialParameterInfo(
-                          "IndicesTexture",
-                          EMaterialParameterAssociation::LayerParameter,
-                          i),
-                      textures[1]->getUnrealTexture());
-                  pMaterial->SetTextureParameterValueByInfo(
-                      FMaterialParameterInfo(
-                          "CutFlagsTexture",
-                          EMaterialParameterAssociation::LayerParameter,
-                          i),
-                      textures[2]->getUnrealTexture());
-                }
-              });
-        });
+                      pMaterial->SetTextureParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "LineTexture",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          textures[0]->getUnrealTexture());
+                      pMaterial->SetTextureParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "IndicesTexture",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          textures[1]->getUnrealTexture());
+                      pMaterial->SetTextureParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "CutFlagsTexture",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          textures[2]->getUnrealTexture());
+                      pMaterial->SetScalarParameterValueByInfo(
+                          FMaterialParameterInfo(
+                              "HasPolygons",
+                              EMaterialParameterAssociation::LayerParameter,
+                              i),
+                          hasPolygons ? 1.0f : 0.0f);
+                    }
+                  });
+            });
   }
 
   return pGltf;

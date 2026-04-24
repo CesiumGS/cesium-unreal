@@ -246,12 +246,15 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
   // console.log("Original number of line segments:", lineSegmentsCount);
   size_t numOfLineSegmentsGeoJSON = 0;
 
+  bool hasPolygons = false;
+
   // assign line segments to grid cells
   for (const GeoJsonFeature& feature : rootObject.allOfType<GeoJsonFeature>()) {
     if (!feature.geometry) {
       continue;
     }
     if (feature.geometry->isType<GeoJsonPolygon>()) {
+      hasPolygons = true;
       const std::vector<std::vector<glm::dvec3>>& coords =
           feature.geometry->get<GeoJsonPolygon>().coordinates;
       const std::optional<std::vector<std::vector<bool>>> ringCutFlags =
@@ -320,8 +323,8 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
               for (size_t k = 0; k < p.size() - 1; k++) {
                 const glm::dvec3& p1 = p[k];
                 const glm::dvec3& p2 = p[k + 1];
-                const bool flag0 = flags[k];
-                const bool flag1 = flags[k + 1];
+                const bool flag0 = flags.size() > k ? flags[k] : false;
+                const bool flag1 = flags.size() > k ? flags[k + 1] : false;
                 const bool flagLine = flag0 && flag1 ? 1 : 0;
                 check(c < grid.size() && r < grid[c].size());
                 grid[c][r].push_back(glm::dvec4(p1.x, p1.y, p2.x, p2.y));
@@ -415,7 +418,8 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
       std::ceil(std::log2(std::ceil(std::sqrt(numOfLineSegmentsGeoJSON)))));
   const size_t textureHeight = std::pow(
       2,
-      std::ceil(std::log2(std::ceil(numOfLineSegmentsGeoJSON / (double)textureWidth))));
+      std::ceil(std::log2(
+          std::ceil(numOfLineSegmentsGeoJSON / (double)textureWidth))));
   const size_t numOfLineSegments = textureWidth * textureHeight;
 
   UE_LOG(
@@ -493,5 +497,6 @@ std::optional<FCesiumVectorLookup> FCesiumVectorLookup::Create(
       indices,
       cutFlags,
       glm::uvec2(textureWidth, textureHeight),
-      glm::uvec2(gridSizeX, gridSizeY)};
+      glm::uvec2(gridSizeX, gridSizeY),
+      hasPolygons};
 }

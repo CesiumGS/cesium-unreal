@@ -20,6 +20,8 @@ struct FCesiumVectorLookup
   glm::uvec2 textureSize;
   glm::uvec2 gridSize;
 
+  bool hasPolygons;
+
   static std::optional<FCesiumVectorLookup> Create(
       CesiumVectorData::GeoJsonObject& rootObject,
       const CesiumGeospatial::GlobeRectangle& bbox,
