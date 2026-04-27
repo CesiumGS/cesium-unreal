@@ -1,0 +1,111 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+/*
+ * MeshEdges: Wireframe composited over other shaded views (e.g. Lit)
+ */
+
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/DeferredShadingCommon.ush"
+#include "/Engine/Private/ScreenPass.ush"
+#include "/Engine/Private/PostProcessCommon.ush"
+
+#if MSAA_SAMPLE_COUNT > 1
+Texture2DMS<float4, MSAA_SAMPLE_COUNT> WireframeColorTexture;
+Texture2DMS<float, MSAA_SAMPLE_COUNT>  WireframeDepthTexture;
+#else
+Texture2D WireframeColorTexture;
+Texture2D<float> WireframeDepthTexture;
+#endif
+
+SCREEN_PASS_TEXTURE_VIEWPORT(Wireframe)
+
+Texture2D DepthTexture;
+SamplerState DepthSampler;
+SCREEN_PASS_TEXTURE_VIEWPORT(Depth)
+float2 DepthTextureJitter;
+float4 SampleOffsetArray[MSAA_SAMPLE_COUNT];
+
+SCREEN_PASS_TEXTURE_VIEWPORT(Output)
+
+float Opacity;
+
+// Return true if A is closer than B
+bool IsCloser(float A, float B)
+{
+  return HAS_INVERTED_Z_BUFFER
+		? (A > B)
+		: (A < B);
+}
+
+// Compose wireframe texture over shaded rendertarget, predicated on depth test with nearest shaded surface
+void CesiumComposePrimitiveEdgesPS(
+	float4 SvPosition : SV_POSITION,
+#if MSAA_SAMPLE_COUNT > 1
+	uint TargetSampleIndex : SV_SampleIndex,
+#endif
+	out float4 OutColor : SV_Target0,
+	out float OutDepth : SV_Depth)
+{
+  float2 ViewportUV = (SvPosition.xy - Output_ViewportMin) * Output_ViewportSizeInverse;
+
+  float2 WireframeSamplePosition = (ViewportUV * Wireframe_ViewportSize) + Wireframe_ViewportMin;
+
+  float4 WireframeColor;
+  float WireframeDeviceZ;
+  float ShadedDeviceZ;
+	#if MSAA_SAMPLE_COUNT > 1
+	{
+		WireframeColor = float4(WireframeColorTexture.Load(WireframeSamplePosition, TargetSampleIndex).rgb, 1.0);
+		WireframeDeviceZ = WireframeDepthTexture.Load(WireframeSamplePosition, TargetSampleIndex).r;
+
+		const float2 SampleOffset = SampleOffsetArray[TargetSampleIndex].xy;
+
+		float2 ShadedDepthUV = (ViewportUV * Depth_ViewportSize + Depth_ViewportMin + SampleOffset - DepthTextureJitter) * Depth_ExtentInverse;
+		ShadedDepthUV = clamp(ShadedDepthUV, Depth_UVViewportBilinearMin, Depth_UVViewportBilinearMax);
+		ShadedDeviceZ = Texture2DSampleLevel(DepthTexture, DepthSampler, ShadedDepthUV, 0).r;
+	}
+	#else
+	{
+    WireframeColor = WireframeColorTexture.Load(int3(WireframeSamplePosition, 0));
+    WireframeDeviceZ = WireframeDepthTexture.Load(int3(WireframeSamplePosition, 0)).r;
+
+    float2 ShadedDepthUV = (ViewportUV * Depth_ViewportSize + Depth_ViewportMin - DepthTextureJitter) * Depth_ExtentInverse;
+    ShadedDepthUV = clamp(ShadedDepthUV, Depth_UVViewportBilinearMin, Depth_UVViewportBilinearMax);
+    ShadedDeviceZ = Texture2DSampleLevel(DepthTexture, DepthSampler, ShadedDepthUV, 0).r;
+  }
+#endif
+
+  if (WireframeDeviceZ == ShadedDeviceZ && WireframeDeviceZ == FarDepthValue)
+  {
+    discard;
+  }
+
+	// Stop z-fighting by biasing wireframe depth towards camera.
+	// The bias factor is a manually tuned heuristic based on surface slope and the proximity of the wireframe to the surface.
+  float2 ShadedDepthSlope = abs(float2(ddx(ShadedDeviceZ), ddy(ShadedDeviceZ)) / ShadedDeviceZ);
+  float DepthRatio = WireframeDeviceZ / ShadedDeviceZ;
+  const float SlopeWeight = 2.0;
+  float DepthBiasFactor = lerp(0, 1, (ShadedDepthSlope.x + ShadedDepthSlope.y) * SlopeWeight) + max(1, DepthRatio);
+
+  WireframeDeviceZ *= DepthBiasFactor;
+
+  if (IsCloser(ShadedDeviceZ, WireframeDeviceZ))
+  {
+    discard;
+  }
+		
+  OutDepth = WireframeDeviceZ;
+	
+	// Fixes the gamma of editor primitives
+	{
+		// Bring out of premultiplied.
+    WireframeColor.rgb /= max(WireframeColor.a, 0.0001f);
+		// Fix gamma.
+    WireframeColor.rgb = pow(WireframeColor.rgb, 2.2f);
+		// Bring back to premultiplied
+    WireframeColor.rgb *= WireframeColor.a;
+  }
+
+  OutColor = WireframeColor;
+  OutColor.a *= Opacity;
+}

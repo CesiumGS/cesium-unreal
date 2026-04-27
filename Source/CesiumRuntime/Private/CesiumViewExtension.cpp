@@ -5,7 +5,10 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCommon.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "Materials/MaterialRenderProxy.h"
+#include "PixelShaderUtils.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "SceneRendering.h"
 
 using namespace Cesium3DTilesSelection;
 
@@ -14,6 +17,434 @@ CesiumViewExtension::CesiumViewExtension(const FAutoRegister& autoRegister)
 
 CesiumViewExtension::~CesiumViewExtension() = default;
 
+void CesiumViewExtension::BeginRenderViewFamily(
+    FSceneViewFamily& /*InViewFamily*/) {
+  if (!this->_isEnabled)
+    return;
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DequeueOcclusionResults)
+  if (!_occlusionResultsQueue.IsEmpty()) {
+    // Recycle the current occlusion results.
+    for (SceneViewOcclusionResults& occlusionResults :
+         _currentOcclusionResults.occlusionResultsByView) {
+      occlusionResults.PrimitiveOcclusionResults.Reset();
+      _recycledOcclusionResultSets.Enqueue(
+          std::move(occlusionResults.PrimitiveOcclusionResults));
+    }
+    _currentOcclusionResults = {};
+
+    // Update occlusion results from the queue.
+    _currentOcclusionResults = std::move(*_occlusionResultsQueue.Peek());
+    _occlusionResultsQueue.Pop();
+  }
+}
+
+namespace {
+class FRenderTargetTexture : public FTexture, public FRenderTarget {
+public:
+  FRenderTargetTexture(FRHITextureCreateDesc InDesc) : Desc(InDesc) {}
+
+  virtual void InitRHI(FRHICommandListBase& RHICmdList) {
+    // Create the sampler state RHI resource.
+    FSamplerStateInitializerRHI SamplerStateInitializer(
+        SF_Bilinear,
+        AM_Clamp,
+        AM_Clamp,
+        AM_Clamp);
+    SamplerStateRHI = GetOrCreateSamplerState(SamplerStateInitializer);
+
+    RenderTargetTextureRHI = TextureRHI = RHICreateTexture(Desc);
+  }
+
+  virtual uint32 GetSizeX() const { return Desc.GetSize().X; }
+
+  virtual uint32 GetSizeY() const { return Desc.GetSize().Y; }
+
+  virtual FIntPoint GetSizeXY() const {
+    return FIntPoint(GetSizeX(), GetSizeY());
+  }
+
+  virtual float GetDisplayGamma() const { return 1.0f; }
+
+  virtual FString GetFriendlyName() const override { return Desc.DebugName; }
+
+private:
+  FRHITextureCreateDesc Desc;
+};
+
+class FCesiumPrimitiveEdgesViewFamilyData
+    : public ISceneViewFamilyExtentionData {
+public:
+  inline static const TCHAR* const GSubclassIdentifier =
+      TEXT("FCesiumPrimitiveEdgesViewFamilyData");
+  virtual const TCHAR* GetSubclassIdentifier() const override {
+    return GSubclassIdentifier;
+  }
+
+  void CreateRenderTargets(
+      ERHIFeatureLevel::Type FeatureLevel,
+      FIntPoint DesiredBufferSize) {
+    int NumMSAASamples =
+        FSceneTexturesConfig::GetEditorPrimitiveNumSamples(FeatureLevel);
+
+    FRHITextureCreateDesc ColorDesc =
+        FRHITextureCreateDesc::Create2D(TEXT("MeshEdgesRenderTarget"))
+            .SetExtent(DesiredBufferSize)
+            .SetFormat(PF_B8G8R8A8)
+            .SetClearValue(FClearValueBinding::Transparent)
+            .SetFlags(
+                ETextureCreateFlags::RenderTargetable |
+                ETextureCreateFlags::ShaderResource)
+            .SetInitialState(ERHIAccess::SRVMask)
+            .SetNumSamples(NumMSAASamples);
+
+    FRHITextureCreateDesc DepthDesc =
+        FRHITextureCreateDesc::Create2D(TEXT("MeshEdgesDepthRenderTarget"))
+            .SetExtent(DesiredBufferSize)
+            .SetFormat(PF_DepthStencil)
+            .SetClearValue(FClearValueBinding::DepthFar)
+            .SetFlags(
+                ETextureCreateFlags::DepthStencilTargetable |
+                ETextureCreateFlags::ShaderResource)
+            .SetInitialState(ERHIAccess::SRVMask)
+            .SetNumSamples(NumMSAASamples);
+
+    WireframeColor = MakeUnique<FRenderTargetTexture>(ColorDesc);
+    WireframeDepth = MakeUnique<FRenderTargetTexture>(DepthDesc);
+  }
+  TUniquePtr<FRenderTargetTexture> WireframeColor;
+  TUniquePtr<FRenderTargetTexture> WireframeDepth;
+  TArray<FIntRect> ViewRects;
+};
+
+void CopyViewFamily(
+    const FSceneViewFamily& SrcViewFamily,
+    FSceneViewFamily& ViewFamily) {
+  ViewFamily.FrameNumber = SrcViewFamily.FrameNumber;
+  ViewFamily.FrameCounter = SrcViewFamily.FrameCounter;
+  ViewFamily.ViewExtensions = GEngine->ViewExtensions->GatherActiveExtensions(
+      FSceneViewExtensionContext(SrcViewFamily.Scene));
+
+  for (int32 ViewIndex = 0; ViewIndex < SrcViewFamily.Views.Num();
+       ++ViewIndex) {
+    const FSceneView* SrcSceneView = SrcViewFamily.Views[ViewIndex];
+    if (ensure(SrcSceneView)) {
+      FSceneViewInitOptions ViewInitOptions =
+          SrcSceneView->SceneViewInitOptions;
+      ViewInitOptions.ViewFamily = &ViewFamily;
+      ViewInitOptions.ViewLocation = SrcSceneView->ViewLocation;
+      ViewInitOptions.ViewRotation = SrcSceneView->ViewRotation;
+
+      // Reset to avoid incorrect culling problems
+      ViewInitOptions.SceneViewStateInterface =
+          FSceneViewInitOptions{}.SceneViewStateInterface;
+
+      FSceneView* View = new FSceneView(ViewInitOptions);
+      ViewFamily.Views.Emplace(View);
+    }
+  }
+}
+
+void RenderMeshEdges_RenderThread(
+    FRHICommandListImmediate& RHICmdList,
+    FSceneRenderer* SceneRenderer,
+    FCesiumPrimitiveEdgesViewFamilyData& MeshEdgesData,
+    bool bUseSceneColorTexture) {
+  MeshEdgesData.WireframeColor->InitResource(RHICmdList);
+  MeshEdgesData.WireframeDepth->InitResource(RHICmdList);
+
+  SceneRenderer->RenderThreadBegin(RHICmdList);
+
+  FUniformExpressionCacheAsyncUpdateScope AsyncUpdateScope;
+
+  // update any resources that needed a deferred update
+  FDeferredUpdateResource::UpdateResources(RHICmdList);
+
+  FRDGBuilder GraphBuilder(
+      RHICmdList,
+      RDG_EVENT_NAME("MeshEdges"),
+      ERDGBuilderFlags::Parallel);
+  {
+    RDG_EVENT_SCOPE(GraphBuilder, "RenderMeshEdges_RenderThread");
+
+    // Render the scene normally
+    {
+      RDG_RHI_EVENT_SCOPE(GraphBuilder, RenderScene);
+      SceneRenderer->Render(GraphBuilder);
+    }
+  }
+  GraphBuilder.Execute();
+
+  for (const FViewInfo& ViewInfo : SceneRenderer->Views) {
+    MeshEdgesData.ViewRects.Emplace(ViewInfo.ViewRect);
+  }
+
+  SceneRenderer->RenderThreadEnd(RHICmdList);
+}
+
+void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
+  if (!ViewFamily.EngineShowFlags.MeshEdges ||
+      ViewFamily.EngineShowFlags.HitProxies) {
+    return;
+  }
+
+  FCesiumPrimitiveEdgesViewFamilyData* ViewFamilyData =
+      ViewFamily
+          .GetOrCreateExtentionData<FCesiumPrimitiveEdgesViewFamilyData>();
+
+  ERHIFeatureLevel::Type FeatureLevel = ViewFamily.GetFeatureLevel();
+  FIntPoint DesiredBufferSize = ViewFamily.RenderTarget->GetSizeXY();
+  ViewFamilyData->CreateRenderTargets(FeatureLevel, DesiredBufferSize);
+
+  FEngineShowFlags WireframeShowFlags = ViewFamily.EngineShowFlags;
+  {
+    // Render a wireframe view
+    WireframeShowFlags.SetWireframe(true);
+
+    // Copy the MSAA wireframe view only, don't copy other scene elements
+    WireframeShowFlags.SetSceneCaptureCopySceneDepth(false);
+
+    // Disable rendering of elements that are not needed
+    WireframeShowFlags.SetMeshEdges(false);
+    WireframeShowFlags.SetLighting(false);
+    WireframeShowFlags.SetLightFunctions(false);
+    WireframeShowFlags.SetGlobalIllumination(false);
+    WireframeShowFlags.SetLumenGlobalIllumination(false);
+    WireframeShowFlags.SetLumenReflections(false);
+    WireframeShowFlags.SetDynamicShadows(false);
+    WireframeShowFlags.SetCapsuleShadows(false);
+    WireframeShowFlags.SetDistanceFieldAO(false);
+    WireframeShowFlags.SetFog(false);
+    WireframeShowFlags.SetVolumetricFog(false);
+    WireframeShowFlags.SetCloud(false);
+    WireframeShowFlags.SetDecals(false);
+    WireframeShowFlags.SetAtmosphere(false);
+    WireframeShowFlags.SetPostProcessing(false);
+    WireframeShowFlags.SetCompositeEditorPrimitives(false);
+    WireframeShowFlags.SetGrid(false);
+    WireframeShowFlags.SetShaderPrint(false);
+    // WireframeShowFlags.SetScreenPercentage(false);
+    // WireframeShowFlags.SetTranslucency(false);
+  }
+
+  FSceneViewFamilyContext CaptureViewFamily(
+      FSceneViewFamily::ConstructionValues(
+          ViewFamilyData->WireframeColor.Get(),
+          ViewFamily.Scene,
+          WireframeShowFlags)
+          .SetRenderTargetDepth(ViewFamilyData->WireframeDepth.Get())
+          .SetResolveScene(true)
+          .SetRealtimeUpdate(true)
+          .SetTime(ViewFamily.Time));
+
+  {
+    CopyViewFamily(ViewFamily, CaptureViewFamily);
+
+    CaptureViewFamily.SceneCaptureSource = SCS_SceneColorSceneDepth;
+
+    // Use the same resolution scale as main view, so the buffers align
+    // pixel-perfect. If the main view is low-res this affects the wireframe
+    // quality, so the main view should be 100% ideally
+    CaptureViewFamily.SetScreenPercentageInterface(
+        ViewFamily.GetScreenPercentageInterface()->Fork_GameThread(
+            CaptureViewFamily));
+  }
+
+  FSceneRenderer* SceneRenderer =
+      FSceneRenderer::CreateSceneRenderer(&CaptureViewFamily, nullptr);
+
+  for (const FSceneViewExtensionRef& Extension :
+       CaptureViewFamily.ViewExtensions) {
+    Extension->SetupViewFamily(CaptureViewFamily);
+  }
+
+  for (int32 ViewIndex = 0; ViewIndex < SceneRenderer->Views.Num();
+       ++ViewIndex) {
+    FViewInfo& ViewInfo = SceneRenderer->Views[ViewIndex];
+    ViewInfo.bAllowTemporalJitter = false;
+    ViewInfo.PrimaryScreenPercentageMethod =
+        EPrimaryScreenPercentageMethod::RawOutput;
+
+    for (const FSceneViewExtensionRef& Extension :
+         CaptureViewFamily.ViewExtensions) {
+      Extension->SetupView(CaptureViewFamily, ViewInfo);
+    }
+  }
+
+  ENQUEUE_RENDER_COMMAND(CaptureCommand)
+  ([SceneRenderer, ViewFamilyData](FRHICommandListImmediate& RHICmdList) {
+    RenderMeshEdges_RenderThread(
+        RHICmdList,
+        SceneRenderer,
+        *ViewFamilyData,
+        true);
+  });
+}
+
+class FCesiumComposePrimitiveEdgesPS : public FGlobalShader {
+  DECLARE_GLOBAL_SHADER(FCesiumComposePrimitiveEdgesPS);
+  SHADER_USE_PARAMETER_STRUCT(FCesiumComposePrimitiveEdgesPS, FGlobalShader)
+
+  static const uint32 kMSAASampleCountMaxLog2 = 3; // = log2(MSAASampleCountMax)
+  static const uint32 kMSAASampleCountMax = 1 << kMSAASampleCountMaxLog2;
+  // class FSampleCountDimension : SHADER_PERMUTATION_RANGE_INT(
+  //                                   "MSAA_SAMPLE_COUNT_LOG2",
+  //                                   0,
+  //                                   kMSAASampleCountMaxLog2 + 1);
+  // using FPermutationDomain = TShaderPermutationDomain<FSampleCountDimension>;
+
+  static bool ShouldCompilePermutation(
+      const FGlobalShaderPermutationParameters& Parameters) {
+    return FDataDrivenShaderPlatformInfo::GetSupportsDebugViewShaders(
+        Parameters.Platform);
+  }
+
+  static void ModifyCompilationEnvironment(
+      const FGlobalShaderPermutationParameters& Parameters,
+      FShaderCompilerEnvironment& OutEnvironment) {
+    const FPermutationDomain PermutationVector(Parameters.PermutationId);
+    const int32 SampleCount = 1;
+    //   << PermutationVector.Get<FSampleCountDimension>();
+    OutEnvironment.SetDefine(TEXT("MSAA_SAMPLE_COUNT"), SampleCount);
+  }
+
+  BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+  SHADER_PARAMETER_RDG_TEXTURE(Texture2D, WireframeColorTexture)
+  SHADER_PARAMETER_RDG_TEXTURE(Texture2D, WireframeDepthTexture)
+  SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, Wireframe)
+
+  SHADER_PARAMETER_RDG_TEXTURE(Texture2D, DepthTexture)
+  SHADER_PARAMETER_SAMPLER(SamplerState, DepthSampler)
+  SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, Depth)
+  SHADER_PARAMETER(FVector2f, DepthTextureJitter)
+  SHADER_PARAMETER_ARRAY(
+      FVector4f,
+      SampleOffsetArray,
+      [FCesiumComposePrimitiveEdgesPS::kMSAASampleCountMax])
+
+  SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, Output)
+
+  SHADER_PARAMETER(float, Opacity)
+
+  RENDER_TARGET_BINDING_SLOTS()
+  END_SHADER_PARAMETER_STRUCT()
+};
+
+IMPLEMENT_GLOBAL_SHADER(
+    FCesiumComposePrimitiveEdgesPS,
+    "/Plugin/CesiumForUnreal/Private/CesiumMeshEdges.usf",
+    "CesiumComposePrimitiveEdgesPS",
+    SF_Pixel);
+
+void ComposeMeshEdges(
+    FRDGBuilder& GraphBuilder,
+    FSceneView& View,
+    const FRenderTargetBindingSlots& RenderTargets,
+    TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) {
+  const FSceneViewFamily& ViewFamily = *View.Family;
+  if (!ViewFamily.EngineShowFlags.MeshEdges) {
+    return;
+  }
+
+  int ViewIndex = 0;
+  for (; ViewIndex < ViewFamily.Views.Num(); ViewIndex++) {
+    if (ViewFamily.Views[ViewIndex] == &View)
+      break;
+  }
+
+  const FCesiumPrimitiveEdgesViewFamilyData* ViewFamilyData =
+      ViewFamily.GetExtentionData<FCesiumPrimitiveEdgesViewFamilyData>();
+
+  FRenderTargetTexture& WireframeTextureColor = *ViewFamilyData->WireframeColor;
+  FRenderTargetTexture& WireframeTextureDepth = *ViewFamilyData->WireframeDepth;
+  const FIntRect& WireframeViewRect = ViewFamilyData->ViewRects[ViewIndex];
+  FScreenPassTextureViewport SceneDepth(
+      SceneTextures->GetParameters()->SceneDepthTexture);
+  FScreenPassTextureViewport Output(
+      SceneTextures->GetContents()->SceneColorTexture);
+
+  FRHISamplerState* PointClampSampler =
+      TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
+
+  FCesiumComposePrimitiveEdgesPS::FParameters* PassParameters =
+      GraphBuilder
+          .AllocParameters<FCesiumComposePrimitiveEdgesPS::FParameters>();
+
+  PassParameters->WireframeColorTexture = RegisterExternalTexture(
+      GraphBuilder,
+      WireframeTextureColor.TextureRHI,
+      *WireframeTextureColor.GetFriendlyName());
+  PassParameters->WireframeDepthTexture = RegisterExternalTexture(
+      GraphBuilder,
+      WireframeTextureDepth.TextureRHI,
+      *WireframeTextureDepth.GetFriendlyName());
+  PassParameters->Wireframe = GetScreenPassTextureViewportParameters(
+      FScreenPassTextureViewport(WireframeViewRect));
+  PassParameters->Depth = GetScreenPassTextureViewportParameters(SceneDepth);
+  PassParameters->Output = GetScreenPassTextureViewportParameters(Output);
+  PassParameters->DepthTexture =
+      SceneTextures->GetParameters()->SceneDepthTexture;
+  PassParameters->DepthSampler = PointClampSampler;
+  //  PassParameters->DepthTextureJitter = FVector2f(View.);
+  PassParameters->Opacity = 1.0;
+
+  // for (int32 i = 0; i < int32(NumMSAASamples); i++) {
+  //   PassParameters->SampleOffsetArray[i].X =
+  //       GetMSAASampleOffsets(NumMSAASamples, i).X;
+  //   PassParameters->SampleOffsetArray[i].Y =
+  //       GetMSAASampleOffsets(NumMSAASamples, i).Y;
+  // }
+
+  PassParameters->RenderTargets[0] = RenderTargets.Output[0];
+  PassParameters->RenderTargets.DepthStencil = RenderTargets.DepthStencil;
+
+  // const int MSAASampleCountDim = FMath::FloorLog2(NumMSAASamples);
+
+  // FCesiumComposePrimitiveEdgesPS::FPermutationDomain PermutationVector;
+  // PermutationVector.Set<FCesiumComposePrimitiveEdgesPS::FSampleCountDimension>(
+  //     MSAASampleCountDim);
+
+  const FGlobalShaderMap* GlobalShaderMap =
+      GetGlobalShaderMap(View.GetFeatureLevel());
+  const TShaderRef<FCesiumComposePrimitiveEdgesPS>& PixelShader =
+      TShaderMapRef<FCesiumComposePrimitiveEdgesPS>(GlobalShaderMap);
+
+  FIntRect Viewport(
+      RenderTargets.ResolveRect.X1,
+      RenderTargets.ResolveRect.Y1,
+      RenderTargets.ResolveRect.Y1,
+      RenderTargets.ResolveRect.Y2);
+
+  FRHIBlendState* BlendState = TStaticBlendState<CW_RGBA>::GetRHI();
+  FRHIDepthStencilState* DepthStencilState =
+      TStaticDepthStencilState<true, CF_DepthNearOrEqual>::GetRHI();
+
+  FPixelShaderUtils::AddFullscreenPass(
+      GraphBuilder,
+      GlobalShaderMap,
+      RDG_EVENT_NAME("FCesiumComposePrimitiveEdgesPS"),
+      PixelShader,
+      PassParameters,
+      Viewport,
+      BlendState,
+      nullptr,
+      DepthStencilState);
+
+  // if (View.IsLastInFamily()) {
+  //   GraphBuilder.AddPostExecuteCallback(
+  //       [&WireframeTextureColor, &WireframeTextureDepth] {
+  //         WireframeTextureColor.ReleaseResource();
+  //         WireframeTextureDepth.ReleaseResource();
+  //       });
+  // }
+}
+} // namespace
+
+void CesiumViewExtension::PostCreateSceneRenderer(
+    const FSceneViewFamily& InViewFamily,
+    ISceneRenderer* Renderer) {
+  RenderMeshEdges(static_cast<FSceneRenderer*>(Renderer)->ViewFamily);
+}
 void CesiumViewExtension::PreRenderView_RenderThread(
     FRDGBuilder& GraphBuilder,
     FSceneView& InView) {
@@ -28,6 +459,7 @@ void CesiumViewExtension::PreRenderView_RenderThread(
               !pComponent->IsVisible()) {
             continue;
           }
+          pComponent->GetSceneProxy();
 
           TObjectPtr<UStaticMesh> pMesh =
               pComponent->GetMeshComponent().GetStaticMesh();
@@ -35,14 +467,6 @@ void CesiumViewExtension::PreRenderView_RenderThread(
             continue;
           }
 
-          RHICmdList.DrawIndexedPrimitive(
-              pMesh->GetRenderData()->LODResources[0].IndexBuffer.GetRHI(),
-              0,
-              0,
-              0,
-              0,
-              0,
-              0);
         }
       });*/
 }
@@ -92,34 +516,6 @@ TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
   }
 }
 
-void CesiumViewExtension::SetupViewFamily(FSceneViewFamily& InViewFamily) {}
-
-void CesiumViewExtension::SetupView(
-    FSceneViewFamily& InViewFamily,
-    FSceneView& InView) {}
-
-void CesiumViewExtension::BeginRenderViewFamily(
-    FSceneViewFamily& /*InViewFamily*/) {
-  if (!this->_isEnabled)
-    return;
-
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DequeueOcclusionResults)
-  if (!_occlusionResultsQueue.IsEmpty()) {
-    // Recycle the current occlusion results.
-    for (SceneViewOcclusionResults& occlusionResults :
-         _currentOcclusionResults.occlusionResultsByView) {
-      occlusionResults.PrimitiveOcclusionResults.Reset();
-      _recycledOcclusionResultSets.Enqueue(
-          std::move(occlusionResults.PrimitiveOcclusionResults));
-    }
-    _currentOcclusionResults = {};
-
-    // Update occlusion results from the queue.
-    _currentOcclusionResults = std::move(*_occlusionResultsQueue.Peek());
-    _occlusionResultsQueue.Pop();
-  }
-}
-
 namespace {
 
 const TSet<FPrimitiveOcclusionHistory, FPrimitiveOcclusionHistoryKeyFuncs>&
@@ -134,7 +530,6 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
     FSceneViewFamily& InViewFamily) {
   if (!this->_isEnabled)
     return;
-
   if (_frameNumber_renderThread != InViewFamily.FrameNumber) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EnqueueAggregatedOcclusion)
     if (_frameNumber_renderThread != -1) {
@@ -236,6 +631,19 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
     }
   }
 }
+void CesiumViewExtension::PostRenderBasePassDeferred_RenderThread(
+    FRDGBuilder& GraphBuilder,
+    FSceneView& InView,
+    const FRenderTargetBindingSlots& RenderTargets,
+    TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) {
+  ComposeMeshEdges(GraphBuilder, InView, RenderTargets, SceneTextures);
+}
+
+void CesiumViewExtension::SubscribeToPostProcessingPass(
+    EPostProcessingPass Pass,
+    const FSceneView& InView,
+    FAfterPassCallbackDelegateArray& InOutPassCallbacks,
+    bool bIsPassEnabled) {}
 
 void CesiumViewExtension::SetEnabled(bool enabled) {
   this->_isEnabled = enabled;

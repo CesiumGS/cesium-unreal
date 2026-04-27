@@ -24,17 +24,27 @@ public:
   CesiumViewExtension(const FAutoRegister& autoRegister);
   ~CesiumViewExtension();
 
-  Cesium3DTilesSelection::TileOcclusionState getPrimitiveOcclusionState(
-      const FPrimitiveComponentId& id,
-      bool previouslyOccluded,
-      float frameTimeCutoff) const;
+  /**
+   * Called on game thread when creating the view family.
+   */
+  void SetupViewFamily(FSceneViewFamily& InViewFamily) override {}
 
-  void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
-  void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
+  /**
+   * Called on game thread when creating the view.
+   */
+  void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override {}
+
+  /**
+   * Called on game thread after the scene renderers have been created
+   */
+  virtual void PostCreateSceneRenderer(
+      const FSceneViewFamily& InViewFamily,
+      ISceneRenderer* Renderer) override;
+
+  /**
+   * Called on game thread when view family is about to be rendered.
+   */
   void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override;
-  void PostRenderViewFamily_RenderThread(
-      FRDGBuilder& GraphBuilder,
-      FSceneViewFamily& InViewFamily) override;
 
   /**
    * Called on render thread at the start of rendering, for each view, after
@@ -43,11 +53,50 @@ public:
   void PreRenderView_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView)
       override;
 
+  /**
+   * Called right after Base Pass rendering finished when using the deferred
+   * renderer.
+   */
+  virtual void PostRenderBasePassDeferred_RenderThread(
+      FRDGBuilder& GraphBuilder,
+      FSceneView& InView,
+      const FRenderTargetBindingSlots& RenderTargets,
+      TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures)
+      override;
+
+  /**
+   * Allows to render content after the 3D content scene, useful for debugging
+   */
+  void PostRenderViewFamily_RenderThread(
+      FRDGBuilder& GraphBuilder,
+      FSceneViewFamily& InViewFamily) override;
+
+  /**
+   * This will be called at the beginning of post processing to make sure that
+   * each view extension gets a chance to subscribe to an after pass event.
+   *  - The pass MUST write to the override output texture if it is active (this
+   * occurs when the pass is the last in the post processing chain writing to
+   * the back buffer). For performance reasons it is recommended to only
+   * subscribe to a pass when the pass will produce a GPU resource.
+   */
+  virtual void SubscribeToPostProcessingPass(
+      EPostProcessingPass Pass,
+      const FSceneView& InView,
+      FAfterPassCallbackDelegateArray& InOutPassCallbacks,
+      bool bIsPassEnabled) override;
+
   void SetEnabled(bool enabled);
+
+  Cesium3DTilesSelection::TileOcclusionState getPrimitiveOcclusionState(
+      const FPrimitiveComponentId& id,
+      bool previouslyOccluded,
+      float frameTimeCutoff) const;
 
 private:
 #pragma region Occlusion Culling
-  // Occlusion results for a single view.
+  /**
+   * Occlusion results for a single view.
+   */
   struct PrimitiveOcclusionResult {
     PrimitiveOcclusionResult(
         const FPrimitiveComponentId primitiveId,
@@ -77,7 +126,9 @@ private:
     bool WasOccludedLastFrame;
   };
 
-  // Defines how PrimitiveOcclusionResult is stored in a TSet
+  /**
+   * Defines how PrimitiveOcclusionResult is stored in a TSet
+   */
   struct PrimitiveOcclusionResultKeyFuncs
       : BaseKeyFuncs<PrimitiveOcclusionResult, FPrimitiveComponentId> {
     typedef FPrimitiveComponentId KeyInitType;
@@ -93,14 +144,18 @@ private:
     }
   };
 
-  // The occlusion results for a single view.
+  /**
+   *The occlusion results for a single view.
+   */
   struct SceneViewOcclusionResults {
     const FSceneView* pView = nullptr;
     TSet<PrimitiveOcclusionResult, PrimitiveOcclusionResultKeyFuncs>
         PrimitiveOcclusionResults{};
   };
 
-  // A collection of occlusion results by view.
+  /**
+   *A collection of occlusion results by view.
+   */
   struct AggregatedOcclusionUpdate {
     std::vector<SceneViewOcclusionResults> occlusionResultsByView{};
   };
