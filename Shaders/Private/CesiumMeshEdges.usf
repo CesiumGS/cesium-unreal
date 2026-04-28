@@ -27,8 +27,6 @@ float4 SampleOffsetArray[MSAA_SAMPLE_COUNT];
 
 SCREEN_PASS_TEXTURE_VIEWPORT(Output)
 
-float Opacity;
-
 // Return true if A is closer than B
 bool IsCloser(float A, float B)
 {
@@ -46,6 +44,8 @@ void CesiumComposePrimitiveEdgesPS(
 	out float4 OutColor : SV_Target0,
 	out float OutDepth : SV_Depth)
 {
+  OutColor = float4(1, 0, 1, 1);
+  return;
   float2 ViewportUV = (SvPosition.xy - Output_ViewportMin) * Output_ViewportSizeInverse;
 
   float2 WireframeSamplePosition = (ViewportUV * Wireframe_ViewportSize) + Wireframe_ViewportMin;
@@ -107,5 +107,4 @@ void CesiumComposePrimitiveEdgesPS(
   }
 
   OutColor = WireframeColor;
-  OutColor.a *= Opacity;
 }

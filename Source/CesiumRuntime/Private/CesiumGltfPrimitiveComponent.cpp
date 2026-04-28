@@ -4,6 +4,7 @@
 #include "CalcBounds.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumViewExtension.h"
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
@@ -234,4 +235,9 @@ void UCesiumGltfPrimitiveComponent::OnCreatePhysicsState() {
   }
 
   Super::OnCreatePhysicsState();
+}
+
+void UCesiumGltfPrimitiveComponent::registerWithTileset(
+    ACesium3DTileset* pTileset) {
+  pTileset->_cesiumViewExtension->registerComponentWithEdges(this);
 }

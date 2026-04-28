@@ -20,6 +20,8 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
+class ACesium3DTileset;
+
 /**
  * A component that represents and renders a glTF mesh primitive made
  * from triangles.
@@ -51,6 +53,9 @@ public:
       int32_t accessorIndex) const override;
 
   virtual void OnCreatePhysicsState() override;
+
+  // TODO: has to be a nicer way to do this
+  void registerWithTileset(ACesium3DTileset* pTileset);
 
 private:
   CesiumPrimitiveData _cesiumData;

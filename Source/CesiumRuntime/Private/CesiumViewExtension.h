@@ -92,6 +92,9 @@ public:
       bool previouslyOccluded,
       float frameTimeCutoff) const;
 
+  void registerComponentWithEdges(UCesiumGltfPrimitiveComponent* pComponent);
+  void unregisterComponentWithEdges(UCesiumGltfPrimitiveComponent* pComponent);
+
 private:
 #pragma region Occlusion Culling
   /**
@@ -183,7 +186,7 @@ private:
 
 #pragma region EXT_mesh_primitive_edge_visibility
 
-  TArray<UCesiumGltfPrimitiveComponent*> _componentsWithEdgeVisibility;
+  TSet<UCesiumGltfPrimitiveComponent*> _componentsWithEdgeVisibility;
 
 #pragma endregion
 

@@ -50,6 +50,7 @@
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
+#include <CesiumGltf/ExtensionExtMeshPrimitiveEdgeVisibility.h>
 #include <CesiumGltf/ExtensionExtPrimitiveVoxels.h>
 #include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
@@ -3321,6 +3322,10 @@ static void loadPrimitiveGameThreadPart(
         NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
+    if (meshPrimitive.hasExtension<
+            CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>()) {
+      pComponent->registerWithTileset(pTilesetActor);
+    }
   }
 
   CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();

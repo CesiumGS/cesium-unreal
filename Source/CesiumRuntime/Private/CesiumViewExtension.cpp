@@ -87,33 +87,36 @@ public:
     int NumMSAASamples =
         FSceneTexturesConfig::GetEditorPrimitiveNumSamples(FeatureLevel);
 
-    FRHITextureCreateDesc ColorDesc =
-        FRHITextureCreateDesc::Create2D(TEXT("MeshEdgesRenderTarget"))
-            .SetExtent(DesiredBufferSize)
-            .SetFormat(PF_B8G8R8A8)
-            .SetClearValue(FClearValueBinding::Transparent)
-            .SetFlags(
-                ETextureCreateFlags::RenderTargetable |
-                ETextureCreateFlags::ShaderResource)
-            .SetInitialState(ERHIAccess::SRVMask)
-            .SetNumSamples(NumMSAASamples);
+    if (!WireframeColor.IsValid()) {
+      FRHITextureCreateDesc ColorDesc =
+          FRHITextureCreateDesc::Create2D(TEXT("MeshEdgesRenderTarget"))
+              .SetExtent(DesiredBufferSize)
+              .SetFormat(PF_B8G8R8A8)
+              .SetClearValue(FClearValueBinding::Transparent)
+              .SetFlags(
+                  ETextureCreateFlags::RenderTargetable |
+                  ETextureCreateFlags::ShaderResource)
+              .SetInitialState(ERHIAccess::SRVMask)
+              .SetNumSamples(NumMSAASamples);
+      WireframeColor = MakeUnique<FRenderTargetTexture>(ColorDesc);
+    }
 
-    FRHITextureCreateDesc DepthDesc =
-        FRHITextureCreateDesc::Create2D(TEXT("MeshEdgesDepthRenderTarget"))
-            .SetExtent(DesiredBufferSize)
-            .SetFormat(PF_DepthStencil)
-            .SetClearValue(FClearValueBinding::DepthFar)
-            .SetFlags(
-                ETextureCreateFlags::DepthStencilTargetable |
-                ETextureCreateFlags::ShaderResource)
-            .SetInitialState(ERHIAccess::SRVMask)
-            .SetNumSamples(NumMSAASamples);
-
-    WireframeColor = MakeUnique<FRenderTargetTexture>(ColorDesc);
-    WireframeDepth = MakeUnique<FRenderTargetTexture>(DepthDesc);
+    if (!WireframeDepth.IsValid()) {
+      FRHITextureCreateDesc DepthDesc =
+          FRHITextureCreateDesc::Create2D(TEXT("MeshEdgesDepthRenderTarget"))
+              .SetExtent(DesiredBufferSize)
+              .SetFormat(PF_DepthStencil)
+              .SetClearValue(FClearValueBinding::DepthFar)
+              .SetFlags(
+                  ETextureCreateFlags::DepthStencilTargetable |
+                  ETextureCreateFlags::ShaderResource)
+              .SetInitialState(ERHIAccess::SRVMask)
+              .SetNumSamples(NumMSAASamples);
+      WireframeDepth = MakeUnique<FRenderTargetTexture>(DepthDesc);
+    }
   }
-  TUniquePtr<FRenderTargetTexture> WireframeColor;
-  TUniquePtr<FRenderTargetTexture> WireframeDepth;
+  TUniquePtr<FRenderTargetTexture> WireframeColor = nullptr;
+  TUniquePtr<FRenderTargetTexture> WireframeDepth = nullptr;
   TArray<FIntRect> ViewRects;
 };
 
@@ -148,8 +151,7 @@ void CopyViewFamily(
 void RenderMeshEdges_RenderThread(
     FRHICommandListImmediate& RHICmdList,
     FSceneRenderer* SceneRenderer,
-    FCesiumPrimitiveEdgesViewFamilyData& MeshEdgesData,
-    bool bUseSceneColorTexture) {
+    FCesiumPrimitiveEdgesViewFamilyData& MeshEdgesData) {
   MeshEdgesData.WireframeColor->InitResource(RHICmdList);
   MeshEdgesData.WireframeDepth->InitResource(RHICmdList);
 
@@ -175,19 +177,17 @@ void RenderMeshEdges_RenderThread(
   }
   GraphBuilder.Execute();
 
-  for (const FViewInfo& ViewInfo : SceneRenderer->Views) {
-    MeshEdgesData.ViewRects.Emplace(ViewInfo.ViewRect);
-  }
+  // for (const FViewInfo& ViewInfo : SceneRenderer->Views) {
+  //   MeshEdgesData.ViewRects.Emplace(ViewInfo.ViewRect);
+  // }
 
   SceneRenderer->RenderThreadEnd(RHICmdList);
 }
 
 void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
-  if (!ViewFamily.EngineShowFlags.MeshEdges ||
-      ViewFamily.EngineShowFlags.HitProxies) {
+  if (ViewFamily.EngineShowFlags.Wireframe) {
     return;
   }
-
   FCesiumPrimitiveEdgesViewFamilyData* ViewFamilyData =
       ViewFamily
           .GetOrCreateExtentionData<FCesiumPrimitiveEdgesViewFamilyData>();
@@ -250,6 +250,8 @@ void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
             CaptureViewFamily));
   }
 
+  // THIS RESULTS IN A RECURSIVE CALL OF POSTCREATESCENERENDERER. THERE HAS TO
+  // BE A BETTER WAY TO DO THIS!
   FSceneRenderer* SceneRenderer =
       FSceneRenderer::CreateSceneRenderer(&CaptureViewFamily, nullptr);
 
@@ -273,11 +275,7 @@ void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
 
   ENQUEUE_RENDER_COMMAND(CaptureCommand)
   ([SceneRenderer, ViewFamilyData](FRHICommandListImmediate& RHICmdList) {
-    RenderMeshEdges_RenderThread(
-        RHICmdList,
-        SceneRenderer,
-        *ViewFamilyData,
-        true);
+    RenderMeshEdges_RenderThread(RHICmdList, SceneRenderer, *ViewFamilyData);
   });
 }
 
@@ -324,8 +322,6 @@ class FCesiumComposePrimitiveEdgesPS : public FGlobalShader {
 
   SHADER_PARAMETER_STRUCT(FScreenPassTextureViewportParameters, Output)
 
-  SHADER_PARAMETER(float, Opacity)
-
   RENDER_TARGET_BINDING_SLOTS()
   END_SHADER_PARAMETER_STRUCT()
 };
@@ -342,9 +338,6 @@ void ComposeMeshEdges(
     const FRenderTargetBindingSlots& RenderTargets,
     TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) {
   const FSceneViewFamily& ViewFamily = *View.Family;
-  if (!ViewFamily.EngineShowFlags.MeshEdges) {
-    return;
-  }
 
   int ViewIndex = 0;
   for (; ViewIndex < ViewFamily.Views.Num(); ViewIndex++) {
@@ -354,14 +347,17 @@ void ComposeMeshEdges(
 
   const FCesiumPrimitiveEdgesViewFamilyData* ViewFamilyData =
       ViewFamily.GetExtentionData<FCesiumPrimitiveEdgesViewFamilyData>();
+  if (!ViewFamilyData) {
+    return;
+  }
 
+  const FIntRect Viewport = static_cast<const FViewInfo&>(View).ViewRect;
   FRenderTargetTexture& WireframeTextureColor = *ViewFamilyData->WireframeColor;
   FRenderTargetTexture& WireframeTextureDepth = *ViewFamilyData->WireframeDepth;
-  const FIntRect& WireframeViewRect = ViewFamilyData->ViewRects[ViewIndex];
+  const FIntRect& WireframeViewRect = Viewport;
   FScreenPassTextureViewport SceneDepth(
       SceneTextures->GetParameters()->SceneDepthTexture);
-  FScreenPassTextureViewport Output(
-      SceneTextures->GetContents()->SceneColorTexture);
+  FScreenPassTextureViewport Output(RenderTargets[0].GetTexture());
 
   FRHISamplerState* PointClampSampler =
       TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
@@ -369,7 +365,6 @@ void ComposeMeshEdges(
   FCesiumComposePrimitiveEdgesPS::FParameters* PassParameters =
       GraphBuilder
           .AllocParameters<FCesiumComposePrimitiveEdgesPS::FParameters>();
-
   PassParameters->WireframeColorTexture = RegisterExternalTexture(
       GraphBuilder,
       WireframeTextureColor.TextureRHI,
@@ -386,7 +381,6 @@ void ComposeMeshEdges(
       SceneTextures->GetParameters()->SceneDepthTexture;
   PassParameters->DepthSampler = PointClampSampler;
   //  PassParameters->DepthTextureJitter = FVector2f(View.);
-  PassParameters->Opacity = 1.0;
 
   // for (int32 i = 0; i < int32(NumMSAASamples); i++) {
   //   PassParameters->SampleOffsetArray[i].X =
@@ -409,12 +403,6 @@ void ComposeMeshEdges(
   const TShaderRef<FCesiumComposePrimitiveEdgesPS>& PixelShader =
       TShaderMapRef<FCesiumComposePrimitiveEdgesPS>(GlobalShaderMap);
 
-  FIntRect Viewport(
-      RenderTargets.ResolveRect.X1,
-      RenderTargets.ResolveRect.Y1,
-      RenderTargets.ResolveRect.Y1,
-      RenderTargets.ResolveRect.Y2);
-
   FRHIBlendState* BlendState = TStaticBlendState<CW_RGBA>::GetRHI();
   FRHIDepthStencilState* DepthStencilState =
       TStaticDepthStencilState<true, CF_DepthNearOrEqual>::GetRHI();
@@ -430,21 +418,22 @@ void ComposeMeshEdges(
       nullptr,
       DepthStencilState);
 
-  // if (View.IsLastInFamily()) {
-  //   GraphBuilder.AddPostExecuteCallback(
-  //       [&WireframeTextureColor, &WireframeTextureDepth] {
-  //         WireframeTextureColor.ReleaseResource();
-  //         WireframeTextureDepth.ReleaseResource();
-  //       });
-  // }
+  GraphBuilder.AddPostExecuteCallback(
+      [&WireframeTextureColor, &WireframeTextureDepth] {
+        WireframeTextureColor.ReleaseResource();
+        WireframeTextureDepth.ReleaseResource();
+      });
 }
 } // namespace
 
 void CesiumViewExtension::PostCreateSceneRenderer(
     const FSceneViewFamily& InViewFamily,
     ISceneRenderer* Renderer) {
-  RenderMeshEdges(static_cast<FSceneRenderer*>(Renderer)->ViewFamily);
+  if (this->_componentsWithEdgeVisibility.Num()) {
+    RenderMeshEdges(static_cast<FSceneRenderer*>(Renderer)->ViewFamily);
+  }
 }
+
 void CesiumViewExtension::PreRenderView_RenderThread(
     FRDGBuilder& GraphBuilder,
     FSceneView& InView) {
@@ -631,12 +620,19 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
     }
   }
 }
+
 void CesiumViewExtension::PostRenderBasePassDeferred_RenderThread(
     FRDGBuilder& GraphBuilder,
     FSceneView& InView,
     const FRenderTargetBindingSlots& RenderTargets,
     TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) {
-  ComposeMeshEdges(GraphBuilder, InView, RenderTargets, SceneTextures);
+  // AddClearRenderTargetPass(
+  //     GraphBuilder,
+  //     RenderTargets.Output[0].GetTexture(),
+  //     FLinearColor(0, 1, 1, 1));
+  if (this->_componentsWithEdgeVisibility.Num()) {
+    ComposeMeshEdges(GraphBuilder, InView, RenderTargets, SceneTextures);
+  }
 }
 
 void CesiumViewExtension::SubscribeToPostProcessingPass(
@@ -647,4 +643,13 @@ void CesiumViewExtension::SubscribeToPostProcessingPass(
 
 void CesiumViewExtension::SetEnabled(bool enabled) {
   this->_isEnabled = enabled;
+}
+
+void CesiumViewExtension::registerComponentWithEdges(
+    UCesiumGltfPrimitiveComponent* pComponent) {
+  this->_componentsWithEdgeVisibility.Add(pComponent);
+}
+void CesiumViewExtension::unregisterComponentWithEdges(
+    UCesiumGltfPrimitiveComponent* pComponent) {
+  this->_componentsWithEdgeVisibility.Remove(pComponent);
 }

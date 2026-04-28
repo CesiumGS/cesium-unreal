@@ -1474,4 +1474,5 @@ private:
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;
+  friend class UCesiumGltfPrimitiveComponent;
 };
