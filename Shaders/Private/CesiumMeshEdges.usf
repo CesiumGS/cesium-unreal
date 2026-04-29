@@ -9,21 +9,16 @@
 #include "/Engine/Private/ScreenPass.ush"
 #include "/Engine/Private/PostProcessCommon.ush"
 
-#if MSAA_SAMPLE_COUNT > 1
-Texture2DMS<float4, MSAA_SAMPLE_COUNT> WireframeColorTexture;
-Texture2DMS<float, MSAA_SAMPLE_COUNT>  WireframeDepthTexture;
-#else
 Texture2D WireframeColorTexture;
 Texture2D<float> WireframeDepthTexture;
-#endif
 
 SCREEN_PASS_TEXTURE_VIEWPORT(Wireframe)
 
 Texture2D DepthTexture;
 SamplerState DepthSampler;
+
 SCREEN_PASS_TEXTURE_VIEWPORT(Depth)
 float2 DepthTextureJitter;
-float4 SampleOffsetArray[MSAA_SAMPLE_COUNT];
 
 SCREEN_PASS_TEXTURE_VIEWPORT(Output)
 
@@ -44,36 +39,15 @@ void CesiumComposePrimitiveEdgesPS(
 	out float4 OutColor : SV_Target0,
 	out float OutDepth : SV_Depth)
 {
-  OutColor = float4(1, 0, 1, 1);
-  return;
   float2 ViewportUV = (SvPosition.xy - Output_ViewportMin) * Output_ViewportSizeInverse;
-
   float2 WireframeSamplePosition = (ViewportUV * Wireframe_ViewportSize) + Wireframe_ViewportMin;
 
-  float4 WireframeColor;
-  float WireframeDeviceZ;
-  float ShadedDeviceZ;
-	#if MSAA_SAMPLE_COUNT > 1
-	{
-		WireframeColor = float4(WireframeColorTexture.Load(WireframeSamplePosition, TargetSampleIndex).rgb, 1.0);
-		WireframeDeviceZ = WireframeDepthTexture.Load(WireframeSamplePosition, TargetSampleIndex).r;
+  float4 WireframeColor = WireframeColorTexture.Load(int3(WireframeSamplePosition, 0));
+  float WireframeDeviceZ = WireframeDepthTexture.Load(int3(WireframeSamplePosition, 0)).r;
 
-		const float2 SampleOffset = SampleOffsetArray[TargetSampleIndex].xy;
-
-		float2 ShadedDepthUV = (ViewportUV * Depth_ViewportSize + Depth_ViewportMin + SampleOffset - DepthTextureJitter) * Depth_ExtentInverse;
-		ShadedDepthUV = clamp(ShadedDepthUV, Depth_UVViewportBilinearMin, Depth_UVViewportBilinearMax);
-		ShadedDeviceZ = Texture2DSampleLevel(DepthTexture, DepthSampler, ShadedDepthUV, 0).r;
-	}
-	#else
-	{
-    WireframeColor = WireframeColorTexture.Load(int3(WireframeSamplePosition, 0));
-    WireframeDeviceZ = WireframeDepthTexture.Load(int3(WireframeSamplePosition, 0)).r;
-
-    float2 ShadedDepthUV = (ViewportUV * Depth_ViewportSize + Depth_ViewportMin - DepthTextureJitter) * Depth_ExtentInverse;
-    ShadedDepthUV = clamp(ShadedDepthUV, Depth_UVViewportBilinearMin, Depth_UVViewportBilinearMax);
-    ShadedDeviceZ = Texture2DSampleLevel(DepthTexture, DepthSampler, ShadedDepthUV, 0).r;
-  }
-#endif
+  float2 ShadedDepthUV = (ViewportUV * Depth_ViewportSize + Depth_ViewportMin - DepthTextureJitter) * Depth_ExtentInverse;
+  ShadedDepthUV = clamp(ShadedDepthUV, Depth_UVViewportBilinearMin, Depth_UVViewportBilinearMax);
+  float ShadedDeviceZ = Texture2DSampleLevel(DepthTexture, DepthSampler, ViewportUV, 0).r;
 
   if (WireframeDeviceZ == ShadedDeviceZ && WireframeDeviceZ == FarDepthValue)
   {

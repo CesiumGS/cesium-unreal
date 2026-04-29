@@ -5,12 +5,163 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCommon.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "DynamicResolutionState.h"
 #include "Materials/MaterialRenderProxy.h"
 #include "PixelShaderUtils.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneRendering.h"
 
 using namespace Cesium3DTilesSelection;
+
+namespace {
+// COPIED FROM SceneRendering.cpp
+// static
+FIntPoint ApplyResolutionFraction(
+    const FSceneViewFamily& ViewFamily,
+    const FIntPoint& UnscaledViewSize,
+    float ResolutionFraction) {
+  FIntPoint ViewSize;
+
+  // CeilToInt so tha view size is at least 1x1 if ResolutionFraction ==
+  // ISceneViewFamilyScreenPercentage::kMinResolutionFraction.
+  ViewSize.X = FMath::CeilToInt(UnscaledViewSize.X * ResolutionFraction);
+  ViewSize.Y = FMath::CeilToInt(UnscaledViewSize.Y * ResolutionFraction);
+
+  check(ViewSize.GetMin() > 0);
+
+  return ViewSize;
+}
+
+// static
+FIntPoint QuantizeViewRectMin(const FIntPoint& ViewRectMin) {
+  FIntPoint Out;
+
+  // Some code paths of Nanite require that view rect is aligned on 8x8
+  // boundary.
+  static const auto EnableNaniteCVar =
+      IConsoleManager::Get().FindConsoleVariable(TEXT("r.Nanite"));
+  const bool bNaniteEnabled =
+      (EnableNaniteCVar != nullptr) ? (EnableNaniteCVar->GetInt() != 0) : true;
+  const int kMinimumNaniteDivisor = 8; // HTILE size
+
+  QuantizeSceneBufferSize(
+      ViewRectMin,
+      Out,
+      bNaniteEnabled ? kMinimumNaniteDivisor : 0);
+  return Out;
+}
+
+// static
+FIntPoint GetDesiredInternalBufferSize(const FSceneViewFamily& ViewFamily) {
+  // If not supporting screen percentage, bypass all computation.
+  if (!ViewFamily.SupportsScreenPercentage()) {
+    FIntPoint FamilySizeUpperBound(0, 0);
+
+    for (const FSceneView* View : ViewFamily.AllViews) {
+      FamilySizeUpperBound.X =
+          FMath::Max(FamilySizeUpperBound.X, View->UnscaledViewRect.Max.X);
+      FamilySizeUpperBound.Y =
+          FMath::Max(FamilySizeUpperBound.Y, View->UnscaledViewRect.Max.Y);
+    }
+
+    FIntPoint DesiredBufferSize;
+    QuantizeSceneBufferSize(FamilySizeUpperBound, DesiredBufferSize);
+    return DesiredBufferSize;
+  }
+
+  // Compute final resolution fraction.
+  float ResolutionFractionUpperBound = 1.f;
+  if (ISceneViewFamilyScreenPercentage const* ScreenPercentageInterface =
+          ViewFamily.GetScreenPercentageInterface()) {
+    DynamicRenderScaling::TMap<float> DynamicResolutionUpperBounds =
+        ScreenPercentageInterface->GetResolutionFractionsUpperBound();
+    const float PrimaryResolutionFractionUpperBound =
+        DynamicResolutionUpperBounds[GDynamicPrimaryResolutionFraction];
+    ResolutionFractionUpperBound =
+        PrimaryResolutionFractionUpperBound * ViewFamily.SecondaryViewFraction;
+  }
+
+  // TODO CVarLensDistortionffectScreenPercentage not accessible.
+  // if (ViewFamily.Views[0]->bIsViewInfo) {
+  //  const FViewInfo& View = static_cast<const
+  //  FViewInfo&>(*ViewFamily.Views[0]); if (View.LensDistortionLUT.IsEnabled())
+  //  {
+  //    float AffectScreenPercentage =
+  //        CVarLensDistortionAffectScreenPercentage.GetValueOnRenderThread();
+  //    ResolutionFractionUpperBound *= FMath::Lerp(
+  //        1.0,
+  //        View.LensDistortionLUT.ResolutionFraction,
+  //        AffectScreenPercentage);
+  //  }
+  //}
+
+  FIntPoint FamilySizeUpperBound(0, 0);
+
+  // For multiple views, use the maximum overscan fraction to ensure that enough
+  // space is allocated so that any overscanned views do not encroach into the
+  // space of other views
+  float MaxOverscanResolutionFraction = 1.0f;
+  for (const FSceneView* View : ViewFamily.AllViews) {
+    MaxOverscanResolutionFraction = FMath::Max(
+        MaxOverscanResolutionFraction,
+        View->SceneViewInitOptions.OverscanResolutionFraction);
+  }
+
+  ResolutionFractionUpperBound *= MaxOverscanResolutionFraction;
+
+  for (const FSceneView* View : ViewFamily.AllViews) {
+    // Note: This ensures that custom passes (rendered with the main renderer)
+    // ignore screen percentage, like regular scene captures.
+    const float AdjustedResolutionFractionUpperBounds =
+        View->CustomRenderPass
+            ? 1.0f
+            : (View->SceneViewInitOptions.OverridePrimaryResolutionFraction >
+                       0.0
+                   ? (View->SceneViewInitOptions
+                          .OverridePrimaryResolutionFraction *
+                      ViewFamily.SecondaryViewFraction)
+                   : ResolutionFractionUpperBound);
+
+    FIntPoint ViewSize = ApplyResolutionFraction(
+        ViewFamily,
+        View->UnconstrainedViewRect.Size(),
+#include "DynamicRenderScaling.h"
+        AdjustedResolutionFractionUpperBounds);
+    FIntPoint ViewRectMin = QuantizeViewRectMin(FIntPoint(
+        FMath::CeilToInt(
+            View->UnconstrainedViewRect.Min.X *
+            AdjustedResolutionFractionUpperBounds),
+        FMath::CeilToInt(
+            View->UnconstrainedViewRect.Min.Y *
+            AdjustedResolutionFractionUpperBounds)));
+
+    FamilySizeUpperBound.X =
+        FMath::Max(FamilySizeUpperBound.X, ViewRectMin.X + ViewSize.X);
+    FamilySizeUpperBound.Y =
+        FMath::Max(FamilySizeUpperBound.Y, ViewRectMin.Y + ViewSize.Y);
+  }
+
+  check(FamilySizeUpperBound.GetMin() > 0);
+
+  FIntPoint DesiredBufferSize;
+  QuantizeSceneBufferSize(FamilySizeUpperBound, DesiredBufferSize);
+
+#if !UE_BUILD_SHIPPING
+  {
+    // Increase the size of desired buffer size by 2 when testing for view
+    // rectangle offset.
+    static const auto CVar = IConsoleManager::Get().FindTConsoleVariableDataInt(
+        TEXT("r.Test.ViewRectOffset"));
+    if (CVar->GetValueOnAnyThread() > 0) {
+      DesiredBufferSize *= 2;
+    }
+  }
+#endif
+
+  return DesiredBufferSize;
+}
+
+} // namespace
 
 CesiumViewExtension::CesiumViewExtension(const FAutoRegister& autoRegister)
     : FSceneViewExtensionBase(autoRegister) {}
@@ -43,6 +194,8 @@ namespace {
 class FRenderTargetTexture : public FTexture, public FRenderTarget {
 public:
   FRenderTargetTexture(FRHITextureCreateDesc InDesc) : Desc(InDesc) {}
+
+  ~FRenderTargetTexture() { this->ReleaseResource(); }
 
   virtual void InitRHI(FRHICommandListBase& RHICmdList) {
     // Create the sampler state RHI resource.
@@ -84,8 +237,8 @@ public:
   void CreateRenderTargets(
       ERHIFeatureLevel::Type FeatureLevel,
       FIntPoint DesiredBufferSize) {
-    int NumMSAASamples =
-        FSceneTexturesConfig::GetEditorPrimitiveNumSamples(FeatureLevel);
+    int NumMSAASamples = 1;
+     //   FSceneTexturesConfig::GetEditorPrimitiveNumSamples(FeatureLevel);
 
     if (!WireframeColor.IsValid()) {
       FRHITextureCreateDesc ColorDesc =
@@ -115,6 +268,7 @@ public:
       WireframeDepth = MakeUnique<FRenderTargetTexture>(DepthDesc);
     }
   }
+
   TUniquePtr<FRenderTargetTexture> WireframeColor = nullptr;
   TUniquePtr<FRenderTargetTexture> WireframeDepth = nullptr;
   TArray<FIntRect> ViewRects;
@@ -164,10 +318,10 @@ void RenderMeshEdges_RenderThread(
 
   FRDGBuilder GraphBuilder(
       RHICmdList,
-      RDG_EVENT_NAME("MeshEdges"),
+      RDG_EVENT_NAME("CesiumMeshEdges"),
       ERDGBuilderFlags::Parallel);
   {
-    RDG_EVENT_SCOPE(GraphBuilder, "RenderMeshEdges_RenderThread");
+    RDG_EVENT_SCOPE(GraphBuilder, "CesiumRenderMeshEdges_RenderThread");
 
     // Render the scene normally
     {
@@ -177,9 +331,9 @@ void RenderMeshEdges_RenderThread(
   }
   GraphBuilder.Execute();
 
-  // for (const FViewInfo& ViewInfo : SceneRenderer->Views) {
-  //   MeshEdgesData.ViewRects.Emplace(ViewInfo.ViewRect);
-  // }
+  for (const FViewInfo& ViewInfo : SceneRenderer->Views) {
+    MeshEdgesData.ViewRects.Emplace(ViewInfo.ViewRect);
+  }
 
   SceneRenderer->RenderThreadEnd(RHICmdList);
 }
@@ -188,12 +342,13 @@ void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
   if (ViewFamily.EngineShowFlags.Wireframe) {
     return;
   }
+
   FCesiumPrimitiveEdgesViewFamilyData* ViewFamilyData =
       ViewFamily
           .GetOrCreateExtentionData<FCesiumPrimitiveEdgesViewFamilyData>();
 
   ERHIFeatureLevel::Type FeatureLevel = ViewFamily.GetFeatureLevel();
-  FIntPoint DesiredBufferSize = ViewFamily.RenderTarget->GetSizeXY();
+  FIntPoint DesiredBufferSize = GetDesiredInternalBufferSize(ViewFamily);
   ViewFamilyData->CreateRenderTargets(FeatureLevel, DesiredBufferSize);
 
   FEngineShowFlags WireframeShowFlags = ViewFamily.EngineShowFlags;
@@ -354,9 +509,9 @@ void ComposeMeshEdges(
   const FIntRect Viewport = static_cast<const FViewInfo&>(View).ViewRect;
   FRenderTargetTexture& WireframeTextureColor = *ViewFamilyData->WireframeColor;
   FRenderTargetTexture& WireframeTextureDepth = *ViewFamilyData->WireframeDepth;
-  const FIntRect& WireframeViewRect = Viewport;
-  FScreenPassTextureViewport SceneDepth(
-      SceneTextures->GetParameters()->SceneDepthTexture);
+  const FIntRect& WireframeViewRect = ViewFamilyData->ViewRects[ViewIndex];
+  FRDGTexture* pDepthTexture = SceneTextures->GetContents()->SceneDepthTexture;
+  FScreenPassTextureViewport SceneDepth(pDepthTexture);
   FScreenPassTextureViewport Output(RenderTargets[0].GetTexture());
 
   FRHISamplerState* PointClampSampler =
@@ -377,8 +532,7 @@ void ComposeMeshEdges(
       FScreenPassTextureViewport(WireframeViewRect));
   PassParameters->Depth = GetScreenPassTextureViewportParameters(SceneDepth);
   PassParameters->Output = GetScreenPassTextureViewportParameters(Output);
-  PassParameters->DepthTexture =
-      SceneTextures->GetParameters()->SceneDepthTexture;
+  PassParameters->DepthTexture = pDepthTexture;
   PassParameters->DepthSampler = PointClampSampler;
   //  PassParameters->DepthTextureJitter = FVector2f(View.);
 
@@ -626,10 +780,6 @@ void CesiumViewExtension::PostRenderBasePassDeferred_RenderThread(
     FSceneView& InView,
     const FRenderTargetBindingSlots& RenderTargets,
     TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) {
-  // AddClearRenderTargetPass(
-  //     GraphBuilder,
-  //     RenderTargets.Output[0].GetTexture(),
-  //     FLinearColor(0, 1, 1, 1));
   if (this->_componentsWithEdgeVisibility.Num()) {
     ComposeMeshEdges(GraphBuilder, InView, RenderTargets, SceneTextures);
   }
