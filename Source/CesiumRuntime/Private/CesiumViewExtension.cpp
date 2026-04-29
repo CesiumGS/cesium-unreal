@@ -238,7 +238,7 @@ public:
       ERHIFeatureLevel::Type FeatureLevel,
       FIntPoint DesiredBufferSize) {
     int NumMSAASamples = 1;
-     //   FSceneTexturesConfig::GetEditorPrimitiveNumSamples(FeatureLevel);
+    //   FSceneTexturesConfig::GetEditorPrimitiveNumSamples(FeatureLevel);
 
     if (!WireframeColor.IsValid()) {
       FRHITextureCreateDesc ColorDesc =
@@ -271,6 +271,7 @@ public:
 
   TUniquePtr<FRenderTargetTexture> WireframeColor = nullptr;
   TUniquePtr<FRenderTargetTexture> WireframeDepth = nullptr;
+  TUniquePtr<FScene> WireframeScene = nullptr;
   TArray<FIntRect> ViewRects;
 };
 
@@ -338,7 +339,9 @@ void RenderMeshEdges_RenderThread(
   SceneRenderer->RenderThreadEnd(RHICmdList);
 }
 
-void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
+void RenderMeshEdges(
+    FSceneViewFamily& ViewFamily,
+    const TSet<FPrimitiveComponentId>& componentIds) {
   if (ViewFamily.EngineShowFlags.Wireframe) {
     return;
   }
@@ -382,10 +385,25 @@ void RenderMeshEdges(FSceneViewFamily& ViewFamily) {
     // WireframeShowFlags.SetTranslucency(false);
   }
 
+  // TODO: Is it possible with FSceneRenderer to create a new scene?
+  if (!ViewFamilyData->WireframeScene) {
+    ViewFamilyData->WireframeScene = MakeUnique<FScene>();
+    auto proxies = ViewFamily.Scene->GetPrimitiveSceneProxies();
+    for (auto proxy : proxies) {
+      if (!proxy) {
+        continue;
+      }
+      const FPrimitiveComponentId& id = proxy->GetPrimitiveComponentId();
+      if (componentIds.Contains(id)) {
+        ViewFamilyData->WireframeScene->PrimitiveSceneProxies.Add();
+      }
+    }
+  }
+
   FSceneViewFamilyContext CaptureViewFamily(
       FSceneViewFamily::ConstructionValues(
           ViewFamilyData->WireframeColor.Get(),
-          ViewFamily.Scene,
+          ViewFamilyData->WireframeScene.Get(),
           WireframeShowFlags)
           .SetRenderTargetDepth(ViewFamilyData->WireframeDepth.Get())
           .SetResolveScene(true)

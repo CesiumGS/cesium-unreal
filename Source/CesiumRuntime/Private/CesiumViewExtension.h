@@ -187,6 +187,7 @@ private:
 #pragma region EXT_mesh_primitive_edge_visibility
 
   TSet<UCesiumGltfPrimitiveComponent*> _componentsWithEdgeVisibility;
+  TSet<FPrimitiveComponentId> _componentIds;
 
 #pragma endregion
 

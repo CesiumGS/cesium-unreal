@@ -1812,6 +1812,33 @@ static void loadPrimitive(
                     indices);
     }
   }
+
+  const auto* pEdgeExtension =
+      primitive
+          .getExtension<CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>();
+  if (!pEdgeExtension) {
+    return;
+  }
+
+  CesiumGltf::AccessorView<uint8_t> visibilityAccessor(
+      model,
+      pEdgeExtension->visibility);
+  if (visibilityAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    // TODO: LOG
+    return;
+  }
+
+  TUniquePtr<FStaticMeshRenderData> pEdgeRenderData =
+      MakeUnique<FStaticMeshRenderData>();
+  pEdgeRenderData->AllocateLODResources(1);
+  FStaticMeshLODResources& resources = pEdgeRenderData->LODResources[0];
+  FPositionVertexBuffer& positionBuffer =
+      resources.VertexBuffers.PositionVertexBuffer;
+  // TODO: See EdgeVisibilityPipelineStage::createCPULineEdgeGeometry in
+  // CesiumJS
+  // - convert information to line geometry
+  // - on game thread, initialize as a "derived" line component on the original
+  // glTF
 }
 
 static void loadIndexedPrimitive(
