@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.26.0 - 2026-05-01
 
 ##### Additions :tada:
 
@@ -10,6 +10,8 @@
 ##### Fixes :wrench:
 
 - Fixed a bug where Gaussian splats would continually accumulate in the scene, eventually causing the application to crash.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.59.0 to v0.60.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.25.0 - 2026-04-01
 
