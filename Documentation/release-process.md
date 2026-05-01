@@ -151,7 +151,7 @@ Once Epic has published the new release, there are a few more steps to complete.
      - `git tag -a v2.22.0 -m "v2.22.0 release"`
      - `git push origin v2.22.0`
    - Wait for CI to run on the pushed tag.
-   - Go to https://github.com/CesiumGS/cesium-unreal/actions.
+   - Go to https://github.com/CesiumGS/cesium-unreal-samples/actions.
    - Click the build of the tag you just pushed.
    - Scroll down to **Artifacts** and download the artifact (there should be only one).
    - The downloaded file's name will end with `.zip.zip`. Rename it to be just `.zip`.
