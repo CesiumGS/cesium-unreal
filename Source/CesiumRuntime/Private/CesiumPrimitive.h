@@ -29,6 +29,38 @@ struct MeshPrimitive;
 class CesiumPrimitiveData {
 public:
   /**
+   * The factor by which the positions in the glTF primitive is scaled up when
+   * the Unreal mesh is populated.
+   *
+   * We scale up the meshes because Chaos has a degenerate triangle epsilon test
+   * in `TriangleMeshImplicitObject.cpp` that is almost laughably too eager.
+   * Perhaps it would be fine if our meshes actually used units of centimeters
+   * like UE, but they usually use meters instead. With a factor of 1.0, UE will
+   * consider a right triangle that is slightly less than ~10cm on each side to
+   * be degenerate.
+   *
+   * This value should be a power-of-two so the the scale affects only the
+   * exponent of coordinate values, not the mantissa, in order to reduce the
+   * chances of losing precision.
+   */
+  static constexpr double positionScaleFactor = 1024.0;
+
+  /**
+   * The scale matrix to apply to positions in the glTF primitive, derived from
+   * positionScaleFactor.
+   */
+  static constexpr glm::dmat4 positionScaleMatrix = glm::dmat4(
+      glm::dvec4(1.0 / positionScaleFactor, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, 1.0 / positionScaleFactor, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, 1.0 / positionScaleFactor, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
+  ACesium3DTileset* pTilesetActor = nullptr;
+  const CesiumGltf::Model* pModel = nullptr;
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
+  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
+
+  /**
    * Represents the primitive's EXT_mesh_features extension.
    */
   FCesiumPrimitiveFeatures Features;
@@ -56,10 +88,6 @@ public:
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
       EncodedMetadata_DEPRECATED;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-  ACesium3DTileset* pTilesetActor = nullptr;
-  const CesiumGltf::Model* pModel = nullptr;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
 
   /**
    * The double-precision transformation matrix for this glTF node.
@@ -100,34 +128,8 @@ public:
    */
   CesiumGltf::IndexAccessorType IndexAccessor;
 
-  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
-
-  /**
-   * The factor by which the positions in the glTF primitive is scaled up when
-   * the Unreal mesh is populated.
-   *
-   * We scale up the meshes because Chaos has a degenerate triangle epsilon test
-   * in `TriangleMeshImplicitObject.cpp` that is almost laughably too eager.
-   * Perhaps it would be fine if our meshes actually used units of centimeters
-   * like UE, but they usually use meters instead. With a factor of 1.0, UE will
-   * consider a right triangle that is slightly less than ~10cm on each side to
-   * be degenerate.
-   *
-   * This value should be a power-of-two so the the scale affects only the
-   * exponent of coordinate values, not the mantissa, in order to reduce the
-   * chances of losing precision.
-   */
-  static constexpr double positionScaleFactor = 1024.0;
-
-  /**
-   * The scale matrix to apply to positions in the glTF primitive, derived from
-   * positionScaleFactor.
-   */
-  static constexpr glm::dmat4 positionScaleMatrix = glm::dmat4(
-      glm::dvec4(1.0 / positionScaleFactor, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 1.0 / positionScaleFactor, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0 / positionScaleFactor, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+  // TODO: custom index buffer for primitive edges
+  FRawStaticIndexBuffer edgeIndices;
 
   void destroy();
 };
@@ -159,4 +161,5 @@ public:
 
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
+
 };

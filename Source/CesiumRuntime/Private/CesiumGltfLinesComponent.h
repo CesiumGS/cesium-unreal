@@ -20,6 +20,4 @@ public:
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
 
-  // TODO: reuse for primitive edges???
-
 };
