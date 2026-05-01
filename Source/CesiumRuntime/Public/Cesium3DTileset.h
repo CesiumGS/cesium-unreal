@@ -633,11 +633,25 @@ public:
   bool SuspendUpdate;
 
   /**
-   * If true, this tileset is ticked/updated in the editor. If false, is only
+   * If true, this tileset is ticked/updated in the editor. If false, it is only
    * ticked while playing (including Play-in-Editor).
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
   bool UpdateInEditor = true;
+
+  /**
+   * Play-in-Editor creates copies of objects in the level, including tileset
+   * actors. This means that two copies of the same tileset may be loaded into
+   * memory during Play-in-Editor mode.
+   *
+   * When this setting is true, the Editor instance of the tileset will unload
+   * its tiles as Play-in-Editor begins. This can prevent the Editor from
+   * duplicating resources and potentially consuming too much memory. However,
+   * tiles will need to be reloaded for the Editor instance after Play-in-Editor
+   * ends.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool UnloadEditorTilesInPlayMode = false;
 
   /**
    * If true, stats about tile selection are printed to the Output Log.
@@ -1400,6 +1414,8 @@ private:
   void RuntimeSettingsChanged(
       UObject* pObject,
       struct FPropertyChangedEvent& changed);
+
+  void OnPreBeginPIE(bool bIsSimulating);
 #endif
 
 private:
