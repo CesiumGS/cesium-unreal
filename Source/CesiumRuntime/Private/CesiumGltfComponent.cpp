@@ -3257,11 +3257,7 @@ static void loadPrimitiveGameThreadPart(
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadedPrimitiveResult& loadResult,
-    const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision,
-    bool enableDoubleSidedCollisions,
-    bool receiveDecals,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
@@ -3335,7 +3331,8 @@ static void loadPrimitiveGameThreadPart(
   primitiveData.positionAccessor = std::move(loadResult.PositionAccessor);
   primitiveData.indexAccessor = std::move(loadResult.IndexAccessor);
   primitiveData.highPrecisionNodeTransform = loadResult.transform;
-  pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+  pCesiumPrimitive->UpdateTransformFromCesium(
+      pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
   UStaticMesh* pStaticMesh;
   {
@@ -3350,7 +3347,7 @@ static void loadPrimitiveGameThreadPart(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
     pMeshComponent->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
-    pMeshComponent->bReceivesDecals = receiveDecals;
+    pMeshComponent->bReceivesDecals = pTilesetActor->GetReceiveDecals();
     if (loadResult.isUnlit) {
       pMeshComponent->bCastDynamicShadow = false;
     }
@@ -3667,7 +3664,8 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
-      pBodySetup->bDoubleSidedGeometry = enableDoubleSidedCollisions;
+      pBodySetup->bDoubleSidedGeometry =
+          pTilesetActor->GetEnableDoubleSidedCollisions();
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
@@ -3679,7 +3677,7 @@ static void loadPrimitiveGameThreadPart(
         UPhysicsSettings::Get()->bSupportUVFromHitResults;
   }
 
-  if (createNavCollision) {
+  if (pTilesetActor->GetCreateNavCollision()) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateNavCollision)
     pStaticMesh->CreateNavCollision(true);
   }
@@ -3699,7 +3697,6 @@ static void loadPrimitiveGameThreadPart(
 }
 
 static void loadVoxelsGameThreadPart(
-    CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadedPrimitiveResult& loadResult,
     const Cesium3DTilesSelection::Tile& tile,
@@ -3747,10 +3744,8 @@ static void loadVoxelsGameThreadPart(
 }
 
 static void loadGaussianSplatsGameThreadPart(
-    CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadedPrimitiveResult& loadResult,
-    const glm::dmat4x4& cesiumToUnrealTransform,
     ACesium3DTileset* pTilesetActor) {
   if (!loadResult.pGaussianSplatData) {
     UE_LOG(
@@ -3780,12 +3775,13 @@ static void loadGaussianSplatsGameThreadPart(
 
   pGaussianSplat->RegisterWithSubsystem();
 
-  CesiumPrimitiveData& primData = pGaussianSplat->getPrimitiveData();
-  primData.pTilesetActor = pTilesetActor;
-  primData.positionAccessor = std::move(loadResult.PositionAccessor);
-  primData.indexAccessor = std::move(loadResult.IndexAccessor);
-  primData.highPrecisionNodeTransform = loadResult.transform;
-  pGaussianSplat->UpdateTransformFromCesium(cesiumToUnrealTransform);
+  CesiumPrimitiveData& primitiveData = pGaussianSplat->getPrimitiveData();
+  primitiveData.pTilesetActor = pTilesetActor;
+  primitiveData.positionAccessor = std::move(loadResult.PositionAccessor);
+  primitiveData.indexAccessor = std::move(loadResult.IndexAccessor);
+  primitiveData.highPrecisionNodeTransform = loadResult.transform;
+  pGaussianSplat->UpdateTransformFromCesium(
+      pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 }
 
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
@@ -3805,15 +3801,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     CesiumGltf::Model& model,
     ACesium3DTileset* pTilesetActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
-    const glm::dmat4x4& cesiumToUnrealTransform,
-    UMaterialInterface* pBaseMaterial,
-    UMaterialInterface* pBaseTranslucentMaterial,
-    UMaterialInterface* pBaseWaterMaterial,
-    FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision,
-    bool enableDoubleSidedCollisions,
-    bool receiveDecals) {
+    const Cesium3DTilesSelection::Tile& tile) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3836,19 +3824,20 @@ UCesiumGltfComponent::CreateOffGameThread(
   pGltf->EncodedMetadata_DEPRECATED =
       std::move(pReal->loadModelResult.EncodedMetadata_DEPRECATED);
 
-  if (pBaseMaterial) {
-    pGltf->BaseMaterial = pBaseMaterial;
+  if (IsValid(pTilesetActor->GetMaterial())) {
+    pGltf->BaseMaterial = pTilesetActor->GetMaterial();
   }
 
-  if (pBaseTranslucentMaterial) {
-    pGltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
+  if (IsValid(pTilesetActor->GetTranslucentMaterial())) {
+    pGltf->BaseMaterialWithTranslucency =
+        pTilesetActor->GetTranslucentMaterial();
   }
 
-  if (pBaseWaterMaterial) {
-    pGltf->BaseMaterialWithWater = pBaseWaterMaterial;
+  if (IsValid(pTilesetActor->GetWaterMaterial())) {
+    pGltf->BaseMaterialWithWater = pTilesetActor->GetWaterMaterial();
   }
 
-  pGltf->CustomDepthParameters = CustomDepthParameters;
+  pGltf->CustomDepthParameters = pTilesetActor->GetCustomDepthParameters();
   encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
   if (pGltf->EncodedMetadata_DEPRECATED) {
@@ -3860,29 +3849,15 @@ UCesiumGltfComponent::CreateOffGameThread(
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
         if (primitive.pGaussianSplatData) {
-          loadGaussianSplatsGameThreadPart(
-              model,
-              pGltf,
-              primitive,
-              cesiumToUnrealTransform,
-              pTilesetActor);
+          loadGaussianSplatsGameThreadPart(pGltf, primitive, pTilesetActor);
         } else if (primitive.voxelPropertyAttributeIndex) {
-          loadVoxelsGameThreadPart(
-              model,
-              pGltf,
-              primitive,
-              tile,
-              pTilesetActor);
+          loadVoxelsGameThreadPart(pGltf, primitive, tile, pTilesetActor);
         } else {
           loadPrimitiveGameThreadPart(
               model,
               pGltf,
               primitive,
-              cesiumToUnrealTransform,
               tile,
-              createNavCollision,
-              enableDoubleSidedCollisions,
-              receiveDecals,
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures,
@@ -4027,7 +4002,7 @@ void UCesiumGltfComponent::AttachRasterTile(
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
-        CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
+        CesiumPrimitiveData& primitiveData = pPrimitive->getPrimitiveData();
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
         // tile.
@@ -4055,14 +4030,15 @@ void UCesiumGltfComponent::AttachRasterTile(
             check(
                 textureCoordinateID >= 0 &&
                 textureCoordinateID <
-                    primData.overlayTextureCoordinateIDToUVIndex.size());
+                    primitiveData.overlayTextureCoordinateIDToUVIndex.size());
             pMaterial->SetScalarParameterValueByInfo(
                 FMaterialParameterInfo(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                static_cast<float>(primData.overlayTextureCoordinateIDToUVIndex
-                                       [textureCoordinateID]));
+                static_cast<float>(
+                    primitiveData.overlayTextureCoordinateIDToUVIndex
+                        [textureCoordinateID]));
           }
         } else {
           pMaterial->SetTextureParameterValue(
@@ -4077,8 +4053,9 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              static_cast<float>(primData.overlayTextureCoordinateIDToUVIndex
-                                     [textureCoordinateID]));
+              static_cast<float>(
+                  primitiveData.overlayTextureCoordinateIDToUVIndex
+                      [textureCoordinateID]));
         }
       });
 }
