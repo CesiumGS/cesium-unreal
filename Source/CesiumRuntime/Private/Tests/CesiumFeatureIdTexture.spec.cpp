@@ -593,10 +593,11 @@ void FCesiumFeatureIdTextureSpec::Define() {
           2,
           texCoords0,
           0);
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -654,10 +655,11 @@ void FCesiumFeatureIdTextureSpec::Define() {
           texCoords0,
           0);
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           1,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -715,10 +717,11 @@ void FCesiumFeatureIdTextureSpec::Define() {
           texCoords0,
           0);
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -782,10 +785,11 @@ void FCesiumFeatureIdTextureSpec::Define() {
           texCoords0,
           0);
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -873,20 +877,21 @@ void FCesiumFeatureIdTextureSpec::Define() {
           *featureId.texture,
           "PropertyTableName");
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
               texCoord0AccessorIndex));
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
               1));
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           1,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,

@@ -8,6 +8,7 @@
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
 #include "CesiumGltfGaussianSplatComponent.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -3276,10 +3277,7 @@ static void loadPrimitiveGameThreadPart(
   CesiumGltf::MeshPrimitive& meshPrimitive =
       model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
 
-  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
-      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
-
-  UStaticMeshComponent* pMesh = nullptr;
+  UStaticMeshComponent* pMeshComponent = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
   if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
@@ -3288,7 +3286,7 @@ static void loadPrimitiveGameThreadPart(
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
-    pMesh = pPointMesh;
+    pMeshComponent = pPointMesh;
     pCesiumPrimitive = pPointMesh;
   } else if (
       meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINES ||
@@ -3296,15 +3294,15 @@ static void loadPrimitiveGameThreadPart(
       meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINE_STRIP) {
     UCesiumGltfLinesComponent* pLineMesh =
         NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
-    pMesh = pLineMesh;
+    pMeshComponent = pLineMesh;
     pCesiumPrimitive = pLineMesh;
   } else if (!instanceTransforms.empty()) {
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
-    pMesh = pInstancedComponent;
     for (const FTransform& transform : instanceTransforms) {
       pInstancedComponent->AddInstance(transform, false);
     }
+
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
 
     const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
@@ -3315,54 +3313,55 @@ static void loadPrimitiveGameThreadPart(
           pFeaturesMetadataComponent->Description);
     }
 
+    pMeshComponent = pInstancedComponent;
     pCesiumPrimitive = pInstancedComponent;
   } else {
     auto* pComponent =
         NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
-    pMesh = pComponent;
+    pMeshComponent = pComponent;
     pCesiumPrimitive = pComponent;
   }
 
-  CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
-
-  primData.pTilesetActor = pTilesetActor;
-  primData.overlayTextureCoordinateIDToUVIndex =
+  CesiumPrimitiveData& primitiveData = pCesiumPrimitive->getPrimitiveData();
+  primitiveData.pMeshPrimitive = &meshPrimitive;
+  primitiveData.boundingVolume =
+      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
+  primitiveData.pTilesetActor = pTilesetActor;
+  primitiveData.overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
-  primData.GltfToUnrealTexCoordMap =
+  primitiveData.gltfToUnrealTexCoordMap =
       std::move(loadResult.GltfToUnrealTexCoordMap);
-  primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
-  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
-  primData.HighPrecisionNodeTransform = loadResult.transform;
+  primitiveData.texCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+  primitiveData.positionAccessor = std::move(loadResult.PositionAccessor);
+  primitiveData.indexAccessor = std::move(loadResult.IndexAccessor);
+  primitiveData.highPrecisionNodeTransform = loadResult.transform;
   pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    pMesh->bUseDefaultCollision = false;
-    pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-    pMesh->SetFlags(
+    pMeshComponent->bUseDefaultCollision = false;
+    pMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+    pMeshComponent->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    primData.pModel = &model;
-    primData.pMeshPrimitive = &meshPrimitive;
-    primData.boundingVolume = boundingVolume;
-    pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
-    pMesh->SetCustomDepthStencilWriteMask(
+    pMeshComponent->SetRenderCustomDepth(
+        pGltf->CustomDepthParameters.RenderCustomDepth);
+    pMeshComponent->SetCustomDepthStencilWriteMask(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
-    pMesh->SetCustomDepthStencilValue(
+    pMeshComponent->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
-    pMesh->bReceivesDecals = receiveDecals;
+    pMeshComponent->bReceivesDecals = receiveDecals;
     if (loadResult.isUnlit) {
-      pMesh->bCastDynamicShadow = false;
+      pMeshComponent->bCastDynamicShadow = false;
     }
-    pMesh->RuntimeVirtualTextures =
-        primData.pTilesetActor->GetRuntimeVirtualTextures();
-    pMesh->VirtualTextureRenderPassType =
-        primData.pTilesetActor->GetVirtualTextureRenderPassType();
-    pMesh->TranslucencySortPriority =
-        primData.pTilesetActor->GetTranslucencySortPriority();
+    pMeshComponent->RuntimeVirtualTextures =
+        pTilesetActor->GetRuntimeVirtualTextures();
+    pMeshComponent->VirtualTextureRenderPassType =
+        pTilesetActor->GetVirtualTextureRenderPassType();
+    pMeshComponent->TranslucencySortPriority =
+        pTilesetActor->GetTranslucencySortPriority();
 
-    pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
+    pStaticMesh = NewObject<UStaticMesh>(pMeshComponent, componentName);
     // Unreal will crash trying to generate ray tracing information for a
     // static mesh without triangles (and it doesn't make sense anyways!)
     switch (meshPrimitive.mode) {
@@ -3375,7 +3374,7 @@ static void loadPrimitiveGameThreadPart(
       pStaticMesh->bSupportRayTracing = false;
       break;
     }
-    pMesh->SetStaticMesh(pStaticMesh);
+    pMeshComponent->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
@@ -3409,8 +3408,8 @@ static void loadPrimitiveGameThreadPart(
   // "Safe" even though loadResult is still used later, because the methods
   // used during material setup (SetGltfParameterValues, etc.) below do not
   // use these members.
-  primData.Features = std::move(loadResult.Features);
-  primData.Metadata = std::move(loadResult.Metadata);
+  primitiveData.features = std::move(loadResult.Features);
+  primitiveData.metadata = std::move(loadResult.Metadata);
 
   UMaterialInstanceDynamic* pMaterialForGltfPrimitive = nullptr;
   ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
@@ -3621,21 +3620,21 @@ static void loadPrimitiveGameThreadPart(
     }
   }
 
-  primData.EncodedFeatures = std::move(loadResult.EncodedFeatures);
-  primData.EncodedMetadata = std::move(loadResult.EncodedMetadata);
+  primitiveData.encodedFeatures = std::move(loadResult.EncodedFeatures);
+  primitiveData.encodedMetadata = std::move(loadResult.EncodedMetadata);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
   // Doing the above std::move operations invalidates the pointers in the
   // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
   // awkward, but we have to reconstruct the metadata primitive here.
-  primData.Metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      primData.Features,
-      primData.Metadata,
+  primitiveData.metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      primitiveData.features,
+      primitiveData.metadata,
       pGltf->Metadata};
 
   if (loadResult.EncodedMetadata_DEPRECATED) {
-    primData.EncodedMetadata_DEPRECATED =
+    primitiveData.encodedMetadata_DEPRECATED =
         std::move(loadResult.EncodedMetadata_DEPRECATED);
   }
 
@@ -3661,7 +3660,7 @@ static void loadPrimitiveGameThreadPart(
 
     pStaticMesh->CreateBodySetup();
 
-    UBodySetup* pBodySetup = pMesh->GetBodySetup();
+    UBodySetup* pBodySetup = pMeshComponent->GetBodySetup();
 
     // pMesh->UpdateCollisionFromStaticMesh();
     pBodySetup->CollisionTraceFlag =
@@ -3685,13 +3684,12 @@ static void loadPrimitiveGameThreadPart(
     pStaticMesh->CreateNavCollision(true);
   }
 
-  pMesh->SetMobility(pGltf->Mobility);
-
-  pMesh->SetupAttachment(pGltf);
+  pMeshComponent->SetMobility(pGltf->Mobility);
+  pMeshComponent->SetupAttachment(pGltf);
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
-    pMesh->RegisterComponent();
+    pMeshComponent->RegisterComponent();
   }
 
   // Call the observer callback (if any) once all is done
@@ -3784,9 +3782,9 @@ static void loadGaussianSplatsGameThreadPart(
 
   CesiumPrimitiveData& primData = pGaussianSplat->getPrimitiveData();
   primData.pTilesetActor = pTilesetActor;
-  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
-  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
-  primData.HighPrecisionNodeTransform = loadResult.transform;
+  primData.positionAccessor = std::move(loadResult.PositionAccessor);
+  primData.indexAccessor = std::move(loadResult.IndexAccessor);
+  primData.highPrecisionNodeTransform = loadResult.transform;
   pGaussianSplat->UpdateTransformFromCesium(cesiumToUnrealTransform);
 }
 
