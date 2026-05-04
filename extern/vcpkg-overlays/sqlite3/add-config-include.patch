@@ -11,7 +11,7 @@ index 80433f6..cfd213b 100644
  # define SQLITE_PRIVATE static
  #endif
 diff --git a/sqlite3.h b/sqlite3.h
-index 0376113..271cf53 100644
+index 4ed8428..f1cf6d4 100644
 --- a/sqlite3.h
 +++ b/sqlite3.h
 @@ -32,6 +32,7 @@

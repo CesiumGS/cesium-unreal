@@ -120,19 +120,24 @@ endif()
 
 set(ABSL_MINGW_OPTIONS "")
 if(VCPKG_TARGET_IS_MINGW)
+    # LIBRT-NOTFOUND is needed since the system librt may be found by cmake in
+    # a cross-compile setup.
+    # See https://github.com/pywinrt/pywinrt/pull/83 for the FIReference
+    # definition issue.
     set(ABSL_MINGW_OPTIONS "-DLIBRT=LIBRT-NOTFOUND"
         "-DCMAKE_CXX_FLAGS=-D____FIReference_1_boolean_INTERFACE_DEFINED__")
+    # Specify ABSL_BUILD_MONOLITHIC_SHARED_LIBS=ON when VCPKG_LIBRARY_LINKAGE is dynamic to match Abseil's Windows (MSVC) defaults
     if(VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
         vcpkg_list(APPEND ABSL_MINGW_OPTIONS "-DABSL_BUILD_MONOLITHIC_SHARED_LIBS=ON")
     endif()
 endif()
-
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
-        # Build abseil with C++17. Unreal Engine uses C++20, but the Android
-        # NDK bundled with Unreal has incomplete C++20 library support. Building
-        # abseil with C++17 avoids any C++20 library dependencies in abseil's
+        # Build abseil with C++17 rather than the upstream default of ON
+        # (propagate whatever standard the consumer uses). Unreal Engine uses
+        # C++20, but its Android NDK has incomplete C++20 library support.
+        # Building with C++17 avoids C++20 library dependencies in abseil's
         # own compiled code. ABSL_PROPAGATE_CXX_STD=OFF prevents abseil from
         # propagating a C++ standard requirement to consumers via
         # target_compile_features, since Unreal controls its own standard.
@@ -140,6 +145,7 @@ vcpkg_cmake_configure(
         -DCMAKE_CXX_STANDARD=17
         -DABSL_BUILD_TESTING=OFF
         -DABSL_BUILD_TEST_HELPERS=OFF
+        ${ABSL_TEST_HELPERS_OPTIONS}
         ${ABSL_STATIC_RUNTIME_OPTION}
         ${ABSL_MINGW_OPTIONS}
 )
