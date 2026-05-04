@@ -10,6 +10,16 @@
 # CUSTOMIZATION HISTORY:
 #   Originally created Nov 2024 (abseil 20240722.0) to fix Android and MSVC
 #   build issues. Updated to 20260107.1 to match the vcpkg 2026.04.27 baseline.
+#
+# BACKGROUND — Unreal Engine and the Android NDK:
+#   Unreal Engine uses C++20. However, the Android NDK version bundled with
+#   Unreal has incomplete C++20 *library* support even though the compiler
+#   supports C++20 *language* features. This means headers that are compiled
+#   as part of Unreal's Android build (including installed vcpkg headers) must
+#   not rely on C++20 standard library types such as std::partial_ordering.
+#   We build abseil itself with C++17 to avoid any C++20 library dependencies
+#   in abseil's own compilation. We additionally patch the installed headers
+#   to be safe when included by Unreal's C++20 Android build.
 
 if(NOT VCPKG_TARGET_IS_WINDOWS)
     vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
@@ -29,9 +39,11 @@ vcpkg_from_github(
         # port.
         fix-mingw-dll.patch
         # NOTE: The upstream vcpkg port also includes 003-force-cxx-17.patch,
-        # which forces abseil to advertise C++17 language features even when
-        # the compiler is in C++14 mode. We intentionally omit that patch
-        # because Unreal Engine is built with C++14, and we must match.
+        # which prevents abseil from advertising cxx_std_20 as a requirement
+        # to consumers (via target_compile_features) even when a C++20 compiler
+        # is in use. We intentionally omit it because we set
+        # ABSL_PROPAGATE_CXX_STD=OFF below, which makes abseil not propagate
+        # any C++ standard requirement at all.
 )
 
 # -----------------------------------------------------------------------------
@@ -39,7 +51,7 @@ vcpkg_from_github(
 # -----------------------------------------------------------------------------
 # Abseil's CMakeLists.txt unconditionally sets CMAKE_MSVC_RUNTIME_LIBRARY,
 # which conflicts with Unreal Engine's choice of MultiThreadedDLL. We comment
-# it out so our setting (established before this subdirectory is added) wins.
+# it out so our setting (established by the triplet) wins.
 vcpkg_replace_string("${SOURCE_PATH}/CMakeLists.txt"
     "set(CMAKE_MSVC_RUNTIME_LIBRARY \"MultiThreaded$<$<CONFIG:Debug>:Debug>\")"
     "#set(CMAKE_MSVC_RUNTIME_LIBRARY \"MultiThreaded$<$<CONFIG:Debug>:Debug>\")")
@@ -73,15 +85,33 @@ vcpkg_replace_string("${SOURCE_PATH}/absl/base/config.h"
     "//#define ABSL_LTS_RELEASE_PATCH_LEVEL 1")
 
 # -----------------------------------------------------------------------------
-# CUSTOMIZATION 4: Disable std::ordering alias (requires C++20)
+# CUSTOMIZATION 4: Disable std::ordering alias (requires C++20 library)
 # -----------------------------------------------------------------------------
-# ABSL_OPTION_USE_STD_ORDERING defaults to 2 (auto-detect), which would enable
-# the alias when compiling in C++20 mode. Unreal Engine uses C++14, so we force
-# this to 0 to always use abseil's own implementation and avoid any accidental
-# dependency on std::ordering.
+# ABSL_OPTION_USE_STD_ORDERING defaults to 2 (auto-detect), which enables the
+# alias to std::partial_ordering / std::strong_ordering / std::weak_ordering
+# when the compiler reports C++20 support. The Android NDK bundled with Unreal
+# Engine supports C++20 language features but has incomplete C++20 *library*
+# support, so std::ordering types may be unavailable. We force this to 0 to
+# always use abseil's own ordering implementation.
 vcpkg_replace_string("${SOURCE_PATH}/absl/base/options.h"
     "#define ABSL_OPTION_USE_STD_ORDERING 2"
     "#define ABSL_OPTION_USE_STD_ORDERING 0")
+
+# -----------------------------------------------------------------------------
+# CUSTOMIZATION 5: Fix C++20 three-way comparison check in cord.h (NDK r25)
+# -----------------------------------------------------------------------------
+# Android NDK r25 defines __cpp_impl_three_way_comparison (indicating compiler
+# support for C++20 three-way comparison syntax) but does not define
+# __cpp_lib_three_way_comparison (indicating standard library support). Abseil's
+# cord.h guards C++20 comparison code with __cpp_impl_three_way_comparison,
+# which causes a build failure on NDK r25 when the library support is missing.
+# We replace the guard with the library feature macro, which is the correct
+# check. See: https://github.com/abseil/abseil-cpp/pull/1728
+# NOTE: This patch has already been applied upstream to time.h; only cord.h
+# still requires it as of abseil 20260107.1.
+vcpkg_replace_string("${SOURCE_PATH}/absl/strings/cord.h"
+    "__cpp_impl_three_way_comparison"
+    "__cpp_lib_three_way_comparison")
 
 set(ABSL_STATIC_RUNTIME_OPTION "")
 if(VCPKG_TARGET_IS_WINDOWS AND VCPKG_CRT_LINKAGE STREQUAL "static")
@@ -101,13 +131,14 @@ vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     DISABLE_PARALLEL_CONFIGURE
     OPTIONS
-        # CUSTOMIZATION 1 (continued): Force C++14 to match Unreal Engine's ABI.
-        # ABSL_PROPAGATE_CXX_STD=OFF prevents abseil from inheriting the
-        # compiler's default standard, and CMAKE_CXX_STANDARD=14 pins it
-        # explicitly. The upstream port uses ABSL_PROPAGATE_CXX_STD=ON with
-        # C++17 forced via patch; we intentionally diverge here.
+        # Build abseil with C++17. Unreal Engine uses C++20, but the Android
+        # NDK bundled with Unreal has incomplete C++20 library support. Building
+        # abseil with C++17 avoids any C++20 library dependencies in abseil's
+        # own compiled code. ABSL_PROPAGATE_CXX_STD=OFF prevents abseil from
+        # propagating a C++ standard requirement to consumers via
+        # target_compile_features, since Unreal controls its own standard.
         -DABSL_PROPAGATE_CXX_STD=OFF
-        -DCMAKE_CXX_STANDARD=14
+        -DCMAKE_CXX_STANDARD=17
         -DABSL_BUILD_TESTING=OFF
         -DABSL_BUILD_TEST_HELPERS=OFF
         ${ABSL_STATIC_RUNTIME_OPTION}
