@@ -129,7 +129,6 @@ endif()
 
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
-    DISABLE_PARALLEL_CONFIGURE
     OPTIONS
         # Build abseil with C++17. Unreal Engine uses C++20, but the Android
         # NDK bundled with Unreal has incomplete C++20 library support. Building
