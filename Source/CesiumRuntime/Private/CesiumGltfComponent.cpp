@@ -3251,6 +3251,271 @@ void addInstanceFeatureIds(
     }
   }
 }
+
+/**
+ * - Creates a dynamic Unreal material instance, based on the parent glTF's
+ *   material
+ * - Sets up the necessarly glTF + metadata parameters on the instance.
+ * - Move the loadResult's features + metadata to the CesiumPrimitiveData.
+ */
+UMaterialInstanceDynamic* setupMaterialAndMetadata(
+    LoadGltfResult::LoadedPrimitiveResult& loadResult,
+    CesiumGltf::Model& model,
+    UCesiumGltfComponent* pGltf,
+    ICesiumPrimitive* pCesiumPrimitive,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
+    ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
+
+  const CesiumGltf::Material& material =
+      loadResult.materialIndex >= 0 ? model.materials[loadResult.materialIndex]
+                                    : defaultMaterial;
+
+  UMaterialInterface* pUserDesignatedMaterial = nullptr;
+  if (loadResult.onlyWater || !loadResult.onlyLand) {
+    pUserDesignatedMaterial = pGltf->BaseMaterialWithWater;
+  } else if (material.alphaMode == CesiumGltf::Material::AlphaMode::BLEND) {
+    pUserDesignatedMaterial = pGltf->BaseMaterialWithTranslucency;
+  } else {
+    pUserDesignatedMaterial = pGltf->BaseMaterial;
+  }
+  ensure(pUserDesignatedMaterial);
+
+  UMaterialInstanceDynamic* pUserDesignatedMaterialAsDynamic =
+      Cast<UMaterialInstanceDynamic>(pUserDesignatedMaterial);
+  // If the user-designated material is a UMaterialInstanceDynamic, Create()
+  // will reject it as a valid instance parent.  Defer to its non-dynamic
+  // parent instead.
+  UMaterialInterface* pBaseMaterial =
+      pUserDesignatedMaterialAsDynamic
+          ? pUserDesignatedMaterialAsDynamic->Parent.Get()
+          : pUserDesignatedMaterial;
+
+  // pLifecycleEventReceiver->CreateMaterial may need the features and metadata
+  // to already exist on the primitive, so move these early. They are not used
+  // for the material construction anyway.
+  CesiumPrimitiveData& primitiveData = pCesiumPrimitive->getPrimitiveData();
+  primitiveData.features = std::move(loadResult.Features);
+  primitiveData.metadata = std::move(loadResult.Metadata);
+
+  UMaterialInstanceDynamic* pMaterial = nullptr;
+  const FName ImportedSlotName(
+      *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+  if (pLifecycleEventReceiver) {
+    // Possibility to override the material for this primitive
+    pMaterial = pLifecycleEventReceiver->CreateMaterial(
+        *pCesiumPrimitive,
+        pBaseMaterial,
+        ImportedSlotName);
+    check(pMaterial);
+    // pMaterial created above may not have used the suggested pBaseMaterial
+    // passed as input.
+    pBaseMaterial = pMaterial->Parent.Get();
+    // May have changed, but we don't need it from now on:
+    pUserDesignatedMaterialAsDynamic = nullptr;
+  } else {
+    // Same as ICesium3DTilesetLifecycleEventReceiver::CreateMaterial's
+    // default implementation
+    pMaterial = UMaterialInstanceDynamic::Create(
+        pBaseMaterial,
+        nullptr,
+        ImportedSlotName);
+  }
+
+  pMaterial->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  SetGltfParameterValues(
+      model,
+      loadResult,
+      material,
+      pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+  SetWaterParameterValues(
+      model,
+      loadResult,
+      pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+
+  // The base material might be a Material, or it might be a
+  // MaterialInstance. Only MaterialInstances can use the material layer
+  // system, so only MaterialInstances will have UCesiumMaterialUserData.
+  UMaterialInstance* pBaseAsMaterialInstance =
+      Cast<UMaterialInstance>(pBaseMaterial);
+
+  UCesiumMaterialUserData* pCesiumData =
+      pBaseAsMaterialInstance
+          ? pBaseAsMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>()
+          : nullptr;
+
+  // If possible and necessary, attach the CesiumMaterialUserData now.
+#if WITH_EDITORONLY_DATA
+  if (pBaseAsMaterialInstance && !pCesiumData) {
+    const FStaticParameterSet& parameters =
+        pBaseAsMaterialInstance->GetStaticParameters();
+
+    bool hasLayers = parameters.bHasMaterialLayers;
+    if (hasLayers) {
+#if WITH_EDITOR
+      FScopedTransaction transaction(
+          FText::FromString("Add Cesium User Data to Material"));
+      pBaseAsMaterialInstance->Modify();
+#endif
+      pCesiumData = NewObject<UCesiumMaterialUserData>(
+          pBaseAsMaterialInstance,
+          NAME_None,
+          RF_Transactional);
+      pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
+      pCesiumData->UpdateLayerNames();
+    }
+  }
+#endif
+
+  // If CesiumMaterialUserData was not attached (e.g., material was
+  // dynamically created at runtime), then walk the parent chain of the
+  // material to find it.
+  while (pBaseAsMaterialInstance && !pCesiumData) {
+    pBaseAsMaterialInstance =
+        Cast<UMaterialInstance>(pBaseAsMaterialInstance->Parent.Get());
+    if (pBaseAsMaterialInstance) {
+      pCesiumData =
+          pBaseAsMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>();
+    }
+  }
+
+  if (pCesiumData) {
+    SetGltfParameterValues(
+        model,
+        loadResult,
+        material,
+        pMaterial,
+        EMaterialParameterAssociation::LayerParameter,
+        0);
+
+    // Initialize fade uniform to fully visible, in case LOD transitions
+    // are off.
+    int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
+    if (fadeLayerIndex >= 0) {
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(
+              "FadePercentage",
+              EMaterialParameterAssociation::LayerParameter,
+              fadeLayerIndex),
+          1.0f);
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(
+              "FadingType",
+              EMaterialParameterAssociation::LayerParameter,
+              fadeLayerIndex),
+          0.0f);
+    }
+
+    // If there's a "Water" layer, set its parameters
+    int32 waterIndex = pCesiumData->LayerNames.Find("Water");
+    if (waterIndex >= 0) {
+      SetWaterParameterValues(
+          model,
+          loadResult,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          waterIndex);
+    }
+
+    int32 featuresMetadataIndex =
+        pCesiumData->LayerNames.Find("FeaturesMetadata");
+    int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
+    if (featuresMetadataIndex >= 0) {
+      SetFeaturesMetadataParameterValues(
+          *pGltf,
+          loadResult,
+          metadataStatistics,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          featuresMetadataIndex);
+    } else if (metadataIndex >= 0) {
+      // Set parameters for materials generated by the old implementation
+      SetMetadataParameterValues_DEPRECATED(
+          model,
+          *pGltf,
+          loadResult,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          metadataIndex);
+    }
+  }
+
+  if (pUserDesignatedMaterialAsDynamic) {
+    // Ensure any parameters on the original UMaterialInstanceDynamic are
+    // transferred to the copy.
+    for (auto& it : pUserDesignatedMaterialAsDynamic->ScalarParameterValues) {
+      pMaterial->SetScalarParameterValueByInfo(
+          it.ParameterInfo,
+          it.ParameterValue);
+    }
+
+    for (auto& it : pUserDesignatedMaterialAsDynamic->VectorParameterValues) {
+      pMaterial->SetVectorParameterValueByInfo(
+          it.ParameterInfo,
+          it.ParameterValue);
+    }
+
+    for (auto& it :
+         pUserDesignatedMaterialAsDynamic->DoubleVectorParameterValues) {
+      pMaterial->SetVectorParameterValueByInfo(
+          it.ParameterInfo,
+          it.ParameterValue);
+    }
+
+    for (auto& it : pUserDesignatedMaterialAsDynamic->TextureParameterValues) {
+      pMaterial->SetTextureParameterValueByInfo(
+          it.ParameterInfo,
+          it.ParameterValue);
+    }
+
+    for (auto& it : pUserDesignatedMaterialAsDynamic->FontParameterValues) {
+      pMaterial->SetFontParameterValue(
+          it.ParameterInfo,
+          it.FontValue,
+          it.FontPage);
+    }
+  }
+
+  pMaterial->TwoSided = true;
+
+  // Extra material customizations
+  if (pLifecycleEventReceiver) {
+    pLifecycleEventReceiver->CustomizeMaterial(
+        *pCesiumPrimitive,
+        *pMaterial,
+        pCesiumData,
+        material);
+  }
+
+  // Now that the material has been set up, it is safe to move the encoded
+  // features and metadata.
+  primitiveData.encodedFeatures = std::move(loadResult.EncodedFeatures);
+  primitiveData.encodedMetadata = std::move(loadResult.EncodedMetadata);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+  // Doing the above std::move operations invalidates the pointers in the
+  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
+  // awkward, but we have to reconstruct the metadata primitive here.
+  primitiveData.metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      primitiveData.features,
+      primitiveData.metadata,
+      pGltf->Metadata};
+
+  if (loadResult.EncodedMetadata_DEPRECATED) {
+    primitiveData.encodedMetadata_DEPRECATED =
+        std::move(loadResult.EncodedMetadata_DEPRECATED);
+  }
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  return pMaterial;
+}
 } // namespace
 
 static void loadPrimitiveGameThreadPart(
@@ -3380,264 +3645,17 @@ static void loadPrimitiveGameThreadPart(
     pStaticMesh->SetRenderData(std::move(loadResult.pRenderData));
   }
 
-  const CesiumGltf::Material& material =
-      loadResult.materialIndex != -1 ? model.materials[loadResult.materialIndex]
-                                     : defaultMaterial;
-  const FName ImportedSlotName(
-      *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-
-  const auto is_in_blend_mode = [&model](auto& result) {
-    return result.materialIndex != -1 &&
-           model.materials[result.materialIndex].alphaMode ==
-               CesiumGltf::Material::AlphaMode::BLEND;
-  };
-
-  UMaterialInterface* pUserDesignatedMaterial;
-  if (loadResult.onlyWater || !loadResult.onlyLand) {
-    pUserDesignatedMaterial = pGltf->BaseMaterialWithWater;
-  } else {
-    pUserDesignatedMaterial = is_in_blend_mode(loadResult)
-                                  ? pGltf->BaseMaterialWithTranslucency
-                                  : pGltf->BaseMaterial;
-  }
-
-  // Move this right now: CreateMaterial may need them!
-  // "Safe" even though loadResult is still used later, because the methods
-  // used during material setup (SetGltfParameterValues, etc.) below do not
-  // use these members.
-  primitiveData.features = std::move(loadResult.Features);
-  primitiveData.metadata = std::move(loadResult.Metadata);
-
-  UMaterialInstanceDynamic* pMaterialForGltfPrimitive = nullptr;
   ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
       pTilesetActor->GetLifecycleEventReceiver();
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-    ensure(pUserDesignatedMaterial);
 
-    UMaterialInstanceDynamic* pUserDesignatedMaterialAsDynamic =
-        Cast<UMaterialInstanceDynamic>(pUserDesignatedMaterial);
-    // If the user-designated material is a UMaterialInstanceDynamic, Create()
-    // will reject it as a valid instance parent.  Defer to its non-dynamic
-    // parent instead.
-    UMaterialInterface* pBaseMaterial =
-        pUserDesignatedMaterialAsDynamic
-            ? pUserDesignatedMaterialAsDynamic->Parent.Get()
-            : pUserDesignatedMaterial;
-
-    if (pLifecycleEventReceiver) {
-      // Possibility to override the material for this primitive
-      pMaterialForGltfPrimitive = pLifecycleEventReceiver->CreateMaterial(
-          *pCesiumPrimitive,
-          pBaseMaterial,
-          ImportedSlotName);
-      check(pMaterialForGltfPrimitive);
-      // pMaterialForGltfPrimitive created above may not have used the
-      // suggested pBaseMaterial passed as input
-      pBaseMaterial = pMaterialForGltfPrimitive->Parent.Get();
-      // may have changed but we don't need it from now on:
-      pUserDesignatedMaterialAsDynamic = nullptr;
-    } else {
-      // Same as ICesium3DTilesetLifecycleEventReceiver::CreateMaterial's
-      // default implementation
-      pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
-          pBaseMaterial,
-          nullptr,
-          ImportedSlotName);
-    }
-
-    pMaterialForGltfPrimitive->SetFlags(
-        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    SetGltfParameterValues(
-        model,
-        loadResult,
-        material,
-        pMaterialForGltfPrimitive,
-        EMaterialParameterAssociation::GlobalParameter,
-        INDEX_NONE);
-    SetWaterParameterValues(
-        model,
-        loadResult,
-        pMaterialForGltfPrimitive,
-        EMaterialParameterAssociation::GlobalParameter,
-        INDEX_NONE);
-
-    // The base material might be a Material, or it might be a
-    // MaterialInstance. Only MaterialInstances can use the material layer
-    // system, so only MaterialInstances will have UCesiumMaterialUserData.
-    UMaterialInstance* pBaseAsMaterialInstance =
-        Cast<UMaterialInstance>(pBaseMaterial);
-
-    UCesiumMaterialUserData* pCesiumData =
-        pBaseAsMaterialInstance
-            ? pBaseAsMaterialInstance
-                  ->GetAssetUserData<UCesiumMaterialUserData>()
-            : nullptr;
-
-    // If possible and necessary, attach the CesiumMaterialUserData now.
-#if WITH_EDITORONLY_DATA
-    if (pBaseAsMaterialInstance && !pCesiumData) {
-      const FStaticParameterSet& parameters =
-          pBaseAsMaterialInstance->GetStaticParameters();
-
-      bool hasLayers = parameters.bHasMaterialLayers;
-      if (hasLayers) {
-#if WITH_EDITOR
-        FScopedTransaction transaction(
-            FText::FromString("Add Cesium User Data to Material"));
-        pBaseAsMaterialInstance->Modify();
-#endif
-        pCesiumData = NewObject<UCesiumMaterialUserData>(
-            pBaseAsMaterialInstance,
-            NAME_None,
-            RF_Transactional);
-        pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
-        pCesiumData->UpdateLayerNames();
-      }
-    }
-#endif
-
-    // If CesiumMaterialUserData was not attached (e.g., material was
-    // dynamically created at runtime), then walk the parent chain of the
-    // material to find it.
-    while (pBaseAsMaterialInstance && !pCesiumData) {
-      pBaseAsMaterialInstance =
-          Cast<UMaterialInstance>(pBaseAsMaterialInstance->Parent.Get());
-      if (pBaseAsMaterialInstance) {
-        pCesiumData = pBaseAsMaterialInstance
-                          ->GetAssetUserData<UCesiumMaterialUserData>();
-      }
-    }
-
-    if (pCesiumData) {
-      SetGltfParameterValues(
-          model,
+  UMaterialInstanceDynamic* pMaterialForGltfPrimitive =
+      setupMaterialAndMetadata(
           loadResult,
-          material,
-          pMaterialForGltfPrimitive,
-          EMaterialParameterAssociation::LayerParameter,
-          0);
-
-      // Initialize fade uniform to fully visible, in case LOD transitions
-      // are off.
-      int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
-      if (fadeLayerIndex >= 0) {
-        pMaterialForGltfPrimitive->SetScalarParameterValueByInfo(
-            FMaterialParameterInfo(
-                "FadePercentage",
-                EMaterialParameterAssociation::LayerParameter,
-                fadeLayerIndex),
-            1.0f);
-        pMaterialForGltfPrimitive->SetScalarParameterValueByInfo(
-            FMaterialParameterInfo(
-                "FadingType",
-                EMaterialParameterAssociation::LayerParameter,
-                fadeLayerIndex),
-            0.0f);
-      }
-
-      // If there's a "Water" layer, set its parameters
-      int32 waterIndex = pCesiumData->LayerNames.Find("Water");
-      if (waterIndex >= 0) {
-        SetWaterParameterValues(
-            model,
-            loadResult,
-            pMaterialForGltfPrimitive,
-            EMaterialParameterAssociation::LayerParameter,
-            waterIndex);
-      }
-
-      int32 featuresMetadataIndex =
-          pCesiumData->LayerNames.Find("FeaturesMetadata");
-      int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
-      if (featuresMetadataIndex >= 0) {
-        SetFeaturesMetadataParameterValues(
-            *pGltf,
-            loadResult,
-            metadataStatistics,
-            pMaterialForGltfPrimitive,
-            EMaterialParameterAssociation::LayerParameter,
-            featuresMetadataIndex);
-      } else if (metadataIndex >= 0) {
-        // Set parameters for materials generated by the old implementation
-        SetMetadataParameterValues_DEPRECATED(
-            model,
-            *pGltf,
-            loadResult,
-            pMaterialForGltfPrimitive,
-            EMaterialParameterAssociation::LayerParameter,
-            metadataIndex);
-      }
-    }
-
-    if (pUserDesignatedMaterialAsDynamic) {
-      // Ensure any parameters on the original UMaterialInstanceDynamic are
-      // transferred to the copy.
-      for (auto& it : pUserDesignatedMaterialAsDynamic->ScalarParameterValues) {
-        pMaterialForGltfPrimitive->SetScalarParameterValueByInfo(
-            it.ParameterInfo,
-            it.ParameterValue);
-      }
-
-      for (auto& it : pUserDesignatedMaterialAsDynamic->VectorParameterValues) {
-        pMaterialForGltfPrimitive->SetVectorParameterValueByInfo(
-            it.ParameterInfo,
-            it.ParameterValue);
-      }
-
-      for (auto& it :
-           pUserDesignatedMaterialAsDynamic->DoubleVectorParameterValues) {
-        pMaterialForGltfPrimitive->SetVectorParameterValueByInfo(
-            it.ParameterInfo,
-            it.ParameterValue);
-      }
-
-      for (auto& it :
-           pUserDesignatedMaterialAsDynamic->TextureParameterValues) {
-        pMaterialForGltfPrimitive->SetTextureParameterValueByInfo(
-            it.ParameterInfo,
-            it.ParameterValue);
-      }
-
-      for (auto& it : pUserDesignatedMaterialAsDynamic->FontParameterValues) {
-        pMaterialForGltfPrimitive->SetFontParameterValue(
-            it.ParameterInfo,
-            it.FontValue,
-            it.FontPage);
-      }
-    }
-
-    // Extra material customizations
-    if (pLifecycleEventReceiver) {
-      pLifecycleEventReceiver->CustomizeMaterial(
-          *pCesiumPrimitive,
-          *pMaterialForGltfPrimitive,
-          pCesiumData,
-          material);
-    }
-  }
-
-  primitiveData.encodedFeatures = std::move(loadResult.EncodedFeatures);
-  primitiveData.encodedMetadata = std::move(loadResult.EncodedMetadata);
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-  // Doing the above std::move operations invalidates the pointers in the
-  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
-  // awkward, but we have to reconstruct the metadata primitive here.
-  primitiveData.metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      primitiveData.features,
-      primitiveData.metadata,
-      pGltf->Metadata};
-
-  if (loadResult.EncodedMetadata_DEPRECATED) {
-    primitiveData.encodedMetadata_DEPRECATED =
-        std::move(loadResult.EncodedMetadata_DEPRECATED);
-  }
-
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-  pMaterialForGltfPrimitive->TwoSided = true;
+          model,
+          pGltf,
+          pCesiumPrimitive,
+          metadataStatistics,
+          pLifecycleEventReceiver);
 
   pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
 
@@ -3806,12 +3824,6 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
-
-  // TODO: was this a common case before?
-  // (This code checked if there were no loaded primitives in the model)
-  // if (result.size() == 0) {
-  //   return nullptr;
-  // }
 
   UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
   pGltf->pTile = &tile;
