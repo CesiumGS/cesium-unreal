@@ -637,11 +637,11 @@ void FCesiumPropertyTextureSpec::Define() {
           pModelComponent,
           FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.pMeshPrimitive = pPrimitive;
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData = pPrimitiveComponent->getPrimitiveData();
+      primitiveData.pMeshPrimitive = pPrimitive;
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,

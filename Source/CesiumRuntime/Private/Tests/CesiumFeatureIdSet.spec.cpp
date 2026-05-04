@@ -412,8 +412,9 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("returns -1 for invalid hit component", [this]() {
       CesiumGltf::FeatureId featureId;
       featureId.featureCount = 6;
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor = CesiumGltf::AccessorView<FVector3f>(
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor = CesiumGltf::AccessorView<FVector3f>(
           model,
           static_cast<int32_t>(model.accessors.size() - 1));
 
@@ -456,10 +457,11 @@ void FCesiumFeatureIdSetSpec::Define() {
           texCoords,
           0);
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
-      primData.TexCoordAccessorMap.emplace(
+      primitiveData.texCoordAccessorMap.emplace(
           0,
           CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
               model,
@@ -492,8 +494,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       CesiumGltf::FeatureId featureId;
       featureId.featureCount = 6;
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor = CesiumGltf::AccessorView<FVector3f>(
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor = CesiumGltf::AccessorView<FVector3f>(
           model,
           static_cast<int32_t>(model.accessors.size() - 1));
 
@@ -533,8 +536,9 @@ void FCesiumFeatureIdSetSpec::Define() {
           2,
           attributeIndex);
 
-      CesiumPrimitiveData& primData = pPrimitiveComponent->getPrimitiveData();
-      primData.PositionAccessor =
+      CesiumPrimitiveData& primitiveData =
+          pPrimitiveComponent->getPrimitiveData();
+      primitiveData.positionAccessor =
           CesiumGltf::AccessorView<FVector3f>(model, positionAccessorIndex);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
