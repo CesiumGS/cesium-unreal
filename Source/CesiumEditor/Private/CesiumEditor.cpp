@@ -1,20 +1,23 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #include "CesiumEditor.h"
-#include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "Cesium3DTilesetCustomization.h"
 #include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
+#include "CesiumFeaturesMetadataViewer.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServer.h"
 #include "CesiumIonTokenTroubleshooting.h"
+#include "CesiumMetadataValueCustomization.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettingsCustomization.h"
 #include "CesiumSunSky.h"
+#include "CesiumVoxelShaderBuilder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
@@ -28,6 +31,10 @@
 #include "Selection.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
+
+THIRD_PARTY_INCLUDES_START
+#include <Cesium3DTilesSelection/Tileset.h>
+THIRD_PARTY_INCLUDES_END
 
 constexpr int MaximumOverlaysWithDefaultMaterial = 3;
 
@@ -115,6 +122,8 @@ void registerDetailCustomization() {
   FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
   FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
   FCesium3DTilesetCustomization::Register(PropertyEditorModule);
+  FCesiumMetadataValueCustomization::Register(PropertyEditorModule);
+  FCesiumRuntimeSettingsCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
@@ -131,6 +140,8 @@ void unregisterDetailCustomization() {
     FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
     FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
     FCesium3DTilesetCustomization::Unregister(PropertyEditorModule);
+    FCesiumMetadataValueCustomization::Unregister(PropertyEditorModule);
+    FCesiumRuntimeSettingsCustomization::Unregister(PropertyEditorModule);
   }
 }
 
@@ -364,6 +375,16 @@ void FCesiumEditorModule::StartupModule() {
       OnCesiumRasterOverlayIonTroubleshooting.AddRaw(
           this,
           &FCesiumEditorModule::OnRasterOverlayIonTroubleshooting);
+
+  this->_featuresMetadataAddPropertiesSubscription =
+      OnCesiumFeaturesMetadataAddProperties.AddRaw(
+          this,
+          &FCesiumEditorModule::OnFeaturesMetadataAddProperties);
+
+  this->_voxelMetadataBuildShaderSubscription =
+      OnCesiumVoxelMetadataBuildShader.AddRaw(
+          this,
+          &FCesiumEditorModule::OnVoxelMetadataBuildShader);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
@@ -386,6 +407,17 @@ void FCesiumEditorModule::ShutdownModule() {
         this->_rasterOverlayIonTroubleshootingSubscription);
     this->_rasterOverlayIonTroubleshootingSubscription.Reset();
   }
+  if (this->_featuresMetadataAddPropertiesSubscription.IsValid()) {
+    OnCesiumFeaturesMetadataAddProperties.Remove(
+        this->_featuresMetadataAddPropertiesSubscription);
+    this->_featuresMetadataAddPropertiesSubscription.Reset();
+  }
+  if (this->_voxelMetadataBuildShaderSubscription.IsValid()) {
+    OnCesiumVoxelMetadataBuildShader.Remove(
+        this->_voxelMetadataBuildShaderSubscription);
+    this->_voxelMetadataBuildShaderSubscription.Reset();
+  }
+
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
@@ -475,6 +507,16 @@ void FCesiumEditorModule::OnTilesetIonTroubleshooting(
 void FCesiumEditorModule::OnRasterOverlayIonTroubleshooting(
     UCesiumRasterOverlay* pOverlay) {
   CesiumIonTokenTroubleshooting::Open(pOverlay, false);
+}
+
+void FCesiumEditorModule::OnFeaturesMetadataAddProperties(
+    ACesium3DTileset* pTileset) {
+  CesiumFeaturesMetadataViewer::Open(pTileset);
+}
+
+void FCesiumEditorModule::OnVoxelMetadataBuildShader(
+    ACesium3DTileset* pTileset) {
+  CesiumVoxelShaderBuilder::Open(pTileset);
 }
 
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }
@@ -701,6 +743,28 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 
   return NewActor;
 }
+
+/**
+ * Tries to spawn an actor with the given class, with all
+ * default parameters, in the current level of the edited world.
+ * Reselects the spawned actor to ensure that it is properly
+ * displayed in the editor viewport.
+ *
+ * @param actorClass The class
+ * @return The resulting actor, or `nullptr` if the actor
+ * could not be spawned.
+ */
+AActor* SpawnActorWithClassSelected(UClass* actorClass) {
+  AActor* pActor = SpawnActorWithClass(actorClass);
+  if (pActor && GEditor) {
+    GEditor->SelectActor(pActor, false, true);
+    GEditor->RedrawAllViewports();
+    GEditor->SelectActor(pActor, true, true);
+  }
+
+  return pActor;
+}
+
 } // namespace
 
 AActor* FCesiumEditorModule::GetCurrentLevelCesiumSunSky() {
@@ -728,7 +792,12 @@ AActor* FCesiumEditorModule::SpawnBlankTileset() {
 }
 
 AActor* FCesiumEditorModule::SpawnCartographicPolygon() {
-  return SpawnActorWithClass(ACesiumCartographicPolygon::StaticClass());
+  ACesiumCartographicPolygon* pActor = static_cast<ACesiumCartographicPolygon*>(
+      SpawnActorWithClassSelected(ACesiumCartographicPolygon::StaticClass()));
+  if (pActor) {
+    pActor->ResetSplineAndCenterInEditorViewport();
+  }
+  return pActor;
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {

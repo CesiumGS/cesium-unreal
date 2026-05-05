@@ -1,10 +1,11 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "VoxelMegatextures.h"
 
 #include "CesiumGltfVoxelComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMetadataPropertyDetails.h"
+#include "CesiumPropertyAttributeProperty.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
 #include "CesiumVoxelMetadataComponent.h"
@@ -155,8 +156,9 @@ FVoxelMegatextures::FVoxelMegatextures(
     ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
     ([pTexture, pResource = pTexture->GetResource()](
          FRHICommandListImmediate& RHICmdList) {
-      if (!pResource)
+      if (!pResource) {
         return;
+      }
 
       pResource->SetTextureReference(
           pTexture->TextureReference.TextureReferenceRHI);
@@ -178,17 +180,13 @@ UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
   return pProperty ? pProperty->pTexture : nullptr;
 }
 
-/**
- * NOTE: This function assumes that the data being read from pData is the same
- * type that the texture expects. Coercive encoding behavior (similar to what
- * is done for CesiumPropertyTableProperty) could be added in the future.
- */
 /*static*/ void FVoxelMegatextures::directCopyToTexture(
     const FCesiumPropertyAttributeProperty& property,
     const FVoxelMegatextures::TextureData& data,
     const FUpdateTextureRegion3D& updateRegion) {
-  if (!data.pTexture)
+  if (!data.pTexture) {
     return;
+  }
 
   const uint8* pData =
       reinterpret_cast<const uint8*>(property.getAccessorData());

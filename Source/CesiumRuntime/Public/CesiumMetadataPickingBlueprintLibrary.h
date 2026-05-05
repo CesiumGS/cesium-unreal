@@ -11,6 +11,7 @@
 struct FHitResult;
 struct FCesiumPrimitiveFeatures;
 struct FCesiumModelMetadata;
+struct FCesiumPropertyTableProperty;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataPickingBlueprintLibrary

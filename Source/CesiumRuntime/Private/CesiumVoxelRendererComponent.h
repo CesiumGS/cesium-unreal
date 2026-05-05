@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -53,15 +53,10 @@ public:
   bool IsReadyForFinishDestroy() override;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* DefaultMaterial = nullptr;
+  UMaterial* DefaultMaterial = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UStaticMesh* CubeMesh = nullptr;
-
-  /**
-   * The mesh used to render the voxels.
-   */
-  UStaticMeshComponent* MeshComponent = nullptr;
 
   /**
    * The options for creating voxel primitives based on the tileset's
@@ -87,11 +82,14 @@ public:
    * rendering.
    */
   void UpdateTiles(
-      const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>& VisibleTiles,
+      const std::vector<Cesium3DTilesSelection::Tile::ConstPointer>&
+          VisibleTiles,
       const std::vector<double>& VisibleTileScreenSpaceErrors);
 
+  void SyncStatistics(const FCesiumVoxelClassDescription& description);
+
 private:
-  static UMaterialInstanceDynamic* CreateVoxelMaterial(
+  static UMaterialInstanceDynamic* createVoxelMaterial(
       UCesiumVoxelRendererComponent* pVoxelComponent,
       const FVector& dimensions,
       const FVector& paddingBefore,
@@ -101,19 +99,16 @@ private:
       const FCesiumVoxelClassDescription* pDescription,
       const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
-  static double
-  computePriority(const CesiumGeometry::OctreeTileID& tileId, double sse);
-
   struct VoxelTileUpdateInfo {
     const UCesiumGltfVoxelComponent* pComponent;
     double sse;
-    double priority;
   };
 
   struct PriorityLessComparator {
     bool
     operator()(const VoxelTileUpdateInfo& lhs, const VoxelTileUpdateInfo& rhs) {
-      return lhs.priority < rhs.priority;
+      // For now, priority is solely based on SSE.
+      return lhs.sse < rhs.sse;
     }
   };
 
@@ -122,6 +117,10 @@ private:
       std::vector<VoxelTileUpdateInfo>,
       PriorityLessComparator>;
 
+  /**
+   * The mesh used to render the voxels.
+   */
+  UStaticMeshComponent* _pMeshComponent = nullptr;
   TUniquePtr<FVoxelOctree> _pOctree;
   TUniquePtr<FVoxelMegatextures> _pDataTextures;
   std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;

@@ -4,13 +4,9 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCommon.h"
 #include "CesiumEditor.h"
-#include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServerDisplay.h"
 #include "CesiumRuntimeSettings.h"
-THIRD_PARTY_INCLUDES_START
-#include "CesiumUtility/Uri.h"
-THIRD_PARTY_INCLUDES_END
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
 #include "ScopedTransaction.h"
@@ -21,6 +17,11 @@ THIRD_PARTY_INCLUDES_END
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Text/STextBlock.h"
+
+THIRD_PARTY_INCLUDES_START
+#include <CesiumIonClient/Connection.h>
+#include <CesiumUtility/Uri.h>
+THIRD_PARTY_INCLUDES_END
 
 using namespace CesiumIonClient;
 

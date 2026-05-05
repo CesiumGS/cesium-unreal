@@ -159,6 +159,27 @@ UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
   return _cesiumData;
 }
 
+UStaticMeshComponent& UCesiumGltfPrimitiveComponent::GetMeshComponent() {
+  return *this;
+}
+
+ICesiumLoadedTile& UCesiumGltfPrimitiveComponent::GetLoadedTile() {
+  // Not GetAttachParent(): not yet attached (eg. when calling
+  // ICesium3DTilesetLifecycleEventReceiver::CreateMaterial)
+  return *Cast<ICesiumLoadedTile>(GetOuter());
+}
+
+std::optional<uint32_t>
+UCesiumGltfPrimitiveComponent::FindTextureCoordinateIndexForGltfAccessor(
+    int32_t accessorIndex) const {
+  auto uvIndexIt =
+      getPrimitiveData().GltfToUnrealTexCoordMap.find(accessorIndex);
+  if (uvIndexIt != getPrimitiveData().GltfToUnrealTexCoordMap.end())
+    return uvIndexIt->second;
+  else
+    return std::nullopt;
+}
+
 CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
   return _cesiumData;
 }
@@ -166,6 +187,27 @@ CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
 const CesiumPrimitiveData&
 UCesiumGltfInstancedComponent::getPrimitiveData() const {
   return _cesiumData;
+}
+
+UStaticMeshComponent& UCesiumGltfInstancedComponent::GetMeshComponent() {
+  return *this;
+}
+
+ICesiumLoadedTile& UCesiumGltfInstancedComponent::GetLoadedTile() {
+  // Not GetAttachParent(): not yet attached (eg. when calling
+  // ICesium3DTilesetLifecycleEventReceiver::CreateMaterial)
+  return *Cast<ICesiumLoadedTile>(GetOuter());
+}
+
+std::optional<uint32_t>
+UCesiumGltfInstancedComponent::FindTextureCoordinateIndexForGltfAccessor(
+    int32_t accessorIndex) const {
+  auto uvIndexIt =
+      getPrimitiveData().GltfToUnrealTexCoordMap.find(accessorIndex);
+  if (uvIndexIt != getPrimitiveData().GltfToUnrealTexCoordMap.end())
+    return uvIndexIt->second;
+  else
+    return std::nullopt;
 }
 
 void UCesiumGltfPrimitiveComponent::OnCreatePhysicsState() {

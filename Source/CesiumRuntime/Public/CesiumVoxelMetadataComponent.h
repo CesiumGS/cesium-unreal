@@ -1,8 +1,9 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumFeaturesMetadataDescription.h"
+#include "CesiumMetadataComponent.h"
 #include "Templates/UniquePtr.h"
 
 #if WITH_EDITOR
@@ -10,6 +11,8 @@
 #endif
 
 #include "CesiumVoxelMetadataComponent.generated.h"
+
+class UTexture;
 
 /**
  * @brief Description of the metadata properties available in the class used by
@@ -22,32 +25,39 @@ USTRUCT() struct CESIUMRUNTIME_API FCesiumVoxelClassDescription {
   /**
    * @brief The ID of the class in the tileset's metadata schema.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Metadata",
-      Meta = (TitleProperty = "Name"))
-  FString ID;
+  UPROPERTY(EditAnywhere, Category = "Cesium|Metadata")
+  FString ClassId;
 
   /**
    * @brief Descriptions of properties to pass to the Unreal material.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Metadata",
+      Category = "Cesium|Metadata",
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyAttributePropertyDescription> Properties;
+
+  /**
+   * @brief Description of the statistics of the properties on the voxel class.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Metadata|Statistics",
+      Meta = (TitleProperty = "Id"))
+  TArray<FCesiumMetadataPropertyStatisticsDescription> Statistics;
 };
 
 /**
  * @brief A component that can be added to Cesium3DTileset actors to
- * view and style metadata embedded in voxels. The properties can be
- * automatically populated by clicking the "Auto Fill" button. Once a selection
- * of desired metadata is made, the boiler-plate material code to access the
- * selected properties and apply custom shaders can be auto-generated using the
- * "Generate Material" button.
+ * view and style metadata embedded in voxel content. "Build Shader" allows
+ * users to view the voxel metadata properties available in the tileset and
+ * write custom code to style them. Then, the boiler-plate material code to
+ * access the selected properties and apply custom shaders can be auto-generated
+ * using the "Generate Material" button.
  */
 UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumVoxelMetadataComponent : public UActorComponent {
+class CESIUMRUNTIME_API UCesiumVoxelMetadataComponent
+    : public UCesiumMetadataComponent {
   GENERATED_BODY()
 
 public:
@@ -55,51 +65,38 @@ public:
 
 #if WITH_EDITOR
   /**
-   * Populate the description of metadata and feature IDs using the current view
-   * of the tileset. This determines what to encode to the GPU based on the
-   * existing metadata.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
+   * Opens a window to build a custom shader for the tileset using its available
+   * voxel properties.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
-  void AutoFill();
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Build Shader"))
+  void BuildShader();
 
   /**
-   * This button can be used to create a boiler-plate material layer that
-   * exposes the requested metadata properties in the current description. The
-   * nodes to access the metadata will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Content/
-   * folder and TargetMaterialLayer will be set to the new material layer.
+   * Creates or overwrites a boiler-plate material that exposes the requested
+   * metadata properties in the current description and writes out the custom
+   * shader. The changes will be applied to TargetMaterial if it is already
+   * specified. Otherwise a new material layer will be created in the /Content/
+   * folder and TargetMaterial will be set to the new material.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Generate Material"))
   void GenerateMaterial();
 #endif
 
 #if WITH_EDITORONLY_DATA
   /**
-   * This is the target UMaterialFunctionMaterialLayer that the
-   * boiler-plate material generation will use. When pressing
-   * "Generate Material", nodes will be added to this material to enable access
-   * to the requested metadata. If this is left blank, a new material layer
-   * will be created in the /Game/ folder.
+   * This is the target UMaterial that the boiler-plate material generation will
+   * use. When pressing "Generate Material", nodes will be added to this
+   * material to enable access to the requested metadata. If this is left blank,
+   * a new material will be created in the /Content/ folder.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
-
-  /**
-   * A preview of the generated custom shader.
-   */
-  UPROPERTY(
-      VisibleAnywhere,
-      Transient,
-      NonTransactional,
-      Category = "Cesium",
-      Meta =
-          (NoResetToDefault,
-           DisplayAfter = "TargetMaterialLayer",
-           MultiLine = true))
-  FString CustomShaderPreview;
+  UMaterial* TargetMaterial = nullptr;
 
   /**
    * The custom shader code to apply to each voxel that is raymarched.
@@ -109,12 +106,13 @@ public:
       Category = "Cesium",
       Meta =
           (TitleProperty = "Custom Shader",
-           DisplayAfter = "CustomShaderPreview",
+           DisplayAfter = "TargetMaterialLayer",
            MultiLine = true))
-  FString CustomShader = TEXT("return 1;");
+  FString CustomShader = TEXT("return float4(1, 1, 1, 0.02);");
 
   /**
-   * Any additional functions to include for use in the custom shader.
+   * Any additional functions to include for use in the custom shader. The HLSL
+   * code provided here is included verbatim in the generated material.
    */
   UPROPERTY(
       EditAnywhere,
@@ -137,21 +135,20 @@ public:
           (TitleProperty = "Voxel Class", DisplayAfter = "AdditionalFunctions"))
   FCesiumVoxelClassDescription Description;
 
-protected:
-#if WITH_EDITOR
-  virtual void PostLoad() override;
+  /**
+   * Gets a preview of the generated custom shader.
+   */
+  FString getCustomShaderPreview() const;
 
-  virtual void
-  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-  virtual void PostEditChangeChainProperty(
-      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
-#endif
+protected:
+  virtual void OnFetchMetadata(
+      ACesium3DTileset* pActor,
+      const Cesium3DTilesSelection::TilesetMetadata* pMetadata);
+  virtual void ClearStatistics();
 
 private:
-  TObjectPtr<UTexture> pDefaultVolumeTexture;
-
+  TObjectPtr<UTexture> _pDefaultVolumeTexture;
 #if WITH_EDITOR
-  static const FString ShaderPreviewTemplate;
-  void UpdateShaderPreview();
+  static const FString _shaderPreviewTemplate;
 #endif
 };

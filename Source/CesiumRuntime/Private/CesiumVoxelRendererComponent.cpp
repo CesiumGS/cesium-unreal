@@ -1,38 +1,43 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumVoxelRendererComponent.h"
+
 #include "CalcBounds.h"
 #include "Cesium3DTileset.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumMetadataEncodingDetails.h"
 #include "CesiumRuntime.h"
 #include "CesiumVoxelMetadataComponent.h"
 #include "EncodedFeaturesMetadata.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "SceneInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 #include <CesiumGeospatial/Ellipsoid.h>
-#include <CesiumGltf/MeshPrimitive.h>
-#include <CesiumGltf/Model.h>
 #include <CesiumUtility/Math.h>
 #include <variant>
+
+using namespace EncodedFeaturesMetadata;
 
 // Sets default values for this component's properties
 UCesiumVoxelRendererComponent::UCesiumVoxelRendererComponent()
     : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UMaterialInstance> DefaultMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterial> DefaultMaterial;
     ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh;
     FConstructorStatics()
         : DefaultMaterial(TEXT(
-              "/CesiumForUnreal/Materials/Instances/MI_CesiumVoxel.MI_CesiumVoxel")),
+              "/CesiumForUnreal/Materials/M_CesiumVoxelMaterial.M_CesiumVoxelMaterial")),
           CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube")) {}
   };
   static FConstructorStatics ConstructorStatics;
@@ -47,19 +52,19 @@ UCesiumVoxelRendererComponent::UCesiumVoxelRendererComponent()
 UCesiumVoxelRendererComponent::~UCesiumVoxelRendererComponent() {}
 
 void UCesiumVoxelRendererComponent::BeginDestroy() {
-  if (this->MeshComponent) {
+  if (this->_pMeshComponent) {
     // Only handle the destruction of the material instance. The
     // UStaticMeshComponent attached to this component will be destroyed by the
     // call to destroyComponentRecursively in Cesium3DTileset.cpp.
     UMaterialInstanceDynamic* pMaterial =
-        Cast<UMaterialInstanceDynamic>(MeshComponent->GetMaterial(0));
+        Cast<UMaterialInstanceDynamic>(this->_pMeshComponent->GetMaterial(0));
     if (pMaterial) {
       CesiumLifetime::destroy(pMaterial);
     }
   }
 
   // Reset the pointers.
-  this->MeshComponent = nullptr;
+  this->_pMeshComponent = nullptr;
 
   Super::BeginDestroy();
 }
@@ -78,6 +83,13 @@ bool UCesiumVoxelRendererComponent::IsReadyForFinishDestroy() {
 }
 
 namespace {
+FMaterialParameterInfo makeVoxelParameterInfo(const FString& name) {
+  return FMaterialParameterInfo{
+      FName(name),
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE};
+}
+
 EVoxelGridShape getVoxelGridShape(
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
   if (std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume)) {
@@ -110,22 +122,13 @@ void setVoxelBoxProperties(
   // explicit cube mesh. In other words, this scale must be applied in-shader
   // to account for the actual mesh's bounds.
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Shape TransformToUnit Row 0"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      makeVoxelParameterInfo(TEXT("Shape TransformToUnit Row 0")),
       FVector4(0.02, 0, 0, 0));
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Shape TransformToUnit Row 1"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      makeVoxelParameterInfo(TEXT("Shape TransformToUnit Row 1")),
       FVector4(0, 0.02, 0, 0));
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Shape TransformToUnit Row 2"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      makeVoxelParameterInfo(TEXT("Shape TransformToUnit Row 2")),
       FVector4(0, 0, 0.02, 0));
 }
 
@@ -413,61 +416,42 @@ void setVoxelEllipsoidProperties(
           latitudeUVOffset));
 }
 
-FCesiumMetadataValue
-getMetadataValue(const std::optional<CesiumUtility::JsonValue>& jsonValue) {
-  if (!jsonValue)
-    return FCesiumMetadataValue();
-
-  if (jsonValue->isArray()) {
-    CesiumUtility::JsonValue::Array array = jsonValue->getArray();
-    if (array.size() == 0 || array.size() > 4) {
-      return FCesiumMetadataValue();
-    }
-
-    // Attempt to convert the array to a vec4 (or a value with less
-    // dimensions).
-    size_t endIndex = FMath::Min(array.size(), (size_t)4);
-    TArray<float> values;
-    for (size_t i = 0; i < endIndex; i++) {
-      values.Add(UCesiumMetadataValueBlueprintLibrary::GetFloat(
-          getMetadataValue(array[i]),
-          0.0f));
-    }
-
-    switch (values.Num()) {
-    case 1:
-      return FCesiumMetadataValue(values[0]);
-    case 2:
-      return FCesiumMetadataValue(glm::vec2(values[0], values[1]));
-    case 3:
-      return FCesiumMetadataValue(glm::vec3(values[0], values[1], values[2]));
-    case 4:
-      return FCesiumMetadataValue(
-          glm::vec4(values[0], values[1], values[2], values[3]));
-    default:
-      return FCesiumMetadataValue();
-    }
-  }
-
-  if (jsonValue->isInt64()) {
-    return FCesiumMetadataValue(jsonValue->getInt64OrDefault(0));
-  }
-
-  if (jsonValue->isUint64()) {
-    return FCesiumMetadataValue(jsonValue->getUint64OrDefault(0));
-  }
-
-  if (jsonValue->isDouble()) {
-    return FCesiumMetadataValue(jsonValue->getDoubleOrDefault(0.0));
-  }
-
-  return FCesiumMetadataValue();
-}
-
 } // namespace
 
+void UCesiumVoxelRendererComponent::SyncStatistics(
+    const FCesiumVoxelClassDescription& description) {
+  UMaterialInterface* pMaterialInstance =
+      IsValid(this->_pMeshComponent) ? this->_pMeshComponent->GetMaterial(0)
+                                     : nullptr;
+  UMaterialInstanceDynamic* pMaterial =
+      Cast<UMaterialInstanceDynamic>(pMaterialInstance);
+  if (!IsValid(pMaterial)) {
+    return;
+  }
+
+  for (const FCesiumMetadataPropertyStatisticsDescription&
+           statisticsDescription : description.Statistics) {
+    for (const FCesiumMetadataPropertyStatisticValue& value :
+         statisticsDescription.Values) {
+      FString statisticNameInMaterial = getNameForStatistic(
+          FString(),
+          statisticsDescription.Id,
+          value.Semantic);
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(value.Value);
+
+      SetPropertyParameterValue(
+          pMaterial,
+          makeVoxelParameterInfo(statisticNameInMaterial),
+          CesiumMetadataTypeToEncodingType(valueType.Type),
+          value.Value,
+          0.0f);
+    }
+  }
+}
+
 /*static*/ UMaterialInstanceDynamic*
-UCesiumVoxelRendererComponent::CreateVoxelMaterial(
+UCesiumVoxelRendererComponent::createVoxelMaterial(
     UCesiumVoxelRendererComponent* pVoxelComponent,
     const FVector& dimensions,
     const FVector& paddingBefore,
@@ -477,7 +461,6 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
     const FCesiumVoxelClassDescription* pDescription,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
   UMaterialInterface* pMaterial = pTilesetActor->GetMaterial();
-
   UMaterialInstanceDynamic* pVoxelMaterial = UMaterialInstanceDynamic::Create(
       pMaterial ? pMaterial : pVoxelComponent->DefaultMaterial,
       nullptr,
@@ -489,35 +472,35 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   EVoxelGridShape shape = pVoxelComponent->Options.gridShape;
 
   pVoxelMaterial->SetTextureParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Octree"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      FMaterialParameterInfo{
+          TEXT("Octree"),
+          EMaterialParameterAssociation::GlobalParameter,
+          INDEX_NONE},
       pVoxelComponent->_pOctree->getTexture());
   pVoxelMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Shape Constant"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      FMaterialParameterInfo{
+          TEXT("Shape Constant"),
+          EMaterialParameterAssociation::GlobalParameter,
+          INDEX_NONE},
       uint8(shape));
 
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Grid Dimensions"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      FMaterialParameterInfo{
+          TEXT("Grid Dimensions"),
+          EMaterialParameterAssociation::GlobalParameter,
+          INDEX_NONE},
       dimensions);
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Padding Before"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      FMaterialParameterInfo{
+          TEXT("Padding Before"),
+          EMaterialParameterAssociation::GlobalParameter,
+          INDEX_NONE},
       paddingBefore);
   pVoxelMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo(
-          UTF8_TO_TCHAR("Padding After"),
-          EMaterialParameterAssociation::LayerParameter,
-          0),
+      FMaterialParameterInfo{
+          TEXT("Padding After"),
+          EMaterialParameterAssociation::GlobalParameter,
+          INDEX_NONE},
       paddingAfter);
 
   if (shape == EVoxelGridShape::Box) {
@@ -536,84 +519,82 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
         pTilesetActor);
   }
 
-  if (pDescription && pVoxelClass) {
-    for (const auto& propertyIt : pVoxelClass->properties) {
-      FString UnrealName(propertyIt.first.c_str());
-
-      for (const FCesiumPropertyAttributePropertyDescription& Property :
-           pDescription->Properties) {
-        if (Property.Name != UnrealName) {
-          continue;
-        }
-
-        FString PropertyName =
-            EncodedFeaturesMetadata::createHlslSafeName(Property.Name);
-
-        pVoxelMaterial->SetTextureParameterValueByInfo(
-            FMaterialParameterInfo(
-                FName(PropertyName),
-                EMaterialParameterAssociation::LayerParameter,
-                0),
-            pVoxelComponent->_pDataTextures->getTexture(Property.Name));
-
-        if (Property.PropertyDetails.bHasScale) {
-          EncodedFeaturesMetadata::SetPropertyParameterValue(
-              pVoxelMaterial,
-              EMaterialParameterAssociation::LayerParameter,
-              0,
-              PropertyName +
-                  EncodedFeaturesMetadata::MaterialPropertyScaleSuffix,
-              Property.EncodingDetails.Type,
-              getMetadataValue(propertyIt.second.scale),
-              1);
-        }
-
-        if (Property.PropertyDetails.bHasOffset) {
-          EncodedFeaturesMetadata::SetPropertyParameterValue(
-              pVoxelMaterial,
-              EMaterialParameterAssociation::LayerParameter,
-              0,
-              PropertyName +
-                  EncodedFeaturesMetadata::MaterialPropertyOffsetSuffix,
-              Property.EncodingDetails.Type,
-              getMetadataValue(propertyIt.second.offset),
-              0);
-        }
-
-        if (Property.PropertyDetails.bHasNoDataValue) {
-          EncodedFeaturesMetadata::SetPropertyParameterValue(
-              pVoxelMaterial,
-              EMaterialParameterAssociation::LayerParameter,
-              0,
-              PropertyName +
-                  EncodedFeaturesMetadata::MaterialPropertyNoDataSuffix,
-              Property.EncodingDetails.Type,
-              getMetadataValue(propertyIt.second.noData),
-              0);
-        }
-
-        if (Property.PropertyDetails.bHasDefaultValue) {
-          EncodedFeaturesMetadata::SetPropertyParameterValue(
-              pVoxelMaterial,
-              EMaterialParameterAssociation::LayerParameter,
-              0,
-              PropertyName +
-                  EncodedFeaturesMetadata::MaterialPropertyDefaultValueSuffix,
-              Property.EncodingDetails.Type,
-              getMetadataValue(propertyIt.second.defaultProperty),
-              0);
-        }
-      }
-    }
-
+  if (pVoxelComponent->_pDataTextures) {
     const glm::uvec3& tileCount =
         pVoxelComponent->_pDataTextures->getTileCountAlongAxes();
     pVoxelMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            UTF8_TO_TCHAR("Tile Count"),
-            EMaterialParameterAssociation::LayerParameter,
-            0),
+        FMaterialParameterInfo{
+            TEXT("Tile Count"),
+            EMaterialParameterAssociation::GlobalParameter,
+            INDEX_NONE},
         FVector(tileCount.x, tileCount.y, tileCount.z));
+  }
+
+  if (pDescription && pVoxelClass) {
+    for (const FCesiumPropertyAttributePropertyDescription&
+             propertyDescription : pDescription->Properties) {
+      std::string propertyId = TCHAR_TO_UTF8(*propertyDescription.Name);
+      if (!pVoxelClass->properties.contains(propertyId)) {
+        continue;
+      }
+
+      const Cesium3DTiles::ClassProperty& property =
+          pVoxelClass->properties.at(propertyId);
+      FCesiumMetadataValueType valueType =
+          FCesiumMetadataValueType::fromClassProperty(property);
+
+      FString propertyNameInMaterial =
+          createHlslSafeName(propertyDescription.Name);
+
+      pVoxelMaterial->SetTextureParameterValueByInfo(
+          FMaterialParameterInfo{
+              FName(propertyNameInMaterial),
+              EMaterialParameterAssociation::GlobalParameter,
+              INDEX_NONE},
+          pVoxelComponent->_pDataTextures->getTexture(propertyNameInMaterial));
+
+      if (propertyDescription.PropertyDetails.bHasScale && property.scale) {
+        SetPropertyParameterValue(
+            pVoxelMaterial,
+            makeVoxelParameterInfo(
+                propertyNameInMaterial + MaterialPropertyScaleSuffix),
+            propertyDescription.EncodingDetails.Type,
+            FCesiumMetadataValue(*property.scale, valueType),
+            1);
+      }
+
+      if (propertyDescription.PropertyDetails.bHasOffset && property.offset) {
+        SetPropertyParameterValue(
+            pVoxelMaterial,
+            makeVoxelParameterInfo(
+                propertyNameInMaterial + MaterialPropertyOffsetSuffix),
+            propertyDescription.EncodingDetails.Type,
+            FCesiumMetadataValue(*property.offset, valueType),
+            0);
+      }
+
+      if (propertyDescription.PropertyDetails.bHasNoDataValue &&
+          property.noData) {
+        SetPropertyParameterValue(
+            pVoxelMaterial,
+            makeVoxelParameterInfo(
+                propertyNameInMaterial + MaterialPropertyNoDataSuffix),
+            propertyDescription.EncodingDetails.Type,
+            FCesiumMetadataValue(*property.noData, valueType),
+            0);
+      }
+
+      if (propertyDescription.PropertyDetails.bHasDefaultValue &&
+          property.defaultProperty) {
+        SetPropertyParameterValue(
+            pVoxelMaterial,
+            makeVoxelParameterInfo(
+                propertyNameInMaterial + MaterialPropertyDefaultValueSuffix),
+            propertyDescription.EncodingDetails.Type,
+            FCesiumMetadataValue(*property.defaultProperty, valueType),
+            0);
+      }
+    }
   }
 
   return pVoxelMaterial;
@@ -729,7 +710,7 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   pVoxelMesh->SetupAttachment(pVoxelComponent);
   pVoxelMesh->RegisterComponent();
 
-  pVoxelComponent->MeshComponent = pVoxelMesh;
+  pVoxelComponent->_pMeshComponent = pVoxelMesh;
 
   // The expected size of the incoming glTF attributes depends on padding and
   // voxel grid shape.
@@ -781,8 +762,14 @@ UCesiumVoxelRendererComponent::CreateVoxelMaterial(
   options.gridShape = shape;
   options.voxelCount = dataDimensions.x * dataDimensions.y * dataDimensions.z;
 
+  const Cesium3DTiles::ClassStatistics* pStatistics = nullptr;
+  if (tilesetMetadata.statistics &&
+      tilesetMetadata.statistics->classes.contains(voxelClassId)) {
+    pStatistics = &tilesetMetadata.statistics->classes.at(voxelClassId);
+  }
+
   UMaterialInstanceDynamic* pMaterial =
-      UCesiumVoxelRendererComponent::CreateVoxelMaterial(
+      UCesiumVoxelRendererComponent::createVoxelMaterial(
           pVoxelComponent,
           FVector(dimensions[0], dimensions[1], dimensions[2]),
           FVector(paddingBefore.x, paddingBefore.y, paddingBefore.z),
@@ -857,9 +844,9 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
           pNode->lastKnownScreenSpaceError = sse;
         }
 
-        // Don't create the missing node just yet? It may not be added to the
+        // Don't create the missing node just yet; it may not be added to the
         // tree depending on the priority of other nodes.
-        priorityQueue.push({pVoxel, sse, computePriority(pVoxel->TileId, sse)});
+        priorityQueue.push({pVoxel, sse});
       });
 
   if (this->_visibleTileQueue.empty()) {
@@ -881,8 +868,8 @@ void UCesiumVoxelRendererComponent::UpdateTiles(
         if (!pRight) {
           return true;
         }
-        return computePriority(lhs, pLeft->lastKnownScreenSpaceError) >
-               computePriority(rhs, pRight->lastKnownScreenSpaceError);
+        return pLeft->lastKnownScreenSpaceError >
+               pRight->lastKnownScreenSpaceError;
       });
 
   size_t existingNodeCount = this->_loadedNodeIds.size();
@@ -1037,11 +1024,11 @@ void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
   FTransform transform = FTransform(VecMath::createMatrix(
       CesiumToUnrealTransform * this->HighPrecisionTransform));
 
-  if (this->MeshComponent->Mobility == EComponentMobility::Movable) {
+  if (this->_pMeshComponent->Mobility == EComponentMobility::Movable) {
     // For movable objects, move the component in the normal way, but don't
     // generate collisions along the way. Teleporting physics is imperfect,
     // but it's the best available option.
-    this->MeshComponent->SetRelativeTransform(
+    this->_pMeshComponent->SetRelativeTransform(
         transform,
         false,
         nullptr,
@@ -1053,28 +1040,18 @@ void UCesiumVoxelRendererComponent::UpdateTransformFromCesium(
     // because, we assume, the globe and globe-oriented lights, etc. are
     // moving too, so in a relative sense the object isn't actually moving.
     // This isn't a perfect assumption, of course.
-    this->MeshComponent->SetRelativeTransform_Direct(transform);
-    this->MeshComponent->UpdateComponentToWorld();
-    this->MeshComponent->MarkRenderTransformDirty();
+    this->_pMeshComponent->SetRelativeTransform_Direct(transform);
+    this->_pMeshComponent->UpdateComponentToWorld();
+    this->_pMeshComponent->MarkRenderTransformDirty();
   }
 
   if (this->Options.gridShape == EVoxelGridShape::Ellipsoid) {
     // Ellipsoid voxels are rendered specially due to the ellipsoid radii and
     // georeference, so the material must be updated here.
     UMaterialInstanceDynamic* pMaterial =
-        Cast<UMaterialInstanceDynamic>(this->MeshComponent->GetMaterial(0));
+        Cast<UMaterialInstanceDynamic>(this->_pMeshComponent->GetMaterial(0));
     ACesiumGeoreference* pGeoreference = this->_pTileset->ResolveGeoreference();
 
     updateEllipsoidVoxelParameters(pMaterial, pGeoreference);
   }
-}
-
-double UCesiumVoxelRendererComponent::computePriority(
-    const CesiumGeometry::OctreeTileID& tileId,
-    double sse) {
-  // This heuristic is intentionally biased towards tiles with lower levels.
-  // Without this, tilesets with many leaf tiles will kick all of the lower
-  // level detail tiles from the megatexture, resulting in holes or other
-  // artifacts.
-  return sse / (sse + 1.0 + tileId.level);
 }

@@ -4,6 +4,7 @@
 
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
+#include "CesiumLoadedTile.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
@@ -118,11 +119,21 @@ public:
    */
   static constexpr double positionScaleFactor = 1024.0;
 
+  /**
+   * The scale matrix to apply to positions in the glTF primitive, derived from
+   * positionScaleFactor.
+   */
+  static constexpr glm::dmat4 positionScaleMatrix = glm::dmat4(
+      glm::dvec4(1.0 / positionScaleFactor, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, 1.0 / positionScaleFactor, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, 1.0 / positionScaleFactor, 0.0),
+      glm::dvec4(0.0, 0.0, 0.0, 1.0));
+
   void destroy();
 };
 
 UINTERFACE()
-class UCesiumPrimitive : public UInterface {
+class UCesiumPrimitive : public UCesiumLoadedTilePrimitive {
   GENERATED_BODY()
 };
 
@@ -135,11 +146,16 @@ class UCesiumPrimitive : public UInterface {
  * code reuse and make certain functions (e.g., UpdateTransformFromCesium())
  * simpler.
  */
-class ICesiumPrimitive {
+class ICesiumPrimitive : public ICesiumLoadedTilePrimitive {
   GENERATED_BODY()
 public:
   virtual CesiumPrimitiveData& getPrimitiveData() = 0;
   virtual const CesiumPrimitiveData& getPrimitiveData() const = 0;
+
+  // from ICesiumLoadedTilePrimitive:
+  const CesiumGltf::MeshPrimitive* GetMeshPrimitive() const override;
+  const FCesiumPrimitiveFeatures& GetPrimitiveFeatures() const override;
+  const FCesiumPrimitiveMetadata& GetPrimitiveMetadata() const override;
 
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;

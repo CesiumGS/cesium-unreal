@@ -1,4 +1,4 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumVoxelMetadataComponent.h"
 
@@ -22,13 +22,13 @@
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "ComponentReregisterContext.h"
-#include "Containers/LazyPrintf.h"
 #include "Containers/Map.h"
 #include "ContentBrowserModule.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "IContentBrowserSingleton.h"
 #include "IMaterialEditor.h"
 #include "Interfaces/IPluginManager.h"
+#include "MaterialEditingLibrary.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialAttributeDefinitionMap.h"
 #include "Materials/MaterialExpressionAppendVector.h"
@@ -37,10 +37,7 @@
 #include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionIf.h"
 #include "Materials/MaterialExpressionMaterialFunctionCall.h"
-#include "Materials/MaterialExpressionReroute.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
-#include "Materials/MaterialExpressionSetMaterialAttributes.h"
-#include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionTextureObjectParameter.h"
 #include "Materials/MaterialExpressionTextureProperty.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
@@ -64,171 +61,111 @@ UCesiumVoxelMetadataComponent::UCesiumVoxelMetadataComponent() {
               TEXT("/Engine/EngineResources/DefaultVolumeTexture")) {}
   };
   static FConstructorStatics ConstructorStatics;
-  pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
-
-#if WITH_EDITOR
-  this->UpdateShaderPreview();
-#endif
+  this->_pDefaultVolumeTexture = ConstructorStatics.DefaultVolumeTexture.Object;
 }
 
-#if WITH_EDITOR
-void UCesiumVoxelMetadataComponent::PostLoad() {
-  Super::PostLoad();
-  this->UpdateShaderPreview();
-}
-
-void UCesiumVoxelMetadataComponent::PostEditChangeProperty(
-    FPropertyChangedEvent& PropertyChangedEvent) {
-  Super::PostEditChangeProperty(PropertyChangedEvent);
-
-  if (!PropertyChangedEvent.Property) {
+void UCesiumVoxelMetadataComponent::OnFetchMetadata(
+    ACesium3DTileset* pActor,
+    const Cesium3DTilesSelection::TilesetMetadata* pMetadata) {
+  if (!IsValid(pActor) || !pMetadata || !pMetadata->statistics) {
+    // Tilesets may not contain any statistics...
     return;
   }
 
-  FName PropName = PropertyChangedEvent.Property->GetFName();
-  FString PropNameAsString = PropertyChangedEvent.Property->GetName();
-
-  if (!PropertyChangedEvent.Property) {
-    return;
-  }
-
-  if (PropName == GET_MEMBER_NAME_CHECKED(
-                      UCesiumVoxelMetadataComponent,
-                      CustomShader) ||
-      PropName == GET_MEMBER_NAME_CHECKED(
-                      UCesiumVoxelMetadataComponent,
-                      AdditionalFunctions) ||
-      PropName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumVoxelMetadataComponent, Description)) {
-    this->UpdateShaderPreview();
-  }
-}
-
-void UCesiumVoxelMetadataComponent::PostEditChangeChainProperty(
-    FPropertyChangedChainEvent& PropertyChangedChainEvent) {
-  Super::PostEditChangeChainProperty(PropertyChangedChainEvent);
-  if (!PropertyChangedChainEvent.Property ||
-      PropertyChangedChainEvent.PropertyChain.IsEmpty()) {
-    return;
-  }
-  this->UpdateShaderPreview();
-}
-
-namespace {
-FCesiumMetadataValueType
-GetValueTypeFromClassProperty(const Cesium3DTiles::ClassProperty& Property) {
-  FCesiumMetadataValueType ValueType;
-  ValueType.Type = (ECesiumMetadataType)CesiumGltf::convertStringToPropertyType(
-      Property.type);
-  ValueType.ComponentType = (ECesiumMetadataComponentType)
-      CesiumGltf::convertStringToPropertyComponentType(
-          Property.componentType.value_or(""));
-  ValueType.bIsArray = Property.array;
-  return ValueType;
-}
-
-void AutoFillVoxelClassDescription(
-    FCesiumVoxelClassDescription& description,
-    const std::string& voxelClassID,
-    const Cesium3DTiles::Class& voxelClass) {
-  description.ID = voxelClassID.c_str();
-
-  for (const auto& propertyIt : voxelClass.properties) {
-    auto pExistingProperty = description.Properties.FindByPredicate(
-        [&propertyName = propertyIt.first](
-            const FCesiumPropertyAttributePropertyDescription&
-                existingProperty) {
-          return existingProperty.Name == propertyName.c_str();
-        });
-
-    if (pExistingProperty) {
-      // We have already accounted for this property.
-      continue;
-    }
-
-    FCesiumPropertyAttributePropertyDescription& property =
-        description.Properties.Emplace_GetRef();
-    property.Name = propertyIt.first.c_str();
-
-    property.PropertyDetails.SetValueType(
-        GetValueTypeFromClassProperty(propertyIt.second));
-    property.PropertyDetails.ArraySize = propertyIt.second.count.value_or(0);
-    property.PropertyDetails.bIsNormalized = propertyIt.second.normalized;
-
-    // These values are not actually validated until the material is generated.
-    property.PropertyDetails.bHasOffset = propertyIt.second.offset.has_value();
-    property.PropertyDetails.bHasScale = propertyIt.second.scale.has_value();
-    property.PropertyDetails.bHasNoDataValue =
-        propertyIt.second.noData.has_value();
-    property.PropertyDetails.bHasDefaultValue =
-        propertyIt.second.defaultProperty.has_value();
-
-    property.EncodingDetails = CesiumMetadataPropertyDetailsToEncodingDetails(
-        property.PropertyDetails);
-  }
-}
-} // namespace
-
-void UCesiumVoxelMetadataComponent::AutoFill() {
-  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
-  const Cesium3DTilesSelection::Tileset* pTileset =
-      pOwner ? pOwner->GetTileset() : nullptr;
-  if (!pTileset || !pTileset->getRootTile()) {
-    return;
-  }
-
-  const Cesium3DTilesSelection::TileExternalContent* pExternalContent =
-      pTileset->getRootTile()->getContent().getExternalContent();
-  if (!pExternalContent) {
-    return;
-  }
-
-  const auto* pVoxelExtension =
-      pExternalContent
-          ->getExtension<Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
-  if (!pVoxelExtension) {
+  // ...however, if statistics are present, then there must be a schema.
+  if (!pMetadata->schema) {
     UE_LOG(
         LogCesium,
-        Warning,
+        Error,
         TEXT(
-            "Tileset %s does not contain voxel content, so CesiumVoxelMetadataComponent will have no effect."),
-        *pOwner->GetName());
+            "Tileset %s has incomplete metadata and cannot sync its statistics with "
+            "UCesiumVoxelMetadataComponent."),
+        *pActor->GetName());
     return;
   }
 
-  const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
-      pTileset->getMetadata();
-  if (!pMetadata || !pMetadata->schema) {
+  const std::string classId(TCHAR_TO_UTF8(*this->Description.ClassId));
+  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
+  const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
+
+  if (!schema.classes.contains(classId) ||
+      !statistics.classes.contains(classId)) {
     return;
   }
 
-  const std::string& voxelClassId = pVoxelExtension->classProperty;
-  if (pMetadata->schema->classes.find(voxelClassId) ==
-      pMetadata->schema->classes.end()) {
-    return;
+  const Cesium3DTiles::Class& voxelClass = schema.classes.at(classId);
+  const Cesium3DTiles::ClassStatistics& classStatistics =
+      statistics.classes.at(classId);
+
+  for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+       this->Description.Statistics) {
+    std::string propertyId = TCHAR_TO_UTF8(*propertyStatistics.Id);
+
+    auto propertyStatisticsIt = classStatistics.properties.find(propertyId);
+    if (propertyStatisticsIt != classStatistics.properties.end()) {
+      FCesiumMetadataValueType type;
+      if (voxelClass.properties.contains(propertyId)) {
+        type = FCesiumMetadataValueType::fromClassProperty(
+            voxelClass.properties.at(propertyId));
+      }
+
+      for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+           propertyStatistics.Values) {
+        statisticValue.Value = getValueForSemantic(
+            propertyStatisticsIt->second,
+            type,
+            statisticValue.Semantic);
+      }
+    } else {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "Tileset %s does not contain statistics for property %s from class %s "
+              "on UCesiumVoxelMetadataComponent."),
+          *pActor->GetName(),
+          *propertyStatistics.Id,
+          *this->Description.ClassId);
+
+      for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+           propertyStatistics.Values) {
+        statisticValue.Value = FCesiumMetadataValue();
+      }
+    }
   }
 
-  Super::PreEditChange(NULL);
+  if (auto* pVoxelRenderer =
+          pActor->GetComponentByClass<UCesiumVoxelRendererComponent>()) {
+    pVoxelRenderer->SyncStatistics(this->Description);
+  }
+}
 
-  AutoFillVoxelClassDescription(
-      this->Description,
-      voxelClassId,
-      pMetadata->schema->classes.at(voxelClassId));
+void UCesiumVoxelMetadataComponent::ClearStatistics() {
+  for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+       this->Description.Statistics) {
+    for (FCesiumMetadataPropertyStatisticValue& statisticValue :
+         propertyStatistics.Values) {
+      statisticValue.Value = FCesiumMetadataValue();
+    }
+  }
+}
 
-  Super::PostEditChange();
-
-  UpdateShaderPreview();
+#if WITH_EDITOR
+void UCesiumVoxelMetadataComponent::BuildShader() {
+  ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  OnCesiumVoxelMetadataBuildShader.Broadcast(pOwner);
 }
 
 namespace {
 struct VoxelMetadataClassification : public MaterialNodeClassification {
-  UMaterialExpressionCustom* RaymarchNode = nullptr;
-  UMaterialExpressionMaterialFunctionCall* BreakFloat4Node = nullptr;
+  UMaterialExpressionCustom* pRaymarchNode = nullptr;
+  UMaterialExpressionMaterialFunctionCall* pBreakFloat4Node = nullptr;
+  UMaterialExpression* pEyeAdaptationInverseNode = nullptr;
 };
 
 struct MaterialResourceLibrary {
   FString ShaderTemplate;
-  UMaterialFunctionMaterialLayer* MaterialLayerTemplate;
+  UMaterial* pMaterialTemplate;
   TObjectPtr<UTexture> pDefaultVolumeTexture;
 
   MaterialResourceLibrary() {
@@ -239,13 +176,13 @@ struct MaterialResourceLibrary {
       FFileHelper::LoadFileToString(ShaderTemplate, *Path);
     }
 
-    MaterialLayerTemplate = LoadObjFromPath<UMaterialFunctionMaterialLayer>(
-        "/CesiumForUnreal/Materials/Layers/ML_CesiumVoxel");
+    pMaterialTemplate = LoadObjFromPath<UMaterial>(
+        "/CesiumForUnreal/Materials/M_CesiumVoxelMaterial");
   }
 
   bool isValid() const {
-    return !ShaderTemplate.IsEmpty() && MaterialLayerTemplate &&
-           pDefaultVolumeTexture;
+    return !ShaderTemplate.IsEmpty() && IsValid(pMaterialTemplate) &&
+           IsValid(pDefaultVolumeTexture);
   }
 };
 
@@ -258,6 +195,7 @@ struct CustomShaderBuilder {
   FString SamplePropertiesFromTexture;
   FString DeclareDataTextureVariables;
   FString SetDataTextures;
+  FString SetStatistics;
 
   /**
    * Declares the property in the CustomShaderProperties struct for use in the
@@ -286,33 +224,38 @@ struct CustomShaderBuilder {
       // If the property is normalized, the encoded type actually corresponds to
       // the raw data values. A second line for the normalized value is added.
       // e.g., "uint8 myProperty_RAW; float myProperty;"
-      // clang-format off
-      DeclareShaderProperties += "\t" + encodedHlslType + " " + rawPropertyName +
-                                 ";\n\t" +
-                                 normalizedHlslType + " " + PropertyName + ";";
-      // clang-format on
+      DeclareShaderProperties.Appendf(
+          TEXT("\t%s %s;\n\t%s = %s;"),
+          *encodedHlslType,
+          *rawPropertyName,
+          *normalizedHlslType,
+          *PropertyName);
     } else {
       // e.g., "float temperature;"
-      DeclareShaderProperties +=
-          "\t" + encodedHlslType + " " + PropertyName + ";";
+      DeclareShaderProperties.Appendf(
+          TEXT("\t%s %s;"),
+          *encodedHlslType,
+          *PropertyName);
     }
 
     if (Property.PropertyDetails.bHasNoDataValue) {
       // Expose "no data" value to the shader so the user can act on it.
       // "No data" values are always given in the raw value type.
       FString NoDataName = PropertyName + MaterialPropertyNoDataSuffix;
-      DeclareShaderProperties +=
-          "\n\t" + encodedHlslType + " " + NoDataName + ";";
+      DeclareShaderProperties.Appendf(
+          TEXT("\n\t%s %s;"),
+          *encodedHlslType,
+          *NoDataName);
     }
 
     if (Property.PropertyDetails.bHasDefaultValue) {
       // Expose default value to the shader so the user can act on it.
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
-      DeclareShaderProperties +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareShaderProperties += " " + DefaultValueName + ";";
+      DeclareShaderProperties.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *DefaultValueName);
     }
   }
 
@@ -327,14 +270,16 @@ struct CustomShaderBuilder {
       DeclareDataTextureVariables += "\n\t";
     }
     // e.g., "Texture3D temperature;"
-    DeclareDataTextureVariables += "Texture3D " + PropertyName + ";";
+    DeclareDataTextureVariables.Appendf(TEXT("Texture3D %s;"), *PropertyName);
 
     if (!SetDataTextures.IsEmpty()) {
       SetDataTextures += "\n";
     }
     // e.g., "DataTextures.temperature = temperature_DATA;"
-    SetDataTextures +=
-        "DataTextures." + PropertyName + " = " + TextureParameterName + ";";
+    SetDataTextures.Appendf(
+        TEXT("DataTextures.%s = %s;"),
+        *PropertyName,
+        *TextureParameterName);
   }
 
   /**
@@ -359,30 +304,37 @@ struct CustomShaderBuilder {
     FString swizzle = GetSwizzleForEncodedType(Property.EncodingDetails.Type);
     bool isNormalizedProperty = Property.PropertyDetails.bIsNormalized;
     if (isNormalizedProperty) {
-      SamplePropertiesFromTexture += "Properties." + rawPropertyName + " = " +
-                                     PropertyName + ".Load(int4(Coords, 0))" +
-                                     swizzle + ";";
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("Properties.%s = %s.Load(int4(Coords, 0))%s;"),
+          *rawPropertyName,
+          *PropertyName,
+          *swizzle);
       // Normalization can be hardcoded because only normalized uint8s are
       // supported.
-      SamplePropertiesFromTexture += "\n\t\tProperties." + PropertyName +
-                                     " = (Properties." + rawPropertyName +
-                                     " / 255.0)";
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("\n\t\tProperties.%s = (Properties.%s / 255.0)"),
+          *PropertyName,
+          *rawPropertyName);
     } else {
-      SamplePropertiesFromTexture += "Properties." + PropertyName + " = " +
-                                     PropertyName + ".Load(int4(Coords, 0))" +
-                                     swizzle;
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("Properties.%s = %s.Load(int4(Coords, 0))%s;"),
+          *PropertyName,
+          *PropertyName,
+          *swizzle);
     }
 
     if (Property.PropertyDetails.bHasScale) {
       FString ScaleName = PropertyName + MaterialPropertyScaleSuffix;
       // Declare the value transforms underneath the corresponding data texture
       // variable. e.g., float myProperty_SCALE;
-      DeclareDataTextureVariables +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareDataTextureVariables += " " + ScaleName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + ScaleName + " = " + ScaleName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *ScaleName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *ScaleName,
+          *ScaleName);
 
       // e.g., " * myProperty_SCALE"
       SamplePropertiesFromTexture += " * " + ScaleName;
@@ -390,12 +342,14 @@ struct CustomShaderBuilder {
 
     if (Property.PropertyDetails.bHasOffset) {
       FString OffsetName = PropertyName + MaterialPropertyOffsetSuffix;
-      DeclareDataTextureVariables +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareDataTextureVariables += " " + OffsetName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + OffsetName + " = " + OffsetName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *OffsetName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *OffsetName,
+          *OffsetName);
 
       // e.g., " + myProperty_OFFSET"
       SamplePropertiesFromTexture += " + " + OffsetName;
@@ -405,28 +359,81 @@ struct CustomShaderBuilder {
 
     if (Property.PropertyDetails.bHasNoDataValue) {
       FString NoDataName = PropertyName + MaterialPropertyNoDataSuffix;
-      DeclareDataTextureVariables +=
-          "\n\t" + encodedHlslType + " " + NoDataName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + NoDataName + " = " + NoDataName + ";";
-
-      SamplePropertiesFromTexture +=
-          "\n\tProperties." + NoDataName + " = " + NoDataName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *encodedHlslType,
+          *NoDataName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *NoDataName,
+          *NoDataName);
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("\n\t\tProperties.%s = %s;"),
+          *NoDataName,
+          *NoDataName);
     }
 
     if (Property.PropertyDetails.bHasDefaultValue) {
       FString DefaultValueName =
           PropertyName + MaterialPropertyDefaultValueSuffix;
-      DeclareDataTextureVariables +=
-          "\n\t" +
-          (isNormalizedProperty ? normalizedHlslType : encodedHlslType);
-      DeclareDataTextureVariables += " " + DefaultValueName + ";";
-      SetDataTextures +=
-          "\nDataTextures." + DefaultValueName + " = " + DefaultValueName + ";";
-
-      SamplePropertiesFromTexture +=
-          "\n\tProperties." + DefaultValueName + " = " + DefaultValueName + ";";
+      DeclareDataTextureVariables.Appendf(
+          TEXT("\n\t%s %s;"),
+          *(isNormalizedProperty ? normalizedHlslType : encodedHlslType),
+          *DefaultValueName);
+      SetDataTextures.Appendf(
+          TEXT("\nDataTextures.%s = %s;"),
+          *DefaultValueName,
+          *DefaultValueName);
+      SamplePropertiesFromTexture.Appendf(
+          TEXT("\n\t\tProperties.%s = %s;"),
+          *DefaultValueName,
+          *DefaultValueName);
     }
+  }
+
+  /**
+   * Declares the statistic in the CustomShaderProperties struct for use in the
+   * shader.
+   */
+  void AddShaderStatistic(
+      const FString& PropertyName,
+      const FCesiumMetadataPropertyStatisticValue& Statistic) {
+    if (!DeclareShaderProperties.IsEmpty()) {
+      DeclareShaderProperties += "\n";
+    }
+
+    FString statisticName =
+        getNameForStatistic(FString(), PropertyName, Statistic.Semantic);
+    FCesiumMetadataValueType valueType =
+        UCesiumMetadataValueBlueprintLibrary::GetValueType(Statistic.Value);
+
+    FString type = "float";
+    switch (valueType.Type) {
+    case ECesiumMetadataType::Vec2:
+      type += "2";
+      break;
+    case ECesiumMetadataType::Vec3:
+      type += "3";
+      break;
+    case ECesiumMetadataType::Vec4:
+      type += "4";
+      break;
+    case ECesiumMetadataType::Scalar:
+    default:
+      break;
+    }
+
+    // e.g., "float temperature_MIN;"
+    DeclareShaderProperties.Appendf(TEXT("\t%s %s;"), *type, *statisticName);
+
+    if (!SetStatistics.IsEmpty()) {
+      SetStatistics += "\n";
+    }
+    // e.g., "Properties.temperature_MIN = temperature_MIN;
+    SetStatistics.Appendf(
+        TEXT("Properties.%s = %s;"),
+        *statisticName,
+        *statisticName);
   }
 
   /**
@@ -445,37 +452,38 @@ struct CustomShaderBuilder {
 };
 } // namespace
 
-/*static*/ const FString UCesiumVoxelMetadataComponent::ShaderPreviewTemplate =
+/*static*/ const FString UCesiumVoxelMetadataComponent::_shaderPreviewTemplate =
     "struct CustomShaderProperties {\n"
-    "%s"
-    "\n}\n\n"
-    "struct CustomShader {\n"
-    "%s\n\n"
-    "\tfloat4 Shade(CustomShaderProperties Properties) {\n"
-    "%s\n"
+    "/* Properties and statistics go here. */\n"
+    "{0}"
+    "\n\n"
+    "/* Additional helper functions go here.*/\n"
+    "{1}\n\n"
+    "float4 Shade() {\n"
+    "/* Custom shader code goes here.*/\n"
+    "{2}\n"
     "\t}\n}";
 
-void UCesiumVoxelMetadataComponent::UpdateShaderPreview() {
+FString UCesiumVoxelMetadataComponent::getCustomShaderPreview() const {
   // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
   // CesiumVoxelTemplate.ush contains "%s" formatters that should be replaced
   // with generated code.
-  FLazyPrintf LazyPrintf(*ShaderPreviewTemplate);
   CustomShaderBuilder Builder;
 
-  const TArray<FCesiumPropertyAttributePropertyDescription>& Properties =
-      this->Description.Properties;
   for (const FCesiumPropertyAttributePropertyDescription& Property :
-       Properties) {
+       this->Description.Properties) {
     if (!isSupportedPropertyAttributeProperty(Property.PropertyDetails)) {
       UE_LOG(
           LogCesium,
           Warning,
           TEXT(
-              "Property %s of type %s, component type %s is not supported for voxels and will not be added to the generated material."),
+              "Property %s (%s) is not supported for voxels and will not be added to the generated material."),
           *Property.Name,
-          *MetadataTypeToString(Property.PropertyDetails.Type),
-          *MetadataComponentTypeToString(
-              Property.PropertyDetails.ComponentType));
+          *FCesiumMetadataValueType(
+               Property.PropertyDetails.Type,
+               Property.PropertyDetails.ComponentType,
+               Property.PropertyDetails.bIsArray)
+               .ToString());
       continue;
     }
 
@@ -483,18 +491,25 @@ void UCesiumVoxelMetadataComponent::UpdateShaderPreview() {
     Builder.AddPropertyDeclaration(PropertyName, Property);
   }
 
-  LazyPrintf.PushParam(*Builder.DeclareShaderProperties);
-  LazyPrintf.PushParam(*this->AdditionalFunctions);
-  LazyPrintf.PushParam(*this->CustomShader);
+  for (const FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+       this->Description.Statistics) {
+    for (const FCesiumMetadataPropertyStatisticValue& statistic :
+         propertyStatistics.Values) {
+      Builder.AddShaderStatistic(propertyStatistics.Id, statistic);
+    }
+  }
 
-  this->CustomShaderPreview = LazyPrintf.GetResultString();
+  return FString::Format(
+      *_shaderPreviewTemplate,
+      {Builder.DeclareShaderProperties,
+       this->AdditionalFunctions,
+       this->CustomShader});
 }
 
-static VoxelMetadataClassification
-ClassifyNodes(UMaterialFunctionMaterialLayer* Layer) {
+static VoxelMetadataClassification ClassifyNodes(UMaterial* pMaterial) {
   VoxelMetadataClassification Classification;
   for (const TObjectPtr<UMaterialExpression>& pNode :
-       Layer->GetExpressionCollection().Expressions) {
+       pMaterial->GetExpressionCollection().Expressions) {
     // Check if this node is marked as autogenerated.
     if (pNode->Desc.StartsWith(
             AutogeneratedMessage,
@@ -505,7 +520,7 @@ ClassifyNodes(UMaterialFunctionMaterialLayer* Layer) {
           Cast<UMaterialExpressionCustom>(pNode);
       if (pCustomNode &&
           pCustomNode->Description.Contains(RaymarchDescription)) {
-        Classification.RaymarchNode = pCustomNode;
+        Classification.pRaymarchNode = pCustomNode;
         continue;
       }
 
@@ -516,7 +531,14 @@ ClassifyNodes(UMaterialFunctionMaterialLayer* Layer) {
               ? pFunctionCall->MaterialFunction->GetName()
               : FString();
       if (FunctionName.Contains("BreakOutFloat4")) {
-        Classification.BreakFloat4Node = pFunctionCall;
+        Classification.pBreakFloat4Node = pFunctionCall;
+        continue;
+      }
+
+      // For some reason using UMaterialExpressionEyeAdaptationInverse results
+      // in a linker error, even when its .h file is included.
+      if (pNode->GetName().Contains("EyeAdaptationInverse")) {
+        Classification.pEyeAdaptationInverseNode = pNode;
       }
     } else {
       Classification.UserAddedNodes.Add(pNode);
@@ -526,13 +548,14 @@ ClassifyNodes(UMaterialFunctionMaterialLayer* Layer) {
 }
 
 static void ClearAutoGeneratedNodes(
-    UMaterialFunctionMaterialLayer* Layer,
-    TMap<FString, TMap<FString, const FExpressionInput*>>& ConnectionInputRemap,
-    TMap<FString, TArray<FExpressionInput*>>& ConnectionOutputRemap) {
-  VoxelMetadataClassification Classification = ClassifyNodes(Layer);
-  // Determine which user-added connections to remap when regenerating the
-  // voxel raymarch node.
-  UMaterialExpressionCustom* pRaymarchNode = Classification.RaymarchNode;
+    UMaterial* pMaterial,
+    TMap<FString, MaterialGenerationState::ParameterConnections>&
+        connectionInputMap,
+    TMap<FString, TArray<FExpressionInput*>>& connectionOutputMap) {
+
+  VoxelMetadataClassification Classification = ClassifyNodes(pMaterial);
+  // Identify user-added connections to remap to the voxel raymarch node.
+  UMaterialExpressionCustom* pRaymarchNode = Classification.pRaymarchNode;
   if (pRaymarchNode && pRaymarchNode->Outputs.Num() > 0) {
     FExpressionOutput& Output = pRaymarchNode->Outputs[0];
     FString Key =
@@ -540,23 +563,25 @@ static void ClearAutoGeneratedNodes(
 
     // Look for user-made connections to this property.
     TArray<FExpressionInput*> Connections;
-    for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-      for (FExpressionInput* Input : UserNode->GetInputsView()) {
-        if (Input->Expression == pRaymarchNode && Input->OutputIndex == 0) {
-          Connections.Add(Input);
-          Input->Expression = nullptr;
+    for (UMaterialExpression* pUserNode : Classification.UserAddedNodes) {
+      for (FExpressionInputIterator It(pUserNode); It; ++It) {
+        if (It.Input->Expression == pRaymarchNode &&
+            It.Input->OutputIndex == 0) {
+          Connections.Add(It.Input);
+          It.Input->Expression = nullptr;
         }
       }
     }
-
-    ConnectionOutputRemap.Emplace(MoveTemp(Key), MoveTemp(Connections));
+    if (Connections.Num()) {
+      connectionOutputMap.Emplace(MoveTemp(Key), MoveTemp(Connections));
+    }
   }
 
-  // Determine which user-added connections to remap when regenerating the
-  // break node. This is primarily used to break out the alpha channel, but
-  // check all outputs just in case the user has made connections.
+  // Identify user-added connections to remap when regenerating the break node.
+  // This is primarily used to break out the alpha channel, but check all
+  // outputs just in case the user has made connections.
   UMaterialExpressionMaterialFunctionCall* pBreakNode =
-      Classification.BreakFloat4Node;
+      Classification.pBreakFloat4Node;
   if (pBreakNode) {
     int32 OutputIndex = 0;
     for (const FExpressionOutput& Output : pBreakNode->Outputs) {
@@ -564,25 +589,65 @@ static void ClearAutoGeneratedNodes(
 
       // Look for user-made connections to this property.
       TArray<FExpressionInput*> Connections;
-      for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
-        for (FExpressionInput* Input : UserNode->GetInputsView()) {
-          if (Input->Expression == pBreakNode &&
-              Input->OutputIndex == OutputIndex) {
-            Connections.Add(Input);
-            Input->Expression = nullptr;
+      for (UMaterialExpression* pUserNode : Classification.UserAddedNodes) {
+        for (FExpressionInputIterator It(pUserNode); It; ++It) {
+          if (It.Input->Expression == pBreakNode &&
+              It.Input->OutputIndex == OutputIndex) {
+            Connections.Add(It.Input);
+            It.Input->Expression = nullptr;
           }
         }
       }
 
-      ConnectionOutputRemap.Emplace(MoveTemp(Key), MoveTemp(Connections));
+      if (Connections.Num()) {
+        connectionOutputMap.Emplace(MoveTemp(Key), MoveTemp(Connections));
+      }
       ++OutputIndex;
+    }
+  }
+
+  // Determine which user-added connections to remap when regenerating the
+  // EyeAdaptationInverse node.
+  UMaterialExpression* pEyeAdaptationInverse =
+      Classification.pEyeAdaptationInverseNode;
+  if (pEyeAdaptationInverse) {
+    for (FExpressionInputIterator It(pEyeAdaptationInverse); It; ++It) {
+      if (It.Input->Expression && It.Input->Expression != pRaymarchNode) {
+        MaterialGenerationState::ParameterConnections& connections =
+            connectionInputMap.Emplace(TEXT("EyeAdaptationInverse"));
+
+        connections.Emplace(
+            FString::FromInt(It.Index),
+            MaterialGenerationState::UserConnectionInput(It.Input));
+      }
+    }
+
+    FExpressionOutput& Output = pRaymarchNode->Outputs[0];
+    FString Key =
+        pEyeAdaptationInverse->GetDescription() + Output.OutputName.ToString();
+
+    // Look for user-made connections to this property.
+    TArray<FExpressionInput*> Connections;
+    for (UMaterialExpression* pUserNode : Classification.UserAddedNodes) {
+      for (FExpressionInputIterator It(pUserNode); It; ++It) {
+        if (It.Input->Expression == pEyeAdaptationInverse &&
+            It.Input->OutputIndex == 0) {
+          Connections.Add(It.Input);
+          It.Input->Expression = nullptr;
+        }
+      }
+    }
+    if (Connections.Num()) {
+      connectionOutputMap.Emplace(MoveTemp(Key), MoveTemp(Connections));
     }
   }
 
   // Remove auto-generated nodes.
   for (UMaterialExpression* AutoGeneratedNode :
        Classification.AutoGeneratedNodes) {
-    Layer->GetExpressionCollection().RemoveExpression(AutoGeneratedNode);
+    UMaterialEditingLibrary::DeleteMaterialExpression(
+        pMaterial,
+        AutoGeneratedNode);
   }
 }
 
@@ -591,7 +656,7 @@ static void ClearAutoGeneratedNodes(
  * metadata property.
  */
 static void GenerateNodesForMetadataPropertyTransforms(
-    UMaterialFunctionMaterialLayer* Layer,
+    UMaterial* pMaterial,
     TArray<UMaterialExpression*>& AutoGeneratedNodes,
     const FCesiumMetadataPropertyDetails& PropertyDetails,
     ECesiumEncodedMetadataType Type,
@@ -603,7 +668,7 @@ static void GenerateNodesForMetadataPropertyTransforms(
     NodeY += Incr;
     FString ParameterName = PropertyName + MaterialPropertyScaleSuffix;
     UMaterialExpressionParameter* Parameter =
-        GenerateParameterNode(Layer, Type, ParameterName, NodeX, NodeY);
+        GenerateParameterNode(pMaterial, Type, ParameterName, NodeX, NodeY);
     AutoGeneratedNodes.Add(Parameter);
 
     FCustomInput& ScaleInput = RaymarchNode->Inputs.Emplace_GetRef();
@@ -615,7 +680,7 @@ static void GenerateNodesForMetadataPropertyTransforms(
     NodeY += Incr;
     FString ParameterName = PropertyName + MaterialPropertyOffsetSuffix;
     UMaterialExpressionParameter* Parameter =
-        GenerateParameterNode(Layer, Type, ParameterName, NodeX, NodeY);
+        GenerateParameterNode(pMaterial, Type, ParameterName, NodeX, NodeY);
     AutoGeneratedNodes.Add(Parameter);
 
     FCustomInput& OffsetInput = RaymarchNode->Inputs.Emplace_GetRef();
@@ -627,7 +692,7 @@ static void GenerateNodesForMetadataPropertyTransforms(
     NodeY += Incr;
     FString ParameterName = PropertyName + MaterialPropertyNoDataSuffix;
     UMaterialExpressionParameter* Parameter =
-        GenerateParameterNode(Layer, Type, ParameterName, NodeX, NodeY);
+        GenerateParameterNode(pMaterial, Type, ParameterName, NodeX, NodeY);
     AutoGeneratedNodes.Add(Parameter);
 
     FCustomInput& NoDataInput = RaymarchNode->Inputs.Emplace_GetRef();
@@ -639,7 +704,7 @@ static void GenerateNodesForMetadataPropertyTransforms(
     NodeY += Incr;
     FString ParameterName = PropertyName + MaterialPropertyDefaultValueSuffix;
     UMaterialExpressionParameter* Parameter =
-        GenerateParameterNode(Layer, Type, ParameterName, NodeX, NodeY);
+        GenerateParameterNode(pMaterial, Type, ParameterName, NodeX, NodeY);
 
     FCustomInput& DefaultInput = RaymarchNode->Inputs.Emplace_GetRef();
     DefaultInput.InputName = FName(ParameterName);
@@ -648,10 +713,10 @@ static void GenerateNodesForMetadataPropertyTransforms(
 }
 
 static void GenerateMaterialNodes(
-    UCesiumVoxelMetadataComponent* Component,
+    UCesiumVoxelMetadataComponent* pComponent,
     MaterialGenerationState& MaterialState,
     const MaterialResourceLibrary& ResourceLibrary) {
-  UMaterialFunctionMaterialLayer* pTargetLayer = Component->TargetMaterialLayer;
+  UMaterial* pMaterial = pComponent->TargetMaterial;
 
   int32 NodeX = 0;
   int32 NodeY = 0;
@@ -659,81 +724,82 @@ static void GenerateMaterialNodes(
   int32 DataSectionY = 0;
 
   FMaterialExpressionCollection& SrcCollection =
-      ResourceLibrary.MaterialLayerTemplate->GetExpressionCollection();
+      ResourceLibrary.pMaterialTemplate->GetExpressionCollection();
   TMap<const UMaterialExpression*, UMaterialExpression*> SrcToDestMap;
   MaterialState.AutoGeneratedNodes.Reserve(SrcCollection.Expressions.Num());
 
-  UMaterialExpressionCustom* RaymarchNode = nullptr;
-  UMaterialExpressionMaterialFunctionCall* BreakFloat4Node = nullptr;
+  UMaterialExpressionCustom* pRaymarchNode = nullptr;
+  UMaterialExpressionMaterialFunctionCall* pBreakFloat4Node = nullptr;
+  UMaterialExpression* pEyeAdaptationInverse = nullptr;
 
-  for (const UMaterialExpression* SrcExpression : SrcCollection.Expressions) {
-    // Ignore the standard input / output nodes; these do not need duplication.
-    const auto* InputMaterial =
-        Cast<UMaterialExpressionFunctionInput>(SrcExpression);
-    const auto* SetAttributes =
-        Cast<UMaterialExpressionSetMaterialAttributes>(SrcExpression);
-    const auto* OutputMaterial =
-        Cast<UMaterialExpressionFunctionOutput>(SrcExpression);
-    if (InputMaterial || SetAttributes || OutputMaterial) {
-      continue;
-    }
-
+  for (const UMaterialExpression* pSrcExpression : SrcCollection.Expressions) {
     // Much of the code below is derived from
-    // UMaterialExpression::CopyMaterialExpressions().
-    UMaterialExpression* NewExpression =
+    // UMaterialExpression::CopyMaterialExpressions(), without some extra
+    // modifications.
+    UMaterialExpression* pNewExpression =
         Cast<UMaterialExpression>(StaticDuplicateObject(
-            SrcExpression,
-            pTargetLayer,
+            pSrcExpression,
+            pMaterial,
             NAME_None,
             RF_Transactional));
 
     // Make sure we remove any references to materials or functions the nodes
     // came from.
-    NewExpression->Material = nullptr;
-    NewExpression->Function = nullptr;
+    pNewExpression->Material = nullptr;
+    pNewExpression->Function = nullptr;
 
-    SrcToDestMap.Add(SrcExpression, NewExpression);
+    SrcToDestMap.Add(pSrcExpression, pNewExpression);
 
     // Add to list of autogenerated nodes.
-    MaterialState.AutoGeneratedNodes.Add(NewExpression);
+    MaterialState.AutoGeneratedNodes.Add(pNewExpression);
 
     // There can be only one default mesh paint texture.
-    UMaterialExpressionTextureBase* TextureSample =
-        Cast<UMaterialExpressionTextureBase>(NewExpression);
-    if (TextureSample) {
-      TextureSample->IsDefaultMeshpaintTexture = false;
+    UMaterialExpressionTextureBase* pTextureSample =
+        Cast<UMaterialExpressionTextureBase>(pNewExpression);
+    if (pTextureSample) {
+      pTextureSample->IsDefaultMeshpaintTexture = false;
     }
 
-    NewExpression->UpdateParameterGuid(true, true);
-    NewExpression->UpdateMaterialExpressionGuid(true, true);
+    pNewExpression->UpdateParameterGuid(true, true);
+    pNewExpression->UpdateMaterialExpressionGuid(true, true);
+    // End of UMaterialExpression::CopyMaterialExpressions() body.
 
-    auto* CustomNode = Cast<UMaterialExpressionCustom>(NewExpression);
-    if (CustomNode && CustomNode->GetDescription() == RaymarchDescription) {
-      RaymarchNode = CustomNode;
+    auto* pCustomNode = Cast<UMaterialExpressionCustom>(pNewExpression);
+    if (pCustomNode && pCustomNode->GetDescription() == RaymarchDescription) {
+      pRaymarchNode = pCustomNode;
       continue;
     }
 
-    auto* MaterialFunctionNode =
-        Cast<UMaterialExpressionMaterialFunctionCall>(NewExpression);
-    if (MaterialFunctionNode) {
-      BreakFloat4Node = MaterialFunctionNode;
+    auto* pMaterialFunctionNode =
+        Cast<UMaterialExpressionMaterialFunctionCall>(pNewExpression);
+    if (pMaterialFunctionNode) {
+      pBreakFloat4Node = pMaterialFunctionNode;
       continue;
     }
 
-    auto* VectorParameterNode =
-        Cast<UMaterialExpressionVectorParameter>(NewExpression);
-    if (VectorParameterNode &&
-        VectorParameterNode->ParameterName.ToString() == "Tile Count") {
-      DataSectionX = VectorParameterNode->MaterialExpressionEditorX;
-      DataSectionY = VectorParameterNode->MaterialExpressionEditorY;
+    auto* pVectorParameterNode =
+        Cast<UMaterialExpressionVectorParameter>(pNewExpression);
+    if (pVectorParameterNode &&
+        pVectorParameterNode->ParameterName.ToString() == "Tile Count") {
+      DataSectionX = pVectorParameterNode->MaterialExpressionEditorX;
+      DataSectionY = pVectorParameterNode->MaterialExpressionEditorY;
+      continue;
+    }
+
+    // For some reason using UMaterialExpressionEyeAdaptationInverse results in
+    // a linker error, even when its .h file is included.
+    if (pNewExpression->GetName().Contains("EyeAdaptationInverse")) {
+      pEyeAdaptationInverse = pNewExpression;
+      continue;
     }
   }
 
-  if (!RaymarchNode) {
+  if (!pRaymarchNode) {
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("Unable to generate material from ML_CesiumVoxels template."))
+        TEXT(
+            "Unable to generate material from M_CesiumVoxelMaterial template."))
     return;
   }
 
@@ -741,42 +807,31 @@ static void GenerateMaterialNodes(
   // expressions, and for each input that refers to an expression that was
   // duplicated, point the reference to that new expression.  Otherwise, clear
   // the input.
-  for (UMaterialExpression* NewExpression : MaterialState.AutoGeneratedNodes) {
-    const TArrayView<FExpressionInput*>& ExpressionInputs =
-        NewExpression->GetInputsView();
-    for (int32 ExpressionInputIndex = 0;
-         ExpressionInputIndex < ExpressionInputs.Num();
-         ++ExpressionInputIndex) {
-      FExpressionInput* Input = ExpressionInputs[ExpressionInputIndex];
-      UMaterialExpression* InputExpression = Input->Expression;
+  for (UMaterialExpression* pNewExpression : MaterialState.AutoGeneratedNodes) {
+    for (FExpressionInputIterator It(pNewExpression); It; ++It) {
+      UMaterialExpression* InputExpression = It.Input->Expression;
       if (InputExpression) {
         UMaterialExpression** NewInputExpression =
             SrcToDestMap.Find(InputExpression);
         if (NewInputExpression) {
           check(*NewInputExpression);
-          Input->Expression = *NewInputExpression;
+          It.Input->Expression = *NewInputExpression;
         } else {
-          Input->Expression = nullptr;
+          It.Input->Expression = nullptr;
         }
       }
     }
   }
 
-  // Save this to offset some nodes later.
-  int32 SetMaterialAttributesOffset =
-      BreakFloat4Node->MaterialExpressionEditorX;
   NodeX = DataSectionX;
   NodeY = DataSectionY;
 
-  // Inspired by HLSLMaterialTranslator.cpp. Similar to MaterialTemplate.ush,
-  // CesiumVoxelTemplate.usf contains "%s" formatters that will be replaced
-  // with generated code.
-  FLazyPrintf LazyPrintf(*ResourceLibrary.ShaderTemplate);
   CustomShaderBuilder Builder;
 
   const TArray<FCesiumPropertyAttributePropertyDescription>& Properties =
-      Component->Description.Properties;
-  RaymarchNode->Inputs.Reserve(RaymarchNode->Inputs.Num() + Properties.Num());
+      pComponent->Description.Properties;
+
+  pRaymarchNode->Inputs.Reserve(pRaymarchNode->Inputs.Num() + Properties.Num());
   for (const FCesiumPropertyAttributePropertyDescription& Property :
        Properties) {
     if (!isSupportedPropertyAttributeProperty(Property.PropertyDetails)) {
@@ -784,11 +839,13 @@ static void GenerateMaterialNodes(
           LogCesium,
           Warning,
           TEXT(
-              "Property %s of type %s, component type %s is not supported for voxels and will not be added to the generated material."),
+              "Property %s (%s) is not supported for voxels and will not be added to the generated material."),
           *Property.Name,
-          *MetadataTypeToString(Property.PropertyDetails.Type),
-          *MetadataComponentTypeToString(
-              Property.PropertyDetails.ComponentType));
+          *FCesiumMetadataValueType(
+               Property.PropertyDetails.Type,
+               Property.PropertyDetails.ComponentType,
+               Property.PropertyDetails.bIsArray)
+               .ToString());
       continue;
     }
 
@@ -799,7 +856,7 @@ static void GenerateMaterialNodes(
     FString PropertyDataName = PropertyName + MaterialPropertyDataSuffix;
 
     UMaterialExpressionTextureObjectParameter* PropertyData =
-        NewObject<UMaterialExpressionTextureObjectParameter>(pTargetLayer);
+        NewObject<UMaterialExpressionTextureObjectParameter>(pMaterial);
     PropertyData->ParameterName = FName(PropertyName);
     PropertyData->MaterialExpressionEditorX = NodeX;
     PropertyData->MaterialExpressionEditorY = NodeY;
@@ -809,144 +866,115 @@ static void GenerateMaterialNodes(
         Cast<UTexture>(ResourceLibrary.pDefaultVolumeTexture);
     MaterialState.AutoGeneratedNodes.Add(PropertyData);
 
-    FCustomInput& PropertyInput = RaymarchNode->Inputs.Emplace_GetRef();
+    FCustomInput& PropertyInput = pRaymarchNode->Inputs.Emplace_GetRef();
     PropertyInput.InputName = FName(PropertyDataName);
     PropertyInput.Input.Expression = PropertyData;
 
     GenerateNodesForMetadataPropertyTransforms(
-        pTargetLayer,
+        pMaterial,
         MaterialState.AutoGeneratedNodes,
         Property.PropertyDetails,
         Property.EncodingDetails.Type,
         PropertyName,
         NodeX,
         NodeY,
-        RaymarchNode);
+        pRaymarchNode);
 
     Builder.AddShaderProperty(PropertyName, PropertyDataName, Property);
   }
 
-  LazyPrintf.PushParam(*Builder.DeclareShaderProperties);
-  LazyPrintf.PushParam(*Component->AdditionalFunctions);
-  LazyPrintf.PushParam(*Component->CustomShader);
-  LazyPrintf.PushParam(*Builder.DeclareDataTextureVariables);
-  LazyPrintf.PushParam(*Builder.SamplePropertiesFromTexture);
-  LazyPrintf.PushParam(*Builder.SetDataTextures);
+  for (const FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :
+       pComponent->Description.Statistics) {
+    for (const FCesiumMetadataPropertyStatisticValue& statistic :
+         propertyStatistics.Values) {
+      FCesiumMetadataValueType valueType =
+          UCesiumMetadataValueBlueprintLibrary::GetValueType(statistic.Value);
 
-  RaymarchNode->Code = LazyPrintf.GetResultString();
-
-  UMaterialExpressionFunctionInput* InputMaterial = nullptr;
-  for (const TObjectPtr<UMaterialExpression>& ExistingNode :
-       pTargetLayer->GetExpressionCollection().Expressions) {
-    UMaterialExpressionFunctionInput* ExistingInputMaterial =
-        Cast<UMaterialExpressionFunctionInput>(ExistingNode);
-    if (ExistingInputMaterial) {
-      InputMaterial = ExistingInputMaterial;
-      break;
-    }
-  }
-
-  NodeX = 0;
-  NodeY = 0;
-
-  if (!InputMaterial) {
-    InputMaterial = NewObject<UMaterialExpressionFunctionInput>(pTargetLayer);
-    InputMaterial->InputType =
-        EFunctionInputType::FunctionInput_MaterialAttributes;
-    InputMaterial->bUsePreviewValueAsDefault = true;
-    InputMaterial->MaterialExpressionEditorX = NodeX;
-    InputMaterial->MaterialExpressionEditorY = NodeY;
-    MaterialState.OneTimeGeneratedNodes.Add(InputMaterial);
-  }
-
-  NodeX += SetMaterialAttributesOffset + Incr;
-
-  UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes = nullptr;
-  for (const TObjectPtr<UMaterialExpression>& ExistingNode :
-       pTargetLayer->GetExpressionCollection().Expressions) {
-    UMaterialExpressionSetMaterialAttributes* ExistingSetAttributes =
-        Cast<UMaterialExpressionSetMaterialAttributes>(ExistingNode);
-    if (ExistingSetAttributes) {
-      SetMaterialAttributes = ExistingSetAttributes;
-      break;
-    }
-  }
-
-  if (!SetMaterialAttributes) {
-    SetMaterialAttributes =
-        NewObject<UMaterialExpressionSetMaterialAttributes>(pTargetLayer);
-    SetMaterialAttributes->MaterialExpressionEditorX = NodeX;
-    SetMaterialAttributes->MaterialExpressionEditorY = NodeY;
-    MaterialState.OneTimeGeneratedNodes.Add(SetMaterialAttributes);
-  }
-
-  if (SetMaterialAttributes->Inputs.Num() <= 1) {
-    SetMaterialAttributes->Inputs.Reset(3);
-    SetMaterialAttributes->AttributeSetTypes.Reset(2);
-
-    SetMaterialAttributes->Inputs.EmplaceAt(0, FExpressionInput());
-    SetMaterialAttributes->Inputs[0].Expression = InputMaterial;
-
-    SetMaterialAttributes->Inputs.EmplaceAt(1, FExpressionInput());
-    SetMaterialAttributes->Inputs[1].Connect(0, RaymarchNode);
-    SetMaterialAttributes->Inputs[1].InputName = "Base Color";
-
-    SetMaterialAttributes->Inputs.EmplaceAt(2, FExpressionInput());
-    SetMaterialAttributes->Inputs[2].Connect(3, BreakFloat4Node);
-    SetMaterialAttributes->Inputs[2].InputName = "Opacity";
-
-    // SetMaterialAttributes needs to manage an internal list of which
-    // attributes were selected.
-    const TArray<FGuid>& OrderedVisibleAttributes =
-        FMaterialAttributeDefinitionMap::GetOrderedVisibleAttributeList();
-    for (const FGuid& AttributeID : OrderedVisibleAttributes) {
-      const FString& name =
-          FMaterialAttributeDefinitionMap::GetAttributeName(AttributeID);
-      if (name == "BaseColor") {
-        SetMaterialAttributes->AttributeSetTypes.EmplaceAt(0, AttributeID);
-      } else if (name == "Opacity") {
-        SetMaterialAttributes->AttributeSetTypes.EmplaceAt(1, AttributeID);
+      UMaterialExpressionParameter* pParameter = nullptr;
+      switch (valueType.Type) {
+      case ECesiumMetadataType::Scalar:
+        pParameter = NewObject<UMaterialExpressionScalarParameter>(pMaterial);
+        break;
+      case ECesiumMetadataType::Vec2:
+      case ECesiumMetadataType::Vec3:
+      case ECesiumMetadataType::Vec4:
+        pParameter = NewObject<UMaterialExpressionVectorParameter>(pMaterial);
+        break;
+      default:
+        FString semanticName =
+            StaticEnum<ECesiumMetadataStatisticSemantic>()
+                ->GetNameStringByValue(int64(statistic.Semantic));
+        FString enumName =
+            StaticEnum<ECesiumMetadataType>()->GetNameStringByValue(
+                int64(valueType.Type));
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT(
+                "Skipping material node generation for %s %s in due to unsupported statistic type %s"),
+            *propertyStatistics.Id,
+            *semanticName,
+            *enumName);
+        continue;
       }
+
+      NodeY += Incr;
+
+      // Example: "temperature_MIN"
+      FString statisticName = getNameForStatistic(
+          FString(),
+          propertyStatistics.Id,
+          statistic.Semantic);
+
+      pParameter->ParameterName = FName(statisticName);
+      pParameter->MaterialExpressionEditorX = NodeX;
+      pParameter->MaterialExpressionEditorY = NodeY;
+      MaterialState.AutoGeneratedNodes.Add(pParameter);
+
+      FCustomInput& PropertyInput = pRaymarchNode->Inputs.Emplace_GetRef();
+      PropertyInput.InputName = FName(statisticName);
+      PropertyInput.Input.Expression = pParameter;
+
+      Builder.AddShaderStatistic(propertyStatistics.Id, statistic);
     }
   }
 
-  NodeX += 2 * Incr;
+  pRaymarchNode->Code = FString::Format(
+      *ResourceLibrary.ShaderTemplate,
+      {Builder.DeclareShaderProperties,
+       pComponent->AdditionalFunctions,
+       pComponent->CustomShader,
+       Builder.DeclareDataTextureVariables,
+       Builder.SamplePropertiesFromTexture,
+       Builder.SetDataTextures,
+       Builder.SetStatistics});
 
-  UMaterialExpressionFunctionOutput* OutputMaterial = nullptr;
-  for (const TObjectPtr<UMaterialExpression>& ExistingNode :
-       pTargetLayer->GetExpressionCollection().Expressions) {
-    UMaterialExpressionFunctionOutput* ExistingOutputMaterial =
-        Cast<UMaterialExpressionFunctionOutput>(ExistingNode);
-    if (ExistingOutputMaterial) {
-      OutputMaterial = ExistingOutputMaterial;
-      break;
-    }
+  UMaterialEditorOnlyData* pEditorOnlyData = pMaterial->GetEditorOnlyData();
+  CESIUM_ASSERT(pEditorOnlyData);
+
+  if (!pEditorOnlyData->EmissiveColor.Expression) {
+    pEditorOnlyData->EmissiveColor.Connect(0, pEyeAdaptationInverse);
   }
 
-  if (!OutputMaterial) {
-    OutputMaterial = NewObject<UMaterialExpressionFunctionOutput>(pTargetLayer);
-    OutputMaterial->A = FMaterialAttributesInput();
-    OutputMaterial->A.Expression = SetMaterialAttributes;
-    OutputMaterial->MaterialExpressionEditorX = NodeX;
-    OutputMaterial->MaterialExpressionEditorY = NodeY;
-    MaterialState.OneTimeGeneratedNodes.Add(OutputMaterial);
+  if (!pEditorOnlyData->Opacity.Expression) {
+    pEditorOnlyData->Opacity.Connect(3, pBreakFloat4Node);
   }
 }
 
 static void RemapUserConnections(
-    UMaterialFunctionMaterialLayer* Layer,
-    TMap<FString, TMap<FString, const FExpressionInput*>>& ConnectionInputRemap,
-    TMap<FString, TArray<FExpressionInput*>>& ConnectionOutputRemap) {
+    UMaterial* pMaterial,
+    TMap<FString, MaterialGenerationState::ParameterConnections>&
+        connectionInputMap,
+    TMap<FString, TArray<FExpressionInput*>>& connectionOutputMap) {
+  VoxelMetadataClassification Classification = ClassifyNodes(pMaterial);
 
-  VoxelMetadataClassification Classification = ClassifyNodes(Layer);
-
-  UMaterialExpressionCustom* pRaymarchNode = Classification.RaymarchNode;
+  UMaterialExpressionCustom* pRaymarchNode = Classification.pRaymarchNode;
   if (pRaymarchNode && pRaymarchNode->Outputs.Num() > 0) {
     FExpressionOutput& Output = pRaymarchNode->Outputs[0];
     FString Key =
         pRaymarchNode->GetDescription() + Output.OutputName.ToString();
 
-    TArray<FExpressionInput*>* pConnections = ConnectionOutputRemap.Find(Key);
+    TArray<FExpressionInput*>* pConnections = connectionOutputMap.Find(Key);
     if (pConnections) {
       for (FExpressionInput* pConnection : *pConnections) {
         pConnection->Connect(0, pRaymarchNode);
@@ -954,21 +982,56 @@ static void RemapUserConnections(
     }
   }
 
-  if (Classification.BreakFloat4Node) {
+  if (Classification.pBreakFloat4Node) {
     int32 OutputIndex = 0;
     for (const FExpressionOutput& Output :
-         Classification.BreakFloat4Node->Outputs) {
-      FString Key = Classification.BreakFloat4Node->GetDescription() +
+         Classification.pBreakFloat4Node->Outputs) {
+      FString Key = Classification.pBreakFloat4Node->GetDescription() +
                     Output.OutputName.ToString();
 
-      TArray<FExpressionInput*>* pConnections = ConnectionOutputRemap.Find(Key);
+      TArray<FExpressionInput*>* pConnections = connectionOutputMap.Find(Key);
       if (pConnections) {
         for (FExpressionInput* pConnection : *pConnections) {
-          pConnection->Connect(OutputIndex, Classification.BreakFloat4Node);
+          pConnection->Connect(OutputIndex, Classification.pBreakFloat4Node);
         }
       }
-
       ++OutputIndex;
+    }
+  }
+
+  UMaterialExpression* pEyeAdaptationInverse =
+      Classification.pEyeAdaptationInverseNode;
+  if (pEyeAdaptationInverse) {
+    MaterialGenerationState::ParameterConnections* pInputConnections =
+        connectionInputMap.Find(TEXT("EyeAdaptationInverse"));
+    if (pInputConnections) {
+      for (FExpressionInputIterator It(pEyeAdaptationInverse); It; ++It) {
+        const auto* pConnectionInput =
+            pInputConnections->Find(FString::FromInt(It.Index));
+        if (!pConnectionInput) {
+          return;
+        }
+
+        if (std::holds_alternative<const FExpressionInput*>(
+                *pConnectionInput)) {
+          const FExpressionInput* pUserNode =
+              std::get<const FExpressionInput*>(*pConnectionInput);
+          It.Input->Expression = pUserNode->Expression;
+          It.Input->OutputIndex = pUserNode->OutputIndex;
+        }
+      }
+    }
+
+    FExpressionOutput& Output = pEyeAdaptationInverse->Outputs[0];
+    FString Key =
+        pEyeAdaptationInverse->GetDescription() + Output.OutputName.ToString();
+
+    TArray<FExpressionInput*>* pOutputConnections =
+        connectionOutputMap.Find(Key);
+    if (pOutputConnections) {
+      for (FExpressionInput* pConnection : *pOutputConnections) {
+        pConnection->Connect(0, pEyeAdaptationInverse);
+      }
     }
   }
 }
@@ -980,7 +1043,7 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
   }
 
   MaterialResourceLibrary ResourceLibrary;
-  ResourceLibrary.pDefaultVolumeTexture = this->pDefaultVolumeTexture;
+  ResourceLibrary.pDefaultVolumeTexture = this->_pDefaultVolumeTexture;
   if (!ResourceLibrary.isValid()) {
     UE_LOG(
         LogCesium,
@@ -990,8 +1053,7 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
     return;
   }
 
-  if (this->TargetMaterialLayer &&
-      this->TargetMaterialLayer->GetPackage()->IsDirty()) {
+  if (this->TargetMaterial && this->TargetMaterial->GetPackage()->IsDirty()) {
     UE_LOG(
         LogCesium,
         Error,
@@ -1001,41 +1063,52 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
   }
 
   const FString MaterialName =
-      "ML_" + pTileset->GetFName().ToString() + "_VoxelMetadata";
+      "M_" + pTileset->GetFName().ToString() + "_VoxelMetadata";
   const FString PackageBaseName = "/Game/";
   const FString PackageName = PackageBaseName + MaterialName;
 
   bool Overwriting = false;
-  if (this->TargetMaterialLayer) {
+  if (this->TargetMaterial &&
+      this->TargetMaterial == ResourceLibrary.pMaterialTemplate) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "TargetMaterial should not be set to M_CesiumVoxelMaterial. "
+            "You can either set a different material, or leave this blank so CesiumVoxelMetadataComponent "
+            "can create a new one."));
+    return;
+  } else if (this->TargetMaterial) {
     // Overwriting an existing material layer.
     Overwriting = true;
     GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()
-        ->CloseAllEditorsForAsset(this->TargetMaterialLayer);
+        ->CloseAllEditorsForAsset(this->TargetMaterial);
   } else {
-    this->TargetMaterialLayer = CreateMaterialLayer(PackageName, MaterialName);
+    this->TargetMaterial = CreateMaterial(PackageName, MaterialName);
   }
 
-  this->TargetMaterialLayer->PreEditChange(NULL);
+  this->TargetMaterial->PreEditChange(NULL);
 
   MaterialGenerationState MaterialState;
 
   ClearAutoGeneratedNodes(
-      this->TargetMaterialLayer,
-      MaterialState.ConnectionInputRemap,
-      MaterialState.ConnectionOutputRemap);
+      this->TargetMaterial,
+      MaterialState.UserConnectionInputMap,
+      MaterialState.UserConnectionOutputMap);
   GenerateMaterialNodes(this, MaterialState, ResourceLibrary);
-  MoveNodesToMaterialLayer(MaterialState, this->TargetMaterialLayer);
+  MoveNodesToMaterial(MaterialState, this->TargetMaterial);
 
   RemapUserConnections(
-      this->TargetMaterialLayer,
-      MaterialState.ConnectionInputRemap,
-      MaterialState.ConnectionOutputRemap);
+      this->TargetMaterial,
+      MaterialState.UserConnectionInputMap,
+      MaterialState.UserConnectionOutputMap);
 
-  this->TargetMaterialLayer->PreviewBlendMode =
+  this->TargetMaterial->BlendMode =
       TEnumAsByte<EBlendMode>(EBlendMode::BLEND_Translucent);
+  this->TargetMaterial->SetShadingModel(EMaterialShadingModel::MSM_Unlit);
 
   // Let the material update itself if necessary
-  this->TargetMaterialLayer->PostEditChange();
+  this->TargetMaterial->PostEditChange();
 
   // Make sure that any static meshes, etc using this material will stop
   // using the FMaterialResource of the original material, and will use the
@@ -1050,7 +1123,7 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
             "ContentBrowser");
     if (pContentBrowserModule) {
       TArray<UObject*> AssetsToHighlight;
-      AssetsToHighlight.Add(this->TargetMaterialLayer);
+      AssetsToHighlight.Add(this->TargetMaterial);
       pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
     }
   }
@@ -1061,9 +1134,9 @@ void UCesiumVoxelMetadataComponent::GenerateMaterial() {
         GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
     if (pAssetEditor) {
       GEngine->EndTransaction();
-      pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
+      pAssetEditor->OpenEditorForAsset(this->TargetMaterial);
       IMaterialEditor* pMaterialEditor = static_cast<IMaterialEditor*>(
-          pAssetEditor->FindEditorForAsset(this->TargetMaterialLayer, true));
+          pAssetEditor->FindEditorForAsset(this->TargetMaterial, true));
       if (pMaterialEditor) {
         pMaterialEditor->UpdateMaterialAfterGraphChange();
       }

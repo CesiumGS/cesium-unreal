@@ -4,7 +4,7 @@
 
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
-#include "CesiumGltfVoxelComponent.h"
+#include "CesiumGltfGaussianSplatComponent.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
@@ -51,7 +51,33 @@ struct LoadedPrimitiveResult {
    * The render data. This is populated so it can be set on the static mesh
    * created on the main thread.
    */
-  TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
+  TUniquePtr<FStaticMeshRenderData> pRenderData = nullptr;
+
+  /**
+   * Data for rendering a Gaussian splats. Used instead of `RenderData` when the
+   * primitive is a Gaussian splat.
+   */
+  TUniquePtr<FCesiumGltfGaussianSplatData> pGaussianSplatData = nullptr;
+
+  /**
+   * The index of the property attribute that is used by voxels, if the
+   * primitive contains them.
+   */
+  std::optional<int32_t> voxelPropertyAttributeIndex;
+
+  /**
+   * Returns whether or not this primitive has renderable data (typical mesh
+   * data, Gaussian splats, or voxels). If this returns false, this primitive
+   * should be removed from consideration for rendering.
+   */
+  bool HasRenderableData() {
+    return pRenderData || pGaussianSplatData || voxelPropertyAttributeIndex;
+  }
+
+  /**
+   * The name of the glTF primitive for debugging purposes.
+   */
+  std::string name{};
 
   /**
    * The index of the material for this primitive within the parent model, or -1
@@ -62,8 +88,6 @@ struct LoadedPrimitiveResult {
   glm::dmat4x4 transform{1.0};
 
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
-
-  std::string name{};
 
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
@@ -78,13 +102,13 @@ struct LoadedPrimitiveResult {
    * A map of feature ID set names to their corresponding texture coordinate
    * indices in the Unreal mesh.
    */
-  TMap<FString, uint32_t> FeaturesMetadataTexCoordParameters;
+  TMap<FString, uint32_t> featuresMetadataTexCoordParameters;
 
   /**
    * A map of accessors indices that point to feature ID attributes to the index
    * of the same feature ID set in CesiumPrimitiveFeatures.
    */
-  std::unordered_map<int32_t, int32_t> AccessorToFeatureIdIndexMap;
+  std::unordered_map<int32_t, int32_t> accessorToFeatureIdIndexMap;
 
   bool isUnlit = false;
 
@@ -157,13 +181,7 @@ struct LoadedPrimitiveResult {
    * for computing the UV at a hit location on a primitive.
    */
   CesiumGltf::IndexAccessorType IndexAccessor;
-
 #pragma endregion
-
-  /**
-   * The index of the property attribute that is used by voxels.
-   */
-  std::optional<int32_t> voxelPropertyAttributeIndex;
 };
 
 /**
@@ -218,5 +236,11 @@ struct LoadedModelResult {
   /** For backwards compatibility with CesiumEncodedMetadataComponent. */
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
       EncodedMetadata_DEPRECATED{};
+
+  /**
+   * Metadata statistics to pass to the Unreal material, mapped by generated
+   * parameter name.
+   */
+  TMap<FString, FCesiumMetadataValue> metadataStatistics;
 };
 } // namespace LoadGltfResult

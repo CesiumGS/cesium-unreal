@@ -66,4 +66,10 @@ public:
       Category = "Cache",
       meta = (ConfigRestartRequired = true))
   int MaxCacheItems = 4096;
+
+  /**
+   * Clears all entries from the request cache database.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static void ClearRequestCache();
 };

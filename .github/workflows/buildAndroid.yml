@@ -77,7 +77,7 @@ jobs:
           rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.3.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.5.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Customize BuildConfiguration.xml
         run: |
           mkdir -p "$env:USERPROFILE\AppData\Roaming\Unreal Engine\UnrealBuildTool"
@@ -95,10 +95,6 @@ jobs:
           $env:NDKROOT=$env:ANDROID_NDK_ROOT
           cd "D:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-      - name: Print log
-        if: ${{ failure() }}
-        run: |
-          cat "C:\Users\runneradmin\AppData\Roaming\Unreal Engine\AutomationTool\Logs\D+Program+Files+Epic+Games+${{ inputs.unreal-program-name }}\UBT-UnrealGame-Android-Development.txt"
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4

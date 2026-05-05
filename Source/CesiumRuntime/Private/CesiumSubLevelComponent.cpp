@@ -3,6 +3,7 @@
 #include "CesiumSubLevelComponent.h"
 #include "Cesium3DTileset.h"
 #include "CesiumActors.h"
+#include "CesiumCompat.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumRuntime.h"
@@ -484,7 +485,7 @@ void UCesiumSubLevelComponent::OnRegister() {
 
 #if WITH_EDITOR
   if (pOwner->GetIsSpatiallyLoaded() ||
-      pOwner->DesiredRuntimeBehavior !=
+      pOwner->GetDesiredRuntimeBehavior() !=
           ELevelInstanceRuntimeBehavior::LevelStreaming) {
     pOwner->Modify();
 
@@ -498,8 +499,9 @@ void UCesiumSubLevelComponent::OnRegister() {
     // (Partitioned), will dump the actors in the sub-level into the main
     // level, which will prevent us from being to turn the sub-level on and
     // off at runtime.
-    pOwner->DesiredRuntimeBehavior =
-        ELevelInstanceRuntimeBehavior::LevelStreaming;
+    ALevelInstance_SetDesiredRuntimeBehavior(
+        pOwner,
+        ELevelInstanceRuntimeBehavior::LevelStreaming);
 
     UE_LOG(
         LogCesium,

@@ -112,7 +112,7 @@ jobs:
           rm -r -fo extern
       - name: Overwrite plugin engine version
         run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.3.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.5.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Customize BuildConfiguration.xml
         run: |
           mkdir -p "$env:USERPROFILE\AppData\Roaming\Unreal Engine\UnrealBuildTool"
@@ -137,10 +137,6 @@ jobs:
           else {
             exit -1
           }
-      - name: Print log
-        if: ${{ failure() }}
-        run: |
-          cat "C:\Users\runneradmin\AppData\Roaming\Unreal Engine\AutomationTool\Logs\C+Program+Files+Epic+Games+UE_5.3\UBT-UnrealEditor-Win64-Development.txt"
       - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4

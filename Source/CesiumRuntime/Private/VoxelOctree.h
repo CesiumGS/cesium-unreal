@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -57,8 +57,8 @@ private:
      * Empty leaf node that should be skipped when rendering.
      *
      * This may happen if a node's sibling is renderable, but neither it nor its
-     * parent are renderable, which can happen Native's algorithm loads higher
-     * LOD tiles before their ancestors.
+     * parent are renderable, which can happen when Cesium Native's algorithm
+     * loads higher LOD tiles before their ancestors.
      */
     Empty = 0,
     /**
@@ -253,7 +253,7 @@ public:
   bool canBeDestroyed() const;
 
 private:
-  bool isNodeRenderable(const CesiumGeometry::OctreeTileID& TileID) const;
+  bool isNodeRenderable(const CesiumGeometry::OctreeTileID& tileId) const;
 
   struct OctreeTileIDHash {
     size_t operator()(const CesiumGeometry::OctreeTileID& tileId) const;

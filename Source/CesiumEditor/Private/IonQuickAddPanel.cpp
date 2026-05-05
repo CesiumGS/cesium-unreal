@@ -4,13 +4,9 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCartographicPolygon.h"
 #include "CesiumEditor.h"
-#include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonServer.h"
 #include "CesiumRuntimeSettings.h"
-THIRD_PARTY_INCLUDES_START
-#include "CesiumUtility/Uri.h"
-THIRD_PARTY_INCLUDES_END
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "SelectCesiumIonToken.h"
@@ -24,6 +20,11 @@ THIRD_PARTY_INCLUDES_END
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
+
+THIRD_PARTY_INCLUDES_START
+#include <CesiumIonClient/Connection.h>
+#include <CesiumUtility/Uri.h>
+THIRD_PARTY_INCLUDES_END
 
 using namespace CesiumIonClient;
 

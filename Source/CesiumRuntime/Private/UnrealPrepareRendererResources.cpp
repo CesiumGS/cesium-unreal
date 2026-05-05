@@ -1,5 +1,8 @@
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
 #include "UnrealPrepareRendererResources.h"
 #include "Cesium3DTileset.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
@@ -37,13 +40,14 @@ UnrealPrepareRendererResources::prepareInLoadThread(
 
   options.ignoreKhrMaterialsUnlit = this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
-  if (this->_pActor->_featuresMetadataDescription) {
-    options.pFeaturesMetadataDescription =
-        &(*this->_pActor->_featuresMetadataDescription);
-  } else if (this->_pActor->_metadataDescription_DEPRECATED) {
+  options.pFeaturesMetadata = this->_pActor->_pFeaturesMetadataComponent;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  if (this->_pActor->_metadataDescription_DEPRECATED) {
     options.pEncodedMetadataDescription_DEPRECATED =
         &(*this->_pActor->_metadataDescription_DEPRECATED);
   }
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   if (this->_pActor->_pVoxelRendererComponent) {
     options.pVoxelOptions = &this->_pActor->_pVoxelRendererComponent->Options;
@@ -88,7 +92,9 @@ void* UnrealPrepareRendererResources::prepareInMainThread(
         this->_pActor->GetWaterMaterial(),
         this->_pActor->GetCustomDepthParameters(),
         tile,
-        this->_pActor->GetCreateNavCollision());
+        this->_pActor->GetCreateNavCollision(),
+        this->_pActor->GetEnableDoubleSidedCollisions(),
+        this->_pActor->GetReceiveDecals());
   }
   // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
   return nullptr;
@@ -106,6 +112,10 @@ void UnrealPrepareRendererResources::free(
   } else if (pMainThreadResult) {
     UCesiumGltfComponent* pGltf =
         reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
+    if (ICesium3DTilesetLifecycleEventReceiver* Receiver =
+            this->_pActor->GetLifecycleEventReceiver()) {
+      Receiver->OnTileUnloading(*pGltf);
+    }
     CesiumLifetime::destroyComponentRecursively(pGltf);
   }
 }

@@ -1,13 +1,18 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfComponent.h"
+
 #include "Async/Async.h"
+#include "Cesium3DTilesetLifecycleEventReceiver.h"
 #include "CesiumCommon.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdSet.h"
+#include "CesiumGltfGaussianSplatComponent.h"
+#include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfTextures.h"
+#include "CesiumGltfVoxelComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
@@ -15,6 +20,7 @@
 #include "CesiumTransforms.h"
 #include "Chaos/AABBTree.h"
 #include "Chaos/CollisionConvexMesh.h"
+#include "Chaos/Core.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "CreateGltfOptions.h"
 #include "EncodedFeaturesMetadata.h"
@@ -45,6 +51,7 @@
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionExtPrimitiveVoxels.h>
+#include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
@@ -91,8 +98,6 @@ public:
   LoadedModelResult loadModelResult{};
 };
 } // namespace
-
-const int32_t VoxelPrimitiveMode = 2147483647;
 
 template <class... T> struct IsAccessorView;
 
@@ -168,7 +173,7 @@ void accumulateFeaturesMetadataAccessors(
               std::to_string(encodedProperty.textureCoordinateSetIndex),
           gltfToUnrealTexCoordMap);
 
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           fullPropertyName +
               EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           index);
@@ -188,10 +193,10 @@ void accumulateFeaturesMetadataAccessors(
       if (accessorIndex < 0)
         continue;
 
-      primitiveResult.AccessorToFeatureIdIndexMap.emplace(
+      primitiveResult.accessorToFeatureIdIndexMap.emplace(
           accessorIndex,
           encodedFeatureIDSet.index);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName,
           addAttributeAccessorToMap(
               primitive,
@@ -201,7 +206,7 @@ void accumulateFeaturesMetadataAccessors(
       int64 setIndex = encodedFeatureIDSet.texture->textureCoordinateSetIndex;
       std::string attributeName = "TEXCOORD_" + std::to_string(setIndex);
 
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName + EncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           addAttributeAccessorToMap(
               primitive,
@@ -217,7 +222,7 @@ void accumulateFeaturesMetadataAccessors(
       // Use try_emplace to ensure a texture coordinate index is only assigned
       // the first time.
       gltfToUnrealTexCoordMap.try_emplace(-1, textureCoordinateIndex);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           SafeName,
           gltfToUnrealTexCoordMap[-1]);
     }
@@ -244,7 +249,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
   for (const CesiumEncodedMetadataUtility::EncodedFeatureIdTexture&
            encodedFeatureIdTexture :
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
-    primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+    primitiveResult.featuresMetadataTexCoordParameters.Emplace(
         encodedFeatureIdTexture.baseName + "UV",
         addAttributeAccessorToMap(
             primitive,
@@ -266,7 +271,7 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
       if (pEncodedFeatureTexture) {
         for (const CesiumEncodedMetadataUtility::EncodedFeatureTextureProperty&
                  encodedProperty : pEncodedFeatureTexture->properties) {
-          primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+          primitiveResult.featuresMetadataTexCoordParameters.Emplace(
               encodedProperty.baseName + "UV",
               addAttributeAccessorToMap(
                   primitive,
@@ -299,10 +304,10 @@ void accumulateFeaturesMetadataAccessors_DEPRECATED(
       if (accessor < 0)
         continue;
 
-      primitiveResult.AccessorToFeatureIdIndexMap.emplace(
+      primitiveResult.accessorToFeatureIdIndexMap.emplace(
           accessor,
           encodedFeatureIdAttribute.index);
-      primitiveResult.FeaturesMetadataTexCoordParameters.Emplace(
+      primitiveResult.featuresMetadataTexCoordParameters.Emplace(
           encodedFeatureIdAttribute.name,
           addAttributeAccessorToMap(
               primitive,
@@ -503,8 +508,8 @@ void populateUnrealTexCoords(
       result.GltfToUnrealTexCoordMap;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  if (modelOptions.pFeaturesMetadataDescription) {
-    for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
+  if (modelOptions.pFeaturesMetadata.IsValid()) {
+    for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds(
           result.Features,
           indexPair.second,
@@ -514,7 +519,7 @@ void populateUnrealTexCoords(
           duplicateVertices);
     }
   } else if (modelOptions.pEncodedMetadataDescription_DEPRECATED) {
-    for (const auto indexPair : result.AccessorToFeatureIdIndexMap) {
+    for (const auto indexPair : result.accessorToFeatureIdIndexMap) {
       copyFeatureIds_DEPRECATED(
           result.Metadata_DEPRECATED,
           indexPair.second,
@@ -527,7 +532,7 @@ void populateUnrealTexCoords(
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   for (const auto indexPair : gltfToUnrealTexCoordMap) {
-    if (result.AccessorToFeatureIdIndexMap.contains(indexPair.first)) {
+    if (result.accessorToFeatureIdIndexMap.contains(indexPair.first)) {
       continue;
     }
     copyTextureCoordinates(
@@ -686,14 +691,21 @@ static void setUnlitNormals(
         glm::dvec4(
             VecMath::createVector3D(FVector(positionBuffer.VertexPosition(i))),
             1.0));
-    glm::dvec3 normal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+
+    glm::dvec3 surfaceNormal = ellipsoid.geodeticSurfaceNormal(positionFixed);
+
+    if (surfaceNormal == glm::dvec3(0.0)) {
+      // This can happen for tilesets georeferenced at the center of the earth,
+      // resulting in NaN normals. Manually assign a normal aligned with Z-up.
+      surfaceNormal = glm::dvec3(0.0, 0.0, 1.0);
+    }
 
     normalBuffer.SetVertexTangents(
         i,
         FVector3f(0.0f),
         FVector3f(0.0),
-        FVector3f(VecMath::createVector(
-            glm::normalize(ellipsoidFixedToVertex * glm::dvec4(normal, 0.0)))));
+        FVector3f(VecMath::createVector(glm::normalize(
+            ellipsoidFixedToVertex * glm::dvec4(surfaceNormal, 0.0)))));
   }
 }
 
@@ -1116,7 +1128,9 @@ static void loadPrimitiveFeaturesMetadata(
       primitiveResult.TexCoordAccessorMap);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      pModelOptions->pFeaturesMetadataDescription;
+      pModelOptions->pFeaturesMetadata.IsValid()
+          ? &pModelOptions->pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Check for deprecated metadata description
@@ -1263,36 +1277,6 @@ std::string getPrimitiveName(
   return name;
 }
 
-/// Helper used to log only once per unsupported primitive mode.
-struct PrimitiveModeLogger {
-  std::array<
-      std::atomic_bool,
-      (size_t)CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN + 1>
-      alreadyLogged;
-
-  PrimitiveModeLogger()
-      : alreadyLogged{
-            {{false}, {false}, {false}, {false}, {false}, {false}, {false}}} {}
-
-  inline void OnUnsupportedMode(int32_t primMode) {
-    bool bPrintLog = false;
-    if (primMode < 0 || primMode >= (int32_t)alreadyLogged.size()) {
-      ensureMsgf(false, TEXT("Unknown primitive mode %d!"), primMode);
-      bPrintLog = true;
-    } else if (!alreadyLogged[(size_t)primMode].exchange(true)) {
-      bPrintLog = true;
-    }
-    if (bPrintLog) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("Primitive mode %d is not supported"),
-          primMode);
-    }
-  }
-};
-static PrimitiveModeLogger UnsupportedPrimitiveLogger;
-
 template <class TIndexAccessor>
 TArray<uint32>
 getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
@@ -1319,9 +1303,8 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
     }
     break;
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-    // The TRIANGLE_FAN primitive mode cannot be enabled without creating a
-    // custom render proxy, so the geometry must be emulated through separate
-    // triangles.
+    // The TRIANGLE_FAN primitive mode is not supported in Unreal, so geometry
+    // must be emulated through separate triangles.
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 2, j = 0; i < indicesView.size(); ++i, j += 3) {
@@ -1330,7 +1313,31 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
       indices[j + 2] = indicesView[i];
     }
     break;
+  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
+    // The LINE_LOOP primitive mode is not supported in Unreal, so geometry must
+    // be emulated through separate lines.
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(2 * indicesView.size()));
+    for (int32 i = 0, j = 0; i < indicesView.size(); ++i, j += 2) {
+      // Loop to the first index once we reach the last line segment.
+      size_t nextIndex = (i < indicesView.size() - 1) ? i + 1 : 0;
+
+      indices[j] = indicesView[i];
+      indices[j + 1] = indicesView[nextIndex];
+    }
+    break;
+  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
+    // The LINE_STRIP primitive mode is not supported in Unreal, so geometry
+    // must be emulated through separate lines.
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(2 * (indicesView.size() - 1)));
+    for (int32 i = 0, j = 0; i < indicesView.size() - 1; ++i, j += 2) {
+      indices[j] = indicesView[i];
+      indices[j + 1] = indicesView[i + 1];
+    }
+    break;
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+  case CesiumGltf::MeshPrimitive::Mode::LINES:
   case CesiumGltf::MeshPrimitive::Mode::POINTS:
   default:
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
@@ -1361,18 +1368,6 @@ static void loadPrimitive(
   CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
   CesiumGltf::MeshPrimitive& primitive =
       mesh.primitives[options.primitiveIndex];
-
-  switch (primitive.mode) {
-  case CesiumGltf::MeshPrimitive::Mode::POINTS:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-    break;
-  default:
-    // TODO: add support for other primitive types.
-    UnsupportedPrimitiveLogger.OnUnsupportedMode(primitive.mode);
-    return;
-  }
 
   const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
@@ -1424,20 +1419,19 @@ static void loadPrimitive(
           : defaultMaterial;
 
   primitiveResult.materialIndex = materialID;
-
   primitiveResult.isUnlit =
       material.hasExtension<CesiumGltf::ExtensionKhrMaterialsUnlit>() &&
       !options.pMeshOptions->pNodeOptions->pModelOptions
            ->ignoreKhrMaterialsUnlit;
 
-  // We can't calculate flat normals for points or lines, so we have to force
-  // them to be unlit if no normals are specified. Otherwise this causes a
-  // crash when attempting to calculate flat normals.
   bool isTriangles =
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN ||
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP;
 
+  // We can't calculate flat normals for points or lines, so we have to force
+  // them to be unlit if no normals are specified. Otherwise this causes a
+  // crash when attempting to calculate flat normals.
   if (!isTriangles && !hasNormals) {
     primitiveResult.isUnlit = true;
   }
@@ -1487,11 +1481,11 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  TUniquePtr<FStaticMeshRenderData> RenderData =
+  TUniquePtr<FStaticMeshRenderData> pRenderData =
       MakeUnique<FStaticMeshRenderData>();
-  RenderData->AllocateLODResources(1);
+  pRenderData->AllocateLODResources(1);
 
-  FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
+  FStaticMeshLODResources& LODResources = pRenderData->LODResources[0];
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
@@ -1528,9 +1522,9 @@ static void loadPrimitive(
         FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
 
     aaBox.GetCenterAndExtents(
-        RenderData->Bounds.Origin,
-        RenderData->Bounds.BoxExtent);
-    RenderData->Bounds.SphereRadius = 0.0f;
+        pRenderData->Bounds.Origin,
+        pRenderData->Bounds.BoxExtent);
+    pRenderData->Bounds.SphereRadius = 0.0f;
   }
 
   TArray<uint32> indices = getIndices(indicesView, primitive.mode);
@@ -1540,12 +1534,23 @@ static void loadPrimitive(
   // vertices shared by multiple triangles. If we don't have tangents, but
   // need them, we need to use a tangent space generation algorithm which
   // requires duplicated vertices.
-  bool normalsAreRequired = !primitiveResult.isUnlit;
+  bool normalsAreRequired = !primitiveResult.isUnlit && isTriangles;
   bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
   bool needToGenerateTangents = needsTangents && !hasTangents;
   bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
-  duplicateVertices = duplicateVertices &&
-                      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+
+  // Some primitive modes may require duplication of vertices anyways due to
+  // the lack of support in Unreal.
+  switch (primitive.mode) {
+  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
+  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+    duplicateVertices = true;
+    break;
+  default:
+    break;
+  }
 
   uint32 numVertices =
       duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
@@ -1555,6 +1560,8 @@ static void loadPrimitive(
   positionBuffer.Init(numVertices, false);
 
   {
+    // Note: scaling from glTF vertices to Unreal's must match
+    // UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor
     if (duplicateVertices) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (uint32 i = 0; i < numVertices; ++i) {
@@ -1564,9 +1571,9 @@ static void loadPrimitive(
         position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
         position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
         position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
+        pRenderData->Bounds.SphereRadius = FMath::Max(
+            (FVector(position) - pRenderData->Bounds.Origin).Size(),
+            pRenderData->Bounds.SphereRadius);
       }
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
@@ -1576,9 +1583,9 @@ static void loadPrimitive(
         position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
         position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
         position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
-        RenderData->Bounds.SphereRadius = FMath::Max(
-            (FVector(position) - RenderData->Bounds.Origin).Size(),
-            RenderData->Bounds.SphereRadius);
+        pRenderData->Bounds.SphereRadius = FMath::Max(
+            (FVector(position) - pRenderData->Bounds.Origin).Size(),
+            pRenderData->Bounds.SphereRadius);
       }
     }
   }
@@ -1611,7 +1618,7 @@ static void loadPrimitive(
         options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult;
 
     PRAGMA_DISABLE_DEPRECATION_WARNINGS
-    if (modelOptions.pFeaturesMetadataDescription) {
+    if (modelOptions.pFeaturesMetadata.IsValid()) {
       accumulateFeaturesMetadataAccessors(
           model,
           primitive,
@@ -1675,13 +1682,6 @@ static void loadPrimitive(
       duplicateVertices,
       primitiveResult);
 
-  double scale = 1.0 / CesiumPrimitiveData::positionScaleFactor;
-  glm::dmat4 scaleMatrix = glm::dmat4(
-      glm::dvec4(scale, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, scale, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, scale, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
-
   // TangentX: Tangent
   // TangentY: Bi-tangent
   // TangentZ: Normal
@@ -1711,16 +1711,14 @@ static void loadPrimitive(
             FVector3f(normal.X, -normal.Y, normal.Z));
       }
     }
+  } else if (primitiveResult.isUnlit || !isTriangles) {
+    setUnlitNormals(
+        LODResources.VertexBuffers,
+        ellipsoid,
+        transform * yInvertMatrix * CesiumPrimitiveData::positionScaleMatrix);
   } else {
-    if (primitiveResult.isUnlit) {
-      setUnlitNormals(
-          LODResources.VertexBuffers,
-          ellipsoid,
-          transform * yInvertMatrix * scaleMatrix);
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-      computeFlatNormals(LODResources.VertexBuffers);
-    }
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
+    computeFlatNormals(LODResources.VertexBuffers);
   }
 
   if (hasTangents) {
@@ -1757,13 +1755,12 @@ static void loadPrimitive(
 
   FStaticMeshSectionArray& Sections = LODResources.Sections;
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  // This will be ignored if the primitive contains points.
+  // This will be ignored if the primitive contains lines or points.
   section.NumTriangles = indices.Num() / 3;
   section.FirstIndex = 0;
   section.MinVertexIndex = 0;
   section.MaxVertexIndex = numVertices - 1;
-  section.bEnableCollision =
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+  section.bEnableCollision = isTriangles;
   section.bCastShadow = true;
   section.MaterialIndex = 0;
 
@@ -1787,24 +1784,20 @@ static void loadPrimitive(
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
 
-#if ENGINE_VERSION_5_5_OR_HIGHER
-  // UE 5.5 requires that we do this in order to avoid a crash when ray
-  // tracing is enabled.
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+  if (isTriangles) {
     // UE 5.5 requires that we do this in order to avoid a crash when ray
     // tracing is enabled.
-    RenderData->InitializeRayTracingRepresentationFromRenderingLODs();
+    pRenderData->InitializeRayTracingRepresentationFromRenderingLODs();
   }
-#endif
 
   primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
   primitiveResult.primitiveIndex = options.primitiveIndex;
-  primitiveResult.RenderData = std::move(RenderData);
+  primitiveResult.pRenderData = std::move(pRenderData);
   primitiveResult.pCollisionMesh = nullptr;
+  primitiveResult.transform =
+      transform * yInvertMatrix * CesiumPrimitiveData::positionScaleMatrix;
 
-  primitiveResult.transform = transform * yInvertMatrix * scaleMatrix;
-
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS &&
+  if (isTriangles &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
     if (numVertices != 0 && indices.Num() != 0) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
@@ -1933,13 +1926,14 @@ static void loadVoxels(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadVoxels)
-  if (primitive.mode != VoxelPrimitiveMode) {
+  if (primitive.mode != CesiumGltf::ExtensionExtPrimitiveVoxels::MODE) {
     UE_LOG(
         LogCesium,
         Warning,
         TEXT(
-            "Primitive mode %d does not match the voxel constant for EXT_primitive_voxels (2147483647). Skipped."),
-        primitive.mode);
+            "Primitive mode %d does not match the voxel constant for EXT_primitive_voxels (%d). Skipped."),
+        primitive.mode,
+        CesiumGltf::ExtensionExtPrimitiveVoxels::MODE);
     return;
   }
 
@@ -2021,6 +2015,37 @@ static void loadVoxels(
   }
 }
 
+static void loadGaussianSplats(
+    LoadedPrimitiveResult& primitiveResult,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const CesiumGltf::ExtensionKhrGaussianSplatting& splatExtension,
+    const glm::dmat4x4& transform,
+    const CreatePrimitiveOptions& options) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadGaussianSplats)
+  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Primitive mode %d is not POINTS as required by KHR_gaussian_splatting. Skipped."),
+        primitive.mode);
+    return;
+  }
+
+  const CesiumGltf::Model& model =
+      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  const CesiumGltf::Mesh& mesh = model.meshes[options.pMeshOptions->meshIndex];
+
+  const std::string name = getPrimitiveName(model, mesh, primitive);
+  primitiveResult.name = name;
+  primitiveResult.meshIndex = options.pMeshOptions->meshIndex;
+  primitiveResult.primitiveIndex = options.primitiveIndex;
+  primitiveResult.transform =
+      transform * yInvertMatrix * CesiumPrimitiveData::positionScaleMatrix;
+  primitiveResult.pGaussianSplatData =
+      MakeUnique<FCesiumGltfGaussianSplatData>(model, primitive);
+}
+
 static void loadPrimitive(
     LoadedPrimitiveResult& result,
     const glm::dmat4x4& transform,
@@ -2034,14 +2059,21 @@ static void loadPrimitive(
       model.meshes[options.pMeshOptions->meshIndex]
           .primitives[options.primitiveIndex];
 
-  if (primitive.attributes.empty()) {
+  if (const auto* pGaussianSplattingExtension =
+          primitive.getExtension<CesiumGltf::ExtensionKhrGaussianSplatting>();
+      pGaussianSplattingExtension) {
+    loadGaussianSplats(
+        result,
+        primitive,
+        *pGaussianSplattingExtension,
+        transform,
+        options);
     return;
   }
 
-  const CesiumGltf::ExtensionExtPrimitiveVoxels* pVoxelExtension =
-      primitive.getExtension<CesiumGltf::ExtensionExtPrimitiveVoxels>();
-  if (pVoxelExtension) {
-    // Special path for voxels.
+  if (const auto* pVoxelExtension =
+          primitive.getExtension<CesiumGltf::ExtensionExtPrimitiveVoxels>();
+      pVoxelExtension) {
     loadVoxels(result, primitive, *pVoxelExtension, transform, options);
     return;
   }
@@ -2108,8 +2140,7 @@ static void loadMesh(
     loadPrimitive(primitiveResult, transform, primitiveOptions, ellipsoid);
 
     // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.RenderData &&
-        primitiveResult.voxelPropertyAttributeIndex < 0) {
+    if (!primitiveResult.HasRenderableData()) {
       result->primitiveResults.pop_back();
     }
   }
@@ -2196,8 +2227,8 @@ static void loadInstancingData(
   // instance transform applied, and then be transformed back to Unreal. It's
   // tempting to do this by trying some manipulation of the individual glTF
   // instance operations, but that general approach has always ended in
-  // tears. Better to formally multiply out the matrices and be assured that the
-  // operation is correct.
+  // tears. Better to formally multiply out the matrices and be assured that
+  // the operation is correct.
   std::vector<glm::dmat4> instanceTransforms(count, glm::dmat4(1.0));
 
   // Note: the glm functions translate() and scale() post-multiply the matrix
@@ -2492,7 +2523,9 @@ static void loadModelMetadata(
   result.Metadata = FCesiumModelMetadata(model, *pModelMetadata);
 
   const FCesiumFeaturesMetadataDescription* pFeaturesMetadataDescription =
-      options.pFeaturesMetadataDescription;
+      options.pFeaturesMetadata.IsValid()
+          ? &options.pFeaturesMetadata->Description
+          : nullptr;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   const FMetadataDescription* pMetadataDescription_DEPRECATED =
@@ -2511,6 +2544,26 @@ static void loadModelMetadata(
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
+static void gatherStatistics(
+    LoadedModelResult& result,
+    const TArray<FCesiumMetadataClassStatisticsDescription>& statistics) {
+  for (const FCesiumMetadataClassStatisticsDescription& classStatistics :
+       statistics) {
+    for (const FCesiumMetadataPropertyStatisticsDescription&
+             propertyStatistics : classStatistics.Properties) {
+      for (const FCesiumMetadataPropertyStatisticValue& statisticValue :
+           propertyStatistics.Values) {
+        result.metadataStatistics.Add(
+            EncodedFeaturesMetadata::getNameForStatistic(
+                classStatistics.Id,
+                propertyStatistics.Id,
+                statisticValue.Semantic),
+            statisticValue.Value);
+      }
+    }
+  }
+}
+
 static CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 loadModelAnyThreadPart(
     const CesiumAsync::AsyncSystem& asyncSystem,
@@ -2526,6 +2579,12 @@ loadModelAnyThreadPart(
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
+
+            if (options.pFeaturesMetadata.IsValid()) {
+              gatherStatistics(
+                  pHalf->loadModelResult,
+                  options.pFeaturesMetadata->Description.Statistics);
+            }
 
             glm::dmat4x4 rootTransform = transform;
 
@@ -2631,7 +2690,6 @@ static void SetGltfParameterValues(
     CesiumGltf::Model& model,
     LoadedPrimitiveResult& loadResult,
     const CesiumGltf::Material& material,
-    const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2643,7 +2701,9 @@ static void SetGltfParameterValues(
             index),
         static_cast<float>(textureCoordinateSet.second));
   }
-
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
   if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
@@ -2885,16 +2945,16 @@ void SetWaterParameterValues(
 }
 
 static void SetFeaturesMetadataParameterValues(
-    const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
     LoadedPrimitiveResult& loadResult,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
   // This handles texture coordinate indices for both attribute feature ID
   // sets and property textures.
   for (const auto& textureCoordinateSet :
-       loadResult.FeaturesMetadataTexCoordParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -2945,6 +3005,29 @@ static void SetFeaturesMetadataParameterValues(
           association,
           index,
           propertyTable);
+    }
+  }
+
+  for (const auto& pair : metadataStatistics) {
+    FCesiumMetadataValueType valueType =
+        UCesiumMetadataValueBlueprintLibrary::GetValueType(pair.Value);
+    switch (valueType.Type) {
+    case ECesiumMetadataType::Scalar:
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(FName(pair.Key), association, index),
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(pair.Value, 0.0f));
+      break;
+    case ECesiumMetadataType::Vec2:
+    case ECesiumMetadataType::Vec3:
+    case ECesiumMetadataType::Vec4:
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(FName(pair.Key), association, index),
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              pair.Value,
+              FVector4::Zero()));
+      break;
+    default:
+      break;
     }
   }
 }
@@ -3003,7 +3086,7 @@ static void SetMetadataParameterValues_DEPRECATED(
   }
 
   for (const auto& textureCoordinateSet :
-       loadResult.FeaturesMetadataTexCoordParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -3176,9 +3259,12 @@ static void loadPrimitiveGameThreadPart(
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
+    bool enableDoubleSidedCollisions,
+    bool receiveDecals,
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
-    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
+    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -3204,6 +3290,14 @@ static void loadPrimitiveGameThreadPart(
     pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
     pCesiumPrimitive = pPointMesh;
+  } else if (
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINES ||
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINE_LOOP ||
+      meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::LINE_STRIP) {
+    UCesiumGltfLinesComponent* pLineMesh =
+        NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
+    pMesh = pLineMesh;
+    pCesiumPrimitive = pLineMesh;
   } else if (!instanceTransforms.empty()) {
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
@@ -3213,11 +3307,12 @@ static void loadPrimitiveGameThreadPart(
     }
     pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
 
-    const std::optional<FCesiumFeaturesMetadataDescription>&
-        maybeFeaturesDescription =
-            pTilesetActor->getFeaturesMetadataDescription();
-    if (maybeFeaturesDescription) {
-      addInstanceFeatureIds(pInstancedComponent, *maybeFeaturesDescription);
+    const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+        pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+    if (pFeaturesMetadataComponent) {
+      addInstanceFeatureIds(
+          pInstancedComponent,
+          pFeaturesMetadataComponent->Description);
     }
 
     pCesiumPrimitive = pInstancedComponent;
@@ -3227,21 +3322,23 @@ static void loadPrimitiveGameThreadPart(
     pMesh = pComponent;
     pCesiumPrimitive = pComponent;
   }
+
   CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
+
+  primData.pTilesetActor = pTilesetActor;
+  primData.overlayTextureCoordinateIDToUVIndex =
+      loadResult.overlayTextureCoordinateIDToUVIndex;
+  primData.GltfToUnrealTexCoordMap =
+      std::move(loadResult.GltfToUnrealTexCoordMap);
+  primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
+  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+  primData.HighPrecisionNodeTransform = loadResult.transform;
+  pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
   UStaticMesh* pStaticMesh;
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
-    primData.pTilesetActor = pTilesetActor;
-    primData.overlayTextureCoordinateIDToUVIndex =
-        loadResult.overlayTextureCoordinateIDToUVIndex;
-    primData.GltfToUnrealTexCoordMap =
-        std::move(loadResult.GltfToUnrealTexCoordMap);
-    primData.TexCoordAccessorMap = std::move(loadResult.TexCoordAccessorMap);
-    primData.PositionAccessor = std::move(loadResult.PositionAccessor);
-    primData.IndexAccessor = std::move(loadResult.IndexAccessor);
-    primData.HighPrecisionNodeTransform = loadResult.transform;
-    pCesiumPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     pMesh->bUseDefaultCollision = false;
     pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
     pMesh->SetFlags(
@@ -3254,6 +3351,7 @@ static void loadPrimitiveGameThreadPart(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
     pMesh->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
+    pMesh->bReceivesDecals = receiveDecals;
     if (loadResult.isUnlit) {
       pMesh->bCastDynamicShadow = false;
     }
@@ -3265,28 +3363,30 @@ static void loadPrimitiveGameThreadPart(
         primData.pTilesetActor->GetTranslucencySortPriority();
 
     pStaticMesh = NewObject<UStaticMesh>(pMesh, componentName);
-    // Not only does the concept of ray tracing a point cloud not make much
-    // sense, but if Unreal will crash trying to generate ray tracing
-    // information for a static mesh without triangles.
-    pStaticMesh->bSupportRayTracing =
-        meshPrimitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS;
+    // Unreal will crash trying to generate ray tracing information for a
+    // static mesh without triangles (and it doesn't make sense anyways!)
+    switch (meshPrimitive.mode) {
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
+    case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
+      pStaticMesh->bSupportRayTracing = true;
+      break;
+    default:
+      pStaticMesh->bSupportRayTracing = false;
+      break;
+    }
     pMesh->SetStaticMesh(pStaticMesh);
 
     pStaticMesh->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     pStaticMesh->NeverStream = true;
 
-    pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
+    pStaticMesh->SetRenderData(std::move(loadResult.pRenderData));
   }
 
   const CesiumGltf::Material& material =
       loadResult.materialIndex != -1 ? model.materials[loadResult.materialIndex]
                                      : defaultMaterial;
-
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
-
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
@@ -3296,12 +3396,6 @@ static void loadPrimitiveGameThreadPart(
                CesiumGltf::Material::AlphaMode::BLEND;
   };
 
-#if PLATFORM_MAC
-  // TODO: figure out why water material crashes mac
-  UMaterialInterface* pUserDesignatedMaterial =
-      is_in_blend_mode(loadResult) ? pGltf->BaseMaterialWithTranslucency
-                                   : pGltf->BaseMaterial;
-#else
   UMaterialInterface* pUserDesignatedMaterial;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
     pUserDesignatedMaterial = pGltf->BaseMaterialWithWater;
@@ -3310,15 +3404,23 @@ static void loadPrimitiveGameThreadPart(
                                   ? pGltf->BaseMaterialWithTranslucency
                                   : pGltf->BaseMaterial;
   }
-#endif
 
-  UMaterialInstanceDynamic* pMaterialForGltfPrimitive;
+  // Move this right now: CreateMaterial may need them!
+  // "Safe" even though loadResult is still used later, because the methods
+  // used during material setup (SetGltfParameterValues, etc.) below do not
+  // use these members.
+  primData.Features = std::move(loadResult.Features);
+  primData.Metadata = std::move(loadResult.Metadata);
+
+  UMaterialInstanceDynamic* pMaterialForGltfPrimitive = nullptr;
+  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+      pTilesetActor->GetLifecycleEventReceiver();
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
+    ensure(pUserDesignatedMaterial);
 
     UMaterialInstanceDynamic* pUserDesignatedMaterialAsDynamic =
         Cast<UMaterialInstanceDynamic>(pUserDesignatedMaterial);
-
     // If the user-designated material is a UMaterialInstanceDynamic, Create()
     // will reject it as a valid instance parent.  Defer to its non-dynamic
     // parent instead.
@@ -3327,10 +3429,26 @@ static void loadPrimitiveGameThreadPart(
             ? pUserDesignatedMaterialAsDynamic->Parent.Get()
             : pUserDesignatedMaterial;
 
-    pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
-        pBaseMaterial,
-        nullptr,
-        ImportedSlotName);
+    if (pLifecycleEventReceiver) {
+      // Possibility to override the material for this primitive
+      pMaterialForGltfPrimitive = pLifecycleEventReceiver->CreateMaterial(
+          *pCesiumPrimitive,
+          pBaseMaterial,
+          ImportedSlotName);
+      check(pMaterialForGltfPrimitive);
+      // pMaterialForGltfPrimitive created above may not have used the
+      // suggested pBaseMaterial passed as input
+      pBaseMaterial = pMaterialForGltfPrimitive->Parent.Get();
+      // may have changed but we don't need it from now on:
+      pUserDesignatedMaterialAsDynamic = nullptr;
+    } else {
+      // Same as ICesium3DTilesetLifecycleEventReceiver::CreateMaterial's
+      // default implementation
+      pMaterialForGltfPrimitive = UMaterialInstanceDynamic::Create(
+          pBaseMaterial,
+          nullptr,
+          ImportedSlotName);
+    }
 
     pMaterialForGltfPrimitive->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
@@ -3338,7 +3456,6 @@ static void loadPrimitiveGameThreadPart(
         model,
         loadResult,
         material,
-        pbr,
         pMaterialForGltfPrimitive,
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
@@ -3349,9 +3466,9 @@ static void loadPrimitiveGameThreadPart(
         EMaterialParameterAssociation::GlobalParameter,
         INDEX_NONE);
 
-    // The base material might be a Material, or it might be a MaterialInstance.
-    // Only MaterialInstances can use the material layer system, so only
-    // MaterialInstances will have UCesiumMaterialUserData.
+    // The base material might be a Material, or it might be a
+    // MaterialInstance. Only MaterialInstances can use the material layer
+    // system, so only MaterialInstances will have UCesiumMaterialUserData.
     UMaterialInstance* pBaseAsMaterialInstance =
         Cast<UMaterialInstance>(pBaseMaterial);
 
@@ -3379,7 +3496,7 @@ static void loadPrimitiveGameThreadPart(
             NAME_None,
             RF_Transactional);
         pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
-        pCesiumData->PostEditChangeOwner();
+        pCesiumData->UpdateLayerNames();
       }
     }
 #endif
@@ -3401,7 +3518,6 @@ static void loadPrimitiveGameThreadPart(
           model,
           loadResult,
           material,
-          pbr,
           pMaterialForGltfPrimitive,
           EMaterialParameterAssociation::LayerParameter,
           0);
@@ -3440,9 +3556,9 @@ static void loadPrimitiveGameThreadPart(
       int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
       if (featuresMetadataIndex >= 0) {
         SetFeaturesMetadataParameterValues(
-            model,
             *pGltf,
             loadResult,
+            metadataStatistics,
             pMaterialForGltfPrimitive,
             EMaterialParameterAssociation::LayerParameter,
             featuresMetadataIndex);
@@ -3494,10 +3610,16 @@ static void loadPrimitiveGameThreadPart(
             it.FontPage);
       }
     }
-  }
 
-  primData.Features = std::move(loadResult.Features);
-  primData.Metadata = std::move(loadResult.Metadata);
+    // Extra material customizations
+    if (pLifecycleEventReceiver) {
+      pLifecycleEventReceiver->CustomizeMaterial(
+          *pCesiumPrimitive,
+          *pMaterialForGltfPrimitive,
+          pCesiumData,
+          material);
+    }
+  }
 
   primData.EncodedFeatures = std::move(loadResult.EncodedFeatures);
   primData.EncodedMetadata = std::move(loadResult.EncodedMetadata);
@@ -3530,7 +3652,7 @@ static void loadPrimitiveGameThreadPart(
     pStaticMesh->InitResources();
   }
 
-  // Set up RenderData bounds and LOD data
+  // Set up pRenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
   pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
 
@@ -3546,6 +3668,7 @@ static void loadPrimitiveGameThreadPart(
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
     if (loadResult.pCollisionMesh) {
+      pBodySetup->bDoubleSidedGeometry = enableDoubleSidedCollisions;
       pBodySetup->TriMeshGeometries.Add(loadResult.pCollisionMesh);
     }
 
@@ -3569,6 +3692,11 @@ static void loadPrimitiveGameThreadPart(
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
     pMesh->RegisterComponent();
+  }
+
+  // Call the observer callback (if any) once all is done
+  if (pLifecycleEventReceiver) {
+    pLifecycleEventReceiver->OnTileMeshPrimitiveLoaded(*pCesiumPrimitive);
   }
 }
 
@@ -3620,6 +3748,48 @@ static void loadVoxelsGameThreadPart(
   }
 }
 
+static void loadGaussianSplatsGameThreadPart(
+    CesiumGltf::Model& model,
+    UCesiumGltfComponent* pGltf,
+    LoadedPrimitiveResult& loadResult,
+    const glm::dmat4x4& cesiumToUnrealTransform,
+    ACesium3DTileset* pTilesetActor) {
+  if (!loadResult.pGaussianSplatData) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Primitive with KHR_gaussian_splatting did not contain valid data."));
+    return;
+  }
+
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
+
+  UCesiumGltfGaussianSplatComponent* pGaussianSplat =
+      NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
+  pGaussianSplat->Data = MoveTemp(*loadResult.pGaussianSplatData.Release());
+  pGaussianSplat->SetupAttachment(pGltf);
+  pGaussianSplat->SetMobility(pGltf->Mobility);
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+    pGaussianSplat->RegisterComponent();
+  }
+
+  pGaussianSplat->RegisterWithSubsystem();
+
+  CesiumPrimitiveData& primData = pGaussianSplat->getPrimitiveData();
+  primData.pTilesetActor = pTilesetActor;
+  primData.PositionAccessor = std::move(loadResult.PositionAccessor);
+  primData.IndexAccessor = std::move(loadResult.IndexAccessor);
+  primData.HighPrecisionNodeTransform = loadResult.transform;
+  pGaussianSplat->UpdateTransformFromCesium(cesiumToUnrealTransform);
+}
+
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumAsync::AsyncSystem& AsyncSystem,
@@ -3643,7 +3813,9 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::Tile& tile,
-    bool createNavCollision) {
+    bool createNavCollision,
+    bool enableDoubleSidedCollisions,
+    bool receiveDecals) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
   HalfConstructedReal* pReal =
@@ -3656,6 +3828,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   // }
 
   UCesiumGltfComponent* pGltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
+  pGltf->pTile = &tile;
   pGltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   pGltf->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
@@ -3678,7 +3851,6 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
 
   pGltf->CustomDepthParameters = CustomDepthParameters;
-
   encodeModelMetadataGameThreadPart(pGltf->EncodedMetadata);
 
   if (pGltf->EncodedMetadata_DEPRECATED) {
@@ -3689,7 +3861,14 @@ UCesiumGltfComponent::CreateOffGameThread(
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
-        if (primitive.voxelPropertyAttributeIndex) {
+        if (primitive.pGaussianSplatData) {
+          loadGaussianSplatsGameThreadPart(
+              model,
+              pGltf,
+              primitive,
+              cesiumToUnrealTransform,
+              pTilesetActor);
+        } else if (primitive.voxelPropertyAttributeIndex) {
           loadVoxelsGameThreadPart(
               model,
               pGltf,
@@ -3704,17 +3883,33 @@ UCesiumGltfComponent::CreateOffGameThread(
               cesiumToUnrealTransform,
               tile,
               createNavCollision,
+              enableDoubleSidedCollisions,
+              receiveDecals,
               pTilesetActor,
               node.InstanceTransforms,
-              node.pInstanceFeatures);
+              node.pInstanceFeatures,
+              pReal->loadModelResult.metadataStatistics);
         }
       }
     }
   }
 
+  if (ICesium3DTilesetLifecycleEventReceiver* Receiver =
+          pTilesetActor->GetLifecycleEventReceiver()) {
+    Receiver->OnTileLoaded(*pGltf);
+  }
+
   pGltf->SetVisibility(false, true);
   pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return pGltf;
+}
+
+void UCesiumGltfComponent::OnVisibilityChanged() {
+  USceneComponent::OnVisibilityChanged();
+  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+      GetTilesetActor().GetLifecycleEventReceiver();
+  if (pLifecycleEventReceiver)
+    pLifecycleEventReceiver->OnTileVisibilityChanged(*this, GetVisibleFlag());
 }
 
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
@@ -3745,6 +3940,35 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
+}
+
+const CesiumGltf::Model* UCesiumGltfComponent::GetGltfModel() const {
+  if (pTile) {
+    if (auto RenderContent = pTile->getContent().getRenderContent())
+      return &RenderContent->getModel();
+  }
+  return nullptr;
+}
+
+const FCesiumModelMetadata& UCesiumGltfComponent::GetModelMetadata() const {
+  return Metadata;
+}
+
+const Cesium3DTilesSelection::TileID& UCesiumGltfComponent::GetTileID() const {
+  return pTile->getTileID();
+}
+
+ACesium3DTileset& UCesiumGltfComponent::GetTilesetActor() {
+  return *Cast<ACesium3DTileset>(GetOuter());
+}
+
+FVector
+UCesiumGltfComponent::GetGltfToUnrealLocalVertexPositionScaleFactor() const {
+  // Note: replicates logic from (static) loadPrimitive
+  return FVector(
+      CesiumPrimitiveData::positionScaleFactor,
+      -CesiumPrimitiveData::positionScaleFactor,
+      CesiumPrimitiveData::positionScaleFactor);
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(
@@ -3978,7 +4202,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
   for (uint32 i = 0; i < vertexCount; ++i) {
-    vertices.X(int32(i)) = positionBuffer.VertexPosition(i);
+    vertices.SetX(int32(i), positionBuffer.VertexPosition(i));
   }
 
   int32 triangleCount = indices.Num() / 3;
@@ -4008,5 +4232,7 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
       MoveTemp(materials),
       MoveTemp(pFaceRemap),
       nullptr,
-      false);
+      // The value passed in for bInCullsBackFaceRaycast will be overridden by
+      // UBodySetup::bDoubleSidedGeometry, so it doesn't matter here.
+      /*bInCullsBackFaceRaycast*/ false);
 }

@@ -1,6 +1,4 @@
-#pragma once
-
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 /*===========================
   CesiumVectorUtility.usf: General utility for handling vectors (e.g., float3s).
@@ -24,7 +22,7 @@ bool3 Equal(float3 v1, float3 v2)
 bool IsInRange(in float3 v, in float3 min, in float3 max)
 {
   bool3 inRange = (clamp(v, min, max) == v);
-  return inRange.x && inRange.y && inRange.z;
+  return all(inRange);
 }
 
 /**

@@ -76,6 +76,11 @@ public class CesiumRuntime : ModuleRules
         string[] allLibs = Directory.Exists(libPath) ? Directory.GetFiles(libPath, libSearchPattern) : new string[0];
 
         PublicAdditionalLibraries.AddRange(allLibs);
+        // On Linux, cpp-httplib uses getaddrinfo_a, which is in the anl library.
+        if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
+            PublicSystemLibraries.Add("anl");
+        }
 
         PublicDependencyModuleNames.AddRange(
             new string[]
@@ -98,9 +103,18 @@ public class CesiumRuntime : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "Slate",
-                "SlateCore"
+                "SlateCore",
+                "Niagara",
+                "ChaosCore"
             }
         );
+        // TinyXML2 is provided on Linux and Windows so use it,
+        // instead of the vcpkg version, to prevent conflicts with other
+        // plugins that link with the Unreal version.
+        if (Target.Platform == UnrealTargetPlatform.Linux || Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            PublicDependencyModuleNames.Add("TinyXML2");
+        }
 
         // Use UE's MikkTSpace on most platforms, except Android and iOS.
         // On those platforms, UE's isn't available, so we use our own.
@@ -151,8 +165,13 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
+#if UE_5_7_OR_LATER
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
+        CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Off;
+#else
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
         ShadowVariableWarningLevel = WarningLevel.Off;
-        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_4;
+#endif
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         CppStandard = CppStandardVersion.Cpp20;

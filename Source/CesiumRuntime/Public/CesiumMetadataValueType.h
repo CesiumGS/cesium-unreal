@@ -1,13 +1,18 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
-#include "CesiumGltf/Enum.h"
-#include "CesiumGltf/PropertyArrayView.h"
-#include "CesiumGltf/PropertyType.h"
-#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataEnum.h"
+#include <CesiumGltf/Enum.h>
+#include <CesiumGltf/PropertyArrayView.h>
+#include <CesiumGltf/PropertyType.h>
+#include <CesiumGltf/PropertyTypeTraits.h>
+
 #include "CesiumMetadataValueType.generated.h"
+
+namespace Cesium3DTiles {
+struct ClassProperty;
+}
 
 /**
  * The Blueprint type that can losslessly represent values of a given property.
@@ -139,16 +144,12 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   GENERATED_USTRUCT_BODY()
 
-  FCesiumMetadataValueType()
-      : Type(ECesiumMetadataType::Invalid),
-        ComponentType(ECesiumMetadataComponentType::None),
-        bIsArray(false) {}
+  FCesiumMetadataValueType();
 
   FCesiumMetadataValueType(
       ECesiumMetadataType InType,
       ECesiumMetadataComponentType InComponentType,
-      bool IsArray = false)
-      : Type(InType), ComponentType(InComponentType), bIsArray(IsArray) {}
+      bool IsArray = false);
 
   /**
    * The type of the metadata property or value.
@@ -186,6 +187,19 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
     return Type != ValueType.Type || ComponentType != ValueType.ComponentType ||
            bIsArray != ValueType.bIsArray;
   }
+
+  /**
+   * Prints this value type in the format "(Component Type) (Type) (Array)".
+   * For example, "Int16 Scalar", "Float32 Mat4 Array", "String Array".
+   */
+  FString ToString() const;
+
+  /**
+   * Deduces the corresponding value type for a given
+   * Cesium3DTiles::ClassProperty.
+   */
+  static FCesiumMetadataValueType
+  fromClassProperty(const Cesium3DTiles::ClassProperty& property);
 };
 
 template <typename T>
@@ -263,15 +277,4 @@ static size_t GetMetadataTypeByteSize(
   }
 
   return byteSize;
-}
-
-static FString MetadataTypeToString(ECesiumMetadataType type) {
-  const UEnum* pEnum = StaticEnum<ECesiumMetadataType>();
-  return pEnum ? pEnum->GetNameByValue((int64)type).ToString() : FString();
-}
-
-static FString
-MetadataComponentTypeToString(ECesiumMetadataComponentType type) {
-  const UEnum* pEnum = StaticEnum<ECesiumMetadataComponentType>();
-  return pEnum ? pEnum->GetNameByValue((int64)type).ToString() : FString();
 }

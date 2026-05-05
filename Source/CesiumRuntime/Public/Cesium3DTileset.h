@@ -26,25 +26,29 @@
 #include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include <vector>
-#include "Cesium3DTileset.generated.h"
 
 #ifdef CESIUM_DEBUG_TILE_STATES
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
 
+#include "Cesium3DTileset.generated.h"
+
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 class ACesiumCameraManager;
 class UCesiumBoundingVolumePoolComponent;
+class UCesiumFeaturesMetadataComponent;
 class UCesiumVoxelRendererComponent;
 class CesiumViewExtension;
 struct FCesiumCamera;
+class ICesium3DTilesetLifecycleEventReceiver;
 
 namespace Cesium3DTiles {
 struct ExtensionContent3dTilesContentVoxels;
 }
 
 namespace Cesium3DTilesSelection {
+class GltfModifier;
 class Tileset;
 class TilesetView;
 class TileOcclusionRendererProxyPool;
@@ -629,11 +633,25 @@ public:
   bool SuspendUpdate;
 
   /**
-   * If true, this tileset is ticked/updated in the editor. If false, is only
+   * If true, this tileset is ticked/updated in the editor. If false, it is only
    * ticked while playing (including Play-in-Editor).
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
   bool UpdateInEditor = true;
+
+  /**
+   * Play-in-Editor creates copies of objects in the level, including tileset
+   * actors. This means that two copies of the same tileset may be loaded into
+   * memory during Play-in-Editor mode.
+   *
+   * When this setting is true, the Editor instance of the tileset will unload
+   * its tiles as Play-in-Editor begins. This can prevent the Editor from
+   * duplicating resources and potentially consuming too much memory. However,
+   * tiles will need to be reloaded for the Editor instance after Play-in-Editor
+   * ends.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool UnloadEditorTilesInPlayMode = false;
 
   /**
    * If true, stats about tile selection are printed to the Output Log.
@@ -804,6 +822,20 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
+   * Whether to enable doubled-sided collisions (both front-facing and
+   * back-facing) on created physics meshes.
+   *
+   * Only relevant when CreatePhysicsMeshes is true.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableDoubleSidedCollisions,
+      BlueprintSetter = SetEnableDoubleSidedCollisions,
+      Category = "Cesium|Physics",
+      meta = (EditCondition = "CreatePhysicsMeshes"))
+  bool EnableDoubleSidedCollisions = false;
+
+  /**
    * Whether to generate navigation collisions for this tileset.
    *
    * Enabling this option creates collisions for navigation when a 3D Tiles
@@ -886,6 +918,16 @@ private:
       Category = "Cesium|Rendering",
       meta = (DisplayName = "Ignore KHR_materials_unlit"))
   bool IgnoreKhrMaterialsUnlit = false;
+
+  /**
+   * Whether this tileset should receive decals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetReceiveDecals,
+      BlueprintSetter = SetReceiveDecals,
+      Category = "Cesium|Rendering")
+  bool ReceiveDecals = true;
 
   /**
    * A custom Material to use to render opaque elements in this tileset, in
@@ -1099,6 +1141,14 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
+  bool GetEnableDoubleSidedCollisions() const {
+    return EnableDoubleSidedCollisions;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
+  void SetEnableDoubleSidedCollisions(bool bEnableDoubleSidedCollisions);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Navigation")
   bool GetCreateNavCollision() const { return CreateNavCollision; }
 
@@ -1127,6 +1177,11 @@ public:
   bool GetIgnoreKhrMaterialsUnlit() const { return IgnoreKhrMaterialsUnlit; }
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetReceiveDecals() const { return ReceiveDecals; }
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetReceiveDecals(bool bReceiveDecals);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }
@@ -1191,11 +1246,6 @@ public:
     return this->_pTileset.Get();
   }
 
-  const std::optional<FCesiumFeaturesMetadataDescription>&
-  getFeaturesMetadataDescription() const {
-    return this->_featuresMetadataDescription;
-  }
-
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -1216,7 +1266,6 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
-  virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
 
 protected:
@@ -1262,6 +1311,41 @@ public:
    * the root component has changed since the previous Tick.
    */
   void UpdateTransformFromCesium();
+
+  /**
+   * Gets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   */
+  const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>&
+  GetGltfModifier() const;
+
+  /**
+   * Sets the glTF modifier, an optional extension class that can edit
+   * each tile's glTF model after it has been loaded, before it can be
+   * displayed.
+   *
+   * Setting this property will refresh the tileset.
+   */
+  void SetGltfModifier(
+      const std::shared_ptr<Cesium3DTilesSelection::GltfModifier>& Modifier);
+
+  /**
+   * Gets the optional receiver of events related to the lifecycle of tiles
+   * created by this tileset.
+   */
+  ICesium3DTilesetLifecycleEventReceiver* GetLifecycleEventReceiver();
+
+  /**
+   * Sets a receiver of events related to the lifecycle of tiles
+   * created by this tileset.
+   *
+   * The receiver will be notified of events such as tile load, unload, show,
+   * and hide. The provided instance _must_ implement @ref
+   * ICesium3DTilesetLifecycleEventReceiver, otherwise it will be as if nullptr
+   * were passed.
+   */
+  void SetLifecycleEventReceiver(UObject* EventReceiver);
 
 private:
   /**
@@ -1330,18 +1414,20 @@ private:
   void RuntimeSettingsChanged(
       UObject* pObject,
       struct FPropertyChangedEvent& changed);
+
+  void OnPreBeginPIE(bool bIsSimulating);
 #endif
 
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
+  TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
+  TWeakObjectPtr<UCesiumVoxelMetadataComponent> _pVoxelMetadataComponent;
+
+  bool _destroyOnNextTick;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
 #endif
-
-  std::optional<FCesiumFeaturesMetadataDescription>
-      _featuresMetadataDescription;
-  std::optional<FCesiumVoxelClassDescription> _voxelClassDescription;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   std::optional<FMetadataDescription> _metadataDescription_DEPRECATED;
@@ -1390,6 +1476,17 @@ private:
   std::vector<Cesium3DTilesSelection::Tile::ConstPointer> _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
+
+  std::shared_ptr<Cesium3DTilesSelection::GltfModifier> _pGltfModifier;
+
+  // Make this visible to the garbage collector, but don't save/load/copy it.
+  // Use UObject instead of TScriptInterface as suggested by
+  // https://www.stevestreeting.com/2020/11/02/ue4-c-interfaces-hints-n-tips/,
+  // even though this cannot be implemented through Blueprints for the moment
+  // (see comment over UCesium3DTilesetLifecycleEventReceiver for instructions),
+  // it's best being prepared for the future.
+  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
+  UObject* _pLifecycleEventReceiver;
 
   friend class UnrealPrepareRendererResources;
   friend class UCesiumGltfPointsComponent;

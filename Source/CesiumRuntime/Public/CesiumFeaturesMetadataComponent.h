@@ -1,9 +1,9 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumFeaturesMetadataDescription.h"
-#include "Components/ActorComponent.h"
+#include "CesiumMetadataComponent.h"
 
 #if WITH_EDITOR
 #include "Materials/MaterialFunctionMaterialLayer.h"
@@ -13,38 +13,40 @@
 
 /**
  * @brief A component that can be added to Cesium3DTileset actors to
- * dictate what metadata to encode for access on the GPU. The selection can be
- * automatically populated based on available metadata by clicking the
- * "Auto Fill" button. Once a selection of desired metadata is made, the
- * boiler-plate material code to access the selected properties can be
- * auto-generated using the "Generate Material" button.
+ * dictate what feature ID sets or metadata to encode for access on the GPU.
+ * "Add Properties" allows users to find and select desired feature ID sets and
+ * metadata properties. Once a selection is made, "Generate Material" can be
+ * used to auto-generated the boiler-plate code to access the selected
+ * properties in the Unreal material.
  */
 UCLASS(ClassGroup = Cesium, Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
-    : public UActorComponent {
+    : public UCesiumMetadataComponent {
   GENERATED_BODY()
 
 public:
 #if WITH_EDITOR
   /**
-   * Populate the description of metadata and feature IDs using the current view
-   * of the tileset. This determines what to encode to the GPU based on the
-   * existing metadata.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
+   * Opens a window to add feature ID sets and metadata properties from the
+   * current view of the tileset.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
-  void AutoFill();
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Add Properties"))
+  void AddProperties();
 
   /**
-   * This button can be used to create a boiler-plate material layer that
-   * exposes the requested metadata properties in the current description. The
-   * nodes to access the metadata will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Content/
+   * Creates or overwrites a boiler-plate material layer that exposes the
+   * requested metadata properties in the current description. The nodes to
+   * access the metadata will be added to TargetMaterialLayer if it is already
+   * specified. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(
+      CallInEditor,
+      Category = "Cesium",
+      Meta = (DisplayName = "Generate Material"))
   void GenerateMaterial();
 #endif
 
@@ -54,7 +56,7 @@ public:
    * boiler-plate material generation will use. When pressing
    * "Generate Material", nodes will be added to this material to enable access
    * to the requested metadata. If this is left blank, a new material layer
-   * will be created in the /Game/ folder.
+   * will be created in the /Content/ folder.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
@@ -75,6 +77,7 @@ public:
            ShowOnlyInnerProperties))
   FCesiumFeaturesMetadataDescription Description;
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // Previously the properties of FCesiumFeaturesMetadataDescription were
   // deconstructed here in order to flatten the Details panel UI. However, the
   // ShowOnlyInnerProperties attribute accomplishes the same thing. These
@@ -128,8 +131,20 @@ public:
            DeprecationMessage =
                "Use PropertyTextures on the CesiumFeaturesMetadataDescription's ModelMetadata instead."))
   TArray<FCesiumPropertyTextureDescription> PropertyTextures;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  virtual void PostLoad() override;
+
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditChangeChainProperty(
+      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
+#endif
 
 protected:
-  /** PostLoad override. */
-  virtual void PostLoad() override;
+  virtual void OnFetchMetadata(
+      ACesium3DTileset* pActor,
+      const Cesium3DTilesSelection::TilesetMetadata* pMetadata) override;
+  virtual void ClearStatistics() override;
 };
