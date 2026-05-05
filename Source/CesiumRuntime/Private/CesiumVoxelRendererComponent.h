@@ -126,4 +126,9 @@ private:
   std::vector<CesiumGeometry::OctreeTileID> _loadedNodeIds;
   MaxPriorityQueue _visibleTileQueue;
   bool _needsOctreeUpdate;
+
+  /**
+   * The tileset that owns this voxel renderer.
+   */
+  ACesium3DTileset* _pTileset = nullptr;
 };
