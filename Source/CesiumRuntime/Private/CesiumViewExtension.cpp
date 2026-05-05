@@ -342,6 +342,7 @@ void RenderMeshEdges_RenderThread(
 void RenderMeshEdges(
     FSceneViewFamily& ViewFamily,
     const TSet<FPrimitiveComponentId>& componentIds) {
+  return;
   if (ViewFamily.EngineShowFlags.Wireframe) {
     return;
   }
@@ -387,17 +388,17 @@ void RenderMeshEdges(
 
   // TODO: Is it possible with FSceneRenderer to create a new scene?
   if (!ViewFamilyData->WireframeScene) {
-    ViewFamilyData->WireframeScene = MakeUnique<FScene>();
-    auto proxies = ViewFamily.Scene->GetPrimitiveSceneProxies();
-    for (auto proxy : proxies) {
-      if (!proxy) {
-        continue;
-      }
-      const FPrimitiveComponentId& id = proxy->GetPrimitiveComponentId();
-      if (componentIds.Contains(id)) {
-        ViewFamilyData->WireframeScene->PrimitiveSceneProxies.Add();
-      }
-    }
+    //ViewFamilyData->WireframeScene = MakeUnique<FScene>();
+    //auto proxies = ViewFamily.Scene->GetPrimitiveSceneProxies();
+    //for (auto proxy : proxies) {
+    //  if (!proxy) {
+    //    continue;
+    //  }
+    //  const FPrimitiveComponentId& id = proxy->GetPrimitiveComponentId();
+    //  if (componentIds.Contains(id)) {
+    //    // ViewFamilyData->WireframeScene->PrimitiveSceneProxies.Add();
+    //  }
+    //}
   }
 
   FSceneViewFamilyContext CaptureViewFamily(
@@ -510,6 +511,7 @@ void ComposeMeshEdges(
     FSceneView& View,
     const FRenderTargetBindingSlots& RenderTargets,
     TRDGUniformBufferRef<FSceneTextureUniformParameters> SceneTextures) {
+  return;
   const FSceneViewFamily& ViewFamily = *View.Family;
 
   int ViewIndex = 0;
@@ -602,7 +604,7 @@ void CesiumViewExtension::PostCreateSceneRenderer(
     const FSceneViewFamily& InViewFamily,
     ISceneRenderer* Renderer) {
   if (this->_componentsWithEdgeVisibility.Num()) {
-    RenderMeshEdges(static_cast<FSceneRenderer*>(Renderer)->ViewFamily);
+    // RenderMeshEdges(static_cast<FSceneRenderer*>(Renderer)->ViewFamily);
   }
 }
 

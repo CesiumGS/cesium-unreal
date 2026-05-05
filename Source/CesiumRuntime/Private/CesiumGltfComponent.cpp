@@ -1352,249 +1352,6 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
   return indices;
 }
 
-void generateEdgeIndices(
-    CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& primitive,
-    CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility& edgeExtension,
-    FStaticMeshLODResources& lodResources) {
-  CesiumGltf::AccessorView<uint8_t> visibilityAccessor(
-      model,
-      edgeExtension.visibility);
-
-  struct EdgeData {
-    uint8_t edgeType;
-    uint32 triangleIndex;
-    uint8 edgeIndex;
-    uint32 mateVertexIndex;
-    std::array<uint32, 3> currentTriangleVertices;
-  };
-
-  if (visibilityAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
-    // TODO: LOG
-    return;
-  }
-
-  // buildTriangleAdjacency
-  //
-  // extractVisibleEdges
-
-  FRawStaticIndexBuffer& indices = lodResources.IndexBuffer;
-  const int32 totalIndexCount = indices.GetNumIndices();
-
-  FPositionVertexBuffer& positionBuffer =
-      lodResources.VertexBuffers.PositionVertexBuffer;
-  const uint32 vertexCount = positionBuffer.GetNumVertices();
-
-  std::vector<uint32> edgeIndices;
-  std::vector<EdgeData> edgeData;
-
-  TSet<uint32> seenEdgeHashes;
-  int32 silhouetteEdgeCount = 0;
-
-  // Process triangles and extract edges (2 bits per edge)
-  int64 edgeIndex = 0;
-
-  for (int32 i = 0; i + 2 < totalIndexCount; i += 3) {
-    uint32 v0 = indices.GetIndex(i);
-    uint32 v1 = indices.GetIndex(i + 1);
-    uint32 v2 = indices.GetIndex(i + 2);
-    for (uint8 edgeIndex = 0; edgeIndex < 3; edgeIndex++) {
-      uint32 a, b;
-      if (edgeIndex == 0) {
-        a = v0;
-        b = v1;
-      } else if (edgeIndex == 1) {
-        a = v1;
-        b = v2;
-      } else if (edgeIndex == 2) {
-        a = v2;
-        b = v0;
-      }
-
-      const uint32 byteIndex = FMath::Floor(edgeIndex / 4);
-      const uint32 bitPairOffset = (edgeIndex % 4) * 2;
-      edgeIndex++;
-
-      if (byteIndex >= visibilityAccessor.size()) {
-        break;
-      }
-
-      uint8_t byte = visibilityAccessor[byteIndex];
-      const uint8_t visibility2Bit = (byte >> bitPairOffset) & 0x3;
-
-      // Only include visible edge types according to
-      // EXT_mesh_primitive_edge_visibility spec
-      bool shouldIncludeEdge = false;
-      switch (visibility2Bit) {
-      case 0: // HIDDEN - never draw
-        shouldIncludeEdge = false;
-        break;
-      case 1: // SILHOUETTE - conditionally visible (front-facing vs
-              // back-facing)
-        shouldIncludeEdge = true;
-        break;
-      case 2: // HARD - always draw (primary encoding)
-        shouldIncludeEdge = true;
-        break;
-      case 3: // REPEATED - always draw (secondary encoding of a hard edge
-              // already encoded as 2)
-        shouldIncludeEdge = true;
-        break;
-      }
-
-      if (shouldIncludeEdge) {
-        const uint32 small = FMath::Min(a, b);
-        const uint32 big = FMath::Max(a, b);
-        const uint32 hash = small * vertexCount + big;
-
-        if (!seenEdgeHashes.Contains(hash)) {
-          seenEdgeHashes.Add(hash);
-          edgeIndices.emplace_back(a);
-          edgeIndices.emplace_back(b);
-
-          int32 mateVertexIndex = -1;
-          if (visibility2Bit == 1) {
-            mateVertexIndex = silhouetteEdgeCount;
-            silhouetteEdgeCount++;
-          }
-
-          edgeData.emplace_back(EdgeData{
-              .edgeType = visibility2Bit,
-              .triangleIndex = uint32(FMath::Floor(i / 3)),
-              .edgeIndex = edgeIndex,
-              .mateVertexIndex = uint32(mateVertexIndex),
-              .currentTriangleVertices = {v0, v1, v2}});
-        }
-      }
-    }
-  }
-
-  if (edgeIndices.size() == 0) {
-    return;
-  }
-
-  // generateFaceEdgeNormals: reuse existing?
-
-  // createCPULineEdgeGeometry
-
-  const uint32 edgeCount = edgeData.size();
-  const uint32 totalEdgeVertices = edgeCount * 2;
-
-  // Always use location 0 for position to avoid conflicts
-  const positionLocation = 0;
-
-  TUniquePtr<FStaticMeshRenderData> pEdgeRenderData =
-      MakeUnique<FStaticMeshRenderData>();
-  pEdgeRenderData->AllocateLODResources(1);
-  FStaticMeshLODResources& edgeResources = pEdgeRenderData->LODResources[0];
-  FPositionVertexBuffer& edgePositions =
-      edgeResources.VertexBuffers.PositionVertexBuffer;
-  edgePositions.Init(totalEdgeVertices, false);
-
-  FStaticMeshVertexBuffer& edgeVertexBuffer =
-      edgeResources.VertexBuffers.StaticMeshVertexBuffer;
-  edgeVertexBuffer.Init(totalEdgeVertices, 1, false);
-
-  // Use Texcoord for edge type, tangents for the three different normals?
-  // tangentX = silhouette normal
-  // tangentY = faceNormalA
-  // tangentZ = faceNormalB
-  //
-  // Create edge-domain vertices (2 per edge)
-  uint32 vertexIndex = 0;
-
-  for (uint32 i = 0; i < edgeCount; i++) {
-    const uint32 a = edgeIndices[i * 2];
-    const uint32 b = edgeIndices[i * 2 + 1];
-
-    FVector3f& position0 = edgePositions.VertexPosition(vertexIndex++);
-    FVector3f& position1 = edgePositions.VertexPosition(vertexIndex++);
-
-    // Validate vertex indices
-    if (a < 0 || b < 0 || a >= vertexCount || b >= vertexCount) {
-      // Fill with zeros to maintain indexing
-      position0 = FVector3f::Zero();
-      position1 = FVector3f::Zero();
-
-      // Fill with default values
-      edgeVertexBuffer.SetVertexTangents(
-          i * 2,
-          FVector3f(0, 0, 1),
-          FVector3f(0, 0, 1),
-          FVector3f(0, 0, 1));
-      edgeVertexBuffer.SetVertexTangents(
-          i * 2 + 1,
-          FVector3f(0, 0, 1),
-          FVector3f(0, 0, 1),
-          FVector3f(0, 0, 1));
-      continue;
-    }
-
-    const FVector3f& positionA = edgePositions.VertexPosition(a);
-    const FVector3f& positionB = edgePositions.VertexPosition(b);
-
-    // Add edge endpoints
-    position0 = positionA;
-    position1 = positionB;
-
-    const uint8_t rawType = edgeData[i].edgeType;
-    const float t = rawType / 255.0;
-
-    edgeVertexBuffer.SetVertexUV(i * 2, 0, FVector2f(t));
-    edgeVertexBuffer.SetVertexUV(i * 2 + 1, 0, FVector2f(t));
-
-    // Add silhouette normal for silhouette edges (type 1)
-    FVector3f normal(0, 0, 1);
-    if (rawType == = 1 && defined(edgeVisibility.silhouetteNormals)) {
-      const mateVertexIndex = edgeData[i].mateVertexIndex;
-      if (mateVertexIndex >= 0 &&
-          mateVertexIndex < edgeVisibility.silhouetteNormals.length) {
-        const silhouetteNormals = edgeVisibility.silhouetteNormals;
-        const normal = silhouetteNormals[mateVertexIndex];
-
-        if (defined(normal)) {
-          normalX = normal.x;
-          normalY = normal.y;
-          normalZ = normal.z;
-        }
-      }
-    }
-
-    // Set silhouette normal for both edge endpoints
-    const normalIdx = i * 2;
-    silhouetteNormalArray[normalIdx * 3] = normalX;
-    silhouetteNormalArray[normalIdx * 3 + 1] = normalY;
-    silhouetteNormalArray[normalIdx * 3 + 2] = normalZ;
-    silhouetteNormalArray[(normalIdx + 1) * 3] = normalX;
-    silhouetteNormalArray[(normalIdx + 1) * 3 + 1] = normalY;
-    silhouetteNormalArray[(normalIdx + 1) * 3 + 2] = normalZ;
-
-    // Set face normals for both edge endpoints
-    const faceNormalIdx = i * 6; // 6 floats per edge (2 normals * 3 components)
-    const normalAX = edgeFaceNormals[faceNormalIdx];
-    const normalAY = edgeFaceNormals[faceNormalIdx + 1];
-    const normalAZ = edgeFaceNormals[faceNormalIdx + 2];
-    const normalBX = edgeFaceNormals[faceNormalIdx + 3];
-    const normalBY = edgeFaceNormals[faceNormalIdx + 4];
-    const normalBZ = edgeFaceNormals[faceNormalIdx + 5];
-
-    // Face normal A for both endpoints
-    faceNormalAArray[normalIdx * 3] = normalAX;
-    faceNormalAArray[normalIdx * 3 + 1] = normalAY;
-    faceNormalAArray[normalIdx * 3 + 2] = normalAZ;
-    faceNormalAArray[(normalIdx + 1) * 3] = normalAX;
-    faceNormalAArray[(normalIdx + 1) * 3 + 1] = normalAY;
-    faceNormalAArray[(normalIdx + 1) * 3 + 2] = normalAZ;
-
-    // Face normal B for both endpoints
-    faceNormalBArray[normalIdx * 3] = normalBX;
-    faceNormalBArray[normalIdx * 3 + 1] = normalBY;
-    faceNormalBArray[normalIdx * 3 + 2] = normalBZ;
-    faceNormalBArray[(normalIdx + 1) * 3] = normalBX;
-    faceNormalBArray[(normalIdx + 1) * 3 + 1] = normalBY;
-    faceNormalBArray[(normalIdx + 1) * 3 + 2] = normalBZ;
-  }
-}
 } // namespace
 
 template <class TIndexAccessor>
@@ -2061,13 +1818,14 @@ static void loadPrimitive(
   const auto* pEdgeExtension =
       primitive
           .getExtension<CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>();
-  if (!pEdgeExtension) {
-    return;
+  if (pEdgeExtension) {
+    FCesiumMeshPrimitiveEdgeData data(
+        model,
+        primitive,
+        *pEdgeExtension,
+        primitiveResult);
+    primitiveResult.pEdgeRenderData = std::move(data.pEdgeRenderData);
   }
-
-  // TODO: See EdgeVisibilityPipelineStage::createCPULineEdgeGeometry in
-  // CesiumJS
-  // - on game thread, create indices for edges (based on original geometry)
 }
 
 static void loadIndexedPrimitive(
@@ -3772,6 +3530,7 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
 
   return pMaterial;
 }
+
 } // namespace
 
 static void loadPrimitiveGameThreadPart(
@@ -3796,6 +3555,7 @@ static void loadPrimitiveGameThreadPart(
 
   UStaticMeshComponent* pMeshComponent = nullptr;
   ICesiumPrimitive* pCesiumPrimitive = nullptr;
+  UStaticMeshComponent* pMesh = nullptr;
   if (meshPrimitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
     UCesiumGltfPointsComponent* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
@@ -3920,6 +3680,53 @@ static void loadPrimitiveGameThreadPart(
   pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
 
   pStaticMesh->SetLightingGuid();
+
+  if (loadResult.pEdgeRenderData) {
+    UCesiumGltfLinesComponent* pLineMesh =
+        NewObject<UCesiumGltfLinesComponent>(pMesh, componentName);
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
+      pLineMesh->bUseDefaultCollision = false;
+      pLineMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+      pLineMesh->SetFlags(
+          RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+      pLineMesh->SetRenderCustomDepth(
+          pGltf->CustomDepthParameters.RenderCustomDepth);
+      pLineMesh->SetCustomDepthStencilWriteMask(
+          pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
+      pLineMesh->SetCustomDepthStencilValue(
+          pGltf->CustomDepthParameters.CustomDepthStencilValue);
+      pLineMesh->bReceivesDecals = pTilesetActor->GetReceiveDecals();
+      pLineMesh->bCastDynamicShadow = false;
+      pLineMesh->RuntimeVirtualTextures =
+          pTilesetActor->GetRuntimeVirtualTextures();
+      pLineMesh->VirtualTextureRenderPassType =
+          pTilesetActor->GetVirtualTextureRenderPassType();
+      pLineMesh->TranslucencySortPriority =
+          pTilesetActor->GetTranslucencySortPriority();
+
+      UStaticMesh* pStaticMesh =
+          NewObject<UStaticMesh>(pMeshComponent, componentName);
+      pStaticMesh->bSupportRayTracing = false;
+      pMeshComponent->SetStaticMesh(pStaticMesh);
+
+      pStaticMesh->SetFlags(
+          RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+      pStaticMesh->NeverStream = true;
+
+      pStaticMesh->SetRenderData(std::move(loadResult.pEdgeRenderData));
+      pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
+      pStaticMesh->SetLightingGuid();
+
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
+        pStaticMesh->InitResources();
+        // Set up pRenderData bounds and LOD data
+        pStaticMesh->CalculateExtendedBounds();
+        pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+      }
+    }
+  }
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
