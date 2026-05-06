@@ -1415,6 +1415,10 @@ static void loadPrimitive(
     }
   }
 
+  const auto* pEdgeExtension =
+      primitive
+          .getExtension<CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>();
+
   int materialID = primitive.material;
   const CesiumGltf::Material& material =
       materialID >= 0 && materialID < model.materials.size()
@@ -1815,9 +1819,6 @@ static void loadPrimitive(
     }
   }
 
-  const auto* pEdgeExtension =
-      primitive
-          .getExtension<CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>();
   if (pEdgeExtension) {
     FCesiumMeshPrimitiveEdgeData data(
         model,
@@ -1825,6 +1826,10 @@ static void loadPrimitive(
         *pEdgeExtension,
         primitiveResult);
     primitiveResult.pEdgeRenderData = std::move(data.pEdgeRenderData);
+    // TODO store data in primitiveResult.
+    // TODO: See EdgeVisibilityPipelineStage::createCPULineEdgeGeometry in
+    // CesiumJS
+    // - on game thread, create indices for edges (based on original geometry)
   }
 }
 
