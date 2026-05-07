@@ -3681,71 +3681,6 @@ static void loadPrimitiveGameThreadPart(
 
   pStaticMesh->SetLightingGuid();
 
-  if (loadResult.pEdgeRenderData) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
-    const FName ImportedSlotName(
-        *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-    // TODO: Handle edge materials
-    UMaterialInstanceDynamic* pEdgeMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->BaseMaterialPrimitiveEdges,
-        nullptr,
-        ImportedSlotName);
-    UCesiumGltfLinesComponent* pEdgeComponent =
-        CesiumGltfPrimitiveEdges::createInMainThread(
-            pGltf,
-            componentName,
-            pMaterialForGltfPrimitive,
-            std::move(loadResult.pEdgeRenderData));
-
-    pEdgeComponent->getPrimitiveData().boundingVolume =
-        tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
-    pEdgeComponent->UpdateTransformFromCesium(
-        pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
-    if (pEdgeComponent) {
-      UStaticMesh* pEdgeStaticMesh = pEdgeComponent->GetStaticMesh();
-      pEdgeStaticMesh->InitResources();
-      {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
-        pEdgeStaticMesh->CalculateExtendedBounds();
-        pEdgeStaticMesh->InitResources();
-        pEdgeStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
-      }
-      {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BodySetup)
-
-        pEdgeStaticMesh->CreateBodySetup();
-
-        UBodySetup* pBodySetup = pEdgeComponent->GetBodySetup();
-
-        // pMesh->UpdateCollisionFromStaticMesh();
-        pBodySetup->CollisionTraceFlag =
-            ECollisionTraceFlag::CTF_UseComplexAsSimple;
-
-        // Mark physics meshes created, no matter if we actually have a
-        // collision mesh or not. We don't want the editor creating collision
-        // meshes itself in the game thread, because that would be slow.
-        pBodySetup->bCreatedPhysicsMeshes = true;
-        pBodySetup->bSupportUVsAndFaceRemap =
-            UPhysicsSettings::Get()->bSupportUVFromHitResults;
-      }
-
-      pEdgeComponent->SetMobility(pGltf->Mobility);
-      pEdgeComponent->SetupAttachment(pGltf);
-      {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
-        pEdgeComponent->RegisterComponent();
-      }
-
-      pEdgeComponent->SetMobility(pGltf->Mobility);
-      pEdgeComponent->SetupAttachment(pGltf);
-
-      {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
-        pEdgeComponent->RegisterComponent();
-      }
-    }
-  }
-
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
     pStaticMesh->InitResources();
@@ -3791,6 +3726,67 @@ static void loadPrimitiveGameThreadPart(
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
     pMeshComponent->RegisterComponent();
+  }
+
+  if (loadResult.pEdgeRenderData) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
+    const FName ImportedSlotName(
+        *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+    // TODO: Handle edge materials
+    UMaterialInstanceDynamic* pEdgeMaterial = UMaterialInstanceDynamic::Create(
+        pGltf->BaseMaterialPrimitiveEdges,
+        nullptr,
+        ImportedSlotName);
+    UCesiumGltfLinesComponent* pEdgeComponent =
+        CesiumGltfPrimitiveEdges::createInMainThread(
+            pGltf,
+            componentName,
+            pEdgeMaterial,
+            std::move(loadResult.pEdgeRenderData));
+
+    pEdgeComponent->getPrimitiveData().boundingVolume =
+        tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
+    pEdgeComponent->getPrimitiveData().highPrecisionNodeTransform =
+        loadResult.transform;
+
+    pEdgeComponent->UpdateTransformFromCesium(
+        pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
+
+    if (pEdgeComponent) {
+      UStaticMesh* pEdgeStaticMesh = pEdgeComponent->GetStaticMesh();
+      pEdgeStaticMesh->InitResources();
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
+        pEdgeStaticMesh->CalculateExtendedBounds();
+        pEdgeStaticMesh->InitResources();
+        pEdgeStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+      }
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BodySetup)
+
+        pEdgeStaticMesh->CreateBodySetup();
+
+        UBodySetup* pBodySetup = pEdgeComponent->GetBodySetup();
+
+        // pMesh->UpdateCollisionFromStaticMesh();
+        pBodySetup->CollisionTraceFlag =
+            ECollisionTraceFlag::CTF_UseComplexAsSimple;
+
+        // Mark physics meshes created, no matter if we actually have a
+        // collision mesh or not. We don't want the editor creating collision
+        // meshes itself in the game thread, because that would be slow.
+        pBodySetup->bCreatedPhysicsMeshes = true;
+        pBodySetup->bSupportUVsAndFaceRemap =
+            UPhysicsSettings::Get()->bSupportUVFromHitResults;
+      }
+
+      pEdgeComponent->SetMobility(pGltf->Mobility);
+      pEdgeComponent->SetupAttachment(pGltf);
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+        pEdgeComponent->RegisterComponent();
+      }
+    }
   }
 
   // Call the observer callback (if any) once all is done

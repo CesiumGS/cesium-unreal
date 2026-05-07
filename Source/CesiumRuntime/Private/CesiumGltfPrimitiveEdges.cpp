@@ -77,18 +77,20 @@ CesiumGltfPrimitiveEdges::createInMainThread(
     const FName& componentName,
     UMaterialInstanceDynamic* pEdgeMaterial,
     TUniquePtr<FStaticMeshRenderData>&& pRenderData) {
-  UCesiumGltfLinesComponent* pLineMesh = NewObject<UCesiumGltfLinesComponent>(
-      pComponent,
-      FName(componentName.ToString() + TEXT("Edges")));
+  UCesiumGltfLinesComponent* pLineComponent =
+      NewObject<UCesiumGltfLinesComponent>(
+          pComponent,
+          FName(componentName.ToString() + TEXT("Edges")));
 
-  pLineMesh->bUseDefaultCollision = false;
-  pLineMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  pLineMesh->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pLineComponent->bUseDefaultCollision = false;
+  pLineComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+  // pLineComponent->SetFlags(
+  //     RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pLineMesh, componentName);
+  UStaticMesh* pStaticMesh =
+      NewObject<UStaticMesh>(pLineComponent, componentName);
   pStaticMesh->bSupportRayTracing = false;
-  pLineMesh->SetStaticMesh(pStaticMesh);
+  pLineComponent->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
@@ -98,7 +100,7 @@ CesiumGltfPrimitiveEdges::createInMainThread(
   pStaticMesh->AddMaterial(pEdgeMaterial);
   pStaticMesh->SetLightingGuid();
 
-  return pLineMesh;
+  return pLineComponent;
 }
 
 namespace {
@@ -263,7 +265,7 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   FStaticMeshLODResources& lodResources = pRenderData->LODResources[0];
 
   size_t edgeCount = visibleEdges.edgeTypes.size();
-  size_t totalEdgeVertices = edgeCount * 2;
+  size_t totalEdgeVertices = visibleEdges.edgeVertexIndices.size();
 
   FPositionVertexBuffer& edgePositions =
       lodResources.VertexBuffers.PositionVertexBuffer;
@@ -274,13 +276,21 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
       lodResources.VertexBuffers.StaticMeshVertexBuffer;
   edgeVertexBuffer.Init(totalEdgeVertices, 1, false);
 
+  TArray<uint32> indices;
+  indices.Reserve(totalEdgeVertices);
+
   glm::vec3 minPosition{std::numeric_limits<float>::max()};
   glm::vec3 maxPosition{std::numeric_limits<float>::lowest()};
+
+  pRenderData->Bounds.SphereRadius = 0.0f;
 
   TIndex vertexCount = TIndex(positionView.size());
   for (size_t i = 0; i < edgeCount; i++) {
     uint32 edgeVertexIndexA = i * 2;
     uint32 edgeVertexIndexB = i * 2 + 1;
+
+    indices.Add(edgeVertexIndexA);
+    indices.Add(edgeVertexIndexB);
 
     FVector3f& outPositionA = edgePositions.VertexPosition(edgeVertexIndexA);
     FVector3f& outPositionB = edgePositions.VertexPosition(edgeVertexIndexB);
@@ -289,7 +299,7 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     const uint32 a = visibleEdges.edgeVertexIndices[edgeVertexIndexA];
     const uint32 b = visibleEdges.edgeVertexIndices[edgeVertexIndexB];
 
-    if (a < 0 || b < 0 || a >= vertexCount || b >= vertexCount) {
+    if (a >= vertexCount || b >= vertexCount) {
       // If the indices are invalid, fill with default values.
       outPositionA = FVector3f::Zero();
       outPositionB = FVector3f::Zero();
@@ -313,13 +323,14 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     minPosition.x = glm::min<float>(minPosition.x, outPositionA.X);
     minPosition.y = glm::min<float>(minPosition.y, outPositionA.Y);
     minPosition.z = glm::min<float>(minPosition.z, outPositionA.Z);
+    maxPosition.x = glm::max<float>(maxPosition.x, outPositionA.X);
+    maxPosition.y = glm::max<float>(maxPosition.y, outPositionA.Y);
+    maxPosition.z = glm::max<float>(maxPosition.z, outPositionA.Z);
+
     minPosition.x = glm::min<float>(minPosition.x, outPositionB.X);
     minPosition.y = glm::min<float>(minPosition.y, outPositionB.Y);
     minPosition.z = glm::min<float>(minPosition.z, outPositionB.Z);
 
-    maxPosition.x = glm::max<float>(maxPosition.x, outPositionA.X);
-    maxPosition.y = glm::max<float>(maxPosition.y, outPositionA.Y);
-    maxPosition.z = glm::max<float>(maxPosition.z, outPositionA.Z);
     maxPosition.x = glm::max<float>(maxPosition.x, outPositionB.X);
     maxPosition.y = glm::max<float>(maxPosition.y, outPositionB.Y);
     maxPosition.z = glm::max<float>(maxPosition.z, outPositionB.Z);
@@ -330,6 +341,13 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
 
     edgeVertexBuffer.SetVertexUV(edgeVertexIndexA, 0, FVector2f(t, 0.0f));
     edgeVertexBuffer.SetVertexUV(edgeVertexIndexB, 0, FVector2f(t, 0.0f));
+
+    pRenderData->Bounds.SphereRadius = FMath::Max(
+        (FVector(outPositionA) - pRenderData->Bounds.Origin).Size(),
+        pRenderData->Bounds.SphereRadius);
+    pRenderData->Bounds.SphereRadius = FMath::Max(
+        (FVector(outPositionB) - pRenderData->Bounds.Origin).Size(),
+        pRenderData->Bounds.SphereRadius);
   }
 
   FBox aaBox(
@@ -339,7 +357,26 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   aaBox.GetCenterAndExtents(
       pRenderData->Bounds.Origin,
       pRenderData->Bounds.BoxExtent);
-  pRenderData->Bounds.SphereRadius = 0.0f;
+
+  FStaticMeshSectionArray& Sections = lodResources.Sections;
+  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+  // This will be ignored since the primitive contains lines.
+  section.NumTriangles = 1;
+  section.FirstIndex = 0;
+  section.MinVertexIndex = 0;
+  section.MaxVertexIndex = totalEdgeVertices - 1;
+  section.bEnableCollision = false;
+  section.bCastShadow = true;
+  section.MaterialIndex = 0;
+
+  lodResources.IndexBuffer.SetIndices(
+      indices,
+      totalEdgeVertices >= std::numeric_limits<uint16>::max()
+          ? EIndexBufferStride::Type::Force32Bit
+          : EIndexBufferStride::Type::Force16Bit);
+  lodResources.bHasDepthOnlyIndices = false;
+  lodResources.bHasReversedIndices = false;
+  lodResources.bHasReversedDepthOnlyIndices = false;
 
   const CesiumGltf::Accessor* pSilhouetteNormalAccessor =
       Model::getSafe(&model.accessors, extension.silhouetteNormals);
