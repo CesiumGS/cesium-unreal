@@ -12,7 +12,7 @@ struct ExtensionExtMeshPrimitiveEdgeVisibility;
 } // namespace CesiumGltf
 
 class UCesiumGltfLinesComponent;
-class UCesiumGltfPrimitiveComponent;
+class UCesiumGltfComponent;
 
 class CesiumGltfPrimitiveEdges {
 public:
@@ -27,9 +27,11 @@ public:
       const CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility& extension);
 
   /**
-   * Creates a UCesiumGltfLinesComponent
+   * Creates a UCesiumGltfLinesComponent attached to the given mesh component.
    */
   static UCesiumGltfLinesComponent* createInMainThread(
-      UCesiumGltfPrimitiveComponent* pComponent,
+      UCesiumGltfComponent* pComponent,
+      const FName& componentName,
+      UMaterialInstanceDynamic* pEdgeMaterial,
       TUniquePtr<FStaticMeshRenderData>&& pRenderData);
 };

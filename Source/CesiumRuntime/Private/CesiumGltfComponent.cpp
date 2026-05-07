@@ -12,6 +12,7 @@
 #include "CesiumGltfLinesComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfPrimitiveEdges.h"
 #include "CesiumGltfTextures.h"
 #include "CesiumGltfVoxelComponent.h"
 #include "CesiumMaterialUserData.h"
@@ -1415,10 +1416,6 @@ static void loadPrimitive(
     }
   }
 
-  const auto* pEdgeExtension =
-      primitive
-          .getExtension<CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>();
-
   int materialID = primitive.material;
   const CesiumGltf::Material& material =
       materialID >= 0 && materialID < model.materials.size()
@@ -1819,17 +1816,15 @@ static void loadPrimitive(
     }
   }
 
-  if (pEdgeExtension) {
-    FCesiumMeshPrimitiveEdgeData data(
-        model,
-        primitive,
-        *pEdgeExtension,
-        primitiveResult);
-    primitiveResult.pEdgeRenderData = std::move(data.pEdgeRenderData);
-    // TODO store data in primitiveResult.
-    // TODO: See EdgeVisibilityPipelineStage::createCPULineEdgeGeometry in
-    // CesiumJS
-    // - on game thread, create indices for edges (based on original geometry)
+  if (const auto* pEdgeExtension =
+          primitive.getExtension<
+              CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility>()) {
+    primitiveResult.pEdgeRenderData =
+        CesiumGltfPrimitiveEdges::createInWorkerThread(
+            model,
+            primitive,
+            positionView,
+            *pEdgeExtension);
   }
 }
 
@@ -3687,48 +3682,66 @@ static void loadPrimitiveGameThreadPart(
   pStaticMesh->SetLightingGuid();
 
   if (loadResult.pEdgeRenderData) {
-    UCesiumGltfLinesComponent* pLineMesh =
-        NewObject<UCesiumGltfLinesComponent>(pMesh, componentName);
-    {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
-      pLineMesh->bUseDefaultCollision = false;
-      pLineMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-      pLineMesh->SetFlags(
-          RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-      pLineMesh->SetRenderCustomDepth(
-          pGltf->CustomDepthParameters.RenderCustomDepth);
-      pLineMesh->SetCustomDepthStencilWriteMask(
-          pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
-      pLineMesh->SetCustomDepthStencilValue(
-          pGltf->CustomDepthParameters.CustomDepthStencilValue);
-      pLineMesh->bReceivesDecals = pTilesetActor->GetReceiveDecals();
-      pLineMesh->bCastDynamicShadow = false;
-      pLineMesh->RuntimeVirtualTextures =
-          pTilesetActor->GetRuntimeVirtualTextures();
-      pLineMesh->VirtualTextureRenderPassType =
-          pTilesetActor->GetVirtualTextureRenderPassType();
-      pLineMesh->TranslucencySortPriority =
-          pTilesetActor->GetTranslucencySortPriority();
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
+    const FName ImportedSlotName(
+        *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+    // TODO: Handle edge materials
+    UMaterialInstanceDynamic* pEdgeMaterial = UMaterialInstanceDynamic::Create(
+        pGltf->BaseMaterialPrimitiveEdges,
+        nullptr,
+        ImportedSlotName);
+    UCesiumGltfLinesComponent* pEdgeComponent =
+        CesiumGltfPrimitiveEdges::createInMainThread(
+            pGltf,
+            componentName,
+            pMaterialForGltfPrimitive,
+            std::move(loadResult.pEdgeRenderData));
 
-      UStaticMesh* pStaticMesh =
-          NewObject<UStaticMesh>(pMeshComponent, componentName);
-      pStaticMesh->bSupportRayTracing = false;
-      pMeshComponent->SetStaticMesh(pStaticMesh);
-
-      pStaticMesh->SetFlags(
-          RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-      pStaticMesh->NeverStream = true;
-
-      pStaticMesh->SetRenderData(std::move(loadResult.pEdgeRenderData));
-      pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
-      pStaticMesh->SetLightingGuid();
-
+    pEdgeComponent->getPrimitiveData().boundingVolume =
+        tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
+    pEdgeComponent->UpdateTransformFromCesium(
+        pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
+    if (pEdgeComponent) {
+      UStaticMesh* pEdgeStaticMesh = pEdgeComponent->GetStaticMesh();
+      pEdgeStaticMesh->InitResources();
       {
         TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
-        pStaticMesh->InitResources();
-        // Set up pRenderData bounds and LOD data
-        pStaticMesh->CalculateExtendedBounds();
-        pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+        pEdgeStaticMesh->CalculateExtendedBounds();
+        pEdgeStaticMesh->InitResources();
+        pEdgeStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+      }
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BodySetup)
+
+        pEdgeStaticMesh->CreateBodySetup();
+
+        UBodySetup* pBodySetup = pEdgeComponent->GetBodySetup();
+
+        // pMesh->UpdateCollisionFromStaticMesh();
+        pBodySetup->CollisionTraceFlag =
+            ECollisionTraceFlag::CTF_UseComplexAsSimple;
+
+        // Mark physics meshes created, no matter if we actually have a
+        // collision mesh or not. We don't want the editor creating collision
+        // meshes itself in the game thread, because that would be slow.
+        pBodySetup->bCreatedPhysicsMeshes = true;
+        pBodySetup->bSupportUVsAndFaceRemap =
+            UPhysicsSettings::Get()->bSupportUVFromHitResults;
+      }
+
+      pEdgeComponent->SetMobility(pGltf->Mobility);
+      pEdgeComponent->SetupAttachment(pGltf);
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+        pEdgeComponent->RegisterComponent();
+      }
+
+      pEdgeComponent->SetMobility(pGltf->Mobility);
+      pEdgeComponent->SetupAttachment(pGltf);
+
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
+        pEdgeComponent->RegisterComponent();
       }
     }
   }
@@ -3976,6 +3989,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UMaterialInstance>
         BaseMaterialWithTranslucency;
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
+    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterialPrimitiveEdges;
     ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
         : BaseMaterial(TEXT(
@@ -3984,6 +3998,8 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingTranslucent.MI_CesiumThreeOverlaysAndClippingTranslucent")),
           BaseMaterialWithWater(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingAndWater.MI_CesiumThreeOverlaysAndClippingAndWater")),
+          BaseMaterialPrimitiveEdges(TEXT(
+              "/CesiumForUnreal/Materials/M_CesiumPrimitiveEdgesMaterial.M_CesiumPrimitiveEdgesMaterial")),
           Transparent1x1(
               TEXT("/CesiumForUnreal/Textures/transparent1x1.transparent1x1")) {
     }
@@ -3994,6 +4010,8 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->BaseMaterialWithTranslucency =
       ConstructorStatics.BaseMaterialWithTranslucency.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
+  this->BaseMaterialPrimitiveEdges =
+      ConstructorStatics.BaseMaterialPrimitiveEdges.Object;
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;

@@ -97,6 +97,9 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater = nullptr;
 
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterial* BaseMaterialPrimitiveEdges = nullptr;
+
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
