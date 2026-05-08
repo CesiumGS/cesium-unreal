@@ -78,14 +78,12 @@ CesiumGltfPrimitiveEdges::createInMainThread(
     UMaterialInstanceDynamic* pEdgeMaterial,
     TUniquePtr<FStaticMeshRenderData>&& pRenderData) {
   UCesiumGltfLinesComponent* pLineComponent =
-      NewObject<UCesiumGltfLinesComponent>(
-          pComponent,
-          FName(componentName.ToString() + TEXT("Edges")));
+      NewObject<UCesiumGltfLinesComponent>(pComponent, componentName);
 
   pLineComponent->bUseDefaultCollision = false;
   pLineComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  // pLineComponent->SetFlags(
-  //     RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pLineComponent->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   UStaticMesh* pStaticMesh =
       NewObject<UStaticMesh>(pLineComponent, componentName);
@@ -137,9 +135,16 @@ VisibleEdgeResult extractVisibleEdges(
     const CesiumGltf::AccessorView<uint8_t>& visibility,
     const CesiumGltf::AccessorView<TIndex>& indices) {
   VisibleEdgeResult result;
+  if (visibility.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Invalid visibility accessor in EXT_mesh_primitive_edges_visibility; skipping."));
+    return result;
+  }
 
   int64_t edgeIndex = 0;
-  int32_t silhouetteEdgeCount = 0;
 
   for (int64_t indexOffset = 0; indexOffset + 2 < indices.size();
        indexOffset += 3) {
@@ -149,9 +154,6 @@ VisibleEdgeResult extractVisibleEdges(
       // For each triangle (v0, v1, v2), the bitfield encodes three visibility
       // values for the edges (v0:v1, v1:v2, v2:v0) in that order.
       uint8_t nextVertex = (vertex + 1) % 3;
-      TIndex a = indices[indexOffset + vertex];
-      TIndex b = indices[indexOffset + nextVertex];
-
       // Get the corresponding visibility value for the edge.
       uint32 byteIndex = FMath::Floor(edgeIndex / 4);
       uint32 bitPairOffset = (edgeIndex % 4) * 2;
@@ -164,6 +166,9 @@ VisibleEdgeResult extractVisibleEdges(
       uint8_t byte = visibility[byteIndex];
       uint8_t edgeType = (byte >> bitPairOffset) & 0x3;
 
+      TIndex a = indices[indexOffset + vertex];
+      TIndex b = indices[indexOffset + nextVertex];
+
       switch (edgeType) {
       case ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::HARD_EDGE:
       case ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE:
@@ -174,6 +179,11 @@ VisibleEdgeResult extractVisibleEdges(
       default:
         // Skip hidden and repeated edges.
         continue;
+      }
+
+      if (edgeType ==
+          ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE) {
+        result.silhouetteEdgeIndices.push_back(result.edgeTypes.size() - 1);
       }
     }
   }
@@ -191,47 +201,50 @@ void populateSilhouetteNormals(
         LogCesium,
         Warning,
         TEXT(
-            "Invalid accessor for silhouette normals in EXT_mesh_primitive_edges_visibility; skipping."));
+            "Invalid accessor for silhouette normals in EXT_mesh_primitive_edges_visibility;"
+            "silhouette edges will be hidden."));
 
     // Ignore silhouette edges as a fallback.
     for (size_t i = 0; i < silhouetteEdgeCount; i++) {
-      edgeVertexBuffer.SetVertexUV(i, 0, FVector2f::Zero());
+      size_t edgeIndex = visibleEdges.silhouetteEdgeIndices[i];
+      edgeVertexBuffer.SetVertexUV(edgeIndex * 2, 0, FVector2f::Zero());
+      edgeVertexBuffer.SetVertexUV(edgeIndex * 2 + 1, 0, FVector2f::Zero());
     }
     return;
   }
 
   for (size_t i = 0; i < silhouetteEdgeCount; i++) {
+    size_t edgeIndex = visibleEdges.silhouetteEdgeIndices[i];
     CESIUM_ASSERT(
-        visibleEdges.edgeTypes[i] ==
+        visibleEdges.edgeTypes[edgeIndex] ==
         ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE);
 
     if (int64_t(i) * 2 + 1 >= silhouetteNormals.size()) {
-      // Protect against out-of-bounds access.
-      break;
+      // Protect against out-of-bounds access, ignoring the edge as a fallback.
+      edgeVertexBuffer.SetVertexUV(edgeIndex * 2, 0, FVector2f::Zero());
+      edgeVertexBuffer.SetVertexUV(edgeIndex * 2 + 1, 0, FVector2f::Zero());
+      continue;
     }
 
-    glm::vec3 normalA, normalB;
-    if constexpr (std::is_same_v<TNormal, glm::i8vec3>) {
-      normalA = glm::vec3(silhouetteNormals[i * 2]) /
-                float(std::numeric_limits<int8_t>::max());
-      normalB = glm::vec3(silhouetteNormals[i * 2 + 1]) /
-                float(std::numeric_limits<int8_t>::max());
-    } else if constexpr (std::is_same_v<TNormal, glm::i16vec3>) {
-      normalA = glm::vec3(silhouetteNormals[i * 2]) /
-                float(std::numeric_limits<int16_t>::max());
-      normalB = glm::vec3(silhouetteNormals[i * 2 + 1]) /
-                float(std::numeric_limits<int16_t>::max());
-    } else {
-      normalA = silhouetteNormals[i * 2];
-      normalB = silhouetteNormals[i * 2 + 1];
-    }
+    // Each silhouette edge corresponds to a pair of two normals.
+    glm::vec3 normalA = glm::vec3(silhouetteNormals[i * 2]),
+              normalB = glm::vec3(silhouetteNormals[i * 2 + 1]);
 
-    // Silhouette edge normals are stored via vertex tangents.
+    // normalize() handles BYTE and SHORT type normals, too.
+    normalA = glm::normalize(normalA);
+    normalB = glm::normalize(normalB);
+
+    // Silhouette edge normals are stored and accessed via vertex tangents.
     edgeVertexBuffer.SetVertexTangents(
-        i,
-        FVector3f(normalA.x, normalA.y, normalA.z),
-        FVector3f(normalB.x, normalB.y, normalB.z),
-        FVector3f::Zero());
+        edgeIndex * 2,
+        FVector3f(normalA.x, -normalA.y, normalA.z),
+        FVector3f::Zero(),
+        FVector3f(normalB.x, -normalB.y, normalB.z));
+    edgeVertexBuffer.SetVertexTangents(
+        edgeIndex * 2 + 1,
+        FVector3f(normalA.x, -normalA.y, normalA.z),
+        FVector3f::Zero(),
+        FVector3f(normalB.x, -normalB.y, normalB.z));
   }
 }
 
@@ -242,19 +255,11 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     const CesiumGltf::AccessorView<TIndex>& indicesView,
     const CesiumGltf::ExtensionExtMeshPrimitiveEdgeVisibility& extension) {
   CesiumGltf::AccessorView<uint8_t> visibilityView(model, extension.visibility);
-  if (visibilityView.status() != CesiumGltf::AccessorViewStatus::Valid) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Invalid visibility accessor in EXT_mesh_primitive_edges_visibility; skipping."));
-    return nullptr;
-  }
 
   VisibleEdgeResult visibleEdges =
       extractVisibleEdges(visibilityView, indicesView);
+
   if (visibleEdges.edgeTypes.empty()) {
-    // No edges were detected.
     return nullptr;
   }
 
@@ -272,17 +277,19 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   edgePositions.Init(totalEdgeVertices, false);
 
   // Edge type is passed through as a UV coordinate in the edge vertex buffer.
+  // If silhouette edges are used, then two UV sets are used; the other three
+  // coordinates hold the position of the other endpoint of the edge.
+  int32 numTexCoords = 1 + int32(!visibleEdges.silhouetteEdgeIndices.empty());
+
   FStaticMeshVertexBuffer& edgeVertexBuffer =
       lodResources.VertexBuffers.StaticMeshVertexBuffer;
-  edgeVertexBuffer.Init(totalEdgeVertices, 1, false);
+  edgeVertexBuffer.Init(totalEdgeVertices, numTexCoords, false);
 
   TArray<uint32> indices;
   indices.Reserve(totalEdgeVertices);
 
   glm::vec3 minPosition{std::numeric_limits<float>::max()};
   glm::vec3 maxPosition{std::numeric_limits<float>::lowest()};
-
-  pRenderData->Bounds.SphereRadius = 0.0f;
 
   TIndex vertexCount = TIndex(positionView.size());
   for (size_t i = 0; i < edgeCount; i++) {
@@ -296,8 +303,8 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     FVector3f& outPositionB = edgePositions.VertexPosition(edgeVertexIndexB);
 
     // Get the endpoints of the edge (as indices into the original mesh).
-    const uint32 a = visibleEdges.edgeVertexIndices[edgeVertexIndexA];
-    const uint32 b = visibleEdges.edgeVertexIndices[edgeVertexIndexB];
+    uint32 a = visibleEdges.edgeVertexIndices[edgeVertexIndexA];
+    uint32 b = visibleEdges.edgeVertexIndices[edgeVertexIndexB];
 
     if (a >= vertexCount || b >= vertexCount) {
       // If the indices are invalid, fill with default values.
@@ -311,7 +318,6 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     FVector3f positionA = positionView[a];
     FVector3f positionB = positionView[b];
 
-    // TODO account for position stuff...
     outPositionA.X = positionA.X * CesiumPrimitiveData::positionScaleFactor;
     outPositionA.Y = -positionA.Y * CesiumPrimitiveData::positionScaleFactor;
     outPositionA.Z = positionA.Z * CesiumPrimitiveData::positionScaleFactor;
@@ -320,54 +326,29 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     outPositionB.Y = -positionB.Y * CesiumPrimitiveData::positionScaleFactor;
     outPositionB.Z = positionB.Z * CesiumPrimitiveData::positionScaleFactor;
 
-    minPosition.x = glm::min<float>(minPosition.x, outPositionA.X);
-    minPosition.y = glm::min<float>(minPosition.y, outPositionA.Y);
-    minPosition.z = glm::min<float>(minPosition.z, outPositionA.Z);
-    maxPosition.x = glm::max<float>(maxPosition.x, outPositionA.X);
-    maxPosition.y = glm::max<float>(maxPosition.y, outPositionA.Y);
-    maxPosition.z = glm::max<float>(maxPosition.z, outPositionA.Z);
+    uint8_t edgeType = visibleEdges.edgeTypes[i];
 
-    minPosition.x = glm::min<float>(minPosition.x, outPositionB.X);
-    minPosition.y = glm::min<float>(minPosition.y, outPositionB.Y);
-    minPosition.z = glm::min<float>(minPosition.z, outPositionB.Z);
+    edgeVertexBuffer.SetVertexUV(
+        edgeVertexIndexA,
+        0,
+        FVector2f(float(edgeType), outPositionB.X));
+    edgeVertexBuffer.SetVertexUV(
+        edgeVertexIndexB,
+        0,
+        FVector2f(float(edgeType), outPositionA.X));
 
-    maxPosition.x = glm::max<float>(maxPosition.x, outPositionB.X);
-    maxPosition.y = glm::max<float>(maxPosition.y, outPositionB.Y);
-    maxPosition.z = glm::max<float>(maxPosition.z, outPositionB.Z);
-
-    const uint8_t edgeType = visibleEdges.edgeTypes[i];
-    // does this really have to be encoded this way?
-    float t = float(edgeType) / 255.0f;
-
-    edgeVertexBuffer.SetVertexUV(edgeVertexIndexA, 0, FVector2f(t, 0.0f));
-    edgeVertexBuffer.SetVertexUV(edgeVertexIndexB, 0, FVector2f(t, 0.0f));
-
-    pRenderData->Bounds.SphereRadius = FMath::Max(
-        (FVector(outPositionA) - pRenderData->Bounds.Origin).Size(),
-        pRenderData->Bounds.SphereRadius);
-    pRenderData->Bounds.SphereRadius = FMath::Max(
-        (FVector(outPositionB) - pRenderData->Bounds.Origin).Size(),
-        pRenderData->Bounds.SphereRadius);
+    if (edgeType ==
+        ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE) {
+      edgeVertexBuffer.SetVertexUV(
+          edgeVertexIndexA,
+          1,
+          FVector2f(outPositionB.Y, outPositionB.Z));
+      edgeVertexBuffer.SetVertexUV(
+          edgeVertexIndexB,
+          1,
+          FVector2f(outPositionA.Y, outPositionA.Z));
+    }
   }
-
-  FBox aaBox(
-      FVector3d(minPosition.x, minPosition.y, minPosition.z),
-      FVector3d(maxPosition.x, maxPosition.y, maxPosition.z));
-
-  aaBox.GetCenterAndExtents(
-      pRenderData->Bounds.Origin,
-      pRenderData->Bounds.BoxExtent);
-
-  FStaticMeshSectionArray& Sections = lodResources.Sections;
-  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  // This will be ignored since the primitive contains lines.
-  section.NumTriangles = 1;
-  section.FirstIndex = 0;
-  section.MinVertexIndex = 0;
-  section.MaxVertexIndex = totalEdgeVertices - 1;
-  section.bEnableCollision = false;
-  section.bCastShadow = true;
-  section.MaterialIndex = 0;
 
   lodResources.IndexBuffer.SetIndices(
       indices,
@@ -377,6 +358,17 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   lodResources.bHasDepthOnlyIndices = false;
   lodResources.bHasReversedIndices = false;
   lodResources.bHasReversedDepthOnlyIndices = false;
+
+  FStaticMeshSectionArray& Sections = lodResources.Sections;
+  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+  // This will be ignored since the primitive contains lines.
+  section.NumTriangles = vertexCount / 3;
+  section.FirstIndex = 0;
+  section.MinVertexIndex = 0;
+  section.MaxVertexIndex = totalEdgeVertices - 1;
+  section.bEnableCollision = false;
+  section.bCastShadow = true;
+  section.MaterialIndex = 0;
 
   const CesiumGltf::Accessor* pSilhouetteNormalAccessor =
       Model::getSafe(&model.accessors, extension.silhouetteNormals);
@@ -405,7 +397,8 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
         edgeVertexBuffer);
     break;
   }
-  case CesiumGltf::Accessor::ComponentType::FLOAT: {
+  case CesiumGltf::Accessor::ComponentType::FLOAT:
+  default: {
     CesiumGltf::AccessorView<glm::vec3> silhouetteNormalView(
         model,
         *pSilhouetteNormalAccessor);
@@ -415,14 +408,6 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
         edgeVertexBuffer);
     break;
   }
-  default:
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Unsupported accessor component type for silhouette normals in EXT_mesh_primitive_edges_visibility; skipping."));
-    return nullptr;
-    break;
   }
 
   return std::move(pRenderData);

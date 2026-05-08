@@ -1825,6 +1825,8 @@ static void loadPrimitive(
             primitive,
             positionView,
             *pEdgeExtension);
+    primitiveResult.pEdgeRenderData->Bounds =
+        primitiveResult.pRenderData->Bounds;
   }
 }
 
@@ -3737,10 +3739,17 @@ static void loadPrimitiveGameThreadPart(
         pGltf->BaseMaterialPrimitiveEdges,
         nullptr,
         ImportedSlotName);
+
+#if DEBUG_GLTF_ASSET_NAMES
+    FName edgeComponentName(componentName.ToString() + TEXT("_Edges"));
+#else
+    FName edgeComponentName = "";
+#endif
+
     UCesiumGltfLinesComponent* pEdgeComponent =
         CesiumGltfPrimitiveEdges::createInMainThread(
             pGltf,
-            componentName,
+            edgeComponentName,
             pEdgeMaterial,
             std::move(loadResult.pEdgeRenderData));
 
@@ -3754,7 +3763,6 @@ static void loadPrimitiveGameThreadPart(
 
     if (pEdgeComponent) {
       UStaticMesh* pEdgeStaticMesh = pEdgeComponent->GetStaticMesh();
-      pEdgeStaticMesh->InitResources();
       {
         TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
         pEdgeStaticMesh->CalculateExtendedBounds();
