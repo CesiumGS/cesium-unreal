@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ?.?.? - ????-??-??
+
+##### Fixes :wrench:
+
+- Added missing `#include <vector>` and `#include <cstddef>` to `Source/CesiumRuntime/Private/VoxelOctree.h`. The header uses `std::vector<std::byte>` in member function signatures but did not include the corresponding STL headers, causing a `no template named 'vector' in namespace 'std'` compile failure when the plugin is rebuilt from source against UE 5.7's bundled clang 20.1.8 toolchain (introduced in v2.25.0 by #1685; binary plugin users were unaffected).
+
 ### v2.26.0 - 2026-05-01
 
 ##### Additions :tada:
