@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed the case where glTF line primitives caused excessive log spam due to Chaos attempting to generate physics bodies for small non-triangle meshes.
+
 ### v2.26.0 - 2026-05-01
 
 ##### Additions :tada:
