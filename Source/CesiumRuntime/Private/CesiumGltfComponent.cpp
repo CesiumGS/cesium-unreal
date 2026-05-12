@@ -3676,8 +3676,6 @@ static void loadPrimitiveGameThreadPart(
     pStaticMesh->CreateBodySetup();
 
     UBodySetup* pBodySetup = pMeshComponent->GetBodySetup();
-
-    // pMesh->UpdateCollisionFromStaticMesh();
     pBodySetup->CollisionTraceFlag =
         ECollisionTraceFlag::CTF_UseComplexAsSimple;
 

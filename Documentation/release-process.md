@@ -62,13 +62,16 @@ If the uploaded packages are later found to have problems during testing, this s
 ## Update the "Cesium for Unreal Samples" Project
 
 1. Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory.
-2. Open the Samples project in the oldest supported version of Unreal Engine. It is essential that you don't use a newer version for this step.
-3. On the Cesium panel, click the Tokens button.
-4. In the "Specify a token" section, replace the token string with the one you created on Cesium ion above. This is the same one that you pasted into `CesiumSceneGeneration.cpp`.
-5. Click "Use as Project Default Token". Ensure that the tilesets reload successfully with the new token.
-6. In rare cases, the updated plugin may modify existing Blueprints in the Samples project based on its `CoreRedirects`. In this case, you should open each sample level in turn to allow the redirects to be applied, and then save them.
-6. Exit Unreal Engine. Save the changes when prompted.
-7. Commit `Content/CesiumSettings/CesiumIonServers/CesiumIonSaaS.uasset`. Also commit other files that were changed via `CoreRedirects`. Do not commit other extraneous changes. You can push the changes directly to `main`.
+2. Change the version in `CesiumForUnrealSamples.uproject`:
+    - Increment the `Version` integer property.
+    - Change the `VersionName` property to the new three digit, dot-delimited version number.
+3. Open the Samples project in the oldest supported version of Unreal Engine. It is essential that you don't use a newer version for this step.
+4. On the Cesium panel, click the Tokens button.
+5. In the "Specify a token" section, replace the token string with the one you created on Cesium ion above. This is the same one that you pasted into `CesiumSceneGeneration.cpp`.
+6. Click "Use as Project Default Token". Ensure that the tilesets reload successfully with the new token.
+7. In rare cases, the updated plugin may modify existing Blueprints in the Samples project based on its `CoreRedirects`. In this case, you should open each sample level in turn to allow the redirects to be applied, and then save them.
+8. Exit Unreal Engine. Save the changes when prompted.
+9. Commit `Content/CesiumSettings/CesiumIonServers/CesiumIonSaaS.uasset`. Also commit other files that were changed via `CoreRedirects`. Do not commit other extraneous changes. You can push the changes directly to `main`.
 
 ## Test the release candidate
 
@@ -148,7 +151,7 @@ Once Epic has published the new release, there are a few more steps to complete.
      - `git tag -a v2.22.0 -m "v2.22.0 release"`
      - `git push origin v2.22.0`
    - Wait for CI to run on the pushed tag.
-   - Go to https://github.com/CesiumGS/cesium-unreal/actions.
+   - Go to https://github.com/CesiumGS/cesium-unreal-samples/actions.
    - Click the build of the tag you just pushed.
    - Scroll down to **Artifacts** and download the artifact (there should be only one).
    - The downloaded file's name will end with `.zip.zip`. Rename it to be just `.zip`.
