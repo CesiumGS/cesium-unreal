@@ -1,23 +1,32 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "Cesium3DTilesSelection/BoundingVolume.h"
-#include "Cesium3DTileset.h"
-#include "CesiumEncodedMetadataUtility.h"
-#include "CesiumGltf/MeshPrimitive.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumMetadataPrimitive.h"
-#include "CesiumRasterOverlays.h"
+#include "CesiumPrimitive.h"
+#include "CesiumPrimitiveFeatures.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
-#include <cstdint>
-#include <glm/mat4x4.hpp>
-#include <unordered_map>
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicsEngine/BodySetup.h"
+#include "VecMath.h"
+
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
+namespace CesiumGltf {
+struct Model;
+struct MeshPrimitive;
+} // namespace CesiumGltf
+
+/**
+ * A component that represents and renders a glTF mesh primitive made
+ * from triangles.
+ */
 UCLASS()
-class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
+                                      public ICesiumPrimitive {
   GENERATED_BODY()
 
 public:
@@ -25,36 +34,59 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
-  FCesiumMetadataPrimitive Metadata;
+  void BeginDestroy() override;
 
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
+  FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 
-  ACesium3DTileset* pTilesetActor;
+  void
+  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
-  const CesiumGltf::Model* pModel;
+  // from ICesiumPrimitive
+  CesiumPrimitiveData& getPrimitiveData() override;
+  const CesiumPrimitiveData& getPrimitiveData() const override;
+  // from ICesiumLoadedTilePrimitive
+  ICesiumLoadedTile& GetLoadedTile() override;
+  UStaticMeshComponent& GetMeshComponent() override;
+  std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
+      int32_t accessorIndex) const override;
 
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
+  virtual void OnCreatePhysicsState() override;
 
-  /**
-   * The double-precision transformation matrix for this glTF node.
-   */
-  glm::dmat4x4 HighPrecisionNodeTransform;
+private:
+  CesiumPrimitiveData _cesiumData;
+};
 
-  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
-  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+/**
+ * A component that represents and renders an instanced glTF mesh
+ * primitive made from triangles.
+ */
+UCLASS()
+class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
+                                      public ICesiumPrimitive {
+  GENERATED_BODY()
 
-  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
+public:
+  // Sets default values for this component's properties
+  UCesiumGltfInstancedComponent();
+  virtual ~UCesiumGltfInstancedComponent();
 
-  /**
-   * Updates this component's transform from a new double-precision
-   * transformation from the Cesium world to the Unreal Engine world, as well as
-   * the current HighPrecisionNodeTransform.
-   *
-   * @param CesiumToUnrealTransform The new transformation.
-   */
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+  void BeginDestroy() override;
 
-  virtual void BeginDestroy() override;
+  FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
+  void
+  UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) override;
 
-  virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
+  // from ICesiumPrimitive
+  CesiumPrimitiveData& getPrimitiveData() override;
+  const CesiumPrimitiveData& getPrimitiveData() const override;
+  // from ICesiumLoadedTilePrimitive
+  ICesiumLoadedTile& GetLoadedTile() override;
+  UStaticMeshComponent& GetMeshComponent() override;
+  std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
+      int32_t accessorIndex) const override;
+
+  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
+
+private:
+  CesiumPrimitiveData _cesiumData;
 };

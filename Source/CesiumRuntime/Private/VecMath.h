@@ -1,9 +1,15 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "Math/Matrix.h"
+#include "Math/Transform.h"
 #include <glm/glm.hpp>
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <type_traits>
 
 /**
  * @brief Vector math utility functions.
@@ -138,10 +144,21 @@ public:
   /**
    * @brief Create a `FMatrix` from the given `glm` matrix.
    *
+   * If the ultimate goal is to create an `FTransform`, use
+   * {@link createTransform} instead.
+   *
    * @param m The `glm` matrix.
    * @return The `FMatrix`.
    */
   static FMatrix createMatrix(const glm::dmat4& m) noexcept;
+
+  /**
+   * @brief Create a `FTransform` from the given `glm` matrix.
+   *
+   * @param m The `glm` matrix.
+   * @return The `FTransform`.
+   */
+  static FTransform createTransform(const glm::dmat4& m) noexcept;
 
   /**
    * @brief Create a `FMatrix` from the given `glm` columns
@@ -331,3 +348,16 @@ public:
    */
   static glm::dvec3 subtract3D(const FIntVector& i, const FVector& f) noexcept;
 };
+
+template <class IntType>
+std::enable_if_t<std::is_signed_v<IntType>, float> GltfNormalized(IntType val) {
+  return std::max(
+      static_cast<float>(val) / std::numeric_limits<IntType>::max(),
+      -1.0f);
+}
+
+template <class IntType>
+std::enable_if_t<std::is_unsigned_v<IntType>, float>
+GltfNormalized(IntType val) {
+  return static_cast<float>(val) / std::numeric_limits<IntType>::max();
+}

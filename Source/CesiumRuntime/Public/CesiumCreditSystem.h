@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -18,7 +18,7 @@
 
 #include "CesiumCreditSystem.generated.h"
 
-namespace Cesium3DTilesSelection {
+namespace CesiumUtility {
 class CreditSystem;
 }
 
@@ -59,7 +59,7 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
 
-  const std::shared_ptr<Cesium3DTilesSelection::CreditSystem>&
+  const std::shared_ptr<CesiumUtility::CreditSystem>&
   GetExternalCreditSystem() const {
     return _pCreditSystem;
   }
@@ -75,8 +75,6 @@ public:
 #endif
 
 private:
-  static UObject* CesiumCreditSystemBP;
-
   /**
    * A tag that is assigned to Credit Systems when they are created
    * as the "default" Credit System for a certain world.
@@ -84,7 +82,7 @@ private:
   static FName DEFAULT_CREDITSYSTEM_TAG;
 
   // the underlying cesium-native credit system that is managed by this actor.
-  std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
+  std::shared_ptr<CesiumUtility::CreditSystem> _pCreditSystem;
 
   size_t _lastCreditsCount;
 

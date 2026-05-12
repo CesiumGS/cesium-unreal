@@ -1,16 +1,20 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
-#include "CesiumMetadataModel.h"
+#include "CesiumLoadedTile.h"
+#include "CesiumModelMetadata.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
+#include "EncodedFeaturesMetadata.h"
 #include "Interfaces/IHttpRequest.h"
+#include "Templates/Function.h"
+#include <CesiumAsync/SharedFuture.h>
 #include <glm/mat4x4.hpp>
 #include <memory>
 #include "CesiumGltfComponent.generated.h"
@@ -21,7 +25,7 @@ class UStaticMeshComponent;
 
 namespace CreateGltfOptions {
 struct CreateModelOptions;
-} // namespace CreateGltfOptions
+}
 
 namespace CesiumGltf {
 struct Model;
@@ -29,8 +33,11 @@ struct Model;
 
 namespace Cesium3DTilesSelection {
 class Tile;
+}
+
+namespace CesiumRasterOverlays {
 class RasterOverlayTile;
-} // namespace Cesium3DTilesSelection
+}
 
 namespace CesiumGeometry {
 struct Rectangle;
@@ -51,7 +58,7 @@ struct FRasterOverlayTile {
 };
 
 UCLASS()
-class UCesiumGltfComponent : public USceneComponent {
+class UCesiumGltfComponent : public USceneComponent, public ICesiumLoadedTile {
   GENERATED_BODY()
 
 public:
@@ -60,12 +67,21 @@ public:
     virtual ~HalfConstructed() = default;
   };
 
-  static TUniquePtr<HalfConstructed> CreateOffGameThread(
+  class CreateOffGameThreadResult {
+  public:
+    TUniquePtr<UCesiumGltfComponent::HalfConstructed> HalfConstructed;
+    Cesium3DTilesSelection::TileLoadResult TileLoadResult;
+  };
+
+  static CesiumAsync::Future<CreateOffGameThreadResult> CreateOffGameThread(
+      const CesiumAsync::AsyncSystem& AsyncSystem,
       const glm::dmat4x4& Transform,
-      const CreateGltfOptions::CreateModelOptions& Options);
+      CreateGltfOptions::CreateModelOptions&& Options,
+      const CesiumGeospatial::Ellipsoid& Ellipsoid =
+          CesiumGeospatial::Ellipsoid::WGS84);
 
   static UCesiumGltfComponent* CreateOnGameThread(
-      const CesiumGltf::Model& model,
+      CesiumGltf::Model& model,
       ACesium3DTileset* ParentActor,
       TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
@@ -74,10 +90,11 @@ public:
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
       const Cesium3DTilesSelection::Tile& tile,
-      bool createNavCollision);
+      bool createNavCollision,
+      bool doubleSidedCollisions,
+      bool receiveDecals);
 
   UCesiumGltfComponent();
-  virtual ~UCesiumGltfComponent();
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterial = nullptr;
@@ -91,15 +108,21 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
 
-  FCesiumMetadataModel Metadata{};
+  const Cesium3DTilesSelection::Tile* pTile = nullptr;
 
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
+  FCesiumModelMetadata Metadata{};
+  EncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadata>
+      EncodedMetadata_DEPRECATED = std::nullopt;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
   void AttachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
-      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
       const glm::dvec2& Translation,
       const glm::dvec2& Scale,
@@ -107,13 +130,21 @@ public:
 
   void DetachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
-      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      const CesiumRasterOverlays::RasterOverlayTile& RasterTile,
       UTexture2D* Texture);
 
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
   virtual void BeginDestroy() override;
+  virtual void OnVisibilityChanged() override;
+
+  // from ICesiumLoadedTile
+  const CesiumGltf::Model* GetGltfModel() const override;
+  const FCesiumModelMetadata& GetModelMetadata() const override;
+  const Cesium3DTilesSelection::TileID& GetTileID() const override;
+  ACesium3DTileset& GetTilesetActor() override;
+  FVector GetGltfToUnrealLocalVertexPositionScaleFactor() const override;
 
   void UpdateFade(float fadePercentage, bool fadingIn);
 

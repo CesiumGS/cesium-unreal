@@ -1,13 +1,35 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
+#include "Cesium3DTileset.h"
 #include "CesiumGeospatial/GlobeAnchor.h"
 #include "Components/ActorComponent.h"
 #include "Delegates/IDelegateInstance.h"
 #include "CesiumGlobeAnchorComponent.generated.h"
 
 class ACesiumGeoreference;
+class ACesium3DTileset;
+
+/**
+ * The frame of reference from which to interpret a given height value.
+ */
+UENUM(BlueprintType)
+enum class ECesiumHeightReference : uint8 {
+  /**
+   * Height is interpreted relative to the ellipsoid.
+   */
+  Ellipsoid,
+  /**
+   * Height is interpreted relative to the surface of a 3D tileset.
+   */
+  Tileset,
+  /**
+   * No specified Height Reference. Used only for HeightReferenceOverride
+   * in the CesiumGlobeAnchor Blueprints.  Do not use otherwise.
+   */
+  None,
+};
 
 /**
  * This component can be added to a movable actor to anchor it to the globe
@@ -46,6 +68,76 @@ private:
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
   /**
+   * The frame of reference in which to interpret the object's height.
+   *
+   * `Ellipsoid` indicates the object's height above the ellipsoid set on the
+   * CesiumGeoreference. The object will remain at this height unless it is
+   * otherwise changed.
+   *
+   * `Tileset` indicates a height above a given tileset. The object will move
+   * vertically to maintain the specified height.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightReference,
+      BlueprintSetter = SetHeightReference,
+      Category = "Cesium",
+      Meta =
+          (AllowPrivateAccess,
+           ReturnDisplayName = "Height Reference",
+           InvalidEnumValues = "None"))
+  ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
+
+  /**
+   * The tileset actor to use as a height reference for the object. The object
+   * will maintain its height relative to this tileset even through movement or
+   * level-of-detail transitions. Only used when `HeightReference` is set to
+   * `Tileset`.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetReferencedTileset,
+      BlueprintSetter = SetReferencedTileset,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  TSoftObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
+
+  /**
+   * The interval, in Ticks, in which to update the object's height when
+   * `HeightReference` is set to `Tileset`.
+   *
+   * A value of 1 causes `Height` to be updated on every Tick.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetHeightUpdateInterval,
+      BlueprintSetter = SetHeightUpdateInterval,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess, ReturnDisplayName = "Height Update Interval"))
+  int HeightUpdateInterval = 1;
+
+  /**
+   * The resolved georeference used by this component. This is not serialized
+   * because it may point to a Georeference in the PersistentLevel while this
+   * component is in a sub-level. If the Georeference property is specified,
+   * however then this property will have the same value.
+   *
+   * This property will be null before ResolveGeoreference is called, which
+   * happens automatically when the component is registered.
+   */
+  UPROPERTY(
+      Transient,
+      VisibleAnywhere,
+      BlueprintReadOnly,
+      BlueprintGetter = GetResolvedGeoreference,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  ACesiumGeoreference* ResolvedGeoreference = nullptr;
+
+  /**
    * Whether to adjust the Actor's orientation based on globe curvature as the
    * Actor moves.
    *
@@ -67,12 +159,32 @@ private:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Cesium",
       BlueprintGetter = GetAdjustOrientationForGlobeWhenMoving,
       BlueprintSetter = SetAdjustOrientationForGlobeWhenMoving,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   bool AdjustOrientationForGlobeWhenMoving = true;
+
+  /**
+   * Whether to automatically detect changes in the Actor's root transform and
+   * update the precise globe coordinates accordingly.
+   *
+   * When this is property is false, the precise coordinates may become out of
+   * sync with the Actor's root transform. However, you can still directly set
+   * the precise coordinates, and its transform will update accordingly. You can
+   * also call Sync after changing the Actor's transform to manually update the
+   * precise coordinates.
+   *
+   * This property is ignored when `HeightReference` is set to `Tileset`.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetDetectTransformChanges,
+      BlueprintSetter = SetDetectTransformChanges,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  bool DetectTransformChanges = true;
 
   /**
    * Using the teleport flag will move objects to the updated transform
@@ -90,24 +202,7 @@ private:
   bool TeleportWhenUpdatingTransform = true;
 
   /**
-   * The resolved georeference used by this component. This is not serialized
-   * because it may point to a Georeference in the PersistentLevel while this
-   * component is in a sub-level. If the Georeference property is specified,
-   * however then this property will have the same value.
-   *
-   * This property will be null before ResolveGeoreference is called, which
-   * happens automatically when the component is registered.
-   */
-  UPROPERTY(
-      Transient,
-      BlueprintReadOnly,
-      BlueprintGetter = GetResolvedGeoreference,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  ACesiumGeoreference* ResolvedGeoreference = nullptr;
-
-  /**
-   * The 4x4 transformation matrix from the Actors's local coordinate system to
+   * The 4x4 transformation matrix from the Actor's local coordinate system to
    * the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
    * The ECEF coordinate system is a right-handed system located at the center
@@ -154,18 +249,40 @@ public:
    * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
   UFUNCTION(BlueprintSetter)
-  void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
+  void
+  SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ECesiumHeightReference GetHeightReference() const;
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetHeightReference(ECesiumHeightReference NewHeightReference);
+
+  UFUNCTION(
+      BlueprintGetter,
+      Category = "Cesium",
+      Meta = (ReturnDisplayName = "Referenced Tileset"))
+  TSoftObjectPtr<ACesium3DTileset> GetReferencedTileset() const;
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetReferencedTileset(const TSoftObjectPtr<ACesium3DTileset>& NewTileset);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  int GetHeightUpdateInterval() const;
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetHeightUpdateInterval(int NewHeightReferenceUpdateInterval);
 
   /**
    * Gets the resolved georeference used by this component. This is not
    * serialized because it may point to a Georeference in the PersistentLevel
    * while this component is in a sub-level. If the Georeference property is
-   * specified, however then this property will have the same value.
+   * manually specified, however, then this property will have the same value.
    *
    * This property will be null before ResolveGeoreference is called, which
    * happens automatically when the component is registered.
    */
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ACesiumGeoreference* GetResolvedGeoreference() const;
 
   /**
@@ -173,13 +290,20 @@ public:
    * the value of the Georeference property if it is set. Otherwise, finds a
    * Georeference in the World and returns it, creating it if necessary. The
    * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
+   * return the same instance, unless ForceReresolve is true.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* ResolveGeoreference();
+  ACesiumGeoreference* ResolveGeoreference(bool bForceReresolve = false);
 
   /**
-   * Gets the 4x4 transformation matrix from the Actors's local coordinate
+   * Obtains the (@ref UCesiumEllipsoid) set on the georeference used by this
+   * component.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  UCesiumEllipsoid* GetEllipsoid() const;
+
+  /**
+   * Gets the 4x4 transformation matrix from the Actor's local coordinate
    * system to the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
    * The ECEF coordinate system is a right-handed system located at the center
@@ -192,7 +316,7 @@ public:
   FMatrix GetActorToEarthCenteredEarthFixedMatrix() const;
 
   /**
-   * Sets the 4x4 transformation matrix from the Actors's local coordinate
+   * Sets the 4x4 transformation matrix from the Actor's local coordinate
    * system to the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
    * The ECEF coordinate system is a right-handed system located at the center
@@ -269,24 +393,56 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetAdjustOrientationForGlobeWhenMoving(bool Value);
 
+  /**
+   * Gets a flag indicating whether to update the globe anchor when the Actor's
+   * transform changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * for performance reasons.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetDetectTransformChanges() const;
+
+  /**
+   * Sets a flag indicating whether to update the globe anchor when the Actor's
+   * transform changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * for performance reasons.
+   */
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetDetectTransformChanges(bool Value);
+
 #pragma endregion
 
 #pragma region Public Methods
+  UCesiumGlobeAnchorComponent();
 
 public:
   /**
-   * Gets the longitude in degrees (X), latitude in degrees (Y),
-   * and height in meters about the ellipsoid (Z) of the actor.
+   * Gets the longitude in degrees (X), latitude in degrees (Y), and height in
+   * meters relative to the specified height reference.
    *
-   * Do not confuse the ellipsoid height with a geoid height or height above
-   * mean sea level, which can be tens of meters higher or lower depending on
-   * where in the world the object is located.
+   * `HeightReferenceOverride` can be optionally used to change the height
+   * reference in which the value is returned. When this is `None`, the
+   * `HeightReference` on the component will be used.
+   *
+   * For a `Tileset` height reference, if a `ReferencedTileset` is set, the
+   * returned value is the height in meters above the reference tileset.
+   *
+   * For an `Ellipsoid` height reference, the returned value is the height above
+   * the ellipsoid in meters. Do not confuse the ellipsoid height with a geoid
+   * height or height above mean sea level, which can be tens of meters higher
+   * or lower depending on where in the world the object is located.
    */
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
-  FVector GetLongitudeLatitudeHeight() const;
+  FVector GetLongitudeLatitudeHeight(
+      const ECesiumHeightReference HeightReferenceOverride =
+          ECesiumHeightReference::None) const;
 
   /**
    * Gets the longitude in degrees.
@@ -307,35 +463,56 @@ public:
   double GetLatitude() const { return this->GetLongitudeLatitudeHeight().Y; }
 
   /**
-   * Gets the height in meters above the ellipsoid.
+   * Gets the height in meters above the specified height reference.
    *
-   * Do not confuse the ellipsoid height with a geoid height or height above
-   * mean sea level, which can be tens of meters higher or lower depending on
-   * where in the world the object is located.
+   * `HeightReferenceOverride` can be optionally used to change the height
+   * reference in which the value is returned. When this is `None`, the
+   * `HeightReference` on the component will be used.
+   *
+   * For a `Tileset` height reference, if a `ReferencedTileset` is set, the
+   * returned value is the height in meters above the reference tileset.
+   *
+   * For an `Ellipsoid` height reference, the returned value is the height above
+   * the ellipsoid in meters. Do not confuse the ellipsoid height with a geoid
+   * height or height above mean sea level, which can be tens of meters higher
+   * or lower depending on where in the world the object is located.
    */
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
       Meta = (ReturnDisplayName = "Height"))
-  double GetHeight() const { return this->GetLongitudeLatitudeHeight().Z; }
+  double GetHeight(
+      const ECesiumHeightReference HeightReferenceOverride =
+          ECesiumHeightReference::None) const;
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in
-   * degrees (X), latitude in degrees (Y), and height in meters (Z).
+   * degrees (X), latitude in degrees (Y), and height in meters (Z) above the
+   * specified height reference.
    *
-   * The Height (Z) is measured in meters above the WGS84 ellipsoid. Do not
-   * confused an ellipsoidal height with a geoid height or height above mean sea
-   * level, which can be tens of meters higher or lower depending on where in
-   * the world the object is located.
+   * `HeightReferenceOverride` can be optionally used to change the height
+   * reference in which the value is returned. When this is `None`, the
+   * `HeightReference` on the component will be used.
+   *
+   * For a `Tileset` height reference, if a `ReferencedTileset` is set, the
+   * returned value is the height in meters above the reference tileset.
+   *
+   * For an `Ellipsoid` height reference, the returned value is the height above
+   * the ellipsoid in meters. Do not confuse the ellipsoid height with a geoid
+   * height or height above mean sea level, which can be tens of meters higher
+   * or lower depending on where in the world the object is located.
    *
    * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
    * orientation will also be adjusted to account for globe curvature.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void MoveToLongitudeLatitudeHeight(const FVector& LongitudeLatitudeHeight);
+  void MoveToLongitudeLatitudeHeight(
+      const FVector& LongitudeLatitudeHeight,
+      const ECesiumHeightReference HeightReferenceOverride =
+          ECesiumHeightReference::None);
 
   /**
-   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
+   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in
    * meters.
    */
   UFUNCTION(
@@ -351,7 +528,7 @@ public:
    * If AdjustOrientationForGlobeWhenMoving is enabled, this method will
    * also update the orientation based on the globe curvature.
    *
-   * @param newPosition The new position.
+   * @param EarthCenteredEarthFixedPosition The new position.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void MoveToEarthCenteredEarthFixedPosition(
@@ -444,6 +621,7 @@ public:
    *   - If the origin of the CesiumGeoreference has changed, the Actor's root
    * transform is updated based on the ActorToEarthCenteredEarthFixedMatrix and
    * the new georeference origin.
+   *   - This synchronization works even if DetectTransformChanges is false.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Sync();
@@ -519,8 +697,55 @@ protected:
   virtual void OnUnregister() override;
 #pragma endregion
 
+protected:
+  virtual void TickComponent(
+      float DeltaTime,
+      ELevelTick TickType,
+      FActorComponentTickFunction* ThisTickFunction) override;
+
 #pragma region Implementation Details
 private:
+  int _heightReferenceUpdateCounter = 0;
+
+  /**
+   * When HeightReference is Tileset, this is the target height
+   * above the tileset to maintain.
+   */
+  UPROPERTY()
+  float _fixedHeightAboveHeightReference = 0.0f;
+
+  /**
+   * Calculate correct Height from the actor's position based on the
+   * HeightReference and tileset.
+   */
+  bool _setHeightFromTilesetReference();
+
+  /**
+   * Determines if HeightReference is Tileset and ReferencedTileset is set.
+   */
+  bool _isUsingTilesetHeightReference(
+      const ECesiumHeightReference heightReferenceOverride =
+          ECesiumHeightReference::None) const;
+
+  /**
+   * Compute a down vector at the specified position in Unreal coordinates
+   */
+  FVector _computeLocalDown(
+      const ACesiumGeoreference* pGeoreference,
+      const FVector& unrealWorldPosition) const;
+
+  /**
+   * Project the component's position onto the tileset specified by
+   * ReferencedTileset, Returns whether an intersection was found.
+   *
+   * alternateActorPosition optionally specifies an alternate position from
+   * which to start the intersection test in Longitude/Latitude/Height
+   * coordinates.
+   */
+  bool _queryLongitudeLatitudeHeightPositionOnTileset(
+      FVector& groundIntersection,
+      const std::optional<FVector>& alternateStartPosition = std::nullopt);
+
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 
   USceneComponent* _getRootComponent(bool warnIfNull) const;
@@ -586,7 +811,7 @@ private:
    * Height. The Actor's position and orientation are recomputed from the
    * Component's globe (ECEF) position and orientation.
    */
-  UFUNCTION()
+  UFUNCTION(CallInEditor)
   void _onGeoreferenceChanged();
 
   friend class FCesiumGlobeAnchorCustomization;

@@ -1,4 +1,4 @@
-﻿// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+﻿// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -12,7 +12,7 @@
  * you're using a Tile Map Service via Cesium ion, use the "Cesium ion Raster
  * Overlay" component instead.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumTileMapServiceRasterOverlay
     : public UCesiumRasterOverlay {
   GENERATED_BODY()
@@ -52,8 +52,13 @@ public:
       meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
   int32 MaximumLevel = 10;
 
+  /**
+   * HTTP headers to be attached to each request made for this raster overlay.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TMap<FString, FString> RequestHeaders;
+
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
-      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
-      override;
+  virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
+      const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
 };

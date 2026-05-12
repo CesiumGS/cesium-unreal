@@ -1,5 +1,8 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #pragma once
 
+#include "CesiumCompat.h"
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "CesiumPointCloudShading.h"
 #include "PrimitiveSceneProxy.h"
@@ -34,12 +37,14 @@ public:
 
   FCesiumGltfPointsSceneProxy(
       UCesiumGltfPointsComponent* InComponent,
-      ERHIFeatureLevel::Type InFeatureLevel);
+      FSceneInterfaceWrapper InSceneInterfaceParams);
 
   virtual ~FCesiumGltfPointsSceneProxy();
 
 protected:
-  virtual void CreateRenderThreadResources() override;
+  virtual void
+  CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
+
   virtual void DestroyRenderThreadResources() override;
 
   virtual void GetDynamicMeshElements(

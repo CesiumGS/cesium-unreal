@@ -1,24 +1,28 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTileset.h"
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
+#include "CesiumCompat.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "CesiumOriginShiftComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelSwitcherComponent.h"
+#include "CesiumSunSky.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
-#include "CesiumWgs84Ellipsoid.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTransforms.h"
+#include "Kismet/GameplayStatics.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "Math/Matrix.h"
 #include "Math/RotationTranslationMatrix.h"
@@ -37,8 +41,10 @@
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
 #include "Editor.h"
+#include "EditorLevelUtils.h"
 #include "EditorViewportClient.h"
 #include "GameFramework/Pawn.h"
+#include "LevelInstance/LevelInstanceEditorLevelStreaming.h"
 #include "Slate/SceneViewport.h"
 #endif
 
@@ -46,15 +52,88 @@ using namespace CesiumGeospatial;
 
 namespace {
 
-LocalHorizontalCoordinateSystem
-createCoordinateSystem(const FVector& center, double scale) {
-  return LocalHorizontalCoordinateSystem(
-      VecMath::createVector3D(center),
-      LocalDirection::East,
-      LocalDirection::South,
-      LocalDirection::Up,
-      1.0 / scale,
-      Ellipsoid::WGS84);
+ACesiumGeoreference* FindGeoreferenceAncestor(AActor* Actor) {
+  AActor* Current = Actor;
+
+  while (IsValid(Current)) {
+    ACesiumGeoreference* Georeference = Cast<ACesiumGeoreference>(Current);
+    if (IsValid(Georeference)) {
+      return Georeference;
+    }
+    Current = Current->GetAttachParentActor();
+  }
+
+  return nullptr;
+}
+
+ACesiumGeoreference*
+FindGeoreferenceWithTag(const UObject* WorldContextObject, const FName& Tag) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  // Note: The actor iterator will be created with the
+  // "EActorIteratorFlags::SkipPendingKill" flag,
+  // meaning that we don't have to handle objects
+  // that have been deleted. (This is the default,
+  // but made explicit here)
+  ACesiumGeoreference* Georeference = nullptr;
+  EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
+                              EActorIteratorFlags::SkipPendingKill;
+  for (TActorIterator<AActor> actorIterator(
+           World,
+           ACesiumGeoreference::StaticClass(),
+           flags);
+       actorIterator;
+       ++actorIterator) {
+    AActor* actor = *actorIterator;
+    if (actor->GetLevel() == World->PersistentLevel &&
+        actor->ActorHasTag(Tag)) {
+      Georeference = Cast<ACesiumGeoreference>(actor);
+      break;
+    }
+  }
+
+  return Georeference;
+}
+
+ACesiumGeoreference*
+FindGeoreferenceWithDefaultName(const UObject* WorldContextObject) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  ACesiumGeoreference* Candidate = FindObject<ACesiumGeoreference>(
+      World->PersistentLevel,
+      TEXT("CesiumGeoreferenceDefault"));
+
+  // Test if PendingKill
+  if (IsValid(Candidate)) {
+    return Candidate;
+  }
+
+  return nullptr;
+}
+
+ACesiumGeoreference*
+CreateDefaultGeoreference(const UObject* WorldContextObject, const FName& Tag) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  // Spawn georeference in the persistent level
+  FActorSpawnParameters spawnParameters;
+  spawnParameters.SpawnCollisionHandlingOverride =
+      ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+  spawnParameters.OverrideLevel = World->PersistentLevel;
+
+  ACesiumGeoreference* Georeference =
+      World->SpawnActor<ACesiumGeoreference>(spawnParameters);
+  if (Georeference) {
+    Georeference->Tags.Add(Tag);
+  }
+
+  return Georeference;
 }
 
 } // namespace
@@ -63,77 +142,46 @@ createCoordinateSystem(const FVector& center, double scale) {
 
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
-  UWorld* world = WorldContextObject->GetWorld();
-  // This method can be called by actors even when opening the content browser.
-  if (!IsValid(world)) {
+  if (!IsValid(WorldContextObject))
     return nullptr;
-  }
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("World name for GetDefaultGeoreference: %s"),
-      *world->GetFullName());
 
-  // Note: The actor iterator will be created with the
-  // "EActorIteratorFlags::SkipPendingKill" flag,
-  // meaning that we don't have to handle objects
-  // that have been deleted. (This is the default,
-  // but made explicit here)
-  ACesiumGeoreference* pGeoreference = nullptr;
-  EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
-                              EActorIteratorFlags::SkipPendingKill;
-  for (TActorIterator<AActor> actorIterator(
-           world,
-           ACesiumGeoreference::StaticClass(),
-           flags);
-       actorIterator;
-       ++actorIterator) {
-    AActor* actor = *actorIterator;
-    if (actor->GetLevel() == world->PersistentLevel &&
-        actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
-      pGeoreference = Cast<ACesiumGeoreference>(actor);
-      break;
-    }
-  }
-  if (!pGeoreference) {
-    // Legacy method of finding Georeference, for backwards compatibility with
-    // existing projects
-    ACesiumGeoreference* pGeoreferenceCandidate =
-        FindObject<ACesiumGeoreference>(
-            world->PersistentLevel,
-            TEXT("CesiumGeoreferenceDefault"));
-    // Test if PendingKill
-    if (IsValid(pGeoreferenceCandidate)) {
-      pGeoreference = pGeoreferenceCandidate;
-    }
-  }
-  if (!pGeoreference) {
+  ACesiumGeoreference* Georeference =
+      FindGeoreferenceWithTag(WorldContextObject, DEFAULT_GEOREFERENCE_TAG);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  Georeference = FindGeoreferenceWithDefaultName(WorldContextObject);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  Georeference =
+      CreateDefaultGeoreference(WorldContextObject, DEFAULT_GEOREFERENCE_TAG);
+
+  return Georeference;
+}
+
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultGeoreferenceForActor(AActor* Actor) {
+  if (!IsValid(Actor))
+    return nullptr;
+
+  ACesiumGeoreference* Georeference = FindGeoreferenceAncestor(Actor);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  return ACesiumGeoreference::GetDefaultGeoreference(Actor);
+}
+
+UCesiumEllipsoid* ACesiumGeoreference::GetEllipsoid() const {
+  if (!IsValid(this->Ellipsoid)) {
     UE_LOG(
         LogCesium,
-        Verbose,
-        TEXT("Creating default Georeference for actor %s"),
-        *WorldContextObject->GetName());
-    // Spawn georeference in the persistent level
-    FActorSpawnParameters spawnParameters;
-    spawnParameters.SpawnCollisionHandlingOverride =
-        ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    spawnParameters.OverrideLevel = world->PersistentLevel;
-    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
-    // Null check so the editor doesn't crash when it makes arbitrary calls to
-    // this function without a valid world context object.
-    if (pGeoreference) {
-      pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
-    }
-
-  } else {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Using existing Georeference %s for actor %s"),
-        *pGeoreference->GetName(),
-        *WorldContextObject->GetName());
+        Error,
+        TEXT(
+            "ACesiumGeoreference needs a valid Ellipsoid asset. Calculations will use a unit ellipsoid as a placeholder."));
+    return UCesiumEllipsoid::Create(FVector::OneVector);
   }
-  return pGeoreference;
+  return this->Ellipsoid;
 }
 
 FVector ACesiumGeoreference::GetOriginLongitudeLatitudeHeight() const {
@@ -149,16 +197,17 @@ void ACesiumGeoreference::SetOriginLongitudeLatitudeHeight(
 }
 
 FVector ACesiumGeoreference::GetOriginEarthCenteredEarthFixed() const {
-  return UCesiumWgs84Ellipsoid::
-      LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+  return this->GetEllipsoid()
+      ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
           this->GetOriginLongitudeLatitudeHeight());
 }
 
 void ACesiumGeoreference::SetOriginEarthCenteredEarthFixed(
     const FVector& TargetEarthCenteredEarthFixed) {
   this->SetOriginLongitudeLatitudeHeight(
-      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-          TargetEarthCenteredEarthFixed));
+      this->GetEllipsoid()
+          ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+              TargetEarthCenteredEarthFixed));
 }
 
 EOriginPlacement ACesiumGeoreference::GetOriginPlacement() const {
@@ -216,6 +265,13 @@ void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
   this->SubLevelCamera_DEPRECATED = NewValue;
 }
 
+void ACesiumGeoreference::SetEllipsoid(UCesiumEllipsoid* NewEllipsoid) {
+  UCesiumEllipsoid* OldEllipsoid = this->Ellipsoid;
+  this->Ellipsoid = NewEllipsoid;
+  this->OnEllipsoidChanged.Broadcast(OldEllipsoid, NewEllipsoid);
+  this->UpdateGeoreference();
+}
+
 #if WITH_EDITOR
 bool ACesiumGeoreference::GetShowLoadRadii() const {
   return this->ShowLoadRadii;
@@ -229,14 +285,15 @@ void ACesiumGeoreference::SetShowLoadRadii(bool NewValue) {
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightPositionToUnreal(
     const FVector& LongitudeLatitudeHeight) const {
   return this->TransformEarthCenteredEarthFixedPositionToUnreal(
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          LongitudeLatitudeHeight));
+      this->GetEllipsoid()
+          ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+              LongitudeLatitudeHeight));
 }
 
 FVector ACesiumGeoreference::TransformUnrealPositionToLongitudeLatitudeHeight(
     const FVector& UnrealPosition) const {
-  return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+  return this->GetEllipsoid()
+      ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
           this->TransformUnrealPositionToEarthCenteredEarthFixed(
               UnrealPosition));
 }
@@ -308,7 +365,9 @@ FMatrix ACesiumGeoreference::
     ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
         const FVector& EarthCenteredEarthFixedPosition) const {
   LocalHorizontalCoordinateSystem newLocal =
-      createCoordinateSystem(EarthCenteredEarthFixedPosition, this->GetScale());
+      this->GetEllipsoid()->CreateCoordinateSystem(
+          EarthCenteredEarthFixedPosition,
+          this->GetScale());
   return VecMath::createMatrix(
       newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }
@@ -323,7 +382,7 @@ FMatrix ACesiumGeoreference::ComputeUnrealToEastSouthUpTransformation(
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
   UWorld* pWorld = this->GetWorld();
-  if (!GEditor || pWorld->IsGameWorld()) {
+  if (!pWorld || !GEditor || pWorld->IsGameWorld()) {
     return;
   }
 
@@ -334,22 +393,32 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   FEditorViewportClient* pEditorViewportClient =
       static_cast<FEditorViewportClient*>(pViewportClient);
 
-  FRotator newViewRotation = this->TransformUnrealRotatorToEastSouthUp(
-      pEditorViewportClient->GetViewRotation(),
-      pEditorViewportClient->GetViewLocation());
+  // The viewport location / rotation is Unreal world coordinates. Transform
+  // into the georeference's reference frame. This way we'll compute the correct
+  // globe position even if the globe is transformed into the Unreal world.
+  FVector ViewLocation = pEditorViewportClient->GetViewLocation();
+  FQuat ViewRotation = pEditorViewportClient->GetViewRotation().Quaternion();
+
+  ViewLocation =
+      this->GetActorTransform().InverseTransformPosition(ViewLocation);
+  ViewRotation =
+      this->GetActorTransform().InverseTransformRotation(ViewRotation);
+
+  FRotator NewViewRotation = this->TransformUnrealRotatorToEastSouthUp(
+      ViewRotation.Rotator(),
+      ViewLocation);
 
   // camera local space to ECEF
-  FVector cameraEcefPosition =
-      this->TransformUnrealPositionToEarthCenteredEarthFixed(
-          pEditorViewportClient->GetViewLocation());
+  FVector CameraEcefPosition =
+      this->TransformUnrealPositionToEarthCenteredEarthFixed(ViewLocation);
 
   // Long/Lat/Height camera location, in degrees/meters (also our new target
   // georeference origin) When the location is too close to the center of the
   // earth, the result will be (0,0,0)
-  this->SetOriginEarthCenteredEarthFixed(cameraEcefPosition);
+  this->SetOriginEarthCenteredEarthFixed(CameraEcefPosition);
 
   // TODO: check for degeneracy ?
-  FVector cameraFront = newViewRotation.RotateVector(FVector::XAxisVector);
+  FVector cameraFront = NewViewRotation.RotateVector(FVector::XAxisVector);
   FVector cameraRight =
       FVector::CrossProduct(FVector::ZAxisVector, cameraFront).GetSafeNormal();
   FVector cameraUp =
@@ -358,7 +427,93 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   pEditorViewportClient->SetViewRotation(
       FMatrix(cameraFront, cameraRight, cameraUp, FVector::ZeroVector)
           .Rotator());
-  pEditorViewportClient->SetViewLocation(FVector::ZeroVector);
+  pEditorViewportClient->SetViewLocation(
+      this->GetActorTransform().TransformPosition(FVector::ZeroVector));
+
+  const double NewLongitude = this->GetOriginLongitude();
+
+  // The georeference origin may have moved to a location across the world
+  // where it is nighttime in the currently set time zone. To improve user
+  // experience, we update the timezones of all the CesiumSunSky instances using
+  // this georeference so that the view is not completely dark.
+  for (TActorIterator<ACesiumSunSky> It(pWorld); It; ++It) {
+    if (!IsValid(It->GlobeAnchor)) {
+      continue;
+    }
+
+    ACesiumGeoreference* ResolvedGeoreference =
+        It->GlobeAnchor->GetResolvedGeoreference();
+    if (IsValid(ResolvedGeoreference) && ResolvedGeoreference == this) {
+      It->EstimateTimeZoneForLongitude(NewLongitude);
+    }
+  }
+}
+
+void ACesiumGeoreference::CreateSubLevelHere() {
+  UWorld* World = GetWorld();
+  if (!World || !GEditor || World->IsGameWorld()) {
+    return;
+  }
+
+  // Deactivate any previous sub-levels, so that setting the georeference origin
+  // doesn't change their origin, too.
+  this->SubLevelSwitcher->SetTargetSubLevel(nullptr);
+
+  // Update the georeference origin so that the new sub-level inherits it.
+  this->PlaceGeoreferenceOriginHere();
+
+  // Create a dummy Actor to add to the new sub-level, because
+  // CreateLevelInstanceFrom forbids an empty array for some reason.
+  TArray<AActor*> SubLevelActors;
+
+  FActorSpawnParameters SpawnParameters{};
+  SpawnParameters.NameMode =
+      FActorSpawnParameters::ESpawnActorNameMode::Requested;
+  SpawnParameters.Name = TEXT("Placeholder");
+  SpawnParameters.ObjectFlags = RF_Transactional;
+
+  AActor* PlaceholderActor = World->SpawnActor<AActor>(
+      FVector::ZeroVector,
+      FRotator::ZeroRotator,
+      SpawnParameters);
+  PlaceholderActor->SetActorLabel(TEXT("Placeholder"));
+
+  SubLevelActors.Add(PlaceholderActor);
+
+  // Create the new Level Instance Actor and corresponding streaming level.
+  FNewLevelInstanceParams LevelInstanceParams{};
+  LevelInstanceParams.PivotType = ELevelInstancePivotType::WorldOrigin;
+  LevelInstanceParams.Type = ELevelInstanceCreationType::LevelInstance;
+  LevelInstanceParams.SetExternalActors(false);
+
+  ULevelInstanceSubsystem* LevelInstanceSubsystem =
+      World->GetSubsystem<ULevelInstanceSubsystem>();
+  AActor* LevelInstance =
+      Cast<AActor>(LevelInstanceSubsystem->CreateLevelInstanceFrom(
+          SubLevelActors,
+          LevelInstanceParams));
+  if (!IsValid(LevelInstance)) {
+    // User canceled creation of the sub-level, so delete the placeholder we
+    // created.
+    PlaceholderActor->Destroy();
+    return;
+  }
+
+  UCesiumSubLevelComponent* LevelComponent =
+      Cast<UCesiumSubLevelComponent>(LevelInstance->AddComponentByClass(
+          UCesiumSubLevelComponent::StaticClass(),
+          false,
+          FTransform::Identity,
+          false));
+  LevelComponent->SetFlags(RF_Transactional);
+  LevelInstance->AddInstanceComponent(LevelComponent);
+
+  // Move the new level instance under the CesiumGeoreference.
+  LevelInstance->GetRootComponent()->SetMobility(
+      this->GetRootComponent()->Mobility);
+  LevelInstance->AttachToActor(
+      this,
+      FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void ACesiumGeoreference::_showSubLevelLoadRadii() const {
@@ -410,11 +565,6 @@ void ACesiumGeoreference::Serialize(FArchive& Ar) {
   Super::Serialize(Ar);
 
   Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
-
-  // Recompute derived values on load.
-  if (Ar.IsLoading()) {
-    this->_updateCoordinateSystem();
-  }
 }
 
 void ACesiumGeoreference::BeginPlay() {
@@ -450,6 +600,8 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 
 void ACesiumGeoreference::PostLoad() {
   Super::PostLoad();
+
+  this->_updateCoordinateSystem();
 
 #if WITH_EDITOR
   if (GEditor && IsValid(this->GetWorld()) &&
@@ -563,6 +715,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
   CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, OriginLatitude);
   CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, OriginHeight);
   CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, Scale);
+  CESIUM_POST_EDIT_CHANGE(propertyName, ACesiumGeoreference, Ellipsoid);
 }
 
 namespace {
@@ -620,6 +773,8 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
 
     FActorSpawnParameters spawnParameters{};
     spawnParameters.Name = FName(pFound->LevelName);
+    spawnParameters.NameMode =
+        FActorSpawnParameters::ESpawnActorNameMode::Requested;
     spawnParameters.ObjectFlags = RF_Transactional;
 
     ALevelInstance* pLevelInstance = pWorld->SpawnActor<ALevelInstance>(
@@ -627,8 +782,9 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
         FRotator::ZeroRotator,
         spawnParameters);
     pLevelInstance->SetIsSpatiallyLoaded(false);
-    pLevelInstance->DesiredRuntimeBehavior =
-        ELevelInstanceRuntimeBehavior::LevelStreaming;
+    ALevelInstance_SetDesiredRuntimeBehavior(
+        pLevelInstance,
+        ELevelInstanceRuntimeBehavior::LevelStreaming);
     pLevelInstance->SetActorLabel(pFound->LevelName);
 
     FString levelPath = level.PackageName.ToString() + "." +
@@ -687,22 +843,36 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
-  return UCesiumWgs84Ellipsoid::
-      LongitudeLatitudeHeightToEarthCenteredEarthFixed(longitudeLatitudeHeight);
+  return this->GetEllipsoid()
+      ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+          longitudeLatitudeHeight);
 }
 
 FVector ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
     const FVector& ecef) const {
-  return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(ecef);
+  return this->GetEllipsoid()
+      ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(ecef);
 }
 
 FMatrix
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const FVector& ecef) const {
-  return UCesiumWgs84Ellipsoid::EastNorthUpToEarthCenteredEarthFixed(ecef);
+  return this->GetEllipsoid()->EastNorthUpToEllipsoidCenteredEllipsoidFixed(
+      ecef);
 }
 
 ACesiumGeoreference::ACesiumGeoreference() : AActor() {
+  struct FConstructorStatics {
+    ConstructorHelpers::FObjectFinder<UCesiumEllipsoid> DefaultEllipsoid;
+
+    FConstructorStatics()
+        : DefaultEllipsoid(TEXT(
+              "/Script/CesiumRuntime.CesiumEllipsoid'/CesiumForUnreal/Ellipsoids/WGS84.WGS84'")) {
+    }
+  };
+
+  static FConstructorStatics ConstructorStatics;
+  this->Ellipsoid = ConstructorStatics.DefaultEllipsoid.Object;
+
   PrimaryActorTick.bCanEverTick = true;
 
   this->Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -749,7 +919,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
 GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
   // Because GeoTransforms is deprecated, we only lazily update it.
   return GeoTransforms(
-      Ellipsoid::WGS84,
+      this->GetEllipsoid()->GetNativeEllipsoid(),
       glm::dvec3(this->_coordinateSystem.getLocalToEcefTransformation()[3]),
       this->GetScale() / 100.0);
 }
@@ -760,7 +930,7 @@ FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
 void ACesiumGeoreference::_updateCoordinateSystem() {
   if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     FVector origin = this->GetOriginLongitudeLatitudeHeight();
-    this->_coordinateSystem = createCoordinateSystem(
+    this->_coordinateSystem = this->GetEllipsoid()->CreateCoordinateSystem(
         this->GetOriginEarthCenteredEarthFixed(),
         this->GetScale());
   } else {

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTilesetRoot.h"
 #include "Cesium3DTileset.h"
@@ -62,21 +62,12 @@ void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
 
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
+  ACesiumGeoreference* pGeoreference = pTileset->ResolveGeoreference();
 
-  const glm::dmat4& ellipsoidCenteredToUnrealWorld =
-      pTileset->ResolveGeoreference()
-          ->GetGeoTransforms()
-          .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+  if (pGeoreference) {
+    this->_tilesetToUnrealRelativeWorld = VecMath::createMatrix4D(
+        pGeoreference->ComputeEarthCenteredEarthFixedToUnrealTransformation());
 
-  glm::dvec3 relativeLocation = this->_absoluteLocation;
-
-  FMatrix tilesetActorToUeLocal =
-      this->GetRelativeTransform().ToMatrixWithScale();
-  glm::dmat4 ueAbsoluteToUeLocal =
-      VecMath::createMatrix4D(tilesetActorToUeLocal, relativeLocation);
-
-  this->_tilesetToUnrealRelativeWorld =
-      ueAbsoluteToUeLocal * ellipsoidCenteredToUnrealWorld;
-
-  pTileset->UpdateTransformFromCesium();
+    pTileset->UpdateTransformFromCesium();
+  }
 }

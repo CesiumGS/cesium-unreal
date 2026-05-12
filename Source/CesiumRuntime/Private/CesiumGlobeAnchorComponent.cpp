@@ -1,15 +1,25 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGlobeAnchorComponent.h"
+#include "Cesium3DTileset.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGeoreference.h"
 #include "CesiumRuntime.h"
-#include "CesiumWgs84Ellipsoid.h"
+#include "CollisionQueryParams.h"
 #include "Components/SceneComponent.h"
+#include "Engine/HitResult.h"
+#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
-#include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+// quick macro for ellipsoid existence check
+#define ELLIPSOID_CHECK(thiz, ret)                                             \
+  if (!IsValid(thiz->GetEllipsoid())) {                                        \
+    UE_LOG(LogCesium, Error, TEXT("Expected ellipsoid but got nullptr"));      \
+    return ret;                                                                \
+  }
 
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:
@@ -55,13 +65,20 @@ createNativeGlobeAnchor(const FMatrix& actorToECEF) {
 
 } // namespace
 
+UCesiumGlobeAnchorComponent::UCesiumGlobeAnchorComponent() {
+  // Enable ticking for this component
+  PrimaryComponentTick.bCanEverTick = true;
+  PrimaryComponentTick.bStartWithTickEnabled = true;
+  PrimaryComponentTick.TickGroup = TG_PostPhysics;
+}
+
 TSoftObjectPtr<ACesiumGeoreference>
 UCesiumGlobeAnchorComponent::GetGeoreference() const {
   return this->Georeference;
 }
 
 void UCesiumGlobeAnchorComponent::SetGeoreference(
-    TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
+    const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference) {
   ACesiumGeoreference* pOriginal = this->ResolvedGeoreference;
 
   if (IsValid(pOriginal)) {
@@ -75,13 +92,42 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   // georeference. If it's not, this will happen when it becomes registered.
   if (this->IsRegistered()) {
     this->ResolveGeoreference();
-
-    // If we switched to a different georeference, synchronize the state based
-    // on the new one.
-    if (pOriginal != this->Georeference && IsValid(pOriginal)) {
-      this->Sync();
-    }
   }
+}
+
+void UCesiumGlobeAnchorComponent::SetHeightReference(
+    ECesiumHeightReference NewHeightReference) {
+
+  if (this->HeightReference != NewHeightReference) {
+    this->HeightReference = NewHeightReference;
+    this->_setHeightFromTilesetReference();
+  }
+}
+
+ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
+  return this->HeightReference;
+}
+
+TSoftObjectPtr<ACesium3DTileset>
+UCesiumGlobeAnchorComponent::GetReferencedTileset() const {
+  return this->ReferencedTileset;
+}
+
+void UCesiumGlobeAnchorComponent::SetReferencedTileset(
+    const TSoftObjectPtr<ACesium3DTileset>& NewTileset) {
+  if (this->ReferencedTileset != NewTileset) {
+    this->ReferencedTileset = NewTileset;
+    this->_setHeightFromTilesetReference();
+  }
+}
+
+void UCesiumGlobeAnchorComponent::SetHeightUpdateInterval(
+    int NewTilesetHeightUpdateInterval) {
+  this->HeightUpdateInterval = NewTilesetHeightUpdateInterval;
+}
+
+int UCesiumGlobeAnchorComponent::GetHeightUpdateInterval() const {
+  return this->HeightUpdateInterval;
 }
 
 ACesiumGeoreference*
@@ -92,12 +138,16 @@ UCesiumGlobeAnchorComponent::GetResolvedGeoreference() const {
 FVector
 UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedPosition() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
+          *this->GetName());
+    }
     return FVector(0.0);
   }
 
@@ -135,6 +185,30 @@ void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
   this->Modify();
   pOwnerRoot->Modify();
 #endif
+}
+
+bool UCesiumGlobeAnchorComponent::GetDetectTransformChanges() const {
+  return this->DetectTransformChanges;
+}
+
+void UCesiumGlobeAnchorComponent::SetDetectTransformChanges(bool Value) {
+  if (Value == this->DetectTransformChanges) {
+    return;
+  }
+  this->DetectTransformChanges = Value;
+
+  USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
+  if (!IsValid(pOwnerRoot)) {
+    return;
+  }
+  if (Value) {
+    pOwnerRoot->TransformUpdated.AddUObject(
+        this,
+        &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
+    this->_setNewActorToECEFFromRelativeTransform();
+  } else {
+    pOwnerRoot->TransformUpdated.RemoveAll(this);
+  }
 }
 
 bool UCesiumGlobeAnchorComponent::GetTeleportWhenUpdatingTransform() const {
@@ -175,11 +249,15 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
     return;
   }
 
+  ELLIPSOID_CHECK(this->ResolveGeoreference(), );
+
+  UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
+
   // Compute the current local up axis of the actor (the +Z axis) in ECEF
   FVector up = this->ActorToEarthCenteredEarthFixedMatrix.GetUnitAxis(EAxis::Z);
 
   // Compute the surface normal of the ellipsoid
-  FVector ellipsoidNormal = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+  FVector ellipsoidNormal = ellipsoid->GeodeticSurfaceNormal(
       this->GetEarthCenteredEarthFixedPosition());
 
   // Find the shortest rotation to align local up with the ellipsoid normal
@@ -231,50 +309,118 @@ void UCesiumGlobeAnchorComponent::Sync() {
     this->SetActorToEarthCenteredEarthFixedMatrix(
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
+
+  this->_setHeightFromTilesetReference();
 }
 
-ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
+ACesiumGeoreference*
+UCesiumGlobeAnchorComponent::ResolveGeoreference(bool bForceReresolve) {
+  if (IsValid(this->ResolvedGeoreference) && !bForceReresolve) {
     return this->ResolvedGeoreference;
   }
 
-  if (IsValid(this->Georeference.Get())) {
-    this->ResolvedGeoreference = this->Georeference.Get();
-  } else {
-    this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
+  ACesiumGeoreference* Previous = this->ResolvedGeoreference;
+  ACesiumGeoreference* Next =
+      IsValid(this->Georeference.Get())
+          ? this->ResolvedGeoreference = this->Georeference.Get()
+          : ACesiumGeoreference::GetDefaultGeoreferenceForActor(
+                this->GetOwner());
 
-  if (this->ResolvedGeoreference) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        this,
-        &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
+  if (Previous != Next) {
+    if (IsValid(Previous)) {
+      // If we previously had a valid georeference, first synchronize using the
+      // old one so that the ECEF and Actor transforms are both up-to-date.
+      this->Sync();
+
+      Previous->OnGeoreferenceUpdated.RemoveAll(this);
+    }
+
+    this->ResolvedGeoreference = Next;
+
+    if (this->ResolvedGeoreference) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          this,
+          &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
+
+      // Now synchronize based on the new georeference.
+      this->Sync();
+    }
   }
 
   return this->ResolvedGeoreference;
+}
+
+UCesiumEllipsoid* UCesiumGlobeAnchorComponent::GetEllipsoid() const {
+  ACesiumGeoreference* Georeference = this->GetResolvedGeoreference();
+  if (!IsValid(Georeference)) {
+    Georeference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->GetOwner());
+  }
+
+  if (!IsValid(Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Unable to find UCesiumGeoreference for UCesiumGlobeAnchorComponent - returning unit ellipsoid."));
+    return UCesiumEllipsoid::Create(FVector::OneVector);
+  }
+
+  return Georeference->GetEllipsoid();
 }
 
 void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
   // This method is deprecated and no longer does anything.
 }
 
-FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
-  return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-          this->GetEarthCenteredEarthFixedPosition());
+FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
+    const ECesiumHeightReference HeightReferenceOverride) const {
+  ELLIPSOID_CHECK(this, FVector::ZeroVector);
+  FVector position =
+      this->GetEllipsoid()
+          ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+              this->GetEarthCenteredEarthFixedPosition());
+  // When using a height reference, the height reported back to the caller
+  // will always be the fixed height above the reference.
+  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride)) {
+    position.Z = this->_fixedHeightAboveHeightReference;
+  }
+  return position;
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
-    const FVector& TargetLongitudeLatitudeHeight) {
+    const FVector& TargetLongitudeLatitudeHeight,
+    const ECesiumHeightReference HeightReferenceOverride) {
+  ELLIPSOID_CHECK(this, );
+
+  FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
+  FVector tilesetPosition{};
+
+  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride) &&
+      this->_queryLongitudeLatitudeHeightPositionOnTileset(
+          tilesetPosition,
+          TargetLongitudeLatitudeHeight)) {
+    this->_fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
+    realLongitudeLatitudeHeight.Z =
+        tilesetPosition.Z + this->_fixedHeightAboveHeightReference;
+  }
+
   this->MoveToEarthCenteredEarthFixedPosition(
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          TargetLongitudeLatitudeHeight));
+      this->GetEllipsoid()
+          ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+              realLongitudeLatitudeHeight));
+}
+
+double UCesiumGlobeAnchorComponent::GetHeight(
+    const ECesiumHeightReference HeightReferenceOverride) const {
+  return this->GetLongitudeLatitudeHeight(HeightReferenceOverride).Z;
 }
 
 namespace {
 
-CesiumGeospatial::LocalHorizontalCoordinateSystem
-createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
+CesiumGeospatial::LocalHorizontalCoordinateSystem createEastSouthUp(
+    const CesiumGeospatial::GlobeAnchor& anchor,
+    const CesiumGeospatial::Ellipsoid& ellipsoid) {
   glm::dvec3 ecefPosition;
   CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
       anchor.getAnchorToFixedTransform(),
@@ -287,27 +433,34 @@ createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
       CesiumGeospatial::LocalDirection::East,
       CesiumGeospatial::LocalDirection::South,
       CesiumGeospatial::LocalDirection::Up,
-      1.0);
+      1.0,
+      ellipsoid);
 }
 
 } // namespace
 
 FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+          *this->GetName());
+    }
     return FQuat::Identity;
   }
+
+  ELLIPSOID_CHECK(this, FQuat::Identity);
 
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
   CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
-      createEastSouthUp(anchor);
+      createEastSouthUp(anchor, this->GetEllipsoid()->GetNativeEllipsoid());
 
   glm::dmat4 modelToEastSouthUp = anchor.getAnchorToLocalTransform(eastSouthUp);
 
@@ -332,11 +485,13 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
     return;
   }
 
+  ELLIPSOID_CHECK(this, );
+
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
   CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
-      createEastSouthUp(anchor);
+      createEastSouthUp(anchor, this->GetEllipsoid()->GetNativeEllipsoid());
 
   glm::dmat4 modelToEastSouthUp = anchor.getAnchorToLocalTransform(eastSouthUp);
 
@@ -354,18 +509,32 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
           VecMath::createQuaternion(EastSouthUpRotation),
           scale);
 
-  anchor.setAnchorToLocalTransform(eastSouthUp, newModelToEastSouthUp, false);
-  this->_updateFromNativeGlobeAnchor(anchor);
+  const ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (pGeoreference) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid =
+        pGeoreference->GetEllipsoid()->GetNativeEllipsoid();
+
+    anchor.setAnchorToLocalTransform(
+        eastSouthUp,
+        newModelToEastSouthUp,
+        false,
+        ellipsoid);
+    this->_updateFromNativeGlobeAnchor(anchor);
+  }
 }
 
 FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
   if (!this->_actorToECEFIsValid) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
-        *this->GetName());
+    // Only log a warning if we're actually in a world. Otherwise we'll spam the
+    // log when editing a CDO.
+    if (this->GetWorld()) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+          *this->GetName());
+    }
     return FQuat::Identity;
   }
 
@@ -486,15 +655,26 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
     return;
   }
 
+  bool detectTransformChanges =
+      this->DetectTransformChanges ||
+      this->HeightReference == ECesiumHeightReference::Tileset;
+
+#if WITH_EDITOR
+  UWorld* pWorld = this->GetWorld();
+  if (pWorld && pWorld->WorldType == EWorldType::Editor) {
+    // Always detect transform changes in the Editor.
+    detectTransformChanges = true;
+  }
+#endif
+
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
-  if (pOwnerRoot) {
+  if (pOwnerRoot && detectTransformChanges) {
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
   }
 
   this->ResolveGeoreference();
-  this->Sync();
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
@@ -620,12 +800,14 @@ CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
         local,
         newModelToLocal);
   } else {
+    assert(this->GetEllipsoid() != nullptr);
     // Create an anchor at the old position and move it to the new one.
     CesiumGeospatial::GlobeAnchor cppAnchor = this->_createNativeGlobeAnchor();
     cppAnchor.setAnchorToLocalTransform(
         local,
         newModelToLocal,
-        this->AdjustOrientationForGlobeWhenMoving);
+        this->AdjustOrientationForGlobeWhenMoving,
+        this->GetEllipsoid()->GetNativeEllipsoid());
     return cppAnchor;
   }
 }
@@ -639,12 +821,14 @@ UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
     return CesiumGeospatial::GlobeAnchor(
         VecMath::createMatrix4D(newActorToECEFMatrix));
   } else {
+    assert(this->GetEllipsoid() != nullptr);
     // Create an anchor at the old position and move it to the new one.
     CesiumGeospatial::GlobeAnchor cppAnchor(
         VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
     cppAnchor.setAnchorToFixedTransform(
         VecMath::createMatrix4D(newActorToECEFMatrix),
-        this->AdjustOrientationForGlobeWhenMoving);
+        this->AdjustOrientationForGlobeWhenMoving,
+        this->GetEllipsoid()->GetNativeEllipsoid());
     return cppAnchor;
   }
 }
@@ -660,12 +844,96 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   if (IsValid(pGeoreference)) {
     glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
         pGeoreference->GetCoordinateSystem());
-
-    this->_setCurrentRelativeTransform(
-        FTransform(VecMath::createMatrix(anchorToLocal)));
+    this->_setCurrentRelativeTransform(VecMath::createTransform(anchorToLocal));
   } else {
     this->_lastRelativeTransformIsValid = false;
   }
+}
+
+bool UCesiumGlobeAnchorComponent::_setHeightFromTilesetReference() {
+  FVector llh =
+      this->GetLongitudeLatitudeHeight(ECesiumHeightReference::Ellipsoid);
+  FVector groundPosition{};
+  if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
+          groundPosition,
+          llh)) {
+    this->_fixedHeightAboveHeightReference = llh.Z - groundPosition.Z;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool UCesiumGlobeAnchorComponent::_isUsingTilesetHeightReference(
+    const ECesiumHeightReference heightReferenceOverride) const {
+  ECesiumHeightReference trueReference =
+      heightReferenceOverride != ECesiumHeightReference::None
+          ? heightReferenceOverride
+          : this->HeightReference;
+
+  return trueReference == ECesiumHeightReference::Tileset &&
+         this->GetReferencedTileset().IsValid();
+}
+
+FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
+    const ACesiumGeoreference* pGeoreference,
+    const FVector& unrealWorldPosition) const {
+  FVector ecefPosition =
+      pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
+          unrealWorldPosition);
+  glm::dvec3 glmNormal =
+      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+          VecMath::createVector3D(ecefPosition));
+  FVector localUp =
+      pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(
+          VecMath::createVector(glmNormal));
+  return -1 * localUp;
+}
+
+bool UCesiumGlobeAnchorComponent::
+    _queryLongitudeLatitudeHeightPositionOnTileset(
+        FVector& groundIntersection,
+        const std::optional<FVector>& alternateStartPosition) {
+  ACesiumGeoreference* pGeoreference = ResolveGeoreference();
+  if (!GetOwner() || !GetWorld() || !this->GetReferencedTileset() ||
+      !IsValid(pGeoreference))
+    return false;
+
+  FVector startPosition =
+      alternateStartPosition.has_value()
+          ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+                *alternateStartPosition)
+          : GetOwner()->GetActorLocation();
+
+  FVector localDown = _computeLocalDown(pGeoreference, startPosition);
+
+  constexpr double traceDistance = 1000000.0;
+  FVector rayStart = startPosition - localDown * traceDistance;
+  FVector rayEnd = startPosition + localDown * traceDistance;
+
+  FCollisionQueryParams queryParams{};
+  queryParams.AddIgnoredActor(GetOwner());
+  queryParams.bTraceComplex = true;
+
+  TArray<FHitResult> hitResults;
+  if (!GetWorld()->LineTraceMultiByChannel(
+          hitResults,
+          rayStart,
+          rayEnd,
+          ECC_Visibility,
+          queryParams))
+    return false;
+
+  for (const FHitResult& hit : hitResults) {
+    if (hit.GetActor() == this->ReferencedTileset.Get()) {
+      groundIntersection =
+          pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
+              hit.Location);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
@@ -677,6 +945,15 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   }
 
   this->_setNewActorToECEFFromRelativeTransform();
+
+#if WITH_EDITOR
+  UWorld* pWorld = this->GetWorld();
+
+  if (pWorld && pWorld->WorldType == EWorldType::Editor &&
+      this->_isUsingTilesetHeightReference()) {
+    this->_setHeightFromTilesetReference();
+  }
+#endif
 }
 
 void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
@@ -719,4 +996,24 @@ void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
     this->SetActorToEarthCenteredEarthFixedMatrix(
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
+}
+
+void UCesiumGlobeAnchorComponent::TickComponent(
+    float DeltaTime,
+    ELevelTick TickType,
+    FActorComponentTickFunction* ThisTickFunction) {
+  Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+  if (!this->_isUsingTilesetHeightReference())
+    return;
+
+  if (--this->_heightReferenceUpdateCounter > 0) {
+    return;
+  }
+  this->_heightReferenceUpdateCounter = this->HeightUpdateInterval;
+
+  FVector llh = this->GetLongitudeLatitudeHeight();
+  // This seems pointless, but it causes the actor's position to be reset
+  // based on the _fixedHeightAboveTileset value.
+  this->MoveToLongitudeLatitudeHeight(llh);
 }

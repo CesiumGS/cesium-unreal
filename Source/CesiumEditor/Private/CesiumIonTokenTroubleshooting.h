@@ -1,16 +1,18 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "Widgets/SWindow.h"
 #include <optional>
-#include <variant>
+#include <swl/variant.hpp>
 #include <vector>
 
 class ACesium3DTileset;
 class UCesiumRasterOverlay;
 
-using CesiumIonObject = std::variant<ACesium3DTileset*, UCesiumRasterOverlay*>;
+using CesiumIonObject = swl::variant<
+    TWeakObjectPtr<ACesium3DTileset>,
+    TWeakObjectPtr<UCesiumRasterOverlay>>;
 
 class CesiumIonTokenTroubleshooting : public SWindow {
   SLATE_BEGIN_ARGS(CesiumIonTokenTroubleshooting) {}

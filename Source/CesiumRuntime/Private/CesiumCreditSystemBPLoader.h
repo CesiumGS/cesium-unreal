@@ -1,11 +1,13 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
+
+#include <Subsystems/EngineSubsystem.h>
 
 #include "CesiumCreditSystemBPLoader.generated.h"
 
 UCLASS()
-class UCesiumCreditSystemBPLoader : public UObject {
+class UCesiumCreditSystemBPLoader : public UEngineSubsystem {
   GENERATED_BODY()
 
 public:

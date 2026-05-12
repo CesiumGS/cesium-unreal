@@ -1,9 +1,11 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumCreditSystem.h"
-#include "Cesium3DTilesSelection/CreditSystem.h"
+#include "CesiumCommon.h"
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
+#include "CesiumUtility/CreditSystem.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "ScreenCreditsWidget.h"
@@ -20,7 +22,6 @@
 #include "Modules/ModuleManager.h"
 #endif
 
-/*static*/ UObject* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 namespace {
 
 /**
@@ -41,8 +42,9 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
         TEXT("No valid level for findValidDefaultCreditSystem"));
     return nullptr;
   }
-  TArray<AActor*>& Actors = Level->Actors;
-  AActor** DefaultCreditSystemPtr =
+
+  TArray<TObjectPtr<AActor>>& Actors = Level->Actors;
+  TObjectPtr<AActor>* DefaultCreditSystemPtr =
       Actors.FindByPredicate([](AActor* const& InItem) {
         if (!IsValid(InItem)) {
           return false;
@@ -82,17 +84,6 @@ FName ACesiumCreditSystem::DEFAULT_CREDITSYSTEM_TAG =
 
 /*static*/ ACesiumCreditSystem*
 ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
-  // Blueprint loading can only happen in a constructor, so we instantiate a
-  // loader object that retrieves the blueprint class in its constructor. We can
-  // destroy the loader immediately once it's done since it will have already
-  // set CesiumCreditSystemBP.
-  if (!CesiumCreditSystemBP) {
-    UCesiumCreditSystemBPLoader* bpLoader =
-        NewObject<UCesiumCreditSystemBPLoader>();
-    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP.LoadSynchronous();
-    bpLoader->ConditionalBeginDestroy();
-  }
-
   UWorld* world = WorldContextObject->GetWorld();
   // This method can be called by actors even when opening the content browser.
   if (!IsValid(world)) {
@@ -147,8 +138,12 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     spawnParameters.OverrideLevel = world->PersistentLevel;
+    UCesiumCreditSystemBPLoader* bpLoader =
+        GEngine->GetEngineSubsystem<UCesiumCreditSystemBPLoader>();
+    UClass* CesiumCreditSystemBP =
+        Cast<UClass>(bpLoader->CesiumCreditSystemBP.LoadSynchronous());
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
-        Cast<UClass>(CesiumCreditSystemBP),
+        CesiumCreditSystemBP,
         spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
     // this function without a valid world context object.
@@ -168,7 +163,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
 
 ACesiumCreditSystem::ACesiumCreditSystem()
     : AActor(),
-      _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
+      _pCreditSystem(std::make_shared<CesiumUtility::CreditSystem>()),
       _lastCreditsCount(0) {
   PrimaryActorTick.bCanEverTick = true;
 #if WITH_EDITOR
@@ -293,7 +288,7 @@ void ACesiumCreditSystem::removeCreditsFromViewports() {
 #endif
 
   if (IsValid(CreditsWidget)) {
-    CreditsWidget->RemoveFromViewport();
+    CreditsWidget->RemoveFromParent();
   }
 }
 
@@ -326,13 +321,14 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     return;
   }
 
-  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
-      _pCreditSystem->getCreditsToShowThisFrame();
+  const CesiumUtility::CreditsSnapshot& credits = _pCreditSystem->getSnapshot();
+
+  const std::vector<CesiumUtility::Credit>& creditsToShowThisFrame =
+      credits.currentCredits;
 
   // if the credit list has changed, we want to reformat the credits
-  CreditsUpdated =
-      creditsToShowThisFrame.size() != _lastCreditsCount ||
-      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
+  CreditsUpdated = creditsToShowThisFrame.size() != _lastCreditsCount ||
+                   credits.removedCredits.size() > 0;
 
   if (CreditsUpdated) {
     FString OnScreenCredits;
@@ -342,17 +338,21 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
     bool firstCreditOnScreen = true;
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      const Cesium3DTilesSelection::Credit& credit = creditsToShowThisFrame[i];
+      const CesiumUtility::Credit& credit = creditsToShowThisFrame[i];
 
-      FString CreditRtf;
+      FString creditRtf;
       const std::string& html = _pCreditSystem->getHtml(credit);
 
       auto htmlFind = _htmlToRtf.find(html);
       if (htmlFind != _htmlToRtf.end()) {
-        CreditRtf = htmlFind->second;
+        creditRtf = htmlFind->second;
       } else {
-        CreditRtf = ConvertHtmlToRtf(html);
-        _htmlToRtf.insert({html, CreditRtf});
+        creditRtf = ConvertHtmlToRtf(html);
+        _htmlToRtf.insert({html, creditRtf});
+      }
+
+      if (creditRtf.IsEmpty()) {
+        continue;
       }
 
       if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
@@ -362,13 +362,13 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
           OnScreenCredits += TEXT(" \u2022 ");
         }
 
-        OnScreenCredits += CreditRtf;
+        OnScreenCredits += creditRtf;
       } else {
         if (i != 0) {
           Credits += "\n";
         }
 
-        Credits += CreditRtf;
+        Credits += creditRtf;
       }
     }
 
@@ -378,7 +378,6 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
     CreditsWidget->SetCredits(Credits, OnScreenCredits);
   }
-  _pCreditSystem->startNextFrame();
 }
 
 namespace {

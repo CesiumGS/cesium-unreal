@@ -1,0 +1,79 @@
+<script type="text/javascript" src="$relpath^mermaid.min.js"></script>
+<script type="text/javascript" src="$relpath^mingcute.json.js"></script>
+<script type="text/javascript" src="$relpath^panzoom.js"></script>
+<script type="text/javascript">
+  let theme = "default";
+  // Detect browser dark mode and use dark theme for Mermaid if enabled
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    theme = "dark";
+  }
+  mermaid.initialize({
+    theme: theme,
+    startOnLoad: true,
+    graph: {
+      useMaxWidth: true
+    }
+  });
+  mermaid.registerIconPacks([
+    {
+      name: "mingcute",
+      loader: () => window.mingcute
+    }
+  ]);
+  window.addEventListener("load", (ev) => {
+    document.querySelectorAll(".mermaid.interactive svg").forEach(svg => {
+      svg.parentElement.style.overflow = "hidden";
+      svg.parentElement.classList.add("pan-zoom-viewport");
+      panzoom(svg);
+    });
+    document.querySelectorAll(".svg.interactive object[type='image/svg+xml']").forEach(svg => {
+      // Make parent element the viewport
+      svg.parentElement.style.overflow = "hidden";
+      svg.parentElement.classList.add("pan-zoom-viewport");
+      svg.parentElement.style.minHeight = svg.parentElement.parentElement.style.minHeight;
+      panzoom(svg);
+    });
+  });
+</script>
+<style type="text/css">
+  .pan-zoom-viewport {
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    padding-bottom: 30px;
+  }
+
+  .pan-zoom-viewport::after {
+    content: "Drag to move, scroll to zoom";
+    color: rgba(0, 0, 0, 0.4);
+    position: absolute;
+    bottom: 5px;
+    right: 10px;
+  }
+
+  .pan-zoom-viewport svg {
+    min-height: 150px;
+  }
+</style>
+<!-- HTML footer for doxygen 1.9.1-->
+<!-- start footer part -->
+<!--BEGIN GENERATE_TREEVIEW-->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    $navpath
+    <li class="footer">$generatedby <a href="https://www.doxygen.org/index.html"><img class="footer"
+          src="$relpath^doxygen.svg" width="104" height="31" alt="doxygen" /></a> $doxygenversion </li>
+  </ul>
+</div>
+<!--END GENERATE_TREEVIEW-->
+<!--BEGIN !GENERATE_TREEVIEW-->
+<hr class="footer" />
+<address class="footer"><small>
+    $generatedby&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="$relpath^doxygen.svg"
+        width="104" height="31" alt="doxygen" /></a> $doxygenversion
+  </small></address>
+</div><!-- doc-content -->
+<!--END !GENERATE_TREEVIEW-->
+</body>
+
+</html>

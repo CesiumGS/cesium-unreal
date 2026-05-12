@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -11,6 +11,7 @@
 class FArguments;
 class ITableRow;
 class STableViewBase;
+class UCesiumIonServer;
 
 template <typename ItemType> class SListView;
 
@@ -43,6 +44,8 @@ private:
   void AssetSelected(
       TSharedPtr<CesiumIonClient::Asset> item,
       ESelectInfo::Type selectionType);
+  void Subscribe(UCesiumIonServer* pNewServer);
+  void OnServerChanged();
 
   /**
    * Filter the current _assets array, based on the current _searchString.
@@ -73,11 +76,11 @@ private:
    */
   void OnSearchTextChange(const FText& SearchText);
 
-  FDelegateHandle _connectionUpdatedDelegateHandle;
-  FDelegateHandle _assetsUpdatedDelegateHandle;
+  FDelegateHandle _serverChangedDelegateHandle;
   TSharedPtr<SListView<TSharedPtr<CesiumIonClient::Asset>>> _pListView;
   TArray<TSharedPtr<CesiumIonClient::Asset>> _assets;
   TSharedPtr<CesiumIonClient::Asset> _pSelection;
+  TObjectPtr<UCesiumIonServer> _pLastServer;
 
   /**
    * The column name based on which the main assets list view is currently

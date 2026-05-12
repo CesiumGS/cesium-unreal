@@ -1,0 +1,23 @@
+---
+config:
+  class:
+    hideEmptyMembersBox: true
+---
+classDiagram
+direction TB
+    class FCesiumCreateNewTextureResource {
+      +Pixel Data
+      +Mip Positions
+    }
+    class FCesiumPreCreatedRHITextureResource {
+      +RHI Texture
+    }
+    class FCesiumUseExistingTextureResource {
+      +Previous FTextureResource to Wrap
+    }
+    FTextureResource <|-- FCesiumTextureResource
+    FCesiumTextureResource <|-- FCesiumCreateNewTextureResource
+    FCesiumTextureResource <|-- FCesiumPreCreatedRHITextureResource
+    FCesiumTextureResource <|-- FCesiumUseExistingTextureResource
+    class FTextureResource:::unreal
+    classDef unreal fill:#FFE9CE, color:#543410

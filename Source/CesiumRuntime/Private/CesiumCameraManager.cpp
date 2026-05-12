@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumCameraManager.h"
 #include "CesiumRuntime.h"
@@ -113,4 +113,21 @@ bool ACesiumCameraManager::UpdateCamera(
 
 const TMap<int32, FCesiumCamera>& ACesiumCameraManager::GetCameras() const {
   return this->_cameras;
+}
+
+std::vector<FCesiumCamera> ACesiumCameraManager::GetAllCameras() const {
+  std::vector<FCesiumCamera> result;
+  for (auto camera : this->_cameras) {
+    result.push_back(camera.Value);
+  }
+  for (const auto& otherCamera : this->AdditionalCameras) {
+    if ((otherCamera.ParameterSource == ECameraParameterSource::Manual &&
+         otherCamera.FieldOfViewDegrees > 0.0) ||
+        (otherCamera.ParameterSource ==
+             ECameraParameterSource::CameraComponent &&
+         otherCamera.CameraComponent)) {
+      result.push_back(otherCamera);
+    }
+  }
+  return result;
 }

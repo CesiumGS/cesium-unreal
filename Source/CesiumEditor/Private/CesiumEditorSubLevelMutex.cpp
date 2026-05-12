@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumEditorSubLevelMutex.h"
 #include "Async/Async.h"
@@ -6,6 +6,7 @@
 #include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "Components/ActorComponent.h"
+#include "Engine/World.h"
 #include "LevelInstance/LevelInstanceActor.h"
 
 CesiumEditorSubLevelMutex::CesiumEditorSubLevelMutex() {

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CalcBounds.h"
 #include "VecMath.h"
@@ -75,4 +75,9 @@ FBoxSphereBounds CalcBoundsOperation::operator()(
 FBoxSphereBounds CalcBoundsOperation::operator()(
     const CesiumGeospatial::S2CellBoundingVolume& s2) const {
   return (*this)(s2.computeBoundingRegion());
+}
+
+FBoxSphereBounds CalcBoundsOperation::operator()(
+    const CesiumGeometry::BoundingCylinderRegion& cylinder) const {
+  return (*this)(cylinder.toOrientedBoundingBox());
 }

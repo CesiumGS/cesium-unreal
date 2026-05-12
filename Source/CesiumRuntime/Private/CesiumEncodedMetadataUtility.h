@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -10,14 +10,20 @@
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
 
-struct FCesiumMetadataModel;
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+struct FCesiumModelMetadata;
 struct FCesiumMetadataPrimitive;
-struct FCesiumFeatureTable;
-struct FCesiumFeatureTexture;
+struct FCesiumPropertyTable;
+struct FCesiumPropertyTexture;
 struct FFeatureTableDescription;
 struct FFeatureTextureDescription;
 struct FMetadataDescription;
+struct FCesiumPrimitiveFeaturesDescription;
 
+/**
+ * DEPRECATED. Use EncodedFeaturesMetadata instead.
+ */
 namespace CesiumEncodedMetadataUtility {
 struct EncodedMetadataProperty {
   /**
@@ -96,16 +102,16 @@ struct EncodedMetadata {
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
-    const FCesiumFeatureTable& featureTable);
+    const FCesiumPropertyTable& featureTable);
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<
-        const CesiumGltf::ImageCesium*,
+        const CesiumGltf::ImageAsset*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
         featureTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
-    const FCesiumFeatureTexture& featureTexture);
+    const FCesiumPropertyTexture& featureTexture);
 
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const FMetadataDescription& metadataDescription,
@@ -113,7 +119,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
 EncodedMetadata encodeMetadataAnyThreadPart(
     const FMetadataDescription& metadataDescription,
-    const FCesiumMetadataModel& metadata);
+    const FCesiumModelMetadata& metadata);
 
 bool encodeMetadataFeatureTableGameThreadPart(
     EncodedMetadataFeatureTable& encodedFeatureTable);
@@ -136,3 +142,5 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata);
 FString createHlslSafeName(const FString& rawName);
 
 } // namespace CesiumEncodedMetadataUtility
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

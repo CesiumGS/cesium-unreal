@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #if WITH_EDITOR
 
 #include "CesiumGeoreference.h"
@@ -15,8 +17,10 @@
 
 BEGIN_DEFINE_SPEC(
     FSubLevelsSpec,
-    "Cesium.SubLevels",
-    EAutomationTestFlags::ApplicationContextMask |
+    "Cesium.Unit.SubLevels",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<UWorld> pWorld;

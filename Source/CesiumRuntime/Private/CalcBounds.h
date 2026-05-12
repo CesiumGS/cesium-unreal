@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -45,4 +45,7 @@ struct CalcBoundsOperation {
 
   FBoxSphereBounds
   operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) const;
+
+  FBoxSphereBounds
+  operator()(const CesiumGeometry::BoundingCylinderRegion& cylinder) const;
 };

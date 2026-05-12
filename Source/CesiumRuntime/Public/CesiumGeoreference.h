@@ -1,9 +1,11 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
+#include "CesiumEllipsoid.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
+#include "Delegates/Delegate.h"
 #include "GameFramework/Actor.h"
 #include "GeoTransforms.h"
 #include "OriginPlacement.h"
@@ -18,6 +20,18 @@ class UCesiumSubLevelSwitcherComponent;
  * which is triggered from UpdateGeoreference
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
+
+/**
+ * The event that triggers when a georeference's ellipsoid is changed.
+ * This should be used for performing any necessary coordinate changes.
+ * The parameters are (OldEllipsoid, NewEllipsoid).
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+    FGeoreferenceEllipsoidChanged,
+    UCesiumEllipsoid*,
+    OldEllipsoid,
+    UCesiumEllipsoid*,
+    NewEllipsoid);
 
 /**
  * Controls how global geospatial coordinates are mapped to coordinates in the
@@ -41,10 +55,17 @@ public:
   static const double kMinimumScale;
 
   /**
-   * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
-   * persistent level of the calling object's world. If not found, it creates a
-   * new default Georeference.
-   * @param WorldContextObject Any `UObject`.
+   * Finds and returns a CesiumGeoreference in the world. It searches in the
+   * following order:
+   *
+   * 1. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 2. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 3. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -52,6 +73,23 @@ public:
       meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
+
+  /**
+   * Finds and returns the CesiumGeoreference suitable for use with the given
+   * Actor. It searches in the following order:
+   *
+   * 1. A CesiumGeoreference that is an attachment parent of the given Actor.
+   * 2. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 3. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 4. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static ACesiumGeoreference* GetDefaultGeoreferenceForActor(AActor* Actor);
 
   /**
    * A delegate that will be called whenever the Georeference is
@@ -70,9 +108,30 @@ public:
       meta = (DisplayName = "GeoreferenceUpdated"))
   void ReceiveGeoreferenceUpdated();
 
+  /**
+   * An event that will be called whenever the georeference's ellipsoid has
+   * been modified.
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium")
+  FGeoreferenceEllipsoidChanged OnEllipsoidChanged;
+
 #pragma region Properties
 
 private:
+  /**
+   * The Ellipsoid being used by this georeference. The ellipsoid informs how
+   * cartographic coordinates will be interpreted and how they are transformed
+   * into cartesian coordinates.
+   */
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetEllipsoid,
+      BlueprintSetter = SetEllipsoid,
+      meta = (AllowPrivateAccess))
+  UCesiumEllipsoid* Ellipsoid;
+
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
    *
@@ -363,9 +422,25 @@ public:
    * registered with this georeference.
    */
   UFUNCTION(BlueprintGetter)
-  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() {
+  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
     return this->SubLevelSwitcher;
   }
+
+  /**
+   * Returns a pointer to the UCesiumEllipsoid currently being used by this
+   * georeference.
+   */
+  UFUNCTION(BlueprintCallable, BlueprintGetter, Category = "Cesium")
+  UCesiumEllipsoid* GetEllipsoid() const;
+
+  /**
+   * Sets the UCesiumEllipsoid used by this georeference.
+   *
+   * Calling this will cause all tilesets under this georeference to be
+   * reloaded.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetEllipsoid(UCesiumEllipsoid* NewEllipsoid);
 
 #if WITH_EDITOR
   /**
@@ -639,7 +714,8 @@ public:
   /**
    * Places the georeference origin at the camera's current location. Rotates
    * the globe so the current longitude/latitude/height of the camera is at the
-   * Unreal origin. The camera is also teleported to the Unreal origin.
+   * Unreal origin. The camera is also teleported to the new Unreal origin and
+   * rotated so that the view direction is maintained.
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
@@ -648,6 +724,19 @@ public:
    */
   UFUNCTION(Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
+
+  /**
+   * Creates a new Level Instance Actor at the current viewport location, and
+   * attaches the Cesium Sub Level Component to it. You will be prompted for
+   * where to store the new level.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sub-levels.
+   */
+  UFUNCTION(Category = "Cesium")
+  void CreateSubLevelHere();
 #endif
 
 private:
@@ -691,7 +780,7 @@ protected:
 public:
   UE_DEPRECATED(
       "Cesium For Unreal v2.0",
-      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")
+      "Use transformation functions on ACesiumGeoreference and UCesiumEllipsoid instead.")
   GeoTransforms GetGeoTransforms() const noexcept;
 
 private:
@@ -719,14 +808,14 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use LongitudeLatitudeHeightToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+               "Use LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed on UCesiumEllipsoid instead."))
   FVector TransformLongitudeLatitudeHeightToEcef(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
-   * the ellipsoid in meters (z).
+   * Ellipsoid longitude in degrees (x), latitude in degrees (y), and height
+   * above the ellipsoid in meters (z).
    */
   UFUNCTION(
       BlueprintPure,
@@ -734,7 +823,7 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use EarthCenteredEarthFixedToLongitudeLatitudeHeight on CesiumWgs84Ellipsoid instead."))
+               "Use EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight on UCesiumEllipsoid instead."))
   FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
 
   /**
@@ -747,11 +836,12 @@ private:
       meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use EastNorthUpToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+               "Use EastNorthUpToEllipsoidCenteredEllipsoidFixed on UCesiumEllipsoid instead."))
   FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
 
 #pragma endregion
 
+private:
 #pragma region Implementation Details
 
 public:

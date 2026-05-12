@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumOriginShiftComponent.h"
 #include "CesiumGeoreference.h"
@@ -28,20 +28,10 @@ void UCesiumOriginShiftComponent::SetDistance(double NewDistance) {
   this->Distance = NewDistance;
 }
 
-UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
+UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() {
   this->PrimaryComponentTick.bCanEverTick = true;
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
   this->bAutoActivate = true;
-}
-
-void UCesiumOriginShiftComponent::OnRegister() {
-  Super::OnRegister();
-  this->ResolveGlobeAnchor();
-}
-
-void UCesiumOriginShiftComponent::BeginPlay() {
-  Super::BeginPlay();
-  this->ResolveGlobeAnchor();
 }
 
 namespace {
@@ -77,13 +67,18 @@ void UCesiumOriginShiftComponent::TickComponent(
   if (!this->IsActive() || this->Mode == ECesiumOriginShiftMode::Disabled)
     return;
 
-  if (!this->GlobeAnchor)
+  UCesiumGlobeAnchorComponent* GlobeAnchor = this->GetGlobeAnchor();
+  if (!IsValid(GlobeAnchor))
     return;
 
-  ACesiumGeoreference* Georeference = this->GlobeAnchor->ResolveGeoreference();
+  ACesiumGeoreference* Georeference = GlobeAnchor->ResolveGeoreference();
 
-  if (!Georeference)
+  if (!IsValid(Georeference))
     return;
+
+  UCesiumEllipsoid* Ellipsoid = Georeference->GetEllipsoid();
+
+  check(IsValid(Ellipsoid));
 
   UCesiumSubLevelSwitcherComponent* Switcher =
       Georeference->GetSubLevelSwitcher();
@@ -96,12 +91,11 @@ void UCesiumOriginShiftComponent::TickComponent(
   // If we don't have any known sub-levels, and aren't origin shifting outside
   // of sub-levels, then bail quickly to save ourselves a little work.
   if (Sublevels.IsEmpty() &&
-      this->Mode != ECesiumOriginShiftMode::ChangeCesiumGeoreference &&
-      this->Mode != ECesiumOriginShiftMode::ChangeWorldOriginLocation) {
+      this->Mode == ECesiumOriginShiftMode::SwitchSubLevelsOnly) {
     return;
   }
 
-  FVector ActorEcef = this->GlobeAnchor->GetEarthCenteredEarthFixedPosition();
+  FVector ActorEcef = GlobeAnchor->GetEarthCenteredEarthFixedPosition();
 
   ALevelInstance* ClosestActiveLevel = nullptr;
   double ClosestLevelDistance = std::numeric_limits<double>::max();
@@ -120,7 +114,7 @@ void UCesiumOriginShiftComponent::TickComponent(
       continue;
 
     FVector LevelEcef =
-        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+        Ellipsoid->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
             FVector(
                 SubLevelComponent->GetOriginLongitude(),
                 SubLevelComponent->GetOriginLatitude(),
@@ -136,12 +130,15 @@ void UCesiumOriginShiftComponent::TickComponent(
 
   Switcher->SetTargetSubLevel(ClosestActiveLevel);
 
+  // Only shift the origin when we're outside of all sub-levels.
   bool doOriginShift =
       Switcher->GetTargetSubLevel() == nullptr &&
       Switcher->GetCurrentSubLevel() == nullptr &&
       this->Mode != ECesiumOriginShiftMode::SwitchSubLevelsOnly;
 
   if (doOriginShift) {
+    // We're between sub-levels, but we also only want to shift the origin when
+    // the Actor has traveled more than Distance from the old origin.
     AActor* Actor = this->GetOwner();
     doOriginShift =
         IsValid(Actor) && Actor->GetActorLocation().SquaredLength() >
@@ -151,54 +148,8 @@ void UCesiumOriginShiftComponent::TickComponent(
   if (doOriginShift) {
     if (this->Mode == ECesiumOriginShiftMode::ChangeCesiumGeoreference) {
       Georeference->SetOriginEarthCenteredEarthFixed(ActorEcef);
-    } else if (
-        this->Mode == ECesiumOriginShiftMode::ChangeWorldOriginLocation) {
-      UWorld* World = GetWorld();
-      AActor* Actor = this->GetOwner();
-      if (IsValid(World) && IsValid(Actor)) {
-        const FIntVector& OriginLocation = World->OriginLocation;
-        FVector WorldPosition = Actor->GetActorLocation();
-        FIntVector WorldPositionInt(
-            int32(WorldPosition.X),
-            int32(WorldPosition.Y),
-            int32(WorldPosition.Z));
-        int32 X = clampedAdd(OriginLocation.X, WorldPositionInt.X);
-        int32 Y = clampedAdd(OriginLocation.Y, WorldPositionInt.Y);
-        int32 Z = clampedAdd(OriginLocation.Z, WorldPositionInt.Z);
-        FIntVector NewOriginLocation(X, Y, Z);
-        if (NewOriginLocation != OriginLocation) {
-          World->SetNewWorldOrigin(NewOriginLocation);
-        }
-      }
+    } else {
+      check(false && "Missing ECesiumOriginShiftMode implementation.")
     }
-  }
-}
-
-void UCesiumOriginShiftComponent::ResolveGlobeAnchor() {
-  this->GlobeAnchor = nullptr;
-
-  AActor* Owner = this->GetOwner();
-  if (!IsValid(Owner))
-    return;
-
-  this->GlobeAnchor =
-      Owner->FindComponentByClass<UCesiumGlobeAnchorComponent>();
-  if (!IsValid(this->GlobeAnchor)) {
-    // A globe anchor is missing and required, so add one.
-    this->GlobeAnchor =
-        Cast<UCesiumGlobeAnchorComponent>(Owner->AddComponentByClass(
-            UCesiumGlobeAnchorComponent::StaticClass(),
-            false,
-            FTransform::Identity,
-            false));
-    Owner->AddInstanceComponent(this->GlobeAnchor);
-
-    // Force the Editor to refresh to show the newly-added component
-#if WITH_EDITOR
-    Owner->Modify();
-    if (Owner->IsSelectedInEditor()) {
-      GEditor->SelectActor(Owner, true, true, true, true);
-    }
-#endif
   }
 }

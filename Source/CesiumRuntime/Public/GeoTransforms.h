@@ -1,10 +1,11 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "HAL/Platform.h"
+#include "Math/Matrix.h"
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 

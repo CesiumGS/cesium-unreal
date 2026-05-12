@@ -1,10 +1,12 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumRasterOverlay.h"
 #include "CoreMinimal.h"
 #include "CesiumIonRasterOverlay.generated.h"
+
+class UCesiumIonServer;
 
 /**
  * A raster overlay that uses an IMAGERY asset from Cesium ion.
@@ -37,11 +39,31 @@ public:
    * endpoint can be specified.
    */
   UPROPERTY(
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage = "Use CesiumIonServer instead."))
+  FString IonAssetEndpointUrl_DEPRECATED;
+
+  /**
+   * The Cesium ion Server from which this raster overlay is loaded.
+   */
+  UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
       AdvancedDisplay)
-  FString IonAssetEndpointUrl;
+  UCesiumIonServer* CesiumIonServer;
+
+  /**
+   * Extra options to pass to Cesium ion when accessing the asset. This
+   * should be a JSON string.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      AdvancedDisplay)
+  FString AssetOptions;
 
   /**
    * Check if the Cesium ion token used to access this raster overlay is working
@@ -50,8 +72,10 @@ public:
   UFUNCTION(CallInEditor, Category = "Cesium")
   void TroubleshootToken();
 
+  // UActorComponent overrides
+  virtual void PostLoad() override;
+
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
-      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
-      override;
+  virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
+      const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
 };

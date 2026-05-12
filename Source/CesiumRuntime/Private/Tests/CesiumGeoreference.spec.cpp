@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeoreference.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -12,8 +12,10 @@ using namespace CesiumUtility;
 
 BEGIN_DEFINE_SPEC(
     FCesiumGeoreferenceSpec,
-    "Cesium.Georeference",
-    EAutomationTestFlags::ApplicationContextMask |
+    "Cesium.Unit.Georeference",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<ACesiumGeoreference> pGeoreferenceNullIsland;

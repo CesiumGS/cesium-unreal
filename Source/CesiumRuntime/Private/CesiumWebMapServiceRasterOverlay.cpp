@@ -1,15 +1,19 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumWebMapServiceRasterOverlay.h"
 #include "Algo/Transform.h"
-#include "Cesium3DTilesSelection/WebMapServiceRasterOverlay.h"
+#include "CesiumRasterOverlays/WebMapServiceRasterOverlay.h"
 #include "CesiumRuntime.h"
 
-std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
+std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
 UCesiumWebMapServiceRasterOverlay::CreateOverlay(
-    const Cesium3DTilesSelection::RasterOverlayOptions& options) {
+    const CesiumRasterOverlays::RasterOverlayOptions& options) {
+  if (this->BaseUrl.IsEmpty()) {
+    // Don't create an overlay with an empty base URL.
+    return nullptr;
+  }
 
-  Cesium3DTilesSelection::WebMapServiceRasterOverlayOptions wmsOptions;
+  CesiumRasterOverlays::WebMapServiceRasterOverlayOptions wmsOptions;
   if (MaximumLevel > MinimumLevel) {
     wmsOptions.minimumLevel = MinimumLevel;
     wmsOptions.maximumLevel = MaximumLevel;
@@ -17,10 +21,19 @@ UCesiumWebMapServiceRasterOverlay::CreateOverlay(
   wmsOptions.layers = TCHAR_TO_UTF8(*Layers);
   wmsOptions.tileWidth = TileWidth;
   wmsOptions.tileHeight = TileHeight;
-  return std::make_unique<Cesium3DTilesSelection::WebMapServiceRasterOverlay>(
+
+  std::vector<CesiumAsync::IAssetAccessor::THeader> headers;
+
+  for (const auto& [Key, Value] : this->RequestHeaders) {
+    headers.push_back(CesiumAsync::IAssetAccessor::THeader{
+        TCHAR_TO_UTF8(*Key),
+        TCHAR_TO_UTF8(*Value)});
+  }
+
+  return std::make_unique<CesiumRasterOverlays::WebMapServiceRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       TCHAR_TO_UTF8(*this->BaseUrl),
-      std::vector<CesiumAsync::IAssetAccessor::THeader>(),
+      headers,
       wmsOptions,
       options);
 }

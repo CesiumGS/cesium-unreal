@@ -1,3 +1,5 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumSourceControl.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "HAL/PlatformFileManager.h"

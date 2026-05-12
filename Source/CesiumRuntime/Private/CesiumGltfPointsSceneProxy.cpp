@@ -1,14 +1,14 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
 #include "CesiumGltfPointsSceneProxy.h"
 #include "CesiumGltfPointsComponent.h"
+#include "DataDrivenShaderPlatformInfo.h"
 #include "Engine/StaticMesh.h"
 #include "RHIResources.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "SceneInterface.h"
+#include "SceneView.h"
 #include "StaticMeshResources.h"
-
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION > 1
-#include "DataDrivenShaderPlatformInfo.h"
-#endif
 
 FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
     : PointCloudShading(),
@@ -19,7 +19,8 @@ FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
 
 void FCesiumGltfPointsSceneProxyTilesetData::UpdateFromComponent(
     UCesiumGltfPointsComponent* Component) {
-  ACesium3DTileset* Tileset = Component->pTilesetActor;
+  CesiumPrimitiveData& primData = Component->getPrimitiveData();
+  ACesium3DTileset* Tileset = primData.pTilesetActor;
   PointCloudShading = Tileset->GetPointCloudShading();
   MaximumScreenSpaceError = Tileset->MaximumScreenSpaceError;
   UsesAdditiveRefinement = Component->UsesAdditiveRefinement;
@@ -34,7 +35,7 @@ SIZE_T FCesiumGltfPointsSceneProxy::GetTypeHash() const {
 
 FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
     UCesiumGltfPointsComponent* InComponent,
-    ERHIFeatureLevel::Type InFeatureLevel)
+    FSceneInterfaceWrapper InSceneInterfaceParams)
     : FPrimitiveSceneProxy(InComponent),
       RenderData(InComponent->GetStaticMesh()->GetRenderData()),
       NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
@@ -42,17 +43,19 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
       TilesetData(),
       AttenuationVertexFactory(
-          InFeatureLevel,
+          InSceneInterfaceParams.RHIFeatureLevelType,
           &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
       AttenuationIndexBuffer(NumPoints, bAttenuationSupported),
       Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
+      MaterialRelevance(
+          InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
 
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 
-void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources() {
-  AttenuationVertexFactory.InitResource();
-  AttenuationIndexBuffer.InitResource();
+void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
+    FRHICommandListBase& RHICmdList) {
+  AttenuationVertexFactory.InitResource(RHICmdList);
+  AttenuationIndexBuffer.InitResource(RHICmdList);
 }
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {

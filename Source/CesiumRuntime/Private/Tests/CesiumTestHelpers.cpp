@@ -1,8 +1,13 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumTestHelpers.h"
 #include "CesiumGeoreference.h"
 #include "Engine/Engine.h"
+
+#if WITH_EDITOR
+#include "Editor/EditorPerformanceSettings.h"
+#include "Interfaces/IPluginManager.h"
+#endif
 
 namespace CesiumTestHelpers {
 
@@ -61,6 +66,37 @@ FName getUniqueTag(AActor* pActor) {
 
 FName getUniqueTag(UActorComponent* pComponent) {
   return FName(FString::Printf(TEXT("%lld"), pComponent));
+}
+
+#if WITH_EDITOR
+namespace {
+size_t timesAllowingEditorTick = 0;
+bool originalEditorTickState = true;
+} // namespace
+#endif
+
+void pushAllowTickInEditor() {
+#if WITH_EDITOR
+  if (timesAllowingEditorTick == 0) {
+    UEditorPerformanceSettings* pSettings =
+        GetMutableDefault<UEditorPerformanceSettings>();
+    originalEditorTickState = pSettings->bThrottleCPUWhenNotForeground;
+    pSettings->bThrottleCPUWhenNotForeground = false;
+  }
+
+  ++timesAllowingEditorTick;
+#endif
+}
+
+void popAllowTickInEditor() {
+#if WITH_EDITOR
+  --timesAllowingEditorTick;
+  if (timesAllowingEditorTick == 0) {
+    UEditorPerformanceSettings* pSettings =
+        GetMutableDefault<UEditorPerformanceSettings>();
+    pSettings->bThrottleCPUWhenNotForeground = originalEditorTickState;
+  }
+#endif
 }
 
 void trackForPlay(AActor* pEditorActor) {

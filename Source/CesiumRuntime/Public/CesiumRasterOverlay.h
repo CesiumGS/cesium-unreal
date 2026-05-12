@@ -1,9 +1,10 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
-#include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "CesiumRasterOverlayLoadFailureDetails.h"
+#include "CesiumRasterOverlays/RasterOverlay.h"
+#include "CesiumUtility/IntrusivePointer.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/Texture.h"
@@ -78,17 +79,27 @@ public:
   UCesiumRasterOverlay();
 
   /**
-   * Adds this raster overlay to its owning Cesium 3D Tileset Actor. If the
-   * overlay is already added or if this component's Owner is not a Cesium 3D
-   * Tileset, this method does nothing.
+   * Displays this raster overlay on its owning Cesium 3D Tileset Actor, without
+   * changing its activation state. It is usually better to call Activate
+   * rather than this function, in order to ensure that the component is also
+   * activated. Otherwise, if the Cesium3DTileset is reloaded for any reason,
+   * this overlay will no longer be shown.
+   *
+   * If the overlay is already added or if this component's Owner is not a
+   * Cesium 3D Tileset, this method does nothing.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void AddToTileset();
 
   /**
-   * Removes this raster overlay from its owning Cesium 3D Tileset Actor. If the
-   * overlay is not yet added or if this component's Owner is not a Cesium 3D
-   * Tileset, this method does nothing.
+   * Stops displaying this raster overlay on its owning Cesium 3D Tileset Actor.
+   * It is usually better to call Deactivate rather than this function, in order
+   * to ensure that the component is also deactivated. Otherwise, if the
+   * component remains active and the Cesium3DTileset is reloaded for any
+   * reason, this overlay will reappear.
+   *
+   * If the overlay is not yet added or if this component's Owner is not a
+   * Cesium 3D Tileset, this method does nothing.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void RemoveFromTileset();
@@ -96,9 +107,11 @@ public:
   /**
    * Refreshes this overlay by removing from its owning Cesium 3D Tileset Actor
    * and re-adding it. If this component's Owner is not a Cesium 3D Tileset
-   * Actor, this method does nothing.
+   * Actor, this method does nothing. If this component is not active, the
+   * overlay will be removed from the Cesium3DTileset if already present but not
+   * re-added.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
   void Refresh();
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
@@ -125,8 +138,32 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetSubTileCacheBytes(int64 Value);
 
+  /**
+   * Activates this raster overlay, which will display it on the Cesium3DTileset
+   * to which the component is attached, if it isn't already displayed. The
+   * overlay will continue to be shown on the tileset until it is deactivated.
+   *
+   * If the overlay is already displayed on the Cesium3DTileset, calling this
+   * function will not cause it to pick up any new values for properties that
+   * have been modified since it was added. To do that, call Refresh.
+   *
+   * If you created this overlay component via Blueprints, consider setting the
+   * "Auto Activate" property to false on the "Add Component" node and calling
+   * Activate after setting all the desired properties. This will avoid the need
+   * to call Refresh, and will ensure the overlay is not loaded multiple times.
+   *
+   * @param bReset  Whether the activation should happen even if ShouldActivate
+   * returns false.
+   */
   virtual void Activate(bool bReset) override;
+
+  /**
+   * Deactivates this raster overlay. This will stop displaying it on the
+   * Cesium3DTileset to which the component is attached. The overlay will not be
+   * shown again until the component is re-activated.
+   */
   virtual void Deactivate() override;
+
   virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
   virtual bool IsReadyForFinishDestroy() override;
 
@@ -178,12 +215,12 @@ protected:
   /**
    * The maximum number of bytes to use to cache sub-tiles in memory.
    *
-   * This is used by provider types, that have an underlying tiling
-   * scheme that may not align with the tiling scheme of the geometry tiles on
-   * which the raster overlay tiles are draped. Because a single sub-tile may
-   * overlap multiple geometry tiles, it is useful to cache loaded sub-tiles
-   * in memory in case they're needed again soon. This property controls the
-   * maximum size of that cache.
+   * This is used by provider types that have an underlying tiling scheme that
+   * may not align with the tiling scheme of the geometry tiles on which the
+   * raster overlay tiles are draped. Because a single sub-tile may overlap
+   * multiple geometry tiles, it is useful to cache loaded sub-tiles in memory
+   * in case they're needed again soon. This property controls the maximum size
+   * of that cache.
    */
   UPROPERTY(
       EditAnywhere,
@@ -207,18 +244,19 @@ protected:
 
   Cesium3DTilesSelection::Tileset* FindTileset() const;
 
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
-      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
+  virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay>
+  CreateOverlay(const CesiumRasterOverlays::RasterOverlayOptions& options = {})
       PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
 
   virtual void OnAdd(
       Cesium3DTilesSelection::Tileset* pTileset,
-      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
+      CesiumRasterOverlays::RasterOverlay* pOverlay) {}
   virtual void OnRemove(
       Cesium3DTilesSelection::Tileset* pTileset,
-      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
+      CesiumRasterOverlays::RasterOverlay* pOverlay) {}
 
 private:
-  Cesium3DTilesSelection::RasterOverlay* _pOverlay;
+  CesiumUtility::IntrusivePointer<CesiumRasterOverlays::RasterOverlay>
+      _pOverlay;
   int32 _overlaysBeingDestroyed;
 };

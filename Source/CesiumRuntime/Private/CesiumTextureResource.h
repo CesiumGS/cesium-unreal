@@ -1,0 +1,154 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
+#pragma once
+
+#include "CesiumCommon.h"
+#include "Engine/Texture.h"
+#include "TextureResource.h"
+#include <CesiumAsync/SharedAssetDepot.h>
+#include <CesiumGltf/ImageAsset.h>
+
+class FCesiumTextureResource;
+
+struct FCesiumTextureResourceDeleter {
+  void operator()(FCesiumTextureResource* p);
+};
+
+using FCesiumTextureResourceUniquePtr =
+    TUniquePtr<FCesiumTextureResource, FCesiumTextureResourceDeleter>;
+
+/**
+ * The base class for Cesium texture resources, making Cesium's texture data
+ * available to Unreal's RHI. The actual creation of the RHI texture is deferred
+ * to a pure virtual method, `InitializeTextureRHI`.
+ */
+class FCesiumTextureResource : public FTextureResource {
+public:
+  /**
+   * Create a new FCesiumTextureResource from an `ImageAsset` and the given
+   * sampling parameters. This method is intended to be called from a worker
+   * thread, not from the game or render thread.
+   *
+   * @param imageCesium The image data from which to create the texture
+   * resource. After this method returns, the `pixelData` will be empty, and
+   * `sizeBytes` will be set to its previous size.
+   * @param textureGroup The texture group in which to create this texture.
+   * @param overridePixelFormat Overrides the pixel format. If std::nullopt, the
+   * format is inferred from the `ImageAsset`.
+   * @param filter The texture filtering to use when sampling this texture.
+   * @param addressX The X texture addressing mode to use when sampling this
+   * texture.
+   * @param addressY The Y texture addressing mode to use when sampling this
+   * texture.
+   * @param sRGB True if the image data stored in this texture should be treated
+   * as sRGB.
+   * @param needsMipMaps True if this texture requires mipmaps. They will be
+   * generated if they don't already exist.
+   * @return The created texture resource, or nullptr if a texture could not be
+   * created.
+   */
+  static FCesiumTextureResourceUniquePtr CreateNew(
+      CesiumGltf::ImageAsset& imageCesium,
+      TextureGroup textureGroup,
+      const std::optional<EPixelFormat>& overridePixelFormat,
+      TextureFilter filter,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      bool sRGB,
+      bool needsMipMaps);
+
+  /**
+   * Create a new FCesiumTextureResource wrapping an existing one and providing
+   * new sampling parameters. This method is intended to be called from a worker
+   * thread, not from the game or render thread.
+   */
+  static FCesiumTextureResourceUniquePtr CreateWrapped(
+      const TSharedPtr<FCesiumTextureResource>& pExistingResource,
+      TextureGroup textureGroup,
+      TextureFilter filter,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      bool sRGB,
+      bool useMipMapsIfAvailable);
+
+  /**
+   * Create a new empty FCesiumTextureResource with the given parameters. Useful
+   * for textures that are procedurally generated or updated at runtime.
+   *
+   * @param textureGroup The texture group in which to create this texture.
+   * @param width The width of the texture.
+   * @param height The height of the texture.
+   * @param depth The depth of the texture.
+   * @param format The pixel format of the texture.
+   * @param filter The texture filtering to use when sampling this texture.
+   * @param addressX The X texture addressing mode to use when sampling this
+   * texture.
+   * @param addressY The Y texture addressing mode to use when sampling this
+   * texture.
+   * @param sRGB True if the image data stored in this texture should be treated
+   * as sRGB.
+   * @return The created texture resource, or nullptr if a texture could not be
+   * created.
+   */
+  static FCesiumTextureResourceUniquePtr CreateEmpty(
+      TextureGroup textureGroup,
+      uint32 width,
+      uint32 height,
+      uint32 depth,
+      EPixelFormat format,
+      TextureFilter filter,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      bool sRGB);
+
+  /**
+   * Destroys an FCesiumTextureResource. Unreal TextureResources must be
+   * destroyed on the render thread, so it is important not to call `delete`
+   * directly.
+   *
+   * \param p
+   */
+  static void Destroy(FCesiumTextureResource* p);
+
+  FCesiumTextureResource(
+      TextureGroup textureGroup,
+      uint32 width,
+      uint32 height,
+      uint32 depth,
+      EPixelFormat format,
+      TextureFilter filter,
+      TextureAddress addressX,
+      TextureAddress addressY,
+      bool sRGB,
+      bool useMipsIfAvailable,
+      uint32 extData,
+      bool isPrimary);
+
+  uint32 GetSizeX() const override { return this->_width; }
+  uint32 GetSizeY() const override { return this->_height; }
+  uint32 GetSizeZ() const override { return this->_depth; }
+
+  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
+  virtual void ReleaseRHI() override;
+
+#if STATS
+  static FName TextureGroupStatFNames[TEXTUREGROUP_MAX];
+#endif
+
+protected:
+  virtual FTextureRHIRef InitializeTextureRHI() = 0;
+
+  TextureGroup _textureGroup;
+  uint32 _width;
+  uint32 _height;
+  uint32 _depth;
+  EPixelFormat _format;
+  ESamplerFilter _filter;
+  ESamplerAddressMode _addressX;
+  ESamplerAddressMode _addressY;
+  bool _useMipsIfAvailable;
+  uint32 _platformExtData;
+  FName _lodGroupStatName;
+  uint64 _textureSize;
+  bool _isPrimary;
+};

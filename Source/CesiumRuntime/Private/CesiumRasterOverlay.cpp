@@ -1,11 +1,11 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumRasterOverlay.h"
 #include "Async/Async.h"
-#include "Cesium3DTilesSelection/RasterOverlayLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "CesiumAsync/IAssetResponse.h"
+#include "CesiumRasterOverlays/RasterOverlayLoadFailureDetails.h"
 #include "CesiumRuntime.h"
 
 FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
@@ -20,7 +20,11 @@ UCesiumRasterOverlay::UCesiumRasterOverlay()
   // don't need them.
   PrimaryComponentTick.bCanEverTick = false;
 
-  // ...
+  // Allow DestroyComponent to be called from Blueprints by anyone. Without
+  // this, only the Actor (Cesium3DTileset) itself can destroy raster overlays.
+  // That's really annoying because it's fairly common to dynamically add/remove
+  // overlays at runtime.
+  bAllowAnyoneToDestroyMe = true;
 }
 
 #if WITH_EDITOR
@@ -43,7 +47,8 @@ void UCesiumRasterOverlay::AddToTileset() {
     return;
   }
 
-  Cesium3DTilesSelection::RasterOverlayOptions options{};
+  CesiumRasterOverlays::RasterOverlayOptions options{};
+  options.ellipsoid = pTileset->getOptions().ellipsoid;
   options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.maximumTextureSize = this->MaximumTextureSize;
@@ -51,18 +56,17 @@ void UCesiumRasterOverlay::AddToTileset() {
   options.showCreditsOnScreen = this->ShowCreditsOnScreen;
   options.rendererOptions = &this->rendererOptions;
   options.loadErrorCallback =
-      [this](const Cesium3DTilesSelection::RasterOverlayLoadFailureDetails&
+      [this](const CesiumRasterOverlays::RasterOverlayLoadFailureDetails&
                  details) {
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::CesiumIon) ==
-            uint8_t(Cesium3DTilesSelection::RasterOverlayLoadType::CesiumIon));
+            uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::CesiumIon));
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::TileProvider) ==
-            uint8_t(
-                Cesium3DTilesSelection::RasterOverlayLoadType::TileProvider));
+            uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::TileProvider));
         static_assert(
             uint8_t(ECesiumRasterOverlayLoadType::Unknown) ==
-            uint8_t(Cesium3DTilesSelection::RasterOverlayLoadType::Unknown));
+            uint8_t(CesiumRasterOverlays::RasterOverlayLoadType::Unknown));
 
         uint8_t typeValue = uint8_t(details.type);
         assert(
@@ -90,7 +94,7 @@ void UCesiumRasterOverlay::AddToTileset() {
             });
       };
 
-  std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
+  std::unique_ptr<CesiumRasterOverlays::RasterOverlay> pOverlay =
       this->CreateOverlay(options);
 
   if (pOverlay) {
@@ -122,12 +126,14 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
 
   this->OnRemove(pTileset, this->_pOverlay);
   pTileset->getOverlays().remove(this->_pOverlay);
-  this->_pOverlay = nullptr;
+  this->_pOverlay.reset();
 }
 
 void UCesiumRasterOverlay::Refresh() {
   this->RemoveFromTileset();
-  this->AddToTileset();
+  if (this->IsActive()) {
+    this->AddToTileset();
+  }
 }
 
 double UCesiumRasterOverlay::GetMaximumScreenSpaceError() const {

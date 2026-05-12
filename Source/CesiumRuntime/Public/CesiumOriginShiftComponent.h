@@ -1,8 +1,8 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
-#include "Components/ActorComponent.h"
+#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CoreMinimal.h"
 #include "CesiumOriginShiftComponent.generated.h"
 
@@ -40,18 +40,6 @@ enum class ECesiumOriginShiftMode : uint8 {
    * objects _will_ be moved when the origin is shifted.
    */
   ChangeCesiumGeoreference,
-
-  /**
-   * Unreal's built-in "World Origin Location" will change as the Actor moves in
-   * order to maintain small, precise coordinate values near the Actor. Because
-   * this is a translation only (no rotation), +Z will not stay aligned with the
-   * globe's local "up" direction. Any objects that are not anchored to the
-   * globe with a CesiumGlobeAnchorComponent will appear to move when the Actor
-   * enters a sub-level, but objects will generally maintain their position
-   * otherwise, as long as they respond correctly to Unreal's ApplyWorldOffset
-   * method.
-   */
-  ChangeWorldOriginLocation
 };
 
 /**
@@ -73,7 +61,8 @@ enum class ECesiumOriginShiftMode : uint8 {
  * sub-level is active.
  */
 UCLASS(ClassGroup = "Cesium", Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumOriginShiftComponent : public UActorComponent {
+class CESIUMRUNTIME_API UCesiumOriginShiftComponent
+    : public UCesiumGlobeAnchoredActorComponent {
   GENERATED_BODY()
 
 #pragma region Properties
@@ -130,7 +119,7 @@ public:
    * Gets the maximum distance between the origin of the Unreal coordinate
    * system and the Actor to which this component is attached. When this
    * distance is exceeded, the origin is shifted to bring it close to the Actor.
-   * This property is ignored if the Mode proeprty is set to "Disabled" or
+   * This property is ignored if the Mode property is set to "Disabled" or
    * "Switch Sub Levels Only".
    *
    * When the value of this property is 0.0, the origin is shifted continuously.
@@ -142,7 +131,7 @@ public:
    * Sets the maximum distance between the origin of the Unreal coordinate
    * system and the Actor to which this component is attached. When this
    * distance is exceeded, the origin is shifted to bring it close to the Actor.
-   * This property is ignored if the Mode proeprty is set to "Disabled" or
+   * This property is ignored if the Mode property is set to "Disabled" or
    * "Switch Sub Levels Only".
    *
    * When the value of this property is 0.0, the origin is shifted continuously.
@@ -155,18 +144,8 @@ public:
   UCesiumOriginShiftComponent();
 
 protected:
-  virtual void OnRegister() override;
-  virtual void BeginPlay() override;
   virtual void TickComponent(
       float DeltaTime,
       ELevelTick TickType,
       FActorComponentTickFunction* ThisTickFunction) override;
-
-private:
-  void ResolveGlobeAnchor();
-
-  // The globe anchor attached to the same Actor as this component. Don't
-  // save/load or copy this. It is set in BeginPlay.
-  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
-  UCesiumGlobeAnchorComponent* GlobeAnchor;
 };

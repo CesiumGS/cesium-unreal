@@ -1,12 +1,26 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumMaterialUserData.h"
+#include "CesiumCommon.h"
 #include "Materials/MaterialInstance.h"
 #include "Runtime/Launch/Resources/Version.h"
 
+#if ENGINE_VERSION_5_6_OR_HIGHER
+void UCesiumMaterialUserData::PostEditChangeOwner(
+    const FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeOwner(PropertyChangedEvent);
+
+  this->UpdateLayerNames();
+}
+#else
 void UCesiumMaterialUserData::PostEditChangeOwner() {
   Super::PostEditChangeOwner();
 
+  this->UpdateLayerNames();
+}
+#endif
+
+void UCesiumMaterialUserData::UpdateLayerNames() {
 #if WITH_EDITORONLY_DATA
   this->LayerNames.Empty();
 
@@ -14,7 +28,6 @@ void UCesiumMaterialUserData::PostEditChangeOwner() {
   if (pMaterial) {
     const FStaticParameterSet& parameters = pMaterial->GetStaticParameters();
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
     const TArray<FText>& layerNames =
         parameters.EditorOnly.MaterialLayers.LayerNames;
 
@@ -23,15 +36,6 @@ void UCesiumMaterialUserData::PostEditChangeOwner() {
     for (int32 i = 0; i < layerNames.Num(); ++i) {
       this->LayerNames.Add(layerNames[i].ToString());
     }
-#else
-    const auto& layerParameters = parameters.MaterialLayers;
-
-    this->LayerNames.Reserve(layerParameters.Layers.Num());
-
-    for (int32 i = 0; i < layerParameters.Layers.Num(); ++i) {
-      this->LayerNames.Add(layerParameters.GetLayerName(i).ToString());
-    }
-#endif
   }
 #endif
 }

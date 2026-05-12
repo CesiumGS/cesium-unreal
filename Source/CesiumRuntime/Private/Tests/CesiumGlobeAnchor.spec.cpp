@@ -1,4 +1,4 @@
-// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeoreference.h"
 #include "CesiumGlobeAnchorComponent.h"
@@ -8,22 +8,21 @@
 
 BEGIN_DEFINE_SPEC(
     FCesiumGlobeAnchorSpec,
-    "Cesium.GlobeAnchor",
-    EAutomationTestFlags::ApplicationContextMask |
+    "Cesium.Unit.GlobeAnchor",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext |
+        EAutomationTestFlags::ServerContext |
+        EAutomationTestFlags::CommandletContext |
         EAutomationTestFlags::ProductFilter)
 
 TObjectPtr<AActor> pActor;
 TObjectPtr<UCesiumGlobeAnchorComponent> pGlobeAnchor;
+TObjectPtr<UCesiumEllipsoid> pEllipsoid;
 
 END_DEFINE_SPEC(FCesiumGlobeAnchorSpec)
 
 void FCesiumGlobeAnchorSpec::Define() {
   BeforeEach([this]() {
     UWorld* pWorld = CesiumTestHelpers::getGlobalWorldContext();
-    ACesiumGeoreference* pGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(pWorld);
-    pGeoreference->SetOriginLongitudeLatitudeHeight(FVector(1.0, 2.0, 3.0));
-
     this->pActor = pWorld->SpawnActor<AActor>();
     this->pActor->AddComponentByClass(
         USceneComponent::StaticClass(),
@@ -31,6 +30,14 @@ void FCesiumGlobeAnchorSpec::Define() {
         FTransform::Identity,
         false);
     this->pActor->SetActorRelativeTransform(FTransform());
+
+    this->pEllipsoid = NewObject<UCesiumEllipsoid>();
+    this->pEllipsoid->SetRadii(UCesiumWgs84Ellipsoid::GetRadii());
+
+    ACesiumGeoreference* pGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(pActor);
+    pGeoreference->SetOriginLongitudeLatitudeHeight(FVector(1.0, 2.0, 3.0));
+    pGeoreference->SetEllipsoid(this->pEllipsoid);
 
     this->pGlobeAnchor =
         Cast<UCesiumGlobeAnchorComponent>(pActor->AddComponentByClass(
@@ -112,6 +119,46 @@ void FCesiumGlobeAnchorSpec::Define() {
         "globe position",
         this->pGlobeAnchor->GetLongitudeLatitudeHeight(),
         beforeLLH);
+  });
+
+  It("doesn't update anchor when DetectTransformChanges is false", [this]() {
+    FVector beforeLLH = this->pGlobeAnchor->GetLongitudeLatitudeHeight();
+
+    this->pGlobeAnchor->SetDetectTransformChanges(false);
+    this->pActor->SetActorLocation(FVector(2000.0, 4000.0, 6000.0));
+
+    // Globe position doesn't update while unsubscribed
+    TestEqual(
+        "globe position when DetectTransformChanges is false",
+        this->pGlobeAnchor->GetLongitudeLatitudeHeight(),
+        beforeLLH);
+
+    // After we re-subscribe, actor transform should be maintained and globe
+    // transform should be updated.
+    this->pGlobeAnchor->SetDetectTransformChanges(true);
+    TestEqual(
+        "actor position",
+        this->pActor->GetActorLocation(),
+        FVector(2000.0, 4000.0, 6000.0));
+    TestNotEqual(
+        "globe position when DetectTransformChanges is true",
+        this->pGlobeAnchor->GetLongitudeLatitudeHeight(),
+        beforeLLH);
+  });
+
+  It("updates after Sync() when DetectTransformChanges is false", [this]() {
+    FVector beforeLLH = this->pGlobeAnchor->GetLongitudeLatitudeHeight();
+
+    this->pGlobeAnchor->SetDetectTransformChanges(false);
+    this->pActor->SetActorLocation(FVector(1000.0, 2000.0, 3000.0));
+
+    this->pGlobeAnchor->Sync();
+    // Globe position has been updated even though GlobeAnchor is unsubscribed.
+    TestNotEqual(
+        "globe position when DetectTransformChanges is false before Sync()",
+        this->pGlobeAnchor->GetLongitudeLatitudeHeight(),
+        beforeLLH);
+    this->pGlobeAnchor->SetDetectTransformChanges(true);
   });
 
   It("adjusts orientation for globe when actor position is set immediately after adding anchor",
@@ -220,4 +267,40 @@ void FCesiumGlobeAnchorSpec::Define() {
 
        TestEqual("up", actualEcefUp, surfaceNormal);
      });
+
+  It("gives correct results for different ellipsoids", [this]() {
+    const FVector Position = FVector(-20.0, -10.0, 1000.0);
+
+    // Check with WGS84 ellipsoid (the default)
+    this->pGlobeAnchor->MoveToLongitudeLatitudeHeight(Position);
+
+    FVector wgs84EcefPos =
+        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+            Position);
+
+    TestEqual(
+        "ecef",
+        this->pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+        wgs84EcefPos);
+
+    // Check with unit ellipsoid
+    TObjectPtr<UCesiumEllipsoid> pUnitEllipsoid = NewObject<UCesiumEllipsoid>();
+    pUnitEllipsoid->SetRadii(FVector::One());
+
+    ACesiumGeoreference* pGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->pActor);
+    pGeoreference->SetEllipsoid(pUnitEllipsoid);
+
+    this->pGlobeAnchor->MoveToLongitudeLatitudeHeight(Position);
+
+    FVector unitEcefPos =
+        pUnitEllipsoid
+            ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
+                Position);
+
+    TestEqual(
+        "ecef",
+        this->pGlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+        unitEcefPos);
+  });
 }

@@ -1,0 +1,34 @@
+name: Install Unreal Engine
+inputs:
+  unreal-engine-zip:
+    required: true
+    type: string
+  aws-access-key-id:
+    required: true
+    type: string
+  aws-secret-access-key:
+    required: true
+    type: string
+  unreal-program-name:
+    required: true
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Download Unreal Engine
+      env:
+        AWS_REGION: us-east-1
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+      shell: bash
+      run: |
+        df -h
+        aws s3 cp ${{ inputs.unreal-engine-zip }} ./ue.zip --no-progress
+    - name: Unzip Unreal Engine
+      shell: bash
+      run: |
+        df -h
+        unzip -q ue.zip "${{ inputs.unreal-program-name }}/Engine/*" -d $HOME -x $(cat "$GITHUB_WORKSPACE/.github/actions/install-unreal-macos/exclude-from-unzip.lst")
+        df -h
+        rm ue.zip
+        df -h

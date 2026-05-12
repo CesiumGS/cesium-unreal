@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -28,4 +28,11 @@ public:
    * @return The world origin
    */
   static glm::dvec4 getWorldOrigin4D(const AActor* actor);
+
+  static bool shouldValidateFlags(UObject* object);
+  static void validateActorFlags(AActor* actor);
+  static void validateActorComponentFlags(UActorComponent* component);
+
+private:
+  static void validatePublicFlag(UObject* object, const FString& label);
 };
