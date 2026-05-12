@@ -196,6 +196,7 @@ void populateSilhouetteNormals(
     const CesiumGltf::AccessorView<TNormal>& silhouetteNormals,
     FStaticMeshVertexBuffer& edgeVertexBuffer) {
   size_t silhouetteEdgeCount = visibleEdges.silhouetteEdgeIndices.size();
+
   if (silhouetteNormals.status() != AccessorViewStatus::Valid) {
     UE_LOG(
         LogCesium,
@@ -204,25 +205,52 @@ void populateSilhouetteNormals(
             "Invalid accessor for silhouette normals in EXT_mesh_primitive_edges_visibility;"
             "silhouette edges will be hidden."));
 
-    // Ignore silhouette edges as a fallback.
+    constexpr float hidden(
+        ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::HIDDEN);
+
     for (size_t i = 0; i < silhouetteEdgeCount; i++) {
       size_t edgeIndex = visibleEdges.silhouetteEdgeIndices[i];
-      edgeVertexBuffer.SetVertexUV(edgeIndex * 2, 0, FVector2f::Zero());
-      edgeVertexBuffer.SetVertexUV(edgeIndex * 2 + 1, 0, FVector2f::Zero());
+      uint32 edgeVertexIndexA = edgeIndex * 2;
+      uint32 edgeVertexIndexB = edgeIndex * 2 + 1;
+      edgeVertexBuffer.SetVertexUV(edgeVertexIndexA, hidden, FVector2f::Zero());
+      edgeVertexBuffer.SetVertexUV(edgeVertexIndexB, hidden, FVector2f::Zero());
     }
     return;
   }
 
+  auto writeSilhouetteNormals = [&edgeVertexBuffer](
+                                    uint32 index,
+                                    const glm::vec3& normalA,
+                                    const glm::vec3& normalB) {
+    constexpr float silhouette(
+        ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE);
+
+    // Although it is tempting to pass both silhouette normals through the
+    // tangents, the TangentX value gets transformed (or recomputed?) by the
+    // time it is passed to the Unreal material. It is more reliable to pass the
+    // value through the UV coordinates.
+    edgeVertexBuffer.SetVertexTangents(
+        index,
+        FVector3f::Zero(),
+        FVector3f::Zero(),
+        FVector3f(normalA.x, -normalA.y, normalA.z));
+
+    edgeVertexBuffer.SetVertexUV(index, 0, FVector2f(silhouette, normalB.x));
+    edgeVertexBuffer.SetVertexUV(index, 1, FVector2f(-normalB.y, normalB.z));
+  };
+
   for (size_t i = 0; i < silhouetteEdgeCount; i++) {
     size_t edgeIndex = visibleEdges.silhouetteEdgeIndices[i];
+    uint32 edgeVertexIndexA = edgeIndex * 2;
+    uint32 edgeVertexIndexB = edgeIndex * 2 + 1;
     CESIUM_ASSERT(
         visibleEdges.edgeTypes[edgeIndex] ==
         ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE);
 
     if (int64_t(i) * 2 + 1 >= silhouetteNormals.size()) {
       // Protect against out-of-bounds access, ignoring the edge as a fallback.
-      edgeVertexBuffer.SetVertexUV(edgeIndex * 2, 0, FVector2f::Zero());
-      edgeVertexBuffer.SetVertexUV(edgeIndex * 2 + 1, 0, FVector2f::Zero());
+      edgeVertexBuffer.SetVertexUV(edgeVertexIndexA, 0, FVector2f::Zero());
+      edgeVertexBuffer.SetVertexUV(edgeVertexIndexB, 0, FVector2f::Zero());
       continue;
     }
 
@@ -234,17 +262,8 @@ void populateSilhouetteNormals(
     normalA = glm::normalize(normalA);
     normalB = glm::normalize(normalB);
 
-    // Silhouette edge normals are stored and accessed via vertex tangents.
-    edgeVertexBuffer.SetVertexTangents(
-        edgeIndex * 2,
-        FVector3f(normalA.x, -normalA.y, normalA.z),
-        FVector3f::Zero(),
-        FVector3f(normalB.x, -normalB.y, normalB.z));
-    edgeVertexBuffer.SetVertexTangents(
-        edgeIndex * 2 + 1,
-        FVector3f(normalA.x, -normalA.y, normalA.z),
-        FVector3f::Zero(),
-        FVector3f(normalB.x, -normalB.y, normalB.z));
+    writeSilhouetteNormals(edgeVertexIndexA, normalA, normalB);
+    writeSilhouetteNormals(edgeVertexIndexB, normalA, normalB);
   }
 }
 
@@ -278,7 +297,8 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
 
   // Edge type is passed through as a UV coordinate in the edge vertex buffer.
   // If silhouette edges are used, then two UV sets are used; the other three
-  // coordinates hold the position of the other endpoint of the edge.
+  // floats are used to pass the second silhouette normal for that edge. (See
+  // populateSilhouetteNormals.)
   int32 numTexCoords = 1 + int32(!visibleEdges.silhouetteEdgeIndices.empty());
 
   FStaticMeshVertexBuffer& edgeVertexBuffer =
@@ -331,23 +351,11 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
     edgeVertexBuffer.SetVertexUV(
         edgeVertexIndexA,
         0,
-        FVector2f(float(edgeType), outPositionB.X));
+        FVector2f(float(edgeType)));
     edgeVertexBuffer.SetVertexUV(
         edgeVertexIndexB,
         0,
-        FVector2f(float(edgeType), outPositionA.X));
-
-    if (edgeType ==
-        ExtensionExtMeshPrimitiveEdgeVisibility::Visibility::SILHOUETTE) {
-      edgeVertexBuffer.SetVertexUV(
-          edgeVertexIndexA,
-          1,
-          FVector2f(outPositionB.Y, outPositionB.Z));
-      edgeVertexBuffer.SetVertexUV(
-          edgeVertexIndexB,
-          1,
-          FVector2f(outPositionA.Y, outPositionA.Z));
-    }
+        FVector2f(float(edgeType)));
   }
 
   lodResources.IndexBuffer.SetIndices(
