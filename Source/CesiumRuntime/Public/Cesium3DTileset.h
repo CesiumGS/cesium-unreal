@@ -812,7 +812,7 @@ private:
    * will no longer be possible to collide with the tileset since the physics
    * meshes will not be created.
    *
-   * Physics meshes cannot be generated for primitives containing points.
+   * Physics meshes are not supported for primitives containing points or lines.
    */
   UPROPERTY(
       EditAnywhere,
