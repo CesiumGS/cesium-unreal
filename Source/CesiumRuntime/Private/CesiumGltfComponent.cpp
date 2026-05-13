@@ -2949,6 +2949,7 @@ static void SetFeaturesMetadataParameterValues(
     UCesiumGltfComponent& gltfComponent,
     LoadedPrimitiveResult& loadResult,
     const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
+    CesiumPrimitiveData& primitiveData,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -2964,9 +2965,9 @@ static void SetFeaturesMetadataParameterValues(
         textureCoordinateSet.Value);
   }
 
-  if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
+  if (encodePrimitiveFeaturesGameThreadPart(primitiveData.encodedFeatures)) {
     for (EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet :
-         loadResult.EncodedFeatures.featureIdSets) {
+         primitiveData.encodedFeatures.featureIdSets) {
       FString SafeName =
           EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIdSet.name);
       if (encodedFeatureIdSet.nullFeatureId) {
@@ -3053,6 +3054,7 @@ static void SetMetadataParameterValues_DEPRECATED(
     const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
     LoadedPrimitiveResult& loadResult,
+    CesiumPrimitiveData& primitiveData,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
@@ -3080,9 +3082,9 @@ static void SetMetadataParameterValues_DEPRECATED(
    *    "FTB_<feature table name>_<property name>"
    */
 
-  if (!loadResult.EncodedMetadata_DEPRECATED ||
+  if (!primitiveData.encodedMetadata_DEPRECATED ||
       !encodeMetadataPrimitiveGameThreadPart(
-          *loadResult.EncodedMetadata_DEPRECATED)) {
+          *primitiveData.encodedMetadata_DEPRECATED)) {
     return;
   }
 
@@ -3097,7 +3099,7 @@ static void SetMetadataParameterValues_DEPRECATED(
   }
 
   for (const FString& featureTextureName :
-       loadResult.EncodedMetadata_DEPRECATED->featureTextureNames) {
+       primitiveData.encodedMetadata_DEPRECATED->featureTextureNames) {
     CesiumEncodedMetadataUtility::EncodedFeatureTexture*
         pEncodedFeatureTexture =
             gltfComponent.EncodedMetadata_DEPRECATED->encodedFeatureTextures
@@ -3130,7 +3132,7 @@ static void SetMetadataParameterValues_DEPRECATED(
 
   for (CesiumEncodedMetadataUtility::EncodedFeatureIdTexture&
            encodedFeatureIdTexture :
-       loadResult.EncodedMetadata_DEPRECATED->encodedFeatureIdTextures) {
+       primitiveData.encodedMetadata_DEPRECATED->encodedFeatureIdTextures) {
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(
@@ -3256,7 +3258,6 @@ void addInstanceFeatureIds(
  * - Creates a dynamic Unreal material instance, based on the parent glTF's
  *   material.
  * - Sets up the necessary glTF + metadata parameters on the material instance.
- * - Move the loadResult's features + metadata to the CesiumPrimitiveData.
  */
 UMaterialInstanceDynamic* setupMaterialAndMetadata(
     LoadGltfResult::LoadedPrimitiveResult& loadResult,
@@ -3295,8 +3296,6 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
   // to already exist on the primitive, so move these early. They are not used
   // for the material construction anyway.
   CesiumPrimitiveData& primitiveData = pCesiumPrimitive->getPrimitiveData();
-  primitiveData.features = std::move(loadResult.Features);
-  primitiveData.metadata = std::move(loadResult.Metadata);
 
   UMaterialInstanceDynamic* pMaterial = nullptr;
   const FName ImportedSlotName(
@@ -3430,6 +3429,7 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
           *pGltf,
           loadResult,
           metadataStatistics,
+          primitiveData,
           pMaterial,
           EMaterialParameterAssociation::LayerParameter,
           featuresMetadataIndex);
@@ -3439,6 +3439,7 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
           model,
           *pGltf,
           loadResult,
+          primitiveData,
           pMaterial,
           EMaterialParameterAssociation::LayerParameter,
           metadataIndex);
@@ -3491,28 +3492,6 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
         pCesiumData,
         material);
   }
-
-  // Now that the material has been set up, it is safe to move the encoded
-  // features and metadata.
-  primitiveData.encodedFeatures = std::move(loadResult.EncodedFeatures);
-  primitiveData.encodedMetadata = std::move(loadResult.EncodedMetadata);
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-  // Doing the above std::move operations invalidates the pointers in the
-  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
-  // awkward, but we have to reconstruct the metadata primitive here.
-  primitiveData.metadata_DEPRECATED = FCesiumMetadataPrimitive{
-      primitiveData.features,
-      primitiveData.metadata,
-      pGltf->Metadata};
-
-  if (loadResult.EncodedMetadata_DEPRECATED) {
-    primitiveData.encodedMetadata_DEPRECATED =
-        std::move(loadResult.EncodedMetadata_DEPRECATED);
-  }
-
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   return pMaterial;
 }
@@ -3622,7 +3601,8 @@ void buildPrimitiveData(
     LoadedPrimitiveResult& loadResult,
     CesiumGltf::MeshPrimitive* pMeshPrimitive,
     const Cesium3DTilesSelection::Tile& tile,
-    ACesium3DTileset* pTilesetActor) {
+    ACesium3DTileset* pTilesetActor,
+    UCesiumGltfComponent* pGltf) {
   CesiumPrimitiveData& primitiveData = cesiumPrimitive.getPrimitiveData();
   primitiveData.pMeshPrimitive = pMeshPrimitive;
   primitiveData.boundingVolume =
@@ -3636,6 +3616,26 @@ void buildPrimitiveData(
   primitiveData.positionAccessor = std::move(loadResult.PositionAccessor);
   primitiveData.indexAccessor = std::move(loadResult.IndexAccessor);
   primitiveData.highPrecisionNodeTransform = loadResult.transform;
+  primitiveData.features = std::move(loadResult.Features);
+  primitiveData.metadata = std::move(loadResult.Metadata);
+  primitiveData.encodedFeatures = std::move(loadResult.EncodedFeatures);
+  primitiveData.encodedMetadata = std::move(loadResult.EncodedMetadata);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  // Doing the above std::move operations invalidates the pointers in the
+  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
+  // awkward, but we have to reconstruct the metadata primitive here.
+  primitiveData.metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      primitiveData.features,
+      primitiveData.metadata,
+      pGltf->Metadata};
+
+  if (loadResult.EncodedMetadata_DEPRECATED) {
+    primitiveData.encodedMetadata_DEPRECATED =
+        std::move(loadResult.EncodedMetadata_DEPRECATED);
+  }
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
 UStaticMesh* createStaticMesh(
@@ -3756,7 +3756,8 @@ static void loadPrimitiveGameThreadPart(
       loadResult,
       &meshPrimitive,
       tile,
-      pTilesetActor);
+      pTilesetActor,
+      pGltf);
   pCesiumPrimitive->UpdateTransformFromCesium(
       pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
