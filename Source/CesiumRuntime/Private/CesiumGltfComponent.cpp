@@ -3533,7 +3533,12 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
   return pMaterial;
 }
 
-UStaticMeshComponent* createMeshComponent(
+struct ConstructedPrimitiveComponent {
+  UStaticMeshComponent* pAsMeshComponent = nullptr;
+  ICesiumPrimitive* pAsCesiumPrimitive = nullptr;
+};
+
+ConstructedPrimitiveComponent createPrimitiveComponent(
     UCesiumGltfComponent* pGltf,
     const LoadedPrimitiveResult& loadResult,
     int32_t primitiveMode,
@@ -3542,7 +3547,8 @@ UStaticMeshComponent* createMeshComponent(
     const ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
-  UStaticMeshComponent* pMeshComponent = nullptr;
+  ConstructedPrimitiveComponent result;
+
   if (!instanceTransforms.empty()) {
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
@@ -3559,59 +3565,72 @@ UStaticMeshComponent* createMeshComponent(
           pInstancedComponent,
           pFeaturesMetadataComponent->Description);
     }
-    pMeshComponent = pInstancedComponent;
+    result.pAsMeshComponent = pInstancedComponent;
+    result.pAsCesiumPrimitive = pInstancedComponent;
   }
 
   switch (primitiveMode) {
   case CesiumGltf::MeshPrimitive::Mode::POINTS: {
-    UCesiumGltfPointsComponent* pPointMesh =
+    auto* pPointMesh =
         NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
     pPointMesh->Dimensions = loadResult.dimensions;
-    pMeshComponent = pPointMesh;
+    result.pAsMeshComponent = pPointMesh;
+    result.pAsCesiumPrimitive = pPointMesh;
     break;
   }
   case CesiumGltf::MeshPrimitive::Mode::LINES:
   case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
   case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP: {
-    pMeshComponent = NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
+    auto* pLinesComponent =
+        NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
+    result.pAsMeshComponent = pLinesComponent;
+    result.pAsCesiumPrimitive = pLinesComponent;
     break;
   }
   default:
-    pMeshComponent =
+    auto* pPrimitiveComponent =
         NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
+    result.pAsMeshComponent = pPrimitiveComponent;
+    result.pAsCesiumPrimitive = pPrimitiveComponent;
     break;
   }
 
-  pMeshComponent->bUseDefaultCollision = false;
-  pMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  pMeshComponent->SetFlags(
+  CESIUM_ASSERT(result.pAsMeshComponent && result.pAsCesiumPrimitive);
+
+  result.pAsMeshComponent->bUseDefaultCollision = false;
+  result.pAsMeshComponent->SetCollisionObjectType(
+      ECollisionChannel::ECC_WorldStatic);
+  result.pAsMeshComponent->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   if (loadResult.isUnlit) {
-    pMeshComponent->bCastDynamicShadow = false;
+    result.pAsMeshComponent->bCastDynamicShadow = false;
   }
 
   if (pGltf) {
-    pMeshComponent->SetRenderCustomDepth(
+    result.pAsMeshComponent->SetRenderCustomDepth(
         pGltf->CustomDepthParameters.RenderCustomDepth);
-    pMeshComponent->SetCustomDepthStencilWriteMask(
+    result.pAsMeshComponent->SetCustomDepthStencilWriteMask(
         pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
-    pMeshComponent->SetCustomDepthStencilValue(
+    result.pAsMeshComponent->SetCustomDepthStencilValue(
         pGltf->CustomDepthParameters.CustomDepthStencilValue);
   }
 
   if (pTilesetActor) {
-    pMeshComponent->bReceivesDecals = pTilesetActor->GetReceiveDecals();
-    pMeshComponent->RuntimeVirtualTextures =
+    result.pAsMeshComponent->bReceivesDecals =
+        pTilesetActor->GetReceiveDecals();
+    result.pAsMeshComponent->RuntimeVirtualTextures =
         pTilesetActor->GetRuntimeVirtualTextures();
-    pMeshComponent->VirtualTextureRenderPassType =
+    result.pAsMeshComponent->VirtualTextureRenderPassType =
         pTilesetActor->GetVirtualTextureRenderPassType();
-    pMeshComponent->TranslucencySortPriority =
+    result.pAsMeshComponent->TranslucencySortPriority =
         pTilesetActor->GetTranslucencySortPriority();
   }
+
+  return result;
 }
 
 void buildPrimitiveData(
@@ -3736,62 +3755,68 @@ static void loadPrimitiveGameThreadPart(
 
   CesiumGltf::MeshPrimitive& meshPrimitive =
       model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
-
-  UStaticMeshComponent* pMeshComponent = createMeshComponent(
-      pGltf,
-      loadResult,
-      meshPrimitive.mode,
-      componentName,
-      tile,
-      pTilesetActor,
-      instanceTransforms,
-      pInstanceFeatures);
-  ICesiumPrimitive* pCesiumPrimitive =
-      reinterpret_cast<ICesiumPrimitive*>(pMeshComponent);
-  buildPrimitiveData(
-      *pCesiumPrimitive,
-      loadResult,
-      &meshPrimitive,
-      tile,
-      pTilesetActor);
-  pCesiumPrimitive->UpdateTransformFromCesium(
-      pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
-
-  UStaticMesh* pStaticMesh = createStaticMesh(
-      pMeshComponent,
-      pGltf,
-      meshPrimitive.mode,
-      componentName,
-      std::move(loadResult.pRenderData));
-
-  ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
-      pTilesetActor->GetLifecycleEventReceiver();
-
-  UMaterialInstanceDynamic* pMaterialForGltfPrimitive =
-      setupMaterialAndMetadata(
-          loadResult,
-          model,
-          pGltf,
-          pCesiumPrimitive,
-          metadataStatistics,
-          pLifecycleEventReceiver);
-
-  pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
-  pStaticMesh->SetLightingGuid();
-
   {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
-    pStaticMesh->InitResources();
+    ConstructedPrimitiveComponent component = createPrimitiveComponent(
+        pGltf,
+        loadResult,
+        meshPrimitive.mode,
+        componentName,
+        tile,
+        pTilesetActor,
+        instanceTransforms,
+        pInstanceFeatures);
+
+    ICesiumPrimitive* pCesiumPrimitive = component.pAsCesiumPrimitive;
+    buildPrimitiveData(
+        *pCesiumPrimitive,
+        loadResult,
+        &meshPrimitive,
+        tile,
+        pTilesetActor);
+    pCesiumPrimitive->UpdateTransformFromCesium(
+        pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
+
+    UStaticMeshComponent* pMeshComponent = component.pAsMeshComponent;
+    UStaticMesh* pStaticMesh = createStaticMesh(
+        pMeshComponent,
+        pGltf,
+        meshPrimitive.mode,
+        componentName,
+        std::move(loadResult.pRenderData));
+
+    ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
+        pTilesetActor->GetLifecycleEventReceiver();
+
+    UMaterialInstanceDynamic* pMaterialForGltfPrimitive =
+        setupMaterialAndMetadata(
+            loadResult,
+            model,
+            pGltf,
+            pCesiumPrimitive,
+            metadataStatistics,
+            pLifecycleEventReceiver);
+
+    pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
+    pStaticMesh->SetLightingGuid();
+
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
+      pStaticMesh->InitResources();
+    }
+
+    setupComponentBoundsAndBody(
+        pMeshComponent,
+        pStaticMesh,
+        loadResult.pCollisionMesh,
+        pTilesetActor->GetEnableDoubleSidedCollisions(),
+        pTilesetActor->GetCreateNavCollision());
+
+    attachAndRegisterComponent(pGltf, pMeshComponent);
+    // Call the observer callback (if any) once all is done
+    if (pLifecycleEventReceiver) {
+      pLifecycleEventReceiver->OnTileMeshPrimitiveLoaded(*pCesiumPrimitive);
+    }
   }
-
-  setupComponentBoundsAndBody(
-      pMeshComponent,
-      pStaticMesh,
-      loadResult.pCollisionMesh,
-      pTilesetActor->GetEnableDoubleSidedCollisions(),
-      pTilesetActor->GetCreateNavCollision());
-
-  attachAndRegisterComponent(pGltf, pMeshComponent);
 
   if (loadResult.pEdgeRenderData) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
@@ -3809,11 +3834,12 @@ static void loadPrimitiveGameThreadPart(
     FName edgeComponentName = "";
 #endif
 
-    LoadedPrimitiveResult simpleResult;
-    simpleResult.transform = loadResult.transform;
-    UStaticMeshComponent* pEdgeMeshComponent = createMeshComponent(
+    LoadedPrimitiveResult simplifiedResult;
+    simplifiedResult.transform = loadResult.transform;
+
+    ConstructedPrimitiveComponent component = createPrimitiveComponent(
         pGltf,
-        simpleResult,
+        simplifiedResult,
         CesiumGltf::MeshPrimitive::Mode::LINES,
         edgeComponentName,
         tile,
@@ -3821,46 +3847,40 @@ static void loadPrimitiveGameThreadPart(
         {},
         nullptr);
 
-    ICesiumPrimitive* pEdgeCesiumPrimitive =
-        reinterpret_cast<ICesiumPrimitive*>(pEdgeMeshComponent);
+    ICesiumPrimitive* pCesiumPrimitive = component.pAsCesiumPrimitive;
     buildPrimitiveData(
-        *pEdgeCesiumPrimitive,
-        simpleResult,
+        *pCesiumPrimitive,
+        simplifiedResult,
         &meshPrimitive,
         tile,
         pTilesetActor);
-
-    pEdgeCesiumPrimitive->UpdateTransformFromCesium(
+    pCesiumPrimitive->UpdateTransformFromCesium(
         pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
-    UStaticMesh* pEdgeStaticMesh = createStaticMesh(
-        pEdgeMeshComponent,
+    UStaticMeshComponent* pMeshComponent = component.pAsMeshComponent;
+    UStaticMesh* pStaticMesh = createStaticMesh(
+        pMeshComponent,
         pGltf,
         CesiumGltf::MeshPrimitive::Mode::LINES,
         componentName,
         std::move(loadResult.pEdgeRenderData));
 
-    pEdgeStaticMesh->AddMaterial(pEdgeMaterial);
-    pEdgeStaticMesh->SetLightingGuid();
+    pStaticMesh->AddMaterial(pEdgeMaterial);
+    pStaticMesh->SetLightingGuid();
 
     {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
-      pEdgeStaticMesh->InitResources();
+      pStaticMesh->InitResources();
     }
 
     setupComponentBoundsAndBody(
-        pEdgeMeshComponent,
-        pEdgeStaticMesh,
-        loadResult.pCollisionMesh,
-        pTilesetActor->GetEnableDoubleSidedCollisions(),
-        pTilesetActor->GetCreateNavCollision());
+        pMeshComponent,
+        pStaticMesh,
+        nullptr,
+        false,
+        false);
 
-    attachAndRegisterComponent(pGltf, pEdgeMeshComponent);
-  }
-
-  // Call the observer callback (if any) once all is done
-  if (pLifecycleEventReceiver) {
-    pLifecycleEventReceiver->OnTileMeshPrimitiveLoaded(*pCesiumPrimitive);
+    attachAndRegisterComponent(pGltf, pMeshComponent);
   }
 }
 
