@@ -80,11 +80,12 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetUnrealUVChannel(
       FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
     return -1;
   }
-  const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
-  auto textureCoordinateIndexIt = primData.GltfToUnrealTexCoordMap.find(
+  const CesiumPrimitiveData& primitiveData =
+      pCesiumPrimitive->getPrimitiveData();
+  auto textureCoordinateIndexIt = primitiveData.gltfToUnrealTexCoordMap.find(
       UCesiumFeatureIdTextureBlueprintLibrary::GetGltfTextureCoordinateSetIndex(
           FeatureIDTexture));
-  if (textureCoordinateIndexIt == primData.GltfToUnrealTexCoordMap.end()) {
+  if (textureCoordinateIndexIt == primitiveData.gltfToUnrealTexCoordMap.end()) {
     return -1;
   }
 

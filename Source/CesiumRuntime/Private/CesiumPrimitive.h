@@ -10,6 +10,7 @@
 #include "CesiumPrimitiveMetadata.h"
 #include "CesiumRasterOverlays.h"
 #include "EncodedFeaturesMetadata.h"
+
 #include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
@@ -24,84 +25,10 @@ struct MeshPrimitive;
 } // namespace CesiumGltf
 
 /**
- * Data that is common to the Cesium mesh component classes.
+ * Data that is common between Cesium glTF component classes.
  */
 class CesiumPrimitiveData {
 public:
-  /**
-   * Represents the primitive's EXT_mesh_features extension.
-   */
-  FCesiumPrimitiveFeatures Features;
-  /**
-   * Represents the primitive's EXT_structural_metadata extension.
-   */
-  FCesiumPrimitiveMetadata Metadata;
-
-  /**
-   * The encoded representation of the primitive's EXT_mesh_features extension.
-   */
-  EncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
-  /**
-   * The encoded representation of the primitive's EXT_structural_metadata
-   * extension.
-   */
-  EncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata;
-
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  /**
-   * For backwards compatibility with the EXT_feature_metadata implementation.
-   */
-  FCesiumMetadataPrimitive Metadata_DEPRECATED;
-
-  std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
-      EncodedMetadata_DEPRECATED;
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-  ACesium3DTileset* pTilesetActor = nullptr;
-  const CesiumGltf::Model* pModel = nullptr;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
-
-  /**
-   * The double-precision transformation matrix for this glTF node.
-   */
-  glm::dmat4x4 HighPrecisionNodeTransform;
-
-  /**
-   * Maps an overlay texture coordinate ID to the index of the corresponding
-   * texture coordinates in the mesh's UVs array.
-   */
-  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
-
-  /**
-   * Maps the accessor index in a glTF to its corresponding texture coordinate
-   * index in the Unreal mesh. The -1 key is reserved for implicit feature IDs
-   * (in other words, the vertex index).
-   */
-  std::unordered_map<int32_t, uint32_t> GltfToUnrealTexCoordMap;
-
-  /**
-   * Maps texture coordinate set indices in a glTF to AccessorViews. This stores
-   * accessor views on texture coordinate sets that will be used by feature ID
-   * textures or property textures for picking.
-   */
-  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
-      TexCoordAccessorMap;
-
-  /**
-   * The position accessor of the glTF primitive. This is used for computing
-   * the UV at a hit location on a primitive, and is safer to access than the
-   * mesh's RenderData.
-   */
-  CesiumGltf::AccessorView<FVector3f> PositionAccessor;
-
-  /**
-   * The index accessor of the glTF primitive, if one is specified. This is used
-   * for computing the UV at a hit location on a primitive.
-   */
-  CesiumGltf::IndexAccessorType IndexAccessor;
-
-  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
-
   /**
    * The factor by which the positions in the glTF primitive is scaled up when
    * the Unreal mesh is populated.
@@ -129,6 +56,90 @@ public:
       glm::dvec4(0.0, 0.0, 1.0 / positionScaleFactor, 0.0),
       glm::dvec4(0.0, 0.0, 0.0, 1.0));
 
+  /**
+   * A reference to the ACesium3DTileset that owns the primitive.
+   */
+  ACesium3DTileset* pTilesetActor = nullptr;
+
+  /**
+   * A reference to the glTF mesh primitive from which this was constructed.
+   */
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
+
+  /**
+   * Represents the primitive's EXT_mesh_features extension.
+   */
+  FCesiumPrimitiveFeatures features;
+  /**
+   * Represents the primitive's EXT_structural_metadata extension.
+   */
+  FCesiumPrimitiveMetadata metadata;
+
+  /**
+   * The encoded representation of the primitive's EXT_mesh_features extension.
+   */
+  EncodedFeaturesMetadata::EncodedPrimitiveFeatures encodedFeatures;
+  /**
+   * The encoded representation of the primitive's EXT_structural_metadata
+   * extension.
+   */
+  EncodedFeaturesMetadata::EncodedPrimitiveMetadata encodedMetadata;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * For backwards compatibility with the EXT_feature_metadata implementation.
+   */
+  FCesiumMetadataPrimitive metadata_DEPRECATED;
+
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
+      encodedMetadata_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
+   * The double-precision transformation matrix for this glTF node.
+   */
+  glm::dmat4x4 highPrecisionNodeTransform;
+
+  /**
+   * Maps an overlay texture coordinate ID to the index of the corresponding
+   * texture coordinates in the mesh's UVs array.
+   */
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
+
+  /**
+   * Maps the accessor index in a glTF to its corresponding texture coordinate
+   * index in the Unreal mesh. The -1 key is reserved for implicit feature IDs
+   * (in other words, the vertex index).
+   */
+  std::unordered_map<int32_t, uint32_t> gltfToUnrealTexCoordMap;
+
+  /**
+   * Maps texture coordinate set indices in a glTF to AccessorViews. This stores
+   * accessor views on texture coordinate sets that will be used by feature ID
+   * textures or property textures for picking.
+   */
+  std::unordered_map<int32_t, CesiumGltf::TexCoordAccessorType>
+      texCoordAccessorMap;
+
+  /**
+   * The position accessor of the glTF primitive. This is used for computing
+   * the UV at a hit location on a primitive, and is safer to access than the
+   * mesh's RenderData.
+   */
+  CesiumGltf::AccessorView<FVector3f> positionAccessor;
+
+  /**
+   * The index accessor of the glTF primitive, if one is specified. This is used
+   * for computing the UV at a hit location on a primitive.
+   */
+  CesiumGltf::IndexAccessorType indexAccessor;
+
+  /**
+   * The bounding volume associated with the tile content to which this
+   * primitive belongs.
+   */
+  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
+
   void destroy();
 };
 
@@ -138,13 +149,12 @@ class UCesiumPrimitive : public UCesiumLoadedTilePrimitive {
 };
 
 /**
- * Common interface to Cesium data and functions for Cesium Components.
+ * Common interface for data and functions used by Cesium mesh components.
  *
- * The Cesium component classes inherit from different classes in the Unreal
- * Component hierarchy, so a multiple inheritance interface approach is needed
- * to access their common data. Other ad-hoc functions are added to increase
- * code reuse and make certain functions (e.g., UpdateTransformFromCesium())
- * simpler.
+ * The rendering components used by Cesium may inherit from different classes in
+ * the Unreal Component hierarchy, so a multiple inheritance interface approach
+ * is used. Other ad-hoc functions are added to increase code reuse and make
+ * certain functions (e.g., UpdateTransformFromCesium()) simpler.
  */
 class ICesiumPrimitive : public ICesiumLoadedTilePrimitive {
   GENERATED_BODY()

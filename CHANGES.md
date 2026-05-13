@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Fixed an incorrect transform that reversed the appearance of data in box voxel tilesets.
+- Fixed the case where glTF line primitives caused excessive log spam due to Chaos attempting to generate physics bodies for small non-triangle meshes.
 
 ### v2.26.0 - 2026-05-01
 

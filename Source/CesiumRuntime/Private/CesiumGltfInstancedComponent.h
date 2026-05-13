@@ -1,27 +1,28 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumPrimitive.h"
-#include "Components/StaticMeshComponent.h"
+#include "CesiumPrimitiveFeatures.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
 
-#include "CesiumGltfPrimitiveComponent.generated.h"
+#include "CesiumGltfInstancedComponent.generated.h"
 
 /**
- * A component that represents and renders a glTF mesh primitive made
+ * A component that represents and renders an instanced glTF mesh primitive made
  * from triangles.
  */
 UCLASS()
-class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent,
+class UCesiumGltfInstancedComponent : public UInstancedStaticMeshComponent,
                                       public ICesiumPrimitive {
   GENERATED_BODY()
 
 public:
   // Sets default values for this component's properties
-  UCesiumGltfPrimitiveComponent();
-  virtual ~UCesiumGltfPrimitiveComponent();
+  UCesiumGltfInstancedComponent();
+  virtual ~UCesiumGltfInstancedComponent();
 
   void BeginDestroy() override;
 
@@ -39,7 +40,7 @@ public:
   std::optional<uint32_t> FindTextureCoordinateIndexForGltfAccessor(
       int32_t accessorIndex) const override;
 
-  virtual void OnCreatePhysicsState() override;
+  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures;
 
 private:
   CesiumPrimitiveData _cesiumData;

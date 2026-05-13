@@ -1,6 +1,6 @@
 // Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
-#include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CalcBounds.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
@@ -16,16 +16,15 @@
 // Prevent deprecation warnings while initializing deprecated metadata structs.
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
-// Sets default values for this component's properties
-UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
+UCesiumGltfInstancedComponent::UCesiumGltfInstancedComponent() {
   PrimaryComponentTick.bCanEverTick = false;
 }
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
+UCesiumGltfInstancedComponent::~UCesiumGltfInstancedComponent() {}
 
-void UCesiumGltfPrimitiveComponent::BeginDestroy() {
+void UCesiumGltfInstancedComponent::BeginDestroy() {
   // Clear everything we can in order to reduce memory usage, because this
   // UObject might not actually get deleted by the garbage collector until
   // much later.
@@ -47,7 +46,7 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
-FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
+FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
   const CesiumPrimitiveData& primitiveData = this->getPrimitiveData();
   if (!primitiveData.boundingVolume) {
@@ -62,7 +61,7 @@ FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
   return maybeBounds.value_or(Super::CalcBounds(LocalToWorld));
 }
 
-void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
+void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
   const CesiumPrimitiveData& primitiveData = this->getPrimitiveData();
   const FTransform transform = VecMath::createTransform(
@@ -91,57 +90,31 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
   }
 }
 
-CesiumPrimitiveData& UCesiumGltfPrimitiveComponent::getPrimitiveData() {
+CesiumPrimitiveData& UCesiumGltfInstancedComponent::getPrimitiveData() {
   return this->_cesiumData;
 }
 
 const CesiumPrimitiveData&
-UCesiumGltfPrimitiveComponent::getPrimitiveData() const {
+UCesiumGltfInstancedComponent::getPrimitiveData() const {
   return this->_cesiumData;
 }
 
-UStaticMeshComponent& UCesiumGltfPrimitiveComponent::GetMeshComponent() {
+UStaticMeshComponent& UCesiumGltfInstancedComponent::GetMeshComponent() {
   return *this;
 }
 
-ICesiumLoadedTile& UCesiumGltfPrimitiveComponent::GetLoadedTile() {
+ICesiumLoadedTile& UCesiumGltfInstancedComponent::GetLoadedTile() {
   // Not GetAttachParent(): not yet attached (eg. when calling
   // ICesium3DTilesetLifecycleEventReceiver::CreateMaterial)
   return *Cast<ICesiumLoadedTile>(GetOuter());
 }
 
 std::optional<uint32_t>
-UCesiumGltfPrimitiveComponent::FindTextureCoordinateIndexForGltfAccessor(
+UCesiumGltfInstancedComponent::FindTextureCoordinateIndexForGltfAccessor(
     int32_t accessorIndex) const {
   std::unordered_map<int32_t, uint32_t> texCoordMap =
       this->getPrimitiveData().gltfToUnrealTexCoordMap;
   auto uvIndexIt = texCoordMap.find(accessorIndex);
   return uvIndexIt != texCoordMap.end() ? std::make_optional(uvIndexIt->second)
                                         : std::nullopt;
-}
-
-void UCesiumGltfPrimitiveComponent::OnCreatePhysicsState() {
-  // If we call Super::OnCreatePhysicsState before we initialize the body
-  // instance, the UPrimitiveComponent will make inappropriate assumptions about
-  // the model scale. Also, FBodyInstance::InitBody will make similar incorrect
-  // assumptions. However, if we manually initialize with a scale of 1.0 and
-  // then change to the actual scale, this skips all of UE's erroneous
-  // "validation" code, and even small scales will work correctly. See:
-  // https://github.com/CesiumGS/cesium-unreal/issues/1659
-  FTransform BodyTransform = GetComponentTransform();
-  if (!BodyInstance.IsValidBodyInstance() &&
-      BodyTransform.GetScale3D().IsNearlyZero()) {
-    FTransform BodyTransformWithoutScale = BodyTransform;
-    BodyTransformWithoutScale.SetScale3D(FVector(1.0));
-
-    UBodySetup* BodySetup = GetBodySetup();
-    BodyInstance.InitBody(
-        BodySetup,
-        BodyTransformWithoutScale,
-        this,
-        GetWorld()->GetPhysicsScene());
-    BodyInstance.UpdateBodyScale(BodyTransform.GetScale3D());
-  }
-
-  Super::OnCreatePhysicsState();
 }
