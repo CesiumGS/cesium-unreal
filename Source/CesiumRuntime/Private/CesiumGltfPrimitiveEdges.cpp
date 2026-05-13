@@ -1,12 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveEdges.h"
-#include "CesiumGltfComponent.h"
-#include "CesiumGltfLinesComponent.h"
 #include "CesiumRuntime.h"
-#include "CesiumTextureResource.h"
-#include "CesiumTextureUtility.h"
-#include "ExtensionImageAssetUnreal.h"
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/ExtensionExtMeshPrimitiveEdgeVisibility.h>
 #include <CesiumGltf/Model.h>
@@ -69,36 +64,6 @@ CesiumGltfPrimitiveEdges::createInWorkerThread(
   default:
     return nullptr;
   }
-}
-
-/*static*/ UCesiumGltfLinesComponent*
-CesiumGltfPrimitiveEdges::createInMainThread(
-    UCesiumGltfComponent* pComponent,
-    const FName& componentName,
-    UMaterialInstanceDynamic* pEdgeMaterial,
-    TUniquePtr<FStaticMeshRenderData>&& pRenderData) {
-  UCesiumGltfLinesComponent* pLineComponent =
-      NewObject<UCesiumGltfLinesComponent>(pComponent, componentName);
-
-  pLineComponent->bUseDefaultCollision = false;
-  pLineComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  pLineComponent->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-
-  UStaticMesh* pStaticMesh =
-      NewObject<UStaticMesh>(pLineComponent, componentName);
-  pStaticMesh->bSupportRayTracing = false;
-  pLineComponent->SetStaticMesh(pStaticMesh);
-
-  pStaticMesh->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pStaticMesh->NeverStream = true;
-
-  pStaticMesh->SetRenderData(std::move(pRenderData));
-  pStaticMesh->AddMaterial(pEdgeMaterial);
-  pStaticMesh->SetLightingGuid();
-
-  return pLineComponent;
 }
 
 namespace {

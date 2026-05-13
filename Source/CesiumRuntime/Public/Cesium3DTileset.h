@@ -1101,7 +1101,7 @@ public:
   }
 
   UFUNCTION(BlueprintGetter, Category = Rendering)
-  int32 GetTranslucencySortPriority() { return TranslucencySortPriority; }
+  int32 GetTranslucencySortPriority() const { return TranslucencySortPriority; }
 
   UFUNCTION(BlueprintSetter, Category = Rendering)
   void SetTranslucencySortPriority(int32 InTranslucencySortPriority);
