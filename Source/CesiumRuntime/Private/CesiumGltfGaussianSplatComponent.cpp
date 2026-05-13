@@ -4,6 +4,7 @@
 
 #include "CesiumGaussianSplatSubsystem.h"
 #include "CesiumRuntime.h"
+#include "VecMath.h"
 
 #include "Engine/Engine.h"
 #include "Math/Box.h"

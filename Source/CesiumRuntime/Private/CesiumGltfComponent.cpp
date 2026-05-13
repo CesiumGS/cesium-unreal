@@ -3597,16 +3597,18 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
 }
 
 void buildPrimitiveData(
-    ICesiumPrimitive& cesiumPrimitive,
+    CesiumPrimitiveData& primitiveData,
     LoadedPrimitiveResult& loadResult,
     CesiumGltf::MeshPrimitive* pMeshPrimitive,
-    const Cesium3DTilesSelection::Tile& tile,
+    const Cesium3DTilesSelection::Tile* pTile,
     ACesium3DTileset* pTilesetActor,
     UCesiumGltfComponent* pGltf) {
-  CesiumPrimitiveData& primitiveData = cesiumPrimitive.getPrimitiveData();
+  if (pTile) {
+    primitiveData.boundingVolume =
+        pTile->getContentBoundingVolume().value_or(pTile->getBoundingVolume());
+  }
+
   primitiveData.pMeshPrimitive = pMeshPrimitive;
-  primitiveData.boundingVolume =
-      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
   primitiveData.pTilesetActor = pTilesetActor;
   primitiveData.overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
@@ -3708,7 +3710,7 @@ void setupComponentBoundsAndBody(
 
 void attachAndRegisterComponent(
     UCesiumGltfComponent* pGltf,
-    UStaticMeshComponent* pMeshComponent) {
+    USceneComponent* pMeshComponent) {
   pMeshComponent->SetMobility(pGltf->Mobility);
   pMeshComponent->SetupAttachment(pGltf);
 
@@ -3752,10 +3754,10 @@ static void loadPrimitiveGameThreadPart(
 
   ICesiumPrimitive* pCesiumPrimitive = component.pAsCesiumPrimitive;
   buildPrimitiveData(
-      *pCesiumPrimitive,
+      pCesiumPrimitive->getPrimitiveData(),
       loadResult,
       &meshPrimitive,
-      tile,
+      &tile,
       pTilesetActor,
       pGltf);
   pCesiumPrimitive->UpdateTransformFromCesium(
@@ -3841,13 +3843,7 @@ static void loadVoxelsGameThreadPart(
   pVoxel->TileId = *tileId;
   pVoxel->PropertyAttribute = std::move(attributes[index]);
 
-  pVoxel->SetMobility(pGltf->Mobility);
-  pVoxel->SetupAttachment(pGltf);
-
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
-    pVoxel->RegisterComponent();
-  }
+  attachAndRegisterComponent(pGltf, pVoxel);
 }
 
 static void loadGaussianSplatsGameThreadPart(
@@ -3872,23 +3868,20 @@ static void loadGaussianSplatsGameThreadPart(
   UCesiumGltfGaussianSplatComponent* pGaussianSplat =
       NewObject<UCesiumGltfGaussianSplatComponent>(pGltf, componentName);
   pGaussianSplat->Data = MoveTemp(*loadResult.pGaussianSplatData.Release());
-  pGaussianSplat->SetupAttachment(pGltf);
-  pGaussianSplat->SetMobility(pGltf->Mobility);
 
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
-    pGaussianSplat->RegisterComponent();
-  }
-
-  pGaussianSplat->RegisterWithSubsystem();
-
-  CesiumPrimitiveData& primitiveData = pGaussianSplat->getPrimitiveData();
-  primitiveData.pTilesetActor = pTilesetActor;
-  primitiveData.positionAccessor = std::move(loadResult.PositionAccessor);
-  primitiveData.indexAccessor = std::move(loadResult.IndexAccessor);
-  primitiveData.highPrecisionNodeTransform = loadResult.transform;
+  buildPrimitiveData(
+      pGaussianSplat->getPrimitiveData(),
+      loadResult,
+      nullptr, /* pMeshPrimitive */
+      nullptr, /* pTile */
+      pTilesetActor,
+      pGltf);
   pGaussianSplat->UpdateTransformFromCesium(
       pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
+
+  attachAndRegisterComponent(pGltf, pGaussianSplat);
+
+  pGaussianSplat->RegisterWithSubsystem();
 }
 
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
