@@ -10,8 +10,6 @@
 #include "CesiumPrimitiveMetadata.h"
 #include "CesiumRasterOverlays.h"
 #include "EncodedFeaturesMetadata.h"
-#include "PhysicsEngine/BodySetup.h"
-#include "VecMath.h"
 
 #include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
