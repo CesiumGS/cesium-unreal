@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed an incorrect transform that reversed the appearance of data in box voxel tilesets.
+
 ### v2.26.0 - 2026-05-01
 
 ##### Additions :tada:
