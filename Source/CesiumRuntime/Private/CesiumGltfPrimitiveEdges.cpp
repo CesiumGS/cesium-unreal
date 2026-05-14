@@ -346,7 +346,7 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   const CesiumGltf::Accessor* pSilhouetteNormalAccessor =
       Model::getSafe(&model.accessors, extension.silhouetteNormals);
   if (!pSilhouetteNormalAccessor) {
-    return std::move(pRenderData);
+    return pRenderData;
   }
 
   switch (pSilhouetteNormalAccessor->componentType) {
