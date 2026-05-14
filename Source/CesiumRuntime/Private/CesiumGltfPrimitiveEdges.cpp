@@ -383,6 +383,6 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   }
   }
 
-  return std::move(pRenderData);
+  return pRenderData;
 }
 } // namespace
