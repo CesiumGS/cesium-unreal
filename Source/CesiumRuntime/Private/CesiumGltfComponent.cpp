@@ -3270,11 +3270,10 @@ void addInstanceFeatureIds(
 }
 
 /**
- * - Creates a dynamic Unreal material instance, based on the parent glTF's
- *   material.
- * - Sets up the necessary glTF + metadata parameters on the material instance.
+ * Creates a dynamic material instance based from the tileset's designated
+ * material, setting the necessary glTF + metadata parameters on the instance.
  */
-UMaterialInstanceDynamic* setupMaterialAndMetadata(
+UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
     LoadGltfResult::LoadedPrimitiveResult& loadResult,
     CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
@@ -3306,11 +3305,6 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
       pUserDesignatedMaterialAsDynamic
           ? pUserDesignatedMaterialAsDynamic->Parent.Get()
           : pUserDesignatedMaterial;
-
-  // pLifecycleEventReceiver->CreateMaterial may need the features and metadata
-  // to already exist on the primitive, so move these early. They are not used
-  // for the material construction anyway.
-  CesiumPrimitiveData& primitiveData = pCesiumPrimitive->getPrimitiveData();
 
   UMaterialInstanceDynamic* pMaterial = nullptr;
   const FName ImportedSlotName(
@@ -3436,6 +3430,7 @@ UMaterialInstanceDynamic* setupMaterialAndMetadata(
           waterIndex);
     }
 
+    CesiumPrimitiveData& primitiveData = pCesiumPrimitive->getPrimitiveData();
     int32 featuresMetadataIndex =
         pCesiumData->LayerNames.Find("FeaturesMetadata");
     int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
@@ -3790,7 +3785,7 @@ static void loadPrimitiveGameThreadPart(
       pTilesetActor->GetLifecycleEventReceiver();
 
   UMaterialInstanceDynamic* pMaterialForGltfPrimitive =
-      setupMaterialAndMetadata(
+      createPrimitiveMaterialInstance(
           loadResult,
           model,
           pGltf,
