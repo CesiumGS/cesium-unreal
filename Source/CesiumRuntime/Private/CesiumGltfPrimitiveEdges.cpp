@@ -263,7 +263,7 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   // Edge type is passed through as a UV coordinate in the edge vertex buffer.
   // If silhouette edges are used, then two UV sets are used; the other three
   // floats are used to pass the second silhouette normal for that edge. (See
-  // populateSilhouetteNormals.)
+  // populateSilhouetteNormals)
   int32 numTexCoords = 1 + int32(!visibleEdges.silhouetteEdgeIndices.empty());
 
   FStaticMeshVertexBuffer& edgeVertexBuffer =

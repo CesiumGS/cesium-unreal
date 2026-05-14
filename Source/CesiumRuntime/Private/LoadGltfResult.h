@@ -92,6 +92,12 @@ struct LoadedPrimitiveResult {
    */
   int32_t materialIndex = -1;
 
+  /**
+   * The index of the material used to render the edges from
+   * EXT_mesh_primitive_edge_visibility, if present.
+   */
+  int32_t edgeMaterialIndex = -1;
+
   glm::dmat4x4 transform{1.0};
 
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;

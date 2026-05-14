@@ -750,7 +750,6 @@ static Chaos::FTriangleMeshImplicitObjectPtr BuildChaosTriangleMeshes(
     const FPositionVertexBuffer& vertexBuffer,
     const TArray<uint32>& indices);
 
-static const CesiumGltf::Material defaultMaterial;
 static const CesiumGltf::MaterialPBRMetallicRoughness
     defaultPbrMetallicRoughness;
 
@@ -1415,13 +1414,11 @@ static void loadPrimitive(
     }
   }
 
-  int materialID = primitive.material;
+  int32_t materialIndex = primitive.material;
   const CesiumGltf::Material& material =
-      materialID >= 0 && materialID < model.materials.size()
-          ? model.materials[materialID]
-          : defaultMaterial;
+      model.getSafe(model.materials, materialIndex);
 
-  primitiveResult.materialIndex = materialID;
+  primitiveResult.materialIndex = materialIndex;
   primitiveResult.isUnlit =
       material.hasExtension<CesiumGltf::ExtensionKhrMaterialsUnlit>() &&
       !options.pMeshOptions->pNodeOptions->pModelOptions
@@ -1440,8 +1437,7 @@ static void loadPrimitive(
   }
 
   const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
+      material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
 
   bool hasNormalMap = material.normalTexture.has_value();
   if (hasNormalMap) {
@@ -1824,8 +1820,12 @@ static void loadPrimitive(
             primitive,
             positionView,
             *pEdgeExtension);
-    primitiveResult.pEdgeRenderData->Bounds =
-        primitiveResult.pRenderData->Bounds;
+
+    if (primitiveResult.pEdgeRenderData) {
+      primitiveResult.pEdgeRenderData->Bounds =
+          primitiveResult.pRenderData->Bounds;
+      primitiveResult.edgeMaterialIndex = pEdgeExtension->material;
+    }
   }
 }
 
@@ -2718,8 +2718,7 @@ static void SetGltfParameterValues(
         static_cast<float>(textureCoordinateSet.second));
   }
   const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
+      material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
   if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
@@ -3269,6 +3268,10 @@ void addInstanceFeatureIds(
   }
 }
 
+inline FName createNewMaterialName() {
+  return (*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+}
+
 /**
  * Creates a dynamic material instance based from the tileset's designated
  * material, setting the necessary glTF + metadata parameters on the instance.
@@ -3281,10 +3284,8 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
     const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
     ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-
   const CesiumGltf::Material& material =
-      loadResult.materialIndex >= 0 ? model.materials[loadResult.materialIndex]
-                                    : defaultMaterial;
+      model.getSafe(model.materials, loadResult.edgeMaterialIndex);
 
   UMaterialInterface* pUserDesignatedMaterial = nullptr;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
@@ -3307,8 +3308,7 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
           : pUserDesignatedMaterial;
 
   UMaterialInstanceDynamic* pMaterial = nullptr;
-  const FName ImportedSlotName(
-      *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+  FName ImportedSlotName = createNewMaterialName();
   if (pLifecycleEventReceiver) {
     // Possibility to override the material for this primitive
     pMaterial = pLifecycleEventReceiver->CreateMaterial(
@@ -3503,6 +3503,58 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
         material);
   }
 
+  return pMaterial;
+}
+
+UMaterialInstanceDynamic* createEdgeMaterial(
+    CesiumGltf::Model& model,
+    int32_t edgeMaterialIndex,
+    int32_t primitiveMaterialIndex,
+    UCesiumGltfComponent* pGltf) {
+  const CesiumGltf::Material* pMaterialFromEdgeExtension =
+      model.getSafe(&model.materials, edgeMaterialIndex);
+
+  // Per the spec, when a material is omitted from
+  // EXT_mesh_primitive_edge_visibility, edges are drawn using the same
+  // material as the triangle mesh primitive.
+  const CesiumGltf::Material& material =
+      pMaterialFromEdgeExtension
+          ? *pMaterialFromEdgeExtension
+          : model.getSafe(model.materials, primitiveMaterialIndex);
+
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
+      material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
+  const FName ImportedSlotName = createNewMaterialName();
+  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
+      pGltf->BaseMaterialPrimitiveEdges,
+      nullptr,
+      ImportedSlotName);
+  FMaterialParameterInfo parameterInfo{
+      "EdgeColor",
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE};
+  if (pbr.baseColorFactor.size() > 3) {
+    pMaterial->SetVectorParameterValueByInfo(
+        parameterInfo,
+        FLinearColor(
+            pbr.baseColorFactor[0],
+            pbr.baseColorFactor[1],
+            pbr.baseColorFactor[2],
+            pbr.baseColorFactor[3]));
+  } else if (pbr.baseColorFactor.size() == 3) {
+    pMaterial->SetVectorParameterValueByInfo(
+        parameterInfo,
+        FLinearColor(
+            pbr.baseColorFactor[0],
+            pbr.baseColorFactor[1],
+            pbr.baseColorFactor[2],
+            1.));
+  } else {
+    pMaterial->SetVectorParameterValueByInfo(
+        parameterInfo,
+        FLinearColor(1., 1., 1., 1.));
+  }
   return pMaterial;
 }
 
@@ -3817,13 +3869,6 @@ static void loadPrimitiveGameThreadPart(
 
   if (loadResult.pEdgeRenderData) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
-    const FName ImportedSlotName(
-        *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-    // TODO: Handle edge materials
-    UMaterialInstanceDynamic* pEdgeMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->BaseMaterialPrimitiveEdges,
-        nullptr,
-        ImportedSlotName);
 
 #if DEBUG_GLTF_ASSET_NAMES
     FName edgeComponentName(componentName.ToString() + TEXT("_Edges"));
@@ -3863,6 +3908,11 @@ static void loadPrimitiveGameThreadPart(
         componentName,
         std::move(loadResult.pEdgeRenderData));
 
+    UMaterialInstanceDynamic* pEdgeMaterial = createEdgeMaterial(
+        model,
+        loadResult.edgeMaterialIndex,
+        loadResult.materialIndex,
+        pGltf);
     pStaticMesh->AddMaterial(pEdgeMaterial);
     pStaticMesh->SetLightingGuid();
 
