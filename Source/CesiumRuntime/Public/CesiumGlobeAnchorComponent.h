@@ -11,6 +11,20 @@
 class ACesiumGeoreference;
 class ACesium3DTileset;
 
+UENUM(BlueprintType)
+enum class ECesiumGlobeAnchorTransformMode : uint8 {
+  /**
+   * The object's relative transform is used to compute the globe anchor
+   * coordinates.
+   */
+  Relative,
+  /**
+   * The object's world transform is used to compute the globe anchor
+   * coordinates.
+   */
+  World
+};
+
 /**
  * The frame of reference from which to interpret a given height value.
  */
@@ -28,7 +42,7 @@ enum class ECesiumHeightReference : uint8 {
    * No specified Height Reference. Used only for HeightReferenceOverride
    * in the CesiumGlobeAnchor Blueprints.  Do not use otherwise.
    */
-  None,
+  None
 };
 
 /**
@@ -66,6 +80,26 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
+
+  /**
+   * The frame of reference in which to interpret the object's height.
+   *
+   * `Ellipsoid` indicates the object's height above the ellipsoid set on the
+   * CesiumGeoreference. The object will remain at this height unless it is
+   * otherwise changed.
+   *
+   * `Tileset` indicates a height above a given tileset. The object will move
+   * vertically to maintain the specified height.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetTransformMode,
+      BlueprintSetter = SetTransformMode,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess, ReturnDisplayName = "TransformMode"))
+  ECesiumGlobeAnchorTransformMode TransformMode =
+      ECesiumGlobeAnchorTransformMode::Relative;
 
   /**
    * The frame of reference in which to interpret the object's height.
@@ -251,6 +285,12 @@ public:
   UFUNCTION(BlueprintSetter)
   void
   SetGeoreference(const TSoftObjectPtr<ACesiumGeoreference>& NewGeoreference);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ECesiumGlobeAnchorTransformMode GetTransformMode() const;
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetTransformMode(ECesiumGlobeAnchorTransformMode NewTransformMode);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ECesiumHeightReference GetHeightReference() const;

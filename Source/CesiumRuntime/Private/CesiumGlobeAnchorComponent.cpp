@@ -95,6 +95,25 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   }
 }
 
+ECesiumGlobeAnchorTransformMode
+UCesiumGlobeAnchorComponent::GetTransformMode() const {
+  return this->TransformMode;
+}
+
+void UCesiumGlobeAnchorComponent::SetTransformMode(
+    ECesiumGlobeAnchorTransformMode NewTransformMode) {
+
+  if (this->TransformMode != NewTransformMode) {
+    this->TransformMode = NewTransformMode;
+    this->_lastRelativeTransformIsValid = false;
+    this->Sync();
+  }
+}
+
+ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
+  return this->HeightReference;
+}
+
 void UCesiumGlobeAnchorComponent::SetHeightReference(
     ECesiumHeightReference NewHeightReference) {
 
@@ -102,10 +121,6 @@ void UCesiumGlobeAnchorComponent::SetHeightReference(
     this->HeightReference = NewHeightReference;
     this->_setHeightFromTilesetReference();
   }
-}
-
-ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
-  return this->HeightReference;
 }
 
 TSoftObjectPtr<ACesium3DTileset>
@@ -740,7 +755,13 @@ UCesiumGlobeAnchorComponent::_getRootComponent(bool warnIfNull) const {
 
 FTransform UCesiumGlobeAnchorComponent::_getCurrentRelativeTransform() const {
   const USceneComponent* pOwnerRoot = this->_getRootComponent(true);
-  return pOwnerRoot->GetRelativeTransform();
+  switch (this->TransformMode) {
+  case ECesiumGlobeAnchorTransformMode::World:
+    return pOwnerRoot->GetComponentTransform();
+  case ECesiumGlobeAnchorTransformMode::Relative:
+  default:
+    return pOwnerRoot->GetRelativeTransform();
+  }
 }
 
 void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
@@ -769,12 +790,22 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
   // Set the new Actor relative transform, taking care not to do this
   // recursively.
   this->_updatingActorTransform = true;
-  pOwnerRoot->SetRelativeTransform(
-      relativeTransform,
-      false,
-      nullptr,
-      this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
-                                          : ETeleportType::None);
+  if (this->TransformMode == ECesiumGlobeAnchorTransformMode::World) {
+    pOwnerRoot->SetWorldTransform(
+        relativeTransform,
+        false,
+        nullptr,
+        this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
+                                            : ETeleportType::None);
+  } else {
+    pOwnerRoot->SetRelativeTransform(
+        relativeTransform,
+        false,
+        nullptr,
+        this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
+                                            : ETeleportType::None);
+  }
+
   this->_updatingActorTransform = false;
 
   this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
