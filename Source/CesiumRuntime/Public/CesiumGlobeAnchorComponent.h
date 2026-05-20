@@ -750,9 +750,9 @@ private:
 
   USceneComponent* _getRootComponent(bool warnIfNull) const;
 
-  FTransform _getCurrentRelativeTransform() const;
+  FTransform _getCurrentRelativeToGeoreferenceTransform();
 
-  void _setCurrentRelativeTransform(const FTransform& relativeTransform);
+  void _setCurrentWorldTransform(const FTransform& transform);
 
   CesiumGeospatial::GlobeAnchor
   _createOrUpdateNativeGlobeAnchorFromRelativeTransform(
@@ -789,8 +789,8 @@ private:
    */
   bool _updatingActorTransform = false;
 
-  bool _lastRelativeTransformIsValid = false;
-  FTransform _lastRelativeTransform{};
+  bool _lastRelativeToGeoreferenceTransformIsValid = false;
+  FTransform _lastRelativeToGeoreferenceTransform{};
 
   /**
    * Called when the root transform of the Actor to which this Component is

@@ -295,11 +295,12 @@ void UCesiumGlobeAnchorComponent::Sync() {
   // If we don't have a actor -> ECEF matrix yet, we must update from the
   // actor's root transform.
   bool updateFromTransform = !this->_actorToECEFIsValid;
-  if (!updateFromTransform && this->_lastRelativeTransformIsValid) {
+  if (!updateFromTransform &&
+      this->_lastRelativeToGeoreferenceTransformIsValid) {
     // We may also need to update from the Transform if it has changed
     // since the last time we computed the local -> globe fixed matrix.
-    updateFromTransform = !this->_lastRelativeTransform.Equals(
-        this->_getCurrentRelativeTransform(),
+    updateFromTransform = !this->_lastRelativeToGeoreferenceTransform.Equals(
+        this->_getCurrentRelativeToGeoreferenceTransform(),
         0.0);
   }
 
@@ -636,8 +637,9 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
   // surely something dodgy would be happening if something _other_ than the
   // globe anchor were intentionally moving the Actor in the globe anchor's
   // PostEditChangeProperty, right?
-  if (this->_lastRelativeTransformIsValid) {
-    this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
+  if (this->_lastRelativeToGeoreferenceTransformIsValid) {
+    this->_lastRelativeToGeoreferenceTransform =
+        this->_getCurrentRelativeToGeoreferenceTransform();
   }
 }
 #endif
@@ -738,13 +740,23 @@ UCesiumGlobeAnchorComponent::_getRootComponent(bool warnIfNull) const {
   return pOwnerRoot;
 }
 
-FTransform UCesiumGlobeAnchorComponent::_getCurrentRelativeTransform() const {
+FTransform
+UCesiumGlobeAnchorComponent::_getCurrentRelativeToGeoreferenceTransform() {
   const USceneComponent* pOwnerRoot = this->_getRootComponent(true);
-  return pOwnerRoot->GetRelativeTransform();
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (!IsValid(pGeoreference)) {
+    return pOwnerRoot->GetRelativeTransform();
+  }
+
+  FTransform georeferenceTransform = pGeoreference->GetTransform();
+  if (!georeferenceTransform.Equals(FTransform::Identity)) {
+    georeferenceTransform = georeferenceTransform.Inverse();
+  }
+  return georeferenceTransform * pOwnerRoot->GetComponentTransform();
 }
 
-void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
-    const FTransform& relativeTransform) {
+void UCesiumGlobeAnchorComponent::_setCurrentWorldTransform(
+    const FTransform& transform) {
   AActor* pOwner = this->GetOwner();
   if (!IsValid(pOwner)) {
     UE_LOG(
@@ -769,16 +781,17 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
   // Set the new Actor relative transform, taking care not to do this
   // recursively.
   this->_updatingActorTransform = true;
-  pOwnerRoot->SetRelativeTransform(
-      relativeTransform,
+  pOwnerRoot->SetWorldTransform(
+      transform,
       false,
       nullptr,
       this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
                                           : ETeleportType::None);
   this->_updatingActorTransform = false;
 
-  this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
-  this->_lastRelativeTransformIsValid = true;
+  this->_lastRelativeToGeoreferenceTransform =
+      this->_getCurrentRelativeToGeoreferenceTransform();
+  this->_lastRelativeToGeoreferenceTransformIsValid = true;
 }
 
 CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
@@ -844,9 +857,11 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   if (IsValid(pGeoreference)) {
     glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
         pGeoreference->GetCoordinateSystem());
-    this->_setCurrentRelativeTransform(VecMath::createTransform(anchorToLocal));
+    this->_setCurrentWorldTransform(
+        pGeoreference->GetTransform() *
+        VecMath::createTransform(anchorToLocal));
   } else {
-    this->_lastRelativeTransformIsValid = false;
+    this->_lastRelativeToGeoreferenceTransformIsValid = false;
   }
 }
 
@@ -978,7 +993,7 @@ void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
 
   // Update with the new local transform, also rotating based on the new
   // position if desired.
-  FTransform modelToLocal = this->_getCurrentRelativeTransform();
+  FTransform modelToLocal = this->_getCurrentRelativeToGeoreferenceTransform();
   CesiumGeospatial::GlobeAnchor cppAnchor =
       this->_createOrUpdateNativeGlobeAnchorFromRelativeTransform(modelToLocal);
   this->_updateFromNativeGlobeAnchor(cppAnchor);
