@@ -3282,7 +3282,7 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
     ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
   const CesiumGltf::Material& material =
-      model.getSafe(model.materials, loadResult.edgeMaterialIndex);
+      model.getSafe(model.materials, loadResult.materialIndex);
 
   UMaterialInterface* pUserDesignatedMaterial = nullptr;
   if (loadResult.onlyWater || !loadResult.onlyLand) {
