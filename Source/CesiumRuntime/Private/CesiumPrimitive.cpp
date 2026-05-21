@@ -2,6 +2,14 @@
 
 #include "CesiumPrimitive.h"
 
+FVector3f scalePositionForUnreal(const FVector3f& position) {
+  FVector3f result;
+  result.X = position.X * CesiumPrimitiveData::positionScaleFactor;
+  result.Y = -position.Y * CesiumPrimitiveData::positionScaleFactor;
+  result.Z = position.Z * CesiumPrimitiveData::positionScaleFactor;
+  return result;
+}
+
 void CesiumPrimitiveData::destroy() {
   this->features = FCesiumPrimitiveFeatures();
   this->metadata = FCesiumPrimitiveMetadata();

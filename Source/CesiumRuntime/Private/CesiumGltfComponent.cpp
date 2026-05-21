@@ -1565,11 +1565,10 @@ static void loadPrimitive(
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (uint32 i = 0; i < numVertices; ++i) {
         uint32 vertexIndex = indices[i];
-        const FVector3f& value = positionView[vertexIndex];
+        const FVector3f& value =
+            scalePositionForUnreal(positionView[vertexIndex]);
         FVector3f& position = positionBuffer.VertexPosition(i);
-        position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
-        position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
-        position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
+        position = value;
         pRenderData->Bounds.SphereRadius = FMath::Max(
             (FVector(position) - pRenderData->Bounds.Origin).Size(),
             pRenderData->Bounds.SphereRadius);
@@ -1577,11 +1576,9 @@ static void loadPrimitive(
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (uint32 i = 0; i < numVertices; ++i) {
-        const FVector3f& value = positionView[i];
+        const FVector3f& value = scalePositionForUnreal(positionView[i]);
         FVector3f& position = positionBuffer.VertexPosition(i);
-        position.X = value.X * CesiumPrimitiveData::positionScaleFactor;
-        position.Y = -value.Y * CesiumPrimitiveData::positionScaleFactor;
-        position.Z = value.Z * CesiumPrimitiveData::positionScaleFactor;
+        position = value;
         pRenderData->Bounds.SphereRadius = FMath::Max(
             (FVector(position) - pRenderData->Bounds.Origin).Size(),
             pRenderData->Bounds.SphereRadius);

@@ -1,10 +1,12 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveEdges.h"
+#include "CesiumPrimitive.h"
 #include "CesiumRuntime.h"
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/ExtensionExtMeshPrimitiveEdgeVisibility.h>
 #include <CesiumGltf/Model.h>
+#include <cstdlib>
 #include <limits>
 #include <type_traits>
 
@@ -119,10 +121,13 @@ VisibleEdgeResult extractVisibleEdges(
       // For each triangle (v0, v1, v2), the bitfield encodes three visibility
       // values for the edges (v0:v1, v1:v2, v2:v0) in that order.
       uint8_t nextVertex = (vertex + 1) % 3;
+
       // Get the corresponding visibility value for the edge.
-      uint32 byteIndex = FMath::Floor(edgeIndex / 4);
-      uint32 bitPairOffset = (edgeIndex % 4) * 2;
+      auto divResult = std::lldiv(edgeIndex, 4);
       edgeIndex++;
+
+      uint32 byteIndex = static_cast<uint32>(divResult.quot);
+      uint32 bitPairOffset = static_cast<uint32>(divResult.rem * 2);
       if (byteIndex >= visibility.size()) {
         break;
       }
@@ -264,7 +269,7 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
   // If silhouette edges are used, then two UV sets are used; the other three
   // floats are used to pass the second silhouette normal for that edge. (See
   // populateSilhouetteNormals)
-  int32 numTexCoords = 1 + int32(!visibleEdges.silhouetteEdgeIndices.empty());
+  int32 numTexCoords = visibleEdges.silhouetteEdgeIndices.empty() ? 1 : 2;
 
   FStaticMeshVertexBuffer& edgeVertexBuffer =
       lodResources.VertexBuffers.StaticMeshVertexBuffer;
@@ -272,9 +277,6 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
 
   TArray<uint32> indices;
   indices.Reserve(totalEdgeVertices);
-
-  glm::vec3 minPosition{std::numeric_limits<float>::max()};
-  glm::vec3 maxPosition{std::numeric_limits<float>::lowest()};
 
   TIndex vertexCount = TIndex(positionView.size());
   for (size_t i = 0; i < edgeCount; i++) {
@@ -300,16 +302,10 @@ TUniquePtr<FStaticMeshRenderData> createInWorkerThreadImpl(
       continue;
     }
 
-    FVector3f positionA = positionView[a];
-    FVector3f positionB = positionView[b];
-
-    outPositionA.X = positionA.X * CesiumPrimitiveData::positionScaleFactor;
-    outPositionA.Y = -positionA.Y * CesiumPrimitiveData::positionScaleFactor;
-    outPositionA.Z = positionA.Z * CesiumPrimitiveData::positionScaleFactor;
-
-    outPositionB.X = positionB.X * CesiumPrimitiveData::positionScaleFactor;
-    outPositionB.Y = -positionB.Y * CesiumPrimitiveData::positionScaleFactor;
-    outPositionB.Z = positionB.Z * CesiumPrimitiveData::positionScaleFactor;
+    FVector3f positionA = scalePositionForUnreal(positionView[a]);
+    FVector3f positionB = scalePositionForUnreal(positionView[b]);
+    outPositionA = positionA;
+    outPositionB = positionB;
 
     uint8_t edgeType = visibleEdges.edgeTypes[i];
 
