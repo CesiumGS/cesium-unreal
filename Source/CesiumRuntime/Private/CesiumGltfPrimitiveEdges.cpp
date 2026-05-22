@@ -338,7 +338,7 @@ void populateSilhouetteNormals(
     FStaticMeshVertexBuffer& edgeVertexBuffer) {
   int32 silhouetteEdgeCount = visibleEdges.silhouetteEdgeIndices.Num();
 
-  if (silhouetteNormals.status != AccessorViewStatus::Valid) {
+  if (silhouetteNormals.status() != AccessorViewStatus::Valid) {
     UE_LOG(
         LogCesium,
         Error,
