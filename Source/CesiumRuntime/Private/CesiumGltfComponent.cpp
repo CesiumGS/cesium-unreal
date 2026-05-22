@@ -1821,7 +1821,6 @@ static void loadPrimitive(
     if (primitiveResult.pEdgeRenderData) {
       primitiveResult.pEdgeRenderData->Bounds =
           primitiveResult.pRenderData->Bounds;
-      primitiveResult.edgeMaterialIndex = pEdgeExtension->material;
     }
   }
 }
@@ -3503,58 +3502,6 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
   return pMaterial;
 }
 
-UMaterialInstanceDynamic* createEdgeMaterial(
-    CesiumGltf::Model& model,
-    int32_t edgeMaterialIndex,
-    int32_t primitiveMaterialIndex,
-    UCesiumGltfComponent* pGltf) {
-  const CesiumGltf::Material* pMaterialFromEdgeExtension =
-      model.getSafe(&model.materials, edgeMaterialIndex);
-
-  // Per the spec, when a material is omitted from
-  // EXT_mesh_primitive_edge_visibility, edges are drawn using the same
-  // material as the triangle mesh primitive.
-  const CesiumGltf::Material& material =
-      pMaterialFromEdgeExtension
-          ? *pMaterialFromEdgeExtension
-          : model.getSafe(model.materials, primitiveMaterialIndex);
-
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
-      material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-  const FName ImportedSlotName = createNewMaterialName();
-  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
-      pGltf->BaseMaterialPrimitiveEdges,
-      nullptr,
-      ImportedSlotName);
-  FMaterialParameterInfo parameterInfo{
-      "EdgeColor",
-      EMaterialParameterAssociation::GlobalParameter,
-      INDEX_NONE};
-  if (pbr.baseColorFactor.size() > 3) {
-    pMaterial->SetVectorParameterValueByInfo(
-        parameterInfo,
-        FLinearColor(
-            pbr.baseColorFactor[0],
-            pbr.baseColorFactor[1],
-            pbr.baseColorFactor[2],
-            pbr.baseColorFactor[3]));
-  } else if (pbr.baseColorFactor.size() == 3) {
-    pMaterial->SetVectorParameterValueByInfo(
-        parameterInfo,
-        FLinearColor(
-            pbr.baseColorFactor[0],
-            pbr.baseColorFactor[1],
-            pbr.baseColorFactor[2],
-            1.));
-  } else {
-    pMaterial->SetVectorParameterValueByInfo(
-        parameterInfo,
-        FLinearColor(1., 1., 1., 1.));
-  }
-  return pMaterial;
-}
-
 struct ConstructedPrimitiveComponent {
   UStaticMeshComponent* pAsMeshComponent = nullptr;
   ICesiumPrimitive* pAsCesiumPrimitive = nullptr;
@@ -3778,7 +3725,6 @@ void attachAndRegisterComponent(
     pMeshComponent->RegisterComponent();
   }
 }
-
 } // namespace
 
 static void loadPrimitiveGameThreadPart(
@@ -3866,7 +3812,6 @@ static void loadPrimitiveGameThreadPart(
 
   if (loadResult.pEdgeRenderData) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupEdgeMesh)
-
 #if DEBUG_GLTF_ASSET_NAMES
     FName edgeComponentName(componentName.ToString() + TEXT("_Edges"));
 #else
@@ -3905,13 +3850,17 @@ static void loadPrimitiveGameThreadPart(
         componentName,
         std::move(loadResult.pEdgeRenderData));
 
-    UMaterialInstanceDynamic* pEdgeMaterial = createEdgeMaterial(
-        model,
-        loadResult.edgeMaterialIndex,
-        loadResult.materialIndex,
-        pGltf);
-    pStaticMesh->AddMaterial(pEdgeMaterial);
-    pStaticMesh->SetLightingGuid();
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
+      const FName ImportedSlotName = createNewMaterialName();
+      UMaterialInstanceDynamic* pEdgeMaterial =
+          UMaterialInstanceDynamic::Create(
+              pGltf->BaseMaterialPrimitiveEdges,
+              nullptr,
+              ImportedSlotName);
+      pStaticMesh->AddMaterial(pEdgeMaterial);
+      pStaticMesh->SetLightingGuid();
+    }
 
     {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
