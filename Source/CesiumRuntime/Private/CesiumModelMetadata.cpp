@@ -4,6 +4,7 @@
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
 static FCesiumModelMetadata EmptyModelMetadata;
