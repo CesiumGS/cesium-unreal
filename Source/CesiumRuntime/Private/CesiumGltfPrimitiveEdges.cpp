@@ -127,12 +127,18 @@ CesiumGltfPrimitiveEdges::createInWorkerThread(
   // EXT_structural_metadata, where the number of points in line string `i` can
   // be derived by `offsets[i + 1] - offsets[i]`.
   TArray<int32> lineStringOffsets;
-  TArray<int32_t> materialIndices;
+  TArray<int32> materialIndices;
   int32 currentOffset = 0;
 
   for (const CesiumGltf::LineString& lineString : extension.lineStrings) {
     pIndexAccessor = Model::getSafe(&model.accessors, lineString.indices);
     if (!pIndexAccessor) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Invalid index accessor in line string from EXT_mesh_primitive_edges_visibility; "
+              "skipping."));
       continue;
     }
 
@@ -332,7 +338,7 @@ void populateSilhouetteNormals(
     FStaticMeshVertexBuffer& edgeVertexBuffer) {
   int32 silhouetteEdgeCount = visibleEdges.silhouetteEdgeIndices.Num();
 
-  if (silhouetteNormals.size() == 0) {
+  if (silhouetteNormals.status != AccessorViewStatus::Valid) {
     UE_LOG(
         LogCesium,
         Error,
@@ -501,42 +507,39 @@ void populateVertexBufferForVisibleEdges(
     vertexBuffer.SetVertexUV(edgeVertexIndexB, 0, FVector2f(edgeType, 0.0f));
   }
 
-  if (silhouetteNormalAccessorIndex >= 0) {
-    const CesiumGltf::Accessor& silhouetteNormalAccessor =
-        Model::getSafe(model.accessors, silhouetteNormalAccessorIndex);
-    switch (silhouetteNormalAccessor.componentType) {
-    case CesiumGltf::Accessor::ComponentType::BYTE: {
-      CesiumGltf::AccessorView<glm::i8vec3> silhouetteNormalView(
-          model,
-          silhouetteNormalAccessor);
-      populateSilhouetteNormals(
-          visibleEdges,
-          silhouetteNormalView,
-          vertexBuffer);
-      break;
-    }
-    case CesiumGltf::Accessor::ComponentType::SHORT: {
-      CesiumGltf::AccessorView<glm::i16vec3> silhouetteNormalView(
-          model,
-          silhouetteNormalAccessor);
-      populateSilhouetteNormals(
-          visibleEdges,
-          silhouetteNormalView,
-          vertexBuffer);
-      break;
-    }
-    case CesiumGltf::Accessor::ComponentType::FLOAT:
-    default: {
-      CesiumGltf::AccessorView<glm::vec3> silhouetteNormalView(
-          model,
-          silhouetteNormalAccessor);
-      populateSilhouetteNormals(
-          visibleEdges,
-          silhouetteNormalView,
-          vertexBuffer);
-      break;
-    }
-    }
+  if (visibleEdges.silhouetteEdgeIndices.IsEmpty()) {
+    return;
+  }
+
+  const CesiumGltf::Accessor* pSilhouetteNormalAccessor =
+      Model::getSafe(&model.accessors, silhouetteNormalAccessorIndex);
+  int32_t componentType = pSilhouetteNormalAccessor
+                              ? pSilhouetteNormalAccessor->componentType
+                              : CesiumGltf::Accessor::ComponentType::FLOAT;
+  // populateSilhouetteNormals will handle when the accessor is invalid.
+  switch (componentType) {
+  case CesiumGltf::Accessor::ComponentType::BYTE: {
+    CesiumGltf::AccessorView<glm::i8vec3> silhouetteNormalView(
+        model,
+        silhouetteNormalAccessorIndex);
+    populateSilhouetteNormals(visibleEdges, silhouetteNormalView, vertexBuffer);
+    break;
+  }
+  case CesiumGltf::Accessor::ComponentType::SHORT: {
+    CesiumGltf::AccessorView<glm::i16vec3> silhouetteNormalView(
+        model,
+        silhouetteNormalAccessorIndex);
+    populateSilhouetteNormals(visibleEdges, silhouetteNormalView, vertexBuffer);
+    break;
+  }
+  case CesiumGltf::Accessor::ComponentType::FLOAT:
+  default: {
+    CesiumGltf::AccessorView<glm::vec3> silhouetteNormalView(
+        model,
+        silhouetteNormalAccessorIndex);
+    populateSilhouetteNormals(visibleEdges, silhouetteNormalView, vertexBuffer);
+    break;
+  }
   }
 }
 
@@ -619,7 +622,7 @@ void populateVertexBufferForLineStrings(
 }
 
 FColor getBaseColorFromMaterial(const Material& material) {
-  FLinearColor result;
+  FLinearColor result(1.f, 1.f, 1.f, 1.f);
 
   const MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness.value_or(MaterialPBRMetallicRoughness());
@@ -628,8 +631,6 @@ FColor getBaseColorFromMaterial(const Material& material) {
     result.G = pbr.baseColorFactor[1];
     result.B = pbr.baseColorFactor[2];
     result.A = pbr.baseColorFactor.size() > 3 ? pbr.baseColorFactor[3] : 1.f;
-  } else {
-    result = FLinearColor(1.f, 1.f, 1.f, 1.f);
   }
 
   return result.ToFColor(false);
