@@ -7,6 +7,7 @@
 - Added missing includes that introduced compilation failures when building the plugin from source against UE 5.7's bundled clang 20.1.8 toolchain (introduced in v2.25.0 by #1685; binary plugin users were unaffected).
 - Fixed the case where glTF line primitives caused excessive log spam due to Chaos attempting to generate physics bodies for small non-triangle meshes.
 - Fixed an incorrect transform that reversed the appearance of data in box voxel tilesets.
+- Fixed a crash in `UCesiumGaussianSplatSubsystem::Tick` when `GetPrimaryWorld()` returns `nullptr` (e.g. between PIE shutdown and Standalone-Game launch, or on nDisplay secondary nodes during world bind-up). Restores the validity check ordering that shipped in v2.24.1 and was inadvertently inverted in v2.26.0 (#1841).
 
 ### v2.26.0 - 2026-05-01
 
