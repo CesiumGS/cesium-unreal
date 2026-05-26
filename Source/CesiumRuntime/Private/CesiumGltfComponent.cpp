@@ -1278,72 +1278,133 @@ std::string getPrimitiveName(
   return name;
 }
 
-template <class TIndexAccessor>
-TArray<uint32>
-getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
+template <class TIndex>
+TArray<uint32> getIndices(
+    const CesiumGltf::AccessorView<TIndex>& indicesView,
+    int32 primitiveMode) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
   TArray<uint32> indices;
+  if (indicesView.size() == 0) {
+    return indices;
+  }
+
+  // Account for the primitive restart constant if present in the index buffer.
+  constexpr TIndex primitiveRestartConstant =
+      std::numeric_limits<TIndex>::max();
 
   switch (primitiveMode) {
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
-    // The TRIANGLE_STRIP primitive mode cannot be enabled without creating a
-    // custom render proxy, so the geometry must be emulated through separate
-    // triangles.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
-    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP: {
+    // TRIANGLE_STRIP cannot be enabled without creating a custom render proxy,
+    // so the geometry must be emulated through separate triangles.
+    const auto triangleCount =
+        static_cast<TArray<uint32>::SizeType>(indicesView.size() - 2);
+    indices.Reserve(3 * triangleCount);
+
+    for (int32 i = 0; i < triangleCount; ++i) {
+      if (indicesView[i] == primitiveRestartConstant ||
+          indicesView[i + 1] == primitiveRestartConstant ||
+          indicesView[i + 2] == primitiveRestartConstant) {
+        continue;
+      }
+
       if (i % 2) {
-        indices[3 * i] = indicesView[i];
-        indices[3 * i + 1] = indicesView[i + 2];
-        indices[3 * i + 2] = indicesView[i + 1];
+        indices.Add(indicesView[i]);
+        indices.Add(indicesView[i + 2]);
+        indices.Add(indicesView[i + 1]);
       } else {
-        indices[3 * i] = indicesView[i];
-        indices[3 * i + 1] = indicesView[i + 1];
-        indices[3 * i + 2] = indicesView[i + 2];
+        indices.Add(indicesView[i]);
+        indices.Add(indicesView[i + 1]);
+        indices.Add(indicesView[i + 2]);
       }
     }
     break;
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-    // The TRIANGLE_FAN primitive mode is not supported in Unreal, so geometry
-    // must be emulated through separate triangles.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
-    for (int32 i = 2, j = 0; i < indicesView.size(); ++i, j += 3) {
-      indices[j] = indicesView[0];
-      indices[j + 1] = indicesView[i - 1];
-      indices[j + 2] = indicesView[i];
-    }
-    break;
-  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
-    // The LINE_LOOP primitive mode is not supported in Unreal, so geometry must
-    // be emulated through separate lines.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(2 * indicesView.size()));
-    for (int32 i = 0, j = 0; i < indicesView.size(); ++i, j += 2) {
-      // Loop to the first index once we reach the last line segment.
-      size_t nextIndex = (i < indicesView.size() - 1) ? i + 1 : 0;
+  }
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN: {
+    // TRIANGLE_FAN is not supported in Unreal, so geometry must be emulated
+    // through separate triangles.
+    const auto triangleCount =
+        static_cast<TArray<uint32>::SizeType>(indicesView.size() - 2);
+    indices.Reserve(3 * triangleCount);
 
-      indices[j] = indicesView[i];
-      indices[j + 1] = indicesView[nextIndex];
+    int32 fanStart = 0;
+    for (int32 i = 2; i < indicesView.size(); ++i) {
+      TIndex fanStartIndex = indicesView[fanStart];
+      TIndex previousIndex = indicesView[i - 1];
+      TIndex currentIndex = indicesView[i];
+
+      if (fanStartIndex == primitiveRestartConstant) {
+        fanStart = i - 1;
+        continue;
+      }
+      if (previousIndex == primitiveRestartConstant) {
+        fanStart = i;
+        continue;
+      }
+      if (currentIndex == primitiveRestartConstant) {
+        fanStart = i + 1;
+        continue;
+      }
+
+      indices.Add(fanStartIndex);
+      indices.Add(previousIndex);
+      indices.Add(currentIndex);
     }
     break;
-  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
-    // The LINE_STRIP primitive mode is not supported in Unreal, so geometry
-    // must be emulated through separate lines.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(2 * (indicesView.size() - 1)));
-    for (int32 i = 0, j = 0; i < indicesView.size() - 1; ++i, j += 2) {
-      indices[j] = indicesView[i];
-      indices[j + 1] = indicesView[i + 1];
+  }
+  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP: {
+    // LINE_LOOP is not supported in Unreal, so geometry must be emulated
+    // through separate lines.
+    const auto lineCount =
+        static_cast<TArray<uint32>::SizeType>(indicesView.size());
+    indices.Reserve(2 * lineCount);
+
+    int32 loopStart = 0;
+    for (int32 i = 0; i < lineCount; ++i) {
+      // Loop to the starting index once we reach the last line segment.
+      size_t nextIndex = (i < lineCount - 1) ? i + 1 : loopStart;
+
+      if (indicesView[i] == primitiveRestartConstant) {
+        loopStart = i + 1;
+        continue;
+      }
+      if (indicesView[nextIndex] == primitiveRestartConstant) {
+        CESIUM_ASSERT(nextIndex != loopStart);
+        loopStart = nextIndex + 1;
+        continue;
+      }
+
+      indices.Add(indicesView[i]);
+      indices.Add(indicesView[nextIndex]);
     }
     break;
+  }
+  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP: {
+    // LINE_STRIP is not supported in Unreal, so geometry must be emulated
+    // through separate lines.
+    const auto lineCount =
+        static_cast<TArray<uint32>::SizeType>(indicesView.size() - 1);
+    indices.Reserve(2 * lineCount);
+
+    for (int32 i = 0; i < lineCount; ++i) {
+      if (indicesView[i] == primitiveRestartConstant ||
+          indicesView[i + 1] == primitiveRestartConstant) {
+        continue;
+      }
+
+      indices.Add(indicesView[i]);
+      indices.Add(indicesView[i + 1]);
+    }
+    break;
+  }
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
   case CesiumGltf::MeshPrimitive::Mode::LINES:
   case CesiumGltf::MeshPrimitive::Mode::POINTS:
   default:
-    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+    indices.Reserve(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
     for (int32 i = 0; i < indicesView.size(); ++i) {
-      indices[i] = indicesView[i];
+      if (indicesView[i] != primitiveRestartConstant) {
+        indices.Add(indicesView[i]);
+      }
     }
     break;
   }
@@ -1352,14 +1413,14 @@ getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
 }
 } // namespace
 
-template <class TIndexAccessor>
+template <class TIndex>
 static void loadPrimitive(
     LoadedPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector3f>& positionView,
-    const TIndexAccessor& indicesView,
+    const CesiumGltf::AccessorView<TIndex>& indicesView,
     const CesiumGeospatial::Ellipsoid& ellipsoid) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
@@ -1382,15 +1443,13 @@ static void loadPrimitive(
     return;
   }
 
-  if constexpr (IsAccessorView<TIndexAccessor>::value) {
-    if (indicesView.status() != CesiumGltf::AccessorViewStatus::Valid) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("%s: Invalid indices buffer"),
-          UTF8_TO_TCHAR(name.c_str()));
-      return;
-    }
+  if (indicesView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("%s: Invalid indices buffer"),
+        UTF8_TO_TCHAR(name.c_str()));
+    return;
   }
 
   auto normalAccessorIt =
@@ -2102,13 +2161,19 @@ static void loadPrimitive(
     for (uint32_t i = 0; i < positionView.size(); ++i) {
       syntheticIndexBuffer[i] = i;
     }
+
+    CesiumGltf::AccessorView<uint32_t> syntheticIndexAccessor(
+        reinterpret_cast<std::byte*>(syntheticIndexBuffer.data()),
+        sizeof(uint32_t),
+        0,
+        syntheticIndexBuffer.size());
     loadPrimitive(
         result,
         transform,
         options,
         *pPositionAccessor,
         positionView,
-        syntheticIndexBuffer,
+        syntheticIndexAccessor,
         ellipsoid);
   } else {
     loadIndexedPrimitive(
