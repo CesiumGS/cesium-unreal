@@ -6,6 +6,7 @@
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/FeatureId.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
 static FCesiumFeatureIdAttribute EmptyFeatureIDAttribute;
@@ -223,30 +224,31 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
     return -1;
   }
 
-  const CesiumPrimitiveData& primData = pGltfComponent->getPrimitiveData();
-  if (!primData.pMeshPrimitive) {
+  const CesiumPrimitiveData& primitiveData = pGltfComponent->getPrimitiveData();
+  if (!primitiveData.pMeshPrimitive) {
     return -1;
   }
-  auto VertexIndices = std::visit(
+
+  auto vertexIndices = std::visit(
       CesiumGltf::IndicesForFaceFromAccessor{
           Hit.FaceIndex,
-          primData.PositionAccessor.size(),
-          primData.pMeshPrimitive->mode},
-      primData.IndexAccessor);
+          primitiveData.positionAccessor.size(),
+          primitiveData.pMeshPrimitive->mode},
+      primitiveData.indexAccessor);
 
-  int64 VertexIndex = VertexIndices[0];
+  int64 vertexIndex = vertexIndices[0];
 
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Attribute) {
     FCesiumFeatureIdAttribute attribute =
         std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
     return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
         attribute,
-        VertexIndex);
+        vertexIndex);
   }
 
   if (FeatureIDSet._featureIDSetType == ECesiumFeatureIdSetType::Implicit) {
-    return (VertexIndex >= 0 && VertexIndex < FeatureIDSet._featureCount)
-               ? VertexIndex
+    return (vertexIndex >= 0 && vertexIndex < FeatureIDSet._featureCount)
+               ? vertexIndex
                : -1;
   }
 

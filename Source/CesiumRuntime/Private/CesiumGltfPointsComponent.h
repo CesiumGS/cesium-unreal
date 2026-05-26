@@ -30,4 +30,5 @@ public:
 
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
+  virtual void OnCreatePhysicsState() override;
 };

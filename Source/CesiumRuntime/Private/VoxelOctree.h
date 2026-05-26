@@ -6,8 +6,10 @@
 #include "RenderCommandFence.h"
 
 #include <CesiumGeometry/OctreeTileID.h>
+#include <cstddef>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 class FVoxelOctree;
 

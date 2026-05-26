@@ -5,6 +5,7 @@
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshGpuInstancing.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
 static FCesiumPrimitiveFeatures EmptyPrimitiveFeatures;
@@ -53,7 +54,7 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (IsValid(pGltfComponent)) {
-    return pGltfComponent->getPrimitiveData().Features;
+    return pGltfComponent->getPrimitiveData().features;
   }
 
   return EmptyPrimitiveFeatures;
