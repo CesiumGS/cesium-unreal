@@ -11,6 +11,21 @@
 #include "Delegates/Delegate.h"
 #include "CesiumVectorTilesRasterOverlay.generated.h"
 
+/**
+ * Configures where the CesiumVectorTilesRasterOverlay should load its vector
+ * data from.
+ */
+UENUM(BlueprintType)
+enum class ECesiumVectorTilesRasterOverlaySource : uint8 {
+  /**
+   * The raster overlay will load a vector tileset from Cesium ion.
+   */
+  FromCesiumIon = 0,
+  /**
+   * The raster overlay will load a vector tileset from a URL.
+   */
+  FromUrl = 1
+};
 
 UCLASS(
     ClassGroup = Cesium,
@@ -22,14 +37,58 @@ class CESIUMRUNTIME_API UCesiumVectorTilesRasterOverlay
   GENERATED_BODY()
 
 public:
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  ECesiumVectorTilesRasterOverlaySource Source =
+      ECesiumVectorTilesRasterOverlaySource::FromCesiumIon;
   /**
-   * A URL to load a GeoJSON document from.
+   * The ID of the Cesium ion asset to use.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Cesium")
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumVectorTilesRasterOverlaySource::FromCesiumIon"))
+  int64 IonAssetID;
+
+  /**
+   * The Cesium ion Server from which this raster overlay is loaded.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      AdvancedDisplay,
+      meta =
+          (EditCondition =
+               "Source == ECesiumVectorTilesRasterOverlaySource::FromCesiumIon"))
+  UCesiumIonServer* CesiumIonServer;
+
+  /**
+   * A URL to load a vector tiles tileset from.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumVectorTilesRasterOverlaySource::FromUrl"))
   FString Url;
+
+  /**
+   * Headers to use while making a request to `Url` to load a vector tiles
+   * tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumVectorTilesRasterOverlaySource::FromUrl"))
+  TMap<FString, FString> RequestHeaders;
 
   /**
    * The number of mip levels to generate for each tile of this raster overlay.
@@ -48,7 +107,7 @@ public:
   /**
    * The default style to use for this raster overlay.
    *
-   * If no style is set on a GeoJSON object or any of its parents, this style
+   * If no style information is present in the vector tiles tileset, this style
    * will be used instead.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
