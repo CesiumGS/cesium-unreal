@@ -28,8 +28,7 @@ void UCesiumGltfInstancedComponent::BeginDestroy() {
   // Clear everything we can in order to reduce memory usage, because this
   // UObject might not actually get deleted by the garbage collector until
   // much later.
-  ICesiumPrimitive* pCesiumPrimitive = Cast<ICesiumPrimitive>(this);
-  pCesiumPrimitive->getPrimitiveData().destroy();
+  this->getPrimitiveData().destroy();
 
   if (UMaterialInstanceDynamic* pMaterial =
           Cast<UMaterialInstanceDynamic>(this->GetMaterial(0))) {
@@ -49,15 +48,15 @@ void UCesiumGltfInstancedComponent::BeginDestroy() {
 FBoxSphereBounds UCesiumGltfInstancedComponent::CalcBounds(
     const FTransform& LocalToWorld) const {
   const CesiumPrimitiveData& primitiveData = this->getPrimitiveData();
-  if (!primitiveData.boundingVolume) {
-    return Super::CalcBounds(LocalToWorld);
-  }
 
-  std::optional<FBoxSphereBounds> maybeBounds = std::visit(
-      CalcBoundsOperation{
-          LocalToWorld,
-          primitiveData.highPrecisionNodeTransform},
-      *primitiveData.boundingVolume);
+  std::optional<FBoxSphereBounds> maybeBounds = std::nullopt;
+  if (primitiveData.boundingVolume) {
+    maybeBounds = std::visit(
+        CalcBoundsOperation{
+            LocalToWorld,
+            primitiveData.highPrecisionNodeTransform},
+        *primitiveData.boundingVolume);
+  }
   return maybeBounds.value_or(Super::CalcBounds(LocalToWorld));
 }
 
