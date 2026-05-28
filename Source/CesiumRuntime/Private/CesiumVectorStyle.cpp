@@ -31,17 +31,17 @@ fillStyleToNative(const FCesiumVectorPolygonFillStyle& fillStyle) {
 CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
   // Assert that enums are equivalent to catch any issues.
   static_assert(
-      (uint8)CesiumVectorData::ColorMode::Normal ==
-      (uint8)ECesiumVectorColorMode::Normal);
+      static_cast<uint8>(CesiumVectorData::ColorMode::Normal) ==
+      static_cast<uint8>(ECesiumVectorColorMode::Normal));
   static_assert(
-      (uint8)CesiumVectorData::ColorMode::Random ==
-      (uint8)ECesiumVectorColorMode::Random);
+      static_cast<uint8>(CesiumVectorData::ColorMode::Random) ==
+      static_cast<uint8>(ECesiumVectorColorMode::Random));
   static_assert(
-      (uint8)CesiumVectorData::LineWidthMode::Meters ==
-      (uint8)ECesiumVectorLineWidthMode::Meters);
+      static_cast<uint8>(CesiumVectorData::LineWidthMode::Meters) ==
+      static_cast<uint8>(ECesiumVectorLineWidthMode::Meters));
   static_assert(
-      (uint8)CesiumVectorData::LineWidthMode::Pixels ==
-      (uint8)ECesiumVectorLineWidthMode::Pixels);
+      static_cast<uint8>(CesiumVectorData::LineWidthMode::Pixels) ==
+      static_cast<uint8>(ECesiumVectorLineWidthMode::Pixels));
 
   return CesiumVectorData::VectorStyle{
       lineStyleToNative(this->LineStyle),
@@ -72,10 +72,10 @@ FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
   if (style.polygon.outline) {
     PolygonOutlineStyle = FCesiumVectorLineStyle{
         FColor(
-            (uint8)style.polygon.outline->color.r,
-            (uint8)style.polygon.outline->color.g,
-            (uint8)style.polygon.outline->color.b,
-            (uint8)style.polygon.outline->color.a),
+            static_cast<uint8>(style.polygon.outline->color.r),
+            static_cast<uint8>(style.polygon.outline->color.g),
+            static_cast<uint8>(style.polygon.outline->color.b),
+            static_cast<uint8>(style.polygon.outline->color.a)),
         (ECesiumVectorColorMode)style.polygon.outline->colorMode,
         style.polygon.outline->width,
         (ECesiumVectorLineWidthMode)style.polygon.outline->widthMode};
@@ -85,10 +85,10 @@ FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
   if (style.polygon.fill) {
     PolygonFillStyle = FCesiumVectorPolygonFillStyle{
         FColor(
-            (uint8)style.polygon.fill->color.r,
-            (uint8)style.polygon.fill->color.g,
-            (uint8)style.polygon.fill->color.b,
-            (uint8)style.polygon.fill->color.a),
+            static_cast<uint8>(style.polygon.fill->color.r),
+            static_cast<uint8>(style.polygon.fill->color.g),
+            static_cast<uint8>(style.polygon.fill->color.b),
+            static_cast<uint8>(style.polygon.fill->color.a)),
         (ECesiumVectorColorMode)style.polygon.fill->colorMode};
   }
 
@@ -96,10 +96,10 @@ FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
   if (style.point.outline) {
     PolygonOutlineStyle = FCesiumVectorLineStyle{
         FColor(
-            (uint8)style.point.outline->color.r,
-            (uint8)style.point.outline->color.g,
-            (uint8)style.point.outline->color.b,
-            (uint8)style.point.outline->color.a),
+            static_cast<uint8>(style.point.outline->color.r),
+            static_cast<uint8>(style.point.outline->color.g),
+            static_cast<uint8>(style.point.outline->color.b),
+            static_cast<uint8>(style.point.outline->color.a)),
         (ECesiumVectorColorMode)style.point.outline->colorMode,
         style.point.outline->width,
         (ECesiumVectorLineWidthMode)style.point.outline->widthMode};
@@ -109,20 +109,20 @@ FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
   if (style.point.fill) {
     PolygonFillStyle = FCesiumVectorPolygonFillStyle{
         FColor(
-            (uint8)style.point.fill->color.r,
-            (uint8)style.point.fill->color.g,
-            (uint8)style.point.fill->color.b,
-            (uint8)style.point.fill->color.a),
+            static_cast<uint8>(style.point.fill->color.r),
+            static_cast<uint8>(style.point.fill->color.g),
+            static_cast<uint8>(style.point.fill->color.b),
+            static_cast<uint8>(style.point.fill->color.a)),
         (ECesiumVectorColorMode)style.point.fill->colorMode};
   }
 
   return FCesiumVectorStyle{
       FCesiumVectorLineStyle{
           FColor(
-              (uint8)style.line.color.r,
-              (uint8)style.line.color.g,
-              (uint8)style.line.color.b,
-              (uint8)style.line.color.a),
+              static_cast<uint8>(style.line.color.r),
+              static_cast<uint8>(style.line.color.g),
+              static_cast<uint8>(style.line.color.b),
+              static_cast<uint8>(style.line.color.a)),
           (ECesiumVectorColorMode)style.line.colorMode,
           style.line.width,
           (ECesiumVectorLineWidthMode)style.line.widthMode},

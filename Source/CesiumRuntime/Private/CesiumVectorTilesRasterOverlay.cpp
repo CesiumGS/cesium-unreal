@@ -29,17 +29,29 @@ UCesiumVectorTilesRasterOverlay::CreateOverlay(
       headers};
 
   if (this->Source == ECesiumVectorTilesRasterOverlaySource::FromCesiumIon) {
+    if (this->IonAssetID <= 0) {
+      return nullptr;
+    }
+
     if (!IsValid(this->CesiumIonServer)) {
       this->CesiumIonServer = UCesiumIonServer::GetServerForNewObjects();
     }
 
+    FString token = this->IonAccessToken.IsEmpty()
+                        ? this->CesiumIonServer->DefaultIonAccessToken
+                        : this->IonAccessToken;
+
     return std::make_unique<CesiumVectorOverlays::VectorTilesRasterOverlay>(
         TCHAR_TO_UTF8(*this->MaterialLayerKey),
         this->IonAssetID,
-        TCHAR_TO_UTF8(*this->CesiumIonServer->DefaultIonAccessToken),
+        TCHAR_TO_UTF8(*token),
         std::string(TCHAR_TO_UTF8(*this->CesiumIonServer->ApiUrl)) + "/",
         vectorOptions,
         options);
+  }
+
+  if (this->Url.IsEmpty()) {
+    return nullptr;
   }
 
   return std::make_unique<CesiumVectorOverlays::VectorTilesRasterOverlay>(

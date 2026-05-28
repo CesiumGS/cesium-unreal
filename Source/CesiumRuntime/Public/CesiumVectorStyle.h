@@ -140,7 +140,7 @@ struct FCesiumVectorPointStyle {
   GENERATED_BODY()
 
   /**
-   * The radius of the point.
+   * The radius of the point in pixels.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float Radius = 1.0f;

@@ -53,6 +53,18 @@ public:
   int64 IonAssetID;
 
   /**
+   * The access token to use to access the Cesium ion resource.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "Source == ECesiumVectorTilesRasterOverlaySource::FromCesiumIon"))
+  FString IonAccessToken;
+
+  /**
    * The Cesium ion Server from which this raster overlay is loaded.
    */
   UPROPERTY(
