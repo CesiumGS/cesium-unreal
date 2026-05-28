@@ -28,7 +28,7 @@ enum class ECesiumHeightReference : uint8 {
    * No specified Height Reference. Used only for HeightReferenceOverride
    * in the CesiumGlobeAnchor Blueprints.  Do not use otherwise.
    */
-  None,
+  None
 };
 
 /**
@@ -715,8 +715,15 @@ private:
   float _fixedHeightAboveHeightReference = 0.0f;
 
   /**
-   * Calculate correct Height from the actor's position based on the
-   * HeightReference and tileset.
+   * Calculates the height in meters from the component's actor to the
+   * referenced tileset. If the computation is unsuccessful, `height` will
+   * remain unchanged.
+   */
+  bool _getHeightAboveReferencedTileset(double& height) const;
+
+  /**
+   * Calculates and sets the height in meters from the component's actor to the
+   * referenced tileset
    */
   bool _setHeightFromTilesetReference();
 
@@ -728,23 +735,20 @@ private:
           ECesiumHeightReference::None) const;
 
   /**
-   * Compute a down vector at the specified position in Unreal coordinates
+   * Compute a down vector at the specified position in Unreal coordinates.
+   * Future TODO: this could be useful to add directly to ACesiumGeoreference.
    */
-  FVector _computeLocalDown(
+  static FVector _computeLocalDown(
       const ACesiumGeoreference* pGeoreference,
-      const FVector& unrealWorldPosition) const;
+      const FVector& unrealWorldPosition);
 
   /**
    * Project the component's position onto the tileset specified by
    * ReferencedTileset, Returns whether an intersection was found.
-   *
-   * alternateActorPosition optionally specifies an alternate position from
-   * which to start the intersection test in Longitude/Latitude/Height
-   * coordinates.
    */
-  bool _queryLongitudeLatitudeHeightPositionOnTileset(
-      FVector& groundIntersection,
-      const std::optional<FVector>& alternateStartPosition = std::nullopt);
+  bool _projectOntoTilesetAsLongitudeLatitudeHeight(
+      FVector& unrealStartPosition,
+      FVector& outLongitudeLatitudeHeight) const;
 
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
 

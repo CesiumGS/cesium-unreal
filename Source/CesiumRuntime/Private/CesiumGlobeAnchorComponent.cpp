@@ -380,11 +380,20 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
       this->GetEllipsoid()
           ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
               this->GetEarthCenteredEarthFixedPosition());
-  // When using a height reference, the height reported back to the caller
-  // will always be the fixed height above the reference.
+
   if (this->_isUsingTilesetHeightReference(HeightReferenceOverride)) {
-    position.Z = this->_fixedHeightAboveHeightReference;
+    // When using a height reference, the height reported back to the caller
+    // will always be the fixed height above the reference. However, if the
+    // current height reference is _not_ Tileset, the
+    // _fixedHeightAboveHeightReference value will be stale. This value should
+    // be recomputed to remain accurate.
+    double height = this->_fixedHeightAboveHeightReference;
+    if (this->HeightReference == ECesiumHeightReference::Ellipsoid) {
+      this->_getHeightAboveReferencedTileset(height);
+    }
+    position.Z = height;
   }
+
   return position;
 }
 
@@ -394,15 +403,28 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   ELLIPSOID_CHECK(this, );
 
   FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
-  FVector tilesetPosition{};
+  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride)) {
+    ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+    if (!pGeoreference) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT("Could not find an ACesiumGeoreference in the world to complete "
+               "MoveToLongitudeLatitudeHeight"));
+      return;
+    }
 
-  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride) &&
-      this->_queryLongitudeLatitudeHeightPositionOnTileset(
-          tilesetPosition,
-          TargetLongitudeLatitudeHeight)) {
-    this->_fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
-    realLongitudeLatitudeHeight.Z =
-        tilesetPosition.Z + this->_fixedHeightAboveHeightReference;
+    FVector unrealStartPosition =
+        pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+            TargetLongitudeLatitudeHeight);
+    FVector result;
+    if (this->_projectOntoTilesetAsLongitudeLatitudeHeight(
+            unrealStartPosition,
+            result)) {
+      this->_fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
+      realLongitudeLatitudeHeight.Z =
+          result.Z + this->_fixedHeightAboveHeightReference;
+    }
   }
 
   this->MoveToEarthCenteredEarthFixedPosition(
@@ -850,18 +872,50 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   }
 }
 
-bool UCesiumGlobeAnchorComponent::_setHeightFromTilesetReference() {
+bool UCesiumGlobeAnchorComponent::_getHeightAboveReferencedTileset(
+    double& height) const {
   FVector llh =
       this->GetLongitudeLatitudeHeight(ECesiumHeightReference::Ellipsoid);
-  FVector groundPosition{};
-  if (this->_queryLongitudeLatitudeHeightPositionOnTileset(
-          groundPosition,
-          llh)) {
-    this->_fixedHeightAboveHeightReference = llh.Z - groundPosition.Z;
-    return true;
+  FVector unrealStartPosition;
+
+  AActor* pOwner = this->GetOwner();
+  ACesiumGeoreference* pGeoreference = this->GetResolvedGeoreference();
+
+  if (pOwner) {
+    unrealStartPosition = pOwner->GetActorLocation();
+  } else if (pGeoreference) {
+    unrealStartPosition =
+        pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(llh);
   } else {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Could not compute tileset-relative height for CesiumGlobeAnchor."));
     return false;
   }
+
+  FVector result;
+  if (this->_projectOntoTilesetAsLongitudeLatitudeHeight(
+          unrealStartPosition,
+          result)) {
+    height = llh.Z - result.Z;
+    return true;
+  }
+
+  return false;
+}
+
+bool UCesiumGlobeAnchorComponent::_setHeightFromTilesetReference() {
+  this->ResolveGeoreference();
+
+  double height = 0.0;
+  if (this->_getHeightAboveReferencedTileset(height)) {
+    this->_fixedHeightAboveHeightReference = height;
+    return true;
+  }
+
+  return false;
 }
 
 bool UCesiumGlobeAnchorComponent::_isUsingTilesetHeightReference(
@@ -875,9 +929,9 @@ bool UCesiumGlobeAnchorComponent::_isUsingTilesetHeightReference(
          this->GetReferencedTileset().IsValid();
 }
 
-FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
+/*static*/ FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
     const ACesiumGeoreference* pGeoreference,
-    const FVector& unrealWorldPosition) const {
+    const FVector& unrealWorldPosition) {
   FVector ecefPosition =
       pGeoreference->TransformUnrealPositionToEarthCenteredEarthFixed(
           unrealWorldPosition);
@@ -890,29 +944,24 @@ FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
   return -1 * localUp;
 }
 
-bool UCesiumGlobeAnchorComponent::
-    _queryLongitudeLatitudeHeightPositionOnTileset(
-        FVector& groundIntersection,
-        const std::optional<FVector>& alternateStartPosition) {
-  ACesiumGeoreference* pGeoreference = ResolveGeoreference();
-  if (!GetOwner() || !GetWorld() || !this->GetReferencedTileset() ||
-      !IsValid(pGeoreference))
+bool UCesiumGlobeAnchorComponent::_projectOntoTilesetAsLongitudeLatitudeHeight(
+    FVector& unrealStartPosition,
+    FVector& outLongitudeLatitudeHeight) const {
+  ACesiumGeoreference* pGeoreference = this->GetResolvedGeoreference();
+  AActor* pOwner = this->GetOwner();
+  if (!IsValid(pGeoreference) || !IsValid(pOwner) ||
+      !IsValid(this->GetWorld()) || !this->GetReferencedTileset().IsValid()) {
     return false;
+  }
 
-  FVector startPosition =
-      alternateStartPosition.has_value()
-          ? pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
-                *alternateStartPosition)
-          : GetOwner()->GetActorLocation();
-
-  FVector localDown = _computeLocalDown(pGeoreference, startPosition);
+  FVector localDown = _computeLocalDown(pGeoreference, unrealStartPosition);
 
   constexpr double traceDistance = 1000000.0;
-  FVector rayStart = startPosition - localDown * traceDistance;
-  FVector rayEnd = startPosition + localDown * traceDistance;
+  FVector rayStart = unrealStartPosition - localDown * traceDistance;
+  FVector rayEnd = unrealStartPosition + localDown * traceDistance;
 
   FCollisionQueryParams queryParams{};
-  queryParams.AddIgnoredActor(GetOwner());
+  queryParams.AddIgnoredActor(pOwner);
   queryParams.bTraceComplex = true;
 
   TArray<FHitResult> hitResults;
@@ -926,7 +975,7 @@ bool UCesiumGlobeAnchorComponent::
 
   for (const FHitResult& hit : hitResults) {
     if (hit.GetActor() == this->ReferencedTileset.Get()) {
-      groundIntersection =
+      outLongitudeLatitudeHeight =
           pGeoreference->TransformUnrealPositionToLongitudeLatitudeHeight(
               hit.Location);
       return true;
@@ -949,7 +998,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 #if WITH_EDITOR
   UWorld* pWorld = this->GetWorld();
 
-  if (pWorld && pWorld->WorldType == EWorldType::Editor &&
+  if (IsValid(pWorld) && pWorld->WorldType == EWorldType::Editor &&
       this->_isUsingTilesetHeightReference()) {
     this->_setHeightFromTilesetReference();
   }
