@@ -2,6 +2,11 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added `CesiumVectorTilesRasterOverlay` supporting vector data loaded from 3D Tiles tilesets.
+- Added support for displaying points in `CesiumGeoJsonDocumentRasterOverlay` and `CesiumVectorTilesRasterOverlay`.
+
 ##### Fixes :wrench:
 
 - Added missing includes that introduced compilation failures when building the plugin from source against UE 5.7's bundled clang 20.1.8 toolchain (introduced in v2.25.0 by #1685; binary plugin users were unaffected).
