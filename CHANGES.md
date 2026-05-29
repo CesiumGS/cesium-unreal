@@ -6,6 +6,7 @@
 
 - Added `CesiumVectorTilesRasterOverlay` supporting vector data loaded from 3D Tiles tilesets.
 - Added support for displaying points in `CesiumGeoJsonDocumentRasterOverlay` and `CesiumVectorTilesRasterOverlay`.
+- Added support for rendering edges from the `EXT_mesh_primitive_edge_visibility` extension.
 
 ##### Fixes :wrench:
 

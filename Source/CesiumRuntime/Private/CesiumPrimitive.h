@@ -143,6 +143,12 @@ public:
   void destroy();
 };
 
+/**
+ * Given a position from a glTF model, applies the scale factor and
+ * Y-coordinate flip necessary for rendering in Unreal.
+ */
+FVector3f scalePositionForUnreal(const FVector3f& position);
+
 UINTERFACE()
 class UCesiumPrimitive : public UCesiumLoadedTilePrimitive {
   GENERATED_BODY()

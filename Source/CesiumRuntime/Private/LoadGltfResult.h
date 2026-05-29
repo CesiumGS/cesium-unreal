@@ -66,6 +66,13 @@ struct LoadedPrimitiveResult {
   std::optional<int32_t> voxelPropertyAttributeIndex;
 
   /**
+   * If the primitive contains the `EXT_mesh_primitive_edge_visibility`
+   * extension, this will contain the data to create a derived
+   * `UCesiumGltfLinesComponent` on the primitive.
+   */
+  TUniquePtr<FStaticMeshRenderData> pEdgeRenderData = nullptr;
+
+  /**
    * Returns whether or not this primitive has renderable data (typical mesh
    * data, Gaussian splats, or voxels). If this returns false, this primitive
    * should be removed from consideration for rendering.
