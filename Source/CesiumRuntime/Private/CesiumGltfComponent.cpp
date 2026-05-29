@@ -3518,7 +3518,7 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
   ConstructedPrimitiveComponent result;
 
-  if (!instanceTransforms.empty()) {
+  if (instanceTransforms.size()) {
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
 
@@ -3536,35 +3536,35 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
     }
     result.pAsMeshComponent = pInstancedComponent;
     result.pAsCesiumPrimitive = pInstancedComponent;
-  }
-
-  switch (primitiveMode) {
-  case CesiumGltf::MeshPrimitive::Mode::POINTS: {
-    auto* pPointMesh =
-        NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
-    pPointMesh->UsesAdditiveRefinement =
-        tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
-    pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
-    pPointMesh->Dimensions = loadResult.dimensions;
-    result.pAsMeshComponent = pPointMesh;
-    result.pAsCesiumPrimitive = pPointMesh;
-    break;
-  }
-  case CesiumGltf::MeshPrimitive::Mode::LINES:
-  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
-  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP: {
-    auto* pLinesComponent =
-        NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
-    result.pAsMeshComponent = pLinesComponent;
-    result.pAsCesiumPrimitive = pLinesComponent;
-    break;
-  }
-  default:
-    auto* pPrimitiveComponent =
-        NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
-    result.pAsMeshComponent = pPrimitiveComponent;
-    result.pAsCesiumPrimitive = pPrimitiveComponent;
-    break;
+  } else {
+    switch (primitiveMode) {
+    case CesiumGltf::MeshPrimitive::Mode::POINTS: {
+      auto* pPointMesh =
+          NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
+      pPointMesh->UsesAdditiveRefinement =
+          tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
+      pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
+      pPointMesh->Dimensions = loadResult.dimensions;
+      result.pAsMeshComponent = pPointMesh;
+      result.pAsCesiumPrimitive = pPointMesh;
+      break;
+    }
+    case CesiumGltf::MeshPrimitive::Mode::LINES:
+    case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
+    case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP: {
+      auto* pLinesComponent =
+          NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
+      result.pAsMeshComponent = pLinesComponent;
+      result.pAsCesiumPrimitive = pLinesComponent;
+      break;
+    }
+    default:
+      auto* pPrimitiveComponent =
+          NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
+      result.pAsMeshComponent = pPrimitiveComponent;
+      result.pAsCesiumPrimitive = pPrimitiveComponent;
+      break;
+    }
   }
 
   CESIUM_ASSERT(result.pAsMeshComponent && result.pAsCesiumPrimitive);
@@ -3654,7 +3654,7 @@ UStaticMesh* createStaticMesh(
     TUniquePtr<FStaticMeshRenderData>&& pRenderData) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMesh)
 
-  auto pStaticMesh = NewObject<UStaticMesh>(pMeshComponent, componentName);
+  auto* pStaticMesh = NewObject<UStaticMesh>(pMeshComponent, componentName);
   // Unreal will crash trying to generate ray tracing information for a
   // static mesh without triangles (and it doesn't make sense anyways!)
   switch (primitiveMode) {
