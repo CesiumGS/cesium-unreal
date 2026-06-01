@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/StaticMesh.h"
 #include "Templates/UniquePtr.h"
 
 #include <CesiumGltf/AccessorView.h>

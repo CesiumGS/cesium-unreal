@@ -3,9 +3,11 @@
 #include "CesiumGltfPrimitiveEdges.h"
 #include "CesiumPrimitive.h"
 #include "CesiumRuntime.h"
+#include "StaticMeshResources.h"
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/ExtensionExtMeshPrimitiveEdgeVisibility.h>
 #include <CesiumGltf/Model.h>
+
 #include <cstdlib>
 #include <limits>
 #include <type_traits>

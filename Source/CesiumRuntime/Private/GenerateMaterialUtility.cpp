@@ -1,7 +1,6 @@
 #include "GenerateMaterialUtility.h"
 
 #include "CesiumMetadataEncodingDetails.h"
-#include "CesiumMetadataValue.h"
 #include "Containers/Map.h"
 #include "EncodedFeaturesMetadata.h"
 
