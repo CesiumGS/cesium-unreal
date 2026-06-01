@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a crash that could occur when zooming to a tileset with **Update in Editor** disabled.
+
 ### v2.27.0 - 2026-06-01
 
 ##### Additions :tada:
