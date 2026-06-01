@@ -135,6 +135,49 @@ struct FCesiumVectorPolygonStyle {
   FCesiumVectorLineStyle OutlineStyle;
 };
 
+USTRUCT(BlueprintType)
+struct FCesiumVectorPointStyle {
+  GENERATED_BODY()
+
+  /**
+   * The radius of the point in pixels.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  float Radius = 1.0f;
+
+  /**
+   * Whether the point should be filled.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool Fill = true;
+
+  /**
+   * If `Fill` is true, this style will be used when filling the point.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "Fill"))
+  FCesiumVectorPolygonFillStyle FillStyle;
+
+  /**
+   * Whether the point should be outlined.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool Outline = false;
+
+  /**
+   * If `Outline` is true, this style will be used when outlining the point.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (EditCondition = "Outline"))
+  FCesiumVectorLineStyle OutlineStyle;
+};
+
 /**
  * Style information to use when drawing vector data.
  */
@@ -153,6 +196,12 @@ struct FCesiumVectorStyle {
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FCesiumVectorPolygonStyle PolygonStyle;
+
+  /**
+   * Styles to use when drawing points.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FCesiumVectorPointStyle PointStyle;
 
   /**
    * Converts this Unreal representation into the Cesium Native equivalent.

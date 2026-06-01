@@ -20,6 +20,7 @@
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterialInterface;
+class UMaterial;
 class UTexture2D;
 class UStaticMeshComponent;
 
@@ -96,6 +97,9 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater = nullptr;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterial* BaseMaterialPrimitiveEdges = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};

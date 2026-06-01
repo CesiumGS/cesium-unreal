@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "CesiumFeaturesMetadataDescription.h"
+#include "CesiumMetadataValue.h"
 #include "CoreMinimal.h"
 
 #if WITH_EDITOR
