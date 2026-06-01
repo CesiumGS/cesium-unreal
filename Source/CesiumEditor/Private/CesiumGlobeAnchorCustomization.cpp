@@ -78,7 +78,10 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
   DetailBuilder.HideProperty(
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ReferencedTileset));
   DetailBuilder.HideProperty(
-      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, HeightReference));
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, HeightAboveTileset));
+  DetailBuilder.HideProperty(GET_MEMBER_NAME_CHECKED(
+      UCesiumGlobeAnchorComponent,
+      LockHeightAboveTileset));
   DetailBuilder.HideProperty(GET_MEMBER_NAME_CHECKED(
       UCesiumGlobeAnchorComponent,
       HeightUpdateInterval));
@@ -121,32 +124,37 @@ void FCesiumGlobeAnchorCustomization::CreateHeightReferencePropertyEditor(
 
   TArrayView<UObject*> View = this->DerivedPointers;
 
-  TSharedPtr<IPropertyHandle> HeightReferenceProperty =
-      DetailBuilder.AddObjectPropertyData(
-          View,
-          GET_MEMBER_NAME_CHECKED(
-              UCesiumGlobeAnchorDerivedProperties,
-              HeightReference));
-
-  Group.AddPropertyRow(HeightReferenceProperty.ToSharedRef());
-
-  TSharedPtr<IPropertyHandle> TilesetProperty =
+  TSharedPtr<IPropertyHandle> pTilesetProperty =
       DetailBuilder.AddObjectPropertyData(
           View,
           GET_MEMBER_NAME_CHECKED(
               UCesiumGlobeAnchorDerivedProperties,
               ReferencedTileset));
+  Group.AddPropertyRow(pTilesetProperty.ToSharedRef());
 
-  Group.AddPropertyRow(TilesetProperty.ToSharedRef());
+  TSharedPtr<IPropertyHandle> pHeightAboveTilesetProperty =
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(
+              UCesiumGlobeAnchorDerivedProperties,
+              HeightAboveTileset));
+  Group.AddPropertyRow(pHeightAboveTilesetProperty.ToSharedRef());
 
-  TSharedPtr<IPropertyHandle> TilesetHeightUpdateIntervalProperty =
+  TSharedPtr<IPropertyHandle> pLockHeightAboveTilesetProperty =
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(
+              UCesiumGlobeAnchorDerivedProperties,
+              LockHeightAboveTileset));
+  Group.AddPropertyRow(pLockHeightAboveTilesetProperty.ToSharedRef());
+
+  TSharedPtr<IPropertyHandle> pTilesetHeightUpdateIntervalProperty =
       DetailBuilder.AddObjectPropertyData(
           View,
           GET_MEMBER_NAME_CHECKED(
               UCesiumGlobeAnchorDerivedProperties,
               HeightUpdateInterval));
-
-  Group.AddPropertyRow(TilesetHeightUpdateIntervalProperty.ToSharedRef());
+  Group.AddPropertyRow(pTilesetHeightUpdateIntervalProperty.ToSharedRef());
 }
 
 void FCesiumGlobeAnchorCustomization::CreatePositionEarthCenteredEarthFixed(
@@ -283,26 +291,27 @@ void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
-                          HeightUpdateInterval)) {
-    this->GlobeAnchor->Modify();
-    this->GlobeAnchor->SetHeightUpdateInterval(this->HeightUpdateInterval);
-  } else if (
-      propertyName == GET_MEMBER_NAME_CHECKED(
-                          UCesiumGlobeAnchorDerivedProperties,
                           ReferencedTileset)) {
     this->GlobeAnchor->Modify();
     this->GlobeAnchor->SetReferencedTileset(this->ReferencedTileset.Get());
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
-                          HeightReference)) {
+                          HeightAboveTileset)) {
     this->GlobeAnchor->Modify();
-    this->GlobeAnchor->SetHeightReference(this->HeightReference);
-    // Notify that the struct has changed, forcing a details panel rebuild
-    FPropertyEditorModule& editor =
-        FModuleManager::GetModuleChecked<FPropertyEditorModule>(
-            "PropertyEditor");
-    editor.NotifyCustomizationModuleChanged();
+    this->GlobeAnchor->SetHeightAboveTileset(this->HeightAboveTileset);
+  } else if (
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          LockHeightAboveTileset)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->SetLockHeightAboveTileset(this->LockHeightAboveTileset);
+  } else if (
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          HeightUpdateInterval)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->SetHeightUpdateInterval(this->HeightUpdateInterval);
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(
                           UCesiumGlobeAnchorDerivedProperties,
@@ -379,8 +388,10 @@ void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
       this->Latitude = llh.Y;
       this->Height = llh.Z;
 
-      this->HeightReference = this->GlobeAnchor->GetHeightReference();
       this->ReferencedTileset = this->GlobeAnchor->GetReferencedTileset().Get();
+      this->HeightAboveTileset = this->GlobeAnchor->GetHeightAboveTileset();
+      this->LockHeightAboveTileset =
+          this->GlobeAnchor->GetLockHeightAboveTileset();
       this->HeightUpdateInterval = this->GlobeAnchor->GetHeightUpdateInterval();
 
       FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();

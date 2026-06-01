@@ -96,16 +96,22 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightReference(
-    ECesiumHeightReference NewHeightReference) {
+    ECesiumHeightReference_DEPRECATED NewHeightReference) {
 
-  if (this->HeightReference != NewHeightReference) {
-    this->HeightReference = NewHeightReference;
-    this->_setHeightFromTilesetReference();
+  if (this->HeightReference_DEPRECATED != NewHeightReference) {
+    this->HeightReference_DEPRECATED = NewHeightReference;
+  }
+
+  if (this->HeightReference_DEPRECATED ==
+      ECesiumHeightReference_DEPRECATED::Tileset_DEPRECATED) {
+
+    this->_moveToHeightAboveTileset();
   }
 }
 
-ECesiumHeightReference UCesiumGlobeAnchorComponent::GetHeightReference() const {
-  return this->HeightReference;
+ECesiumHeightReference_DEPRECATED
+UCesiumGlobeAnchorComponent::GetHeightReference() const {
+  return this->HeightReference_DEPRECATED;
 }
 
 TSoftObjectPtr<ACesium3DTileset>
@@ -117,8 +123,35 @@ void UCesiumGlobeAnchorComponent::SetReferencedTileset(
     const TSoftObjectPtr<ACesium3DTileset>& NewTileset) {
   if (this->ReferencedTileset != NewTileset) {
     this->ReferencedTileset = NewTileset;
-    this->_setHeightFromTilesetReference();
   }
+
+  if (this->LockHeightAboveTileset) {
+    this->_moveToHeightAboveTileset();
+  } else {
+    double height = 0.0;
+    this->_getHeightAboveReferencedTileset(height);
+    this->HeightAboveTileset = height;
+  }
+}
+
+double UCesiumGlobeAnchorComponent::GetHeightAboveTileset() const {
+  return this->HeightAboveTileset;
+}
+
+void UCesiumGlobeAnchorComponent::SetHeightAboveTileset(double Height) {
+  if (this->HeightAboveTileset != Height) {
+    this->HeightAboveTileset = Height;
+    this->_moveToHeightAboveTileset();
+  }
+}
+
+bool UCesiumGlobeAnchorComponent::GetLockHeightAboveTileset() const {
+  return this->LockHeightAboveTileset;
+}
+
+void UCesiumGlobeAnchorComponent::SetLockHeightAboveTileset(
+    bool InLockHeightAboveTileset) {
+  this->LockHeightAboveTileset = InLockHeightAboveTileset;
 }
 
 void UCesiumGlobeAnchorComponent::SetHeightUpdateInterval(
@@ -178,6 +211,7 @@ void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
   CesiumGeospatial::GlobeAnchor nativeAnchor =
       this->_createOrUpdateNativeGlobeAnchorFromECEF(Value);
   this->_updateFromNativeGlobeAnchor(nativeAnchor);
+  this->_updateStateForHeightAboveTileset();
 
 #if WITH_EDITOR
   // In the Editor, mark this component and the root component modified so Undo
@@ -309,8 +343,6 @@ void UCesiumGlobeAnchorComponent::Sync() {
     this->SetActorToEarthCenteredEarthFixedMatrix(
         this->ActorToEarthCenteredEarthFixedMatrix);
   }
-
-  this->_setHeightFromTilesetReference();
 }
 
 ACesiumGeoreference*
@@ -373,69 +405,23 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
   // This method is deprecated and no longer does anything.
 }
 
-FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight(
-    const ECesiumHeightReference HeightReferenceOverride) const {
+FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
   ELLIPSOID_CHECK(this, FVector::ZeroVector);
-  FVector position =
-      this->GetEllipsoid()
-          ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
-              this->GetEarthCenteredEarthFixedPosition());
-
-  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride)) {
-    // When using a height reference, the height reported back to the caller
-    // will always be the fixed height above the reference. However, if the
-    // current height reference is _not_ Tileset, the
-    // _fixedHeightAboveHeightReference value will be stale. This value should
-    // be recomputed to remain accurate.
-    double height = this->_fixedHeightAboveHeightReference;
-    if (this->HeightReference == ECesiumHeightReference::Ellipsoid) {
-      this->_getHeightAboveReferencedTileset(height);
-    }
-    position.Z = height;
-  }
-
-  return position;
+  return this->GetEllipsoid()
+      ->EllipsoidCenteredEllipsoidFixedToLongitudeLatitudeHeight(
+          this->GetEarthCenteredEarthFixedPosition());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
-    const FVector& TargetLongitudeLatitudeHeight,
-    const ECesiumHeightReference HeightReferenceOverride) {
-  ELLIPSOID_CHECK(this, );
-
-  FVector realLongitudeLatitudeHeight = TargetLongitudeLatitudeHeight;
-  if (this->_isUsingTilesetHeightReference(HeightReferenceOverride)) {
-    ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-    if (!pGeoreference) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT("Could not find an ACesiumGeoreference in the world to complete "
-               "MoveToLongitudeLatitudeHeight"));
-      return;
-    }
-
-    FVector unrealStartPosition =
-        pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
-            TargetLongitudeLatitudeHeight);
-    FVector result;
-    if (this->_projectOntoTilesetAsLongitudeLatitudeHeight(
-            unrealStartPosition,
-            result)) {
-      this->_fixedHeightAboveHeightReference = TargetLongitudeLatitudeHeight.Z;
-      realLongitudeLatitudeHeight.Z =
-          result.Z + this->_fixedHeightAboveHeightReference;
-    }
-  }
-
+    const FVector& TargetLongitudeLatitudeHeight) {
   this->MoveToEarthCenteredEarthFixedPosition(
       this->GetEllipsoid()
           ->LongitudeLatitudeHeightToEllipsoidCenteredEllipsoidFixed(
-              realLongitudeLatitudeHeight));
+              TargetLongitudeLatitudeHeight));
 }
 
-double UCesiumGlobeAnchorComponent::GetHeight(
-    const ECesiumHeightReference HeightReferenceOverride) const {
-  return this->GetLongitudeLatitudeHeight(HeightReferenceOverride).Z;
+double UCesiumGlobeAnchorComponent::GetHeight() const {
+  return this->GetLongitudeLatitudeHeight().Z;
 }
 
 namespace {
@@ -621,6 +607,17 @@ void UCesiumGlobeAnchorComponent::Serialize(FArchive& Ar) {
         sizeof(double) * 16);
   }
 #endif
+
+  if (CesiumVersion <
+      FCesiumCustomVersion::GlobeAnchorHeightReferenceDeprecated) {
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (this->HeightReference_DEPRECATED ==
+        ECesiumHeightReference_DEPRECATED::Tileset_DEPRECATED) {
+      this->HeightAboveTileset = this->_fixedHeightAboveHeightReference;
+      this->LockHeightAboveTileset = true;
+    }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
+  }
 }
 
 void UCesiumGlobeAnchorComponent::OnComponentCreated() {
@@ -677,9 +674,7 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
     return;
   }
 
-  bool detectTransformChanges =
-      this->DetectTransformChanges ||
-      this->HeightReference == ECesiumHeightReference::Tileset;
+  bool detectTransformChanges = this->DetectTransformChanges;
 
 #if WITH_EDITOR
   UWorld* pWorld = this->GetWorld();
@@ -874,8 +869,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 
 bool UCesiumGlobeAnchorComponent::_getHeightAboveReferencedTileset(
     double& height) const {
-  FVector llh =
-      this->GetLongitudeLatitudeHeight(ECesiumHeightReference::Ellipsoid);
+  FVector llh = this->GetLongitudeLatitudeHeight();
   FVector unrealStartPosition;
 
   AActor* pOwner = this->GetOwner();
@@ -891,7 +885,8 @@ bool UCesiumGlobeAnchorComponent::_getHeightAboveReferencedTileset(
         LogCesium,
         Error,
         TEXT(
-            "Could not compute tileset-relative height for CesiumGlobeAnchor."));
+            "CesiumGlobeAnchor cannot resolve its owner or georeference to compute "
+            "its tileset-relative height."));
     return false;
   }
 
@@ -906,27 +901,51 @@ bool UCesiumGlobeAnchorComponent::_getHeightAboveReferencedTileset(
   return false;
 }
 
-bool UCesiumGlobeAnchorComponent::_setHeightFromTilesetReference() {
-  this->ResolveGeoreference();
-
-  double height = 0.0;
-  if (this->_getHeightAboveReferencedTileset(height)) {
-    this->_fixedHeightAboveHeightReference = height;
-    return true;
+void UCesiumGlobeAnchorComponent::_moveToHeightAboveTileset() {
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (!pGeoreference) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Could not resolve ACesiumGeoreference on CesiumGlobeAnchor to adjust its "
+            "position for tileset-relative height."));
+    return;
   }
 
-  return false;
+  FVector target = this->GetLongitudeLatitudeHeight();
+
+  FVector positionOnTileset;
+  FVector unrealStartPosition =
+      pGeoreference->TransformLongitudeLatitudeHeightPositionToUnreal(
+          this->GetLongitudeLatitudeHeight());
+  if (this->_projectOntoTilesetAsLongitudeLatitudeHeight(
+          unrealStartPosition,
+          positionOnTileset)) {
+    target.Z = positionOnTileset.Z + this->HeightAboveTileset;
+  }
+
+  this->MoveToLongitudeLatitudeHeight(target);
 }
 
-bool UCesiumGlobeAnchorComponent::_isUsingTilesetHeightReference(
-    const ECesiumHeightReference heightReferenceOverride) const {
-  ECesiumHeightReference trueReference =
-      heightReferenceOverride != ECesiumHeightReference::None
-          ? heightReferenceOverride
-          : this->HeightReference;
+void UCesiumGlobeAnchorComponent::_updateStateForHeightAboveTileset() {
+  if (!this->ReferencedTileset.IsValid()) {
+    return;
+  }
 
-  return trueReference == ECesiumHeightReference::Tileset &&
-         this->GetReferencedTileset().IsValid();
+#if WITH_EDITOR
+  UWorld* pWorld = this->GetWorld();
+  // Do not enforce locking behavior in the Editor.
+  bool isEditor = pWorld && pWorld->WorldType == EWorldType::Editor;
+#else
+  bool isEditor = false;
+#endif
+
+  if (this->LockHeightAboveTileset && !isEditor) {
+    this->_moveToHeightAboveTileset();
+  } else {
+    this->_getHeightAboveReferencedTileset(this->HeightAboveTileset);
+  }
 }
 
 /*static*/ FVector UCesiumGlobeAnchorComponent::_computeLocalDown(
@@ -999,8 +1018,8 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   UWorld* pWorld = this->GetWorld();
 
   if (IsValid(pWorld) && pWorld->WorldType == EWorldType::Editor &&
-      this->_isUsingTilesetHeightReference()) {
-    this->_setHeightFromTilesetReference();
+      this->LockHeightAboveTileset) {
+    this->_moveToHeightAboveTileset();
   }
 #endif
 }
@@ -1031,6 +1050,7 @@ void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
   CesiumGeospatial::GlobeAnchor cppAnchor =
       this->_createOrUpdateNativeGlobeAnchorFromRelativeTransform(modelToLocal);
   this->_updateFromNativeGlobeAnchor(cppAnchor);
+  this->_updateStateForHeightAboveTileset();
 
 #if WITH_EDITOR
   // In the Editor, mark this component and the root component modified so Undo
@@ -1053,16 +1073,11 @@ void UCesiumGlobeAnchorComponent::TickComponent(
     FActorComponentTickFunction* ThisTickFunction) {
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (!this->_isUsingTilesetHeightReference())
-    return;
-
-  if (--this->_heightReferenceUpdateCounter > 0) {
+  if (!this->ReferencedTileset.IsValid() ||
+      --this->_heightReferenceUpdateCounter > 0) {
     return;
   }
-  this->_heightReferenceUpdateCounter = this->HeightUpdateInterval;
 
-  FVector llh = this->GetLongitudeLatitudeHeight();
-  // This seems pointless, but it causes the actor's position to be reset
-  // based on the _fixedHeightAboveTileset value.
-  this->MoveToLongitudeLatitudeHeight(llh);
+  this->_heightReferenceUpdateCounter = this->HeightUpdateInterval;
+  this->_updateStateForHeightAboveTileset();
 }

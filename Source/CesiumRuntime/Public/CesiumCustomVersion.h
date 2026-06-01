@@ -41,6 +41,9 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // CesiumWebMapTileServiceOverlay with the enum Projection property.
     WebMapTileServiceProjectionAsEnum = 8,
 
+    // Deprecated ECesiumHeightReference in CesiumGlobeAnchor.
+    GlobeAnchorHeightReferenceDeprecated = 9,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };

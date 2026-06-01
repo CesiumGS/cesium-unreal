@@ -104,13 +104,7 @@ public:
   double Longitude = 0.0;
 
   /**
-   * The height in meters above the specified height reference.
-   *
-   * When `HeightReference` is `Tileset` and a valid `ReferencedTileset` is set,
-   * the returned value is the height above the reference tileset.
-   *
-   * Otherwise, when `HeightReference` is `Ellipsoid`, the returned value
-   * is the height above the ellipsoid.
+   * The height in meters above the ellipsoid.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
@@ -120,48 +114,47 @@ public:
   double Height = 0.0;
 
   /**
-   * The frame of reference in which to interpret the object's height.
-   *
-   * `Ellipsoid` indicates the object's height above the ellipsoid set on the
-   * CesiumGeoreference. The object will remain at this height unless it is
-   * otherwise changed.
-   *
-   * `Tileset` indicates height above a given tileset. The object will move
-   * vertically to maintain the specified height.
+   * The tileset actor that is referenced by this component, if any. If set,
+   * this will automatically update the value of HeightAboveTileset, or
+   * otherwise reposition the object to maintain the HeightAboveTileset if
+   * LockHeightAboveTileset is true.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      Meta = (InvalidateWidgets, HideInDetailPanel, InvalidEnumValues = "None"))
-  ECesiumHeightReference HeightReference = ECesiumHeightReference::Ellipsoid;
-
-  /**
-   * The tileset actor to use as a height reference for the object. The object
-   * will maintain its height relative to this tileset even through movement or
-   * level-of-detail transitions. Only used when `HeightReference` is set to
-   * `Tileset`.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      Meta =
-          (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
-           HideInDetailPanel))
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   TObjectPtr<ACesium3DTileset> ReferencedTileset = nullptr;
 
   /**
-   * The interval, in Ticks, in which to update the object's height when
-   * `HeightReference` is set to `Tileset`.
-   *
-   * A value of 1 causes `Height` to be updated on every Tick.
+   * The height above the ReferencedTileset in meters. If ReferencedTileset is
+   * not set, this value has no effect.
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      Meta =
-          (EditCondition = "HeightReference == ECesiumHeightReference::Tileset",
-           ClampMin = 1,
-           HideInDetailPanel))
+      meta = (EditCondition = "ReferencedTileset.IsValid()"))
+  double HeightAboveTileset = 0.0;
+
+  /**
+   * Whether to lock the value of HeightAboveTileset. When true, the globe
+   * anchor will reposition itself as necessary to maintain the locked height,
+   * even through any changes in the Actor's transform.
+   *
+   * SetHeightAboveTileset will take effect regardless of this value.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (EditCondition = "ReferencedTileset.IsValid()"))
+  bool LockHeightAboveTileset = true;
+
+  /**
+   * The interval, in Ticks, in which to recompute `HeightAboveTileset` when
+   * `ReferencedTileset` is set.
+   *
+   * A value of 1 causes `HeightAboveTileset` to be updated on every Tick.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (EditCondition = "ReferencedTileset.IsValid()", ClampMin = 1))
   int HeightUpdateInterval = 1;
 
   /**
