@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveFeatures.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
@@ -158,7 +159,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
       UCesiumGltfPrimitiveComponent* pComponent =
           NewObject<UCesiumGltfPrimitiveComponent>();
-      pComponent->getPrimitiveData().Features =
+      pComponent->getPrimitiveData().features =
           FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
 
       const FCesiumPrimitiveFeatures& primitiveFeatures =

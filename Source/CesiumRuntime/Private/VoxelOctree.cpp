@@ -6,6 +6,7 @@
 #include "CesiumTextureResource.h"
 
 #include <Cesium3DTilesContent/ImplicitTilingUtilities.h>
+#include <UObject/Package.h>
 #include <glm/glm.hpp>
 
 using namespace CesiumGeometry;

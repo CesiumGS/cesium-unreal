@@ -2,6 +2,7 @@
 
 #include "CesiumMetadataPickingBlueprintLibrary.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumModelMetadata.h"
@@ -27,8 +28,8 @@ UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFace(
   if (!IsValid(pModel)) {
     return TMap<FString, FCesiumMetadataValue>();
   }
-  const CesiumPrimitiveData& primData = pGltfComponent->getPrimitiveData();
-  const FCesiumPrimitiveFeatures& features = primData.Features;
+  const CesiumPrimitiveData& primitiveData = pGltfComponent->getPrimitiveData();
+  const FCesiumPrimitiveFeatures& features = primitiveData.features;
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
 
@@ -93,24 +94,25 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
     return false;
   }
 
-  const CesiumPrimitiveData& primData = pGltfComponent->getPrimitiveData();
+  const CesiumPrimitiveData& primitiveData = pGltfComponent->getPrimitiveData();
 
-  if (primData.PositionAccessor.status() !=
+  if (primitiveData.positionAccessor.status() !=
       CesiumGltf::AccessorViewStatus::Valid) {
     return false;
   }
 
-  auto accessorIt = primData.TexCoordAccessorMap.find(GltfTexCoordSetIndex);
-  if (accessorIt == primData.TexCoordAccessorMap.end()) {
+  auto accessorIt =
+      primitiveData.texCoordAccessorMap.find(GltfTexCoordSetIndex);
+  if (accessorIt == primitiveData.texCoordAccessorMap.end()) {
     return false;
   }
 
   auto VertexIndices = std::visit(
       CesiumGltf::IndicesForFaceFromAccessor{
           Hit.FaceIndex,
-          primData.PositionAccessor.size(),
-          primData.pMeshPrimitive->mode},
-      primData.IndexAccessor);
+          primitiveData.positionAccessor.size(),
+          primitiveData.pMeshPrimitive->mode},
+      primitiveData.indexAccessor);
 
   // Adapted from UBodySetup::CalcUVAtLocation. Compute the barycentric
   // coordinates of the point relative to the face, then use those to
@@ -130,7 +132,7 @@ bool UCesiumMetadataPickingBlueprintLibrary::FindUVFromHit(
 
   std::array<FVector, 3> Positions;
   for (size_t i = 0; i < Positions.size(); i++) {
-    auto& Position = primData.PositionAccessor[VertexIndices[i]];
+    auto& Position = primitiveData.positionAccessor[VertexIndices[i]];
     // The Y-component of glTF positions must be inverted, and the positions
     // must be scaled to match the UE meshes.
     Positions[i] = FVector(Position[0], -Position[1], Position[2]) *
@@ -237,8 +239,9 @@ UCesiumMetadataPickingBlueprintLibrary::GetPropertyTableValuesFromHit(
   }
 
   // Query for primitive-level metadata. (EXT_mesh_features)
-  const CesiumPrimitiveData& primData = pCesiumPrimitive->getPrimitiveData();
-  const FCesiumPrimitiveFeatures& features = primData.Features;
+  const CesiumPrimitiveData& primitiveData =
+      pCesiumPrimitive->getPrimitiveData();
+  const FCesiumPrimitiveFeatures& features = primitiveData.features;
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
 
@@ -324,7 +327,7 @@ UCesiumMetadataPickingBlueprintLibrary::FindPropertyTableProperty(
     return InvalidPropertyTableProperty;
   }
   return FindPropertyTableProperty(
-      pGltfComponent->getPrimitiveData().Features,
+      pGltfComponent->getPrimitiveData().features,
       pModel->Metadata,
       PropertyName,
       FeatureIDSetIndex);

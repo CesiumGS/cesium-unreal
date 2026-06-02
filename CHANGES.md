@@ -1,5 +1,22 @@
 # Change Log {#changes}
 
+### v2.27.0 - 2026-06-01
+
+##### Additions :tada:
+
+- Added `CesiumVectorTilesRasterOverlay` supporting vector data loaded from 3D Tiles tilesets.
+- Added support for displaying points in `CesiumGeoJsonDocumentRasterOverlay` and `CesiumVectorTilesRasterOverlay`.
+- Added support for rendering edges from the `EXT_mesh_primitive_edge_visibility` extension.
+
+##### Fixes :wrench:
+
+- Added missing includes that introduced compilation failures when building the plugin from source against UE 5.7's bundled clang 20.1.8 toolchain (introduced in v2.25.0 by #1685; binary plugin users were unaffected).
+- Fixed the case where glTF line primitives caused excessive log spam due to Chaos attempting to generate physics bodies for small non-triangle meshes.
+- Fixed an incorrect transform that reversed the appearance of data in box voxel tilesets.
+- Fixed a crash in `UCesiumGaussianSplatSubsystem::Tick` when `GetPrimaryWorld()` returns `nullptr` (e.g. between PIE shutdown and Standalone-Game launch, or on nDisplay secondary nodes during world bind-up). Restores the validity check ordering that shipped in v2.24.1 and was inadvertently inverted in v2.26.0 (#1841).
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.60.0 to v0.61.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v2.26.0 - 2026-05-01
 
 ##### Additions :tada:

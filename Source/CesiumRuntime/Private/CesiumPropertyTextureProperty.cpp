@@ -412,14 +412,12 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetUnrealUVChannel(
 
   int64_t texCoordSetIndex = UCesiumPropertyTexturePropertyBlueprintLibrary::
       GetGltfTextureCoordinateSetIndex(Property);
-  const CesiumPrimitiveData& primData = pPrimitive->getPrimitiveData();
-  auto textureCoordinateIndexIt =
-      primData.GltfToUnrealTexCoordMap.find(texCoordSetIndex);
-  if (textureCoordinateIndexIt == primData.GltfToUnrealTexCoordMap.end()) {
-    return -1;
-  }
-
-  return textureCoordinateIndexIt->second;
+  const std::unordered_map<int32_t, uint32_t>& texCoordMap =
+      pPrimitive->getPrimitiveData().gltfToUnrealTexCoordMap;
+  auto textureCoordinateIndexIt = texCoordMap.find(texCoordSetIndex);
+  return textureCoordinateIndexIt != texCoordMap.end()
+             ? textureCoordinateIndexIt->second
+             : -1;
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS

@@ -20,6 +20,7 @@
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterialInterface;
+class UMaterial;
 class UTexture2D;
 class UStaticMeshComponent;
 
@@ -74,25 +75,17 @@ public:
   };
 
   static CesiumAsync::Future<CreateOffGameThreadResult> CreateOffGameThread(
-      const CesiumAsync::AsyncSystem& AsyncSystem,
-      const glm::dmat4x4& Transform,
-      CreateGltfOptions::CreateModelOptions&& Options,
-      const CesiumGeospatial::Ellipsoid& Ellipsoid =
+      const CesiumAsync::AsyncSystem& asyncSystem,
+      const glm::dmat4x4& transform,
+      CreateGltfOptions::CreateModelOptions&& options,
+      const CesiumGeospatial::Ellipsoid& ellipsoid =
           CesiumGeospatial::Ellipsoid::WGS84);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       CesiumGltf::Model& model,
-      ACesium3DTileset* ParentActor,
-      TUniquePtr<HalfConstructed> HalfConstructed,
-      const glm::dmat4x4& CesiumToUnrealTransform,
-      UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseTranslucentMaterial,
-      UMaterialInterface* BaseWaterMaterial,
-      FCustomDepthParameters CustomDepthParameters,
-      const Cesium3DTilesSelection::Tile& tile,
-      bool createNavCollision,
-      bool doubleSidedCollisions,
-      bool receiveDecals);
+      ACesium3DTileset* pParentActor,
+      TUniquePtr<HalfConstructed> pHalfConstructed,
+      const Cesium3DTilesSelection::Tile& tile);
 
   UCesiumGltfComponent();
 
@@ -104,6 +97,9 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater = nullptr;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterial* BaseMaterialPrimitiveEdges = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters{};
