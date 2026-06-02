@@ -76,9 +76,9 @@ UWorld* GetPrimaryWorld() {
 #if WITH_EDITOR
   if (IsValid(GEditor)) {
     Contexts = &GEditor->GetWorldContexts();
-  } else
+  }
 #endif
-      if (IsValid(GEngine)) {
+  if (Contexts == nullptr && IsValid(GEngine)) {
     Contexts = &GEngine->GetWorldContexts();
   }
 
@@ -174,9 +174,9 @@ void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
 #if WITH_EDITOR
   // Only mark the splat system actor as a temp editor-preview actor when
   // spawning into a non-game worlds. In a game world bTemporaryEditorActor sets
-  // bIsEditorPreviewActor, which suppresses BeginPlay and the Niagrara component
-  // never runs its per-instance data lifecycle hence the splat data interface
-  // is never initialized for the world, therefore no splats render.
+  // bIsEditorPreviewActor, which suppresses BeginPlay and the Niagrara
+  // component never runs its per-instance data lifecycle hence the splat data
+  // interface is never initialized for the world, therefore no splats render.
   if (!InWorld.IsGameWorld()) {
     ActorParams.bTemporaryEditorActor = true;
     // Set this to false if you need the actor to be visible in the outliner to
