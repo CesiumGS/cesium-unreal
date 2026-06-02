@@ -65,31 +65,40 @@ FBox CalculateBounds(
 // instance, it seems like it might not be wise to be doing it more than once at
 // a time unless necessary.
 UWorld* GetPrimaryWorld() {
+  // Pick the right context provider:
+  // - In the editor process (PIE included), GEditor exposes both the editor
+  //   world and any active PIE worlds.
+  // - In a Standalone-Game child process GEditor is null at runtime
+  //   as it's a -game session , so we fall through to GEngine.
+  // - In a packaged build the GEditor branch is compiled out entirely and we
+  //   reach GEngine the same way.
+  const TIndirectArray<FWorldContext>* Contexts = nullptr;
 #if WITH_EDITOR
-  if (!IsValid(GEditor)) {
-    return nullptr;
+  if (IsValid(GEditor)) {
+    Contexts = &GEditor->GetWorldContexts();
   }
-
-  const TIndirectArray<FWorldContext>& Contexts = GEditor->GetWorldContexts();
-#else
-  if (!IsValid(GEngine)) {
-    return nullptr;
-  }
-
-  const TIndirectArray<FWorldContext>& Contexts = GEngine->GetWorldContexts();
 #endif
+  if (Contexts == nullptr && IsValid(GEngine)) {
+    Contexts = &GEngine->GetWorldContexts();
+  }
 
-  if (Contexts.IsEmpty()) {
+  if (!Contexts || Contexts->IsEmpty()) {
     return nullptr;
   }
 
-  for (const FWorldContext& Context : Contexts) {
+  // Prefer the primary PIE instance, then any Game mode world (Standalone or
+  // packaged) fall back to the first context (typically the editor world when
+  // nothing else is running, so splats still render in the editor viewport).
+  UWorld* GameWorld = nullptr;
+  for (const FWorldContext& Context : *Contexts) {
     if (Context.bIsPrimaryPIEInstance) {
       return Context.World();
     }
+    if (Context.WorldType == EWorldType::Game && !GameWorld) {
+      GameWorld = Context.World();
+    }
   }
-
-  return Contexts[0].World();
+  return GameWorld ? GameWorld : (*Contexts)[0].World();
 }
 } // namespace
 
@@ -163,10 +172,17 @@ void UCesiumGaussianSplatSubsystem::initializeForWorld(UWorld& InWorld) {
   ActorParams.Name = FName(TEXT("CesiumGaussianSplatSystemActor"));
   ActorParams.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
 #if WITH_EDITOR
-  ActorParams.bTemporaryEditorActor = true;
-  // Set this to false if you need the actor to be visible in the outliner to
-  // help with debugging.
-  ActorParams.bHideFromSceneOutliner = true;
+  // Only mark the splat system actor as a temp editor-preview actor when
+  // spawning into a non-game worlds. In a game world bTemporaryEditorActor sets
+  // bIsEditorPreviewActor, which suppresses BeginPlay and the Niagrara
+  // component never runs its per-instance data lifecycle hence the splat data
+  // interface is never initialized for the world, therefore no splats render.
+  if (!InWorld.IsGameWorld()) {
+    ActorParams.bTemporaryEditorActor = true;
+    // Set this to false if you need the actor to be visible in the outliner to
+    // help with debugging.
+    ActorParams.bHideFromSceneOutliner = true;
+  }
 #endif
 
   ACesiumGaussianSplatActor* pActor =
