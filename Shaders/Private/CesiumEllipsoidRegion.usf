@@ -1,0 +1,835 @@
+#pragma once
+
+// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumEllipsoidRegion.usf: An implicit ellipsoid region that may be intersected by a ray.
+=============================================================================*/
+
+#include "CesiumRayIntersectionList.usf"
+
+struct EllipsoidRegion
+{
+  float3 MinBounds;
+  float3 MaxBounds;
+  
+  float3 RadiiUV;
+  float3 InverseRadiiUVSquared;
+  float InverseHeightDifferenceUV;
+
+  float EccentricitySquared;
+  float2 EvoluteScale;
+  float3 LongitudeUVExtents; // X = min, Y = max, Z = midpoint
+  float LongitudeUVScale;
+  float LongitudeUVOffset;
+  float LatitudeUVScale;
+  float LatitudeUVOffset;
+
+  uint LongitudeRangeFlag;
+  bool LongitudeMinAtDiscontinuity;
+  bool LongitudeMaxAtDiscontinuity;
+  bool LongitudeIsReversed;
+  uint LatitudeMinFlag;
+  uint LatitudeMaxFlag;
+
+  void Initialize(float3 InMinBounds, float3 InMaxBounds, float4 PackedData0, float4 PackedData1, float4 PackedData2, float4 PackedData3, float4 PackedData4, float4 PackedData5)
+  {
+    MinBounds = InMinBounds; // longitude, sine(latitude), height
+    MaxBounds = InMaxBounds; // longitude, sine(latitude), height
+
+    // Flags are packed in CesiumVoxelRendererComponent.cpp
+    LongitudeRangeFlag = round(PackedData0.x);
+    LongitudeMinAtDiscontinuity = bool(PackedData0.y);
+    LongitudeMaxAtDiscontinuity = bool(PackedData0.z);
+    LongitudeIsReversed = bool(PackedData0.w);
+
+    LatitudeMinFlag = round(PackedData1.x);
+    LatitudeMaxFlag = round(PackedData1.y);
+
+    EvoluteScale = PackedData1.zw;
+    RadiiUV = PackedData2.xyz;
+    InverseRadiiUVSquared = PackedData3.xyz;
+    InverseHeightDifferenceUV = PackedData3.w;
+    EccentricitySquared = PackedData4.w;
+    LongitudeUVExtents = PackedData4.xyz;
+    LongitudeUVScale = PackedData5.x;
+    LongitudeUVOffset = PackedData5.y;
+    LatitudeUVScale = PackedData5.z;
+    LatitudeUVOffset = PackedData5.w;
+  }
+
+  /**
+  * Tests whether the input ray intersects the ellipsoid at the given height, relative to original radii.
+  */
+  RayIntersections IntersectEllipsoidAtHeight(in Ray R, in float RelativeHeight, in bool IsConvex)
+  {
+    // Scale the ray by the ellipsoid axes to make it a unit sphere.
+    // Note: This approximates ellipsoid + height as an ellipsoid.
+    float3 radiiCorrection = RadiiUV / (RadiiUV + RelativeHeight);
+    float3 position = R.Origin * radiiCorrection;
+    float3 direction = R.Direction * radiiCorrection;
+
+    // Intersect the ellipsoid defined by x^2/a^2 + y^2/b^2 + z^2/c^2 = 1.
+    // Solve for the values of t where the ray intersects the ellipsoid, by substituting
+    // the ray equation o + t * d into the ellipsoid x/y values. Results in a quadratic
+    // equation on t where we can find the determinant.
+    float a = dot(direction, direction); // ~ 1.0 (or maybe 4.0 if ray is scaled)
+    float b = dot(direction, position); // roughly inside [-1.0, 1.0] when zoomed in
+    float c = dot(position, position) - 1.0; // ~ 0.0 when zoomed in.
+    float determinant = b * b - a * c; // ~ b * b when zoomed in
+
+    if (determinant < 0.0)
+    {
+      // Output a "normal" so that the shape entry information can be encoded.
+      // (See EncodeIntersection)
+      Intersection miss = NewIntersection(NO_HIT, normalize(direction));
+      return NewRayIntersections(miss, miss);
+    }
+
+    determinant = sqrt(determinant);
+    RayIntersections result = (RayIntersections) 0;
+
+    // Compute the larger t using standard formula.
+    // The other t may suffer from subtractive cancellation in the standard formula,
+    // so it is computed from the first t instead.
+    float t1 = (-b - sign(b) * determinant) / a;
+    float t2 = c / (a * t1);
+    result.Entry.t = min(t1, t2);
+    result.Exit.t = max(t1, t2);
+
+    float directionScale = IsConvex ? 1.0 : -1.0;
+    result.Entry.Normal = directionScale * normalize(position + result.Entry.t * direction);
+    result.Exit.Normal = directionScale * normalize(position + result.Exit.t * direction);
+    return result;
+  }
+
+  /**
+  * Intersects the plane at the specified longitude angle.
+  */
+  Intersection IntersectLongitudePlane(in Ray R, in float Angle, in bool PositiveNormal)
+  {
+    float normalSign = PositiveNormal ? 1.0 : -1.0;
+    float2 planeNormal = normalSign * float2(-sin(Angle), cos(Angle));
+
+    float approachRate = dot(R.Direction.xy, planeNormal);
+    float distance = -dot(R.Origin.xy, planeNormal);
+
+    float t = (approachRate == 0.0)
+        ? NO_HIT
+        : distance / approachRate;
+
+    return NewIntersection(t, float3(planeNormal, 0));
+  }
+
+  /**
+  * Intersects the space on one side of the specified longitude angle.
+  */
+  RayIntersections IntersectHalfSpace(in Ray R, in float Angle, in bool PositiveNormal)
+  {
+    Intersection intersection = IntersectLongitudePlane(R, Angle, PositiveNormal);
+    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
+
+    bool hitFront = (intersection.t > 0.0) == (dot(R.Origin.xy, intersection.Normal.xy) > 0.0);
+    if (!hitFront)
+    {
+      return NewRayIntersections(intersection, farSide);
+    }
+    else
+    {
+      return NewRayIntersections(Multiply(farSide, -1), intersection);
+    }
+  }
+
+  /**
+  * Intersects a "flipped" wedge formed by the negative space of the specified angle
+  * bounds and returns up to four intersections. The "flipped" wedge is the union of
+  * two half-spaces defined at the given angles and represents a *negative* volume
+  * of over > 180 degrees.
+  */
+  void IntersectFlippedWedge(in Ray R, in float2 AngleBounds, out RayIntersections FirstIntersection, out RayIntersections SecondIntersection)
+  {
+    FirstIntersection = IntersectHalfSpace(R, AngleBounds.x, false);
+    SecondIntersection = IntersectHalfSpace(R, AngleBounds.y, true);
+  }
+
+  /**
+  * Intersects the wedge formed by the negative space of the min/max longitude, where
+  * maxAngle > minAngle + pi. The wedge is represented by two planes at such angles.
+  * There is an opposite "shadow wedge", i.e. the wedge formed at the *opposite* side
+  * of the planes' intersection, that must be specially handled.
+  */
+  RayIntersections IntersectRegularWedge(in Ray R, in float2 AngleBounds)
+  {
+    // Normals will point toward the "outside" (into the negative space)
+    Intersection intersect1 = IntersectLongitudePlane(R, AngleBounds.x, false);
+    Intersection intersect2 = IntersectLongitudePlane(R, AngleBounds.y, true);
+
+    // Note: the intersections could be in the "shadow" wedge, beyond the tip of
+    // the actual wedge.
+    Intersection first = intersect1;
+    Intersection last = intersect2;
+    if (first.t > last.t)
+    {
+      first = intersect2;
+      last = intersect1;
+    }
+
+    bool firstIntersectionAheadOfRay = first.t >= 0.0;
+    bool startedInsideFirst = dot(R.Origin.xy, first.Normal.xy) < 0.0;
+    bool isExitingFromInside = firstIntersectionAheadOfRay == startedInsideFirst;
+    bool lastIntersectionAheadOfRay = last.t > 0.0;
+    bool startedOutsideLast = dot(R.Origin.xy, last.Normal.xy) >= 0.0;
+    bool isEnteringFromOutside = lastIntersectionAheadOfRay == startedOutsideLast;
+
+    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
+    Intersection miss = NewIntersection(NO_HIT, normalize(R.Direction));
+
+    if (isExitingFromInside && isEnteringFromOutside)
+    {
+      // Ray crosses both faces of negative wedge, exiting then entering the positive shape
+      return NewRayIntersections(first, last);
+    }
+    else if (!isExitingFromInside && isEnteringFromOutside)
+    {
+      // Ray starts inside wedge. last is in shadow wedge, and first is actually the entry
+      return NewRayIntersections(Multiply(farSide, -1), first);
+    }
+    else if (isExitingFromInside && !isEnteringFromOutside)
+    {
+      // First intersection was in the shadow wedge, so last is actually the exit
+      return NewRayIntersections(last, farSide);
+    }
+    else
+    { // !exitFromInside && !enterFromOutside
+      // Both intersections were in the shadow wedge
+      return NewRayIntersections(miss, miss);
+    }
+  }
+
+  bool HitsPositiveHalfPlane(in Ray R, in Intersection InputIntersection, in bool positiveNormal)
+  {
+    float normalSign = positiveNormal ? 1.0 : -1.0;
+    float2 planeDirection = float2(InputIntersection.Normal.y, -InputIntersection.Normal.x) * normalSign;
+    float2 hit = R.Origin.xy + InputIntersection.t * R.Direction.xy;
+    return dot(hit, planeDirection) > 0.0;
+  }
+
+  void IntersectHalfPlane(in Ray R, in float Angle, out RayIntersections FirstIntersection, out RayIntersections SecondIntersection)
+  {
+    Intersection intersection = IntersectLongitudePlane(R, Angle, true);
+    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
+
+    if (HitsPositiveHalfPlane(R, intersection, true))
+    {
+      FirstIntersection.Entry = Multiply(farSide, -1);
+      FirstIntersection.Exit = NewIntersection(intersection.t, float3(-1.0 * intersection.Normal.xy, 0.0));
+      SecondIntersection.Entry = intersection;
+      SecondIntersection.Exit = farSide;
+    }
+    else
+    {
+      Intersection miss = NewIntersection(NO_HIT, normalize(R.Direction));
+      FirstIntersection.Entry = Multiply(farSide, -1);
+      FirstIntersection.Exit = farSide;
+      SecondIntersection.Entry = miss;
+      SecondIntersection.Exit = miss;
+    }
+  }
+
+  /**
+  * Given a circular quadric cone around the z-axis, with apex at the origin,
+  * find the parametric distance(s) along a ray where that ray intersects
+  * the cone. Computation of the normal is deferred to GetFlippedCone.
+  * 
+  * The cone opening angle is described by the squared cosine of its half-angle
+  * (the angle between the Z-axis and the surface)
+  */
+  RayIntersections IntersectQuadricCone(in Ray R, in float cosSquaredHalfAngle)
+  {
+    float3 o = R.Origin;
+    float3 d = R.Direction;
+
+    float sinSquaredHalfAngle = 1.0 - cosSquaredHalfAngle;
+
+    float aSin = d.z * d.z * sinSquaredHalfAngle;
+    float aCos = -dot(d.xy, d.xy) * cosSquaredHalfAngle;
+    float a = aSin + aCos;
+
+    float bSin = d.z * o.z * sinSquaredHalfAngle;
+    float bCos = -dot(o.xy, d.xy) * cosSquaredHalfAngle;
+    float b = bSin + bCos;
+
+    float cSin = o.z * o.z * sinSquaredHalfAngle;
+    float cCos = -dot(o.xy, o.xy) * cosSquaredHalfAngle;
+    float c = cSin + cCos;
+    // determinant = b * b - a * c. But bSin * bSin = aSin * cSin.
+    // Avoid subtractive cancellation by expanding to eliminate these terms
+    float determinant = 2.0 * bSin * bCos + bCos * bCos - aSin * cCos - aCos * cSin - aCos * cCos;
+
+    RayIntersections result = (RayIntersections) 0;
+    result.Entry.t = NO_HIT;
+    result.Exit.t = NO_HIT;
+
+    if (determinant < 0.0)
+    {
+      return result;
+    }
+
+    if (a == 0.0)
+    {
+      // Ray is parallel to cone surface if b == 0.0.
+      // Otherwise, ray has a single intersection on cone surface
+      if (b != 0.0)
+      {
+        result.Entry.t = -0.5 * c / b;
+      }
+    }
+
+    determinant = sqrt(determinant);
+
+    // Compute larger root using standard formula
+    float signB = b < 0.0 ? -1.0 : 1.0;
+    float t1 = (-b - signB * determinant) / a;
+    // The other root may suffer from subtractive cancellation in the standard formula.
+    // Compute it from the first root instead.
+    float t2 = c / (a * t1);
+    result.Entry.t = min(t1, t2);
+    result.Exit.t = max(t1, t2);
+    return result;
+  }
+
+  /**
+   * Given a point on a conical surface, find the surface normal at that point.
+   */
+  float3 GetConeNormal(in float3 Point, in bool IsConvex)
+  {
+    // Start with radial component pointing toward z-axis
+    float2 radial = -abs(Point.z) * normalize(Point.xy);
+    // Z component points toward opening of cone
+    float zSign = (Point.z < 0.0) ? -1.0 : 1.0;
+    float z = length(Point.xy) * zSign;
+    // Flip normal if the shape is convex
+    float flip = (IsConvex) ? -1.0 : 1.0;
+    return normalize(float3(radial, z) * flip);
+  }
+
+  /**
+   * Compute the shift between the ellipsoid origin and the apex of a cone of latitude
+   */
+  float GetLatitudeConeShift(in float sinLatitude)
+  {
+    // Find prime vertical radius of curvature: 
+    // the distance along the ellipsoid normal to the intersection with the z-axis
+    float x2 = EccentricitySquared * sinLatitude * sinLatitude;
+    float primeVerticalRadius = rsqrt(1.0 - x2);
+
+    // Compute a shift from the origin to the intersection of the cone with the z-axis
+    return primeVerticalRadius * EccentricitySquared * sinLatitude;
+  }
+
+  /**
+  * Tests if the input ray intersects the negative space outside of the cone. In other words,
+  * this captures the volume outside the cone, excluding the part of the ray that is inside the cone.
+  */ 
+  void IntersectFlippedCone(in Ray R, in float CosHalfAngle, out RayIntersections FirstIntersections, out RayIntersections SecondIntersections)
+  {
+    // Undo the scaling from ellipsoid to sphere
+    float3 position = R.Origin * RadiiUV;
+    float3 direction = R.Direction * RadiiUV;
+    // Shift the ray to account for the latitude cone not being centered at the Earth center
+    position.z += GetLatitudeConeShift(CosHalfAngle);
+
+    RayIntersections quadricIntersections = IntersectQuadricCone(R, CosHalfAngle * CosHalfAngle);
+
+    Intersection miss = NewIntersection(NO_HIT, normalize(direction));
+    Intersection farSide = NewIntersection(INF_HIT, normalize(direction));
+
+    // Initialize output with no intersections
+    FirstIntersections = (RayIntersections) 0;
+    FirstIntersections.Entry = Multiply(farSide, -1);
+    FirstIntersections.Exit = farSide;
+
+    SecondIntersections = NewRayIntersections(miss, miss);
+
+    if (quadricIntersections.Entry.t == NO_HIT)
+    {
+      return;
+    }
+
+    // Find the points of intersection
+    float3 p0 = position + quadricIntersections.Entry.t * direction;
+    float3 p1 = position + quadricIntersections.Exit.t * direction;
+
+    quadricIntersections.Entry.Normal = GetConeNormal(p0, true);
+    quadricIntersections.Exit.Normal = GetConeNormal(p1, true);
+
+    // shadow cone = the half of the quadric cone that is being discarded.
+    bool p0InShadowCone = sign(p0.z) != sign(CosHalfAngle);
+    bool p1InShadowCone = sign(p1.z) != sign(CosHalfAngle);
+
+    if (p0InShadowCone && p1InShadowCone)
+    {
+      // both points in shadow cone; no valid intersections
+      return;
+    }
+    else if (p0InShadowCone)
+    {
+      FirstIntersections.Exit = quadricIntersections.Exit;
+    }
+    else if (p1InShadowCone)
+    {
+      FirstIntersections.Entry = quadricIntersections.Entry;
+    }
+    else
+    {
+      FirstIntersections.Exit = quadricIntersections.Entry;
+      SecondIntersections.Entry = quadricIntersections.Exit;
+      SecondIntersections.Exit = farSide;
+    }
+  }
+
+  /**
+  * Tests if the input ray intersects the volume inside the quadric cone. The cone's orientation is
+  * dependent on the sign of the input angle.
+  */ 
+  RayIntersections IntersectCone(in Ray R, in float CosHalfAngle)
+  {
+    // Undo the scaling from ellipsoid to sphere
+    float3 position = R.Origin * RadiiUV;
+    float3 direction = R.Direction * RadiiUV;
+    // Shift the ray to account for the latitude cone not being centered at the Earth center
+    position.z += GetLatitudeConeShift(CosHalfAngle);
+
+    RayIntersections quadricIntersections = IntersectQuadricCone(R, CosHalfAngle * CosHalfAngle);
+
+    Intersection miss = NewIntersection(NO_HIT, normalize(direction));
+    Intersection farSide = NewIntersection(INF_HIT, normalize(direction));
+
+    if (quadricIntersections.Entry.t == NO_HIT)
+    {
+      return NewRayIntersections(miss, miss);
+    }
+
+    // Find the points of intersection
+    float3 p0 = position + quadricIntersections.Entry.t * direction;
+    float3 p1 = position + quadricIntersections.Exit.t * direction;
+
+    quadricIntersections.Entry.Normal = GetConeNormal(p0, false);
+    quadricIntersections.Exit.Normal = GetConeNormal(p1, false);
+
+    bool p0InShadowCone = sign(p0.z) != sign(CosHalfAngle);
+    bool p1InShadowCone = sign(p1.z) != sign(CosHalfAngle);
+
+    if (p0InShadowCone && p1InShadowCone)
+    {
+      return NewRayIntersections(miss, miss);
+    }
+    else if (p0InShadowCone)
+    {
+      return NewRayIntersections(quadricIntersections.Exit, farSide);
+    }
+    else if (p1InShadowCone)
+    {
+      return NewRayIntersections(Multiply(farSide, -1), quadricIntersections.Entry);
+    }
+    else
+    {
+      return NewRayIntersections(quadricIntersections.Entry, quadricIntersections.Exit);
+    }
+  }
+
+  /**
+  * Intersects an XY-plane at Z = 0. The given Z describes the direction of plane's normal.
+  */
+  RayIntersections IntersectZPlane(in Ray R, in float Z)
+  {
+    float t = -R.Origin.z / R.Direction.z;
+
+    bool startsOutside = sign(R.Origin.z) == sign(Z);
+    bool isEntering = (t >= 0.0) != startsOutside;
+
+    Intersection intersect = NewIntersection(t, float3(0.0, 0.0, Z));
+    Intersection farSide = NewIntersection(INF_HIT, normalize(R.Direction));
+
+    if (isEntering)
+    {
+      return NewRayIntersections(intersect, farSide);
+    }
+    else
+    {
+      return NewRayIntersections(Multiply(farSide, -1), intersect);
+    }
+  }
+  
+  
+#define ANGLE_EQUAL_ZERO 1
+#define ANGLE_UNDER_HALF 2
+#define ANGLE_HALF 3
+#define ANGLE_OVER_HALF 4
+
+  /**
+  * Tests whether the input ray (Unit Space) intersects the ellipsoid region. Outputs the intersections in Unit Space.
+  */
+  void Intersect(in Ray R, inout float4 Intersections[INTERSECTIONS_LENGTH], inout IntersectionListState ListState)
+  {
+    ListState.Length = 2;
+
+    // The region can be thought of as the space between two ellipsoids.
+    RayIntersections OuterResult = IntersectEllipsoidAtHeight(R, MaxBounds.z, true);
+    setShapeIntersections(Intersections, ListState, 0, OuterResult);
+    if (OuterResult.Entry.t == NO_HIT)
+    {
+      return;
+    }
+
+    ListState.Length += 2;
+    RayIntersections InnerResult = IntersectEllipsoidAtHeight(R, MinBounds.z, false);
+    if (InnerResult.Entry.t == NO_HIT)
+    {
+      setShapeIntersections(Intersections, ListState, 1, InnerResult);
+    }
+    else
+    {
+      // When the ellipsoid is large and thin it's possible for floating point math
+      // to cause the ray to intersect the inner ellipsoid before the outer ellipsoid. 
+      // To prevent this from happening, clamp the inner intersections to the outer ones
+      // and sandwich the inner ellipsoid intersection inside the outer ellipsoid intersection.
+      //
+      // Without this special case,
+      // [outerMin, outerMax, innerMin, innerMax] will bubble sort to
+      // [outerMin, innerMin, outerMax, innerMax] which will cause the back
+      // side of the ellipsoid to be invisible because it will think the ray
+      // is still inside the inner (negative) ellipsoid after exiting the
+      // outer (positive) ellipsoid.
+      //
+      // With this special case,
+      // [outerMin, innerMin, innerMax, outerMax] will bubble sort to
+      // [outerMin, innerMin, innerMax, outerMax] which will work correctly.
+      //
+      // Note: If Sort() changes its sorting function
+      // from bubble sort to something else, this code may need to change.
+      InnerResult.Entry.t = max(InnerResult.Entry.t, OuterResult.Entry.t);
+      InnerResult.Exit.t = min(InnerResult.Exit.t, OuterResult.Exit.t);
+      setSurfaceIntersection(Intersections, ListState, 0, OuterResult.Entry, true, true); // positive, entering
+      setSurfaceIntersection(Intersections, ListState, 1, InnerResult.Entry, false, true); // negative, entering
+      setSurfaceIntersection(Intersections, ListState, 2, InnerResult.Exit, false, false); // negative, exiting
+      setSurfaceIntersection(Intersections, ListState, 3, OuterResult.Exit, true, false); // positive, exiting
+    }
+
+    // For min latitude, intersect a NEGATIVE cone at the bottom, based on the latitude value.
+    if (LatitudeMinFlag == ANGLE_UNDER_HALF)
+    {
+      ListState.Length += 2;
+      RayIntersections BottomConeResult = IntersectCone(R, MinBounds.y);
+      setShapeIntersections(Intersections, ListState, 2, BottomConeResult);
+    }
+    else if (LatitudeMinFlag == ANGLE_HALF)
+    {
+      ListState.Length += 2;
+      RayIntersections PlaneResult = IntersectZPlane(R, -1.0);
+      setShapeIntersections(Intersections, ListState, 2, PlaneResult);
+    }
+    else if (LatitudeMinFlag == ANGLE_OVER_HALF)
+    {
+      ListState.Length += 4;
+      RayIntersections FirstIntersection;
+      RayIntersections SecondIntersection;
+      IntersectFlippedCone(R, MinBounds.y, FirstIntersection, SecondIntersection);
+      setShapeIntersections(Intersections, ListState, 2, FirstIntersection);
+      setShapeIntersections(Intersections, ListState, 3, SecondIntersection);
+    }
+
+    // For max latitude, intersect a NEGATIVE cone at the top, based on the latitude value.
+    if (LatitudeMaxFlag == ANGLE_UNDER_HALF)
+    {
+      RayIntersections FirstIntersection;
+      RayIntersections SecondIntersection;
+      IntersectFlippedCone(R, MaxBounds.y, FirstIntersection, SecondIntersection);
+      // The array index depends on how many intersections were previously found.
+      [branch]
+      switch (ListState.Length)
+      {
+        case 6: // maxHeight + minHeight + minLatitude <= half
+          setShapeIntersections(Intersections, ListState, 3, FirstIntersection);
+          setShapeIntersections(Intersections, ListState, 4, SecondIntersection);
+          break;
+        case 8: // maxHeight + minHeight + minLatitude > half
+          // It makes no sense for min latitude to be in the top half, AND max latitude in the bottom half.
+          // The region is invalid, so make things easier and mark the shape as not hit.
+          Intersections[0].w = NO_HIT;
+          Intersections[1].w = NO_HIT;
+          ListState.Length = 0;
+          return;
+        case 4: // maxHeight + minHeight
+        default:
+          setShapeIntersections(Intersections, ListState, 2, FirstIntersection);
+          setShapeIntersections(Intersections, ListState, 3, SecondIntersection);
+          break;
+      }
+      ListState.Length += 4;
+    }
+    else if (LatitudeMaxFlag == ANGLE_HALF)
+    {
+      RayIntersections PlaneResult = IntersectZPlane(R, 1.0);
+      // The array index depends on how many intersections were previously found.
+      [branch]
+      switch (ListState.Length)
+      {
+        case 6: // maxHeight + minHeight + minLatitude <= half
+          // Not worth checking if minLatitude == half, just let the sort algorithm figure it out
+          setShapeIntersections(Intersections, ListState, 3, PlaneResult);
+          break;
+        case 8: // maxHeight + minHeight + minLatitude > half
+          // It makes no sense for min latitude to be over half, AND max latitude to be half.
+          // The region is invalid, so make things easier and mark the shape as not hit.
+          Intersections[0].w = NO_HIT;
+          Intersections[1].w = NO_HIT;
+          ListState.Length = 0;
+          return;
+        case 4: // maxHeight + minHeight
+        default:
+          setShapeIntersections(Intersections, ListState, 2, PlaneResult);
+          break;
+      }
+      ListState.Length += 2;
+    }
+    else if (LatitudeMaxFlag == ANGLE_OVER_HALF)
+    {
+      RayIntersections TopConeResult = IntersectCone(R, MaxBounds.y);
+      [branch]
+      switch (ListState.Length)
+      {
+        case 6: // maxHeight + minHeight + minLatitude <= half
+          setShapeIntersections(Intersections, ListState, 3, TopConeResult);
+          break;
+        case 8: // maxHeight + minHeight + minLatitude > half
+          setShapeIntersections(Intersections, ListState, 4, TopConeResult);
+          break;
+        case 4: // maxHeight + minHeight
+        default:
+          setShapeIntersections(Intersections, ListState, 2, TopConeResult);
+          break;
+      }
+      ListState.Length += 2;
+    }
+
+    float2 LongitudeBounds = float2(MinBounds.x, MaxBounds.x);
+    if (LongitudeRangeFlag == ANGLE_OVER_HALF)
+    {
+      // The shape's longitude range is over half, so we intersect a NEGATIVE shape that is under half.
+      RayIntersections WedgeResult = IntersectRegularWedge(R, LongitudeBounds);
+      // The array index depends on how many intersections were previously found.
+      [branch]
+      switch (ListState.Length)
+      {
+        case 6: // maxHeight + minHeight + (minLatitude <= half || maxLatitude >= half)
+          setShapeIntersections(Intersections, ListState, 3, WedgeResult);
+          break;
+        case 8: // maxHeight + minHeight + (minLatitude > half || maxLatitude < half || minLatitude <= half && maxLatitude >= half)
+          setShapeIntersections(Intersections, ListState, 4, WedgeResult);
+          break;
+        case 10: // maxHeight + minHeight + (minLatitude > half && maxLatitude > half || minLatitude < half + maxLatitude < half)
+          setShapeIntersections(Intersections, ListState, 5, WedgeResult);
+          break;
+        case 4: // maxHeight + minHeight
+        default:
+          setShapeIntersections(Intersections, ListState, 2, WedgeResult);
+          break;
+      }
+      ListState.Length += 2;
+    }
+    else if (LongitudeRangeFlag == ANGLE_UNDER_HALF)
+    {
+      // The shape's longitude range is under half, so we intersect a NEGATIVE shape that is over half.
+      RayIntersections FirstResult = (RayIntersections) 0;
+      RayIntersections SecondResult = (RayIntersections) 0;
+      IntersectFlippedWedge(R, LongitudeBounds, FirstResult, SecondResult);
+      // The array index depends on how many intersections were previously found.
+      [branch]
+      switch (ListState.Length)
+      {
+        case 6: // maxHeight + minHeight + (minLatitude <= half || maxLatitude >= half)
+          setShapeIntersections(Intersections, ListState, 3, FirstResult);
+          setShapeIntersections(Intersections, ListState, 4, SecondResult);
+          break;
+        case 8: // maxHeight + minHeight + (minLatitude > half || maxLatitude < half || minLatitude <= half && maxLatitude >= half)
+          setShapeIntersections(Intersections, ListState, 4, FirstResult);
+          setShapeIntersections(Intersections, ListState, 5, SecondResult);
+          break;
+        case 10: // maxHeight + minHeight + (minLatitude > half && maxLatitude > half || minLatitude < half + maxLatitude < half)
+          setShapeIntersections(Intersections, ListState, 5, FirstResult);
+          setShapeIntersections(Intersections, ListState, 6, SecondResult);
+          break;
+        case 4: // maxHeight + minHeight
+        default:
+          setShapeIntersections(Intersections, ListState, 2, FirstResult);
+          setShapeIntersections(Intersections, ListState, 3, SecondResult);
+          break;
+      }
+      ListState.Length += 4;
+    }
+    else if (LongitudeRangeFlag == ANGLE_EQUAL_ZERO)
+    {
+      RayIntersections FirstResult = (RayIntersections) 0;
+      RayIntersections SecondResult = (RayIntersections) 0;
+      IntersectHalfPlane(R, LongitudeBounds.x, FirstResult, SecondResult);
+      // The array index depends on how many intersections were previously found.
+      [branch]
+      switch (ListState.Length)
+      {
+        case 6: // maxHeight + minHeight + (minLatitude <= half || maxLatitude >= half)
+          setShapeIntersections(Intersections, ListState, 3, FirstResult);
+          setShapeIntersections(Intersections, ListState, 4, SecondResult);
+          break;
+        case 8: // maxHeight + minHeight + (minLatitude > half || maxLatitude < half || minLatitude <= half && maxLatitude >= half)
+          setShapeIntersections(Intersections, ListState, 4, FirstResult);
+          setShapeIntersections(Intersections, ListState, 5, SecondResult);
+          break;
+        case 10: // maxHeight + minHeight + (minLatitude > half && maxLatitude > half || minLatitude < half + maxLatitude < half)
+          setShapeIntersections(Intersections, ListState, 5, FirstResult);
+          setShapeIntersections(Intersections, ListState, 6, SecondResult);
+          break;
+        case 4: // maxHeight + minHeight
+        default:
+          setShapeIntersections(Intersections, ListState, 2, FirstResult);
+          setShapeIntersections(Intersections, ListState, 3, SecondResult);
+          break;
+      }
+      ListState.Length += 4;
+    }
+  }
+
+  /**
+  * Scales the input UV coordinates from [0, 1] to their values in UV Shape Space.  
+  */
+  float3 ScaleUVToShapeUVSpace(in float3 UV)
+  {
+    // Convert from [0, 1] to radians [-pi, pi]
+    float longitude = UV.x * CZM_TWO_PI;
+    if (LongitudeRangeFlag > 0)
+    {
+      longitude /= LongitudeUVScale;
+    }
+
+      // Convert from [0, 1] to radians [-pi/2, pi/2]
+    float latitude = UV.y * CZM_PI;
+    if (LatitudeMinFlag > 0 || LatitudeMaxFlag > 0)
+    {
+      latitude /= LatitudeUVScale;
+    }
+    
+    float height = UV.z / InverseHeightDifferenceUV;
+
+    return float3(longitude, latitude, height);
+  }
+
+  /**
+    * Given a specified point, gets the nearest point (XY) on the ellipse using a robust
+    * iterative solution without trig functions, as well as the radius of curvature
+    * at that point (Z).
+    * https://github.com/0xfaded/ellipse_demo/issues/1
+    * https://stackoverflow.com/questions/22959698/distance-from-given-point-to-given-ellipse
+    */
+  float3 GetNearestPointAndRadiusOnEllipse(float2 pos, float2 radii)
+  {
+    float2 p = abs(pos);
+    float2 inverseRadii = 1.0 / radii;
+
+    // We describe the ellipse parametrically: v = radii * vec2(cos(t), sin(t))
+    // but store the cos and sin of t in a vec2 for efficiency.
+    // Initial guess: t = pi/4
+    float2 tTrigs = 0.7071067811865476;
+    // Initial guess of point on ellipsoid
+    float2 v = radii * tTrigs;
+    // Center of curvature of the ellipse at v
+    float2 evolute = EvoluteScale * tTrigs * tTrigs * tTrigs;
+
+    const int iterations = 3;
+    for (int i = 0; i < iterations; ++i)
+    {
+      // Find the (approximate) intersection of p - evolute with the ellipsoid.
+      float2 q = normalize(p - evolute) * length(v - evolute);
+      // Update the estimate of t.
+      tTrigs = (q + evolute) * inverseRadii;
+      tTrigs = normalize(clamp(tTrigs, 0.0, 1.0));
+      v = radii * tTrigs;
+      evolute = EvoluteScale * tTrigs * tTrigs * tTrigs;
+    }
+
+    return float3(v * sign(pos), length(v - evolute));
+  }
+  
+  
+ /**
+   * Converts the input position (vanilla UV Space) to its Shape UV Space relative to the
+   * ellipsoid geometry. Also outputs the Jacobian transpose for future use.
+   */
+  float3 ConvertUVToShapeUVSpace(in float3 PositionUV, out float3x3 JacobianT)
+  {
+    // First convert UV to "Unit Space derivative".
+    // Get the position in unit space, undo the scaling from ellipsoid to sphere
+    float3 position = UVToUnit(PositionUV);
+    position *= RadiiUV;
+
+    float longitude = atan2(position.y, position.x);
+    float3 east = normalize(float3(-position.y, position.x, 0.0));
+
+    // Convert the 3D position to a 2D position relative to the ellipse (radii.x, radii.z)
+    // (assume radii.y == radii.x) and find the nearest point on the ellipse and its normal
+    float distanceFromZAxis = length(position.xy);
+    float2 positionEllipse = float2(distanceFromZAxis, position.z);
+    float3 surfacePointAndRadius = GetNearestPointAndRadiusOnEllipse(positionEllipse, RadiiUV.xz);
+    float2 surfacePoint = surfacePointAndRadius.xy;
+
+    float2 normal2d = normalize(surfacePoint * InverseRadiiUVSquared.xz);
+    float latitude = atan2(normal2d.y, normal2d.x);
+    float3 north = float3(-normal2d.y * normalize(position.xy), abs(normal2d.x));
+
+    float heightSign = length(positionEllipse) < length(surfacePoint) ? -1.0 : 1.0;
+    float height = heightSign * length(positionEllipse - surfacePoint);
+    float3 up = normalize(cross(east, north));
+
+    JacobianT = float3x3(east / distanceFromZAxis, north / (surfacePointAndRadius.z + height), up);
+    // Transpose because HLSL matrices are constructed in row-major order.
+    JacobianT = transpose(JacobianT);
+
+    // Then convert Unit Space to Shape UV Space
+    // Longitude: shift & scale to [0, 1]
+    float longitudeUV = (longitude + CZM_PI) / CZM_TWO_PI;
+
+    // Correct the angle when max < min
+    // Technically this should compare against min longitude - but it has precision problems so compare against the middle of empty space.
+    if (LongitudeIsReversed)
+    {
+      longitudeUV += float(longitudeUV < LongitudeUVExtents.z);
+    }
+
+    // Avoid flickering from reading voxels from both sides of the -pi/+pi discontinuity.
+    if (LongitudeMinAtDiscontinuity)
+    {
+      longitudeUV = longitudeUV > LongitudeUVExtents.z ? LongitudeUVExtents.x : longitudeUV;
+    }
+
+    if (LongitudeMaxAtDiscontinuity)
+    {
+      longitudeUV = longitudeUV < LongitudeUVExtents.z ? LongitudeUVExtents.y : longitudeUV;
+    }
+
+    if (LongitudeRangeFlag > 0)
+    {
+      longitudeUV = longitudeUV * LongitudeUVScale + LongitudeUVOffset;
+    }
+
+    // Latitude: shift and scale to [0, 1]
+    float latitudeUV = (latitude + CZM_PI_OVER_TWO) / CZM_PI;
+    if (LatitudeMinFlag > 0 || LatitudeMaxFlag > 0)
+    {
+      latitudeUV = latitudeUV * LatitudeUVScale + LatitudeUVOffset;
+    }
+
+    // Height: scale to the range [0, 1]
+    float heightUV = 1.0 + height * InverseHeightDifferenceUV;
+
+    return float3(longitudeUV, latitudeUV, heightUV);
+  }
+};
