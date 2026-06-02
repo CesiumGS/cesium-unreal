@@ -1,6 +1,7 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitiveMetadata.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumPropertyAttribute.h"
 
@@ -54,13 +55,13 @@ UCesiumPrimitiveMetadataBlueprintLibrary::GetPrimitiveMetadata(
   const UCesiumGltfInstancedComponent* pGltfInstancedComponent =
       Cast<UCesiumGltfInstancedComponent>(component);
   if (IsValid(pGltfInstancedComponent)) {
-    return pGltfInstancedComponent->getPrimitiveData().Metadata;
+    return pGltfInstancedComponent->getPrimitiveData().metadata;
   }
 
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (IsValid(pGltfComponent)) {
-    return pGltfComponent->getPrimitiveData().Metadata;
+    return pGltfComponent->getPrimitiveData().metadata;
   }
 
   return EmptyPrimitiveMetadata;

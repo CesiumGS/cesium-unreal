@@ -6,8 +6,8 @@
 #include "CesiumGeometry/QuadtreeTilingScheme.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "CesiumGeospatial/Projection.h"
-#include "CesiumRasterOverlays/GeoJsonDocumentRasterOverlay.h"
 #include "CesiumVectorData/VectorStyle.h"
+#include "CesiumVectorOverlays/GeoJsonDocumentRasterOverlay.h"
 
 #include "CesiumRuntime.h"
 
@@ -52,7 +52,7 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
     return nullptr;
   }
 
-  CesiumRasterOverlays::GeoJsonDocumentRasterOverlayOptions vectorOptions{
+  CesiumVectorOverlays::GeoJsonDocumentRasterOverlayOptions vectorOptions{
       this->DefaultStyle.toNative(),
       options.ellipsoid,
       this->MipLevels};
@@ -63,7 +63,7 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
       this->CesiumIonServer = UCesiumIonServer::GetServerForNewObjects();
     }
 
-    return std::make_unique<CesiumRasterOverlays::GeoJsonDocumentRasterOverlay>(
+    return std::make_unique<CesiumVectorOverlays::GeoJsonDocumentRasterOverlay>(
         TCHAR_TO_UTF8(*this->MaterialLayerKey),
         wrapLoaderFuture(
             this,
@@ -85,7 +85,7 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
       headers.push_back({TCHAR_TO_UTF8(*k), TCHAR_TO_UTF8(*v)});
     }
 
-    return std::make_unique<CesiumRasterOverlays::GeoJsonDocumentRasterOverlay>(
+    return std::make_unique<CesiumVectorOverlays::GeoJsonDocumentRasterOverlay>(
         TCHAR_TO_UTF8(*this->MaterialLayerKey),
         wrapLoaderFuture(
             this,
@@ -102,7 +102,7 @@ UCesiumGeoJsonDocumentRasterOverlay::CreateOverlay(
     this->OnDocumentLoaded.Execute(this->GeoJsonDocument);
   }
 
-  return std::make_unique<CesiumRasterOverlays::GeoJsonDocumentRasterOverlay>(
+  return std::make_unique<CesiumVectorOverlays::GeoJsonDocumentRasterOverlay>(
       getAsyncSystem(),
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->GeoJsonDocument.GetDocument(),

@@ -229,19 +229,20 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
   }
 
   UWorld* pWorld = GetPrimaryWorld();
-  // Gaussian splats are purely visual, so we don't need to initialize them if
-  // we can't render anything. Besides, the Niagara component will fail to
-  // spawn if either of these conditions are false (they are checked in
-  // UNiagaraFunctionLibrary::CreateNiagaraSystem).
-  if (!FApp::CanEverRender() || pWorld->IsNetMode(NM_DedicatedServer)) {
-    return;
-  }
 
   if (!IsValid(pWorld)) {
     if (IsValid(this->_pNiagaraActor)) {
       this->_pNiagaraActor->Destroy();
     }
     this->reset();
+    return;
+  }
+
+  // Gaussian splats are purely visual, so we don't need to initialize them if
+  // we can't render anything. Besides, the Niagara component will fail to
+  // spawn if either of these conditions are false (they are checked in
+  // UNiagaraFunctionLibrary::CreateNiagaraSystem).
+  if (!FApp::CanEverRender() || pWorld->IsNetMode(NM_DedicatedServer)) {
     return;
   }
 
