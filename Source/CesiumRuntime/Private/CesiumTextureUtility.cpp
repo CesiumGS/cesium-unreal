@@ -21,12 +21,17 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "TextureResource.h"
 #include "UObject/Package.h"
+
+THIRD_PARTY_INCLUDES_START
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ExtensionTextureWebp.h>
-#include <CesiumGltf/ImageAsset.h>
-#include <CesiumGltf/Ktx2TranscodeTargets.h>
+#include <CesiumGltf/Sampler.h>
+#include <CesiumGltf/Texture.h>
 #include <CesiumGltfReader/GltfReader.h>
+#include <CesiumImage/ImageAsset.h>
+#include <CesiumImage/Ktx2TranscodeTargets.h>
 #include <CesiumUtility/IntrusivePointer.h>
+THIRD_PARTY_INCLUDES_END
 
 namespace {
 
@@ -248,7 +253,7 @@ bool getUseMipmapsIfAvailableFromSampler(const CesiumGltf::Sampler& sampler) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::ImageAsset& image,
+    CesiumImage::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB) {
   return loadTextureAnyThreadPart(
@@ -293,7 +298,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
 }
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageAsset& image,
+    CesiumImage::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -422,42 +427,42 @@ TextureAddress convertGltfWrapTToUnreal(int32_t wrapT) {
 }
 
 std::optional<EPixelFormat> getPixelFormatForImageAsset(
-    const CesiumGltf::ImageAsset& imageCesium,
+    const CesiumImage::ImageAsset& imageCesium,
     const std::optional<EPixelFormat> overridePixelFormat) {
   if (imageCesium.compressedPixelFormat !=
-      CesiumGltf::GpuCompressedPixelFormat::NONE) {
+      CesiumImage::GpuCompressedPixelFormat::NONE) {
     switch (imageCesium.compressedPixelFormat) {
-    case CesiumGltf::GpuCompressedPixelFormat::ETC1_RGB:
+    case CesiumImage::GpuCompressedPixelFormat::ETC1_RGB:
       return EPixelFormat::PF_ETC1;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::ETC2_RGBA:
+    case CesiumImage::GpuCompressedPixelFormat::ETC2_RGBA:
       return EPixelFormat::PF_ETC2_RGBA;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::BC1_RGB:
+    case CesiumImage::GpuCompressedPixelFormat::BC1_RGB:
       return EPixelFormat::PF_DXT1;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::BC3_RGBA:
+    case CesiumImage::GpuCompressedPixelFormat::BC3_RGBA:
       return EPixelFormat::PF_DXT5;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::BC4_R:
+    case CesiumImage::GpuCompressedPixelFormat::BC4_R:
       return EPixelFormat::PF_BC4;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::BC5_RG:
+    case CesiumImage::GpuCompressedPixelFormat::BC5_RG:
       return EPixelFormat::PF_BC5;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::BC7_RGBA:
+    case CesiumImage::GpuCompressedPixelFormat::BC7_RGBA:
       return EPixelFormat::PF_BC7;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::ASTC_4x4_RGBA:
+    case CesiumImage::GpuCompressedPixelFormat::ASTC_4x4_RGBA:
       return EPixelFormat::PF_ASTC_4x4;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::PVRTC2_4_RGBA:
+    case CesiumImage::GpuCompressedPixelFormat::PVRTC2_4_RGBA:
       return EPixelFormat::PF_PVRTC2;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::ETC2_EAC_R11:
+    case CesiumImage::GpuCompressedPixelFormat::ETC2_EAC_R11:
       return EPixelFormat::PF_ETC2_R11_EAC;
       break;
-    case CesiumGltf::GpuCompressedPixelFormat::ETC2_EAC_RG11:
+    case CesiumImage::GpuCompressedPixelFormat::ETC2_EAC_RG11:
       return EPixelFormat::PF_ETC2_RG11_EAC;
       break;
     default:

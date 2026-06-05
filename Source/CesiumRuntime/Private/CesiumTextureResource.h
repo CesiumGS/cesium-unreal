@@ -5,8 +5,14 @@
 #include "CesiumCommon.h"
 #include "Engine/Texture.h"
 #include "TextureResource.h"
+
+THIRD_PARTY_INCLUDES_START
 #include <CesiumAsync/SharedAssetDepot.h>
-#include <CesiumGltf/ImageAsset.h>
+THIRD_PARTY_INCLUDES_END
+
+namespace CesiumImage {
+struct ImageAsset;
+}
 
 class FCesiumTextureResource;
 
@@ -48,7 +54,7 @@ public:
    * created.
    */
   static FCesiumTextureResourceUniquePtr CreateNew(
-      CesiumGltf::ImageAsset& imageCesium,
+      CesiumImage::ImageAsset& imageCesium,
       TextureGroup textureGroup,
       const std::optional<EPixelFormat>& overridePixelFormat,
       TextureFilter filter,

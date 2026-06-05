@@ -1,12 +1,14 @@
 // Copyright 2020-2024 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
-#include "CesiumAsync/AsyncSystem.h"
 #include "ExtensionImageAssetUnreal.h"
 #include "Misc/AutomationTest.h"
 #include "RenderingThread.h"
-#include <CesiumGltfReader/GltfReader.h>
-#include <UnrealTaskProcessor.h>
+#include "UnrealTaskProcessor.h"
+THIRD_PARTY_INCLUDES_START
+#include <CesiumAsync/AsyncSystem.h>
+#include <CesiumImage/ImageDecoder.h>
+THIRD_PARTY_INCLUDES_END
 #include <memory>
 
 using namespace CesiumTextureUtility;
@@ -20,7 +22,7 @@ BEGIN_DEFINE_SPEC(
 std::vector<uint8_t> originalPixels;
 std::vector<uint8_t> originalMipPixels;
 std::vector<uint8_t> expectedMipPixelsIfGenerated;
-CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pImageAsset;
+CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImageAsset;
 
 void RunTests();
 
@@ -65,9 +67,9 @@ void CesiumTextureUtilitySpec::Define() {
           originalPixels.data(),
           originalPixels.size());
 
-      CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pCopy =
-          new CesiumGltf::ImageAsset(*pImageAsset);
-      CesiumGltfReader::ImageDecoder::generateMipMaps(*pCopy);
+      CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pCopy =
+          new CesiumImage::ImageAsset(*pImageAsset);
+      CesiumImage::ImageDecoder::generateMipMaps(*pCopy);
 
       expectedMipPixelsIfGenerated.clear();
 
@@ -95,11 +97,11 @@ void CesiumTextureUtilitySpec::Define() {
                         0x22, 0x42, 0x82, 0xF2, 0x23, 0x43, 0x83, 0xF3,
                         0x24, 0x44, 0x84, 0xF4, 0x25, 0x45, 0x85, 0xF5};
       pImageAsset->mipPositions.emplace_back(
-          CesiumGltf::ImageAssetMipPosition{0, originalPixels.size()});
+          CesiumImage::ImageAssetMipPosition{0, originalPixels.size()});
 
       // Mip 1 (1x1)
       originalMipPixels = {0x26, 0x46, 0x86, 0xF6};
-      pImageAsset->mipPositions.emplace_back(CesiumGltf::ImageAssetMipPosition{
+      pImageAsset->mipPositions.emplace_back(CesiumImage::ImageAssetMipPosition{
           pImageAsset->mipPositions[0].byteSize,
           originalMipPixels.size()});
 

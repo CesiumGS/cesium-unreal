@@ -2,9 +2,6 @@
 
 #pragma once
 
-#include "CesiumAsync/SharedAssetDepot.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumGltf/Texture.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumTextureResource.h"
 #include "Engine/Texture.h"
@@ -13,13 +10,21 @@
 #include "RHI.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Templates/UniquePtr.h"
+
+THIRD_PARTY_INCLUDES_START
+#include <CesiumAsync/SharedAssetDepot.h>
 #include <CesiumUtility/IntrusivePointer.h>
 #include <CesiumUtility/ReferenceCounted.h>
+THIRD_PARTY_INCLUDES_END
 
 namespace CesiumGltf {
-struct ImageAsset;
+struct Sampler;
 struct Texture;
 } // namespace CesiumGltf
+
+namespace CesiumImage {
+struct ImageAsset;
+}
 
 namespace CesiumTextureUtility {
 
@@ -112,7 +117,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromModelAnyThreadPart(
  * be treated as linear.
  */
 TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
-    CesiumGltf::ImageAsset& image,
+    CesiumImage::ImageAsset& image,
     const CesiumGltf::Sampler& sampler,
     bool sRGB);
 
@@ -136,7 +141,7 @@ TUniquePtr<LoadedTextureResult> loadTextureFromImageAndSamplerAnyThreadPart(
  * @return The loaded texture.
  */
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
-    CesiumGltf::ImageAsset& image,
+    CesiumImage::ImageAsset& image,
     TextureAddress addressX,
     TextureAddress addressY,
     TextureFilter filter,
@@ -193,7 +198,7 @@ TextureAddress convertGltfWrapSToUnreal(int32_t wrapS);
 TextureAddress convertGltfWrapTToUnreal(int32_t wrapT);
 
 std::optional<EPixelFormat> getPixelFormatForImageAsset(
-    const CesiumGltf::ImageAsset& imageCesium,
+    const CesiumImage::ImageAsset& imageCesium,
     const std::optional<EPixelFormat> overridePixelFormat);
 
 std::optional<ReferenceCountedUnrealTexture>
