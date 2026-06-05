@@ -23,7 +23,7 @@ Have questions? Ask them on the [community forum](https://community.cesium.com).
 
 ### 🏡 Cesium for Unreal and the 3D Geospatial Ecosystem
 
-Cesium for Unreal streams real-world 3D content such as high-resolution photogrammetry, terrain, imagery, and 3D buildings from [Cesium ion](https://cesium.com/cesium-ion) and other sources, available as optional commercial subscriptions. The plugin includes Cesium ion integration for instant access to global high-resolution 3D content ready for runtime streaming. Cesium ion users can also leverage cloud-based 3D tiling pipelines to create end-to-end workflows to transform massive heterogenous content into semantically-rich 3D Tiles, ready for streaming to Unreal Engine.
+Cesium for Unreal streams real-world 3D content such as high-resolution photogrammetry, terrain, imagery, and 3D buildings from [Cesium ion](https://cesium.com/cesium-ion) and other sources, available as optional commercial subscriptions. The plugin includes Cesium ion integration for instant access to global high-resolution 3D content ready for runtime streaming. Cesium ion users can also leverage cloud-based 3D tiling pipelines to create end-to-end workflows to transform massive heterogeneous content into semantically-rich 3D Tiles, ready for streaming to Unreal Engine.
 
 Cesium for Unreal supports cloud and private network content and services based on open standards and APIs. You are free to use any combination of supported content sources, standards, APIs with Cesium for Unreal.
 
@@ -63,7 +63,7 @@ The code for the last version of the plugin that supported Unreal Engine 4 can b
 
 ### Documentation
 
-<!--! \cond DOXYGEN_EXCLUDE !--> 
+<!--! \cond DOXYGEN_EXCLUDE !-->
 Please see the [User and contributor documentation](https://cesium.com/learn/cesium-unreal/ref-doc/).
 <!--! \endcond -->
 

@@ -3,7 +3,7 @@
 Detailed instructions for setting up a Cesium for Unreal development environment on Windows. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
 <!--! [TOC] -->
 
-# Prerequisities
+# Prerequisites
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Install Visual Studio 2022 v17.4+
