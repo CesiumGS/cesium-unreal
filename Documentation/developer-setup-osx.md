@@ -3,7 +3,7 @@
 Detailed instructions for setting up a Cesium for Unreal development environment on macOS. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
 <!--! [TOC] -->
 
-# Prerequisities
+# Prerequisites
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Install Xcode 14.1+ from https://developer.apple.com/xcode/resources/

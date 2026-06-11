@@ -3,7 +3,7 @@
 Detailed instructions for setting up a Cesium for Unreal development environment on Linux. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
 <!--! [TOC] -->
 
-# Prerequisities
+# Prerequisites
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.

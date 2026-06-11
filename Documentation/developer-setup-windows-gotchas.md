@@ -50,7 +50,7 @@ To see what complete version numbers you have installed, look in `C:\Program Fil
 
 vcpkg has hard-coded logic to choose the very latest version of the compiler that you have installed. It completely ignores all the usual ways that different compiler versions can be selected, such as setting the defaults file (`"C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.props"`), setting environment variables or running the `vcvarsall` script.
 
-As explained above, if you're building for Unreal Engine 5.5 and 5.6, Unreal Build Tool will choose v14.38 of the compiler if it's installed, and 5.7 will use v14.44. This will lead to linker errors if you have a newer version installed, because vcpkg chooses the latest compiler version, and you'll be linking with an older compiler than was used to compile. 
+As explained above, if you're building for Unreal Engine 5.5 and 5.6, Unreal Build Tool will choose v14.38 of the compiler if it's installed, and 5.7 will use v14.44. This will lead to linker errors if you have a newer version installed, because vcpkg chooses the latest compiler version, and you'll be linking with an older compiler than was used to compile.
 
 The easiest way to select a compiler for vcpkg to use is to set the `VCPKG_PLATFORM_TOOLSET_VERSION` environment variable. Despite the name, this is not built-in vcpkg functionality, but is instead something that our `x64-windows-unreal.cmake` triplet file looks for explicitly. To set it, run the following in a PowerShell window:
 
@@ -100,7 +100,7 @@ cmake -B build -S . -T "version=14.38"
 
 A common scenario is that you've followed the instructions in this document and installed v14.38, and your Cesium for Unreal build is working fine. Then, you try to compile some _other_ CMake-based project that should be using the newer compiler, and it doesn't work anymore. The other project's build is unexpectedly using the v14.38 compiler. It makes sense that 14.38 would be the default, because that's the one you installed most recently. But even following either one or both of the suggestions above doesn't help. CMake continues to insist on using 14.38. What's the deal?
 
-The solution here is to explicitly install the version of the build tools that you're trying to use. In "Add / Remove Programs" -> Modify "Visual Studio Professional 2022" -> "Invididual Components" tabs, you'll probably see that the box next to the "MSVC v143 - VS2022 C++ x64/x86 build tools (Latest)" is ticked. But the specific version that actually is the latest (14.44 as of this writing) is _not_ ticked. If you install that one, you will now be able to explicitly select it in CMake builds using either of the techniques above. It is very frustating that this kind of thing is required.
+The solution here is to explicitly install the version of the build tools that you're trying to use. In "Add / Remove Programs" -> Modify "Visual Studio Professional 2022" -> "Individual Components" tabs, you'll probably see that the box next to the "MSVC v143 - VS2022 C++ x64/x86 build tools (Latest)" is ticked. But the specific version that actually is the latest (14.44 as of this writing) is _not_ ticked. If you install that one, you will now be able to explicitly select it in CMake builds using either of the techniques above. It is very frustrating that this kind of thing is required.
 
 ## Visual Studio Code
 
