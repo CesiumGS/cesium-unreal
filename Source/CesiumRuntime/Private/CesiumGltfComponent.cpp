@@ -1278,79 +1278,6 @@ std::string getPrimitiveName(
   }
   return name;
 }
-
-template <class TIndexAccessor>
-TArray<uint32>
-getIndices(const TIndexAccessor& indicesView, int32 primitiveMode) {
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
-  TArray<uint32> indices;
-
-  switch (primitiveMode) {
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
-    // The TRIANGLE_STRIP primitive mode cannot be enabled without creating a
-    // custom render proxy, so the geometry must be emulated through separate
-    // triangles.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
-    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
-      if (i % 2) {
-        indices[3 * i] = indicesView[i];
-        indices[3 * i + 1] = indicesView[i + 2];
-        indices[3 * i + 2] = indicesView[i + 1];
-      } else {
-        indices[3 * i] = indicesView[i];
-        indices[3 * i + 1] = indicesView[i + 1];
-        indices[3 * i + 2] = indicesView[i + 2];
-      }
-    }
-    break;
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-    // The TRIANGLE_FAN primitive mode is not supported in Unreal, so geometry
-    // must be emulated through separate triangles.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
-    for (int32 i = 2, j = 0; i < indicesView.size(); ++i, j += 3) {
-      indices[j] = indicesView[0];
-      indices[j + 1] = indicesView[i - 1];
-      indices[j + 2] = indicesView[i];
-    }
-    break;
-  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
-    // The LINE_LOOP primitive mode is not supported in Unreal, so geometry must
-    // be emulated through separate lines.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(2 * indicesView.size()));
-    for (int32 i = 0, j = 0; i < indicesView.size(); ++i, j += 2) {
-      // Loop to the first index once we reach the last line segment.
-      size_t nextIndex = (i < indicesView.size() - 1) ? i + 1 : 0;
-
-      indices[j] = indicesView[i];
-      indices[j + 1] = indicesView[nextIndex];
-    }
-    break;
-  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
-    // The LINE_STRIP primitive mode is not supported in Unreal, so geometry
-    // must be emulated through separate lines.
-    indices.SetNum(
-        static_cast<TArray<uint32>::SizeType>(2 * (indicesView.size() - 1)));
-    for (int32 i = 0, j = 0; i < indicesView.size() - 1; ++i, j += 2) {
-      indices[j] = indicesView[i];
-      indices[j + 1] = indicesView[i + 1];
-    }
-    break;
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
-  case CesiumGltf::MeshPrimitive::Mode::LINES:
-  case CesiumGltf::MeshPrimitive::Mode::POINTS:
-  default:
-    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
-    for (int32 i = 0; i < indicesView.size(); ++i) {
-      indices[i] = indicesView[i];
-    }
-    break;
-  }
-
-  return indices;
-}
 } // namespace
 
 template <class TIndexAccessor>
@@ -1424,10 +1351,20 @@ static void loadPrimitive(
       !options.pMeshOptions->pNodeOptions->pModelOptions
            ->ignoreKhrMaterialsUnlit;
 
+  switch (primitive.mode) {
+  case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  case CesiumGltf::MeshPrimitive::Mode::LINES:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+    break;
+  default:
+    // The options set in Cesium3DTileset::LoadTileset should ensure we only
+    // receive supported primitive modes.
+    CESIUM_ASSERT(false);
+    break;
+  }
+
   bool isTriangles =
-      primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES ||
-      primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN ||
-      primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP;
+      primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
 
   // We can't calculate flat normals for points or lines, so we have to force
   // them to be unlit if no normals are specified. Otherwise this causes a
@@ -1526,7 +1463,15 @@ static void loadPrimitive(
     pRenderData->Bounds.SphereRadius = 0.0f;
   }
 
-  TArray<uint32> indices = getIndices(indicesView, primitive.mode);
+  TArray<uint32> indices;
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
+
+    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+    for (int32 i = 0; i < indicesView.size(); ++i) {
+      indices[i] = indicesView[i];
+    }
+  }
 
   // If we don't have normals, the gltf spec prescribes that the client
   // implementation must generate flat normals, which requires duplicating
@@ -1537,19 +1482,6 @@ static void loadPrimitive(
   bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
   bool needToGenerateTangents = needsTangents && !hasTangents;
   bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
-
-  // Some primitive modes may require duplication of vertices anyways due to
-  // the lack of support in Unreal.
-  switch (primitive.mode) {
-  case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
-  case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
-    duplicateVertices = true;
-    break;
-  default:
-    break;
-  }
 
   uint32 numVertices =
       duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());
@@ -3549,9 +3481,7 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
       result.pAsCesiumPrimitive = pPointMesh;
       break;
     }
-    case CesiumGltf::MeshPrimitive::Mode::LINES:
-    case CesiumGltf::MeshPrimitive::Mode::LINE_LOOP:
-    case CesiumGltf::MeshPrimitive::Mode::LINE_STRIP: {
+    case CesiumGltf::MeshPrimitive::Mode::LINES: {
       auto* pLinesComponent =
           NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
       result.pAsMeshComponent = pLinesComponent;
@@ -3659,8 +3589,6 @@ UStaticMesh* createStaticMesh(
   // static mesh without triangles (and it doesn't make sense anyways!)
   switch (primitiveMode) {
   case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_FAN:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP:
     pStaticMesh->bSupportRayTracing = true;
     break;
   default:
