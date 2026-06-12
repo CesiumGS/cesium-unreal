@@ -21,6 +21,10 @@ struct FFeatureTextureDescription;
 struct FMetadataDescription;
 struct FCesiumPrimitiveFeaturesDescription;
 
+namespace CesiumImage {
+struct ImageAsset;
+}
+
 /**
  * DEPRECATED. Use EncodedFeaturesMetadata instead.
  */
@@ -106,7 +110,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<
-        const CesiumGltf::ImageAsset*,
+        const CesiumImage::ImageAsset*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
         featureTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,

@@ -5,10 +5,13 @@
 #include "CesiumTextureResource.h"
 #include "CesiumTextureUtility.h"
 #include "ExtensionImageAssetUnreal.h"
+
+THIRD_PARTY_INCLUDES_START
 #include <CesiumGltf/AccessorView.h>
 #include <CesiumGltf/Model.h>
 #include <CesiumGltf/VertexAttributeSemantics.h>
 #include <CesiumGltfReader/GltfReader.h>
+THIRD_PARTY_INCLUDES_END
 
 using namespace CesiumAsync;
 

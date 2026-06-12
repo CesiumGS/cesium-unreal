@@ -1,8 +1,11 @@
 #include "ExtensionImageAssetUnreal.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
-#include <CesiumGltf/ImageAsset.h>
+
+THIRD_PARTY_INCLUDES_START
 #include <CesiumGltfReader/GltfReader.h>
+#include <CesiumImage/ImageAsset.h>
+THIRD_PARTY_INCLUDES_END
 
 using namespace CesiumAsync;
 using namespace CesiumGltfReader;
@@ -14,14 +17,14 @@ std::mutex createExtensionMutex;
 std::pair<ExtensionImageAssetUnreal&, std::optional<Promise<void>>>
 getOrCreateImageFuture(
     const AsyncSystem& asyncSystem,
-    CesiumGltf::ImageAsset& imageCesium);
+    CesiumImage::ImageAsset& imageCesium);
 
 } // namespace
 
 /*static*/ const ExtensionImageAssetUnreal&
 ExtensionImageAssetUnreal::getOrCreate(
     const CesiumAsync::AsyncSystem& asyncSystem,
-    CesiumGltf::ImageAsset& imageCesium,
+    CesiumImage::ImageAsset& imageCesium,
     bool sRGB,
     bool needsMipMaps,
     const std::optional<EPixelFormat>& overridePixelFormat) {
@@ -93,7 +96,7 @@ namespace {
 std::pair<ExtensionImageAssetUnreal&, std::optional<Promise<void>>>
 getOrCreateImageFuture(
     const AsyncSystem& asyncSystem,
-    CesiumGltf::ImageAsset& imageCesium) {
+    CesiumImage::ImageAsset& imageCesium) {
   std::scoped_lock lock(createExtensionMutex);
 
   ExtensionImageAssetUnreal* pExtension =

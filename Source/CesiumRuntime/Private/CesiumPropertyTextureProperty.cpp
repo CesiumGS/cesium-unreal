@@ -4,7 +4,10 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "UnrealMetadataConversions.h"
 
+THIRD_PARTY_INCLUDES_START
+#include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/MetadataConversions.h>
+THIRD_PARTY_INCLUDES_END
 #include <cstdint>
 #include <limits>
 
@@ -332,12 +335,13 @@ const CesiumGltf::Sampler* FCesiumPropertyTextureProperty::getSampler() const {
       });
 }
 
-const CesiumGltf::ImageAsset* FCesiumPropertyTextureProperty::getImage() const {
-  return propertyTexturePropertyCallback<const CesiumGltf::ImageAsset*>(
+const CesiumImage::ImageAsset*
+FCesiumPropertyTextureProperty::getImage() const {
+  return propertyTexturePropertyCallback<const CesiumImage::ImageAsset*>(
       this->_property,
       this->_valueType,
       this->_normalized,
-      [](const auto& view) -> const CesiumGltf::ImageAsset* {
+      [](const auto& view) -> const CesiumImage::ImageAsset* {
         return view.getImage();
       });
 }
