@@ -1298,6 +1298,18 @@ static void loadPrimitive(
   CesiumGltf::MeshPrimitive& primitive =
       mesh.primitives[options.primitiveIndex];
 
+  switch (primitive.mode) {
+  case CesiumGltf::MeshPrimitive::Mode::POINTS:
+  case CesiumGltf::MeshPrimitive::Mode::LINES:
+  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
+    break;
+  default:
+    // The options set in Cesium3DTileset::LoadTileset should ensure we only
+    // receive supported primitive modes.
+    CESIUM_ASSERT(false);
+    return;
+  }
+
   const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
 
@@ -1350,18 +1362,6 @@ static void loadPrimitive(
       material.hasExtension<CesiumGltf::ExtensionKhrMaterialsUnlit>() &&
       !options.pMeshOptions->pNodeOptions->pModelOptions
            ->ignoreKhrMaterialsUnlit;
-
-  switch (primitive.mode) {
-  case CesiumGltf::MeshPrimitive::Mode::POINTS:
-  case CesiumGltf::MeshPrimitive::Mode::LINES:
-  case CesiumGltf::MeshPrimitive::Mode::TRIANGLES:
-    break;
-  default:
-    // The options set in Cesium3DTileset::LoadTileset should ensure we only
-    // receive supported primitive modes.
-    CESIUM_ASSERT(false);
-    break;
-  }
 
   bool isTriangles =
       primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES;
