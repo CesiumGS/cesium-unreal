@@ -202,7 +202,7 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
         LogCesiumEditor,
         Warning,
         TEXT(
-            "Tileset {} contains statistics but has no metadata schema to qualify them."),
+            "Tileset %s contains statistics but has no metadata schema to qualify them."),
         *tileset.GetActorLabel());
     return;
   }
@@ -214,8 +214,9 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
           LogCesiumEditor,
           Warning,
           TEXT(
-              "Tileset {} contains statistics for class {}, but it is missing from the metadata schema."),
-          *tileset.GetActorLabel());
+              "Tileset %s contains statistics for class %s, but it is missing from the metadata schema."),
+          *tileset.GetActorLabel(),
+          UTF8_TO_TCHAR(classIt.first.c_str()));
       continue;
     }
 
@@ -231,8 +232,10 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
             LogCesiumEditor,
             Warning,
             TEXT(
-                "Tileset {} contains statistics for property {} in class {}, but it is missing from the schema."),
-            *tileset.GetActorLabel());
+                "Tileset %s contains statistics for property %s in class %s, but it is missing from the schema."),
+            *tileset.GetActorLabel(),
+            UTF8_TO_TCHAR(propertyIt.first.c_str()),
+            UTF8_TO_TCHAR(classIt.first.c_str()));
         continue;
       }
 
