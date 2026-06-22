@@ -11,11 +11,15 @@
 #include "CreateGltfOptions.h"
 #include "ExtensionImageAssetUnreal.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <Cesium3DTilesSelection/Tile.h>
 #include <Cesium3DTilesSelection/TileLoadResult.h>
 #include <CesiumAsync/AsyncSystem.h>
 #include <CesiumGeospatial/Ellipsoid.h>
+#include <CesiumImage/ImageAsset.h>
+#include <CesiumImage/ImageDecoder.h>
 #include <glm/mat4x4.hpp>
+THIRD_PARTY_INCLUDES_END
 
 UnrealPrepareRendererResources::UnrealPrepareRendererResources(
     ACesium3DTileset* pActor)
@@ -113,7 +117,7 @@ void UnrealPrepareRendererResources::free(
 }
 
 void* UnrealPrepareRendererResources::prepareRasterInLoadThread(
-    CesiumGltf::ImageAsset& image,
+    CesiumImage::ImageAsset& image,
     const std::any& rendererOptions) {
   auto ppOptions =
       std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
@@ -126,7 +130,7 @@ void* UnrealPrepareRendererResources::prepareRasterInLoadThread(
 
   if (pOptions->useMipmaps) {
     std::optional<std::string> errorMessage =
-        CesiumGltfReader::ImageDecoder::generateMipMaps(image);
+        CesiumImage::ImageDecoder::generateMipMaps(image);
     if (errorMessage) {
       UE_LOG(
           LogCesium,

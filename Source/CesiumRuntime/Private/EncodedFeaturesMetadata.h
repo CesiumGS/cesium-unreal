@@ -12,7 +12,6 @@
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
 
-#include <CesiumGltf/KhrTextureTransform.h>
 #include <array>
 #include <variant>
 
@@ -28,6 +27,14 @@ struct FCesiumMetadataPropertyDetails;
 struct FMaterialParameterInfo;
 class UMaterialInstanceDynamic;
 enum EMaterialParameterAssociation : int;
+
+namespace CesiumGltf {
+class KhrTextureTransform;
+}
+
+namespace CesiumImage {
+struct ImageAsset;
+}
 
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
@@ -478,7 +485,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     const FCesiumPropertyTextureDescription& propertyTextureDescription,
     const FCesiumPropertyTexture& propertyTexture,
     TMap<
-        const CesiumGltf::ImageAsset*,
+        const CesiumImage::ImageAsset*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
         propertyTexturePropertyMap);
 

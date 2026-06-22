@@ -5,10 +5,12 @@
 #include "CesiumTextureResource.h"
 #include "PixelFormat.h"
 #include "Templates/SharedPointer.h"
+THIRD_PARTY_INCLUDES_START
 #include <CesiumAsync/SharedFuture.h>
+THIRD_PARTY_INCLUDES_END
 #include <optional>
 
-namespace CesiumGltf {
+namespace CesiumImage {
 struct ImageAsset;
 }
 
@@ -49,11 +51,11 @@ struct ExtensionImageAssetUnreal {
    * at the same time.
    *
    * To determine if the asynchronous `FTextureResource` creation process has
-   * completed, use {@link getFuture}.
+   * completed, use @ref getFuture.
    */
   static const ExtensionImageAssetUnreal& getOrCreate(
       const CesiumAsync::AsyncSystem& asyncSystem,
-      CesiumGltf::ImageAsset& imageCesium,
+      CesiumImage::ImageAsset& imageCesium,
       bool sRGB,
       bool needsMipMaps,
       const std::optional<EPixelFormat>& overridePixelFormat);
@@ -62,25 +64,25 @@ struct ExtensionImageAssetUnreal {
    * Constructs a new instance.
    *
    * @param future The future that will resolve when loading of the
-   * {@link getTextureResource} is complete.
+   * @ref getTextureResource is complete.
    */
   ExtensionImageAssetUnreal(const CesiumAsync::SharedFuture<void>& future);
 
   /**
    * Gets the created texture resource. This resource should not be accessed or
-   * used before the future returned by {@link getFuture} resolves.
+   * used before the future returned by @ref getFuture resolves.
    */
   const TSharedPtr<FCesiumTextureResource>& getTextureResource() const;
 
   /**
    * Gets the future that will resolve when loading of the
-   * {@link getTextureResource} is complete. This future will not reject.
+   * @ref getTextureResource is complete. This future will not reject.
    */
   CesiumAsync::SharedFuture<void>& getFuture();
 
   /**
    * Gets the future that will resolve when loading of the
-   * {@link getTextureResource} is complete. This future will not reject.
+   * @ref getTextureResource is complete. This future will not reject.
    */
   const CesiumAsync::SharedFuture<void>& getFuture() const;
 

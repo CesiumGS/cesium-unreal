@@ -93,11 +93,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint32_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint32_t> accessorView(
-          data.data(),
-          sizeof(uint32_t),
-          0,
-          values.size());
+      AccessorView<uint32_t>
+          accessorView(data.data(), sizeof(uint32_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<uint32_t> propertyView(
           propertyAttributeProperty,
@@ -170,11 +167,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int8_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int8_t> accessorView(
-          data.data(),
-          sizeof(int8_t),
-          0,
-          values.size());
+      AccessorView<int8_t>
+          accessorView(data.data(), sizeof(int8_t), 0, values.size(), true);
 
       PropertyAttributePropertyView<int8_t, true> propertyView(
           propertyAttributeProperty,
@@ -236,11 +230,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int8_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int8_t> accessorView(
-          data.data(),
-          sizeof(int8_t),
-          0,
-          values.size());
+      AccessorView<int8_t>
+          accessorView(data.data(), sizeof(int8_t), 0, values.size(), true);
 
       PropertyAttributePropertyView<int8_t, true> propertyView(
           propertyAttributeProperty,
@@ -346,11 +337,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint8_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint8_t> accessorView(
-          data.data(),
-          sizeof(uint8_t),
-          0,
-          values.size());
+      AccessorView<uint8_t>
+          accessorView(data.data(), sizeof(uint8_t), 0, values.size(), false);
       PropertyAttributePropertyView<uint8_t> propertyView(
           propertyAttributeProperty,
           classProperty,
@@ -391,11 +379,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint8_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint8_t> accessorView(
-          data.data(),
-          sizeof(uint8_t),
-          0,
-          values.size());
+      AccessorView<uint8_t>
+          accessorView(data.data(), sizeof(uint8_t), 0, values.size(), false);
       PropertyAttributePropertyView<uint8_t> propertyView(
           propertyAttributeProperty,
           classProperty,
@@ -427,11 +412,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.0f, 2.0f, 256.0f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -471,11 +453,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint8_t> values{1, 2, 3, 0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint8> accessorView(
-          data.data(),
-          sizeof(uint8),
-          0,
-          values.size());
+      AccessorView<uint8>
+          accessorView(data.data(), sizeof(uint8), 0, values.size(), false);
 
       PropertyAttributePropertyView<uint8> propertyView(
           propertyAttributeProperty,
@@ -533,11 +512,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int16_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int16_t> accessorView(
-          data.data(),
-          sizeof(int16_t),
-          0,
-          values.size());
+      AccessorView<int16_t>
+          accessorView(data.data(), sizeof(int16_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int16_t> propertyView(
           propertyAttributeProperty,
@@ -578,11 +554,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int16_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int16_t> accessorView(
-          data.data(),
-          sizeof(int16_t),
-          0,
-          values.size());
+      AccessorView<int16_t>
+          accessorView(data.data(), sizeof(int16_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int16_t> propertyView(
           propertyAttributeProperty,
@@ -619,11 +592,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           2.54f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -662,11 +632,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int16_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int16_t> accessorView(
-          data.data(),
-          sizeof(int16_t),
-          0,
-          values.size());
+      AccessorView<int16_t>
+          accessorView(data.data(), sizeof(int16_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int16_t> propertyView(
           propertyAttributeProperty,
@@ -725,11 +692,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           values{1, 2, 3, 4, std::numeric_limits<uint32_t>::max()};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint32_t> accessorView(
-          data.data(),
-          sizeof(uint32_t),
-          0,
-          values.size());
+      AccessorView<uint32_t>
+          accessorView(data.data(), sizeof(uint32_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<uint32_t> propertyView(
           propertyAttributeProperty,
@@ -772,11 +736,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           values{1, 2, 3, 4, std::numeric_limits<uint32_t>::max()};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint32_t> accessorView(
-          data.data(),
-          sizeof(uint32_t),
-          0,
-          values.size());
+      AccessorView<uint32_t>
+          accessorView(data.data(), sizeof(uint32_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<uint32_t> propertyView(
           propertyAttributeProperty,
@@ -813,11 +774,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           2.54f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -856,11 +814,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int16_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int16_t> accessorView(
-          data.data(),
-          sizeof(int16_t),
-          0,
-          values.size());
+      AccessorView<int16_t>
+          accessorView(data.data(), sizeof(int16_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int16_t> propertyView(
           propertyAttributeProperty,
@@ -918,11 +873,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.54f, 52.78f, -39.0f, 4.005f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -963,11 +915,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.54f, 52.78f, -39.0f, 4.005f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -999,11 +948,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int8_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int8_t> accessorView(
-          data.data(),
-          sizeof(int8_t),
-          0,
-          values.size());
+      AccessorView<int8_t>
+          accessorView(data.data(), sizeof(int8_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int8_t> propertyView(
           propertyAttributeProperty,
@@ -1041,11 +987,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -1094,11 +1037,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.1, 2.2, -3.3, 4.0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -1139,11 +1079,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.1, 2.2, -3.3, 4.0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -1176,11 +1113,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint8_t> values{0, 128, 255, 0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint8_t> accessorView(
-          data.data(),
-          sizeof(uint8_t),
-          0,
-          values.size());
+      AccessorView<uint8_t>
+          accessorView(data.data(), sizeof(uint8_t), 0, values.size(), true);
 
       PropertyAttributePropertyView<uint8_t, true> propertyView(
           propertyAttributeProperty,
@@ -1224,11 +1158,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint8_t> values{0, 128, 255, 0};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint8_t> accessorView(
-          data.data(),
-          sizeof(uint8_t),
-          0,
-          values.size());
+      AccessorView<uint8_t>
+          accessorView(data.data(), sizeof(uint8_t), 0, values.size(), true);
 
       PropertyAttributePropertyView<uint8, true> propertyView(
           propertyAttributeProperty,
@@ -1286,7 +1217,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec2),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec2> propertyView(
           propertyAttributeProperty,
@@ -1337,7 +1269,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec2),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec2> propertyView(
           propertyAttributeProperty,
@@ -1375,11 +1308,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           2456.80f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -1428,7 +1358,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec2),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec2> propertyView(
           propertyAttributeProperty,
@@ -1491,11 +1422,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec2(0.0f, -8.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec2> accessorView(
-          data.data(),
-          sizeof(glm::vec2),
-          0,
-          values.size());
+      AccessorView<glm::vec2>
+          accessorView(data.data(), sizeof(glm::vec2), 0, values.size(), false);
 
       PropertyAttributePropertyView<glm::vec2> propertyView(
           propertyAttributeProperty,
@@ -1543,11 +1471,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec2(0.0f, -8.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec2> accessorView(
-          data.data(),
-          sizeof(glm::vec2),
-          0,
-          values.size());
+      AccessorView<glm::vec2>
+          accessorView(data.data(), sizeof(glm::vec2), 0, values.size(), false);
 
       PropertyAttributePropertyView<glm::vec2> propertyView(
           propertyAttributeProperty,
@@ -1594,7 +1519,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::u8vec2),
           0,
-          values.size());
+          values.size(),
+          true);
 
       PropertyAttributePropertyView<glm::u8vec2, true> propertyView(
           propertyAttributeProperty,
@@ -1641,7 +1567,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::u8vec2),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::u8vec2> propertyView(
           propertyAttributeProperty,
@@ -1689,7 +1616,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::u8vec2),
           0,
-          values.size());
+          values.size(),
+          true);
 
       PropertyAttributePropertyView<glm::u8vec2, true> propertyView(
           propertyAttributeProperty,
@@ -1752,7 +1680,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec3),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec3> propertyView(
           propertyAttributeProperty,
@@ -1790,11 +1719,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           2456.80f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -1846,7 +1772,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec3),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec3> propertyView(
           propertyAttributeProperty,
@@ -1907,11 +1834,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec3(10.0f, 4.4f, 5.4f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec3> accessorView(
-          data.data(),
-          sizeof(glm::vec3),
-          0,
-          values.size());
+      AccessorView<glm::vec3>
+          accessorView(data.data(), sizeof(glm::vec3), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec3> propertyView(
           propertyAttributeProperty,
@@ -1957,11 +1881,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec3(10.0f, 4.4f, 5.4f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec3> accessorView(
-          data.data(),
-          sizeof(glm::vec3),
-          0,
-          values.size());
+      AccessorView<glm::vec3>
+          accessorView(data.data(), sizeof(glm::vec3), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec3> propertyView(
           propertyAttributeProperty,
@@ -1999,11 +1920,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec2(-1.0f, -1.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec2> accessorView(
-          data.data(),
-          sizeof(glm::vec2),
-          0,
-          values.size());
+      AccessorView<glm::vec2>
+          accessorView(data.data(), sizeof(glm::vec2), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec2> propertyView(
           propertyAttributeProperty,
@@ -2050,11 +1968,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec3(10.0f, 4.4f, 5.4f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec3> accessorView(
-          data.data(),
-          sizeof(glm::vec3),
-          0,
-          values.size());
+      AccessorView<glm::vec3>
+          accessorView(data.data(), sizeof(glm::vec3), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec3> propertyView(
           propertyAttributeProperty,
@@ -2113,11 +2028,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec3(10.0f, 8.067f, 5.213f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec3> accessorView(
-          data.data(),
-          sizeof(glm::vec3),
-          0,
-          values.size());
+      AccessorView<glm::vec3>
+          accessorView(data.data(), sizeof(glm::vec3), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec3> propertyView(
           propertyAttributeProperty,
@@ -2164,11 +2076,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec3(10.0f, 8.067f, 5.213f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec3> accessorView(
-          data.data(),
-          sizeof(glm::vec3),
-          0,
-          values.size());
+      AccessorView<glm::vec3>
+          accessorView(data.data(), sizeof(glm::vec3), 0, values.size(), false);
 
       PropertyAttributePropertyView<glm::vec3> propertyView(
           propertyAttributeProperty,
@@ -2216,7 +2125,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec3),
           0,
-          values.size());
+          values.size(),
+          true);
 
       PropertyAttributePropertyView<glm::i8vec3, true> propertyView(
           propertyAttributeProperty,
@@ -2264,7 +2174,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec3),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec3> propertyView(
           propertyAttributeProperty,
@@ -2312,7 +2223,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::u8vec3),
           0,
-          values.size());
+          values.size(),
+          true);
 
       PropertyAttributePropertyView<glm::u8vec3, true> propertyView(
           propertyAttributeProperty,
@@ -2371,11 +2283,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec4(10.0f, 8.067f, 5.213f, 0.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec4> accessorView(
-          data.data(),
-          sizeof(glm::vec4),
-          0,
-          values.size());
+      AccessorView<glm::vec4>
+          accessorView(data.data(), sizeof(glm::vec4), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec4> propertyView(
           propertyAttributeProperty,
@@ -2422,11 +2331,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec4(10.0f, 8.067f, 5.213f, 0.0f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec4> accessorView(
-          data.data(),
-          sizeof(glm::vec4),
-          0,
-          values.size());
+      AccessorView<glm::vec4>
+          accessorView(data.data(), sizeof(glm::vec4), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec4> propertyView(
           propertyAttributeProperty,
@@ -2474,7 +2380,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec4),
           0,
-          values.size());
+          values.size(),
+          true);
 
       PropertyAttributePropertyView<glm::i8vec4, true> propertyView(
           propertyAttributeProperty,
@@ -2527,7 +2434,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec4),
           0,
-          values.size());
+          values.size(),
+          false);
 
       PropertyAttributePropertyView<glm::i8vec4> propertyView(
           propertyAttributeProperty,
@@ -2581,7 +2489,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8vec4),
           0,
-          values.size());
+          values.size(),
+          true);
 
       PropertyAttributePropertyView<glm::i8vec4, true> propertyView(
           propertyAttributeProperty,
@@ -2650,11 +2559,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::mat4> accessorView(
-          data.data(),
-          sizeof(glm::mat4),
-          0,
-          values.size());
+      AccessorView<glm::mat4>
+          accessorView(data.data(), sizeof(glm::mat4), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::mat4> propertyView(
           propertyAttributeProperty,
@@ -2706,11 +2612,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::mat4> accessorView(
-          data.data(),
-          sizeof(glm::mat4),
-          0,
-          values.size());
+      AccessorView<glm::mat4>
+          accessorView(data.data(), sizeof(glm::mat4), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::mat4> propertyView(
           propertyAttributeProperty,
@@ -2773,7 +2676,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           data.data(),
           sizeof(glm::i8mat4x4),
           0,
-          values.size());
+          values.size(),
+          true);
 
       CesiumGltf::PropertyAttributePropertyView<glm::i8mat4x4, true>
           propertyView(propertyAttributeProperty, classProperty, accessorView);
@@ -2821,11 +2725,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-2.0f, 10.5f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -2871,11 +2772,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
           glm::vec2(1.5f, 0.1f)};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::vec2> accessorView(
-          data.data(),
-          sizeof(glm::vec2),
-          0,
-          values.size());
+      AccessorView<glm::vec2>
+          accessorView(data.data(), sizeof(glm::vec2), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::vec2> propertyView(
           propertyAttributeProperty,
@@ -2934,11 +2832,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       // clang-format on
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<glm::mat4> accessorView(
-          data.data(),
-          sizeof(glm::mat4),
-          0,
-          values.size());
+      AccessorView<glm::mat4>
+          accessorView(data.data(), sizeof(glm::mat4), 0, values.size(), false);
 
       CesiumGltf::PropertyAttributePropertyView<glm::mat4> propertyView(
           propertyAttributeProperty,
@@ -3002,11 +2897,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint32_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint32_t> accessorView(
-          data.data(),
-          sizeof(uint32_t),
-          0,
-          values.size());
+      AccessorView<uint32_t>
+          accessorView(data.data(), sizeof(uint32_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<uint32_t> propertyView(
           propertyAttributeProperty,
@@ -3049,11 +2941,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<uint32_t> values{1, 2, 3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<uint32_t> accessorView(
-          data.data(),
-          sizeof(uint32_t),
-          0,
-          values.size());
+      AccessorView<uint32_t>
+          accessorView(data.data(), sizeof(uint32_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<uint32_t> propertyView(
           propertyAttributeProperty,
@@ -3101,11 +2990,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<float> values{-1.1f, 2.0f, -3.5f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<float> accessorView(
-          data.data(),
-          sizeof(float),
-          0,
-          values.size());
+      AccessorView<float>
+          accessorView(data.data(), sizeof(float), 0, values.size(), false);
 
       PropertyAttributePropertyView<float> propertyView(
           propertyAttributeProperty,
@@ -3150,11 +3036,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int16_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int16_t> accessorView(
-          data.data(),
-          sizeof(int16_t),
-          0,
-          values.size());
+      AccessorView<int16_t>
+          accessorView(data.data(), sizeof(int16_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int16_t> propertyView(
           propertyAttributeProperty,
@@ -3208,11 +3091,8 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       std::vector<int16_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
-      AccessorView<int16_t> accessorView(
-          data.data(),
-          sizeof(int16_t),
-          0,
-          values.size());
+      AccessorView<int16_t>
+          accessorView(data.data(), sizeof(int16_t), 0, values.size(), false);
 
       PropertyAttributePropertyView<int16_t> propertyView(
           propertyAttributeProperty,
