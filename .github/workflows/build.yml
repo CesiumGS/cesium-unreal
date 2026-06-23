@@ -444,7 +444,7 @@ jobs:
       unreal-engine-zip: "s3://cesium-unreal-engine/5.8.0/UE_58-mac.zip"
       unreal-program-name: "UE_5.8"
       upload-package-base-name: "CesiumForUnreal-58-apple"
-      xcode-version: "16.1"
+      xcode-version: "16.2"
   Combine58:
     runs-on: ubuntu-latest
     needs: [Windows58, Android58, Linux58, Apple58]
