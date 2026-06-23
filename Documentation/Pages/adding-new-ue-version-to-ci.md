@@ -47,7 +47,7 @@ Wait for the installation to complete. Then, _before launching it_:
 1. Find the installation directory. It is usually found in something like `/Users/Shared/Epic Games/UE_5.8`.
 2. Create the ZIP file by running the following (adjusting the path if necessary):
    - `cd /Users/Shared/Epic\ Games`
-   - `zip -9 -r UE_58-macos.zip UE_5.8`
+   - `zip -9 -r UE_58-mac.zip UE_5.8`
 
 After creating the ZIP file, you may want to go back and install the "Template and Feature Packs" option that was deselected above. This isn't needed on CI, and it's useful to save the bytes, but you probably want it locally.
 
@@ -63,7 +63,7 @@ You will need the aws command-line utility configured to be able to access the `
 Once that's setup, you can upload the ZIPs to S3 with something like:
 
 - Windows: `aws --profile cesium-ci s3 cp UE_5.8.zip s3://cesium-unreal-engine/5.8.0/`
-- macOS: `aws --profile cesium-ci s3 cp UE_58-macos.zip s3://cesium-unreal-engine/5.8.0/`
+- macOS: `aws --profile cesium-ci s3 cp UE_58-mac.zip s3://cesium-unreal-engine/5.8.0/`
 - Linux: `aws --profile cesium-ci s3 cp Linux_Unreal_Engine_5.8.0.zip s3://cesium-unreal-engine/5.8.0/`
 
 # Adding new CI jobs for the new version
