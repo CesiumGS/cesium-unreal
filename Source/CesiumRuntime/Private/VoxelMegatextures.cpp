@@ -208,7 +208,7 @@ UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
     uint32 srcDepthPitch =
         updateRegion.Width * updateRegion.Height * texelSizeBytes;
 
-    RHIUpdateTexture3D(
+    FRHICommandListExecutor::GetImmediateCommandList().UpdateTexture3D(
         pResource->TextureRHI,
         0,
         updateRegion,
@@ -238,7 +238,10 @@ UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
       return;
 
     FUpdateTexture3DData UpdateData =
-        RHIBeginUpdateTexture3D(pResource->TextureRHI, 0, updateRegion);
+        FRHICommandListExecutor::GetImmediateCommandList().BeginUpdateTexture3D(
+            pResource->TextureRHI,
+            0,
+            updateRegion);
 
     for (uint32 z = 0; z < updateRegion.Depth; z++) {
       for (uint32 y = 0; y < updateRegion.Height; y++) {
@@ -263,7 +266,8 @@ UTexture* FVoxelMegatextures::getTexture(const FString& attributeId) const {
       }
     }
 
-    RHIEndUpdateTexture3D(UpdateData);
+    FRHICommandListExecutor::GetImmediateCommandList().EndUpdateTexture3D(
+        UpdateData);
   });
 }
 

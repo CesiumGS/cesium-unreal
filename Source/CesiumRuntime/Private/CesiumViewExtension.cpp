@@ -5,6 +5,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCommon.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "Runtime/Renderer/Private/SceneViewState.h"
 
 using namespace Cesium3DTilesSelection;
 
