@@ -313,7 +313,7 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
         LogCesiumEditor,
         Error,
         TEXT(
-            "Tileset {} does not the voxel class required by 3DTILES_content_voxel."),
+            "Tileset %s does not the voxel class required by 3DTILES_content_voxel."),
         *tileset.GetActorLabel());
     return;
   }
