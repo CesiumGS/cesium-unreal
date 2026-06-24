@@ -20,8 +20,13 @@
 #include "TextureResource.h"
 #include "UnrealMetadataConversions.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <CesiumGltf/FeatureIdTextureView.h>
+#include <CesiumGltf/KhrTextureTransform.h>
+#include <CesiumImage/ImageAsset.h>
 #include <CesiumUtility/Tracing.h>
+THIRD_PARTY_INCLUDES_END
+
 #include <optional>
 #include <unordered_map>
 
@@ -118,7 +123,7 @@ encodeFeatureIdAttribute(const FCesiumFeatureIdAttribute& attribute) {
 
 std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     const FCesiumFeatureIdTexture& texture,
-    TMap<const CesiumGltf::ImageAsset*, TWeakPtr<LoadedTextureResult>>&
+    TMap<const CesiumImage::ImageAsset*, TWeakPtr<LoadedTextureResult>>&
         featureIdTextureMap) {
   const ECesiumFeatureIdTextureStatus status =
       UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -133,7 +138,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
 
   const CesiumGltf::FeatureIdTextureView& featureIdTextureView =
       texture.getFeatureIdTextureView();
-  const CesiumGltf::ImageAsset* pFeatureIdImage =
+  const CesiumImage::ImageAsset* pFeatureIdImage =
       featureIdTextureView.getImage();
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureIdTexture)
@@ -162,8 +167,8 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     }
 
     // Copy the image, so that we can keep a copy of it in the glTF.
-    CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pImageCopy =
-        new CesiumGltf::ImageAsset(*pFeatureIdImage);
+    CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImageCopy =
+        new CesiumImage::ImageAsset(*pFeatureIdImage);
     encodedFeatureIdTexture.pTexture =
         MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
             *pImageCopy,
@@ -196,7 +201,7 @@ EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
 
   // Not all feature ID sets are necessarily textures, but reserve the max
   // amount just in case.
-  TMap<const CesiumGltf::ImageAsset*, TWeakPtr<LoadedTextureResult>>
+  TMap<const CesiumImage::ImageAsset*, TWeakPtr<LoadedTextureResult>>
       featureIdTextureMap;
   featureIdTextureMap.Reserve(featureIDSetDescriptions.Num());
 
@@ -529,8 +534,8 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
               ? floorSqrtFeatureCount
               : (floorSqrtFeatureCount + 1);
 
-      CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pImage =
-          new CesiumGltf::ImageAsset();
+      CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
+          new CesiumImage::ImageAsset();
       pImage->width = pImage->height = textureDimension;
       pImage->bytesPerChannel = encodedFormat.bytesPerChannel;
       pImage->channels = encodedFormat.channels;
@@ -611,7 +616,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
 EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     const FCesiumPropertyTextureDescription& propertyTextureDescription,
     const FCesiumPropertyTexture& propertyTexture,
-    TMap<const CesiumGltf::ImageAsset*, TWeakPtr<LoadedTextureResult>>&
+    TMap<const CesiumImage::ImageAsset*, TWeakPtr<LoadedTextureResult>>&
         propertyTexturePropertyMap) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodePropertyTexture)
@@ -660,7 +665,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
         encodedProperty.channels[i] = channels[i];
       }
 
-      const CesiumGltf::ImageAsset* pImage = property.getImage();
+      const CesiumImage::ImageAsset* pImage = property.getImage();
 
       TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
           propertyTexturePropertyMap.Find(pImage);
@@ -677,8 +682,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
         }
 
         // Copy the image, so that we can keep a copy of it in the glTF.
-        CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> pImageCopy =
-            new CesiumGltf::ImageAsset(*pImage);
+        CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImageCopy =
+            new CesiumImage::ImageAsset(*pImage);
         encodedProperty.pTexture =
             MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
                 *pImageCopy,
@@ -789,7 +794,7 @@ EncodedModelMetadata encodeModelMetadataAnyThreadPart(
       UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(metadata);
   result.propertyTextures.Reserve(propertyTextures.Num());
 
-  TMap<const CesiumGltf::ImageAsset*, TWeakPtr<LoadedTextureResult>>
+  TMap<const CesiumImage::ImageAsset*, TWeakPtr<LoadedTextureResult>>
       propertyTexturePropertyMap;
   propertyTexturePropertyMap.Reserve(propertyTextures.Num());
 

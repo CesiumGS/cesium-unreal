@@ -44,6 +44,7 @@
 #include "UnrealPrepareRendererResources.h"
 #include "VecMath.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 #include <Cesium3DTilesSelection/EllipsoidTilesetLoader.h>
 #include <Cesium3DTilesSelection/GltfModifier.h>
@@ -53,8 +54,7 @@
 #include <Cesium3DTilesSelection/TilesetSharedAssetSystem.h>
 #include <CesiumAsync/SharedAssetDepot.h>
 #include <CesiumGeospatial/GlobeTransforms.h>
-#include <CesiumGltf/ImageAsset.h>
-#include <CesiumGltf/Ktx2TranscodeTargets.h>
+#include <CesiumImage/Ktx2TranscodeTargets.h>
 #include <CesiumIonClient/Connection.h>
 
 #include <glm/gtc/matrix_inverse.hpp>
@@ -66,6 +66,7 @@
 
 #include <Cesium3DTilesSelection/DebugTileStateDatabase.h>
 #endif
+THIRD_PARTY_INCLUDES_END
 
 FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
@@ -708,7 +709,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
-      this->_pTileset->getRootTile();
+      this->_pTileset ? this->_pTileset->getRootTile() : nullptr;
   if (!pRootTile) {
     return;
   }
@@ -1098,7 +1099,7 @@ void ACesium3DTileset::LoadTileset() {
 
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 
-  CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
+  CesiumImage::SupportedGpuCompressedPixelFormats supportedFormats;
   supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
   supportedFormats.ETC2_RGBA =
       GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
@@ -1117,7 +1118,7 @@ void ACesium3DTileset::LoadTileset() {
       GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
 
   options.contentOptions.ktx2TranscodeTargets =
-      CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
+      CesiumImage::Ktx2TranscodeTargets(supportedFormats, false);
 
   options.contentOptions.applyTextureTransform = false;
 

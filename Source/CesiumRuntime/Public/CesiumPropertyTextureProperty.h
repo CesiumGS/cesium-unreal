@@ -7,12 +7,22 @@
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
-#include <CesiumGltf/KhrTextureTransform.h>
+THIRD_PARTY_INCLUDES_START
 #include <CesiumGltf/PropertyTexturePropertyView.h>
+THIRD_PARTY_INCLUDES_END
 #include <any>
 #include <optional>
 
 #include "CesiumPropertyTextureProperty.generated.h"
+
+namespace CesiumGltf {
+class KhrTextureTransform;
+struct Sampler;
+} // namespace CesiumGltf
+
+namespace CesiumImage {
+struct ImageAsset;
+}
 
 /**
  * @brief Reports the status of a FCesiumPropertyTextureProperty. If the
@@ -103,7 +113,7 @@ public:
 
   const int64 getTexCoordSetIndex() const;
   const CesiumGltf::Sampler* getSampler() const;
-  const CesiumGltf::ImageAsset* getImage() const;
+  const CesiumImage::ImageAsset* getImage() const;
   const std::optional<CesiumGltf::KhrTextureTransform>
   getTextureTransform() const;
 

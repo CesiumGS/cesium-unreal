@@ -1,5 +1,12 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a crash that could occur when zooming to a tileset with **Update in Editor** disabled.
+- Fixed Gaussian splats not rendering in Standalone Game sessions launched from the editor.
+
 ### v2.27.0 - 2026-06-01
 
 ##### Additions :tada:
