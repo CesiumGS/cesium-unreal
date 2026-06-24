@@ -301,7 +301,7 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
         LogCesiumEditor,
         Error,
         TEXT(
-            "Tileset {} does not contain a metadata schema, which is required for voxel content."),
+            "Tileset %s does not contain a metadata schema, which is required for voxel content."),
         *tileset.GetActorLabel());
     return;
   }
