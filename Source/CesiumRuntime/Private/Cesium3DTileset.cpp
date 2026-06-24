@@ -955,8 +955,7 @@ void ACesium3DTileset::LoadTileset() {
         LogCesium,
         Warning,
         TEXT(
-            "\"Enable World Bounds Checks\" in the world settings is currently enabled. Please consider disabling it to avoid potential issues."),
-        *this->Url);
+            "\"Enable World Bounds Checks\" in the world settings is currently enabled. Please consider disabling it to avoid potential issues."));
   }
 
   // Make sure we have a valid Cesium ion server if we need one.
