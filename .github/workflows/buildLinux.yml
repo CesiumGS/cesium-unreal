@@ -48,7 +48,7 @@ jobs:
       - name: Prune unneeded packages
         run: |
           sudo apt update
-          export PACKAGES_REMOVE=$(sudo node ./github/linux-prune-packages.js)
+          export PACKAGES_REMOVE=$(sudo node ./.github/linux-prune-packages.js)
           echo $PACKAGES_REMOVE
           sudo apt remove -y $PACKAGES_REMOVE
           df -h
