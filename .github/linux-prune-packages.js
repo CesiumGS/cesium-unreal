@@ -26,13 +26,14 @@ function findPackageDependencies(packageName) {
   const matches = [...result.matchAll(regex)];
   matches.forEach(match => {
     const name = match[2].replace(/[\<\>]/g, '');
-    if(packagesObj[name] !== 'keep') {
+    if(packagesObj[name] === 'remove') {
       packagesObj[name] = 'unchecked';
     }
   });
 }
 
-packagesToKeep.forEach(pkg => {
+// Make sure we're not trying to keep packages that don't exist.
+packagesToKeep.filter(pkg => packagesObj.hasOwnProperty(pkg)).forEach(pkg => {
   packagesObj[pkg] = 'unchecked';
 });
 
