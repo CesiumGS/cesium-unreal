@@ -36,19 +36,21 @@ jobs:
           apt list --installed
           sudo dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
           sudo snap list
+      - name: Create some space to work in /mnt
+        run: |
+          sudo mkdir /mnt/work
+          sudo chown $(whoami) /mnt/work
+      - name: Check out minimal build files
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
       - name: Prune unneeded packages
         run: |
           sudo apt update
-          sudo dpkg-query -Wf '${Package}\n' > packages.temp.txt
-          source /etc/lsb-release
-          export MAJOR_VERSION=$(echo $DISTRIB_RELEASE | grep -o '^[0-9]\+')
-          wget https://cdimage.ubuntu.com/ubuntu-core/$MAJOR_VERSION/stable/current/ubuntu-core-$MAJOR_VERSION-amd64.manifest -O core.manifest
-          cat core.manifest | awk -F' ' '{print $1}' > packages-keep.txt
-          printf "apt\napt-utils\nbinutils\nbinutils-common\nbinutils-x86-64-linux-gnu\ncoreutils\nadduser\ngpgv\nlibapt-pkg6.0\nubuntu-keyring\nlibc6\nlibgcc-s1\nlibgnutls30\nlibseccomp2\nlibstdc++6\nlibsystemd0\nca-certificates\nlibacl1\nlibattr1\nlibgmp10\nlibselinux1" >> packages-keep.temp.txt
-          sort packages.temp.txt > packages.txt
-          sort packages-keep.temp.txt > packages-keep.txt
-          comm -23 packages.txt packages-keep.txt > packages-remove.txt
-          sudo apt remove -y $(cat packages-remove.txt | tr '\n' ' ')
+          export PACKAGES_REMOVE=$(sudo node ./github/linux-prune-packages.js)
+          echo $PACKAGES_REMOVE
+          sudo apt remove -y $PACKAGES_REMOVE
           df -h
           sudo rm -rf /usr/local/lib/android || true
           sudo rm -rf /usr/share/dotnet || true
@@ -61,15 +63,6 @@ jobs:
         uses: ssrobins/install-cmake@v1
         with:
           version: 4.4
-      - name: Create some space to work in /mnt
-        run: |
-          sudo mkdir /mnt/work
-          sudo chown $(whoami) /mnt/work
-      - name: Check out minimal build files
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            .github
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
