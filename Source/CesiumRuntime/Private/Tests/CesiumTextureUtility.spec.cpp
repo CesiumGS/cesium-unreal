@@ -7,6 +7,10 @@
 #include "UnrealTaskProcessor.h"
 THIRD_PARTY_INCLUDES_START
 #include <CesiumAsync/AsyncSystem.h>
+#include <CesiumGltf/Image.h>
+#include <CesiumGltf/Model.h>
+#include <CesiumGltf/Sampler.h>
+#include <CesiumGltf/Texture.h>
 #include <CesiumImage/ImageDecoder.h>
 THIRD_PARTY_INCLUDES_END
 #include <memory>
