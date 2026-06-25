@@ -1,6 +1,10 @@
 #pragma once
 
+#include "CoreMinimal.h"
+
+THIRD_PARTY_INCLUDES_START
 #include <Cesium3DTilesSelection/IPrepareRendererResources.h>
+THIRD_PARTY_INCLUDES_END
 
 class ACesium3DTileset;
 
