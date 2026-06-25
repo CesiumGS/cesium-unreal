@@ -45,6 +45,8 @@ jobs:
           wget https://cdimage.ubuntu.com/ubuntu-core/$MAJOR_VERSION/stable/current/ubuntu-core-$MAJOR_VERSION-amd64.manifest -O core.manifest
           cat core.manifest | awk -F' ' '{print $1}' > packages-keep.txt
           printf "apt\napt-utils\nbinutils\nbinutils-common\nbinutils-x86-64-linux-gnu\ncoreutils" >> packages-keep.txt
+          sort packages.txt > packages.txt
+          sort packages-keep.txt > packages-keep.txt
           comm -23 packages.txt packages-keep.txt > packages-remove.txt
           sudo apt remove -y $(cat packages.txt | tr '\n' ' ')
           df -h
