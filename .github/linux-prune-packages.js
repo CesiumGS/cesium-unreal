@@ -8,7 +8,9 @@ const packagesToKeep = [
   "pc-kernel",
   "pc",
   "snapd",
-  "sudo"
+  "sudo",
+  "init",
+  "shim-signed"
 ];
 
 function runCommand(command) {
