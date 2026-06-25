@@ -40,6 +40,11 @@ jobs:
         run: |
           sudo mkdir /mnt/work
           sudo chown $(whoami) /mnt/work
+      - name: Install CMake
+        run: |
+          wget https://github.com/Kitware/CMake/releases/download/v4.4.0-rc2/cmake-4.4.0-rc2-linux-x86_64.tar.gz
+          tar -xvf cmake-4.4.0-rc2-linux-x86_64.tar.gz
+          sudo cp -R cmake-4.4.0-rc2-linux-x86_64/* /usr/
       - name: Check out minimal build files
         uses: actions/checkout@v4
         with:
@@ -54,15 +59,12 @@ jobs:
           df -h
           sudo rm -rf /usr/local/lib/android || true
           sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /var/lib/apache2 || true
           df -h
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: "18.1"
-      - name: Install CMake
-        uses: ssrobins/install-cmake@v1
-        with:
-          version: 4.4
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
@@ -81,6 +83,7 @@ jobs:
       - name: Install Ninja and patchelf
         run: |
           sudo apt install -y ninja-build patchelf
+          sudo apt clean
       - name: Set environment variables
         run: |
           echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
