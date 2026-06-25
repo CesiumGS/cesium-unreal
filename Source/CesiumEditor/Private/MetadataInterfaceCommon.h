@@ -5,6 +5,7 @@
 #include "CesiumFeaturesMetadataDescription.h"
 #include "Containers/Array.h"
 #include "Templates/SharedPointer.h"
+#include "Widgets/Input/SComboBox.h"
 
 #include <optional>
 

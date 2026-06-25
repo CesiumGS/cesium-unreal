@@ -10,6 +10,7 @@
 #include "Templates/UniquePtr.h"
 #include "UObject/WeakObjectPtr.h"
 #include "Widgets/Input/SComboBox.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SWindow.h"
 
 #include <optional>
