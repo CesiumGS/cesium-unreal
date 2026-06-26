@@ -262,7 +262,7 @@ void UCesiumGaussianSplatSubsystem::Tick(float DeltaTime) {
     return;
   }
 
-  if (!IsValid(this->_pNiagaraActor) || pWorld != this->_pLastCreatedWorld) {
+  if (pWorld != this->_pLastCreatedWorld || !IsValid(this->_pNiagaraActor)) {
     this->initializeForWorld(*pWorld);
   }
 
