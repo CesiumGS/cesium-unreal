@@ -61,6 +61,30 @@ jobs:
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /var/lib/apache2 || true
           df -h
+      - name: Remove cruft
+        run: |
+          sudo rm -rf /home/runner/.rustup || true
+          sudo rm -rf /home/runner/.cargo || true
+          sudo rm -rf /home/runner/.dotnet || true
+          sudo rm -rf /var/lib/mysql || true
+          sudo rm -rf /var/lib/postgresql || true
+          sudo rm -rf /var/lib/gems || true
+          sudo rm -rf /usr/share/swift || true
+          sudo rm -rf /usr/share/.ghcup || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/local/lib/node_modules || true
+          sudo rm -rf /usr/local/julia* || true
+          sudo rm -rf /usr/share/miniconda || true
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/share/az_15.6.1 || true
+          sudo rm -rf /usr/share/gradle-* || true
+          sudo rm -rf /usr/libexec/docker || true
+          sudo rm -rf /usr/local/sqlpackage || true
+          sudo rm -rf /usr/share/kotlinc || true
+          sudo rm -rf /usr/share/java || true
+          sudo rm -rf /usr/local/share/chromedriver-linux64 || true
+          sudo rm -rf /usr/share/apache-maven-* || true
+          sudo rm -rf /usr/doc/* || true
       - name: Print Detailed Disk Space Info
         run: |
           sudo du -h -d 3 /usr -t 10M | sort -h
@@ -70,6 +94,9 @@ jobs:
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: "18.1"
+      - name: Print disk space free
+        run: |
+          df -h
       - name: Install Unreal Engine
         uses: ./.github/actions/install-unreal-linux
         with:
@@ -77,6 +104,10 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Remove AWS CLI
+        run: |
+          sudo rm -rf /usr/local/aws-cli || true
+          sudo rm -rf /usr/local/aws-sam-cli || true
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -92,6 +123,7 @@ jobs:
         run: |
           sudo apt install -y ninja-build patchelf
           sudo apt clean
+          sudo rm -rf /var/lib/apt/lists/* || true
       - name: Set environment variables
         run: |
           echo "CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
