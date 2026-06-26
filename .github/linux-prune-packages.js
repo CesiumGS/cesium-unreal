@@ -11,7 +11,8 @@ const packagesToKeep = [
   "sudo",
   "init",
   "shim-signed",
-  "unzip"
+  "unzip",
+  "git"
 ];
 
 function runCommand(command) {

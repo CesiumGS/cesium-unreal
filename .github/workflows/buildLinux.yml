@@ -80,6 +80,9 @@ jobs:
         uses: ./.github/actions/vcpkg-cache
         with:
           id: ${{ inputs.upload-package-base-name }}
+      - name: Remove now-unneeded packages
+        run: |
+          sudo apt remove -y git git-man unzip
       - name: Install Ninja and patchelf
         run: |
           sudo apt install -y ninja-build patchelf
@@ -128,6 +131,14 @@ jobs:
       - name: Print disk space free
         run: |
           df -h
+      # We need Node for actions/upload-artifact
+      - name: Remove Unreal files
+        run: |
+          rm -rf $UNREAL_ENGINE_ROOT
+      - name: Reinstall Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
