@@ -1136,7 +1136,7 @@ void FCesiumPropertyTexturePropertySpec::Define() {
       image.channels = 4;
       image.bytesPerChannel = 1;
 
-      std::vector<float> values{-1.1, 2.2, -3.3, 4.0};
+      std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       image.pixelData = GetValuesAsBytes(values);
 
       if (FPlatformProperties::IsLittleEndian()) {

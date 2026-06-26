@@ -127,7 +127,7 @@ void UVoxelOctreeTexture::update(
   ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
   ([pResource = this->GetResource(), &result, region, sourcePitch](
        FRHICommandListImmediate& RHICmdList) {
-    RHIUpdateTexture2D(
+    RHICmdList.UpdateTexture2D(
         pResource->TextureRHI,
         0,
         region,

@@ -1034,7 +1034,7 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
-      std::vector<float> values{-1.1, 2.2, -3.3, 4.0};
+      std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
       AccessorView<float>
@@ -1076,7 +1076,7 @@ void FCesiumPropertyAttributePropertySpec::Define() {
       classProperty.type = ClassProperty::Type::SCALAR;
       classProperty.componentType = ClassProperty::ComponentType::FLOAT32;
 
-      std::vector<float> values{-1.1, 2.2, -3.3, 4.0};
+      std::vector<float> values{-1.1f, 2.2f, -3.3f, 4.0f};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
       AccessorView<float>

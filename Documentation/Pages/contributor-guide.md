@@ -8,4 +8,5 @@ This section contains topics that are useful to anyone building Cesium for Unrea
 - \subpage api-design
 - \subpage performance-profiling
 - \subpage release-process
+- \subpage adding-unreal-version-ci
 - \subpage three-d-tiles-in-unreal

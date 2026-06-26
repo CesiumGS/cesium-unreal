@@ -9,3 +9,6 @@
 
 #define ENGINE_VERSION_5_7_OR_HIGHER                                           \
   (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 7)
+
+#define ENGINE_VERSION_5_8_OR_HIGHER                                           \
+  (ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 8)

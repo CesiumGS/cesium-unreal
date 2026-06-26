@@ -824,8 +824,6 @@ FCesiumCreateEmptyTextureResource::FCesiumCreateEmptyTextureResource(
 FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
   FString debugName = TEXT("CesiumTextureUtility");
 
-  FRHIResourceCreateInfo createInfo{*debugName};
-
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
   if (this->bSRGB) {
     textureFlags |= TexCreate_SRGB;
@@ -834,7 +832,7 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
   if (this->_depth > 1) {
     // Create a new empty RHI texture (3D).
     return RHICreateTexture(
-        FRHITextureCreateDesc::Create3D(createInfo.DebugName)
+        FRHITextureCreateDesc::Create3D(*debugName)
             .SetExtent(int32(this->_width), int32(this->_height))
             .SetDepth(this->_depth)
             .SetFormat(this->_format)
@@ -847,7 +845,7 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
 
   // Create a new empty RHI texture (2D).
   return RHICreateTexture(
-      FRHITextureCreateDesc::Create2D(createInfo.DebugName)
+      FRHITextureCreateDesc::Create2D(*debugName)
           .SetExtent(int32(this->_width), int32(this->_height))
           .SetFormat(this->_format)
           .SetNumMips(1)

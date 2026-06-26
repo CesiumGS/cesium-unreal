@@ -32,17 +32,17 @@ void FVecMathSpec::Define() {
           TEXT("Translation"),
           viaVecMath.GetTranslation(),
           viaUnrealMatrix.GetTranslation(),
-          1e-8);
+          1e-8f);
       TestNearlyEqual(
           TEXT("Rotation"),
           viaVecMath.GetRotation().Rotator(),
           viaUnrealMatrix.GetRotation().Rotator(),
-          1e-10);
+          1e-10f);
       TestNearlyEqual(
           TEXT("Scale"),
           viaVecMath.GetScale3D(),
           viaUnrealMatrix.GetScale3D(),
-          1e-11);
+          1e-11f);
     });
 
     It("returns correct values when scale is small", [this]() {
@@ -61,17 +61,17 @@ void FVecMathSpec::Define() {
           TEXT("Translation"),
           viaVecMath.GetTranslation(),
           original.GetTranslation(),
-          1e-8);
+          1e-8f);
       TestNearlyEqual(
           TEXT("Rotation"),
           viaVecMath.GetRotation().Rotator(),
           original.GetRotation().Rotator(),
-          1e-10);
+          1e-10f);
       TestNearlyEqual(
           TEXT("Scale"),
           viaVecMath.GetScale3D(),
           original.GetScale3D(),
-          1e-18);
+          1e-18f);
     });
   });
 }
