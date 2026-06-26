@@ -6,6 +6,7 @@
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
 #include "PropertyHandle.h"
+#include "Widgets/Text/STextBlock.h"
 
 FName FCesiumMetadataValueCustomization::RegisteredLayoutName;
 

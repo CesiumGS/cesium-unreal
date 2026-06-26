@@ -934,6 +934,28 @@ getCesiumViewExtension() {
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
   return cesiumViewExtension;
 }
+
+CesiumImage::SupportedGpuCompressedPixelFormats
+getSupportedGpuCompressedPixelFormats() {
+  CesiumImage::SupportedGpuCompressedPixelFormats supportedFormats;
+  supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
+  supportedFormats.ETC2_RGBA =
+      GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
+  supportedFormats.BC1_RGB = GPixelFormats[EPixelFormat::PF_DXT1].Supported;
+  supportedFormats.BC3_RGBA = GPixelFormats[EPixelFormat::PF_DXT5].Supported;
+  supportedFormats.BC4_R = GPixelFormats[EPixelFormat::PF_BC4].Supported;
+  supportedFormats.BC5_RG = GPixelFormats[EPixelFormat::PF_BC5].Supported;
+  supportedFormats.BC7_RGBA = GPixelFormats[EPixelFormat::PF_BC7].Supported;
+  supportedFormats.ASTC_4x4_RGBA =
+      GPixelFormats[EPixelFormat::PF_ASTC_4x4].Supported;
+  supportedFormats.PVRTC2_4_RGBA =
+      GPixelFormats[EPixelFormat::PF_PVRTC2].Supported;
+  supportedFormats.ETC2_EAC_R11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_R11_EAC].Supported;
+  supportedFormats.ETC2_EAC_RG11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
+  return supportedFormats;
+}
 } // namespace
 
 void ACesium3DTileset::LoadTileset() {
@@ -1096,31 +1118,20 @@ void ACesium3DTileset::LoadTileset() {
 
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
-
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
-
-  CesiumImage::SupportedGpuCompressedPixelFormats supportedFormats;
-  supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
-  supportedFormats.ETC2_RGBA =
-      GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
-  supportedFormats.BC1_RGB = GPixelFormats[EPixelFormat::PF_DXT1].Supported;
-  supportedFormats.BC3_RGBA = GPixelFormats[EPixelFormat::PF_DXT5].Supported;
-  supportedFormats.BC4_R = GPixelFormats[EPixelFormat::PF_BC4].Supported;
-  supportedFormats.BC5_RG = GPixelFormats[EPixelFormat::PF_BC5].Supported;
-  supportedFormats.BC7_RGBA = GPixelFormats[EPixelFormat::PF_BC7].Supported;
-  supportedFormats.ASTC_4x4_RGBA =
-      GPixelFormats[EPixelFormat::PF_ASTC_4x4].Supported;
-  supportedFormats.PVRTC2_4_RGBA =
-      GPixelFormats[EPixelFormat::PF_PVRTC2].Supported;
-  supportedFormats.ETC2_EAC_R11 =
-      GPixelFormats[EPixelFormat::PF_ETC2_R11_EAC].Supported;
-  supportedFormats.ETC2_EAC_RG11 =
-      GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
-
   options.contentOptions.ktx2TranscodeTargets =
-      CesiumImage::Ktx2TranscodeTargets(supportedFormats, false);
-
+      CesiumImage::Ktx2TranscodeTargets(
+          getSupportedGpuCompressedPixelFormats(),
+          false);
   options.contentOptions.applyTextureTransform = false;
+
+  // Most of these primitive modes are not supported in Unreal. The exception is
+  // TRIANGLE_STRIP, but it would require creating a custom render proxy to
+  // switch to the desired mode.
+  options.contentOptions.primitiveModeOptions.convertLineLoop = true;
+  options.contentOptions.primitiveModeOptions.convertLineStrip = true;
+  options.contentOptions.primitiveModeOptions.convertTriangleStrip = true;
+  options.contentOptions.primitiveModeOptions.convertTriangleFan = true;
 
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
