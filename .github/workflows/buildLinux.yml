@@ -61,6 +61,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /var/lib/apache2 || true
           df -h
+      - name: Print Detailed Disk Space Info
+        run: |
+          sudo du -h -d 3 /usr -t 10M | sort -h
+          sudo du -h -d 3 /var -t 10M | sort -h
+          sudo du -h -d 3 ~ -t 10M | sort -h
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v2
         with:
