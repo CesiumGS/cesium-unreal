@@ -10,7 +10,8 @@ const packagesToKeep = [
   "snapd",
   "sudo",
   "init",
-  "shim-signed"
+  "shim-signed",
+  "unzip"
 ];
 
 function runCommand(command) {
