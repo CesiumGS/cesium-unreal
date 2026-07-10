@@ -214,10 +214,14 @@ struct LoadedNodeResult {
   LoadedNodeResult(LoadedNodeResult&& other) = default;
 
   std::optional<LoadedMeshResult> meshResult = std::nullopt;
+
   /**
    * Array of instance transforms, if any.
    */
   std::vector<FTransform> InstanceTransforms;
+
+  int32 lightIndex = -1;
+
   /**
    * Features from EXT_instance_features. A pointer is used for shared ownership
    * because there may be multiple primitives in the same mesh belonging to a

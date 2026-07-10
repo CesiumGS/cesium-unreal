@@ -24,6 +24,7 @@
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/Core.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
+#include "Components/PointLightComponent.h"
 #include "CreateGltfOptions.h"
 #include "EncodedFeaturesMetadata.h"
 #include "Engine/CollisionProfile.h"
@@ -59,6 +60,8 @@
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
+#include <CesiumGltf/ExtensionModelKhrLightsPunctual.h>
+#include <CesiumGltf/ExtensionNodeKhrLightsPunctual.h>
 #include <CesiumGltf/KhrTextureTransform.h>
 #include <CesiumGltf/Padding.h>
 #include <CesiumGltf/PropertyType.h>
@@ -2318,6 +2321,11 @@ static void loadNode(
         nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
   }
 
+  if (auto* pLightsExtension =
+          node.getExtension<CesiumGltf::ExtensionNodeKhrLightsPunctual>()) {
+    result.lightIndex = pLightsExtension->light;
+  }
+
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
@@ -2518,7 +2526,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3938,7 +3946,31 @@ UCesiumGltfComponent::CreateOffGameThread(
     encodeMetadataGameThreadPart(*pGltf->EncodedMetadata_DEPRECATED);
   }
 
+  auto* pLightExtension =
+      model.getExtension<CesiumGltf::ExtensionModelKhrLightsPunctual>();
+
   for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
+    if (pLightExtension) {
+      if (node.lightIndex >= 0 &&
+          node.lightIndex < pLightExtension->lights.size()) {
+        CesiumGltf::Light& light = pLightExtension->lights[node.lightIndex];
+        if (light.type == "point") {
+          UPointLightComponent* pLightComponent =
+              NewObject<UPointLightComponent>(pGltf, "");
+
+          FLinearColor color(1, 1, 1);
+          if (light.color.size() >= 3) {
+            color = FLinearColor(
+                static_cast<float>(light.color[0]),
+                static_cast<float>(light.color[1]),
+                static_cast<float>(light.color[2]));
+          }
+          pLightComponent->SetLightColor(color);
+          pLightComponent->SetIntensity(static_cast<float>(light.intensity));
+        }
+      }
+    }
+
     if (node.meshResult) {
       for (LoadedPrimitiveResult& primitive :
            node.meshResult->primitiveResults) {
