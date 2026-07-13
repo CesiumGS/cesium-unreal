@@ -2323,7 +2323,10 @@ static void loadNode(
 
   if (auto* pLightsExtension =
           node.getExtension<CesiumGltf::ExtensionNodeKhrLightsPunctual>()) {
-    result.lightIndex = pLightsExtension->light;
+    LoadGltfResult::LoadedLightResult& lightResult =
+        result.lightResult.emplace();
+    lightResult.transform = nodeTransform * yInvertMatrix;
+    lightResult.lightIndex = pLightsExtension->light;
   }
 
   int meshId = node.mesh;
@@ -3650,14 +3653,14 @@ void setupComponentBoundsAndBody(
 }
 
 void attachAndRegisterComponent(
-    UCesiumGltfComponent* pGltf,
-    USceneComponent* pMeshComponent) {
-  pMeshComponent->SetMobility(pGltf->Mobility);
-  pMeshComponent->SetupAttachment(pGltf);
+    USceneComponent* pParent,
+    USceneComponent* pChild) {
+  pChild->SetMobility(pParent->Mobility);
+  pChild->SetupAttachment(pParent);
 
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RegisterComponent)
-    pMeshComponent->RegisterComponent();
+    pChild->RegisterComponent();
   }
 }
 } // namespace
@@ -3892,6 +3895,73 @@ static void loadGaussianSplatsGameThreadPart(
   pGaussianSplat->RegisterWithSubsystem();
 }
 
+static void loadLight(
+    UCesiumGltfComponent* pGltf,
+    LoadGltfResult::LoadedLightResult& loadResult,
+    const CesiumGltf::ExtensionModelKhrLightsPunctual& lightExtension,
+    ACesium3DTileset* pTilesetActor) {
+  if (loadResult.lightIndex < 0 &&
+      loadResult.lightIndex >= lightExtension.lights.size()) {
+    return;
+  }
+
+#if DEBUG_GLTF_ASSET_NAMES
+  FName componentName = createSafeName(loadResult.name, "");
+#else
+  FName componentName = "";
+#endif
+
+  auto* pPrimitiveComponent =
+      NewObject<UCesiumGltfPrimitiveComponent>(pGltf, componentName);
+  pPrimitiveComponent->bUseDefaultCollision = false;
+  pPrimitiveComponent->SetCollisionObjectType(
+      ECollisionChannel::ECC_WorldStatic);
+  pPrimitiveComponent->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+
+  pPrimitiveComponent->getPrimitiveData().pTilesetActor = pTilesetActor;
+  pPrimitiveComponent->getPrimitiveData().highPrecisionNodeTransform =
+      loadResult.transform;
+  pPrimitiveComponent->UpdateTransformFromCesium(
+      pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
+
+  attachAndRegisterComponent(pGltf, pPrimitiveComponent);
+
+  const CesiumGltf::Light& light = lightExtension.lights[loadResult.lightIndex];
+
+#if DEBUG_GLTF_ASSET_NAMES
+  FName lightComponentName = createSafeName(loadResult.name, "");
+#else
+  FName lightComponentName = "";
+#endif
+
+  if (light.type == "point") {
+    UPointLightComponent* pLightComponent =
+        NewObject<UPointLightComponent>(pPrimitiveComponent, componentName);
+
+    pLightComponent->SetFlags(
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+
+    FLinearColor color(1, 1, 1);
+    if (light.color.size() >= 3) {
+      color = FLinearColor(
+          static_cast<float>(light.color[0]),
+          static_cast<float>(light.color[1]),
+          static_cast<float>(light.color[2]));
+    }
+
+    pLightComponent->SetLightColor(color);
+    pLightComponent->SetIntensity(static_cast<float>(light.intensity));
+    pLightComponent->SetIntensityUnits(ELightUnits::Candelas);
+    if (light.range) {
+      pLightComponent->SetAttenuationRadius(
+          static_cast<float>(*light.range * 100.0));
+    }
+
+    attachAndRegisterComponent(pPrimitiveComponent, pLightComponent);
+  }
+}
+
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumAsync::AsyncSystem& AsyncSystem,
@@ -3950,25 +4020,8 @@ UCesiumGltfComponent::CreateOffGameThread(
       model.getExtension<CesiumGltf::ExtensionModelKhrLightsPunctual>();
 
   for (LoadedNodeResult& node : pReal->loadModelResult.nodeResults) {
-    if (pLightExtension) {
-      if (node.lightIndex >= 0 &&
-          node.lightIndex < pLightExtension->lights.size()) {
-        CesiumGltf::Light& light = pLightExtension->lights[node.lightIndex];
-        if (light.type == "point") {
-          UPointLightComponent* pLightComponent =
-              NewObject<UPointLightComponent>(pGltf, "");
-
-          FLinearColor color(1, 1, 1);
-          if (light.color.size() >= 3) {
-            color = FLinearColor(
-                static_cast<float>(light.color[0]),
-                static_cast<float>(light.color[1]),
-                static_cast<float>(light.color[2]));
-          }
-          pLightComponent->SetLightColor(color);
-          pLightComponent->SetIntensity(static_cast<float>(light.intensity));
-        }
-      }
+    if (node.lightResult && pLightExtension) {
+      loadLight(pGltf, *node.lightResult, *pLightExtension, pTilesetActor);
     }
 
     if (node.meshResult) {

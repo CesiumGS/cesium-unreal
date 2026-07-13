@@ -205,6 +205,20 @@ struct LoadedMeshResult {
 };
 
 /**
+ * Represents the result of loading a light from KHR_lights_punctual on a load thread.
+ */
+struct LoadedLightResult {
+  LoadedLightResult() {}
+  LoadedLightResult(const LoadedLightResult&) = delete;
+  LoadedLightResult(LoadedLightResult&& other) = default;
+  LoadedLightResult& operator=(LoadedLightResult&& other) = default;
+
+  glm::dmat4x4 transform{1.0};
+
+  int32 lightIndex = -1;
+};
+
+/**
  * Represents the result of loading a glTF node on a load thread.
  */
 struct LoadedNodeResult {
@@ -215,12 +229,12 @@ struct LoadedNodeResult {
 
   std::optional<LoadedMeshResult> meshResult = std::nullopt;
 
+  std::optional<LoadedLightResult> lightResult = std::nullopt;
+
   /**
    * Array of instance transforms, if any.
    */
   std::vector<FTransform> InstanceTransforms;
-
-  int32 lightIndex = -1;
 
   /**
    * Features from EXT_instance_features. A pointer is used for shared ownership
