@@ -24,7 +24,9 @@
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/Core.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "CreateGltfOptions.h"
 #include "EncodedFeaturesMetadata.h"
 #include "Engine/CollisionProfile.h"
@@ -113,6 +115,26 @@ template <class T>
 struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
 
 namespace {
+FLinearColor getLinearColor(
+    const std::vector<double>& color,
+    bool includeAlpha,
+    const FLinearColor& defaultColor) {
+  if (color.size() < 3) {
+    return defaultColor;
+  }
+
+  float alpha = 1.0f;
+  if (includeAlpha) {
+    alpha = color.size() >= 4 ? static_cast<float>(color[3]) : defaultColor.A;
+  }
+
+  return FLinearColor(
+      static_cast<float>(color[0]),
+      static_cast<float>(color[1]),
+      static_cast<float>(color[2]),
+      alpha);
+}
+
 uint32_t addAttributeAccessorToMap(
     const CesiumGltf::MeshPrimitive& primitive,
     const std::string& attributeName,
@@ -2122,52 +2144,59 @@ static void loadInstancingData(
     const CesiumGltf::ExtensionExtInstanceFeatures* pInstanceFeatures) {
   auto getInstanceAccessor =
       [&](const char* name) -> const CesiumGltf::Accessor* {
-    if (auto accessorItr = pGpuInstancing->attributes.find(name);
-        accessorItr != pGpuInstancing->attributes.end()) {
-      return CesiumGltf::Model::getSafe(&model.accessors, accessorItr->second);
-    }
-    return nullptr;
+    auto accessorItr = pGpuInstancing->attributes.find(name);
+    return accessorItr != pGpuInstancing->attributes.end()
+               ? CesiumGltf::Model::getSafe(
+                     &model.accessors,
+                     accessorItr->second)
+               : nullptr;
   };
-  const CesiumGltf::Accessor* translations = getInstanceAccessor("TRANSLATION");
-  const CesiumGltf::Accessor* rotations = getInstanceAccessor("ROTATION");
-  const CesiumGltf::Accessor* scales = getInstanceAccessor("SCALE");
 
-  int64_t count = 0;
-  if (translations) {
-    count = translations->count;
+  const CesiumGltf::Accessor* pTranslations =
+      getInstanceAccessor("TRANSLATION");
+  const CesiumGltf::Accessor* pRotations = getInstanceAccessor("ROTATION");
+  const CesiumGltf::Accessor* pScales = getInstanceAccessor("SCALE");
+
+  int64_t instanceCount = 0;
+  if (pTranslations) {
+    instanceCount = pTranslations->count;
   }
-  if (rotations) {
-    if (count == 0) {
-      count = rotations->count;
-    } else if (count != rotations->count) {
+
+  if (pRotations) {
+    if (instanceCount == 0) {
+      instanceCount = pRotations->count;
+    } else if (instanceCount != pRotations->count) {
       UE_LOG(
           LogCesium,
           Warning,
           TEXT("instance rotation count %d not consistent with %d"),
-          rotations->count,
-          count);
+          pRotations->count,
+          instanceCount);
       return;
     }
   }
-  if (scales) {
-    if (count == 0) {
-      count = scales->count;
-    } else if (count != scales->count) {
+
+  if (pScales) {
+    if (instanceCount == 0) {
+      instanceCount = pScales->count;
+    } else if (instanceCount != pScales->count) {
       UE_LOG(
           LogCesium,
           Warning,
           TEXT("instance scale count %d not consistent with %d"),
-          scales->count,
-          count);
+          pScales->count,
+          instanceCount);
       return;
     }
   }
-  if (count == 0) {
+
+  if (instanceCount == 0) {
     UE_LOG(LogCesium, Warning, TEXT("No valid instance data"));
     return;
   }
+
   // The glTF instance transforms need to be transformed into the local
-  // coordinate system of the Unreal static mesh i.e., Unreals' left-handed
+  // coordinate system of the Unreal static mesh i.e., Unreal's left-handed
   // system. Another way to think about it is that the geometry, which is
   // stored in the Unreal system, must be transformed to glTF, have the
   // instance transform applied, and then be transformed back to Unreal. It's
@@ -2175,17 +2204,17 @@ static void loadInstancingData(
   // instance operations, but that general approach has always ended in
   // tears. Better to formally multiply out the matrices and be assured that
   // the operation is correct.
-  std::vector<glm::dmat4> instanceTransforms(count, glm::dmat4(1.0));
+  std::vector<glm::dmat4> instanceTransforms(instanceCount, glm::dmat4(1.0));
 
   // Note: the glm functions translate() and scale() post-multiply the matrix
   // argument by the new transform. E.g., translate() does *not* translate the
   // matrix.
-  if (translations) {
+  if (pTranslations) {
     CesiumGltf::AccessorView<glm::fvec3> translationAccessor(
         model,
-        *translations);
+        *pTranslations);
     if (translationAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
-      for (int64_t i = 0; i < count; ++i) {
+      for (int64_t i = 0; i < instanceCount; ++i) {
         glm::dvec3 translation(translationAccessor[i]);
         instanceTransforms[i] = glm::translate(
             instanceTransforms[i],
@@ -2198,12 +2227,13 @@ static void loadInstancingData(
         Warning,
         TEXT("Invalid accessor for instance translations"));
   }
-  if (rotations) {
-    createAccessorView(model, *rotations, [&](auto&& quatView) -> void {
+
+  if (pRotations) {
+    createAccessorView(model, *pRotations, [&](auto&& quatView) -> void {
       using QuatType = decltype(quatView[0]);
       using ValueType = std::decay_t<QuatType>;
       if constexpr (is_float_quat_v<ValueType>) {
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < instanceCount; ++i) {
           glm::dquat quat(
               quatView[i].value[3],
               quatView[i].value[0],
@@ -2212,7 +2242,7 @@ static void loadInstancingData(
           instanceTransforms[i] = instanceTransforms[i] * glm::mat4_cast(quat);
         }
       } else if constexpr (is_int_quat_v<ValueType>) {
-        for (int64_t i = 0; i < count; ++i) {
+        for (int64_t i = 0; i < instanceCount; ++i) {
           float val[4];
           for (int j = 0; j < 4; ++j) {
             val[j] = GltfNormalized(quatView[i].value[j]);
@@ -2223,23 +2253,26 @@ static void loadInstancingData(
       }
     });
   }
-  if (scales) {
-    CesiumGltf::AccessorView<glm::fvec3> scaleAccessor(model, *scales);
-    for (int64_t i = 0; i < count; ++i) {
+
+  if (pScales) {
+    CesiumGltf::AccessorView<glm::fvec3> scaleAccessor(model, *pScales);
+    for (int64_t i = 0; i < instanceCount; ++i) {
       glm::dvec3 scaleFactors(scaleAccessor[i]);
       instanceTransforms[i] = glm::scale(instanceTransforms[i], scaleFactors);
     }
   } else {
     UE_LOG(LogCesium, Warning, TEXT("Invalid accessor for instance scales"));
   }
-  result.InstanceTransforms.resize(count);
-  for (int64_t i = 0; i < count; ++i) {
+
+  LoadedInstancesResult& instances = result.instancesResult.emplace();
+  instances.transforms.resize(instanceCount);
+  for (int64_t i = 0; i < instanceCount; ++i) {
     glm::dmat4 unrealMat =
         yInvertMatrix * instanceTransforms[i] * yInvertMatrix;
-    result.InstanceTransforms[i] = VecMath::createTransform(unrealMat);
+    instances.transforms[i] = VecMath::createTransform(unrealMat);
   }
   if (pInstanceFeatures) {
-    result.pInstanceFeatures =
+    instances.pFeatures =
         MakeShared<FCesiumPrimitiveFeatures>(model, node, *pInstanceFeatures);
   }
 }
@@ -2325,6 +2358,8 @@ static void loadNode(
           node.getExtension<CesiumGltf::ExtensionNodeKhrLightsPunctual>()) {
     LoadGltfResult::LoadedLightResult& lightResult =
         result.lightResult.emplace();
+    lightResult.name =
+        "glTF node " + std::to_string(options.nodeIndex) + " light";
     lightResult.transform = nodeTransform * yInvertMatrix;
     lightResult.lightIndex = pLightsExtension->light;
   }
@@ -2349,7 +2384,8 @@ static void loadNode(
       CreateNodeOptions childNodeOptions = {
           options.pModelOptions,
           options.pHalfConstructedModelResult,
-          &model.nodes[childNodeId]};
+          &model.nodes[childNodeId],
+          childNodeId};
       loadNode(loadNodeResults, nodeTransform, childNodeOptions, ellipsoid);
     }
   }
@@ -2558,7 +2594,8 @@ loadModelAnyThreadPart(
                 CreateNodeOptions nodeOptions = {
                     &options,
                     &pHalf->loadModelResult,
-                    &model.nodes[nodeId]};
+                    &model.nodes[nodeId],
+                    nodeId};
                 loadNode(
                     pHalf->loadModelResult.nodeResults,
                     rootTransform,
@@ -2572,7 +2609,8 @@ loadModelAnyThreadPart(
                 CreateNodeOptions nodeOptions = {
                     &options,
                     &pHalf->loadModelResult,
-                    &model.nodes[nodeId]};
+                    &model.nodes[nodeId],
+                    nodeId};
                 loadNode(
                     pHalf->loadModelResult.nodeResults,
                     rootTransform,
@@ -2581,10 +2619,8 @@ loadModelAnyThreadPart(
               }
             } else if (model.nodes.size() > 0) {
               // No scenes at all, use the first node as the root node.
-              CreateNodeOptions nodeOptions = {
-                  &options,
-                  &pHalf->loadModelResult,
-                  &model.nodes[0]};
+              CreateNodeOptions nodeOptions =
+                  {&options, &pHalf->loadModelResult, &model.nodes[0], 0};
               loadNode(
                   pHalf->loadModelResult.nodeResults,
                   rootTransform,
@@ -2593,10 +2629,8 @@ loadModelAnyThreadPart(
             } else if (model.meshes.size() > 0) {
               // No nodes either, show all the meshes.
               for (size_t i = 0; i < model.meshes.size(); i++) {
-                CreateNodeOptions dummyNodeOptions = {
-                    &options,
-                    &pHalf->loadModelResult,
-                    nullptr};
+                CreateNodeOptions dummyNodeOptions =
+                    {&options, &pHalf->loadModelResult, nullptr, -1};
                 LoadedNodeResult& dummyNodeResult =
                     pHalf->loadModelResult.nodeResults.emplace_back();
                 CreateMeshOptions meshOptions = {
@@ -2657,27 +2691,12 @@ static void SetGltfParameterValues(
   }
   const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
-  if (pbr.baseColorFactor.size() > 3) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("baseColorFactor", association, index),
-        FLinearColor(
-            pbr.baseColorFactor[0],
-            pbr.baseColorFactor[1],
-            pbr.baseColorFactor[2],
-            pbr.baseColorFactor[3]));
-  } else if (pbr.baseColorFactor.size() == 3) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("baseColorFactor", association, index),
-        FLinearColor(
-            pbr.baseColorFactor[0],
-            pbr.baseColorFactor[1],
-            pbr.baseColorFactor[2],
-            1.));
-  } else {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("baseColorFactor", association, index),
-        FLinearColor(1., 1., 1., 1.));
-  }
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo("baseColorFactor", association, index),
+      getLinearColor(
+          pbr.baseColorFactor,
+          true, /* includeAlpha */
+          FLinearColor(1.0f, 1.0f, 1.0f, 1.0f)));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", association, index),
       static_cast<float>(loadResult.isUnlit ? 0.0f : pbr.metallicFactor));
@@ -2851,21 +2870,15 @@ static void SetGltfParameterValues(
             1.0f));
   }
 
-  if (material.emissiveFactor.size() >= 3) {
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("emissiveFactor", association, index),
-        FVector(
-            material.emissiveFactor[0],
-            material.emissiveFactor[1],
-            material.emissiveFactor[2]));
-  } else if (hasEmissiveTexture) {
-    // When we have an emissive texture but not a factor, we need to use a
-    // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
-    // from the texture.
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("emissiveFactor", association, index),
-        FVector(1.0f, 1.0f, 1.0f));
-  }
+  // When we have an emissive texture but not a factor, we need to use a
+  // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
+  // from the texture.
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo("emissiveFactor", association, index),
+      getLinearColor(
+          material.emissiveFactor,
+          false, /* includeAlpha */
+          FLinearColor(1.0f, 1.0f, 1.0f)));
 }
 
 void SetWaterParameterValues(
@@ -3456,18 +3469,19 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
     const FName& componentName,
     const Cesium3DTilesSelection::Tile& tile,
     const ACesium3DTileset* pTilesetActor,
-    const std::vector<FTransform>& instanceTransforms,
-    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures) {
+    const std::optional<LoadedInstancesResult>& loadedInstances) {
   ConstructedPrimitiveComponent result;
 
-  if (instanceTransforms.size()) {
+  if (loadedInstances) {
+    CESIUM_ASSERT(!loadedInstances->transforms.empty());
+
     auto* pInstancedComponent =
         NewObject<UCesiumGltfInstancedComponent>(pGltf, componentName);
 
-    for (const FTransform& transform : instanceTransforms) {
+    for (const FTransform& transform : loadedInstances->transforms) {
       pInstancedComponent->AddInstance(transform, false);
     }
-    pInstancedComponent->pInstanceFeatures = pInstanceFeatures;
+    pInstancedComponent->pInstanceFeatures = loadedInstances->pFeatures;
 
     const auto* pFeaturesMetadataComponent =
         pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
@@ -3671,8 +3685,7 @@ static void loadPrimitiveGameThreadPart(
     LoadedPrimitiveResult& loadResult,
     const Cesium3DTilesSelection::Tile& tile,
     ACesium3DTileset* pTilesetActor,
-    const std::vector<FTransform>& instanceTransforms,
-    const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
+    const std::optional<LoadedInstancesResult>& loadedInstances,
     const TMap<FString, FCesiumMetadataValue>& metadataStatistics) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
@@ -3692,8 +3705,7 @@ static void loadPrimitiveGameThreadPart(
       componentName,
       tile,
       pTilesetActor,
-      instanceTransforms,
-      pInstanceFeatures);
+      loadedInstances);
 
   ICesiumPrimitive* pCesiumPrimitive = component.pAsCesiumPrimitive;
   buildPrimitiveData(
@@ -3766,8 +3778,7 @@ static void loadPrimitiveGameThreadPart(
         edgeComponentName,
         tile,
         pTilesetActor,
-        {},
-        nullptr);
+        std::nullopt);
 
     ICesiumPrimitive* pCesiumPrimitive = component.pAsCesiumPrimitive;
     buildPrimitiveData(
@@ -3905,10 +3916,33 @@ static void loadLight(
     return;
   }
 
+  const CesiumGltf::Light& light = lightExtension.lights[loadResult.lightIndex];
+  if (light.type != "point" && light.type != "spot" &&
+      light.type != "directional") {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Light primitive has unsupported type '%s'; skipped."),
+        *FString(light.type.c_str()));
+    return;
+  }
+  if (light.type == "spot" && !light.spot) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Light primitive has type 'spot' but no spot properties; skipped."));
+    return;
+  }
+
 #if DEBUG_GLTF_ASSET_NAMES
-  FName componentName = createSafeName(loadResult.name, "");
+  FName componentName =
+      createSafeName(loadResult.name + " primitive component", "");
+  FName lightComponentName = createSafeName(loadResult.name, "");
 #else
   FName componentName = "";
+  FName lightComponentName = "";
 #endif
 
   auto* pPrimitiveComponent =
@@ -3927,39 +3961,54 @@ static void loadLight(
 
   attachAndRegisterComponent(pGltf, pPrimitiveComponent);
 
-  const CesiumGltf::Light& light = lightExtension.lights[loadResult.lightIndex];
+  // If range is absent, the light should be treated as infinite. However, it
+  // seems like the maximum value of AttenuationRadius that Unreal uses is
+  // 16384.
+  float range =
+      light.range ? static_cast<float>(*light.range * 100.0f) : 16384.0f;
 
-#if DEBUG_GLTF_ASSET_NAMES
-  FName lightComponentName = createSafeName(loadResult.name, "");
-#else
-  FName lightComponentName = "";
-#endif
+  ULightComponent* pLightComponent = nullptr;
 
   if (light.type == "point") {
-    UPointLightComponent* pLightComponent =
-        NewObject<UPointLightComponent>(pPrimitiveComponent, componentName);
+    auto* pPointLight = NewObject<UPointLightComponent>(
+        pPrimitiveComponent,
+        lightComponentName);
+    pPointLight->SetIntensityUnits(ELightUnits::Candelas);
+    pPointLight->SetAttenuationRadius(range);
+    pLightComponent = pPointLight;
+  } else if (light.type == "spot") {
+    CESIUM_ASSERT(light.spot);
 
-    pLightComponent->SetFlags(
-        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+    auto* pSpotLight =
+        NewObject<USpotLightComponent>(pPrimitiveComponent, lightComponentName);
+    pSpotLight->SetIntensityUnits(ELightUnits::Candelas);
 
-    FLinearColor color(1, 1, 1);
-    if (light.color.size() >= 3) {
-      color = FLinearColor(
-          static_cast<float>(light.color[0]),
-          static_cast<float>(light.color[1]),
-          static_cast<float>(light.color[2]));
-    }
-
-    pLightComponent->SetLightColor(color);
-    pLightComponent->SetIntensity(static_cast<float>(light.intensity));
-    pLightComponent->SetIntensityUnits(ELightUnits::Candelas);
-    if (light.range) {
-      pLightComponent->SetAttenuationRadius(
-          static_cast<float>(*light.range * 100.0));
-    }
-
-    attachAndRegisterComponent(pPrimitiveComponent, pLightComponent);
+    float innerConeAngle =
+        FMath::RadiansToDegrees(static_cast<float>(light.spot->innerConeAngle));
+    float outerConeAngle =
+        FMath::RadiansToDegrees(static_cast<float>(light.spot->outerConeAngle));
+    pSpotLight->SetInnerConeAngle(innerConeAngle);
+    pSpotLight->SetOuterConeAngle(outerConeAngle);
+    pSpotLight->SetAttenuationRadius(range);
+    pLightComponent = pSpotLight;
+  } else if (light.type == "directional") {
+    pLightComponent = NewObject<UDirectionalLightComponent>(
+        pPrimitiveComponent,
+        componentName);
   }
+  CESIUM_ASSERT(pLightComponent);
+  pTilesetActor->AddInstanceComponent(pLightComponent);
+
+  FLinearColor lightColor = getLinearColor(
+      light.color,
+      false, /* includeAlpha */
+      FLinearColor(1.0f, 1.0f, 1.0f));
+  pLightComponent->SetLightColor(lightColor);
+  pLightComponent->SetIntensity(static_cast<float>(light.intensity));
+  pLightComponent->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+
+  attachAndRegisterComponent(pPrimitiveComponent, pLightComponent);
 }
 
 /*static*/ CesiumAsync::Future<UCesiumGltfComponent::CreateOffGameThreadResult>
@@ -4038,8 +4087,7 @@ UCesiumGltfComponent::CreateOffGameThread(
               primitive,
               tile,
               pTilesetActor,
-              node.InstanceTransforms,
-              node.pInstanceFeatures,
+              node.instancesResult,
               pReal->loadModelResult.metadataStatistics);
         }
       }

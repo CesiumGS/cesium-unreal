@@ -90,6 +90,7 @@ struct CreateNodeOptions {
   const LoadGltfResult::LoadedModelResult* pHalfConstructedModelResult =
       nullptr;
   const CesiumGltf::Node* pNode = nullptr;
+  int32_t nodeIndex = -1;
 };
 
 struct CreateMeshOptions {

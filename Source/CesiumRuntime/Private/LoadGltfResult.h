@@ -92,6 +92,10 @@ struct LoadedPrimitiveResult {
    */
   int32_t materialIndex = -1;
 
+  /**
+   * @brief The transform applied to the mesh, accumulated from node transforms
+   * and Unreal coordinate space conversions.
+   */
   glm::dmat4x4 transform{1.0};
 
   Chaos::FTriangleMeshImplicitObjectPtr pCollisionMesh = nullptr;
@@ -205,7 +209,8 @@ struct LoadedMeshResult {
 };
 
 /**
- * Represents the result of loading a light from KHR_lights_punctual on a load thread.
+ * Represents the result of loading a light from @ref
+ * CesiumGltf::ExtensionNodeExtLightsPunctual on a load thread.
  */
 struct LoadedLightResult {
   LoadedLightResult() {}
@@ -213,9 +218,41 @@ struct LoadedLightResult {
   LoadedLightResult(LoadedLightResult&& other) = default;
   LoadedLightResult& operator=(LoadedLightResult&& other) = default;
 
+  /**
+   * The name of the glTF light for debugging purposes.
+   */
+  std::string name{};
+
+  /**
+   * @brief The transform applied to the light, accumulated from node transforms
+   * and Unreal coordinate space conversions.
+   */
   glm::dmat4x4 transform{1.0};
 
+  /**
+   * @brief The index of this light within the model's @ref
+   * CesiumGltf::ExtensionModelExtLightsPunctual::lights array.
+   */
   int32 lightIndex = -1;
+};
+
+struct LoadedInstancesResult {
+  LoadedInstancesResult() {}
+  LoadedInstancesResult(const LoadedInstancesResult&) = delete;
+  LoadedInstancesResult(LoadedInstancesResult&& other) = default;
+  LoadedInstancesResult& operator=(LoadedInstancesResult&& other) = default;
+
+  /**
+   * The array of instance transforms.
+   */
+  std::vector<FTransform> transforms;
+
+  /**
+   * Features from EXT_instance_features. A pointer is used for shared ownership
+   * because there may be multiple primitives in the same mesh belonging to a
+   * single instance.
+   */
+  TSharedPtr<FCesiumPrimitiveFeatures> pFeatures = nullptr;
 };
 
 /**
@@ -231,17 +268,7 @@ struct LoadedNodeResult {
 
   std::optional<LoadedLightResult> lightResult = std::nullopt;
 
-  /**
-   * Array of instance transforms, if any.
-   */
-  std::vector<FTransform> InstanceTransforms;
-
-  /**
-   * Features from EXT_instance_features. A pointer is used for shared ownership
-   * because there may be multiple primitives in the same mesh belonging to a
-   * single instance.
-   */
-  TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures = nullptr;
+  std::optional<LoadedInstancesResult> instancesResult = std::nullopt;
 };
 
 /**
