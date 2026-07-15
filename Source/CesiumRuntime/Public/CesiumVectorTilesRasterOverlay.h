@@ -4,12 +4,64 @@
 
 #include "CesiumGeoJsonDocument.h"
 #include "CesiumIonServer.h"
+#include "CesiumModelMetadata.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumVectorStyle.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include "Delegates/Delegate.h"
 #include "CesiumVectorTilesRasterOverlay.generated.h"
+
+UINTERFACE(Blueprintable, MinimalAPI)
+class UCesiumVectorTilesStylingCallbacks : public UInterface {
+  GENERATED_BODY()
+};
+
+class ICesiumVectorTilesStylingCallbacks {
+  GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  void OnStylingBegin(const FCesiumModelMetadata& InModelMetadata);
+  virtual void
+  OnStylingBegin_Implementation(const FCesiumModelMetadata& InModelMetadata) {}
+
+  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  bool OnStylePoint(
+      int64 InFeatureId,
+      const FVector& InPointLlh,
+      FCesiumVectorStyle& OutVectorStyle);
+  virtual bool OnStylePoint_Implementation(
+      int64 InFeatureId,
+      const FVector& InPointLlh,
+      FCesiumVectorStyle& OutVectorStyle) {
+    return false;
+  }
+
+  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  bool OnStylePolyline(
+      int64 InFeatureId,
+      const TArray<FVector>& InPolylineLlh,
+      FCesiumVectorStyle& OutVectorStyle);
+  virtual bool OnStylePolyline_Implementation(
+      int64 InFeatureId,
+      const TArray<FVector>& InPolylineLlh,
+      FCesiumVectorStyle& OutVectorStyle) {
+    return false;
+  }
+
+  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  bool OnStylePolygon(
+      int64 InFeatureId,
+      const TArray<FVector>& InPolygonLlh,
+      FCesiumVectorStyle& OutVectorStyle);
+  virtual bool OnStylePolygon_Implementation(
+      int64 InFeatureId,
+      const TArray<FVector>& InPolygonLlh,
+      FCesiumVectorStyle& OutVectorStyle) {
+    return false;
+  }
+};
 
 /**
  * Configures where the CesiumVectorTilesRasterOverlay should load its vector
@@ -124,6 +176,15 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FCesiumVectorStyle DefaultStyle;
+
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta =
+          (MustImplement =
+               "/Script/CesiumRuntime.CesiumVectorTilesStylingCallbacks"))
+  TSubclassOf<UObject> StylingProvider;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
