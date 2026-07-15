@@ -1961,7 +1961,8 @@ static void loadVoxels(
   const std::string name = getPrimitiveName(model, mesh, primitive);
   primitiveResult.name = name;
   primitiveResult.primitiveIndex = options.primitiveIndex;
-  primitiveResult.transform = transform * yInvertMatrix;
+  // No need to multiply by yInvertMatrix; lights don't invert their positions.
+  primitiveResult.transform = transform;
   primitiveResult.Metadata =
       pPrimitiveMetadata
           ? FCesiumPrimitiveMetadata(model, primitive, *pPrimitiveMetadata)
@@ -3922,8 +3923,7 @@ static void loadLight(
     UE_LOG(
         LogCesium,
         Warning,
-        TEXT(
-            "Light primitive has unsupported type '%s'; skipped."),
+        TEXT("Light primitive has unsupported type '%s'; skipped."),
         *FString(light.type.c_str()));
     return;
   }
@@ -3954,12 +3954,15 @@ static void loadLight(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   pPrimitiveComponent->getPrimitiveData().pTilesetActor = pTilesetActor;
+  // Directional and spotlights in glTF are aligned with -Z, but Unreal's are
+  // aligned with +X.
   pPrimitiveComponent->getPrimitiveData().highPrecisionNodeTransform =
-      loadResult.transform;
+      loadResult.transform * CesiumGeometry::Transforms::Z_UP_TO_X_UP;
   pPrimitiveComponent->UpdateTransformFromCesium(
       pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
   attachAndRegisterComponent(pGltf, pPrimitiveComponent);
+  pTilesetActor->AddInstanceComponent(pPrimitiveComponent);
 
   // If range is absent, the light should be treated as infinite. However, it
   // seems like the maximum value of AttenuationRadius that Unreal uses is
@@ -3969,14 +3972,14 @@ static void loadLight(
 
   ULightComponent* pLightComponent = nullptr;
 
-  if (light.type == "point") {
+  if (light.type == CesiumGltf::Light::Type::point) {
     auto* pPointLight = NewObject<UPointLightComponent>(
         pPrimitiveComponent,
         lightComponentName);
     pPointLight->SetIntensityUnits(ELightUnits::Candelas);
     pPointLight->SetAttenuationRadius(range);
     pLightComponent = pPointLight;
-  } else if (light.type == "spot") {
+  } else if (light.type == CesiumGltf::Light::Type::spot) {
     CESIUM_ASSERT(light.spot);
 
     auto* pSpotLight =
@@ -3991,11 +3994,12 @@ static void loadLight(
     pSpotLight->SetOuterConeAngle(outerConeAngle);
     pSpotLight->SetAttenuationRadius(range);
     pLightComponent = pSpotLight;
-  } else if (light.type == "directional") {
+  } else if (light.type == CesiumGltf::Light::Type::directional) {
     pLightComponent = NewObject<UDirectionalLightComponent>(
         pPrimitiveComponent,
         componentName);
   }
+
   CESIUM_ASSERT(pLightComponent);
   pTilesetActor->AddInstanceComponent(pLightComponent);
 
