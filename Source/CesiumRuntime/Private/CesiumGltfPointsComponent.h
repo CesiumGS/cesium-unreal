@@ -17,16 +17,29 @@ public:
   UCesiumGltfPointsComponent();
   virtual ~UCesiumGltfPointsComponent();
 
-  // Whether the tile that contains this point component uses additive
-  // refinement.
-  bool UsesAdditiveRefinement;
+  /**
+   * @brief Whether the tile that contains this point component uses additive
+   * refinement. This affects how attenuation is computed for the component.
+   */
+  bool usesAdditiveRefinement;
 
-  // The geometric error of the tile containing this point component.
-  float GeometricError;
+  /**
+   * @brief The geometric error of the tile containing this point component.
+   * Affects how attenuation is computed for the component.
+   */
+  float geometricError;
 
-  // The dimensions of the point component. Used to estimate the geometric
-  // error.
-  glm::vec3 Dimensions;
+  /**
+   * @brief The dimensions of the point component. Used to estimate the
+   * geometric error if none was specified.
+   */
+  glm::vec3 dimensions;
+
+  /**
+   * @brief The diameter specified by @ref
+   * CesiumGltf::ExtensionBentleyMaterialsPointStyle, if present.
+   */
+  int64 diameter;
 
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;

@@ -10,21 +10,32 @@
 #include "SceneView.h"
 #include "StaticMeshResources.h"
 
-FCesiumGltfPointsSceneProxyTilesetData::FCesiumGltfPointsSceneProxyTilesetData()
-    : PointCloudShading(),
-      MaximumScreenSpaceError(0.0),
-      UsesAdditiveRefinement(false),
-      GeometricError(0.0f),
-      Dimensions() {}
+FCesiumGltfPointsSceneProxyAttenuationData::
+    FCesiumGltfPointsSceneProxyAttenuationData()
+    : tilesetPointCloudShading(),
+      maximumScreenSpaceError(0.0),
+      usesAdditiveRefinement(false),
+      geometricError(0.0f),
+      dimensions(),
+      diameter(0) {}
 
-void FCesiumGltfPointsSceneProxyTilesetData::UpdateFromComponent(
-    UCesiumGltfPointsComponent* Component) {
-  ACesium3DTileset* pTileset = Component->getPrimitiveData().pTilesetActor;
-  PointCloudShading = pTileset->GetPointCloudShading();
-  MaximumScreenSpaceError = pTileset->MaximumScreenSpaceError;
-  UsesAdditiveRefinement = Component->UsesAdditiveRefinement;
-  GeometricError = Component->GeometricError;
-  Dimensions = Component->Dimensions;
+FCesiumGltfPointsSceneProxyAttenuationData::
+    FCesiumGltfPointsSceneProxyAttenuationData(
+        UCesiumGltfPointsComponent* pComponent) {
+  if (!IsValid(pComponent)) {
+    return;
+  }
+
+  this->usesAdditiveRefinement = pComponent->usesAdditiveRefinement;
+  this->geometricError = pComponent->geometricError;
+  this->dimensions = pComponent->dimensions;
+  this->diameter = pComponent->diameter;
+
+  if (ACesium3DTileset* pTileset = pComponent->getPrimitiveData().pTilesetActor;
+      IsValid(pTileset)) {
+    this->tilesetPointCloudShading = pTileset->GetPointCloudShading();
+    this->maximumScreenSpaceError = pTileset->MaximumScreenSpaceError;
+  }
 }
 
 SIZE_T FCesiumGltfPointsSceneProxy::GetTypeHash() const {
@@ -36,30 +47,32 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
     UCesiumGltfPointsComponent* InComponent,
     FSceneInterfaceWrapper InSceneInterfaceParams)
     : FPrimitiveSceneProxy(InComponent),
-      RenderData(InComponent->GetStaticMesh()->GetRenderData()),
-      NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-      bAttenuationSupported(
+      _pRenderData(InComponent->GetStaticMesh()->GetRenderData()),
+      _numPoints(
+          this->_pRenderData->LODResources[0].IndexBuffer.GetNumIndices()),
+      _attenuationSupported(
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
-      TilesetData(),
-      AttenuationVertexFactory(
+      _attenuationData(),
+      _attenuationVertexFactory(
           InSceneInterfaceParams.RHIFeatureLevelType,
-          &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
-      AttenuationIndexBuffer(NumPoints, bAttenuationSupported),
-      Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(
+          &this->_pRenderData->LODResources[0]
+               .VertexBuffers.PositionVertexBuffer),
+      _attenuationIndexBuffer(this->_numPoints, this->_attenuationSupported),
+      _pMaterial(InComponent->GetMaterial(0)),
+      _materialRelevance(
           InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
 
 FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
     FRHICommandListBase& RHICmdList) {
-  AttenuationVertexFactory.InitResource(RHICmdList);
-  AttenuationIndexBuffer.InitResource(RHICmdList);
+  this->_attenuationVertexFactory.InitResource(RHICmdList);
+  this->_attenuationIndexBuffer.InitResource(RHICmdList);
 }
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {
-  AttenuationVertexFactory.ReleaseResource();
-  AttenuationIndexBuffer.ReleaseResource();
+  this->_attenuationVertexFactory.ReleaseResource();
+  this->_attenuationIndexBuffer.ReleaseResource();
 }
 
 void FCesiumGltfPointsSceneProxy::GetDynamicMeshElements(
@@ -69,8 +82,12 @@ void FCesiumGltfPointsSceneProxy::GetDynamicMeshElements(
     FMeshElementCollector& Collector) const {
   QUICK_SCOPE_CYCLE_COUNTER(STAT_GltfPointsSceneProxy_GetDynamicMeshElements);
 
-  const bool useAttenuation =
-      bAttenuationSupported && TilesetData.PointCloudShading.Attenuation;
+  // The attenuation pipeline should be used if BENTLEY_materials_point_style is
+  // present.
+  bool useAttenuation =
+      this->_attenuationData.tilesetPointCloudShading.Attenuation ||
+      this->_attenuationData.diameter >= 1;
+  useAttenuation &= this->_attenuationSupported;
 
   for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
     if (VisibilityMap & (1 << ViewIndex)) {
@@ -104,7 +121,7 @@ FCesiumGltfPointsSceneProxy::GetViewRelevance(const FSceneView* View) const {
   Result.bVelocityRelevance =
       IsMovable() & Result.bOpaque & Result.bRenderInMainPass;
 
-  MaterialRelevance.SetPrimitiveViewRelevance(Result);
+  this->_materialRelevance.SetPrimitiveViewRelevance(Result);
 
   return Result;
 }
@@ -113,26 +130,27 @@ uint32 FCesiumGltfPointsSceneProxy::GetMemoryFootprint(void) const {
   return (sizeof(*this) + GetAllocatedSize());
 }
 
-void FCesiumGltfPointsSceneProxy::UpdateTilesetData(
-    const FCesiumGltfPointsSceneProxyTilesetData& InTilesetData) {
-  TilesetData = InTilesetData;
+void FCesiumGltfPointsSceneProxy::UpdateAttenuationData(
+    const FCesiumGltfPointsSceneProxyAttenuationData& InAttenuationData) {
+  this->_attenuationData = InAttenuationData;
 }
 
-float FCesiumGltfPointsSceneProxy::GetGeometricError() const {
-  FCesiumPointCloudShading PointCloudShading = TilesetData.PointCloudShading;
-  float GeometricError = TilesetData.GeometricError;
-  if (GeometricError > 0.0f) {
-    return GeometricError;
+float FCesiumGltfPointsSceneProxy::getGeometricError() const {
+  FCesiumPointCloudShading pointCloudShading =
+      this->_attenuationData.tilesetPointCloudShading;
+  float geometricError = this->_attenuationData.geometricError;
+  if (geometricError > 0.0f) {
+    return geometricError;
   }
 
-  if (PointCloudShading.BaseResolution > 0.0f) {
-    return PointCloudShading.BaseResolution;
+  if (pointCloudShading.BaseResolution > 0.0f) {
+    return pointCloudShading.BaseResolution;
   }
 
   // Estimate the geometric error.
-  glm::vec3 Dimensions = TilesetData.Dimensions;
-  float Volume = Dimensions.x * Dimensions.y * Dimensions.z;
-  return FMath::Pow(Volume / NumPoints, 1.0f / 3.0f);
+  glm::vec3 dimensions = this->_attenuationData.dimensions;
+  float volume = dimensions.x * dimensions.y * dimensions.z;
+  return FMath::Pow(volume / this->_numPoints, 1.0f / 3.0f);
 }
 
 void FCesiumGltfPointsSceneProxy::CreatePointAttenuationUserData(
@@ -145,37 +163,43 @@ void FCesiumGltfPointsSceneProxy::CreatePointAttenuationUserData(
 
   FCesiumPointAttenuationBatchElementUserData& UserData = UserDataWrapper->Data;
   const FLocalVertexFactory& OriginalVertexFactory =
-      RenderData->LODVertexFactories[0].VertexFactory;
+      this->_pRenderData->LODVertexFactories[0].VertexFactory;
 
   UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
   UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
   UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
   UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
   UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
-  UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
+  UserData.bHasPointColors =
+      this->_pRenderData->LODResources[0].bHasColorVertexData;
 
-  FCesiumPointCloudShading PointCloudShading = TilesetData.PointCloudShading;
+  FCesiumPointCloudShading pointCloudShading =
+      this->_attenuationData.tilesetPointCloudShading;
 
-  float MaximumPointSize = TilesetData.UsesAdditiveRefinement
-                               ? 5.0f
-                               : TilesetData.MaximumScreenSpaceError;
+  float maximumPointSize = 1.0f;
 
-  if (PointCloudShading.MaximumAttenuation > 0.0f) {
-    // Don't multiply by DPI scale; let Unreal handle scaling.
-    MaximumPointSize = PointCloudShading.MaximumAttenuation;
+  if (pointCloudShading.Attenuation) {
+    maximumPointSize = this->_attenuationData.usesAdditiveRefinement
+                           ? 5.0f
+                           : this->_attenuationData.maximumScreenSpaceError;
+    if (pointCloudShading.MaximumAttenuation > 0.0f) {
+      // Don't multiply by DPI scale; let Unreal handle scaling.
+      maximumPointSize = pointCloudShading.MaximumAttenuation;
+    }
   }
 
-  float GeometricError = GetGeometricError();
-  GeometricError *= PointCloudShading.GeometricErrorScale;
+  float geometricError = this->getGeometricError();
+  geometricError *= pointCloudShading.GeometricErrorScale;
 
   // Depth Multiplier
-  float SSEDenominator = 2.0f * tanf(0.5f * FMath::DegreesToRadians(View->FOV));
-  float DepthMultiplier =
-      static_cast<float>(View->UnconstrainedViewRect.Height()) / SSEDenominator;
+  float sseDenominator = 2.0f * tanf(0.5f * FMath::DegreesToRadians(View->FOV));
+  float depthMultiplier =
+      static_cast<float>(View->UnconstrainedViewRect.Height()) / sseDenominator;
+
+  int32 diameter = this->_attenuationData.diameter;
 
   UserData.AttenuationParameters =
-      FVector3f(MaximumPointSize, GeometricError, DepthMultiplier);
-
+      FVector4f(maximumPointSize, geometricError, depthMultiplier, diameter);
   BatchElement.UserData = &UserDataWrapper->Data;
 }
 
@@ -183,8 +207,8 @@ void FCesiumGltfPointsSceneProxy::CreateMeshWithAttenuation(
     FMeshBatch& Mesh,
     const FSceneView* View,
     FMeshElementCollector& Collector) const {
-  Mesh.VertexFactory = &AttenuationVertexFactory;
-  Mesh.MaterialRenderProxy = Material->GetRenderProxy();
+  Mesh.VertexFactory = &this->_attenuationVertexFactory;
+  Mesh.MaterialRenderProxy = this->_pMaterial->GetRenderProxy();
   Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
   Mesh.Type = PT_TriangleList;
   Mesh.DepthPriorityGroup = SDPG_World;
@@ -194,19 +218,19 @@ void FCesiumGltfPointsSceneProxy::CreateMeshWithAttenuation(
   Mesh.bWireframe = false;
 
   FMeshBatchElement& BatchElement = Mesh.Elements[0];
-  BatchElement.IndexBuffer = &AttenuationIndexBuffer;
-  BatchElement.NumPrimitives = NumPoints * 2;
+  BatchElement.IndexBuffer = &this->_attenuationIndexBuffer;
+  BatchElement.NumPrimitives = this->_numPoints * 2;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
-  BatchElement.MaxVertexIndex = NumPoints * 4 - 1;
+  BatchElement.MaxVertexIndex = this->_numPoints * 4 - 1;
   BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
 
   CreatePointAttenuationUserData(BatchElement, View, Collector);
 }
 
 void FCesiumGltfPointsSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
-  Mesh.VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;
-  Mesh.MaterialRenderProxy = Material->GetRenderProxy();
+  Mesh.VertexFactory = &this->_pRenderData->LODVertexFactories[0].VertexFactory;
+  Mesh.MaterialRenderProxy = this->_pMaterial->GetRenderProxy();
   Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
   Mesh.Type = PT_PointList;
   Mesh.DepthPriorityGroup = SDPG_World;
@@ -216,8 +240,8 @@ void FCesiumGltfPointsSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   Mesh.bWireframe = false;
 
   FMeshBatchElement& BatchElement = Mesh.Elements[0];
-  BatchElement.IndexBuffer = &RenderData->LODResources[0].IndexBuffer;
-  BatchElement.NumPrimitives = NumPoints;
+  BatchElement.IndexBuffer = &this->_pRenderData->LODResources[0].IndexBuffer;
+  BatchElement.NumPrimitives = this->_numPoints;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
   BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;
