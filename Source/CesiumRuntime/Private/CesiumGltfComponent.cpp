@@ -3977,7 +3977,6 @@ static void loadLight(
       pTilesetActor->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
   attachAndRegisterComponent(pGltf, pPrimitiveComponent);
-  pTilesetActor->AddInstanceComponent(pPrimitiveComponent);
 
   // If range is absent, the light should be treated as infinite. However, it
   // seems like the maximum value of AttenuationRadius that Unreal uses is
@@ -4016,7 +4015,6 @@ static void loadLight(
   }
 
   CESIUM_ASSERT(pLightComponent);
-  pTilesetActor->AddInstanceComponent(pLightComponent);
 
   FLinearColor lightColor = getLinearColor(
       light.color,
