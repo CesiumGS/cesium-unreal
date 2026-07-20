@@ -3933,8 +3933,9 @@ static void loadLight(
   }
 
   const CesiumGltf::Light& light = lightExtension.lights[loadResult.lightIndex];
-  if (light.type != "point" && light.type != "spot" &&
-      light.type != "directional") {
+  if (light.type != CesiumGltf::Light::Type::point &&
+      light.type != CesiumGltf::Light::Type::spot &&
+      light.type != CesiumGltf::Light::Type::directional) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -3942,7 +3943,8 @@ static void loadLight(
         *FString(light.type.c_str()));
     return;
   }
-  if (light.type == "spot" && !light.spot) {
+
+  if (light.type == CesiumGltf::Light::Type::spot && !light.spot) {
     UE_LOG(
         LogCesium,
         Warning,
