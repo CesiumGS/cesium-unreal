@@ -59,6 +59,8 @@ THIRD_PARTY_INCLUDES_START
 #include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
+#include <CesiumGltf/ExtensionMaterialBentleyMaterialsLineStyle.h>
+#include <CesiumGltf/ExtensionMeshPrimitiveBentleyMaterialsLineStyle.h>
 #include <CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h>
 #include <CesiumGltf/ExtensionModelExtStructuralMetadata.h>
 #include <CesiumGltf/KhrTextureTransform.h>
@@ -3496,6 +3498,19 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
     case CesiumGltf::MeshPrimitive::Mode::LINES: {
       auto* pLinesComponent =
           NewObject<UCesiumGltfLinesComponent>(pGltf, componentName);
+
+      const auto* pLineStyleExtension =
+          model.getSafe(model.materials, loadResult.materialIndex)
+              .getExtension<
+                  CesiumGltf::ExtensionMaterialBentleyMaterialsLineStyle>();
+      pLinesComponent->width =
+          pLineStyleExtension ? static_cast<int32>(pLineStyleExtension->width)
+                              : 0;
+      pLinesComponent->pattern =
+          pLineStyleExtension
+              ? static_cast<uint16>(pLineStyleExtension->pattern)
+              : 0xFFFF;
+
       result.pAsMeshComponent = pLinesComponent;
       result.pAsCesiumPrimitive = pLinesComponent;
       break;

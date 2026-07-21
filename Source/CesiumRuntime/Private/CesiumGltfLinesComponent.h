@@ -17,6 +17,18 @@ public:
   UCesiumGltfLinesComponent();
   virtual ~UCesiumGltfLinesComponent();
 
+  /**
+   * @brief The width of the lines specified by @ref
+   * CesiumGltf::ExtensionMaterialBentleyMaterialsLineStyle, if present.
+   */
+  int64 width;
+
+  /**
+   * @brief The on/off bit pattern of the lines specified by @ref
+   * CesiumGltf::ExtensionMaterialBentleyMaterialsLineStyle, if present.
+   */
+  uint16 pattern;
+
   // Override UPrimitiveComponent interface.
   virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
   virtual void OnCreatePhysicsState() override;
