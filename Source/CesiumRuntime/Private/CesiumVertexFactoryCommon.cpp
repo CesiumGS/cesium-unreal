@@ -8,7 +8,7 @@
 #include "Runtime/Launch/Resources/Version.h"
 
 void FCesiumQuadIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
-  if (!bManualVertexFetchSupported) {
+  if (!this->_manualVertexFetchSupported) {
     return;
   }
 
@@ -17,7 +17,7 @@ void FCesiumQuadIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
 
   FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumQuadIndexBuffer"));
 
-  const uint32 NumIndices = QuadCount * 6;
+  const uint32 NumIndices = this->_quadCount * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
   IndexBufferRHI = RHICmdList.CreateBuffer(

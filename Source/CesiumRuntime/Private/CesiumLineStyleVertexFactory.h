@@ -12,32 +12,31 @@
 #include "SceneManagement.h"
 
 /**
- * @brief Parameters to pass as UserData to the
- * CesiumPointAttenuationVertexFactor shader.
+ * @brief Parameters to pass as UserData to the CesiumLineStyleVertexFactory
+ * shader.
  */
-struct FCesiumPointAttenuationBatchElementUserData {
+struct FCesiumLineStyleBatchElementUserData {
   FRHIShaderResourceView* PositionBuffer;
   FRHIShaderResourceView* PackedTangentsBuffer;
   FRHIShaderResourceView* ColorBuffer;
   FRHIShaderResourceView* TexCoordBuffer;
   uint32 NumTexCoords;
-  uint32 bHasPointColors;
-  FVector4f AttenuationParameters;
+  float LineWidth;
+  uint16 Pattern;
 };
 
-class FCesiumPointAttenuationBatchElementUserDataWrapper
-    : public FOneFrameResource {
+class FCesiumLineStyleBatchElementUserDataWrapper : public FOneFrameResource {
 public:
-  FCesiumPointAttenuationBatchElementUserData Data;
+  FCesiumLineStyleBatchElementUserData Data;
 };
 
-class FCesiumPointAttenuationVertexFactory : public FLocalVertexFactory {
+class FCesiumLineStyleVertexFactory : public FLocalVertexFactory {
 
-  DECLARE_VERTEX_FACTORY_TYPE(FCesiumPointAttenuationVertexFactory);
+  DECLARE_VERTEX_FACTORY_TYPE(FCesiumLineStyleVertexFactory);
 
 public:
   // Sets default values for this component's properties
-  FCesiumPointAttenuationVertexFactory(
+  FCesiumLineStyleVertexFactory(
       ERHIFeatureLevel::Type InFeatureLevel,
       const FPositionVertexBuffer* PositionVertexBuffer);
 

@@ -16,16 +16,16 @@
 class FCesiumQuadIndexBuffer : public FIndexBuffer {
 public:
   FCesiumQuadIndexBuffer(
-      const int32& InQuadCount,
-      const bool InManualVertexFetchSupported)
-      : QuadCount(InQuadCount),
-        bManualVertexFetchSupported(InManualVertexFetchSupported) {}
+      const int32& quadCount,
+      const bool manualVertexFetchSupported)
+      : _quadCount(quadCount),
+        _manualVertexFetchSupported(manualVertexFetchSupported) {}
 
   virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
 
 private:
-  int32 QuadCount;
-  bool bManualVertexFetchSupported;
+  int32 _quadCount;
+  bool _manualVertexFetchSupported;
 };
 
 /**

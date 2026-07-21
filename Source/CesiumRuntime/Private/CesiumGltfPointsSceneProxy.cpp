@@ -50,14 +50,14 @@ FCesiumGltfPointsSceneProxy::FCesiumGltfPointsSceneProxy(
       _pRenderData(InComponent->GetStaticMesh()->GetRenderData()),
       _numPoints(
           this->_pRenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-      _attenuationSupported(
+      _manualVertexFetchSupported(
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
       _attenuationData(),
       _attenuationVertexFactory(
           InSceneInterfaceParams.RHIFeatureLevelType,
           &this->_pRenderData->LODResources[0]
                .VertexBuffers.PositionVertexBuffer),
-      _attenuationIndexBuffer(this->_numPoints, this->_attenuationSupported),
+      _quadIndexBuffer(this->_numPoints, this->_manualVertexFetchSupported),
       _pMaterial(InComponent->GetMaterial(0)),
       _materialRelevance(
           InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
@@ -67,12 +67,12 @@ FCesiumGltfPointsSceneProxy::~FCesiumGltfPointsSceneProxy() {}
 void FCesiumGltfPointsSceneProxy::CreateRenderThreadResources(
     FRHICommandListBase& RHICmdList) {
   this->_attenuationVertexFactory.InitResource(RHICmdList);
-  this->_attenuationIndexBuffer.InitResource(RHICmdList);
+  this->_quadIndexBuffer.InitResource(RHICmdList);
 }
 
 void FCesiumGltfPointsSceneProxy::DestroyRenderThreadResources() {
   this->_attenuationVertexFactory.ReleaseResource();
-  this->_attenuationIndexBuffer.ReleaseResource();
+  this->_quadIndexBuffer.ReleaseResource();
 }
 
 void FCesiumGltfPointsSceneProxy::GetDynamicMeshElements(
@@ -82,21 +82,14 @@ void FCesiumGltfPointsSceneProxy::GetDynamicMeshElements(
     FMeshElementCollector& Collector) const {
   QUICK_SCOPE_CYCLE_COUNTER(STAT_GltfPointsSceneProxy_GetDynamicMeshElements);
 
-  // The attenuation pipeline should be used if BENTLEY_materials_point_style is
-  // present.
-  bool useAttenuation =
-      this->_attenuationData.tilesetPointCloudShading.Attenuation ||
-      this->_attenuationData.diameter >= 1;
-  useAttenuation &= this->_attenuationSupported;
-
   for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
     if (VisibilityMap & (1 << ViewIndex)) {
       const FSceneView* View = Views[ViewIndex];
       FMeshBatch& Mesh = Collector.AllocateMesh();
-      if (useAttenuation) {
-        CreateMeshWithAttenuation(Mesh, View, Collector);
+      if (this->shouldRenderWithAttenuation()) {
+        createMeshWithAttenuation(Mesh, View, Collector);
       } else {
-        CreateMesh(Mesh);
+        createMesh(Mesh);
       }
       Collector.AddMesh(ViewIndex, Mesh);
     }
@@ -153,7 +146,7 @@ float FCesiumGltfPointsSceneProxy::getGeometricError() const {
   return FMath::Pow(volume / this->_numPoints, 1.0f / 3.0f);
 }
 
-void FCesiumGltfPointsSceneProxy::CreatePointAttenuationUserData(
+void FCesiumGltfPointsSceneProxy::createPointAttenuationUserData(
     FMeshBatchElement& BatchElement,
     const FSceneView* View,
     FMeshElementCollector& Collector) const {
@@ -203,13 +196,13 @@ void FCesiumGltfPointsSceneProxy::CreatePointAttenuationUserData(
   BatchElement.UserData = &UserDataWrapper->Data;
 }
 
-void FCesiumGltfPointsSceneProxy::CreateMeshWithAttenuation(
+void FCesiumGltfPointsSceneProxy::createMeshWithAttenuation(
     FMeshBatch& Mesh,
     const FSceneView* View,
     FMeshElementCollector& Collector) const {
   Mesh.VertexFactory = &this->_attenuationVertexFactory;
   Mesh.MaterialRenderProxy = this->_pMaterial->GetRenderProxy();
-  Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+  Mesh.ReverseCulling = this->IsLocalToWorldDeterminantNegative();
   Mesh.Type = PT_TriangleList;
   Mesh.DepthPriorityGroup = SDPG_World;
   Mesh.LODIndex = 0;
@@ -218,20 +211,20 @@ void FCesiumGltfPointsSceneProxy::CreateMeshWithAttenuation(
   Mesh.bWireframe = false;
 
   FMeshBatchElement& BatchElement = Mesh.Elements[0];
-  BatchElement.IndexBuffer = &this->_attenuationIndexBuffer;
+  BatchElement.IndexBuffer = &this->_quadIndexBuffer;
   BatchElement.NumPrimitives = this->_numPoints * 2;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
   BatchElement.MaxVertexIndex = this->_numPoints * 4 - 1;
   BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
 
-  CreatePointAttenuationUserData(BatchElement, View, Collector);
+  this->createPointAttenuationUserData(BatchElement, View, Collector);
 }
 
-void FCesiumGltfPointsSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
+void FCesiumGltfPointsSceneProxy::createMesh(FMeshBatch& Mesh) const {
   Mesh.VertexFactory = &this->_pRenderData->LODVertexFactories[0].VertexFactory;
   Mesh.MaterialRenderProxy = this->_pMaterial->GetRenderProxy();
-  Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+  Mesh.ReverseCulling = this->IsLocalToWorldDeterminantNegative();
   Mesh.Type = PT_PointList;
   Mesh.DepthPriorityGroup = SDPG_World;
   Mesh.LODIndex = 0;
@@ -245,4 +238,12 @@ void FCesiumGltfPointsSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
   BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;
+}
+
+bool FCesiumGltfPointsSceneProxy::shouldRenderWithAttenuation() const {
+  // The attenuation pipeline should be used if either the user enables it, or
+  // if BENTLEY_materials_point_style is present.
+  return (this->_attenuationData.tilesetPointCloudShading.Attenuation ||
+          this->_attenuationData.diameter >= 1) &&
+         this->_manualVertexFetchSupported;
 }

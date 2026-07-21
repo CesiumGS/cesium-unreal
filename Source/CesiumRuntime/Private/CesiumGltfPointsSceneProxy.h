@@ -5,6 +5,7 @@
 #include "CesiumCompat.h"
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "CesiumPointCloudShading.h"
+#include "CesiumVertexFactoryCommon.h"
 #include "PrimitiveSceneProxy.h"
 #include <glm/vec3.hpp>
 
@@ -72,16 +73,18 @@ public:
       const FCesiumGltfPointsSceneProxyAttenuationData& InAttenuationData);
 
 private:
-  void CreatePointAttenuationUserData(
+  void createPointAttenuationUserData(
       FMeshBatchElement& BatchElement,
       const FSceneView* View,
       FMeshElementCollector& Collector) const;
 
-  void CreateMeshWithAttenuation(
+  void createMeshWithAttenuation(
       FMeshBatch& Mesh,
       const FSceneView* View,
       FMeshElementCollector& Collector) const;
-  void CreateMesh(FMeshBatch& Mesh) const;
+  void createMesh(FMeshBatch& Mesh) const;
+
+  bool shouldRenderWithAttenuation() const;
 
   /**
    * @brief Returns the geometric error to use for point attenuation.
@@ -102,9 +105,10 @@ private:
   int32_t _numPoints;
 
   /**
-   * @brief Whether or not the shader platform supports attenuation.
+   * @brief Whether or not the shader platform supports "Manual Vertex Fetch",
+   * which is required for attenuation.
    */
-  bool _attenuationSupported;
+  bool _manualVertexFetchSupported;
 
   /**
    * @brief Settings from the UCesiumGltfPointsComponent that owns this scene
@@ -113,7 +117,7 @@ private:
   FCesiumGltfPointsSceneProxyAttenuationData _attenuationData;
 
   FCesiumPointAttenuationVertexFactory _attenuationVertexFactory;
-  FCesiumPointAttenuationIndexBuffer _attenuationIndexBuffer;
+  FCesiumQuadIndexBuffer _quadIndexBuffer;
   UMaterialInterface* _pMaterial;
   FMaterialRelevance _materialRelevance;
 };

@@ -1,0 +1,582 @@
+// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+
+/*=============================================================================
+	CesiumLineStyleVertexFactory.ush: vertex factory shader code for thick, patterned lines.
+=============================================================================*/
+
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/VertexFactoryCommon.ush"
+
+Buffer<float> PositionBuffer;
+Buffer<float4> PackedTangentsBuffer;
+Buffer<float4> ColorBuffer;
+Buffer<float2> TexCoordBuffer;
+uint NumTexCoords;
+
+float LineWidth;
+uint Pattern;
+
+#if INSTANCED_STEREO
+uint InstancedEyeIndex;
+#endif
+
+/*
+ * Per-vertex input. Only a position buffer is bound.
+ */
+struct FVertexFactoryInput
+{
+  	uint    VertexId    : SV_VertexID;
+  
+#if USE_INSTANCING
+  	uint    InstanceId  : SV_InstanceID;
+#else
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+#endif
+};
+
+/**
+ * Per-vertex inputs. Used by passes with a trimmed down position-only shader.
+ */
+struct FPositionOnlyVertexFactoryInput
+{
+  	float4  Position	: ATTRIBUTE0;
+  	uint    VertexId	: SV_VertexID;
+#if USE_INSTANCING
+  	uint    InstanceId  : SV_InstanceID;
+#else
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+#endif
+};
+
+/**
+ * Per-vertex inputs. Used by passes with a trimmed down position-and-normal-only shader.
+ */
+struct FPositionAndNormalOnlyVertexFactoryInput
+{
+  	float4  Position	: ATTRIBUTE0;
+  	float4	Normal		: ATTRIBUTE2;
+  	uint    VertexId	: SV_VertexID;
+#if USE_INSTANCING
+  	uint    InstanceId  : SV_InstanceID;
+#else
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+#endif
+};
+
+/** Cached intermediates that would otherwise have to be computed multiple times. */
+struct FVertexFactoryIntermediates
+{
+  	uint PolylinePointIndex;
+  	uint CornerIndex;
+
+  	float3 Position;
+  	float4 WorldPosition;
+    float4 PreviousWorldPosition;
+    float4 NextWorldPosition;
+
+  	half3x3 TangentToLocal;
+  	half3x3 TangentToWorld;
+  	half TangentToWorldSign;
+
+  	half4 Color;
+
+  	/** Cached primitive and instance data */
+  	FSceneDataIntermediates SceneData;
+};
+
+struct FVertexFactoryInterpolantsVSToPS
+{
+  	TANGENTTOWORLD_INTERPOLATOR_BLOCK
+  	half4  Color : COLOR0;
+
+#if NUM_TEX_COORD_INTERPOLATORS
+  	float4  TexCoords[(NUM_TEX_COORD_INTERPOLATORS+1)/2]  : TEXCOORD0;
+#endif
+
+#if INSTANCED_STEREO
+  	nointerpolation uint EyeIndex : PACKED_EYE_INDEX;
+#endif
+};
+
+void GetLineEndpointAndCornerIndices(uint VertexId, out uint LineEndpointIndex, out uint CornerIndex)
+{
+  	uint QuadIndex = VertexId / 4;
+  	CornerIndex = VertexId - (QuadIndex * 4);
+  
+  	// Every line is defined by two points. The start of each line segment is every other point.
+  	LineEndpointIndex = QuadIndex * 2;
+}
+
+/** Helper function for position-only passes that don't require point index for other intermediates.*/
+float4 GetWorldPosition(uint VertexId)
+{
+  	uint LineEndpointIndex, CornerIndex;
+  	GetLineEndpointAndCornerIndices(VertexId, LineEndpointIndex, CornerIndex);
+  
+  	float3 Position = float3(0, 0, 0);
+  	Position.x = PositionBuffer[LineEndpointIndex * 3 + 0];
+  	Position.y = PositionBuffer[LineEndpointIndex * 3 + 1];
+  	Position.z = PositionBuffer[LineEndpointIndex * 3 + 2];
+
+  	return TransformLocalToTranslatedWorld(Position);
+}
+
+/** Computes TangentToLocal based on the Manual Vertex Fetch method in LocalVertexFactory.ush */
+half3x3 CalculateTangentToLocal(uint LineEndpointIndex, out float TangentSign)
+{
+  	half3 TangentInputX = PackedTangentsBuffer[2 * LineEndpointIndex + 0].xyz;
+  	half4 TangentInputZ = PackedTangentsBuffer[2 * LineEndpointIndex + 1].xyzw;
+
+  	half3 TangentX = TangentBias(TangentInputX);
+  	half4 TangentZ = TangentBias(TangentInputZ);
+
+  	TangentSign = TangentZ.w;
+
+  	// Derive the binormal by getting the cross product of the normal and tangent
+  	half3 TangentY = cross(TangentZ.xyz, TangentX) * TangentZ.w;
+
+  	// Recalculate TangentX off of the other two vectors
+  	// This corrects quantization errors since TangentX was passed in as a quantized vertex input
+  	half3x3 Result;
+  	Result[0] = cross(TangentY, TangentZ.xyz) * TangentZ.w;
+  	Result[1] = TangentY;
+  	Result[2] = TangentZ.xyz;
+
+  	return Result;
+}
+
+half3x3 CalculateTangentToWorldNoScale(half3x3 TangentToLocal)
+{
+  	half3x3 LocalToWorld = GetLocalToWorld3x3();
+  	half3 InvScale = Primitive.InvNonUniformScale;
+  	LocalToWorld[0] *= InvScale.x;
+  	LocalToWorld[1] *= InvScale.y;
+  	LocalToWorld[2] *= InvScale.z;
+  	return mul(TangentToLocal, LocalToWorld);
+}
+
+/** Helper function for position and normal-only passes that don't require point index for other intermediates.*/
+float3 GetPointNormal(uint VertexId) {
+  	uint LineEndpointIndex, CornerIndex;
+  	GetLineEndpointAndCornerIndices(VertexId, LineEndpointIndex, CornerIndex);
+  	return PackedTangentsBuffer[2 * LineEndpointIndex + 1].xyz;
+}
+
+FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
+{
+  	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates)0;
+  	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
+
+  	uint LineEndpointIndex, CornerIndex;
+  	GetLineEndpointAndCornerIndices(Input.VertexId, LineEndpointIndex, CornerIndex);
+    		  
+  	Intermediates.PolylinePointIndex = PolylinePointIndex;
+  	Intermediates.CornerIndex = CornerIndex;
+
+  	Intermediates.Position.x = PositionBuffer[LineEndpointIndex * 3 + 0];
+  	Intermediates.Position.y = PositionBuffer[LineEndpointIndex * 3 + 1];
+  	Intermediates.Position.z = PositionBuffer[LineEndpointIndex * 3 + 2];
+
+    float3 PreviousPosition = 0;
+    float3 NextPosition = 0;
+
+  // TODO this needs to act more like attenuation
+    uint PreviousIndex = LineEndpointIndex > 0 ? LineEndpointIndex - 1 : 0;
+    PreviousPosition.x = PositionBuffer[PreviousIndex * 3 + 0];
+    PreviousPosition.y = PositionBuffer[PreviousIndex * 3 + 1];
+    PreviousPosition.z = PositionBuffer[PreviousIndex * 3 + 2];
+
+    uint MaxIndex = 0;// NumPolylinePoints - 1;
+    uint NextIndex = LineEndpointIndex < MaxIndex ? PolylinePointIndex + 1 : MaxIndex;
+    NextPosition.x = PositionBuffer[NextIndex * 3 + 0];
+    NextPosition.y = PositionBuffer[NextIndex * 3 + 1];
+    NextPosition.z = PositionBuffer[NextIndex * 3 + 2];
+  
+    Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
+    Intermediates.PreviousWorldPosition = TransformLocalToTranslatedWorld(PreviousPosition);
+    Intermediates.NextWorldPosition = TransformLocalToTranslatedWorld(NextPosition);
+
+  	float TangentSign = 1.0;
+  	Intermediates.TangentToLocal = CalculateTangentToLocal(Intermediates.PolylinePointIndex, TangentSign);
+  	Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
+  	Intermediates.TangentToWorldSign =  Intermediates.SceneData.InstanceData.DeterminantSign;
+
+  	float4 Color = ColorBuffer[PolylinePointIndex];
+  	Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
+
+  	return Intermediates;
+}
+
+
+#if NUM_TEX_COORD_INTERPOLATORS
+/** Taken from LocalVertexFactoryCommon.ush. */
+
+float2 GetUV(FVertexFactoryInterpolantsVSToPS Interpolants, int UVIndex)
+{
+	float4 UVVector = Interpolants.TexCoords[UVIndex / 2];
+	return UVIndex % 2 ? UVVector.zw : UVVector.xy;
+}
+
+void SetUV(inout FVertexFactoryInterpolantsVSToPS Interpolants, int UVIndex, float2 InValue)
+{
+	FLATTEN
+	if (UVIndex % 2)
+	{
+		Interpolants.TexCoords[UVIndex / 2].zw = InValue;
+	}
+	else
+	{
+		Interpolants.TexCoords[UVIndex / 2].xy = InValue;
+	}
+}
+#endif
+
+FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(
+  	FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
+{
+  	FVertexFactoryInterpolantsVSToPS Interpolants = (FVertexFactoryInterpolantsVSToPS)0;
+  	Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
+  	Interpolants.TangentToWorld2 = float4(Intermediates.TangentToWorld[2], Intermediates.TangentToWorldSign);
+  	Interpolants.Color = Intermediates.Color;
+
+  	#if NUM_TEX_COORD_INTERPOLATORS
+  	float2 CustomizedUVs[NUM_TEX_COORD_INTERPOLATORS];
+  	GetMaterialCustomizedUVs(VertexParameters, CustomizedUVs);
+  	GetCustomInterpolators(VertexParameters, CustomizedUVs);
+
+  	UNROLL
+  	for (int CoordinateIndex = 0; CoordinateIndex < NUM_TEX_COORD_INTERPOLATORS; CoordinateIndex++)
+  	{
+  	SetUV(Interpolants, CoordinateIndex, CustomizedUVs[CoordinateIndex]);
+  	}
+#endif
+
+#if INSTANCED_STEREO
+  	Interpolants.EyeIndex = 0;
+#endif
+
+  	return Interpolants;
+}
+
+half3x3 VertexFactoryGetTangentToLocal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+  	return Intermediates.TangentToLocal;
+}
+
+float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+  	return Intermediates.WorldPosition;
+}
+
+float4 VertexFactoryGetWorldPosition(FPositionOnlyVertexFactoryInput Input)
+{
+  	return GetWorldPosition(Input.VertexId);
+}
+
+float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput Input)
+{
+  	return GetWorldPosition(Input.VertexId);
+}
+
+// local position relative to instance
+float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+  	// No support for instancing, so instance == primitive
+  	return Intermediates.Position;
+}
+
+float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)
+{
+  	float3 PointNormal = GetPointNormal(Input.VertexId);
+  	return RotateLocalToWorld(PointNormal);
+}
+
+float3 VertexFactoryGetWorldNormal(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+  	return Intermediates.TangentToWorld[2];
+}
+
+float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+  #ifdef DFGetX
+    // When double floats exist (UE 5.4), use the df tranform functions
+    return DFTransformLocalToTranslatedWorld(Intermediates.Position, Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation);
+  #else
+    return mul(float4(Intermediates.Position, 1),
+  	  	LWCMultiplyTranslation(Intermediates.SceneData.InstanceData.PrevLocalToWorld, ResolvedView.PrevPreViewTranslation));
+  #endif
+}
+
+// local position relative to instance
+float3 VertexFactoryGetPreviousInstanceSpacePosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
+{
+  	// No support for instancing, so instance == primitive
+  	return Intermediates.Position;
+}
+
+bool EqualsEpsilon(float A, float B, float epsilon)
+{
+  return abs(A - B) < epsilon;
+}
+
+bool EqualsEpsilon(float3 A, float3 B, float epsilon)
+{
+  	float3 result = abs(A - B);
+  	return all(result < epsilon);
+}
+
+float4 ExpandPolyline(float4 WorldPosition, float4 PreviousWorldPosition, float4 NextWorldPosition, uint CornerIndex) {
+    // Recall that each pair of quad corners corresponds to a point, such that the quad is stretched
+    // between two points on the polyline. Each corner must compute an offset from the original point
+    // position to form the quad. The offset direction depends on the angle of the line on the screen.
+    // Thus, we can't hardcode offsets from [-0.5, 0.5] like one typically would for a billboarded quad.
+    // 
+    // Instead, we compute an ExpandDirection later in the function. Starting from the original point
+    // position, we offset the two corners perpendicularly from both sides of the line. The side of the
+    // line is deduced from the corner index.
+    //
+    // Unreal uses counter-clockwise winding order, and a billboarded quad is typically generated like so:
+    // 1 --- 2
+    // |  /  |
+    // 0 --- 3
+    // Thus, the Corner Direction should results in -1 for indices 0 and 3; and +1 for 1, 2.
+  	float CornerDirection = -1;
+  	if (CornerIndex == 0 || CornerIndex == 3)
+  	{
+  	  	CornerDirection = 1;
+  	}
+  
+  	float3 DirectionToPrevious = normalize(PreviousWorldPosition.xyz - WorldPosition.xyz);
+  	float3 DirectionToNext = normalize(NextWorldPosition.xyz - WorldPosition.xyz);
+  
+  	// Use the correct direction of the line segment for the last two corners of the quad.
+  	bool IsSegmentEnd = CornerIndex >= 2;
+  	// Doing -DirectionToPrevious can result in weird compiler error, "Negate modifier not allowed".
+  	// Multiply explicitly by -1 to avoid this.
+  	float3 SegmentForward = IsSegmentEnd ? (-1.0 * DirectionToPrevious) : DirectionToNext;
+
+  	float2x3 ViewPlane = float2x3(ResolvedView.ViewRight, ResolvedView.ViewUp);
+  	float2 ProjectedSegmentForward = normalize(mul(ViewPlane, SegmentForward));
+  	float2 ExpandDirection = float2(-ProjectedSegmentForward.y, ProjectedSegmentForward.x);
+  	float ExpandWidth = LineWidth * 0.5;
+
+  	// Connect adjacent line segments at clean angles where possible.
+  	if (!EqualsEpsilon(WorldPosition.xyz, PreviousWorldPosition.xyz, 0.001) &&
+			  !EqualsEpsilon(WorldPosition.xyz, NextWorldPosition.xyz, 0.001))
+  	{
+      // Find the direction of the other segment at the same polyline point.
+			float3 OtherSegmentForward = IsSegmentEnd ? DirectionToNext : -1.0 * DirectionToPrevious;
+			float2 ProjectedOtherSegmentForward = normalize(mul(ViewPlane, OtherSegmentForward));
+			float2 OtherExpandDirection = float2(-ProjectedOtherSegmentForward.y, ProjectedOtherSegmentForward.x);
+  	  	
+			// Get the average of the expand directions (if valid).
+			float2 DirectionSum = ExpandDirection + OtherExpandDirection;
+			float SumLength = length(DirectionSum);
+			if (SumLength > 0.000001)
+      {
+  	  	  ExpandDirection = DirectionSum / SumLength;
+			}
+  	  	
+			// The sine of the angle between the two vectors is given by the formula
+			//         |a x b| = |a||b|sin(theta)
+			// which is:
+			// float sinAngle = length(cross(float3(ExpandDirection, 0.0), float3(-SegmentForward, 0.0)));
+			// Because the z components of both vectors are zero, the x and y coordinate will be zero.
+			// Therefore, the sine of the angle is just the z component of the cross product.
+			float2 u = -1.0 * ProjectedSegmentForward;
+			float2 v = ExpandDirection;
+			float SinAngle = abs(u.x * v.y - u.y * v.x);
+			ExpandWidth = clamp(ExpandWidth / SinAngle, 0.0, LineWidth * 2.0);
+  	}
+
+  	// Convert the desired pixel line width into a view-space offset.
+  	float4 PositionClip = mul(WorldPosition, ResolvedView.TranslatedWorldToClip);
+  	float2 ScreenOffset = ExpandWidth * ResolvedView.ViewSizeAndInvSize.zw;
+  	float2 ClipOffset = ScreenOffset * PositionClip.w;
+  	float4 ViewOffset = mul(float4(ClipOffset, PositionClip.z, 1), ResolvedView.ClipToView);
+  	ViewOffset /= ViewOffset.w;
+
+  	float4 FinalViewOffset = float4(ExpandDirection * CornerDirection * ViewOffset.xy, 0.0, 1.0);
+  	float3 WorldOffset = mul(FinalViewOffset, ResolvedView.ViewToTranslatedWorld);
+  	return float4(WorldPosition.xyz + WorldOffset, 1);
+}
+
+float4 VertexFactoryGetRasterizedWorldPosition(
+  	FVertexFactoryInput Input,
+  	FVertexFactoryIntermediates Intermediates,
+  	float4 InWorldPosition)
+{
+  	return ExpandPolyline(InWorldPosition, Intermediates.PreviousWorldPosition, Intermediates.NextWorldPosition, Intermediates.CornerIndex);
+}
+
+float3 VertexFactoryGetPositionForVertexLighting(
+  	FVertexFactoryInput Input,
+  	FVertexFactoryIntermediates Intermediates,
+  	float3 TranslatedWorldPosition)
+{
+  	return TranslatedWorldPosition;
+}
+
+/** Converts from vertex factory specific input to a FMaterialVertexParameters, which is used by vertex shader material inputs. */
+FMaterialVertexParameters GetMaterialVertexParameters(
+  	FVertexFactoryInput Input,
+  	FVertexFactoryIntermediates Intermediates,
+  	float3 WorldPosition,
+  	half3x3 TangentToLocal,
+  	bool bIsPreviousFrame = false)
+{
+    FMaterialVertexParameters Result = MakeInitializedMaterialVertexParameters();
+    if (bIsPreviousFrame)
+    {
+      Result.PositionInstanceSpace = VertexFactoryGetPreviousInstanceSpacePosition(Input, Intermediates);
+    }
+    else
+    {
+      Result.PositionInstanceSpace = VertexFactoryGetInstanceSpacePosition(Input, Intermediates);
+    }
+    Result.PositionPrimitiveSpace = Result.PositionInstanceSpace; // No support for instancing, so instance == primitive
+
+
+  	Result.SceneData = Intermediates.SceneData;
+  	Result.WorldPosition = WorldPosition;
+  	Result.TangentToWorld = Intermediates.TangentToWorld;
+  	Result.PreSkinnedNormal = TangentToLocal[2];
+  	Result.PreSkinnedPosition = WorldPosition;
+  	Result.VertexColor = Intermediates.Color;
+
+#if NUM_MATERIAL_TEXCOORDS_VERTEX
+  	UNROLL
+  	for (uint CoordinateIndex = 0; CoordinateIndex < NUM_MATERIAL_TEXCOORDS_VERTEX; CoordinateIndex++)
+  	{
+  	  	// Clamp coordinates to mesh's maximum as materials can request more than are available
+  	  	uint ClampedCoordinateIndex = min(CoordinateIndex, NumTexCoords - 1);
+  	  	Result.TexCoords[CoordinateIndex] = TexCoordBuffer[NumTexCoords * Intermediates.PolylinePointIndex + ClampedCoordinateIndex];
+  	}
+#endif
+
+  	Result.LWCData = MakeMaterialLWCData(Result);
+
+  	return Result;
+}
+
+FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVSToPS Interpolants, float4 SvPosition)
+{
+  	FMaterialPixelParameters Result = MakeInitializedMaterialPixelParameters();
+
+  	Result.Particle.Color = half4(1, 1, 1, 1);
+  	Result.TwoSidedSign = 1;
+  	Result.VertexColor = Interpolants.Color;
+
+  //if (Pattern > 0)
+  //{
+  //  const float maskLength = 16.0;
+  //  float dashPosition = fract(v_lineCoord / maskLength);
+  //  float maskIndex = floor(dashPosition * maskLength);
+  //  float maskTest = floor(u_linePattern / pow(2.0, maskIndex));
+  //  if (mod(maskTest, 2.0) < 1.0)
+  //  {
+  //    discard;
+  //  }
+  //    Result.VertexColor.a = Result.VertexColor.a * pattern;
+  //  }
+
+    half3 TangentToWorld0 = Interpolants.TangentToWorld0.xyz;
+  	half4 TangentToWorld2 = Interpolants.TangentToWorld2;
+  	Result.UnMirrored = TangentToWorld2.w;
+  	Result.TangentToWorld = AssembleTangentToWorld(TangentToWorld0, TangentToWorld2);
+
+#if NUM_TEX_COORD_INTERPOLATORS
+  	UNROLL
+  	for( int CoordinateIndex = 0; CoordinateIndex < NUM_TEX_COORD_INTERPOLATORS; CoordinateIndex++ )
+  	{
+  	  	Result.TexCoords[CoordinateIndex] = GetUV(Interpolants, CoordinateIndex);
+  	}
+#endif
+
+  	return Result;
+}
+
+#if USE_INSTANCING
+float4 VertexFactoryGetInstanceHitProxyId(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates) { return 0; }
+#endif
+
+float4 VertexFactoryGetTranslatedPrimitiveVolumeBounds(FVertexFactoryInterpolantsVSToPS Interpolants)
+{
+  	FPrimitiveSceneData PrimitiveData = GetPrimitiveDataFromUniformBuffer();
+  	return float4(LWCToFloat(LWCAdd(PrimitiveData.ObjectWorldPosition, ResolvedView.PreViewTranslation)), PrimitiveData.ObjectRadius);
+}
+
+#if INSTANCED_STEREO
+uint VertexFactoryGetEyeIndex(uint InstanceId)
+{
+#if USE_INSTANCING
+  	return InstancedEyeIndex;
+#else
+  	return InstanceId & 1;
+#endif
+}
+#endif
+
+#if NEEDS_VERTEX_FACTORY_INTERPOLATION
+struct FVertexFactoryRayTracingInterpolants
+{
+  	FVertexFactoryInterpolantsVSToPS InterpolantsVSToPS;
+};
+
+float2 VertexFactoryGetRayTracingTextureCoordinate(FVertexFactoryRayTracingInterpolants Interpolants)
+{
+#if NUM_MATERIAL_TEXCOORDS
+  	return Interpolants.InterpolantsVSToPS.TexCoords[0].xy;
+#else
+  	return float2(0,0);
+#endif
+}
+
+FVertexFactoryInterpolantsVSToPS VertexFactoryAssignInterpolants(FVertexFactoryRayTracingInterpolants Input)
+{
+  	return Input.InterpolantsVSToPS;
+}
+
+FVertexFactoryRayTracingInterpolants VertexFactoryGetRayTracingInterpolants(
+  	FVertexFactoryInput Input,
+  	FVertexFactoryIntermediates Intermediates,
+  	FMaterialVertexParameters VertexParameters)
+{
+  	FVertexFactoryRayTracingInterpolants Interpolants;
+  	Interpolants.InterpolantsVSToPS = VertexFactoryGetInterpolantsVSToPS(Input, Intermediates, VertexParameters);
+  	return Interpolants;
+}
+
+FVertexFactoryRayTracingInterpolants VertexFactoryInterpolate(
+  	FVertexFactoryRayTracingInterpolants a,
+  	float aInterp,
+  	FVertexFactoryRayTracingInterpolants b,
+  	float bInterp)
+{
+  	FVertexFactoryRayTracingInterpolants O;
+
+  	INTERPOLATE_MEMBER(InterpolantsVSToPS.TangentToWorld0.xyz);
+  	INTERPOLATE_MEMBER(InterpolantsVSToPS.TangentToWorld2);
+
+#if INTERPOLATE_VERTEX_COLOR
+  	INTERPOLATE_MEMBER(InterpolantsVSToPS.Color);
+#endif
+
+#if NUM_TEX_COORD_INTERPOLATORS
+  	UNROLL
+  	for(int tc = 0; tc < (NUM_TEX_COORD_INTERPOLATORS+1)/2; ++tc)
+  	{
+  	  	INTERPOLATE_MEMBER(InterpolantsVSToPS.TexCoords[tc]);
+  	}
+#endif
+
+  	return O;
+}
+#endif // #if NEEDS_VERTEX_FACTORY_INTERPOLATION
+
+uint VertexFactoryGetPrimitiveId(FVertexFactoryInterpolantsVSToPS Interpolants)
+{
+  	return 0;
+}
+
+#include "/Engine/Private/VertexFactoryDefaultInterface.ush"

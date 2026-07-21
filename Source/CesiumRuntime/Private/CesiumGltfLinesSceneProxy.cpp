@@ -18,10 +18,20 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
     UCesiumGltfLinesComponent* InComponent,
     FSceneInterfaceWrapper InSceneInterfaceParams)
     : FPrimitiveSceneProxy(InComponent),
-      RenderData(InComponent->GetStaticMesh()->GetRenderData()),
-      NumLines(RenderData->LODResources[0].IndexBuffer.GetNumIndices() / 2),
-      Material(InComponent->GetMaterial(0)),
-      MaterialRelevance(
+      _pRenderData(InComponent->GetStaticMesh()->GetRenderData()),
+      _numLines(
+          this->_pRenderData->LODResources[0].IndexBuffer.GetNumIndices() / 2),
+      _lineWidth(InComponent->width),
+      _pattern(InComponent->pattern),
+      _manualVertexFetchSupported(
+          RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
+      _lineStyleVertexFactory(
+          InSceneInterfaceParams.RHIFeatureLevelType,
+          &this->_pRenderData->LODResources[0]
+               .VertexBuffers.PositionVertexBuffer),
+      _quadIndexBuffer(this->_numLines, this->_manualVertexFetchSupported),
+      _pMaterial(InComponent->GetMaterial(0)),
+      _materialRelevance(
           InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
 
 FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
@@ -30,7 +40,7 @@ void FCesiumGltfLinesSceneProxy::DrawStaticElements(
     FStaticPrimitiveDrawInterface* PDI) {
   if (!HasViewDependentDPG()) {
     FMeshBatch Mesh;
-    CreateMesh(Mesh);
+    this->createMesh(Mesh);
     PDI->DrawMesh(Mesh, FLT_MAX);
   }
 }
@@ -46,7 +56,11 @@ void FCesiumGltfLinesSceneProxy::GetDynamicMeshElements(
     if (VisibilityMap & (1 << ViewIndex)) {
       const FSceneView* View = Views[ViewIndex];
       FMeshBatch& Mesh = Collector.AllocateMesh();
-      CreateMesh(Mesh);
+      if (this->shouldRenderWithLineWidth()) {
+        this->createMeshWithLineWidth(Mesh, View, Collector);
+      } else {
+        this->createMesh(Mesh);
+      }
       Collector.AddMesh(ViewIndex, Mesh);
     }
   }
@@ -57,7 +71,7 @@ FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
 
-  if (HasViewDependentDPG()) {
+  if (this->shouldRenderWithLineWidth() || HasViewDependentDPG()) {
     Result.bDynamicRelevance = true;
   } else {
     Result.bStaticRelevance = true;
@@ -72,7 +86,7 @@ FCesiumGltfLinesSceneProxy::GetViewRelevance(const FSceneView* View) const {
   Result.bVelocityRelevance =
       IsMovable() & Result.bOpaque & Result.bRenderInMainPass;
 
-  MaterialRelevance.SetPrimitiveViewRelevance(Result);
+  this->_materialRelevance.SetPrimitiveViewRelevance(Result);
 
   return Result;
 }
@@ -81,10 +95,57 @@ uint32 FCesiumGltfLinesSceneProxy::GetMemoryFootprint(void) const {
   return (sizeof(*this) + GetAllocatedSize());
 }
 
-void FCesiumGltfLinesSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
-  Mesh.VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;
-  Mesh.MaterialRenderProxy = Material->GetRenderProxy();
-  Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+void FCesiumGltfLinesSceneProxy::createLineStyleUserData(
+    FMeshBatchElement& BatchElement,
+    const FSceneView* View,
+    FMeshElementCollector& Collector) const {
+  FCesiumLineStyleBatchElementUserDataWrapper* pUserDataWrapper =
+      &Collector.AllocateOneFrameResource<
+          FCesiumLineStyleBatchElementUserDataWrapper>();
+
+  FCesiumLineStyleBatchElementUserData& UserData = pUserDataWrapper->Data;
+  const FLocalVertexFactory& OriginalVertexFactory =
+      this->_pRenderData->LODVertexFactories[0].VertexFactory;
+
+  UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
+  UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
+  UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
+  UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
+  UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
+  UserData.LineWidth = this->_lineWidth;
+  UserData.Pattern = this->_pattern;
+  BatchElement.UserData = &pUserDataWrapper->Data;
+}
+
+void FCesiumGltfLinesSceneProxy::createMeshWithLineWidth(
+    FMeshBatch& Mesh,
+    const FSceneView* View,
+    FMeshElementCollector& Collector) const {
+  Mesh.VertexFactory = &this->_lineStyleVertexFactory;
+  Mesh.MaterialRenderProxy = this->_pMaterial->GetRenderProxy();
+  Mesh.ReverseCulling = this->IsLocalToWorldDeterminantNegative();
+  Mesh.Type = PT_TriangleList;
+  Mesh.DepthPriorityGroup = SDPG_World;
+  Mesh.LODIndex = 0;
+  Mesh.bCanApplyViewModeOverrides = false;
+  Mesh.bUseAsOccluder = false;
+  Mesh.bWireframe = false;
+
+  FMeshBatchElement& BatchElement = Mesh.Elements[0];
+  BatchElement.IndexBuffer = &this->_quadIndexBuffer;
+  BatchElement.NumPrimitives = this->_numLines * 2;
+  BatchElement.FirstIndex = 0;
+  BatchElement.MinVertexIndex = 0;
+  BatchElement.MaxVertexIndex = this->_numLines * 4 - 1;
+  BatchElement.PrimitiveUniformBuffer = this->GetUniformBuffer();
+
+  this->createLineStyleUserData(BatchElement, View, Collector);
+}
+
+void FCesiumGltfLinesSceneProxy::createMesh(FMeshBatch& Mesh) const {
+  Mesh.VertexFactory = &this->_pRenderData->LODVertexFactories[0].VertexFactory;
+  Mesh.MaterialRenderProxy = this->_pMaterial->GetRenderProxy();
+  Mesh.ReverseCulling = this->IsLocalToWorldDeterminantNegative();
   Mesh.Type = PT_LineList;
   Mesh.DepthPriorityGroup = SDPG_World;
   Mesh.LODIndex = 0;
@@ -93,9 +154,16 @@ void FCesiumGltfLinesSceneProxy::CreateMesh(FMeshBatch& Mesh) const {
   Mesh.bWireframe = false;
 
   FMeshBatchElement& BatchElement = Mesh.Elements[0];
-  BatchElement.IndexBuffer = &RenderData->LODResources[0].IndexBuffer;
-  BatchElement.NumPrimitives = NumLines;
+  BatchElement.IndexBuffer = &this->_pRenderData->LODResources[0].IndexBuffer;
+  BatchElement.NumPrimitives = this->_numLines;
   BatchElement.FirstIndex = 0;
   BatchElement.MinVertexIndex = 0;
   BatchElement.MaxVertexIndex = BatchElement.NumPrimitives;
+}
+
+bool FCesiumGltfLinesSceneProxy::shouldRenderWithLineWidth() const {
+  // The line width pipeline should be used if BENTLEY_materials_line_style is
+  // present.
+  return (this->_lineWidth >= 1 || this->_pattern != 0xFFFF) &&
+         this->_manualVertexFetchSupported;
 }
