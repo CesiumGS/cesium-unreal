@@ -20,6 +20,7 @@
 #include "Templates/SharedPointer.h"
 
 #include <CesiumGltf/AccessorUtility.h>
+#include <CesiumGltf/ExtensionKhrBillboard.h>
 #include <CesiumGltf/Material.h>
 #include <CesiumGltf/MeshPrimitive.h>
 #include <CesiumGltf/Model.h>
@@ -224,6 +225,8 @@ struct LoadedNodeResult {
    * single instance.
    */
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures = nullptr;
+
+  std::optional<CesiumGltf::ExtensionKhrBillboard> billboard = std::nullopt;
 };
 
 /**
