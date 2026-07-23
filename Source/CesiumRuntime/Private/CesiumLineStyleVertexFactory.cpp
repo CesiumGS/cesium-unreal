@@ -26,6 +26,7 @@ public:
     ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
     TexCoordBuffer.Bind(ParameterMap, TEXT("TexCoordBuffer"));
     NumTexCoords.Bind(ParameterMap, TEXT("NumTexCoords"));
+    bHasVertexColors.Bind(ParameterMap, TEXT("bHasVertexColors"));
     LineWidth.Bind(ParameterMap, TEXT("LineWidth"));
     Pattern.Bind(ParameterMap, TEXT("Pattern"));
   }
@@ -57,6 +58,9 @@ public:
     if (pUserData->TexCoordBuffer && TexCoordBuffer.IsBound()) {
       ShaderBindings.Add(TexCoordBuffer, pUserData->TexCoordBuffer);
     }
+    if (pUserData->bHasVertexColors && bHasVertexColors.IsBound()) {
+      ShaderBindings.Add(bHasVertexColors, pUserData->bHasVertexColors);
+    }
     if (NumTexCoords.IsBound()) {
       ShaderBindings.Add(NumTexCoords, pUserData->NumTexCoords);
     }
@@ -75,7 +79,7 @@ private:
   LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, TexCoordBuffer);
   LAYOUT_FIELD(FShaderParameter, NumTexCoords);
-  LAYOUT_FIELD(FShaderParameter, NumLines);
+  LAYOUT_FIELD(FShaderParameter, bHasVertexColors);
   LAYOUT_FIELD(FShaderParameter, LineWidth);
   LAYOUT_FIELD(FShaderParameter, Pattern);
 };

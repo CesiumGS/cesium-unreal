@@ -15,6 +15,8 @@ Buffer<float4> ColorBuffer;
 Buffer<float2> TexCoordBuffer;
 uint NumTexCoords;
 
+// Whether or not the lines have per-vertex colors.
+uint bHasVertexColors;
 float LineWidth;
 uint Pattern;
 
@@ -111,20 +113,21 @@ void GetLineAndCornerIndices(uint VertexId, out uint LineIndex, out uint CornerI
 /**
 * Resolves the index to use when sampling the original line mesh data.
 */
-uint GetVertexFetchIndex(uint VertexId)
+uint GetVertexFetchIndex(uint LineIndex, uint CornerIndex)
 {
-  uint LineIndex, CornerIndex;
-  GetLineAndCornerIndices(VertexId, LineIndex, CornerIndex);
   return CornerIndex >= 2 ? 2 * LineIndex + 1 : 2 * LineIndex;
 }
 
 /**
 * Resolves the index to use when sampling the original line mesh data.
 */
-uint GetVertexFetchIndex(uint LineIndex, uint CornerIndex)
+uint GetVertexFetchIndex(uint VertexId)
 {
-  return CornerIndex >= 2 ? 2 * LineIndex + 1 : 2 * LineIndex;
+  uint LineIndex, CornerIndex;
+  GetLineAndCornerIndices(VertexId, LineIndex, CornerIndex);
+  return GetVertexFetchIndex(LineIndex, CornerIndex);
 }
+
 
 /** Helper function for position-only passes that don't require point index for other intermediates.*/
 float4 GetWorldPosition(uint VertexId)
@@ -141,10 +144,10 @@ float4 GetWorldPosition(uint VertexId)
 }
 
 /** Computes TangentToLocal based on the Manual Vertex Fetch method in LocalVertexFactory.ush */
-half3x3 CalculateTangentToLocal(uint LineVertexIndex, out float TangentSign)
+half3x3 CalculateTangentToLocal(uint Index, out float TangentSign)
 {
-  	half3 TangentInputX = PackedTangentsBuffer[2 * LineVertexIndex + 0].xyz;
-  	half4 TangentInputZ = PackedTangentsBuffer[2 * LineVertexIndex + 1].xyzw;
+  	half3 TangentInputX = PackedTangentsBuffer[2 * Index + 0].xyz;
+  	half4 TangentInputZ = PackedTangentsBuffer[2 * Index + 1].xyzw;
   	
   	half3 TangentX = TangentBias(TangentInputX);
   	half4 TangentZ = TangentBias(TangentInputZ);
@@ -166,66 +169,61 @@ half3x3 CalculateTangentToLocal(uint LineVertexIndex, out float TangentSign)
 
 half3x3 CalculateTangentToWorldNoScale(half3x3 TangentToLocal)
 {
-  half3x3 LocalToWorld = GetLocalToWorld3x3();
-  half3 InvScale = Primitive.InvNonUniformScale;
-  LocalToWorld[0] *= InvScale.x;
-  LocalToWorld[1] *= InvScale.y;
-  LocalToWorld[2] *= InvScale.z;
-  return mul(TangentToLocal, LocalToWorld);
+  	half3x3 LocalToWorld = GetLocalToWorld3x3();
+  	half3 InvScale = Primitive.InvNonUniformScale;
+  	LocalToWorld[0] *= InvScale.x;
+  	LocalToWorld[1] *= InvScale.y;
+  	LocalToWorld[2] *= InvScale.z;
+  	return mul(TangentToLocal, LocalToWorld);
 }
 
 /** Helper function for position and normal-only passes that don't require point index for other intermediates.*/
 float3 GetPointNormal(uint VertexId)
 {
-  uint FetchIndex = GetVertexFetchIndex(VertexId);
-  uint ActualIndex = IndexBuffer[FetchIndex];
-  return PackedTangentsBuffer[2 * ActualIndex + 1].xyz;
+  	uint FetchIndex = GetVertexFetchIndex(VertexId);
+  	uint ActualIndex = IndexBuffer[FetchIndex];
+  	return PackedTangentsBuffer[2 * ActualIndex + 1].xyz;
 }
 
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
 {
-  FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates) 0;
-  Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
-
-  uint LineIndex, CornerIndex;
-  GetLineAndCornerIndices(Input.VertexId, LineIndex, CornerIndex);
-    		  
-  Intermediates.LineIndex = LineIndex;
-  Intermediates.CornerIndex = CornerIndex;
-
-  uint LineEndpointIndex = 2 * LineIndex;
-  uint FetchIndex = LineEndpointIndex;
-  uint OtherFetchIndex = LineEndpointIndex + 1;
-  if (CornerIndex >= 2)
-  {
-    FetchIndex = OtherFetchIndex;
-    OtherFetchIndex = LineEndpointIndex;
-  }
-
-  uint ActualIndex = IndexBuffer[FetchIndex];
-  uint OtherActualIndex = IndexBuffer[OtherFetchIndex];
-
-  Intermediates.Position.x = PositionBuffer[ActualIndex * 3 + 0];
-  Intermediates.Position.y = PositionBuffer[ActualIndex * 3 + 1];
-  Intermediates.Position.z = PositionBuffer[ActualIndex * 3 + 2];
-  
-  float3 OtherVertexPosition;
-  OtherVertexPosition.x = PositionBuffer[OtherActualIndex * 3 + 0];
-  OtherVertexPosition.y = PositionBuffer[OtherActualIndex * 3 + 1];
-  OtherVertexPosition.z = PositionBuffer[OtherActualIndex * 3 + 2];
-  
-  Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
-  Intermediates.OtherVertexWorldPosition = TransformLocalToTranslatedWorld(OtherVertexPosition);
-
-  float TangentSign = 1.0;
-  Intermediates.TangentToLocal = CalculateTangentToLocal(ActualIndex, TangentSign);
-  Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
-  Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
-
-  float4 Color = ColorBuffer[ActualIndex];
-  Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
-
-  return Intermediates;
+  	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates) 0;
+  	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
+  	
+  	uint LineIndex, CornerIndex;
+  	GetLineAndCornerIndices(Input.VertexId, LineIndex, CornerIndex);
+  	  		  
+  	Intermediates.LineIndex = LineIndex;
+  	Intermediates.CornerIndex = CornerIndex;
+  	
+  	uint LineEndpointIndex = 2 * LineIndex;
+  	uint FetchIndex = CornerIndex >= 2 ? 2 * LineIndex + 1 : 2 * LineIndex;
+  	uint OtherFetchIndex = CornerIndex >= 2 ? 2 * LineIndex : 2 * LineIndex + 1;
+  	
+  	uint ActualIndex = IndexBuffer[FetchIndex];
+  	uint OtherActualIndex = IndexBuffer[OtherFetchIndex];
+  	
+  	Intermediates.Position.x = PositionBuffer[ActualIndex * 3 + 0];
+  	Intermediates.Position.y = PositionBuffer[ActualIndex * 3 + 1];
+  	Intermediates.Position.z = PositionBuffer[ActualIndex * 3 + 2];
+  	
+  	float3 OtherVertexPosition;
+  	OtherVertexPosition.x = PositionBuffer[OtherActualIndex * 3 + 0];
+  	OtherVertexPosition.y = PositionBuffer[OtherActualIndex * 3 + 1];
+  	OtherVertexPosition.z = PositionBuffer[OtherActualIndex * 3 + 2];
+  	
+  	Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
+  	Intermediates.OtherVertexWorldPosition = TransformLocalToTranslatedWorld(OtherVertexPosition);
+  	
+  	float TangentSign = 1.0;
+  	Intermediates.TangentToLocal = CalculateTangentToLocal(ActualIndex, TangentSign);
+  	Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
+  	Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
+  	
+  	float4 Color = bHasVertexColors ? ColorBuffer[ActualIndex] : float4(1, 1, 1, 1);
+  	Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
+  	
+  	return Intermediates;
 }
 
 
@@ -425,13 +423,14 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	Result.VertexColor = Intermediates.Color;
 
 #if NUM_MATERIAL_TEXCOORDS_VERTEX
-  	uint LineVertexIndex = GetVertexFetchIndex(Intermediates.LineIndex, Intermediates.CornerIndex);
+  	uint FetchIndex = GetVertexFetchIndex(Intermediates.LineIndex, Intermediates.CornerIndex);
+  	uint ActualIndex = IndexBuffer[FetchIndex];
   	UNROLL
   	for (uint CoordinateIndex = 0; CoordinateIndex < NUM_MATERIAL_TEXCOORDS_VERTEX; CoordinateIndex++)
   	{
   	  	// Clamp coordinates to mesh's maximum as materials can request more than are available
   	  	uint ClampedCoordinateIndex = min(CoordinateIndex, NumTexCoords - 1);
-  	  	Result.TexCoords[CoordinateIndex] = TexCoordBuffer[NumTexCoords * LineVertexIndex + ClampedCoordinateIndex];
+  	  	Result.TexCoords[CoordinateIndex] = TexCoordBuffer[NumTexCoords * ActualIndex + ClampedCoordinateIndex];
   	}
 #endif
 

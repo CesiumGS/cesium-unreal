@@ -22,8 +22,9 @@ struct FCesiumLineStyleBatchElementUserData {
   FRHIShaderResourceView* ColorBuffer;
   FRHIShaderResourceView* TexCoordBuffer;
   uint32 NumTexCoords;
+  uint32 bHasVertexColors;
   float LineWidth;
-  uint16 Pattern;
+  uint32 Pattern;
 };
 
 class FCesiumLineStyleBatchElementUserDataWrapper : public FOneFrameResource {

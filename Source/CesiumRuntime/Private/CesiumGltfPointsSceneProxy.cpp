@@ -163,7 +163,7 @@ void FCesiumGltfPointsSceneProxy::createPointAttenuationUserData(
   UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
   UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
   UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
-  UserData.bHasPointColors =
+  UserData.bHasVertexColors =
       this->_pRenderData->LODResources[0].bHasColorVertexData;
 
   FCesiumPointCloudShading pointCloudShading =

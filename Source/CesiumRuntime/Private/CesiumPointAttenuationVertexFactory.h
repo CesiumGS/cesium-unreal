@@ -21,7 +21,7 @@ struct FCesiumPointAttenuationBatchElementUserData {
   FRHIShaderResourceView* ColorBuffer;
   FRHIShaderResourceView* TexCoordBuffer;
   uint32 NumTexCoords;
-  uint32 bHasPointColors;
+  uint32 bHasVertexColors;
   FVector4f AttenuationParameters;
 };
 

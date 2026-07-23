@@ -137,6 +137,8 @@ void FCesiumGltfLinesSceneProxy::createLineStyleUserData(
   UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
   UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
   UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
+  UserData.bHasVertexColors =
+      this->_pRenderData->LODResources[0].bHasColorVertexData;
   UserData.LineWidth = this->_lineWidth;
   UserData.Pattern = this->_pattern;
   BatchElement.UserData = &pUserDataWrapper->Data;

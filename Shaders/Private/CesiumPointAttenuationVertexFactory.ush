@@ -14,7 +14,7 @@ Buffer<float2> TexCoordBuffer;
 uint NumTexCoords;
 
 // Whether or not the point cloud has per-point colors.
-uint bHasPointColors;
+uint bHasVertexColors;
 // X = Maximum Point Size, Y = Geometric Error, Z = Depth Multiplier, W = Diameter from BENTLEY_materials_point_style if present
 float4 AttenuationParameters;
 
@@ -186,8 +186,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
   	Intermediates.TangentToWorldSign =  Intermediates.SceneData.InstanceData.DeterminantSign;
 
-  	bool bHasColors = bHasPointColors;
-  	float4 Color = bHasColors ? ColorBuffer[PointIndex] : float4(1, 1, 1, 1);
+  	float4 Color = bHasVertexColors ? ColorBuffer[PointIndex] : float4(1, 1, 1, 1);
   	Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
 
   	return Intermediates;

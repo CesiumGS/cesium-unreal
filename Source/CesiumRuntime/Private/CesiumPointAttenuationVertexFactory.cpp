@@ -26,7 +26,7 @@ public:
     ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
     TexCoordBuffer.Bind(ParameterMap, TEXT("TexCoordBuffer"));
     NumTexCoords.Bind(ParameterMap, TEXT("NumTexCoords"));
-    bHasPointColors.Bind(ParameterMap, TEXT("bHasPointColors"));
+    bHasVertexColors.Bind(ParameterMap, TEXT("bHasVertexColors"));
     AttenuationParameters.Bind(ParameterMap, TEXT("AttenuationParameters"));
   }
 
@@ -57,8 +57,8 @@ public:
     if (NumTexCoords.IsBound()) {
       ShaderBindings.Add(NumTexCoords, UserData->NumTexCoords);
     }
-    if (bHasPointColors.IsBound()) {
-      ShaderBindings.Add(bHasPointColors, UserData->bHasPointColors);
+    if (bHasVertexColors.IsBound()) {
+      ShaderBindings.Add(bHasVertexColors, UserData->bHasVertexColors);
     }
     if (AttenuationParameters.IsBound()) {
       ShaderBindings.Add(
@@ -73,7 +73,7 @@ private:
   LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, TexCoordBuffer);
   LAYOUT_FIELD(FShaderParameter, NumTexCoords);
-  LAYOUT_FIELD(FShaderParameter, bHasPointColors);
+  LAYOUT_FIELD(FShaderParameter, bHasVertexColors);
   LAYOUT_FIELD(FShaderParameter, AttenuationParameters);
 };
 
