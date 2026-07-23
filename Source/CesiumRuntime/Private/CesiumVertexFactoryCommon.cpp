@@ -15,17 +15,17 @@ void FCesiumQuadIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
   // This must be called from Rendering thread
   check(IsInRenderingThread());
 
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumQuadIndexBuffer"));
-
   const uint32 NumIndices = this->_quadCount * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
-  IndexBufferRHI = RHICmdList.CreateBuffer(
+  FRHIBufferCreateDesc CreateDesc(
+      TEXT("FCesiumQuadIndexBuffer"),
       Size,
-      BUF_Static | BUF_IndexBuffer,
       sizeof(uint32),
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
+      BUF_Static | BUF_IndexBuffer);
+  CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
+
+  IndexBufferRHI = RHICmdList.CreateBuffer(CreateDesc);
 
   uint32* pData =
       (uint32*)RHICmdList.LockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
@@ -45,13 +45,14 @@ void FCesiumQuadIndexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
 }
 
 void FCesiumDummyVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
-  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumDummyVertexBuffer"));
-  VertexBufferRHI = RHICmdList.CreateBuffer(
+  FRHIBufferCreateDesc CreateDesc(
+      TEXT("FCesiumDummyVertexBuffer"),
       sizeof(FVector3f) * 4,
-      BUF_Static | BUF_VertexBuffer,
       0,
-      ERHIAccess::VertexOrIndexBuffer,
-      CreateInfo);
+      BUF_Static | BUF_VertexBuffer);
+  CreateDesc.SetInitialState(ERHIAccess::VertexOrIndexBuffer);
+  VertexBufferRHI = RHICmdList.CreateBuffer(CreateDesc);
+
   FVector3f* pDummyContents = (FVector3f*)RHICmdList.LockBuffer(
       VertexBufferRHI,
       0,
@@ -61,5 +62,6 @@ void FCesiumDummyVertexBuffer::InitRHI(FRHICommandListBase& RHICmdList) {
   pDummyContents[1] = FVector3f(1.0f, 0.0f, 0.0f);
   pDummyContents[2] = FVector3f(0.0f, 1.0f, 0.0f);
   pDummyContents[3] = FVector3f(1.0f, 1.0f, 0.0f);
+
   RHICmdList.UnlockBuffer(VertexBufferRHI);
 }

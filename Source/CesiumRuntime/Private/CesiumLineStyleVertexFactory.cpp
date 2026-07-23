@@ -20,6 +20,7 @@ class FCesiumLineStyleVertexFactoryShaderParameters
 
 public:
   void Bind(const FShaderParameterMap& ParameterMap) {
+    IndexBuffer.Bind(ParameterMap, TEXT("IndexBuffer"));
     PositionBuffer.Bind(ParameterMap, TEXT("PositionBuffer"));
     PackedTangentsBuffer.Bind(ParameterMap, TEXT("PackedTangentsBuffer"));
     ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
@@ -41,6 +42,9 @@ public:
       FVertexInputStreamArray& VertexStreams) const {
     FCesiumLineStyleBatchElementUserData* pUserData =
         (FCesiumLineStyleBatchElementUserData*)BatchElement.UserData;
+    if (pUserData->IndexBuffer && IndexBuffer.IsBound()) {
+      ShaderBindings.Add(IndexBuffer, pUserData->IndexBuffer);
+    }
     if (pUserData->PositionBuffer && PositionBuffer.IsBound()) {
       ShaderBindings.Add(PositionBuffer, pUserData->PositionBuffer);
     }
@@ -65,6 +69,7 @@ public:
   }
 
 private:
+  LAYOUT_FIELD(FShaderResourceParameter, IndexBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, PositionBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, PackedTangentsBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);

@@ -7,6 +7,8 @@
 #include "/Engine/Private/Common.ush"
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
+
+Buffer<uint> IndexBuffer;
 Buffer<float> PositionBuffer;
 Buffer<float4> PackedTangentsBuffer;
 Buffer<float4> ColorBuffer;
@@ -109,7 +111,7 @@ void GetLineAndCornerIndices(uint VertexId, out uint LineIndex, out uint CornerI
 /**
 * Resolves the index to use when sampling the original line mesh data.
 */
-uint GetOriginalLineVertexIndex(uint VertexId)
+uint GetVertexFetchIndex(uint VertexId)
 {
   uint LineIndex, CornerIndex;
   GetLineAndCornerIndices(VertexId, LineIndex, CornerIndex);
@@ -119,7 +121,7 @@ uint GetOriginalLineVertexIndex(uint VertexId)
 /**
 * Resolves the index to use when sampling the original line mesh data.
 */
-uint GetOriginalLineVertexIndex(uint LineIndex, uint CornerIndex)
+uint GetVertexFetchIndex(uint LineIndex, uint CornerIndex)
 {
   return CornerIndex >= 2 ? 2 * LineIndex + 1 : 2 * LineIndex;
 }
@@ -127,12 +129,13 @@ uint GetOriginalLineVertexIndex(uint LineIndex, uint CornerIndex)
 /** Helper function for position-only passes that don't require point index for other intermediates.*/
 float4 GetWorldPosition(uint VertexId)
 {
-  uint LineVertexIndex = GetOriginalLineVertexIndex(VertexId);
+  uint FetchIndex = GetVertexFetchIndex(VertexId);
+  uint ActualIndex = IndexBuffer[FetchIndex];
   
   float3 Position = float3(0, 0, 0);
-  Position.x = PositionBuffer[LineVertexIndex * 3 + 0];
-  Position.y = PositionBuffer[LineVertexIndex * 3 + 1];
-  Position.z = PositionBuffer[LineVertexIndex * 3 + 2];
+  Position.x = PositionBuffer[ActualIndex * 3 + 0];
+  Position.y = PositionBuffer[ActualIndex * 3 + 1];
+  Position.z = PositionBuffer[ActualIndex * 3 + 2];
 
   return TransformLocalToTranslatedWorld(Position);
 }
@@ -174,8 +177,9 @@ half3x3 CalculateTangentToWorldNoScale(half3x3 TangentToLocal)
 /** Helper function for position and normal-only passes that don't require point index for other intermediates.*/
 float3 GetPointNormal(uint VertexId)
 {
-  uint LineVertexIndex = GetOriginalLineVertexIndex(VertexId);
-  return PackedTangentsBuffer[2 * LineVertexIndex + 1].xyz;
+  uint FetchIndex = GetVertexFetchIndex(VertexId);
+  uint ActualIndex = IndexBuffer[FetchIndex];
+  return PackedTangentsBuffer[2 * ActualIndex + 1].xyz;
 }
 
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
@@ -189,33 +193,36 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   Intermediates.LineIndex = LineIndex;
   Intermediates.CornerIndex = CornerIndex;
 
-  uint LineStart = 2 * LineIndex;
-  uint LineVertexIndex = LineStart;
-  uint OtherLineVertexIndex = LineStart + 1;
+  uint LineEndpointIndex = 2 * LineIndex;
+  uint FetchIndex = LineEndpointIndex;
+  uint OtherFetchIndex = LineEndpointIndex + 1;
   if (CornerIndex >= 2)
   {
-    LineVertexIndex = OtherLineVertexIndex;
-    OtherLineVertexIndex = LineStart;
+    FetchIndex = OtherFetchIndex;
+    OtherFetchIndex = LineEndpointIndex;
   }
 
-  Intermediates.Position.x = PositionBuffer[LineVertexIndex * 3 + 0];
-  Intermediates.Position.y = PositionBuffer[LineVertexIndex * 3 + 1];
-  Intermediates.Position.z = PositionBuffer[LineVertexIndex * 3 + 2];
+  uint ActualIndex = IndexBuffer[FetchIndex];
+  uint OtherActualIndex = IndexBuffer[OtherFetchIndex];
 
+  Intermediates.Position.x = PositionBuffer[ActualIndex * 3 + 0];
+  Intermediates.Position.y = PositionBuffer[ActualIndex * 3 + 1];
+  Intermediates.Position.z = PositionBuffer[ActualIndex * 3 + 2];
+  
   float3 OtherVertexPosition;
-  OtherVertexPosition.x = PositionBuffer[OtherLineVertexIndex * 3 + 0];
-  OtherVertexPosition.y = PositionBuffer[OtherLineVertexIndex * 3 + 1];
-  OtherVertexPosition.z = PositionBuffer[OtherLineVertexIndex * 3 + 2];
+  OtherVertexPosition.x = PositionBuffer[OtherActualIndex * 3 + 0];
+  OtherVertexPosition.y = PositionBuffer[OtherActualIndex * 3 + 1];
+  OtherVertexPosition.z = PositionBuffer[OtherActualIndex * 3 + 2];
   
   Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
   Intermediates.OtherVertexWorldPosition = TransformLocalToTranslatedWorld(OtherVertexPosition);
 
   float TangentSign = 1.0;
-  Intermediates.TangentToLocal = CalculateTangentToLocal(LineVertexIndex, TangentSign);
+  Intermediates.TangentToLocal = CalculateTangentToLocal(ActualIndex, TangentSign);
   Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
   Intermediates.TangentToWorldSign = Intermediates.SceneData.InstanceData.DeterminantSign;
 
-  float4 Color = ColorBuffer[LineVertexIndex];
+  float4 Color = ColorBuffer[ActualIndex];
   Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
 
   return Intermediates;
@@ -417,8 +424,8 @@ FMaterialVertexParameters GetMaterialVertexParameters(
   	Result.PreSkinnedPosition = WorldPosition;
   	Result.VertexColor = Intermediates.Color;
 
-  	uint LineVertexIndex = GetOriginalLineVertexIndex(Intermediates.LineIndex, Intermediates.CornerIndex);
 #if NUM_MATERIAL_TEXCOORDS_VERTEX
+  	uint LineVertexIndex = GetVertexFetchIndex(Intermediates.LineIndex, Intermediates.CornerIndex);
   	UNROLL
   	for (uint CoordinateIndex = 0; CoordinateIndex < NUM_MATERIAL_TEXCOORDS_VERTEX; CoordinateIndex++)
   	{
@@ -441,18 +448,18 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
   	Result.TwoSidedSign = 1;
   	Result.VertexColor = Interpolants.Color;
   	
-  	//if (Pattern > 0)
-  	//{
-  	//  const float maskLength = 16.0;
-  	//  float dashPosition = fract(v_lineCoord / maskLength);
-  	//  float maskIndex = floor(dashPosition * maskLength);
-  	//  float maskTest = floor(u_linePattern / pow(2.0, maskIndex));
-  	//  if (mod(maskTest, 2.0) < 1.0)
-  	//  {
-  	//    discard;
-  	//  }
-  	//    Result.VertexColor.a = Result.VertexColor.a * pattern;
-  	//  }
+  //if (Pattern )
+  //{
+  //  const float maskLength = 16.0;
+  //  float dashPosition = fract(v_lineCoord / maskLength);
+  //  float maskIndex = floor(dashPosition * maskLength);
+  //  float maskTest = floor(u_linePattern / pow(2.0, maskIndex));
+  //  if (mod(maskTest, 2.0) < 1.0)
+  //  {
+  //    discard;
+  //  }
+  //  Result.VertexColor.a = Result.VertexColor.a * pattern;
+  //}
   	
   	half3 TangentToWorld0 = Interpolants.TangentToWorld0.xyz;
   	half4 TangentToWorld2 = Interpolants.TangentToWorld2;

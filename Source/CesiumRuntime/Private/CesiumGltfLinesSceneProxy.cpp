@@ -21,10 +21,11 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
       _pRenderData(InComponent->GetStaticMesh()->GetRenderData()),
       _numLines(
           this->_pRenderData->LODResources[0].IndexBuffer.GetNumIndices() / 2),
-      _lineWidth(InComponent->width),
-      _pattern(InComponent->pattern),
       _manualVertexFetchSupported(
           RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
+      _lineWidth(InComponent->width),
+      _pattern(InComponent->pattern),
+      _indexBufferSRV(),
       _lineStyleVertexFactory(
           InSceneInterfaceParams.RHIFeatureLevelType,
           &this->_pRenderData->LODResources[0]
@@ -35,6 +36,29 @@ FCesiumGltfLinesSceneProxy::FCesiumGltfLinesSceneProxy(
           InSceneInterfaceParams.GetMaterialRelevance(InComponent)) {}
 
 FCesiumGltfLinesSceneProxy::~FCesiumGltfLinesSceneProxy() {}
+
+void FCesiumGltfLinesSceneProxy::CreateRenderThreadResources(
+    FRHICommandListBase& RHICmdList) {
+  this->_lineStyleVertexFactory.InitResource(RHICmdList);
+  this->_quadIndexBuffer.InitResource(RHICmdList);
+
+  if (this->shouldRenderWithLineWidth()) {
+    const FRawStaticIndexBuffer& indexBuffer =
+        this->_pRenderData->LODResources[0].IndexBuffer;
+    bool b32Bit = indexBuffer.Is32Bit();
+    this->_indexBufferSRV = RHICmdList.CreateShaderResourceView(
+        indexBuffer.IndexBufferRHI,
+        FRHIViewDesc::CreateBufferSRV()
+            .SetType(FRHIViewDesc::EBufferType::Typed)
+            .SetFormat(b32Bit ? PF_R32_UINT : PF_R16_UINT));
+  }
+}
+
+void FCesiumGltfLinesSceneProxy::DestroyRenderThreadResources() {
+  this->_lineStyleVertexFactory.ReleaseResource();
+  this->_quadIndexBuffer.ReleaseResource();
+  this->_indexBufferSRV.SafeRelease();
+}
 
 void FCesiumGltfLinesSceneProxy::DrawStaticElements(
     FStaticPrimitiveDrawInterface* PDI) {
@@ -107,6 +131,7 @@ void FCesiumGltfLinesSceneProxy::createLineStyleUserData(
   const FLocalVertexFactory& OriginalVertexFactory =
       this->_pRenderData->LODVertexFactories[0].VertexFactory;
 
+  UserData.IndexBuffer = this->_indexBufferSRV;
   UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
   UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
   UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();

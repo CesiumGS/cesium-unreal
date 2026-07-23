@@ -16,6 +16,7 @@
  * shader.
  */
 struct FCesiumLineStyleBatchElementUserData {
+  FRHIShaderResourceView* IndexBuffer;
   FRHIShaderResourceView* PositionBuffer;
   FRHIShaderResourceView* PackedTangentsBuffer;
   FRHIShaderResourceView* ColorBuffer;

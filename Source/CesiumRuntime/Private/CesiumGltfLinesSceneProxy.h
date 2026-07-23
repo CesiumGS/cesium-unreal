@@ -21,6 +21,11 @@ public:
   virtual ~FCesiumGltfLinesSceneProxy();
 
 protected:
+  virtual void
+  CreateRenderThreadResources(FRHICommandListBase& RHICmdList) override;
+
+  virtual void DestroyRenderThreadResources() override;
+
   virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override;
 
   virtual void GetDynamicMeshElements(
@@ -58,6 +63,12 @@ private:
   int32_t _numLines;
 
   /**
+   * @brief Whether or not the shader platform supports "Manual Vertex Fetch",
+   * which is required for attenuation.
+   */
+  bool _manualVertexFetchSupported;
+
+  /**
    * @brief The desired line width.
    */
   int32_t _lineWidth;
@@ -67,12 +78,7 @@ private:
    */
   uint16_t _pattern;
 
-  /**
-   * @brief Whether or not the shader platform supports "Manual Vertex Fetch",
-   * which is required for attenuation.
-   */
-  bool _manualVertexFetchSupported;
-
+  FShaderResourceViewRHIRef _indexBufferSRV;
   FCesiumLineStyleVertexFactory _lineStyleVertexFactory;
   FCesiumQuadIndexBuffer _quadIndexBuffer;
   UMaterialInterface* _pMaterial;
