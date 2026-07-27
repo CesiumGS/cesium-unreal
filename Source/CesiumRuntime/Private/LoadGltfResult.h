@@ -227,8 +227,9 @@ struct LoadedNodeResult {
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures = nullptr;
 
   /**
-   * The @ref CesiumGltf::ExtensionKhrBillboard extension on the node, if present.
-   * Indicates that the mesh should be billboarded in the Unreal material.
+   * The @ref CesiumGltf::ExtensionKhrBillboard extension on the node, if
+   * present. Indicates that the mesh should be billboarded in the Unreal
+   * material.
    */
   std::optional<CesiumGltf::ExtensionKhrBillboard> billboard = std::nullopt;
 };

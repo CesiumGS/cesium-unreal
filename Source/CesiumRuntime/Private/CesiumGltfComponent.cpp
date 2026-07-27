@@ -28,7 +28,6 @@
 #include "EncodedFeaturesMetadata.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
-#include "GameFramework/Actor.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "LoadGltfResult.h"
