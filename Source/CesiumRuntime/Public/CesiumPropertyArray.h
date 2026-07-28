@@ -1,4 +1,4 @@
-// Copyright 2020-2025 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
