@@ -358,6 +358,34 @@ void AECPerformanceTestSetup::setupForTilesetK1(
   context.sunSky->UpdateSun();
 }
 
+void AECPerformanceTestSetup::setupForTilesetL0(
+    SceneGenerationContext& context) {
+
+  setupForLocation(
+      context,
+      FVector(0.015221, 0.01461, 1384.564112),
+      FRotator(-51.709758, 127.227448, 0),
+      TEXT("L"),
+      0);
+
+  context.sunSky->TimeZone = 0.0f;
+  context.sunSky->UpdateSun();
+}
+
+void AECPerformanceTestSetup::setupForTilesetL1(
+    SceneGenerationContext& context) {
+
+  setupForLocation(
+      context,
+      FVector(0.015221, 0.01461, 1384.564112),
+      FRotator(-51.709758, 127.227448, 0),
+      TEXT("L"),
+      1);
+
+  context.sunSky->TimeZone = 0.0f;
+  context.sunSky->UpdateSun();
+}
+
 void AECPerformanceTestSetup::setupForTilesetM0(
     SceneGenerationContext& context) {
 

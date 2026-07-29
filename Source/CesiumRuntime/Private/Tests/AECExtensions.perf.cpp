@@ -126,6 +126,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FLoadTilesetL0,
+    "Cesium.Performance.Tileset Loading.AEC Model L0",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FLoadTilesetL1,
+    "Cesium.Performance.Tileset Loading.AEC Model L1",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FLoadTilesetM0,
     "Cesium.Performance.Tileset Loading.AEC Model M0",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
@@ -205,8 +215,10 @@ bool FLoadTilesetA0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetA1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -218,8 +230,10 @@ bool FLoadTilesetA1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetB0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -231,8 +245,10 @@ bool FLoadTilesetB0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetB1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -244,8 +260,10 @@ bool FLoadTilesetB1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetC0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -257,8 +275,10 @@ bool FLoadTilesetC0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetC1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -270,8 +290,10 @@ bool FLoadTilesetC1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetD0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -283,8 +305,10 @@ bool FLoadTilesetD0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetD1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -296,8 +320,10 @@ bool FLoadTilesetD1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetE0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -309,8 +335,10 @@ bool FLoadTilesetE0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetE1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -322,8 +350,10 @@ bool FLoadTilesetE1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetF0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -335,8 +365,10 @@ bool FLoadTilesetF0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetF1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -348,8 +380,10 @@ bool FLoadTilesetF1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetG0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -361,8 +395,10 @@ bool FLoadTilesetG0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetG1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -374,8 +410,10 @@ bool FLoadTilesetG1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetH0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -387,8 +425,10 @@ bool FLoadTilesetH0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetH1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -400,8 +440,10 @@ bool FLoadTilesetH1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetI0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -413,8 +455,10 @@ bool FLoadTilesetI0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetI1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -426,8 +470,10 @@ bool FLoadTilesetI1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetJ0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -439,8 +485,10 @@ bool FLoadTilesetJ0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetJ1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -452,8 +500,10 @@ bool FLoadTilesetJ1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetK0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -465,8 +515,10 @@ bool FLoadTilesetK0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetK1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -476,10 +528,42 @@ bool FLoadTilesetK1::RunTest(const FString& Parameters) {
       TEST_SCREEN_HEIGHT);
 }
 
+bool FLoadTilesetL0::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      AECPerformanceTestSetup::setupForTilesetL0,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
+bool FLoadTilesetL1::RunTest(const FString& Parameters) {
+  std::vector<TestPass> testPasses;
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
+
+  return RunLoadTest(
+      GetBeautifiedTestName(),
+      AECPerformanceTestSetup::setupForTilesetL1,
+      testPasses,
+      TEST_SCREEN_WIDTH,
+      TEST_SCREEN_HEIGHT);
+}
+
 bool FLoadTilesetM0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -491,8 +575,10 @@ bool FLoadTilesetM0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetM1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -504,8 +590,10 @@ bool FLoadTilesetM1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetN0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -517,8 +605,10 @@ bool FLoadTilesetN0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetN1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -530,8 +620,10 @@ bool FLoadTilesetN1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetO0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -543,8 +635,10 @@ bool FLoadTilesetO0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetO1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -556,8 +650,10 @@ bool FLoadTilesetO1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetP0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -569,8 +665,10 @@ bool FLoadTilesetP0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetP1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -582,8 +680,10 @@ bool FLoadTilesetP1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetQ0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -595,8 +695,10 @@ bool FLoadTilesetQ0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetQ1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -608,8 +710,10 @@ bool FLoadTilesetQ1::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetR0::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),
@@ -621,8 +725,10 @@ bool FLoadTilesetR0::RunTest(const FString& Parameters) {
 
 bool FLoadTilesetR1::RunTest(const FString& Parameters) {
   std::vector<TestPass> testPasses;
-  testPasses.push_back(
-      TestPass{"Cold Cache", AECPerformanceTestSetup::setupClearCache, nullptr});
+  testPasses.push_back(TestPass{
+      "Cold Cache",
+      AECPerformanceTestSetup::setupClearCache,
+      nullptr});
 
   return RunLoadTest(
       GetBeautifiedTestName(),

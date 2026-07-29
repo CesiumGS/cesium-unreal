@@ -60,6 +60,9 @@ struct AECPerformanceTestSetup {
   static void setupForTilesetK0(SceneGenerationContext& context);
   static void setupForTilesetK1(SceneGenerationContext& context);
 
+  static void setupForTilesetL0(SceneGenerationContext& context);
+  static void setupForTilesetL1(SceneGenerationContext& context);
+
   static void setupForTilesetM0(SceneGenerationContext& context);
   static void setupForTilesetM1(SceneGenerationContext& context);
 
