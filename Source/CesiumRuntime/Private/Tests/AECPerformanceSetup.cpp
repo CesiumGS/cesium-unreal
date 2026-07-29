@@ -55,8 +55,8 @@ void AECPerformanceTestSetup::setupForTilesetA0(
 
   setupForLocation(
       context,
-      FVector(0.000287, 0.000289, 32.000162),
-      FRotator(-35.264798, 135, 0),
+      FVector(0.000075, -0.000067, -14.885801),
+      FRotator(-9.865022, -116.400058, 0),
       TEXT("A"),
       0);
 
@@ -69,8 +69,8 @@ void AECPerformanceTestSetup::setupForTilesetA1(
 
   setupForLocation(
       context,
-      FVector(0.000287, 0.000289, 32.000162),
-      FRotator(-35.264798, 135, 0),
+      FVector(0.000075, -0.000067, -14.885801),
+      FRotator(-9.865022, -116.400058, 0),
       TEXT("A"),
       1);
 
@@ -83,8 +83,8 @@ void AECPerformanceTestSetup::setupForTilesetB0(
 
   setupForLocation(
       context,
-      FVector(153.244486, -30.175477, 14270.878238),
-      FRotator(-33.450034, 138.524321, 0),
+      FVector(153.077527, -30.283263, 205.774323),
+      FRotator(-30.867372, -51.822038, 0),
       TEXT("B"),
       0);
 
@@ -97,8 +97,8 @@ void AECPerformanceTestSetup::setupForTilesetB1(
 
   setupForLocation(
       context,
-      FVector(153.244486, -30.175477, 14270.878238),
-      FRotator(-33.450034, 138.524321, 0),
+      FVector(153.077527, -30.283263, 205.774323),
+      FRotator(-30.867372, -51.822038, 0),
       TEXT("B"),
       1);
 
@@ -111,8 +111,8 @@ void AECPerformanceTestSetup::setupForTilesetC0(
 
   setupForLocation(
       context,
-      FVector(153.244486, -30.175477, 14270.878238),
-      FRotator(-33.450034, 138.524321, 0),
+      FVector(153.081, -30.308164, 44.407408),
+      FRotator(-28.649103, 126.366824, 0),
       TEXT("C"),
       0);
 
@@ -125,8 +125,8 @@ void AECPerformanceTestSetup::setupForTilesetC1(
 
   setupForLocation(
       context,
-      FVector(153.244486, -30.175477, 14270.878238),
-      FRotator(-33.450034, 138.524321, 0),
+      FVector(153.081, -30.308164, 44.407408),
+      FRotator(-28.649103, 126.366824, 0),
       TEXT("C"),
       1);
 
@@ -139,8 +139,8 @@ void AECPerformanceTestSetup::setupForTilesetD0(
 
   setupForLocation(
       context,
-      FVector(103.660255, 1.3027, 2049.861654),
-      FRotator(-35.290489, 135.000478, 0),
+      FVector(103.647192, 1.285037, 20.879465),
+      FRotator(-8.486185, 139.006219, 0),
       TEXT("D"),
       0);
 
@@ -153,8 +153,8 @@ void AECPerformanceTestSetup::setupForTilesetD1(
 
   setupForLocation(
       context,
-      FVector(103.660255, 1.3027, 2049.861654),
-      FRotator(-35.290489, 135.000478, 0),
+      FVector(103.647192, 1.285037, 20.879465),
+      FRotator(-8.486185, 139.006219, 0),
       TEXT("D"),
       1);
 
@@ -167,8 +167,8 @@ void AECPerformanceTestSetup::setupForTilesetE0(
 
   setupForLocation(
       context,
-      FVector(-111.518115, 40.234581, 8874.704235),
-      FRotator(-33.599439, 135.279056, 0),
+      FVector(-111.647076, 40.144028, 23.997996),
+      FRotator(-24.890024, -36.079948, 0),
       TEXT("E"),
       0);
 
@@ -181,8 +181,8 @@ void AECPerformanceTestSetup::setupForTilesetE1(
 
   setupForLocation(
       context,
-      FVector(-111.518115, 40.234581, 8874.704235),
-      FRotator(-33.599439, 135.279056, 0),
+      FVector(-111.647076, 40.144028, 23.997996),
+      FRotator(-24.890024, -36.079948, 0),
       TEXT("E"),
       1);
 
@@ -195,8 +195,8 @@ void AECPerformanceTestSetup::setupForTilesetF0(
 
   setupForLocation(
       context,
-      FVector(-89.28925, 34.95378, 936.496303),
-      FRotator(-35.27493, 135.005217, 0),
+      FVector(-89.298164, 34.946326, 117.802649),
+      FRotator(-19.239172, 0.609666, 0),
       TEXT("F"),
       0);
 
@@ -209,8 +209,8 @@ void AECPerformanceTestSetup::setupForTilesetF1(
 
   setupForLocation(
       context,
-      FVector(-89.28925, 34.95378, 936.496303),
-      FRotator(-35.27493, 135.005217, 0),
+      FVector(-89.298164, 34.946326, 117.802649),
+      FRotator(-19.239172, 0.609666, 0),
       TEXT("F"),
       1);
 
@@ -223,8 +223,8 @@ void AECPerformanceTestSetup::setupForTilesetG0(
 
   setupForLocation(
       context,
-      FVector(-104.768621, 41.05502, 4467.448873),
-      FRotator(-27.22203, 135.998267, 0),
+      FVector(-104.821185, 41.022095, 2310.360097),
+      FRotator(-79.844101, 1.209228, 0),
       TEXT("G"),
       0);
 
@@ -237,8 +237,8 @@ void AECPerformanceTestSetup::setupForTilesetG1(
 
   setupForLocation(
       context,
-      FVector(-104.768621, 41.05502, 4467.448873),
-      FRotator(-27.22203, 135.998267, 0),
+      FVector(-104.821185, 41.022095, 2310.360097),
+      FRotator(-79.844101, 1.209228, 0),
       TEXT("G"),
       1);
 
@@ -251,8 +251,8 @@ void AECPerformanceTestSetup::setupForTilesetH0(
 
   setupForLocation(
       context,
-      FVector(0.024799, 0.023635, 2729.545791),
-      FRotator(-35.498595, 132.799711, 0),
+      FVector(-0.002553, 0.001267, 279.320775),
+      FRotator(-67.327954, 58.70202, 0),
       TEXT("H"),
       0);
 
@@ -265,8 +265,8 @@ void AECPerformanceTestSetup::setupForTilesetH1(
 
   setupForLocation(
       context,
-      FVector(0.024799, 0.023635, 2729.545791),
-      FRotator(-35.498595, 132.799711, 0),
+      FVector(-0.002553, 0.001267, 279.320775),
+      FRotator(-67.327954, 58.70202, 0),
       TEXT("H"),
       1);
 
@@ -279,8 +279,8 @@ void AECPerformanceTestSetup::setupForTilesetI0(
 
   setupForLocation(
       context,
-      FVector(0.024799, 0.023635, 2729.545791),
-      FRotator(-35.498595, 132.799711, 0),
+      FVector(-0.002553, 0.001267, 279.320775),
+      FRotator(-67.327954, 58.70202, 0),
       TEXT("I"),
       0);
 
@@ -293,8 +293,8 @@ void AECPerformanceTestSetup::setupForTilesetI1(
 
   setupForLocation(
       context,
-      FVector(0.024799, 0.023635, 2729.545791),
-      FRotator(-35.498595, 132.799711, 0),
+      FVector(-0.002553, 0.001267, 279.320775),
+      FRotator(-67.327954, 58.70202, 0),
       TEXT("I"),
       1);
 
@@ -307,8 +307,8 @@ void AECPerformanceTestSetup::setupForTilesetJ0(
 
   setupForLocation(
       context,
-      FVector(145.052347, -37.799518, 2906.153212),
-      FRotator(-44.324084, -30.737397, 0),
+      FVector(145.081106, -37.779139, 42.869058),
+      FRotator(-18.699018, -155.221659, 0),
       TEXT("J"),
       0);
 
@@ -321,8 +321,8 @@ void AECPerformanceTestSetup::setupForTilesetJ1(
 
   setupForLocation(
       context,
-      FVector(145.052347, -37.799518, 2906.153212),
-      FRotator(-44.324084, -30.737397, 0),
+      FVector(145.081106, -37.779139, 42.869058),
+      FRotator(-18.699018, -155.221659, 0),
       TEXT("J"),
       1);
 
@@ -335,8 +335,8 @@ void AECPerformanceTestSetup::setupForTilesetK0(
 
   setupForLocation(
       context,
-      FVector(151.17909, -33.934336, 205.811273),
-      FRotator(-31.855117, -89.983212, 0),
+      FVector(151.177915, -33.932124, 42.869058),
+      FRotator(-20.959633, -11.467612, 0),
       TEXT("K"),
       0);
 
@@ -349,8 +349,8 @@ void AECPerformanceTestSetup::setupForTilesetK1(
 
   setupForLocation(
       context,
-      FVector(151.17909, -33.934336, 205.811273),
-      FRotator(-31.855117, -89.983212, 0),
+      FVector(151.177915, -33.932124, 42.869058),
+      FRotator(-20.959633, -11.467612, 0),
       TEXT("K"),
       1);
 
@@ -363,8 +363,8 @@ void AECPerformanceTestSetup::setupForTilesetL0(
 
   setupForLocation(
       context,
-      FVector(0.015221, 0.01461, 1384.564112),
-      FRotator(-51.709758, 127.227448, 0),
+      FVector(0.009731, 0.003466, -874.879431),
+      FRotator(-38.473705, 134.796517, 0),
       TEXT("L"),
       0);
 
@@ -377,8 +377,8 @@ void AECPerformanceTestSetup::setupForTilesetL1(
 
   setupForLocation(
       context,
-      FVector(0.015221, 0.01461, 1384.564112),
-      FRotator(-51.709758, 127.227448, 0),
+      FVector(0.009731, 0.003466, -874.879431),
+      FRotator(-38.473705, 134.796517, 0),
       TEXT("L"),
       1);
 
@@ -391,8 +391,8 @@ void AECPerformanceTestSetup::setupForTilesetM0(
 
   setupForLocation(
       context,
-      FVector(153.052995, -27.552007, 233.12071),
-      FRotator(-35.266017, 134.999401, 0),
+      FVector(153.052168, -27.553686, 103.558762),
+      FRotator(-3.466836, -129.800314, 0),
       TEXT("M"),
       0);
 
@@ -405,8 +405,8 @@ void AECPerformanceTestSetup::setupForTilesetM1(
 
   setupForLocation(
       context,
-      FVector(153.052995, -27.552007, 233.12071),
-      FRotator(-35.266017, 134.999401, 0),
+      FVector(153.052168, -27.553686, 103.558762),
+      FRotator(-3.466836, -129.800314, 0),
       TEXT("M"),
       1);
 
@@ -419,8 +419,8 @@ void AECPerformanceTestSetup::setupForTilesetN0(
 
   setupForLocation(
       context,
-      FVector(151.17909, -33.934336, 205.811273),
-      FRotator(-31.855117, -89.983212, 0),
+      FVector(151.177915, -33.932124, 42.869058),
+      FRotator(-20.959633, -11.467612, 0),
       TEXT("N"),
       0);
 
@@ -433,8 +433,8 @@ void AECPerformanceTestSetup::setupForTilesetN1(
 
   setupForLocation(
       context,
-      FVector(151.17909, -33.934336, 205.811273),
-      FRotator(-31.855117, -89.983212, 0),
+      FVector(151.177915, -33.932124, 42.869058),
+      FRotator(-20.959633, -11.467612, 0),
       TEXT("N"),
       1);
 
@@ -447,8 +447,8 @@ void AECPerformanceTestSetup::setupForTilesetO0(
 
   setupForLocation(
       context,
-      FVector(151.178281, -33.931789, 165.032743),
-      FRotator(-43.506419, 118.707747, 0),
+      FVector(151.177265, -33.932771, 27.996889),
+      FRotator(-8.463267, -25.799784, 0),
       TEXT("O"),
       0);
 
@@ -461,8 +461,8 @@ void AECPerformanceTestSetup::setupForTilesetO1(
 
   setupForLocation(
       context,
-      FVector(151.178281, -33.931789, 165.032743),
-      FRotator(-43.506419, 118.707747, 0),
+      FVector(151.177265, -33.932771, 27.996889),
+      FRotator(-8.463267, -25.799784, 0),
       TEXT("O"),
       1);
 
@@ -475,8 +475,8 @@ void AECPerformanceTestSetup::setupForTilesetP0(
 
   setupForLocation(
       context,
-      FVector(151.097874, -33.809544, 550.42273),
-      FRotator(-35.270892, 134.996925, 0),
+      FVector(151.093434, -33.813435, 49.323094),
+      FRotator(-26.473443, 118.394261, 0),
       TEXT("P"),
       0);
 
@@ -489,8 +489,8 @@ void AECPerformanceTestSetup::setupForTilesetP1(
 
   setupForLocation(
       context,
-      FVector(151.097874, -33.809544, 550.42273),
-      FRotator(-35.270892, 134.996925, 0),
+      FVector(151.093434, -33.813435, 49.323094),
+      FRotator(-26.473443, 118.394261, 0),
       TEXT("P"),
       1);
 
@@ -503,8 +503,8 @@ void AECPerformanceTestSetup::setupForTilesetQ0(
 
   setupForLocation(
       context,
-      FVector(-87.836437, 28.589484, 13754.033049),
-      FRotator(-45.645534, -178.651315, 0),
+      FVector(-87.934045, 28.573852, -1.148601),
+      FRotator(12.000101, 165.278029, 0),
       TEXT("Q"),
       0);
 
@@ -517,8 +517,8 @@ void AECPerformanceTestSetup::setupForTilesetQ1(
 
   setupForLocation(
       context,
-      FVector(-87.836437, 28.589484, 13754.033049),
-      FRotator(-45.645534, -178.651315, 0),
+      FVector(-87.934045, 28.573852, -1.148601),
+      FRotator(12.000101, 165.278029, 0),
       TEXT("Q"),
       1);
 
@@ -531,8 +531,8 @@ void AECPerformanceTestSetup::setupForTilesetR0(
 
   setupForLocation(
       context,
-      FVector(151.094597, -33.813012, 274.949843),
-      FRotator(-49.466374, 140.998639, 0),
+      FVector(151.093155, -33.814459, 25.695306),
+      FRotator(-7.669473, -116.000782, 0),
       TEXT("R"),
       0);
 
@@ -545,8 +545,8 @@ void AECPerformanceTestSetup::setupForTilesetR1(
 
   setupForLocation(
       context,
-      FVector(151.094597, -33.813012, 274.949843),
-      FRotator(-49.466374, 140.998639, 0),
+      FVector(151.093155, -33.814459, 25.695306),
+      FRotator(-7.669473, -116.000782, 0),
       TEXT("R"),
       1);
 
