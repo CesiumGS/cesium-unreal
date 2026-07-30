@@ -13,23 +13,42 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumRuntime.h"
 
+#include <atomic>
 #include <vector>
 
 namespace {
 class BlueprintClassVectorStylingProvider
-    : public FGCObject,
-      public CesiumVectorOverlays::VectorStylingProvider {
+    : public CesiumVectorOverlays::VectorStylingProvider {
 public:
-  BlueprintClassVectorStylingProvider(UObject* pInterface) {
-    if (IsValid(pInterface)) {
-      this->_pInterface = pInterface;
-      RegisterGCObject();
+  BlueprintClassVectorStylingProvider(UObject* pObject) {
+    if (IsValid(pObject)) {
+      this->_pInterface = pObject;
+      if (this->IsInterfaceValid()) {
+        this->_useWorkerThread =
+            ICesiumVectorTilesStylingCallbacks::Execute_ShouldRunOnWorkerThread(
+                this->_pInterface.GetObject());
+      }
+      this->_blueprintCompileDelegate = GEditor->OnBlueprintPreCompile().AddRaw(
+          this,
+          &BlueprintClassVectorStylingProvider::OnBlueprintPreCompile);
     }
   }
 
-  ~BlueprintClassVectorStylingProvider() {
-    UnregisterGCObject();
-    this->_pInterface = nullptr;
+  virtual ~BlueprintClassVectorStylingProvider() {
+    GEditor->OnBlueprintPreCompile().Remove(this->_blueprintCompileDelegate);
+  }
+
+  void OnBlueprintPreCompile(UBlueprint* pBlueprint) {
+    if (this->_pInterface.GetObject() != nullptr &&
+        pBlueprint->GeneratedClass ==
+            this->_pInterface.GetObject()->GetClass()) {
+      CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
+      while (this->_pendingStylingJobs > 0) {
+        asyncSystem.dispatchMainThreadTasks();
+      }
+
+      this->_pInterface = nullptr;
+    }
   }
 
   CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
@@ -46,38 +65,46 @@ public:
       Metadata = FCesiumModelMetadata(model, *pStructuralMetadata);
     }
 
-    return asyncSystem.createResolvedFuture<bool>(true).thenInMainThread(
-        [this, Metadata, featureIds, points](bool /*result*/) {
-          std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
-          if (!this->IsInterfaceValid()) {
-            return result;
-          }
+    auto lambda = [this, Metadata, featureIds, points]() {
+      std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
+      ++this->_pendingStylingJobs;
+      if (!this->IsInterfaceValid()) {
+        --this->_pendingStylingJobs;
+        return result;
+      }
 
-          result.reserve(featureIds.size());
+      result.reserve(featureIds.size());
 
-          ICesiumVectorTilesStylingCallbacks::Execute_OnStylingBegin(
-              this->_pInterface.GetObject(),
-              Metadata);
+      ICesiumVectorTilesStylingCallbacks::Execute_OnStylingBegin(
+          this->_pInterface.GetObject(),
+          Metadata);
 
-          FCesiumVectorStyle OutStyle;
+      FCesiumVectorStyle OutStyle;
 
-          for (size_t i = 0; i < featureIds.size(); i++) {
-            if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePoint(
-                    this->_pInterface.GetObject(),
-                    featureIds[i],
-                    FVector(
-                        points[i].longitude,
-                        points[i].latitude,
-                        points[i].height),
-                    OutStyle)) {
-              result.emplace_back(OutStyle.toNative());
-            } else {
-              result.emplace_back(std::nullopt);
-            }
-          }
+      for (size_t i = 0; i < featureIds.size(); i++) {
+        if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePoint(
+                this->_pInterface.GetObject(),
+                featureIds[i],
+                FVector(
+                    points[i].longitude,
+                    points[i].latitude,
+                    points[i].height),
+                OutStyle)) {
+          result.emplace_back(OutStyle.toNative());
+        } else {
+          result.emplace_back(std::nullopt);
+        }
+      }
 
-          return result;
-        });
+      --this->_pendingStylingJobs;
+      return result;
+    };
+
+    if (this->_useWorkerThread) {
+      return asyncSystem.runInWorkerThread(lambda);
+    } else {
+      return asyncSystem.runInMainThread(lambda);
+    }
   }
 
   CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
@@ -95,44 +122,52 @@ public:
       Metadata = FCesiumModelMetadata(model, *pStructuralMetadata);
     }
 
-    return asyncSystem.createResolvedFuture<bool>(true).thenInMainThread(
-        [this, Metadata, featureIds, polylines](bool /*result*/) {
-          std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
-          if (!this->IsInterfaceValid()) {
-            return result;
-          }
+    auto lambda = [this, Metadata, featureIds, polylines]() {
+      std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
+      ++this->_pendingStylingJobs;
+      if (!this->IsInterfaceValid()) {
+        --this->_pendingStylingJobs;
+        return result;
+      }
 
-          result.reserve(featureIds.size());
+      result.reserve(featureIds.size());
 
-          ICesiumVectorTilesStylingCallbacks::Execute_OnStylingBegin(
-              this->_pInterface.GetObject(),
-              Metadata);
+      ICesiumVectorTilesStylingCallbacks::Execute_OnStylingBegin(
+          this->_pInterface.GetObject(),
+          Metadata);
 
-          FCesiumVectorStyle OutStyle;
-          TArray<FVector> PolylineLlh;
+      FCesiumVectorStyle OutStyle;
+      TArray<FVector> PolylineLlh;
 
-          for (size_t i = 0; i < featureIds.size(); i++) {
-            PolylineLlh.SetNum(polylines[i].size());
-            for (size_t j = 0; j < polylines[i].size(); j++) {
-              PolylineLlh[j] = FVector(
-                  polylines[i][j].longitude,
-                  polylines[i][j].latitude,
-                  polylines[i][j].height);
-            }
+      for (size_t i = 0; i < featureIds.size(); i++) {
+        PolylineLlh.SetNum(polylines[i].size());
+        for (size_t j = 0; j < polylines[i].size(); j++) {
+          PolylineLlh[j] = FVector(
+              polylines[i][j].longitude,
+              polylines[i][j].latitude,
+              polylines[i][j].height);
+        }
 
-            if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePolyline(
-                    this->_pInterface.GetObject(),
-                    featureIds[i],
-                    PolylineLlh,
-                    OutStyle)) {
-              result.emplace_back(OutStyle.toNative());
-            } else {
-              result.emplace_back(std::nullopt);
-            }
-          }
+        if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePolyline(
+                this->_pInterface.GetObject(),
+                featureIds[i],
+                PolylineLlh,
+                OutStyle)) {
+          result.emplace_back(OutStyle.toNative());
+        } else {
+          result.emplace_back(std::nullopt);
+        }
+      }
 
-          return result;
-        });
+      --this->_pendingStylingJobs;
+      return result;
+    };
+
+    if (this->_useWorkerThread) {
+      return asyncSystem.runInWorkerThread(lambda);
+    } else {
+      return asyncSystem.runInMainThread(lambda);
+    }
   }
 
   CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
@@ -150,59 +185,57 @@ public:
       Metadata = FCesiumModelMetadata(model, *pStructuralMetadata);
     }
 
-    return asyncSystem.createResolvedFuture<bool>(true).thenInMainThread(
-        [this, Metadata, featureIds, polygons](bool /*result*/) {
-          std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
-          if (!this->IsInterfaceValid()) {
-            return result;
-          }
+    auto lambda = [this, Metadata, featureIds, polygons]() {
+      std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
+      ++this->_pendingStylingJobs;
+      if (!this->IsInterfaceValid()) {
+        --this->_pendingStylingJobs;
+        return result;
+      }
 
-          result.reserve(featureIds.size());
+      result.reserve(featureIds.size());
 
-          ICesiumVectorTilesStylingCallbacks::Execute_OnStylingBegin(
-              this->_pInterface.GetObject(),
-              Metadata);
+      ICesiumVectorTilesStylingCallbacks::Execute_OnStylingBegin(
+          this->_pInterface.GetObject(),
+          Metadata);
 
-          FCesiumVectorStyle OutStyle;
-          TArray<FVector> PolygonLlh;
+      FCesiumVectorStyle OutStyle;
+      TArray<FVector> PolygonLlh;
 
-          for (size_t i = 0; i < featureIds.size(); i++) {
-            PolygonLlh.SetNum(polygons[i].size());
-            for (size_t j = 0; j < polygons[i].size(); j++) {
-              PolygonLlh[j] = FVector(
-                  polygons[i][j].longitude,
-                  polygons[i][j].latitude,
-                  polygons[i][j].height);
-            }
+      for (size_t i = 0; i < featureIds.size(); i++) {
+        PolygonLlh.SetNum(polygons[i].size());
+        for (size_t j = 0; j < polygons[i].size(); j++) {
+          PolygonLlh[j] = FVector(
+              polygons[i][j].longitude,
+              polygons[i][j].latitude,
+              polygons[i][j].height);
+        }
 
-            if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePolygon(
-                    this->_pInterface.GetObject(),
-                    featureIds[i],
-                    PolygonLlh,
-                    OutStyle)) {
-              result.emplace_back(OutStyle.toNative());
-            } else {
-              result.emplace_back(std::nullopt);
-            }
-          }
+        if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePolygon(
+                this->_pInterface.GetObject(),
+                featureIds[i],
+                PolygonLlh,
+                OutStyle)) {
+          result.emplace_back(OutStyle.toNative());
+        } else {
+          result.emplace_back(std::nullopt);
+        }
+      }
 
-          return result;
-        });
-  }
+      --this->_pendingStylingJobs;
+      return result;
+    };
 
-  // Inherited via FGCObject
-  void AddReferencedObjects(FReferenceCollector& Collector) override {
-    if (this->IsInterfaceValid()) {
-      Collector.AddReferencedObject(this->_pInterface.GetObjectRef());
+    if (this->_useWorkerThread) {
+      return asyncSystem.runInWorkerThread(lambda);
+    } else {
+      return asyncSystem.runInMainThread(lambda);
     }
   }
 
-  FString GetReferencerName() const override {
-    return TEXT("BlueprintClassVectorStylingProvider");
-  }
-
   inline bool IsInterfaceValid() {
-    return !this->_pInterface.GetObject()->HasAnyFlags(
+    return this->_pInterface.GetObject() != nullptr &&
+           !this->_pInterface.GetObject()->HasAnyFlags(
                EObjectFlags::RF_BeginDestroyed |
                EObjectFlags::RF_FinishDestroyed |
                EObjectFlags::RF_MirroredGarbage) &&
@@ -212,7 +245,10 @@ public:
   }
 
 private:
+  bool _useWorkerThread = false;
   TScriptInterface<ICesiumVectorTilesStylingCallbacks> _pInterface = nullptr;
+  FDelegateHandle _blueprintCompileDelegate;
+  std::atomic<int> _pendingStylingJobs = 0;
 };
 } // namespace
 
@@ -228,9 +264,17 @@ UCesiumVectorTilesRasterOverlay::CreateOverlay(
 
   std::shared_ptr<CesiumVectorOverlays::VectorStylingProvider>
       pStylingProvider = nullptr;
-  if (IsValid(this->StylingProvider)) {
+  if (this->StylingProviderType == ECesiumVectorStylingProviderType::Blueprint && IsValid(this->BlueprintStylingProvider)) {
+    if (!IsValid(this->_pStylingInterfaceObject)) {
+      this->_pStylingInterfaceObject =
+          NewObject<UObject>(this, this->BlueprintStylingProvider);
+    }
+
     pStylingProvider = std::make_shared<BlueprintClassVectorStylingProvider>(
-        NewObject<UObject>(GetTransientPackage(), this->StylingProvider));
+        this->_pStylingInterfaceObject);
+  } else if (
+      this->StylingProviderType == ECesiumVectorStylingProviderType::Lambda && this->LambdaStylingProvider.IsSet()) {
+    pStylingProvider = this->LambdaStylingProvider.GetValue()();
   }
 
   CesiumVectorOverlays::VectorTilesRasterOverlayOptions vectorOptions{

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CesiumVectorOverlays/VectorStylingProvider.h>
+
 #include "CesiumGeoJsonDocument.h"
 #include "CesiumIonServer.h"
 #include "CesiumModelMetadata.h"
@@ -11,6 +13,17 @@
 #include "CoreMinimal.h"
 #include "Delegates/Delegate.h"
 #include "CesiumVectorTilesRasterOverlay.generated.h"
+
+UENUM()
+enum class ECesiumVectorStylingProviderType : uint8 {
+  None = 0 UMETA(ToolTip = "Only the default style will be used."),
+  Blueprint = 1 UMETA(
+      ToolTip =
+          "Uses the Blueprint class implementing the ICesumVectorTilesStylingCallbacks interface specified in BlueprintStylingProvider."),
+  Lambda = 2 UMETA(
+      ToolTip =
+          "Calls the TFunction specified on the overlay using C++ to create a VectorStylingProvider directly.")
+};
 
 UINTERFACE(Blueprintable, MinimalAPI)
 class UCesiumVectorTilesStylingCallbacks : public UInterface {
@@ -61,6 +74,10 @@ public:
       FCesiumVectorStyle& OutVectorStyle) {
     return false;
   }
+
+  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  bool ShouldRunOnWorkerThread();
+  virtual bool ShouldRunOnWorkerThread_Implementation() { return false; }
 };
 
 /**
@@ -174,19 +191,32 @@ public:
    * If no style information is present in the vector tiles tileset, this style
    * will be used instead.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Styling")
   FCesiumVectorStyle DefaultStyle;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Styling")
+  ECesiumVectorStylingProviderType StylingProviderType =
+      ECesiumVectorStylingProviderType::None;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Cesium",
+      Category = "Cesium|Styling",
       meta =
-          (MustImplement =
+          (EditCondition =
+               "StylingProviderType == ECesiumVectorStylingProviderType::Blueprint",
+           MustImplement =
                "/Script/CesiumRuntime.CesiumVectorTilesStylingCallbacks"))
-  TSubclassOf<UObject> StylingProvider;
+  TSubclassOf<UObject> BlueprintStylingProvider;
+
+  TOptional<TFunction<std::shared_ptr<CesiumVectorOverlays::VectorStylingProvider>()>>
+      LambdaStylingProvider;
 
 protected:
   virtual std::unique_ptr<CesiumRasterOverlays::RasterOverlay> CreateOverlay(
       const CesiumRasterOverlays::RasterOverlayOptions& options = {}) override;
+
+private:
+  UPROPERTY(Transient)
+  UObject* _pStylingInterfaceObject;
 };
