@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -20,6 +20,7 @@
 #include "Templates/SharedPointer.h"
 
 #include <CesiumGltf/AccessorUtility.h>
+#include <CesiumGltf/ExtensionKhrBillboard.h>
 #include <CesiumGltf/Material.h>
 #include <CesiumGltf/MeshPrimitive.h>
 #include <CesiumGltf/Model.h>
@@ -224,6 +225,13 @@ struct LoadedNodeResult {
    * single instance.
    */
   TSharedPtr<FCesiumPrimitiveFeatures> pInstanceFeatures = nullptr;
+
+  /**
+   * The @ref CesiumGltf::ExtensionKhrBillboard extension on the node, if
+   * present. Indicates that the mesh should be billboarded in the Unreal
+   * material.
+   */
+  std::optional<CesiumGltf::ExtensionKhrBillboard> billboard = std::nullopt;
 };
 
 /**

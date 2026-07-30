@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -42,7 +42,7 @@ struct FCesiumPointAttenuationBatchElementUserData {
   FRHIShaderResourceView* TexCoordBuffer;
   uint32 NumTexCoords;
   uint32 bHasPointColors;
-  FVector3f AttenuationParameters;
+  FVector4f AttenuationParameters;
 };
 
 class FCesiumPointAttenuationBatchElementUserDataWrapper

@@ -16,7 +16,7 @@ endif()
 message(STATUS "Using Unreal Engine installation at $ENV{UNREAL_ENGINE_ROOT}")
 
 # Some old versions of UE used to have multiple versions of OpenSSL, with different versions used on different platforms.
-# That is no longer the case in UE 5.3, 5.4, and 5.5, but the below logic may need to change if that ever happens again.
+# That is no longer the case in UE 5.3+, but the below logic may need to change if that ever happens again.
 set(OPENSSL_VERSIONS_DIR "$ENV{UNREAL_ENGINE_ROOT}/Engine/Source/ThirdParty/OpenSSL")
 file(GLOB OPENSSL_POSSIBLE_ROOT_DIRS LIST_DIRECTORIES true "${OPENSSL_VERSIONS_DIR}/*")
 

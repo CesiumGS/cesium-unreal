@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfComponent.h"
 
@@ -44,16 +44,19 @@
 #include "VecMath.h"
 #include "mikktspace.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <CesiumGeometry/Axis.h>
 #include <CesiumGeometry/Rectangle.h>
 #include <CesiumGeometry/Transforms.h>
 #include <CesiumGltf/AccessorUtility.h>
 #include <CesiumGltf/AccessorView.h>
+#include <CesiumGltf/ExtensionBentleyMaterialsPointStyle.h>
 #include <CesiumGltf/ExtensionExtInstanceFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshFeatures.h>
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionExtMeshPrimitiveEdgeVisibility.h>
 #include <CesiumGltf/ExtensionExtPrimitiveVoxels.h>
+#include <CesiumGltf/ExtensionKhrBillboard.h>
 #include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
@@ -76,6 +79,7 @@
 #include <glm/mat3x3.hpp>
 #include <iostream>
 #include <type_traits>
+THIRD_PARTY_INCLUDES_END
 
 #if WITH_EDITOR
 #include "ScopedTransaction.h"
@@ -1713,8 +1717,7 @@ static void loadPrimitive(
   LODResources.bHasReversedDepthOnlyIndices = false;
 
   if (isTriangles) {
-    // UE 5.5 requires that we do this in order to avoid a crash when ray
-    // tracing is enabled.
+    // This is required in order to avoid a crash when ray-tracing is enabled.
     pRenderData->InitializeRayTracingRepresentationFromRenderingLODs();
   }
 
@@ -2319,6 +2322,11 @@ static void loadNode(
         nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
   }
 
+  if (const auto* pBillboardExtension =
+          node.getExtension<CesiumGltf::ExtensionKhrBillboard>()) {
+    result.billboard = *pBillboardExtension;
+  }
+
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
@@ -2647,6 +2655,7 @@ static void SetGltfParameterValues(
   }
   const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
+
   if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
@@ -3137,6 +3146,19 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
 namespace {
+void SetBillboardParameterValues(
+    UMaterialInstanceDynamic* pMaterial,
+    const std::optional<CesiumGltf::ExtensionKhrBillboard>& billboard,
+    const EMaterialParameterAssociation association,
+    const int32 index) {
+
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo(FName("isBillboard"), association, index),
+      billboard ? 1.0 : 0.0);
+
+  // Future TODO: support other properties in the KHR_billboard extension.
+}
+
 void addInstanceFeatureIds(
     UCesiumGltfInstancedComponent* pInstancedComponent,
     const FCesiumFeaturesMetadataDescription& featuresDescription) {
@@ -3210,8 +3232,11 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
     UCesiumGltfComponent* pGltf,
     ICesiumPrimitive* pCesiumPrimitive,
     const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
-    ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver) {
+    ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver,
+    const std::optional<CesiumGltf::ExtensionKhrBillboard>& billboard) {
+
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
+
   const CesiumGltf::Material& material =
       model.getSafe(model.materials, loadResult.materialIndex);
 
@@ -3237,6 +3262,7 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
 
   UMaterialInstanceDynamic* pMaterial = nullptr;
   FName ImportedSlotName = createNewMaterialName();
+
   if (pLifecycleEventReceiver) {
     // Possibility to override the material for this primitive
     pMaterial = pLifecycleEventReceiver->CreateMaterial(
@@ -3271,6 +3297,11 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
       model,
       loadResult,
       pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+  SetBillboardParameterValues(
+      pMaterial,
+      billboard,
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
 
@@ -3321,6 +3352,12 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
   }
 
   if (pCesiumData) {
+    SetBillboardParameterValues(
+        pMaterial,
+        billboard,
+        EMaterialParameterAssociation::LayerParameter,
+        0);
+
     SetGltfParameterValues(
         model,
         loadResult,
@@ -3440,6 +3477,7 @@ struct ConstructedPrimitiveComponent {
 };
 
 ConstructedPrimitiveComponent createPrimitiveComponent(
+    CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     const LoadedPrimitiveResult& loadResult,
     int32_t primitiveMode,
@@ -3473,10 +3511,19 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
     case CesiumGltf::MeshPrimitive::Mode::POINTS: {
       auto* pPointMesh =
           NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
-      pPointMesh->UsesAdditiveRefinement =
+      pPointMesh->usesAdditiveRefinement =
           tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
-      pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
-      pPointMesh->Dimensions = loadResult.dimensions;
+      pPointMesh->geometricError = static_cast<float>(tile.getGeometricError());
+      pPointMesh->dimensions = loadResult.dimensions;
+
+      const auto* pPointStyleExtension =
+          model.getSafe(model.materials, loadResult.materialIndex)
+              .getExtension<CesiumGltf::ExtensionBentleyMaterialsPointStyle>();
+      pPointMesh->diameter =
+          pPointStyleExtension
+              ? static_cast<int32>(pPointStyleExtension->diameter)
+              : 0;
+
       result.pAsMeshComponent = pPointMesh;
       result.pAsCesiumPrimitive = pPointMesh;
       break;
@@ -3663,7 +3710,8 @@ static void loadPrimitiveGameThreadPart(
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
-    const TMap<FString, FCesiumMetadataValue>& metadataStatistics) {
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
+    const std::optional<CesiumGltf::ExtensionKhrBillboard>& billboard) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -3676,6 +3724,7 @@ static void loadPrimitiveGameThreadPart(
       model.meshes[loadResult.meshIndex].primitives[loadResult.primitiveIndex];
 
   ConstructedPrimitiveComponent component = createPrimitiveComponent(
+      model,
       pGltf,
       loadResult,
       meshPrimitive.mode,
@@ -3714,7 +3763,8 @@ static void loadPrimitiveGameThreadPart(
           pGltf,
           pCesiumPrimitive,
           metadataStatistics,
-          pLifecycleEventReceiver);
+          pLifecycleEventReceiver,
+          billboard);
 
   pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
   pStaticMesh->SetLightingGuid();
@@ -3750,6 +3800,7 @@ static void loadPrimitiveGameThreadPart(
     simplifiedResult.transform = loadResult.transform;
 
     ConstructedPrimitiveComponent component = createPrimitiveComponent(
+        model,
         pGltf,
         simplifiedResult,
         CesiumGltf::MeshPrimitive::Mode::LINES,
@@ -3956,7 +4007,8 @@ UCesiumGltfComponent::CreateOffGameThread(
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures,
-              pReal->loadModelResult.metadataStatistics);
+              pReal->loadModelResult.metadataStatistics,
+              node.billboard);
         }
       }
     }

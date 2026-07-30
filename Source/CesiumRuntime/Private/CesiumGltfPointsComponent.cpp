@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumCompat.h"
@@ -7,9 +7,10 @@
 
 // Sets default values for this component's properties
 UCesiumGltfPointsComponent::UCesiumGltfPointsComponent()
-    : UsesAdditiveRefinement(false),
-      GeometricError(0),
-      Dimensions(glm::vec3(0)) {}
+    : usesAdditiveRefinement(false),
+      geometricError(0),
+      dimensions(glm::vec3(0)),
+      diameter(0) {}
 
 UCesiumGltfPointsComponent::~UCesiumGltfPointsComponent() {}
 
@@ -18,14 +19,13 @@ FPrimitiveSceneProxy* UCesiumGltfPointsComponent::CreateSceneProxy() {
     return nullptr;
   }
 
-  FCesiumGltfPointsSceneProxy* Proxy =
+  FCesiumGltfPointsSceneProxy* pProxy =
       new FCesiumGltfPointsSceneProxy(this, FSceneInterfaceWrapper(GetScene()));
 
-  FCesiumGltfPointsSceneProxyTilesetData TilesetData;
-  TilesetData.UpdateFromComponent(this);
-  Proxy->UpdateTilesetData(TilesetData);
+  pProxy->UpdateAttenuationData(
+      FCesiumGltfPointsSceneProxyAttenuationData(this));
 
-  return Proxy;
+  return pProxy;
 }
 
 void UCesiumGltfPointsComponent::OnCreatePhysicsState() {

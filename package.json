@@ -29,5 +29,8 @@
   "devDependencies": {
     "clang-format": "^1.5.0",
     "doxygen-awesome-css": "https://github.com/jothepro/doxygen-awesome-css#v2.3.4"
+  },
+  "dependencies": {
+    "clang-tidy": "^19.1.1"
   }
 }

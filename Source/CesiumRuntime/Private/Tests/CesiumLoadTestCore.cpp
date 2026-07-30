@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #if WITH_EDITOR
 
@@ -254,7 +254,7 @@ bool RunLoadTest(
       InitForPlayWhenReady(context.creationContext, context.playContext));
 
   // Make sure the player viewport is the correct size. This will not be the
-  // case otherwise in headless UE 5.5.
+  // case otherwise in headless UE 5.5+.
   ADD_LATENT_AUTOMATION_COMMAND(SetPlayerViewportSize(
       context.creationContext,
       context.playContext,

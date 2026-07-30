@@ -6,6 +6,11 @@
 
 - Removed support for Unreal Engine 5.5. Unreal Engine 5.6 or later is now required.
 
+##### Additions :tada:
+
+- Added support for rendering points with `BENTLEY_materials_points_style`.
+- Added basic support for billboarded meshes via the `KHR_billboard` extension.
+
 ### v2.28.0 - 2026-07-01
 
 This is the last release that will support Unreal 5.5. Future versions will require Unreal 5.6+.
