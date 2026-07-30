@@ -264,7 +264,9 @@ UCesiumVectorTilesRasterOverlay::CreateOverlay(
 
   std::shared_ptr<CesiumVectorOverlays::VectorStylingProvider>
       pStylingProvider = nullptr;
-  if (this->StylingProviderType == ECesiumVectorStylingProviderType::Blueprint && IsValid(this->BlueprintStylingProvider)) {
+  if (this->StylingProviderType ==
+          ECesiumVectorStylingProviderType::Blueprint &&
+      IsValid(this->BlueprintStylingProvider)) {
     if (!IsValid(this->_pStylingInterfaceObject)) {
       this->_pStylingInterfaceObject =
           NewObject<UObject>(this, this->BlueprintStylingProvider);
@@ -273,7 +275,8 @@ UCesiumVectorTilesRasterOverlay::CreateOverlay(
     pStylingProvider = std::make_shared<BlueprintClassVectorStylingProvider>(
         this->_pStylingInterfaceObject);
   } else if (
-      this->StylingProviderType == ECesiumVectorStylingProviderType::Lambda && this->LambdaStylingProvider.IsSet()) {
+      this->StylingProviderType == ECesiumVectorStylingProviderType::Lambda &&
+      this->LambdaStylingProvider.IsSet()) {
     pStylingProvider = this->LambdaStylingProvider.GetValue()();
   }
 

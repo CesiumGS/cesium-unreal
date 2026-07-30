@@ -209,7 +209,8 @@ public:
                "/Script/CesiumRuntime.CesiumVectorTilesStylingCallbacks"))
   TSubclassOf<UObject> BlueprintStylingProvider;
 
-  TOptional<TFunction<std::shared_ptr<CesiumVectorOverlays::VectorStylingProvider>()>>
+  TOptional<
+      TFunction<std::shared_ptr<CesiumVectorOverlays::VectorStylingProvider>()>>
       LambdaStylingProvider;
 
 protected:

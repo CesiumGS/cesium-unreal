@@ -52,3 +52,5 @@ if(DEFINED ENV{CI})
     endif()
   endif()
 endif()
+
+set(VCPKG_PLATFORM_TOOLSET_VERSION "14.44")
