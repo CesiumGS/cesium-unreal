@@ -60,9 +60,9 @@ protected:
 
   virtual FPrimitiveViewRelevance
   GetViewRelevance(const FSceneView* View) const override;
-
   virtual uint32 GetMemoryFootprint(void) const override;
 
+  virtual bool CanBeOccluded() const override;
 public:
   /**
    * @brief Updates the attenuation data for this scene proxy.

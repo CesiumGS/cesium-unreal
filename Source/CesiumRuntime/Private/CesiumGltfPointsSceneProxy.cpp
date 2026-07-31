@@ -90,8 +90,8 @@ void FCesiumGltfPointsSceneProxy::GetDynamicMeshElements(
   useAttenuation &= this->_attenuationSupported;
 
   for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
-    if (VisibilityMap & (1 << ViewIndex)) {
-      const FSceneView* View = Views[ViewIndex];
+    const FSceneView* View = Views[ViewIndex];
+    if (IsShown(View) && VisibilityMap & (1 << ViewIndex)) {
       FMeshBatch& Mesh = Collector.AllocateMesh();
       if (useAttenuation) {
         CreateMeshWithAttenuation(Mesh, View, Collector);
@@ -107,8 +107,8 @@ FPrimitiveViewRelevance
 FCesiumGltfPointsSceneProxy::GetViewRelevance(const FSceneView* View) const {
   FPrimitiveViewRelevance Result;
   Result.bDrawRelevance = IsShown(View);
-  // Always render dynamically; the appearance of the points can change
-  // via point cloud shading.
+  // Always render dynamically; the appearance of the points can
+  // change via point cloud shading.
   Result.bDynamicRelevance = true;
   Result.bStaticRelevance = false;
 
@@ -117,17 +117,24 @@ FCesiumGltfPointsSceneProxy::GetViewRelevance(const FSceneView* View) const {
   Result.bRenderInDepthPass = ShouldRenderInDepthPass();
   Result.bUsesLightingChannels =
       GetLightingChannelMask() != GetDefaultLightingChannelMask();
+
   Result.bShadowRelevance = IsShadowCast(View);
-  Result.bVelocityRelevance =
-      IsMovable() & Result.bOpaque & Result.bRenderInMainPass;
+  Result.bTranslucentSelfShadow = this->bCastVolumetricTranslucentShadow;
 
   this->_materialRelevance.SetPrimitiveViewRelevance(Result);
+
+  Result.bVelocityRelevance =
+      DrawsVelocity() && Result.bOpaque && Result.bRenderInMainPass;
 
   return Result;
 }
 
 uint32 FCesiumGltfPointsSceneProxy::GetMemoryFootprint(void) const {
   return (sizeof(*this) + GetAllocatedSize());
+}
+
+bool FCesiumGltfPointsSceneProxy::CanBeOccluded() const {
+  return !this->_materialRelevance.bDisableDepthTest;
 }
 
 void FCesiumGltfPointsSceneProxy::UpdateAttenuationData(

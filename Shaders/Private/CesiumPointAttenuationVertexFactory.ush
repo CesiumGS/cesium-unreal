@@ -160,14 +160,9 @@ half3x3 CalculateTangentToWorldNoScale(half3x3 TangentToLocal)
   	return mul(TangentToLocal, LocalToWorld);
 }
 
-FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
+float2 GetCornerOffset(uint CornerIndex)
 {
-  	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates) 0;
-  	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
-    
-  	uint PointIndex = Input.VertexId / 4;
-  	uint CornerIndex = Input.VertexId - (PointIndex * 4);
-   	// These offsets generate the quad like so:
+  	// These offsets generate the quad like so:
    	// 1 --- 2
   	// |  /  |
   	// 0 --- 3
@@ -178,13 +173,21 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
 
   	// Results in -0.5 for 0, 1 and 0.5 for 2, 3
   	float OffsetX = CornerIndex / 2 - 0.5;
-  	float OffsetY = -0.5f;
-  	if (CornerIndex == 1 || CornerIndex == 2) {
-   	  	OffsetY = 0.5;
-  	}
+  	float OffsetY = (CornerIndex == 1 || CornerIndex == 2) ? -0.5f : 0.5f;
+  	return float2(OffsetX, OffsetY);
+}
+
+FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
+{
+  	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates) 0;
+  	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
+    
+  	uint PointIndex = Input.VertexId / 4;
+  	uint CornerIndex = Input.VertexId - (PointIndex * 4);
+   
 
   	Intermediates.PointIndex = PointIndex;
-  	Intermediates.CornerOffset = float2(OffsetX, OffsetY);
+  	Intermediates.CornerOffset = GetCornerOffset(CornerIndex);
 
   	Intermediates.Position.x = PositionBuffer[PointIndex * 3 + 0];
   	Intermediates.Position.y = PositionBuffer[PointIndex * 3 + 1];
@@ -312,15 +315,12 @@ float3 VertexFactoryGetInstanceSpacePosition(FVertexFactoryInput Input, FVertexF
   return Intermediates.Position;
 }
 
-float4 AttenuatePosition(
-  	FVertexFactoryInput Input,
-  	FVertexFactoryIntermediates Intermediates,
-  	float4 InWorldPosition)
+float4 AttenuatePosition(float4 InWorldPosition, float2 CornerOffset)
 {
   float4 PositionView = mul(InWorldPosition, ResolvedView.TranslatedWorldToView);
   float4 PositionClip = mul(InWorldPosition, ResolvedView.TranslatedWorldToClip);
   	
-  float2 PixelOffset = Intermediates.CornerOffset;
+  float2 PixelOffset = CornerOffset;
   float Diameter = AttenuationParameters.w;
   if (Diameter >= 1.0f)
   {
@@ -350,6 +350,7 @@ float4 AttenuatePosition(
 float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates)
 {
 	float4 WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position, Intermediates.SceneData.Primitive.LocalToWorld);
+  float4 AttenuatedPosition = AttenuatePosition(WorldPosition, Intermediates.CornerOffset);
   return WorldPosition * Intermediates.IsVisible;
 }
 
@@ -358,7 +359,9 @@ float4 VertexFactoryGetWorldPosition(FPositionOnlyVertexFactoryInput Input)
 {
   	FSceneDataIntermediates Intermediates = VF_GPUSCENE_GET_INTERMEDIATES(Input);
   	float4 Position = GetPointPosition(Input.VertexId);
-  	return TransformLocalToTranslatedWorld(Position, Intermediates.InstanceData.LocalToWorld);
+  	float2 CornerOffset = GetCornerOffset(Input.VertexId % 4);
+  	float4 WorldPosition = TransformLocalToTranslatedWorld(Position, Intermediates.InstanceData.LocalToWorld);
+  	return AttenuatePosition(WorldPosition, CornerOffset);
 }
 
 /** for depth-only pass (slope depth bias) */
@@ -366,7 +369,9 @@ float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput In
 {
   	FSceneDataIntermediates Intermediates = VF_GPUSCENE_GET_INTERMEDIATES(Input);
   	float4 Position = GetPointPosition(Input.VertexId);
-  	return TransformLocalToTranslatedWorld(Position, Intermediates.InstanceData.LocalToWorld);
+  	float2 CornerOffset = GetCornerOffset(Input.VertexId % 4);
+  	float4 WorldPosition = TransformLocalToTranslatedWorld(Position, Intermediates.InstanceData.LocalToWorld);
+  	return AttenuatePosition(WorldPosition, CornerOffset);
 }
 
 float4 VertexFactoryGetRasterizedWorldPosition(
@@ -374,7 +379,7 @@ float4 VertexFactoryGetRasterizedWorldPosition(
   	FVertexFactoryIntermediates Intermediates,
   	float4 InWorldPosition)
 {
-  return AttenuatePosition(Input, Intermediates, InWorldPosition);
+  	return InWorldPosition;
 }
 
 float3 VertexFactoryGetPositionForVertexLighting(
@@ -382,7 +387,7 @@ float3 VertexFactoryGetPositionForVertexLighting(
   	FVertexFactoryIntermediates Intermediates,
   	float3 TranslatedWorldPosition)
 {
-  return TranslatedWorldPosition;
+  	return TranslatedWorldPosition;
 }
 
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)
@@ -475,7 +480,7 @@ FMaterialPixelParameters GetMaterialPixelParameters(FVertexFactoryInterpolantsVS
   	Result.Particle.Color = half4(1, 1, 1, 1);
   	Result.TwoSidedSign = 1;
   	Result.VertexColor = Interpolants.Color;
-  
+
   	if (Interpolants.CornerOffset.x != 0 || Interpolants.CornerOffset.y != 0)
   	{
   	  	// Rounds length to 0 for < 0.5, and 1 >= 0.5.
