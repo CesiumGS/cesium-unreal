@@ -14,6 +14,10 @@
 #include "Delegates/Delegate.h"
 #include "CesiumVectorTilesRasterOverlay.generated.h"
 
+/**
+ * Determines the styling provider to be used to provide styling information for
+ * individual features.
+ */
 UENUM()
 enum class ECesiumVectorStylingProviderType : uint8 {
   None = 0 UMETA(ToolTip = "Only the default style will be used."),
@@ -34,11 +38,21 @@ class ICesiumVectorTilesStylingCallbacks {
   GENERATED_BODY()
 
 public:
+  /**
+   * This function is called before styling begins. It should be used to look up
+   * metadata property tables and store them for use in the styling functions.
+   */
   UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
   void OnStylingBegin(const FCesiumModelMetadata& InModelMetadata);
   virtual void
   OnStylingBegin_Implementation(const FCesiumModelMetadata& InModelMetadata) {}
 
+  /**
+   * This function is called for each individual point feature.
+   *
+   * If it returns false, the default style will be used for this feature. If it
+   * returns true, the "Out Vector Style" will be used for this feature.
+   */
   UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
   bool OnStylePoint(
       int64 InFeatureId,
@@ -51,6 +65,12 @@ public:
     return false;
   }
 
+  /**
+   * This function is called for each individual polyline feature.
+   *
+   * If it returns false, the default style will be used for this feature. If it
+   * returns true, the "Out Vector Style" will be used for this feature.
+   */
   UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
   bool OnStylePolyline(
       int64 InFeatureId,
@@ -63,6 +83,12 @@ public:
     return false;
   }
 
+  /**
+   * This function is called for each individual polygon feature.
+   *
+   * If it returns false, the default style will be used for this feature. If it
+   * returns true, the "Out Vector Style" will be used for this feature.
+   */
   UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
   bool OnStylePolygon(
       int64 InFeatureId,
@@ -74,10 +100,6 @@ public:
       FCesiumVectorStyle& OutVectorStyle) {
     return false;
   }
-
-  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-  bool ShouldRunOnWorkerThread();
-  virtual bool ShouldRunOnWorkerThread_Implementation() { return false; }
 };
 
 /**
@@ -194,10 +216,25 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Styling")
   FCesiumVectorStyle DefaultStyle;
 
+  /**
+   * The styling provider to use to apply styling information to individual
+   * features.
+   *
+   * If this is set to None, the DefaultStyle will be used for all features.
+   */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Styling")
   ECesiumVectorStylingProviderType StylingProviderType =
       ECesiumVectorStylingProviderType::None;
 
+  /**
+   * The Blueprint class that will be instantiated to provide styling
+   * information for features when StylingProviderType is set to Blueprint.
+   *
+   * Because Blueprints in Unreal need to run on the main thread, a Blueprint
+   * styling provider can cause significant performance degradation when styling
+   * large numbers of features. If improved performance is required, styling via
+   * C++ via the LambdaStylingProvider property should be used instead.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -209,6 +246,11 @@ public:
                "/Script/CesiumRuntime.CesiumVectorTilesStylingCallbacks"))
   TSubclassOf<UObject> BlueprintStylingProvider;
 
+  /**
+   * The lambda that will be called to instantiate a
+   * `CesiumVectorOverlays::VectorStylingProvider` when StylingProviderType is
+   * set to Lambda.
+   */
   TOptional<
       TFunction<std::shared_ptr<CesiumVectorOverlays::VectorStylingProvider>()>>
       LambdaStylingProvider;

@@ -23,17 +23,15 @@ public:
   BlueprintClassVectorStylingProvider(UObject* pObject) {
     if (IsValid(pObject)) {
       this->_pInterface = pObject;
-      if (this->IsInterfaceValid()) {
-        this->_useWorkerThread =
-            ICesiumVectorTilesStylingCallbacks::Execute_ShouldRunOnWorkerThread(
-                this->_pInterface.GetObject());
-      }
+#ifdef WITH_EDITOR
       this->_blueprintCompileDelegate = GEditor->OnBlueprintPreCompile().AddRaw(
           this,
           &BlueprintClassVectorStylingProvider::OnBlueprintPreCompile);
+#endif
     }
   }
 
+#ifdef WITH_EDITOR
   virtual ~BlueprintClassVectorStylingProvider() {
     GEditor->OnBlueprintPreCompile().Remove(this->_blueprintCompileDelegate);
   }
@@ -50,6 +48,7 @@ public:
       this->_pInterface = nullptr;
     }
   }
+#endif
 
   CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
   onStylePoints(
@@ -100,11 +99,7 @@ public:
       return result;
     };
 
-    if (this->_useWorkerThread) {
-      return asyncSystem.runInWorkerThread(lambda);
-    } else {
-      return asyncSystem.runInMainThread(lambda);
-    }
+    return asyncSystem.runInMainThread(lambda);
   }
 
   CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
@@ -163,11 +158,7 @@ public:
       return result;
     };
 
-    if (this->_useWorkerThread) {
-      return asyncSystem.runInWorkerThread(lambda);
-    } else {
-      return asyncSystem.runInMainThread(lambda);
-    }
+    return asyncSystem.runInMainThread(lambda);
   }
 
   CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
@@ -226,11 +217,7 @@ public:
       return result;
     };
 
-    if (this->_useWorkerThread) {
-      return asyncSystem.runInWorkerThread(lambda);
-    } else {
-      return asyncSystem.runInMainThread(lambda);
-    }
+    return asyncSystem.runInMainThread(lambda);
   }
 
   inline bool IsInterfaceValid() {
@@ -245,7 +232,6 @@ public:
   }
 
 private:
-  bool _useWorkerThread = false;
   TScriptInterface<ICesiumVectorTilesStylingCallbacks> _pInterface = nullptr;
   FDelegateHandle _blueprintCompileDelegate;
   std::atomic<int> _pendingStylingJobs = 0;
