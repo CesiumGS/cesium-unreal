@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.29.0 - 2026-08-03
 
 ##### Breaking Changes :mega:
 
@@ -9,7 +9,6 @@
 ##### Additions :tada:
 
 - Added support for rendering points with `BENTLEY_materials_points_style`.
-- Added basic support for billboarded meshes via the `KHR_billboard` extension.
 
 ### v2.28.0 - 2026-07-01
 

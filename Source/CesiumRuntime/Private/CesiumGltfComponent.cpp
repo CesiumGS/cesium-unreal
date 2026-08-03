@@ -56,7 +56,6 @@ THIRD_PARTY_INCLUDES_START
 #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
 #include <CesiumGltf/ExtensionExtMeshPrimitiveEdgeVisibility.h>
 #include <CesiumGltf/ExtensionExtPrimitiveVoxels.h>
-#include <CesiumGltf/ExtensionKhrBillboard.h>
 #include <CesiumGltf/ExtensionKhrGaussianSplatting.h>
 #include <CesiumGltf/ExtensionKhrMaterialsUnlit.h>
 #include <CesiumGltf/ExtensionKhrTextureTransform.h>
@@ -2322,11 +2321,6 @@ static void loadNode(
         nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
   }
 
-  if (const auto* pBillboardExtension =
-          node.getExtension<CesiumGltf::ExtensionKhrBillboard>()) {
-    result.billboard = *pBillboardExtension;
-  }
-
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     if (const auto* pGpuInstancingExtension =
@@ -2655,7 +2649,6 @@ static void SetGltfParameterValues(
   }
   const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness.value_or(defaultPbrMetallicRoughness);
-
   if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
@@ -3146,19 +3139,6 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #pragma endregion
 
 namespace {
-void SetBillboardParameterValues(
-    UMaterialInstanceDynamic* pMaterial,
-    const std::optional<CesiumGltf::ExtensionKhrBillboard>& billboard,
-    const EMaterialParameterAssociation association,
-    const int32 index) {
-
-  pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo(FName("isBillboard"), association, index),
-      billboard ? 1.0 : 0.0);
-
-  // Future TODO: support other properties in the KHR_billboard extension.
-}
-
 void addInstanceFeatureIds(
     UCesiumGltfInstancedComponent* pInstancedComponent,
     const FCesiumFeaturesMetadataDescription& featuresDescription) {
@@ -3232,11 +3212,8 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
     UCesiumGltfComponent* pGltf,
     ICesiumPrimitive* pCesiumPrimitive,
     const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
-    ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver,
-    const std::optional<CesiumGltf::ExtensionKhrBillboard>& billboard) {
-
+    ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetupMaterial)
-
   const CesiumGltf::Material& material =
       model.getSafe(model.materials, loadResult.materialIndex);
 
@@ -3262,7 +3239,6 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
 
   UMaterialInstanceDynamic* pMaterial = nullptr;
   FName ImportedSlotName = createNewMaterialName();
-
   if (pLifecycleEventReceiver) {
     // Possibility to override the material for this primitive
     pMaterial = pLifecycleEventReceiver->CreateMaterial(
@@ -3297,11 +3273,6 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
       model,
       loadResult,
       pMaterial,
-      EMaterialParameterAssociation::GlobalParameter,
-      INDEX_NONE);
-  SetBillboardParameterValues(
-      pMaterial,
-      billboard,
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
 
@@ -3352,12 +3323,6 @@ UMaterialInstanceDynamic* createPrimitiveMaterialInstance(
   }
 
   if (pCesiumData) {
-    SetBillboardParameterValues(
-        pMaterial,
-        billboard,
-        EMaterialParameterAssociation::LayerParameter,
-        0);
-
     SetGltfParameterValues(
         model,
         loadResult,
@@ -3710,8 +3675,7 @@ static void loadPrimitiveGameThreadPart(
     ACesium3DTileset* pTilesetActor,
     const std::vector<FTransform>& instanceTransforms,
     const TSharedPtr<FCesiumPrimitiveFeatures>& pInstanceFeatures,
-    const TMap<FString, FCesiumMetadataValue>& metadataStatistics,
-    const std::optional<CesiumGltf::ExtensionKhrBillboard>& billboard) {
+    const TMap<FString, FCesiumMetadataValue>& metadataStatistics) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
 #if DEBUG_GLTF_ASSET_NAMES
@@ -3763,8 +3727,7 @@ static void loadPrimitiveGameThreadPart(
           pGltf,
           pCesiumPrimitive,
           metadataStatistics,
-          pLifecycleEventReceiver,
-          billboard);
+          pLifecycleEventReceiver);
 
   pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
   pStaticMesh->SetLightingGuid();
@@ -4007,8 +3970,7 @@ UCesiumGltfComponent::CreateOffGameThread(
               pTilesetActor,
               node.InstanceTransforms,
               node.pInstanceFeatures,
-              pReal->loadModelResult.metadataStatistics,
-              node.billboard);
+              pReal->loadModelResult.metadataStatistics);
         }
       }
     }
