@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.29.0 - 2026-08-03
 
 ##### Breaking Changes :mega:
 
