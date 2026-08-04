@@ -1,0 +1,36 @@
+name: Build Unreal Image
+on: [workflow_dispatch]
+jobs:
+  Linux56:
+    uses: ./.github/workflows/imageLinux.yml
+    secrets: inherit
+    with:
+      snapshot-name: unreal-linux-5.6
+      runner-label: ubuntu-latest-m
+      unreal-engine-version: "5.6.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.6.0/Linux_Unreal_Engine_5.6.0.zip"
+      unreal-program-name: "UE_5.6"
+      upload-package-base-name: "CesiumForUnreal-56-linux"
+      clang-version: "v25_clang-18.1.0-rockylinux8"
+  Linux57:
+    uses: ./.github/workflows/imageLinux.yml
+    secrets: inherit
+    with:
+      snapshot-name: unreal-linux-5.7
+      runner-label: ubuntu-latest-m
+      unreal-engine-version: "5.7.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.7.0/Linux_Unreal_Engine_5.7.0.zip"
+      unreal-program-name: "UE_5.7"
+      upload-package-base-name: "CesiumForUnreal-57-linux"
+      clang-version: "v26_clang-20.1.8-rockylinux8"
+  Linux58:
+    uses: ./.github/workflows/imageLinux.yml
+    secrets: inherit
+    with:
+      snapshot-name: unreal-linux-5.8
+      runner-label: ubuntu-latest-m
+      unreal-engine-version: "5.8.0"
+      unreal-engine-zip: "s3://cesium-unreal-engine/5.8.0/Linux_Unreal_Engine_5.8.0.zip"
+      unreal-program-name: "UE_5.8"
+      upload-package-base-name: "CesiumForUnreal-58-linux"
+      clang-version: "v26_clang-20.1.8-rockylinux8"

@@ -1,0 +1,152 @@
+name: Build Linux Image
+
+on:
+  workflow_call:
+    inputs:
+      snapshot-name:
+        required: true
+        type: string
+      runner-label:
+        required: true
+        type: string
+      unreal-engine-version:
+        required: true
+        type: string
+      unreal-engine-zip:
+        required: true
+        type: string
+      unreal-program-name:
+        required: true
+        type: string
+      upload-package-base-name:
+        required: true
+        type: string
+      extra-choco-packages:
+        required: false
+        type: string
+        default: ''
+      clang-version:
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ${{ inputs.runner-label }}
+    snapshot: ${{ inputs.snapshot-name }}
+    steps:
+      - name: Display system info
+        run: |
+          sudo swapon --show
+          cat /proc/meminfo
+          apt list --installed
+          sudo dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
+          sudo snap list
+      - name: Create some space to work in /mnt
+        run: |
+          sudo mkdir /mnt/work
+          sudo chown $(whoami) /mnt/work
+      - name: Install CMake
+        run: |
+          wget https://github.com/Kitware/CMake/releases/download/v4.4.0-rc2/cmake-4.4.0-rc2-linux-x86_64.tar.gz
+          tar -xvf cmake-4.4.0-rc2-linux-x86_64.tar.gz
+          sudo cp -R cmake-4.4.0-rc2-linux-x86_64/* /usr/
+      - name: Check out minimal build files
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+      - name: Prune unneeded packages
+        run: |
+          sudo apt update
+          export PACKAGES_REMOVE=$(sudo node ./.github/linux-prune-packages.js)
+          echo $PACKAGES_REMOVE
+          sudo apt remove -y $PACKAGES_REMOVE
+          df -h
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /var/lib/apache2 || true
+          df -h
+      - name: Remove cruft
+        run: |
+          sudo rm -rf /home/runner/.rustup || true
+          sudo rm -rf /home/runner/.cargo || true
+          sudo rm -rf /home/runner/.dotnet || true
+          sudo rm -rf /var/lib/mysql || true
+          sudo rm -rf /var/lib/postgresql || true
+          sudo rm -rf /var/lib/gems || true
+          sudo rm -rf /usr/share/swift || true
+          sudo rm -rf /usr/share/.ghcup || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/local/lib/node_modules || true
+          sudo rm -rf /usr/local/julia* || true
+          sudo rm -rf /usr/share/miniconda || true
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/share/az_15.6.1 || true
+          sudo rm -rf /usr/share/gradle-* || true
+          sudo rm -rf /usr/libexec/docker || true
+          sudo rm -rf /usr/local/sqlpackage || true
+          sudo rm -rf /usr/share/kotlinc || true
+          sudo rm -rf /usr/share/java || true
+          sudo rm -rf /usr/local/share/chromedriver-linux64 || true
+          sudo rm -rf /usr/share/apache-maven-* || true
+          sudo rm -rf /usr/doc/* || true
+      - name: Print Detailed Disk Space Info
+        run: |
+          sudo du -h -d 3 /usr -t 10M | sort -h
+          sudo du -h -d 3 /var -t 10M | sort -h
+          sudo du -h -d 3 ~ -t 10M | sort -h
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "18.1"
+      - name: Print disk space free
+        run: |
+          df -h
+      - name: Install Unreal Engine
+        uses: ./.github/actions/install-unreal-linux
+        with:
+          unreal-engine-zip: ${{ inputs.unreal-engine-zip }}
+          unreal-program-name: ${{ inputs.unreal-program-name }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Remove AWS CLI
+        run: |
+          sudo rm -rf /usr/local/aws-cli || true
+          sudo rm -rf /usr/local/aws-sam-cli || true
+      - name: Configure vcpkg caching
+        uses: ./.github/actions/vcpkg-cache
+        with:
+          id: ${{ inputs.upload-package-base-name }}
+      - name: Remove now-unneeded packages
+        run: |
+          sudo apt remove -y git git-man unzip
+      - name: Install Ninja and patchelf
+        run: |
+          sudo apt install -y ninja-build patchelf
+          sudo apt clean
+          sudo rm -rf /var/lib/apt/lists/* || true
+      - name: Set environment variables
+        run: |
+          echo "UNREAL_ENGINE_ROOT=/mnt/work/${{ inputs.unreal-program-name }}" >> "~/.unreal-env"
+          echo "LINUX_MULTIARCH_ROOT=/mnt/work/${{ inputs.unreal-program-name }}/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/${{ inputs.clang-version }}/" >> "~/.unreal-env"
+      - name: Make more swap space available
+        run: |
+          sudo swapoff -a
+          sudo fallocate -l 10G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          sudo swapon --show
+      - name: Customize BuildConfiguration.xml
+        run: |
+          mkdir -p ~/.config/Unreal\ Engine/UnrealBuildTool
+          # - We limit parallel actions because our builds use a lot more memory than UBT thinks they will.
+          # - We set the source code control Provider to None so UBT includes all files in the unity build.
+          printf '<?xml version="1.0" encoding="utf-8" ?>\n<Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">\n    <BuildConfiguration>\n      <MaxParallelActions>2</MaxParallelActions>\n    </BuildConfiguration>\n    <SourceFileWorkingSet><Provider>None</Provider></SourceFileWorkingSet>\n</Configuration>\n' > ~/.config/Unreal\ Engine/UnrealBuildTool/BuildConfiguration.xml
+      - name: Print disk space free
+        run: |
+          df -h
+      # We need Node for actions/upload-artifact
+      - name: Reinstall Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
