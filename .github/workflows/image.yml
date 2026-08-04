@@ -1,5 +1,5 @@
 name: Build Unreal Image
-on: [workflow_dispatch]
+on: [push, workflow_dispatch]
 jobs:
   Linux56:
     uses: ./.github/workflows/imageLinux.yml
