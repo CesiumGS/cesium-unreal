@@ -1039,6 +1039,30 @@ private:
       Category = Rendering)
   int32 TranslucencySortPriority;
 
+public:
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+      bool FixedAreaLod = false;
+
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere)
+  double FixedAreaLatitude = 0.0;
+
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere)
+  double FixedAreaLongitude = 0.0;
+
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere)
+  double FixedAreaLatitudeExtent = 0.0;
+
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere)
+  double FixedAreaLongitudeExtent = 0.0;
+
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -1298,6 +1322,8 @@ private:
       const glm::dmat4& unrealWorldToTileset,
       UCesiumEllipsoid* ellipsoid);
 
+  Cesium3DTilesSelection::ViewState CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid);
+  
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
   std::vector<FCesiumCamera> GetSceneCaptures() const;
