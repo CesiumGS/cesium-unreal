@@ -1063,6 +1063,11 @@ public:
       EditAnywhere)
   double FixedAreaLongitudeExtent = 0.0;
 
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere)
+      double FixedGeometricError = 10000.0;
+
 protected:
   UPROPERTY()
   FString PlatformName;

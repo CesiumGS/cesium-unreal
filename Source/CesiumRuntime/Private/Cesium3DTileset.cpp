@@ -1714,7 +1714,7 @@ Cesium3DTilesSelection::ViewState ACesium3DTileset::CreateFixedLodViewState(UCes
           this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
           this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
           10000.0));
-  return Cesium3DTilesSelection::ViewState{builder.toRegion(), ellipsoid->GetNativeEllipsoid()};
+  return Cesium3DTilesSelection::ViewState{builder.toRegion(), this->FixedGeometricError, ellipsoid->GetNativeEllipsoid()};
 }
 
 #if WITH_EDITOR
