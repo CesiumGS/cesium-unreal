@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace {
-class BlueprintClassVectorStylingProvider
+class BlueprintClassVectorStylingProvider final
     : public CesiumVectorOverlays::VectorStylingProvider {
 public:
   BlueprintClassVectorStylingProvider(UObject* pObject) {
