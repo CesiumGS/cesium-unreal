@@ -259,7 +259,9 @@ UCesiumVectorTilesRasterOverlay::CreateOverlay(
       pStylingProvider = nullptr;
   if (this->StylingProviderType ==
           ECesiumVectorStylingProviderType::Blueprint &&
-      IsValid(this->BlueprintStylingProvider)) {
+      IsValid(this->BlueprintStylingProvider) &&
+      this->BlueprintStylingProvider->ImplementsInterface(
+          UCesiumVectorTilesStylingCallbacks::StaticClass())) {
     if (!IsValid(this->_pStylingInterfaceObject)) {
       this->_pStylingInterfaceObject =
           NewObject<UObject>(this, this->BlueprintStylingProvider);
