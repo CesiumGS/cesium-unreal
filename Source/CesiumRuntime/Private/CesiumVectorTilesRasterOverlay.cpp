@@ -11,7 +11,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumVectorStyle.h"
 
-#if WITH_EDITOR
+#ifdef WITH_EDITOR
 #include "Editor.h"
 #include "Engine/Blueprint.h"
 #endif
