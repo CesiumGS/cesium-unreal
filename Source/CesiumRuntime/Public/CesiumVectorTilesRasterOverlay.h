@@ -23,7 +23,7 @@ enum class ECesiumVectorStylingProviderType : uint8 {
   None = 0 UMETA(ToolTip = "Only the default style will be used."),
   Blueprint = 1 UMETA(
       ToolTip =
-          "Uses the Blueprint class implementing the ICesumVectorTilesStylingCallbacks interface specified in BlueprintStylingProvider."),
+          "Uses the Blueprint class implementing the ICesiumVectorTilesStylingCallbacks interface specified in BlueprintStylingProvider."),
   Lambda = 2 UMETA(
       ToolTip =
           "Calls the TFunction specified on the overlay using C++ to create a VectorStylingProvider directly.")
@@ -42,7 +42,10 @@ public:
    * This function is called before styling begins. It should be used to look up
    * metadata property tables and store them for use in the styling functions.
    */
-  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintNativeEvent,
+      Category = "Cesium|Styling")
   void OnStylingBegin(const FCesiumModelMetadata& InModelMetadata);
   virtual void
   OnStylingBegin_Implementation(const FCesiumModelMetadata& InModelMetadata) {}
@@ -51,17 +54,20 @@ public:
    * This function is called for each individual point feature.
    *
    * If it returns false, the default style will be used for this feature. If it
-   * returns true, the "Out Vector Style" will be used for this feature.
+   * returns true, the "Out Point Style" will be used for this feature.
    */
-  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintNativeEvent,
+      Category = "Cesium|Styling")
   bool OnStylePoint(
       int64 InFeatureId,
       const FVector& InPointLlh,
-      FCesiumVectorStyle& OutVectorStyle);
+      FCesiumVectorPointStyle& OutPointStyle);
   virtual bool OnStylePoint_Implementation(
       int64 InFeatureId,
       const FVector& InPointLlh,
-      FCesiumVectorStyle& OutVectorStyle) {
+      FCesiumVectorPointStyle& OutPointStyle) {
     return false;
   }
 
@@ -69,17 +75,20 @@ public:
    * This function is called for each individual polyline feature.
    *
    * If it returns false, the default style will be used for this feature. If it
-   * returns true, the "Out Vector Style" will be used for this feature.
+   * returns true, the "Out Line Style" will be used for this feature.
    */
-  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintNativeEvent,
+      Category = "Cesium|Styling")
   bool OnStylePolyline(
       int64 InFeatureId,
       const TArray<FVector>& InPolylineLlh,
-      FCesiumVectorStyle& OutVectorStyle);
+      FCesiumVectorLineStyle& OutLineStyle);
   virtual bool OnStylePolyline_Implementation(
       int64 InFeatureId,
       const TArray<FVector>& InPolylineLlh,
-      FCesiumVectorStyle& OutVectorStyle) {
+      FCesiumVectorLineStyle& OutLineStyle) {
     return false;
   }
 
@@ -87,17 +96,20 @@ public:
    * This function is called for each individual polygon feature.
    *
    * If it returns false, the default style will be used for this feature. If it
-   * returns true, the "Out Vector Style" will be used for this feature.
+   * returns true, the "Out Polygon Style" will be used for this feature.
    */
-  UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintNativeEvent,
+      Category = "Cesium|Styling")
   bool OnStylePolygon(
       int64 InFeatureId,
       const TArray<FVector>& InPolygonLlh,
-      FCesiumVectorStyle& OutVectorStyle);
+      FCesiumVectorPolygonStyle& OutPolygonStyle);
   virtual bool OnStylePolygon_Implementation(
       int64 InFeatureId,
       const TArray<FVector>& InPolygonLlh,
-      FCesiumVectorStyle& OutVectorStyle) {
+      FCesiumVectorPolygonStyle& OutPolygonStyle) {
     return false;
   }
 };

@@ -3,17 +3,23 @@
 #include "CesiumVectorTilesRasterOverlay.h"
 
 #include <CesiumAsync/IAssetAccessor.h>
-#include <CesiumGeometry/QuadtreeTilingScheme.h>
-#include <CesiumGeospatial/GlobeRectangle.h>
-#include <CesiumGeospatial/Projection.h>
 #include <CesiumVectorData/VectorStyle.h>
 #include <CesiumVectorOverlays/VectorStylingProvider.h>
 #include <CesiumVectorOverlays/VectorTilesRasterOverlay.h>
 
-#include "CesiumCustomVersion.h"
+#include "CesiumModelMetadata.h"
 #include "CesiumRuntime.h"
+#include "CesiumVectorStyle.h"
+
+#if WITH_EDITOR
+#include "Editor.h"
+#include "Engine/Blueprint.h"
+#endif
 
 #include <atomic>
+#include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace {
@@ -50,7 +56,7 @@ public:
   }
 #endif
 
-  CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
+  CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::PointStyle>>>
   onStylePoints(
       const CesiumAsync::AsyncSystem& asyncSystem,
       const CesiumGltf::Model& model,
@@ -65,7 +71,7 @@ public:
     }
 
     auto lambda = [this, Metadata, featureIds, points]() {
-      std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
+      std::vector<std::optional<CesiumVectorData::PointStyle>> result;
       ++this->_pendingStylingJobs;
       if (!this->IsInterfaceValid()) {
         --this->_pendingStylingJobs;
@@ -78,7 +84,7 @@ public:
           this->_pInterface.GetObject(),
           Metadata);
 
-      FCesiumVectorStyle OutStyle;
+      FCesiumVectorPointStyle OutStyle;
 
       for (size_t i = 0; i < featureIds.size(); i++) {
         if (ICesiumVectorTilesStylingCallbacks::Execute_OnStylePoint(
@@ -102,7 +108,7 @@ public:
     return asyncSystem.runInMainThread(lambda);
   }
 
-  CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
+  CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::LineStyle>>>
   onStylePolylines(
       const CesiumAsync::AsyncSystem& asyncSystem,
       const CesiumGltf::Model& model,
@@ -118,7 +124,7 @@ public:
     }
 
     auto lambda = [this, Metadata, featureIds, polylines]() {
-      std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
+      std::vector<std::optional<CesiumVectorData::LineStyle>> result;
       ++this->_pendingStylingJobs;
       if (!this->IsInterfaceValid()) {
         --this->_pendingStylingJobs;
@@ -131,7 +137,7 @@ public:
           this->_pInterface.GetObject(),
           Metadata);
 
-      FCesiumVectorStyle OutStyle;
+      FCesiumVectorLineStyle OutStyle;
       TArray<FVector> PolylineLlh;
 
       for (size_t i = 0; i < featureIds.size(); i++) {
@@ -161,7 +167,8 @@ public:
     return asyncSystem.runInMainThread(lambda);
   }
 
-  CesiumAsync::Future<std::vector<std::optional<CesiumVectorData::VectorStyle>>>
+  CesiumAsync::Future<
+      std::vector<std::optional<CesiumVectorData::PolygonStyle>>>
   onStylePolygons(
       const CesiumAsync::AsyncSystem& asyncSystem,
       const CesiumGltf::Model& model,
@@ -177,7 +184,7 @@ public:
     }
 
     auto lambda = [this, Metadata, featureIds, polygons]() {
-      std::vector<std::optional<CesiumVectorData::VectorStyle>> result;
+      std::vector<std::optional<CesiumVectorData::PolygonStyle>> result;
       ++this->_pendingStylingJobs;
       if (!this->IsInterfaceValid()) {
         --this->_pendingStylingJobs;
@@ -190,7 +197,7 @@ public:
           this->_pInterface.GetObject(),
           Metadata);
 
-      FCesiumVectorStyle OutStyle;
+      FCesiumVectorPolygonStyle OutStyle;
       TArray<FVector> PolygonLlh;
 
       for (size_t i = 0; i < featureIds.size(); i++) {
