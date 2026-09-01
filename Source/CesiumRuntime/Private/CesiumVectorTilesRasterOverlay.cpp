@@ -11,7 +11,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumVectorStyle.h"
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 #include "Editor.h"
 #include "Engine/Blueprint.h"
 #endif
@@ -29,7 +29,7 @@ public:
   BlueprintClassVectorStylingProvider(UObject* pObject) {
     if (IsValid(pObject)) {
       this->_pInterface = pObject;
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
       this->_blueprintCompileDelegate = GEditor->OnBlueprintPreCompile().AddRaw(
           this,
           &BlueprintClassVectorStylingProvider::OnBlueprintPreCompile);
@@ -37,7 +37,7 @@ public:
     }
   }
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
   virtual ~BlueprintClassVectorStylingProvider() {
     GEditor->OnBlueprintPreCompile().Remove(this->_blueprintCompileDelegate);
   }
