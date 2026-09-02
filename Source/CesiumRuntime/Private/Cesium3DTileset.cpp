@@ -1702,19 +1702,21 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       ellipsoid->GetNativeEllipsoid());
 }
 
-Cesium3DTilesSelection::ViewState ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
+Cesium3DTilesSelection::ViewState
+ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
   CesiumGeospatial::BoundingRegionBuilder builder;
-  builder.expandToIncludePosition(
-      CesiumGeospatial::Cartographic::fromDegrees(
-          this->FixedAreaLongitude - this->FixedAreaLongitudeExtent / 2.0,
-          this->FixedAreaLatitude - this->FixedAreaLatitudeExtent / 2.0,
-          -10000.0));
-  builder.expandToIncludePosition(
-      CesiumGeospatial::Cartographic::fromDegrees(
-          this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
-          this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
-          10000.0));
-  return Cesium3DTilesSelection::ViewState{builder.toRegion(), this->FixedGeometricError, ellipsoid->GetNativeEllipsoid()};
+  builder.expandToIncludePosition(CesiumGeospatial::Cartographic::fromDegrees(
+      this->FixedAreaLongitude - this->FixedAreaLongitudeExtent / 2.0,
+      this->FixedAreaLatitude - this->FixedAreaLatitudeExtent / 2.0,
+      -10000.0));
+  builder.expandToIncludePosition(CesiumGeospatial::Cartographic::fromDegrees(
+      this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
+      this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
+      10000.0));
+  return Cesium3DTilesSelection::ViewState{
+      builder.toRegion(),
+      this->FixedGeometricError,
+      ellipsoid->GetNativeEllipsoid()};
 }
 
 #if WITH_EDITOR
@@ -2212,9 +2214,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   } else {
     for (const FCesiumCamera& camera : cameras) {
       frustums.push_back(CreateViewStateFromViewParameters(
-                             camera,
-                             unrealWorldToCesiumTileset,
-                             ellipsoid));
+          camera,
+          unrealWorldToCesiumTileset,
+          ellipsoid));
     }
   }
 

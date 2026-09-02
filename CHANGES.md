@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? -?
+
+##### Additions :tada:
+
+- Added provisional support for testing area-based paging at fixed LOD.
+
 ### v2.29.1 - 2026-09-01
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.63.0 to v0.64.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.

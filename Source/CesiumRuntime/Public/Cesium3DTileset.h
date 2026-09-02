@@ -1041,32 +1041,22 @@ private:
 
 public:
   UPROPERTY(Category = "Cesium", EditAnywhere)
-      bool FixedAreaLod = false;
+  bool FixedAreaLod = false;
 
-  UPROPERTY(
-      Category = "Cesium",
-      EditAnywhere)
+  UPROPERTY(Category = "Cesium", EditAnywhere)
   double FixedAreaLatitude = 0.0;
 
-  UPROPERTY(
-      Category = "Cesium",
-      EditAnywhere)
+  UPROPERTY(Category = "Cesium", EditAnywhere)
   double FixedAreaLongitude = 0.0;
 
-  UPROPERTY(
-      Category = "Cesium",
-      EditAnywhere)
+  UPROPERTY(Category = "Cesium", EditAnywhere)
   double FixedAreaLatitudeExtent = 0.0;
 
-  UPROPERTY(
-      Category = "Cesium",
-      EditAnywhere)
+  UPROPERTY(Category = "Cesium", EditAnywhere)
   double FixedAreaLongitudeExtent = 0.0;
 
-  UPROPERTY(
-      Category = "Cesium",
-      EditAnywhere)
-      double FixedGeometricError = 10000.0;
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  double FixedGeometricError = 10000.0;
 
 protected:
   UPROPERTY()
@@ -1327,8 +1317,9 @@ private:
       const glm::dmat4& unrealWorldToTileset,
       UCesiumEllipsoid* ellipsoid);
 
-  Cesium3DTilesSelection::ViewState CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid);
-  
+  Cesium3DTilesSelection::ViewState
+  CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid);
+
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
   std::vector<FCesiumCamera> GetSceneCaptures() const;
