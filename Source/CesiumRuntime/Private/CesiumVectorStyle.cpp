@@ -3,33 +3,7 @@
 #include "CesiumUtility/Color.h"
 
 namespace {
-CesiumVectorData::LineStyle
-lineStyleToNative(const FCesiumVectorLineStyle& InLineStyle) {
-  return CesiumVectorData::LineStyle{
-      {CesiumUtility::Color{
-           InLineStyle.Color.R,
-           InLineStyle.Color.G,
-           InLineStyle.Color.B,
-           InLineStyle.Color.A},
-       (CesiumVectorData::ColorMode)InLineStyle.ColorMode},
-      InLineStyle.Width,
-      (CesiumVectorData::LineWidthMode)InLineStyle.WidthMode};
-}
-
-CesiumVectorData::ColorStyle
-fillStyleToNative(const FCesiumVectorPolygonFillStyle& fillStyle) {
-  return CesiumVectorData::ColorStyle{
-      CesiumUtility::Color{
-          fillStyle.Color.R,
-          fillStyle.Color.G,
-          fillStyle.Color.B,
-          fillStyle.Color.A},
-      (CesiumVectorData::ColorMode)fillStyle.ColorMode};
-}
-} // namespace
-
-CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
-  // Assert that enums are equivalent to catch any issues.
+constexpr void checkEnumsMatch() {
   static_assert(
       static_cast<uint8>(CesiumVectorData::ColorMode::Normal) ==
       static_cast<uint8>(ECesiumVectorColorMode::Normal));
@@ -42,99 +16,126 @@ CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
   static_assert(
       static_cast<uint8>(CesiumVectorData::LineWidthMode::Pixels) ==
       static_cast<uint8>(ECesiumVectorLineWidthMode::Pixels));
+}
+} // namespace
 
+CesiumVectorData::LineStyle FCesiumVectorLineStyle::toNative() const {
+  checkEnumsMatch();
+
+  return CesiumVectorData::LineStyle{
+      {CesiumUtility::Color{
+           this->Color.R,
+           this->Color.G,
+           this->Color.B,
+           this->Color.A},
+       (CesiumVectorData::ColorMode)this->ColorMode},
+      this->Width,
+      (CesiumVectorData::LineWidthMode)this->WidthMode};
+}
+
+FCesiumVectorLineStyle
+FCesiumVectorLineStyle::fromNative(const CesiumVectorData::LineStyle& style) {
+  checkEnumsMatch();
+
+  return FCesiumVectorLineStyle{
+      FColor(
+          static_cast<uint8>(style.color.r),
+          static_cast<uint8>(style.color.g),
+          static_cast<uint8>(style.color.b),
+          static_cast<uint8>(style.color.a)),
+      (ECesiumVectorColorMode)style.colorMode,
+      style.width,
+      (ECesiumVectorLineWidthMode)style.widthMode};
+}
+
+CesiumVectorData::ColorStyle FCesiumVectorPolygonFillStyle::toNative() const {
+  checkEnumsMatch();
+
+  return CesiumVectorData::ColorStyle{
+      CesiumUtility::Color{
+          this->Color.R,
+          this->Color.G,
+          this->Color.B,
+          this->Color.A},
+      (CesiumVectorData::ColorMode)this->ColorMode};
+}
+
+FCesiumVectorPolygonFillStyle FCesiumVectorPolygonFillStyle::fromNative(
+    const CesiumVectorData::ColorStyle& style) {
+  checkEnumsMatch();
+
+  return FCesiumVectorPolygonFillStyle{
+      FColor(
+          static_cast<uint8>(style.color.r),
+          static_cast<uint8>(style.color.g),
+          static_cast<uint8>(style.color.b),
+          static_cast<uint8>(style.color.a)),
+      (ECesiumVectorColorMode)style.colorMode};
+}
+
+CesiumVectorData::PolygonStyle FCesiumVectorPolygonStyle::toNative() const {
+  return CesiumVectorData::PolygonStyle{
+      this->Fill ? std::optional<CesiumVectorData::ColorStyle>(
+                       this->FillStyle.toNative())
+                 : std::nullopt,
+      this->Outline ? std::optional<CesiumVectorData::LineStyle>(
+                          this->OutlineStyle.toNative())
+                    : std::nullopt};
+}
+
+FCesiumVectorPolygonStyle FCesiumVectorPolygonStyle::fromNative(
+    const CesiumVectorData::PolygonStyle& style) {
+  FCesiumVectorLineStyle OutlineStyle =
+      style.outline ? FCesiumVectorLineStyle::fromNative(*style.outline)
+                    : FCesiumVectorLineStyle{};
+  FCesiumVectorPolygonFillStyle FillStyle =
+      style.fill ? FCesiumVectorPolygonFillStyle::fromNative(*style.fill)
+                 : FCesiumVectorPolygonFillStyle{};
+  return FCesiumVectorPolygonStyle{
+      style.fill.has_value(),
+      FillStyle,
+      style.outline.has_value(),
+      OutlineStyle};
+}
+
+CesiumVectorData::PointStyle FCesiumVectorPointStyle::toNative() const {
+  return CesiumVectorData::PointStyle{
+      this->Radius,
+      this->Fill ? std::optional<CesiumVectorData::ColorStyle>(
+                       this->FillStyle.toNative())
+                 : std::nullopt,
+      this->Outline ? std::optional<CesiumVectorData::LineStyle>(
+                          this->OutlineStyle.toNative())
+                    : std::nullopt};
+}
+
+FCesiumVectorPointStyle
+FCesiumVectorPointStyle::fromNative(const CesiumVectorData::PointStyle& style) {
+  FCesiumVectorLineStyle OutlineStyle =
+      style.outline ? FCesiumVectorLineStyle::fromNative(*style.outline)
+                    : FCesiumVectorLineStyle{};
+  FCesiumVectorPolygonFillStyle FillStyle =
+      style.fill ? FCesiumVectorPolygonFillStyle::fromNative(*style.fill)
+                 : FCesiumVectorPolygonFillStyle{};
+  return FCesiumVectorPointStyle{
+      (float)style.radius,
+      style.fill.has_value(),
+      FillStyle,
+      style.outline.has_value(),
+      OutlineStyle};
+}
+
+CesiumVectorData::VectorStyle FCesiumVectorStyle::toNative() const {
   return CesiumVectorData::VectorStyle{
-      lineStyleToNative(this->LineStyle),
-      CesiumVectorData::PolygonStyle{
-          this->PolygonStyle.Fill
-              ? std::optional<CesiumVectorData::ColorStyle>(
-                    fillStyleToNative(this->PolygonStyle.FillStyle))
-              : std::nullopt,
-          this->PolygonStyle.Outline
-              ? std::optional<CesiumVectorData::LineStyle>(
-                    lineStyleToNative(this->PolygonStyle.OutlineStyle))
-              : std::nullopt},
-      CesiumVectorData::PointStyle{
-          this->PointStyle.Radius,
-          this->PointStyle.Fill
-              ? std::optional<CesiumVectorData::ColorStyle>(
-                    fillStyleToNative(this->PointStyle.FillStyle))
-              : std::nullopt,
-          this->PointStyle.Outline
-              ? std::optional<CesiumVectorData::LineStyle>(
-                    lineStyleToNative(this->PointStyle.OutlineStyle))
-              : std::nullopt}};
+      this->LineStyle.toNative(),
+      this->PolygonStyle.toNative(),
+      this->PointStyle.toNative()};
 }
 
 FCesiumVectorStyle
 FCesiumVectorStyle::fromNative(const CesiumVectorData::VectorStyle& style) {
-  FCesiumVectorLineStyle PolygonOutlineStyle;
-  if (style.polygon.outline) {
-    PolygonOutlineStyle = FCesiumVectorLineStyle{
-        FColor(
-            static_cast<uint8>(style.polygon.outline->color.r),
-            static_cast<uint8>(style.polygon.outline->color.g),
-            static_cast<uint8>(style.polygon.outline->color.b),
-            static_cast<uint8>(style.polygon.outline->color.a)),
-        (ECesiumVectorColorMode)style.polygon.outline->colorMode,
-        style.polygon.outline->width,
-        (ECesiumVectorLineWidthMode)style.polygon.outline->widthMode};
-  }
-
-  FCesiumVectorPolygonFillStyle PolygonFillStyle;
-  if (style.polygon.fill) {
-    PolygonFillStyle = FCesiumVectorPolygonFillStyle{
-        FColor(
-            static_cast<uint8>(style.polygon.fill->color.r),
-            static_cast<uint8>(style.polygon.fill->color.g),
-            static_cast<uint8>(style.polygon.fill->color.b),
-            static_cast<uint8>(style.polygon.fill->color.a)),
-        (ECesiumVectorColorMode)style.polygon.fill->colorMode};
-  }
-
-  FCesiumVectorLineStyle PointOutlineStyle;
-  if (style.point.outline) {
-    PolygonOutlineStyle = FCesiumVectorLineStyle{
-        FColor(
-            static_cast<uint8>(style.point.outline->color.r),
-            static_cast<uint8>(style.point.outline->color.g),
-            static_cast<uint8>(style.point.outline->color.b),
-            static_cast<uint8>(style.point.outline->color.a)),
-        (ECesiumVectorColorMode)style.point.outline->colorMode,
-        style.point.outline->width,
-        (ECesiumVectorLineWidthMode)style.point.outline->widthMode};
-  }
-
-  FCesiumVectorPolygonFillStyle PointFillStyle;
-  if (style.point.fill) {
-    PolygonFillStyle = FCesiumVectorPolygonFillStyle{
-        FColor(
-            static_cast<uint8>(style.point.fill->color.r),
-            static_cast<uint8>(style.point.fill->color.g),
-            static_cast<uint8>(style.point.fill->color.b),
-            static_cast<uint8>(style.point.fill->color.a)),
-        (ECesiumVectorColorMode)style.point.fill->colorMode};
-  }
-
   return FCesiumVectorStyle{
-      FCesiumVectorLineStyle{
-          FColor(
-              static_cast<uint8>(style.line.color.r),
-              static_cast<uint8>(style.line.color.g),
-              static_cast<uint8>(style.line.color.b),
-              static_cast<uint8>(style.line.color.a)),
-          (ECesiumVectorColorMode)style.line.colorMode,
-          style.line.width,
-          (ECesiumVectorLineWidthMode)style.line.widthMode},
-      FCesiumVectorPolygonStyle{
-          style.polygon.fill.has_value(),
-          PolygonFillStyle,
-          style.polygon.outline.has_value(),
-          PolygonOutlineStyle},
-      FCesiumVectorPointStyle{
-          (float)style.point.radius,
-          style.point.fill.has_value(),
-          PointFillStyle,
-          style.point.outline.has_value(),
-          PointOutlineStyle}};
+      FCesiumVectorLineStyle::fromNative(style.line),
+      FCesiumVectorPolygonStyle::fromNative(style.polygon),
+      FCesiumVectorPointStyle::fromNative(style.point)};
 }
