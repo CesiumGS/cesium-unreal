@@ -1,4 +1,4 @@
-// Copyright 2020-2024 CesiumGS, Inc. and Contributors
+// Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #if WITH_EDITOR
 
@@ -19,7 +19,7 @@
 namespace Cesium {
 
 FString SceneGenerationContext::testIonToken(
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5Y2Y3ZmYwOS1jNWQwLTQ0MzMtYWJhNi0zOTQyNmE5MzQwMTMiLCJpZCI6MjU5LCJzdWIiOiJDZXNpdW1KUyIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJDZXNpdW0gZm9yIFVucmVhbCBTYW1wbGVzIHYyLjI4LjAgLSBEZWxldGUgb24gU2VwdGVtYmVyIDFzdCwgMjAyNiIsImlhdCI6MTc4Mjg0MTgyMn0.8MByTQSzzQTMMTklENmzLgjy_exutSuZ3Vdl1XuvCzQ");
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IkRpN1lwX0RINk1aaWcwblkiLCJqdGkiOiIyN2Q1YTFlOC1jNWQwLTQzNjAtODE4Ni1kN2ZmMzZhMzBkZWEiLCJpZCI6MjU5LCJzdWIiOiJDZXNpdW1KUyIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJDZXNpdW0gZm9yIFVucmVhbCBTYW1wbGVzIDIuMjkuMSAtIERlbGV0ZSBvbiBOb3ZlbWJlciAybmQgMjAyNiIsImlhdCI6MTc4ODE5MTI5OH0.axwPjCdEelVbRbfiGERQF2Ao-oC2G-Fwq6-P71d6KSg");
 
 void SceneGenerationContext::setCommonProperties(
     const FVector& origin,
