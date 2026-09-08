@@ -1679,12 +1679,12 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   double verticalFieldOfView =
       atan(tan(horizontalFieldOfView * 0.5) / actualAspectRatio) * 2.0;
 
-  FVector direction = camera.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-  FVector up = camera.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+  FVector direction = cameraRotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+  FVector up = cameraRotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
   glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
-      glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
+      glm::dvec4(cameraLocation.X, cameraLocation.Y, cameraLocation.Z, 1.0));
   glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
       unrealWorldToTileset *
       glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
