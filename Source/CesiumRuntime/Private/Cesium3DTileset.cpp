@@ -1713,9 +1713,18 @@ ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
       this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
       this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
       10000.0));
+  if (this->FixedDepth == 0) {
+    return Cesium3DTilesSelection::ViewState{
+        builder.toRegion(),
+        this->FixedGeometricError,
+        ellipsoid->GetNativeEllipsoid()};
+  }
   return Cesium3DTilesSelection::ViewState{
       builder.toRegion(),
-      this->FixedGeometricError,
+      1.0 / this->FixedDepth,
+      [](const Cesium3DTilesSelection::Tile&, double, uint32_t depth) {
+        return 1.0 / depth;
+      },
       ellipsoid->GetNativeEllipsoid()};
 }
 

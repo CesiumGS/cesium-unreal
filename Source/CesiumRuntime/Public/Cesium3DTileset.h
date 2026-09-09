@@ -1058,6 +1058,9 @@ public:
   UPROPERTY(Category = "Cesium", EditAnywhere)
   double FixedGeometricError = 10000.0;
 
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  uint32 FixedDepth = 0;
+
 protected:
   UPROPERTY()
   FString PlatformName;
