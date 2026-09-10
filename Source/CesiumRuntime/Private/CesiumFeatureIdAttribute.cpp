@@ -87,3 +87,22 @@ int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
       CesiumGltf::FeatureIdFromAccessor{Index},
       FeatureIDAttribute._featureIdAccessor);
 }
+
+TSet<int64> UCesiumFeatureIdAttributeBlueprintLibrary::GetUniqueFeatureIDs(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
+  TSet<int64> result;
+  if (FeatureIDAttribute._status != ECesiumFeatureIdAttributeStatus::Valid) {
+    return result;
+  }
+
+  int64 elementCount =
+      UCesiumFeatureIdAttributeBlueprintLibrary::GetCount(FeatureIDAttribute);
+
+  for (int64 i = 0; i < elementCount; i++) {
+    result.Add(UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureID(
+        FeatureIDAttribute,
+        i));
+  }
+
+  return result;
+}

@@ -214,4 +214,24 @@ public:
   static int64 GetFeatureIDFromHit(
       UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
       const FHitResult& Hit);
+
+  /**
+   * Given a trace hit result, gets the feature ID from the feature ID set on
+   * the hit component. This returns a more accurate value for feature ID
+   * textures, since they define feature IDs per-texel instead of per-vertex.
+   * The feature ID can be used with a FCesiumPropertyTable to retrieve the
+   * corresponding metadata.
+   *
+   * This can still retrieve the feature IDs for non-texture feature ID sets.
+   * For attribute or implicit feature IDs, the first feature ID associated
+   * with the first vertex of the intersected face is returned.
+   *
+   * This returns an empty set -1 if the feature ID set is invalid.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDSet")
+  static TSet<int64>
+  GetUniqueFeatureIDs(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 };

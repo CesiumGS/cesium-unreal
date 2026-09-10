@@ -162,4 +162,17 @@ public:
   static int64 GetFeatureID(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
       int64 Index);
+
+  /**
+   * Gets a set of all unique feature IDs in this attribute
+   *
+   * If the feature ID attribute is invalid, this returns an empty set.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDAttribute")
+  static TSet<int64>
+  GetUniqueFeatureIDs(UPARAM(ref)
+                          const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 };

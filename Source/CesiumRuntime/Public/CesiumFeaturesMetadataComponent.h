@@ -12,6 +12,20 @@
 #include "CesiumFeaturesMetadataComponent.generated.h"
 
 /**
+ * @brief Determines the styling provider to be used to provide styling
+ * information for individual features.
+ */
+UENUM()
+enum class ECesiumStylingProviderType : uint8 {
+  Material = 0 UMETA(
+      ToolTip =
+          "Metadata will be exposed to the material with logic to affect materials."),
+  Blueprint = 1 UMETA(
+      ToolTip =
+          "Uses the Blueprint class implementing the ICesium3DTilesStylingCallbacks interface specified in BlueprintStylingProvider.")
+};
+
+/**
  * @brief A component that can be added to Cesium3DTileset actors to
  * dictate what feature ID sets or metadata to encode for access on the GPU.
  * "Add Properties" allows users to find and select desired feature ID sets and
@@ -61,6 +75,34 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
 #endif
+
+  /**
+   * The styling provider to use to apply styling information to individual
+   * features.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Styling")
+  ECesiumStylingProviderType StylingProviderType =
+      ECesiumStylingProviderType::Material;
+
+  /**
+   * The Blueprint class that will be instantiated to provide styling
+   * information for features when StylingProviderType is set to Blueprint.
+   *
+   * Because Blueprints in Unreal need to run on the main thread, a Blueprint
+   * styling provider can cause significant performance degradation when styling
+   * large numbers of features. If improved performance is required, styling via
+   * C++ via the LambdaStylingProvider property should be used instead.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Styling",
+      meta =
+          (EditCondition =
+               "StylingProviderType == ECesiumStylingProviderType::Blueprint",
+           MustImplement =
+               "/Script/CesiumRuntime.Cesium3DTilesStylingCallbacks"))
+  TSubclassOf<UObject> BlueprintStylingProvider;
 
   /**
    * @brief Description of both feature IDs and metadata from a glTF via the
@@ -142,9 +184,15 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
 #endif
 
+  UObject* getStylingObject() const { return this->_pStylingInterfaceObject; };
+
 protected:
   virtual void OnFetchMetadata(
       ACesium3DTileset* pActor,
       const Cesium3DTilesSelection::TilesetMetadata* pMetadata) override;
   virtual void ClearStatistics() override;
+
+private:
+  UPROPERTY(Transient)
+  UObject* _pStylingInterfaceObject;
 };

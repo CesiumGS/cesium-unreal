@@ -1,6 +1,7 @@
 // Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeaturesMetadataComponent.h"
+#include "Cesium3DTilesStyle.h"
 #include "Cesium3DTileset.h"
 #include "CesiumCommon.h"
 #include "CesiumGltfComponent.h"
@@ -2553,6 +2554,16 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
         this->Description.ModelMetadata.PropertyTextures);
   }
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  if (this->StylingProviderType == ECesiumStylingProviderType::Blueprint &&
+      IsValid(this->BlueprintStylingProvider) &&
+      this->BlueprintStylingProvider->ImplementsInterface(
+          UCesium3DTilesStylingCallbacks::StaticClass())) {
+    if (!IsValid(this->_pStylingInterfaceObject)) {
+      this->_pStylingInterfaceObject =
+          NewObject<UObject>(this, this->BlueprintStylingProvider);
+    }
+  }
 
   Super::PostLoad();
 }

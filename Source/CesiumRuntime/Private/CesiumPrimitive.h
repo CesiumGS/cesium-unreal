@@ -19,10 +19,17 @@
 
 #include "CesiumPrimitive.generated.h"
 
+class UTexture2D;
+
 namespace CesiumGltf {
 struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
+
+struct Styling {
+  TMap<FString, UTexture2D*> colorTextures;
+  TMap<FString, UTexture2D*> showTextures;
+};
 
 /**
  * Data that is common between Cesium glTF component classes.
@@ -140,6 +147,8 @@ public:
    */
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 
+  Styling styling;
+
   void destroy();
 };
 
@@ -175,4 +184,6 @@ public:
 
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
+
+  void ApplyStyle(UObject* pObject, const FCesiumModelMetadata& modelMetadata);
 };
