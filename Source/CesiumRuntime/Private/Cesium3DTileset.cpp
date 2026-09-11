@@ -58,6 +58,7 @@ THIRD_PARTY_INCLUDES_START
 #include <CesiumImage/Ktx2TranscodeTargets.h>
 #include <CesiumIonClient/Connection.h>
 
+#include <cmath>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
@@ -1702,6 +1703,25 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       ellipsoid->GetNativeEllipsoid());
 }
 
+class FixedDepthHandler : public Cesium3DTilesSelection::ErrorMeasureHandler {
+public:
+  FixedDepthHandler(uint32 fixedDepth_)
+      : fixedDepth(fixedDepth_)
+  {
+    this->depthErrorMeasure = std::exp2(-int32(fixedDepth_));
+  }
+  
+  double computeErrorMeasure(const Cesium3DTilesSelection::Tile&, double distance, uint32_t depth) const override {
+    return std::exp2(-int32(depth));
+  }
+
+  bool meetsErrorThreshold(double computedError, const Cesium3DTilesSelection::Tile&) const override {
+    return computedError < this->depthErrorMeasure;
+  }
+  uint32 fixedDepth;
+  double depthErrorMeasure;
+};
+
 Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
   CesiumGeospatial::BoundingRegionBuilder builder;
@@ -1721,10 +1741,8 @@ ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
   }
   return Cesium3DTilesSelection::ViewState{
       builder.toRegion(),
-      1.0 / this->FixedDepth,
-      [](const Cesium3DTilesSelection::Tile&, double, uint32_t depth) {
-        return 1.0 / depth;
-      },
+      0.0,
+      std::make_shared<FixedDepthHandler>(this->FixedDepth),
       ellipsoid->GetNativeEllipsoid()};
 }
 
