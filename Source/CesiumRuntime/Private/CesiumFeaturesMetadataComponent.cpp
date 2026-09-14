@@ -2556,12 +2556,11 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   if (this->StylingProviderType == ECesiumStylingProviderType::Blueprint &&
-      IsValid(this->BlueprintStylingProvider) &&
-      this->BlueprintStylingProvider->ImplementsInterface(
+      IsValid(this->StyleClass) &&
+      this->StyleClass->ImplementsInterface(
           UCesium3DTilesStylingCallbacks::StaticClass())) {
-    if (!IsValid(this->_pStylingInterfaceObject)) {
-      this->_pStylingInterfaceObject =
-          NewObject<UObject>(this, this->BlueprintStylingProvider);
+    if (!IsValid(this->_pStyleInstance)) {
+      this->_pStyleInstance = NewObject<UObject>(this, this->StyleClass);
     }
   }
 

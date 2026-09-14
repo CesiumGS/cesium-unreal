@@ -49,6 +49,8 @@ struct ImageAsset;
  */
 namespace EncodedFeaturesMetadata {
 
+#pragma region Material Naming Conventions
+
 /**
  * Naming convention for feature ID texture parameters nodes:
  *  - Texture: FeatureIDTextureName + "_TX"
@@ -65,6 +67,13 @@ static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
  * - Null Feature ID node: FeatureIDSetName + "_NULL_ID"
  */
 static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
+
+/**
+ * - Feature highlight color: FeatureIDSetName + "_COLOR"
+ * - Feature visibility: FeatureIDSetName + "_VISIBILITY"
+ */
+static const FString MaterialFeatureColorSuffix = "_COLOR";
+static const FString MaterialFeatureVisibilitySuffix = "_VISIBILITY";
 
 /**
  * Naming convention for metadata parameter nodes
@@ -133,6 +142,8 @@ static const FString MaterialPropertyUVSuffix = "_UV";
  */
 static const FString MaterialTextureScaleOffsetSuffix = "_TX_SCALE_OFFSET";
 static const FString MaterialTextureRotationSuffix = "_TX_ROTATION";
+
+#pragma endregion
 
 #pragma region Encoded Primitive Features
 
@@ -509,6 +520,24 @@ bool encodePropertyTextureGameThreadPart(
 bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata);
 
 void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
+
+#pragma endregion
+
+#pragma region Feature Styling
+
+struct EncodedFeatureStyling {
+  TMap<FString, UTexture2D*> visibilityTextures;
+  TMap<FString, UTexture2D*> colorTextures;
+};
+
+bool encodeFeatureStylingGameThread(
+    EncodedFeatureStyling& encodedStyling,
+    const EncodedPrimitiveFeatures& encodedFeatures,
+    const FCesiumPrimitiveFeatures& primitiveFeatures,
+    const FCesiumModelMetadata& modelMetadata,
+    UObject* pBlueprintStyleInstance);
+
+void destroyEncodedFeatureStyling(EncodedFeatureStyling& encodedStyling);
 
 #pragma endregion
 

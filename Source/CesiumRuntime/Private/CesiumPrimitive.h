@@ -26,11 +26,6 @@ struct Model;
 struct MeshPrimitive;
 } // namespace CesiumGltf
 
-struct Styling {
-  TMap<FString, UTexture2D*> colorTextures;
-  TMap<FString, UTexture2D*> showTextures;
-};
-
 /**
  * Data that is common between Cesium glTF component classes.
  */
@@ -91,6 +86,11 @@ public:
    * extension.
    */
   EncodedFeaturesMetadata::EncodedPrimitiveMetadata encodedMetadata;
+  /**
+   * The encoded representation of the primitive's EXT_structural_metadata
+   * extension.
+   */
+  EncodedFeaturesMetadata::EncodedFeatureStyling encodedStyling;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
@@ -147,8 +147,6 @@ public:
    */
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 
-  Styling styling;
-
   void destroy();
 };
 
@@ -184,6 +182,4 @@ public:
 
   virtual void
   UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform) = 0;
-
-  void ApplyStyle(UObject* pObject, const FCesiumModelMetadata& modelMetadata);
 };

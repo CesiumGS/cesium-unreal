@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTilesStyle.h"
 #include "CesiumFeaturesMetadataDescription.h"
 #include "CesiumMetadataComponent.h"
 
@@ -85,8 +86,8 @@ public:
       ECesiumStylingProviderType::Material;
 
   /**
-   * The Blueprint class that will be instantiated to provide styling
-   * information for features when StylingProviderType is set to Blueprint.
+   * The Blueprint class to instantiate for feature styling. Only used when
+   * StylingProviderType is set to Blueprint.
    *
    * Because Blueprints in Unreal need to run on the main thread, a Blueprint
    * styling provider can cause significant performance degradation when styling
@@ -102,7 +103,7 @@ public:
                "StylingProviderType == ECesiumStylingProviderType::Blueprint",
            MustImplement =
                "/Script/CesiumRuntime.Cesium3DTilesStylingCallbacks"))
-  TSubclassOf<UObject> BlueprintStylingProvider;
+  TSubclassOf<UObject> StyleClass;
 
   /**
    * @brief Description of both feature IDs and metadata from a glTF via the
@@ -184,7 +185,11 @@ public:
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
 #endif
 
-  UObject* getStylingObject() const { return this->_pStylingInterfaceObject; };
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
+  UObject* GetStyleInstance() const { return this->_pStyleInstance; }
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
+  void SetStyleInstance(UObject* Instance) {}
 
 protected:
   virtual void OnFetchMetadata(
@@ -194,5 +199,5 @@ protected:
 
 private:
   UPROPERTY(Transient)
-  UObject* _pStylingInterfaceObject;
+  UObject* _pStyleInstance;
 };

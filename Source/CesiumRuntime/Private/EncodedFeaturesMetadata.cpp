@@ -295,6 +295,7 @@ void destroyEncodedPrimitiveFeatures(
       encodedFeatureIdTexture.pTexture->pTexture = nullptr;
     }
   }
+  encodedFeatures.featureIdSets.Empty();
 }
 
 FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable) {
@@ -898,6 +899,175 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {
   }
 }
 
+bool encodeFeatureStylingGameThread(
+    EncodedFeatureStyling& styling,
+    const EncodedPrimitiveFeatures& encodedFeatures,
+    const FCesiumPrimitiveFeatures& primitiveFeatures,
+    const FCesiumModelMetadata& modelMetadata,
+    UObject* pBlueprintStyleInstance) {
+  if (!IsValid(pBlueprintStyleInstance)) {
+    return false;
+  }
+
+  TScriptInterface<ICesium3DTilesStylingCallbacks> pInterface =
+      pBlueprintStyleInstance;
+
+  const TArray<EncodedFeaturesMetadata::EncodedFeatureIdSet>&
+      encodedFeatureIdSets = encodedFeatures.featureIdSets;
+  const TArray<FCesiumFeatureIdSet>& featureIdSets =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+          primitiveFeatures);
+
+  for (const auto& encodedFeatureIdSet : encodedFeatureIdSets) {
+    const FCesiumFeatureIdSet& featureIdSet =
+        featureIdSets[encodedFeatureIdSet.index];
+
+    const FCesiumPropertyTable& propertyTable =
+        UCesiumModelMetadataBlueprintLibrary::GetPropertyTable(
+            modelMetadata,
+            UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
+                featureIdSet));
+
+    int64 count = UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
+        propertyTable);
+
+    std::vector<std::byte> colorResult(count * sizeof(uint8_t) * 4);
+    uint8_t* pColorData = reinterpret_cast<uint8_t*>(colorResult.data());
+
+    std::vector<std::byte> showResult(count * sizeof(uint8_t));
+    uint8_t* pShowData = reinterpret_cast<uint8_t*>(showResult.data());
+
+    for (int64 i = 0; i < count; i++) {
+      FCesium3DTilesStyle result =
+          ICesium3DTilesStylingCallbacks::Execute_EvaluateStyle(
+              pInterface.GetObject(),
+              propertyTable,
+              i);
+      uint8_t* pWriteColor = pColorData + (i * sizeof(uint8_t) * 4);
+      pWriteColor[0] = result.Color.R;
+      pWriteColor[1] = result.Color.G;
+      pWriteColor[2] = result.Color.B;
+      pWriteColor[3] = result.Color.A;
+
+      uint8_t* pWriteShow = pShowData + (i * sizeof(uint8_t));
+      *pWriteShow = uint8_t(result.bShow);
+    }
+
+    FString name("_FEATURE_ID_0_Color");
+    UTexture2D** ppColorTexture = styling.colorTextures.Find(name);
+    UTexture2D* pColorTexture = ppColorTexture ? *ppColorTexture : nullptr;
+
+    int64 textureDimension = 0;
+
+    if (pColorTexture) {
+      FUpdateTextureRegion2D region;
+      region.DestX = 0;
+      region.DestY = 0;
+      region.Width = pColorTexture->GetResource()->GetSizeX();
+      region.Height = pColorTexture->GetResource()->GetSizeY();
+      region.SrcX = 0;
+      region.SrcY = 0;
+
+      // Pitch = size in bytes of each row of the source image
+      uint32 sourcePitch = region.Width * 4;
+
+      ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
+      ([pResource = pColorTexture->GetResource(),
+        result = std::move(colorResult),
+        region,
+        sourcePitch](FRHICommandListImmediate& RHICmdList) {
+        RHICmdList.UpdateTexture2D(
+            pResource->TextureRHI,
+            0,
+            region,
+            sourcePitch,
+            reinterpret_cast<const uint8*>(result.data()));
+      });
+    } else {
+      int64 floorSqrtFeatureCount = glm::sqrt(count);
+      int64 textureDimension =
+          (floorSqrtFeatureCount * floorSqrtFeatureCount == count)
+              ? floorSqrtFeatureCount
+              : (floorSqrtFeatureCount + 1);
+
+      FTextureResource* pResource = FCesiumTextureResource::CreateEmpty(
+                                        TextureGroup::TEXTUREGROUP_8BitData,
+                                        textureDimension,
+                                        textureDimension,
+                                        1, /* Depth */
+                                        EPixelFormat::PF_R8G8B8A8,
+                                        TextureFilter::TF_Nearest,
+                                        TextureAddress::TA_Clamp,
+                                        TextureAddress::TA_Clamp,
+                                        false)
+                                        .Release();
+
+      UTexture2D* pColorTexture = NewObject<UTexture2D>(
+          GetTransientPackage(),
+          MakeUniqueObjectName(
+              GetTransientPackage(),
+              UTexture2D::StaticClass(),
+              "HighlightColorTexture"),
+          RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+
+      pColorTexture->AddressX = TextureAddress::TA_Clamp;
+      pColorTexture->AddressY = TextureAddress::TA_Clamp;
+      pColorTexture->Filter = TextureFilter::TF_Nearest;
+      pColorTexture->LODGroup = TextureGroup::TEXTUREGROUP_8BitData;
+      pColorTexture->SRGB = false;
+      pColorTexture->NeverStream = true;
+
+      if (!pColorTexture || !pResource) {
+        // UE_LOG(LogCesium, Error, TEXT("Could not create texture."));
+        return false;
+      }
+
+      pColorTexture->SetResource(pResource);
+
+      ENQUEUE_RENDER_COMMAND(Cesium_InitResource)(
+          [pColorTexture,
+           pResource = pColorTexture->GetResource(),
+           result = std::move(colorResult),
+           textureDimension](FRHICommandListImmediate& RHICmdList) {
+            pResource->SetTextureReference(
+                pColorTexture->TextureReference.TextureReferenceRHI);
+            pResource->InitResource(FRHICommandListImmediate::Get());
+            uint32 DestPitch;
+            void* pDestination = RHILockTexture2D(
+                pResource->TextureRHI,
+                0,
+                RLM_WriteOnly,
+                DestPitch,
+                false);
+            uint32 sourcePitch = textureDimension * sizeof(uint8_t) * 4;
+            CopyTextureData2D(
+                result.data(),
+                pDestination,
+                textureDimension,
+                EPixelFormat::PF_R8G8B8A8,
+                sourcePitch,
+                DestPitch);
+
+            RHIUnlockTexture2D(pResource->TextureRHI, 0, false);
+          });
+      styling.colorTextures.Add(name, pColorTexture);
+    }
+  }
+  return true;
+}
+
+void destroyEncodedFeatureStyling(EncodedFeatureStyling& encodedStyling) {
+  for (auto it : encodedStyling.colorTextures) {
+    it.Value->ReleaseResource();
+  }
+  encodedStyling.colorTextures.Empty();
+
+  for (auto it : encodedStyling.visibilityTextures) {
+    it.Value->ReleaseResource();
+  }
+  encodedStyling.visibilityTextures.Empty();
+}
+
 FString getNameForStatistic(
     const FString& classId,
     const FString& propertyId,
@@ -933,8 +1103,8 @@ FString createHlslSafeName(const FString& rawName) {
   return safeName;
 }
 
-// TODO: consider picking better pixel formats when they are available for the
-// current platform.
+// TODO: consider picking better pixel formats when they are available for
+// the current platform.
 EncodedPixelFormat getPixelFormat(
     ECesiumEncodedMetadataType Type,
     ECesiumEncodedMetadataComponentType ComponentType) {
