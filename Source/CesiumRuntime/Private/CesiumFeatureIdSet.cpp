@@ -254,27 +254,3 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDFromHit(
 
   return -1;
 }
-
-TSet<int64> UCesiumFeatureIdSetBlueprintLibrary::GetUniqueFeatureIDs(
-    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
-
-  switch (FeatureIDSet._featureIDSetType) {
-  case ECesiumFeatureIdSetType::Attribute: {
-    auto attribute =
-        std::get<FCesiumFeatureIdAttribute>(FeatureIDSet._featureID);
-
-    return UCesiumFeatureIdAttributeBlueprintLibrary::GetUniqueFeatureIDs(
-        attribute);
-  }
-  case ECesiumFeatureIdSetType::Implicit: {
-    TSet<int64> result;
-    result.Reserve(FeatureIDSet._featureCount);
-    for (int64 i = 0; i < FeatureIDSet._featureCount; i++) {
-      result.Add(i);
-    }
-    return result;
-  }
-  default:
-    return TSet<int64>();
-  }
-}
