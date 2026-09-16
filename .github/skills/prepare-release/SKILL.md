@@ -1,7 +1,7 @@
 ---
 name: prepare-release
 description: 'Prepare a Cesium for Unreal release by auditing CHANGES.md against all changes since the last release, proposing missing changelog entries, determining the release date, and then running the release-prep script.'
-argument-hint: 'New release version, and optionally a cesium-native submodule commit'
+argument-hint: 'New release version'
 user-invocable: true
 ---
 
