@@ -13,20 +13,6 @@
 #include "CesiumFeaturesMetadataComponent.generated.h"
 
 /**
- * @brief Determines the styling provider to be used to provide styling
- * information for individual features.
- */
-UENUM()
-enum class ECesiumStylingProviderType : uint8 {
-  Material = 0 UMETA(
-      ToolTip =
-          "Metadata will be exposed to the material with logic to affect materials."),
-  Blueprint = 1 UMETA(
-      ToolTip =
-          "Uses the Blueprint class implementing the ICesium3DTilesStylingCallbacks interface specified in BlueprintStylingProvider.")
-};
-
-/**
  * @brief A component that can be added to Cesium3DTileset actors to
  * dictate what feature ID sets or metadata to encode for access on the GPU.
  * "Add Properties" allows users to find and select desired feature ID sets and
@@ -50,6 +36,8 @@ public:
       Category = "Cesium",
       Meta = (DisplayName = "Add Properties"))
   void AddProperties();
+
+  // rename: Setup Material?
 
   /**
    * Creates or overwrites a boiler-plate material layer that exposes the
@@ -78,14 +66,6 @@ public:
 #endif
 
   /**
-   * The styling provider to use to apply styling information to individual
-   * features.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Styling")
-  ECesiumStylingProviderType StylingProviderType =
-      ECesiumStylingProviderType::Material;
-
-  /**
    * The Blueprint class to instantiate for feature styling. Only used when
    * StylingProviderType is set to Blueprint.
    *
@@ -97,13 +77,11 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Cesium|Styling",
+      Category = "Cesium",
       meta =
-          (EditCondition =
-               "StylingProviderType == ECesiumStylingProviderType::Blueprint",
-           MustImplement =
-               "/Script/CesiumRuntime.Cesium3DTilesStylingCallbacks"))
-  TSubclassOf<UObject> StyleClass;
+          (MustImplement =
+               "/Script/CesiumRuntime.Cesium3DTilesStylingProvider"))
+  TSubclassOf<UObject> BlueprintStyleClass;
 
   /**
    * @brief Description of both feature IDs and metadata from a glTF via the
@@ -184,12 +162,9 @@ public:
   virtual void PostEditChangeChainProperty(
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
 #endif
-
+  // TODO: Should this be put on tileset instead??
   UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
   UObject* GetStyleInstance() const { return this->_pStyleInstance; }
-
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
-  void SetStyleInstance(UObject* Instance) {}
 
 protected:
   virtual void OnFetchMetadata(
@@ -198,6 +173,8 @@ protected:
   virtual void ClearStatistics() override;
 
 private:
+  void recreateStyleInstance();
+
   UPROPERTY(Transient)
   UObject* _pStyleInstance;
 };

@@ -69,11 +69,11 @@ static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
 static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
 
 /**
- * - Feature highlight color: FeatureIDSetName + "_COLOR"
- * - Feature visibility: FeatureIDSetName + "_VISIBILITY"
+ * - Feature color: FeatureIDSetName + "_COLOR"
+ * - Feature show: FeatureIDSetName + "_SHOW"
  */
 static const FString MaterialFeatureColorSuffix = "_COLOR";
-static const FString MaterialFeatureVisibilitySuffix = "_VISIBILITY";
+static const FString MaterialFeatureShowSuffix = "_SHOW";
 
 /**
  * Naming convention for metadata parameter nodes
@@ -525,6 +525,10 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 
 #pragma region Feature Styling
 
+// TODO should this be put here? what happens when the style is reapplied at runtime?
+/**
+* @brief 
+*/
 struct EncodedFeatureStyling {
   TMap<FString, UTexture2D*> visibilityTextures;
   TMap<FString, UTexture2D*> colorTextures;

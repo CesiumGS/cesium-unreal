@@ -19,18 +19,17 @@ public:
 
   UPROPERTY(BlueprintReadWrite, Category = "Cesium|Styling")
   /**
-   * The color to use to highlight the given feature. This color is applied
-   * multiplicatively; a color of white will result in the same appearance.
+   * The color to apply to the given feature.
    */
   FColor Color = FColor(255, 255, 255, 255);
 };
 
 UINTERFACE(Blueprintable, MinimalAPI)
-class UCesium3DTilesStylingCallbacks : public UInterface {
+class UCesium3DTilesStylingProvider : public UInterface {
   GENERATED_BODY()
 };
 
-class ICesium3DTilesStylingCallbacks {
+class ICesium3DTilesStylingProvider {
   GENERATED_BODY()
 
 public:

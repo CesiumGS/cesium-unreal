@@ -909,7 +909,7 @@ bool encodeFeatureStylingGameThread(
     return false;
   }
 
-  TScriptInterface<ICesium3DTilesStylingCallbacks> pInterface =
+  TScriptInterface<ICesium3DTilesStylingProvider> pInterface =
       pBlueprintStyleInstance;
 
   const TArray<EncodedFeaturesMetadata::EncodedFeatureIdSet>&
@@ -939,7 +939,7 @@ bool encodeFeatureStylingGameThread(
 
     for (int64 i = 0; i < count; i++) {
       FCesium3DTilesStyle result =
-          ICesium3DTilesStylingCallbacks::Execute_EvaluateStyle(
+          ICesium3DTilesStylingProvider::Execute_EvaluateStyle(
               pInterface.GetObject(),
               propertyTable,
               i);
@@ -953,7 +953,8 @@ bool encodeFeatureStylingGameThread(
       *pWriteShow = uint8_t(result.bShow);
     }
 
-    FString name("_FEATURE_ID_0_Color");
+    // TODO: Put in EncodedFeaturesMetadata.h so it's standardized
+    FString name(encodedFeatureIdSet.name + MaterialFeatureColorSuffix);
     UTexture2D** ppColorTexture = styling.colorTextures.Find(name);
     UTexture2D* pColorTexture = ppColorTexture ? *ppColorTexture : nullptr;
 

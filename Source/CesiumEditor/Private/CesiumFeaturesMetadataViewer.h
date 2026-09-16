@@ -22,7 +22,7 @@ class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
 enum class ECesiumMetadataStatisticSemantic : uint8;
-enum class ComponentSearchResult;
+enum class ECesiumStylingMode : uint8;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
@@ -162,6 +162,16 @@ private:
      * The name of the property table that this instance references.
      */
     TSharedRef<FString> pPropertyTableName;
+    /**
+     * The combo box widget for selecting the style method.
+     */
+    TSharedPtr<SComboBox<TSharedRef<ECesiumFeatureStylingMode>>>
+        pStylingModeCombo;
+    /**
+     * The option to set as the selected encoded type, if previously specified
+     * (e.g., by details queried from UCesiumFeatureMetadataComponent).
+     */
+    TSharedPtr<ECesiumFeatureStylingMode> pStylingModeSelection;
 
     bool operator==(const FeatureIdSetInstance& rhs) const;
     bool operator!=(const FeatureIdSetInstance& rhs) const;
@@ -232,6 +242,11 @@ private:
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
 
+  void buildStylingModeDropdown(TSharedRef<SVerticalBox>& pContent);
+  void buildGltfFeaturesSection(TSharedRef<SVerticalBox>& pContent);
+  void buildGltfMetadataSection(TSharedRef<SVerticalBox>& pContent);
+  void buildTilesetStatisticsSection(TSharedRef<SVerticalBox>& pContent);
+
   ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
   ComponentSearchResult findOnComponent(
       TSharedRef<PropertyInstance> pItem,
@@ -254,6 +269,8 @@ private:
 
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
+
+  // TArray<ECesiumStylingMode> _stylingModes;
 
   TArray<ClassStatisticsView> _statisticsClasses;
   // The current Features / Metadata implementation folds the class / property

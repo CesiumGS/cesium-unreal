@@ -15,6 +15,19 @@
 #pragma region Features descriptions
 
 /**
+ * @brief Determines how features in a Cesium3DTileset will be visually styled.
+ */
+UENUM()
+enum class ECesiumFeatureStylingMode : uint8 {
+  Material = 0 UMETA(
+      ToolTip =
+          "Passes metadata values to the material layer for use with other material logic."),
+  Blueprint = 1 UMETA(
+      ToolTip =
+          "Calls the Blueprint class implementing the ICesium3DTilesStylingProvider interface specified in BlueprintStyleClass.")
+};
+
+/**
  * @brief Description of a feature ID set from either EXT_mesh_features or
  * EXT_instance_features.
  */
@@ -55,6 +68,16 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Features")
   FString PropertyTableName;
+
+  /**
+   * The styling provider to use to apply styling information to individual
+   * features.
+   *
+   * By default, the features are connected to a property table in the material
+   * to be acted upon. However, they can also be styled via Blueprint.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Features")
+  ECesiumFeatureStylingMode StylingMode = ECesiumFeatureStylingMode::Material;
 };
 
 /**

@@ -3739,9 +3739,7 @@ static void loadPrimitiveGameThreadPart(
   UObject* pBlueprintStyling = nullptr;
   const auto* pFeaturesMetadataComponent =
       pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
-  if (pFeaturesMetadataComponent &&
-      pFeaturesMetadataComponent->StylingProviderType ==
-          ECesiumStylingProviderType::Blueprint) {
+  if (pFeaturesMetadataComponent) {
     pBlueprintStyling = pFeaturesMetadataComponent->GetStyleInstance();
   }
 
