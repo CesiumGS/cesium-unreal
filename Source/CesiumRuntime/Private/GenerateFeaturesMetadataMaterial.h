@@ -31,6 +31,7 @@ struct MaterialFunctionLibrary {
 struct FeaturesMetadataClassification
     : public GenerateMaterialUtility::MaterialNodeClassification {
   TSet<UMaterialExpressionMaterialFunctionCall*> GetFeatureIdNodes;
+  TSet<UMaterialExpressionCustom*> GetBlueprintStyleNodes;
   TSet<UMaterialExpressionCustom*> GetPropertyValueNodes;
   TSet<UMaterialExpressionCustom*> ApplyValueTransformNodes;
   TSet<UMaterialExpressionIf*> IfNodes;

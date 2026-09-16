@@ -214,3 +214,4 @@ public:
   static int64 GetFeatureIDFromHit(
       UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
       const FHitResult& Hit);
+};

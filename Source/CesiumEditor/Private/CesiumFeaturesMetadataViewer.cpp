@@ -15,7 +15,6 @@
 #include "LevelEditor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "ScopedTransaction.h"
-#include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -99,14 +98,15 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
   this->gatherGltfFeaturesMetadata();
   this->syncPropertyEncodingDetails();
 
-  TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
-  pContent->ClearChildren();
-
   TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
 
   this->buildGltfFeaturesSection(pVerticalBox);
   this->buildGltfMetadataSection(pVerticalBox);
   this->buildTilesetStatisticsSection(pVerticalBox);
+
+  const FString refreshButtonTooltip =
+      "Refreshes the lists with the feature ID sets and metadata from "
+      "currently loaded tiles in the ACesium3DTileset.";
 
   pVerticalBox->AddSlot()
       .Padding(0.0f, 10.0f)
@@ -118,13 +118,14 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                .ContentPadding(FMargin(1.0, 1.0))
                .HAlign(EHorizontalAlignment::HAlign_Center)
                .Text(FText::FromString(TEXT("Refresh for Current View")))
-               .ToolTipText(FText::FromString(TEXT(
-                   "Refreshes the lists with the feature ID sets and metadata from currently loaded tiles in the ACesium3DTileset.")))
+               .ToolTipText(FText::FromString(refreshButtonTooltip))
                .OnClicked_Lambda([this]() {
                  this->SyncAndRebuildUI();
                  return FReply::Handled();
                })];
 
+  TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
+  pContent->ClearChildren();
   pContent->AddSlot()[pVerticalBox];
 }
 

@@ -162,3 +162,4 @@ public:
   static int64 GetFeatureID(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
       int64 Index);
+};
