@@ -4,6 +4,7 @@
 
 #include "CesiumCommon.h"
 #include "CesiumPropertyTable.h"
+#include "UObject/Interface.h"
 
 #include "Cesium3DTilesStyle.generated.h"
 
