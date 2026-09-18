@@ -96,7 +96,7 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
 
   this->gatherTilesetStatistics();
   this->gatherGltfFeaturesMetadata();
-  this->syncPropertyEncodingDetails();
+  this->syncEncodingDetails();
 
   TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
 
@@ -460,7 +460,7 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
   }
 }
 
-void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
+void CesiumFeaturesMetadataViewer::syncEncodingDetails() {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return;
   }
@@ -527,6 +527,30 @@ void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
         pInstance->encodingDetails->pEncodedComponentTypeSelection =
             EncodedComponentTypeEnum.options[componentTypeIndex].ToSharedPtr();
       }
+    }
+  }
+
+  const TArray<FCesiumFeatureIdSetDescription>& featureIdSets =
+      this->_pFeaturesMetadataComponent->Description.PrimitiveFeatures
+          .FeatureIdSets;
+  for (const FCesiumFeatureIdSetDescription& featureIdSet : featureIdSets) {
+    FeatureIdSetView* pFeatureIdSetView = this->_featureIdSets.FindByPredicate(
+        [&name = featureIdSet.Name](const FeatureIdSetView& set) {
+          return *set.pName == name;
+        });
+    if (!pFeatureIdSetView) {
+      continue;
+    }
+
+    for (TSharedRef<FeatureIdSetInstance>& pInstance :
+         pFeatureIdSetView->instances) {
+      int64 stylingModeIndex = int64(featureIdSet.StylingMode);
+
+      // Here the combo boxes will still be nullptr because
+      // OnGenerateRow is not executed right away, so save the selected
+      // option.
+      pInstance->pStylingModeSelection =
+          FeatureStylingModeEnum.options[stylingModeIndex].ToSharedPtr();
     }
   }
 }
@@ -1102,13 +1126,12 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
                    "The property table with which this feature ID set should be used. "
                    "Add properties from the corresponding property table under \"glTF Metadata\"."))];
 
-  // TODO: style selection dropdown.
   this->createEnumComboBox(
       pItem->pStylingModeCombo,
       FeatureStylingModeEnum.options,
       pItem->pStylingModeSelection ? *pItem->pStylingModeSelection
                                    : ECesiumFeatureStylingMode::Material,
-      FString());
+      FString(""));
   pBox->AddSlot()
       .AutoWidth()
       .HAlign(EHorizontalAlignment::HAlign_Fill)
@@ -1154,8 +1177,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       FText::FromString(TEXT(
           "Remove this feature ID set from the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create([this, pItem]() {
-        return this->findOnComponent(pItem) ==
-               ComponentSearchResult::ExactMatch;
+        return this->findOnComponent(pItem) != ComponentSearchResult::NoMatch;
       }));
 
   pBox->AddSlot()
@@ -1190,9 +1212,7 @@ void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
                                       createFeatureIdSetInstanceRow)]];
 }
 
-void CesiumFeaturesMetadataViewer::buildStylingModeDropdown(
-    TSharedRef<SVerticalBox>& pContent) {
-
+void buildStylingModeDropdown(TSharedRef<SVerticalBox>& pContent) {
   pContent->AddSlot().AutoHeight()
       [SNew(SHeader).Content()
            [SNew(STextBlock)
@@ -1504,6 +1524,19 @@ ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
   }
 }
 
+namespace {
+ECesiumFeatureStylingMode getSelectedFeatureStylingMode(
+    const TSharedPtr<SComboBox<TSharedRef<ECesiumFeatureStylingMode>>>&
+        pCombo) {
+  if (!pCombo) {
+    return ECesiumFeatureStylingMode::Material;
+  }
+
+  TSharedPtr<ECesiumFeatureStylingMode> pMode = pCombo->GetSelectedItem();
+  return pMode ? *pMode : ECesiumFeatureStylingMode::Material;
+}
+} // namespace
+
 ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<FeatureIdSetInstance> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
@@ -1520,7 +1553,12 @@ ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     return ComponentSearchResult::NoMatch;
   }
 
-  return pFeatureIdSet->PropertyTableName == *pItem->pPropertyTableName
+  if (pFeatureIdSet->PropertyTableName != *pItem->pPropertyTableName) {
+    return ComponentSearchResult::PartialMatch;
+  }
+
+  return pFeatureIdSet->StylingMode ==
+                 getSelectedFeatureStylingMode(pItem->pStylingModeCombo)
              ? ComponentSearchResult::ExactMatch
              : ComponentSearchResult::PartialMatch;
 }
@@ -1661,6 +1699,8 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
 
   pFeatureIdSet->Type = pItem->type;
   pFeatureIdSet->PropertyTableName = *pItem->pPropertyTableName;
+  pFeatureIdSet->StylingMode =
+      getSelectedFeatureStylingMode(pItem->pStylingModeCombo);
 
   this->_pFeaturesMetadataComponent->PostEditChange();
   UKismetSystemLibrary::EndTransaction();

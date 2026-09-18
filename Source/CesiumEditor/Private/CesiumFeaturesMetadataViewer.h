@@ -163,12 +163,12 @@ private:
      */
     TSharedRef<FString> pPropertyTableName;
     /**
-     * The combo box widget for selecting the style method.
+     * The combo box widget for setting the styling mode on the feature ID set.
      */
     TSharedPtr<SComboBox<TSharedRef<ECesiumFeatureStylingMode>>>
         pStylingModeCombo;
     /**
-     * The option to set as the selected encoded type, if previously specified
+     * The option to set as the selected styling mode, if previously specified
      * (e.g., by details queried from UCesiumFeatureMetadataComponent).
      */
     TSharedPtr<ECesiumFeatureStylingMode> pStylingModeSelection;
@@ -201,10 +201,10 @@ private:
   void gatherGltfFeaturesMetadata();
 
   /**
-   * @brief Syncs with any property encoding details present on the
+   * @brief Syncs with any encoding details present on the
    * UCesiumFeaturesMetadataComponent.
    */
-  void syncPropertyEncodingDetails();
+  void syncEncodingDetails();
 
   TSharedRef<ITableRow> createStatisticRow(
       TSharedRef<StatisticView> pItem,
@@ -242,7 +242,6 @@ private:
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
 
-  void buildStylingModeDropdown(TSharedRef<SVerticalBox>& pContent);
   void buildGltfFeaturesSection(TSharedRef<SVerticalBox>& pContent);
   void buildGltfMetadataSection(TSharedRef<SVerticalBox>& pContent);
   void buildTilesetStatisticsSection(TSharedRef<SVerticalBox>& pContent);
@@ -269,8 +268,6 @@ private:
 
   TWeakObjectPtr<ACesium3DTileset> _pTileset;
   TWeakObjectPtr<UCesiumFeaturesMetadataComponent> _pFeaturesMetadataComponent;
-
-  // TArray<ECesiumStylingMode> _stylingModes;
 
   TArray<ClassStatisticsView> _statisticsClasses;
   // The current Features / Metadata implementation folds the class / property

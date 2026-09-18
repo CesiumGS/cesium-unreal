@@ -1,8 +1,6 @@
 // Copyright 2020-2026 CesiumGS, Inc. and Contributors
 
 #include "CesiumPrimitive.h"
-#include "Cesium3DTilesStyle.h"
-#include "CesiumCommon.h"
 
 FVector3f scalePositionForUnreal(const FVector3f& position) {
   FVector3f result;

@@ -19,8 +19,6 @@
 
 #include "CesiumPrimitive.generated.h"
 
-class UTexture2D;
-
 namespace CesiumGltf {
 struct Model;
 struct MeshPrimitive;
