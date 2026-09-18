@@ -86,11 +86,6 @@ public:
    * extension.
    */
   EncodedFeaturesMetadata::EncodedPrimitiveMetadata encodedMetadata;
-  /**
-   * The encoded representation of the primitive's EXT_structural_metadata
-   * extension.
-   */
-  EncodedFeaturesMetadata::EncodedFeatureStyling encodedStyling;
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
@@ -148,6 +143,9 @@ public:
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 
   void destroy();
+
+  CesiumPrimitiveData& operator=(const CesiumPrimitiveData& other) = delete;
+  CesiumPrimitiveData& operator=(CesiumPrimitiveData&& other) = default;
 };
 
 /**

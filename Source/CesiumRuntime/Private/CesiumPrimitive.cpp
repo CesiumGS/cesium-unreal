@@ -18,7 +18,6 @@ void CesiumPrimitiveData::destroy() {
 
   EncodedFeaturesMetadata::destroyEncodedPrimitiveFeatures(
       this->encodedFeatures);
-  EncodedFeaturesMetadata::destroyEncodedFeatureStyling(this->encodedStyling);
   this->encodedMetadata = EncodedFeaturesMetadata::EncodedPrimitiveMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS

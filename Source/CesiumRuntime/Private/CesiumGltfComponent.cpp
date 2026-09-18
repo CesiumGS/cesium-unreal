@@ -1146,8 +1146,8 @@ static void loadPrimitiveFeaturesMetadata(
     primitiveResult.EncodedFeatures =
         EncodedFeaturesMetadata::encodePrimitiveFeaturesAnyThreadPart(
             pFeaturesMetadataDescription->PrimitiveFeatures,
-            primitiveResult.Features);
-
+            primitiveResult.Features,
+            pModelResult->Metadata);
     primitiveResult.EncodedMetadata =
         EncodedFeaturesMetadata::encodePrimitiveMetadataAnyThreadPart(
             pFeaturesMetadataDescription->PrimitiveMetadata,
@@ -2521,7 +2521,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-              -> UCesiumGltfComponent::CreateOffGameThreadResult {
+          -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -2910,9 +2910,14 @@ static void SetFeaturesMetadataParameterValues(
         textureCoordinateSet.Value);
   }
 
-  if (encodePrimitiveFeaturesGameThreadPart(primitiveData.encodedFeatures)) {
-    for (EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet :
-         primitiveData.encodedFeatures.featureIdSets) {
+  if (encodePrimitiveFeaturesGameThreadPart(
+          primitiveData.encodedFeatures,
+          gltfComponent.GetModelMetadata(),
+          pBlueprintStyling)) {
+    for (int32 i = 0; i < primitiveData.encodedFeatures.featureIdSets.Num();
+         i++) {
+      EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet =
+          primitiveData.encodedFeatures.featureIdSets[i];
       FString SafeName =
           EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIdSet.name);
       if (encodedFeatureIdSet.nullFeatureId) {
@@ -2934,6 +2939,18 @@ static void SetFeaturesMetadataParameterValues(
             SafeName,
             *encodedFeatureIdSet.texture);
       }
+
+      if (encodedFeatureIdSet.styling) {
+        pMaterial->SetTextureParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(
+                    encodedFeatureIdSet.name +
+                    EncodedFeaturesMetadata::MaterialFeatureColorSuffix),
+                association,
+                index),
+            encodedFeatureIdSet.styling->pColorTexture->pTexture
+                ->getUnrealTexture());
+      }
     }
 
     for (const EncodedFeaturesMetadata::EncodedPropertyTexture&
@@ -2952,19 +2969,6 @@ static void SetFeaturesMetadataParameterValues(
           association,
           index,
           propertyTable);
-    }
-  }
-
-  if (encodeFeatureStylingGameThread(
-          primitiveData.encodedStyling,
-          primitiveData.encodedFeatures,
-          primitiveData.features,
-          gltfComponent.GetModelMetadata(),
-          pBlueprintStyling)) {
-    for (auto textureIt : primitiveData.encodedStyling.colorTextures) {
-      pMaterial->SetTextureParameterValueByInfo(
-          FMaterialParameterInfo(FName(textureIt.Key), association, index),
-          textureIt.Value);
     }
   }
 
