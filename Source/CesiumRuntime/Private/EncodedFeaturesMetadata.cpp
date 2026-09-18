@@ -93,17 +93,38 @@ FString getNameForFeatureIDSet(
 }
 
 namespace {
+CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> createDataTexture(
+    int64 elementCount,
+    int32 bytesPerChannel,
+    int32 channels,
+    std::byte defaultValue = std::byte(0)) {
+  int64 sqrtElementCount = glm::sqrt(elementCount);
+
+  bool perfectSquare = (sqrtElementCount * sqrtElementCount == elementCount);
+  int64 textureDimension =
+      perfectSquare ? sqrtElementCount : (sqrtElementCount + 1);
+
+  CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
+      new CesiumImage::ImageAsset();
+  pImage->width = pImage->height = textureDimension;
+  pImage->bytesPerChannel = bytesPerChannel;
+  pImage->channels = channels;
+  pImage->pixelData.resize(
+      textureDimension * textureDimension * bytesPerChannel * channels,
+      defaultValue);
+  return pImage;
+}
 
 /**
  * @brief Encodes a feature ID attribute for access in a Unreal Engine Material.
  * The feature IDs are simply sent to the GPU as texture coordinates, so this
  * just handles the variable names necessary for material access.
  *
- * @returns The encoded feature ID attribute, or std::nullopt if the attribute
- * was somehow invalid.
+ * @returns Whether the feature ID attribute was succesfully encoded.
  */
-std::optional<EncodedFeatureIdSet>
-encodeFeatureIdAttribute(const FCesiumFeatureIdAttribute& attribute) {
+bool encodeFeatureIdAttribute(
+    const FCesiumFeatureIdAttribute& attribute,
+    EncodedFeatureIdSet& result) {
   const ECesiumFeatureIdAttributeStatus status =
       UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
           attribute);
@@ -113,16 +134,16 @@ encodeFeatureIdAttribute(const FCesiumFeatureIdAttribute& attribute) {
         LogCesium,
         Warning,
         TEXT("Can't encode invalid feature ID attribute, skipped."));
-    return std::nullopt;
+    return false;
   }
 
-  EncodedFeatureIdSet result;
   result.attribute = attribute.getAttributeIndex();
-  return result;
+  return true;
 }
 
-std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
+bool encodeFeatureIdTexture(
     const FCesiumFeatureIdTexture& texture,
+    EncodedFeatureIdSet& result,
     TMap<const CesiumImage::ImageAsset*, TWeakPtr<LoadedTextureResult>>&
         featureIdTextureMap) {
   const ECesiumFeatureIdTextureStatus status =
@@ -133,7 +154,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
         LogCesium,
         Warning,
         TEXT("Can't encode invalid feature ID texture, skipped."));
-    return std::nullopt;
+    return false;
   }
 
   const CesiumGltf::FeatureIdTextureView& featureIdTextureView =
@@ -143,7 +164,6 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureIdTexture)
 
-  EncodedFeatureIdSet result;
   EncodedFeatureIdTexture& encodedFeatureIdTexture = result.texture.emplace();
 
   encodedFeatureIdTexture.channels = featureIdTextureView.getChannels();
@@ -185,14 +205,75 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
         encodedFeatureIdTexture.pTexture);
   }
 
-  return result;
+  return true;
+}
+
+void encodeFeatureStylingAnyThreadPart(
+    EncodedFeatureIdSet& encodedFeatureIdSet,
+    const FCesiumFeatureIdSet& featureIdSet,
+    const FCesiumModelMetadata& modelMetadata) {
+  int64 propertyTableIndex =
+      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIdSet);
+
+  const FCesiumPropertyTable& propertyTable =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTable(
+          modelMetadata,
+          propertyTableIndex);
+
+  int64 count = UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
+      propertyTable);
+
+  if (count == 0) {
+    return;
+  }
+
+  EncodedFeatureStyling& styling = encodedFeatureIdSet.styling.emplace();
+
+  {
+    CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
+        createDataTexture(
+            count,
+            1, /* bytesPerChannel */
+            1 /* channels */,
+            std::byte(255));
+
+    encodedFeatureIdSet.styling->pShowTexture = loadTextureAnyThreadPart(
+        *pImage,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Nearest,
+        false, /* useMipMaps */
+        TEXTUREGROUP_8BitData,
+        true, /* sRGB */
+        EPixelFormat::PF_R8);
+  }
+
+  {
+    CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
+        createDataTexture(
+            count,
+            1, /* bytesPerChannel */
+            4 /* channels */,
+            std::byte(255));
+
+    encodedFeatureIdSet.styling->pColorTexture = loadTextureAnyThreadPart(
+        *pImage,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Nearest,
+        false, /* useMipMaps */
+        TEXTUREGROUP_8BitData,
+        true, /* sRGB */
+        EPixelFormat::PF_R8G8B8A8);
+  }
 }
 
 } // namespace
 
 EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
     const FCesiumPrimitiveFeaturesDescription& featuresDescription,
-    const FCesiumPrimitiveFeatures& features) {
+    const FCesiumPrimitiveFeatures& features,
+    const FCesiumModelMetadata& modelMetadata) {
   EncodedPrimitiveFeatures result;
 
   const TArray<FCesiumFeatureIdSetDescription>& featureIDSetDescriptions =
@@ -224,39 +305,170 @@ EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
       continue;
     }
 
-    std::optional<EncodedFeatureIdSet> encodedSet;
+    EncodedFeatureIdSet& encodedSet = result.featureIdSets.Emplace_GetRef();
     ECesiumFeatureIdSetType type =
         UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(set);
 
-    if (type == ECesiumFeatureIdSetType::Attribute) {
-      const FCesiumFeatureIdAttribute& attribute =
-          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(set);
-      encodedSet = encodeFeatureIdAttribute(attribute);
-    } else if (type == ECesiumFeatureIdSetType::Texture) {
-      const FCesiumFeatureIdTexture& texture =
-          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(set);
-      encodedSet = encodeFeatureIdTexture(texture, featureIdTextureMap);
-    } else if (type == ECesiumFeatureIdSetType::Implicit) {
-      encodedSet = EncodedFeatureIdSet();
+    bool success = true;
+    switch (type) {
+    case ECesiumFeatureIdSetType::Attribute:
+      success = encodeFeatureIdAttribute(
+          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(set),
+          encodedSet);
+      break;
+    case ECesiumFeatureIdSetType::Texture:
+      success = encodeFeatureIdTexture(
+          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(set),
+          encodedSet,
+          featureIdTextureMap);
+      break;
+    case ECesiumFeatureIdSetType::Implicit:
+      break;
+    default:
+      success = false;
+      break;
     }
 
-    if (!encodedSet)
+    if (!success) {
+      result.featureIdSets.Pop();
       continue;
+    }
 
-    encodedSet->name = name;
-    encodedSet->index = i;
-    encodedSet->propertyTableName = pDescription->PropertyTableName;
-    encodedSet->nullFeatureId =
+    encodedSet.name = name;
+    encodedSet.index = i;
+    encodedSet.propertyTableName = pDescription->PropertyTableName;
+    encodedSet.nullFeatureId =
         UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(set);
 
-    result.featureIdSets.Add(*encodedSet);
+    if (pDescription->StylingMode == ECesiumFeatureStylingMode::Blueprint) {
+      encodeFeatureStylingAnyThreadPart(encodedSet, set, modelMetadata);
+    }
   }
 
   return result;
 }
 
+namespace {
+bool encodeFeatureStylingGameThreadPart(
+    EncodedFeatureIdSet& encodedFeatureIdSet,
+    const FCesiumModelMetadata& modelMetadata,
+    UObject* pBlueprintStyleInstance) {
+  if (!IsValid(pBlueprintStyleInstance)) {
+    return false;
+  }
+
+  const FCesiumPropertyTable* pTable =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(modelMetadata)
+          .FindByPredicate([&propertyTableName =
+                                encodedFeatureIdSet.propertyTableName](
+                               const FCesiumPropertyTable& propertyTable) {
+            return getNameForPropertyTable(propertyTable) == propertyTableName;
+          });
+
+  if (!pTable) {
+    return false;
+  }
+
+  int64 count =
+      UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(*pTable);
+
+  std::vector<std::byte> colorResult(
+      count * sizeof(uint8_t) * 4,
+      std::byte(255));
+  uint8_t* pColorData = reinterpret_cast<uint8_t*>(colorResult.data());
+
+  std::vector<std::byte> showResult(count * sizeof(uint8_t), std::byte(255));
+  uint8_t* pShowData = reinterpret_cast<uint8_t*>(showResult.data());
+
+  TScriptInterface<ICesium3DTilesStylingProvider> pInterface =
+      pBlueprintStyleInstance;
+
+  for (int64 i = 0; i < count; i++) {
+    FCesium3DTilesStyle result =
+        ICesium3DTilesStylingProvider::Execute_EvaluateStyle(
+            pInterface.GetObject(),
+            *pTable,
+            i);
+    uint8_t* pWriteColor = pColorData + (i * sizeof(uint8_t) * 4);
+    pWriteColor[0] = result.Color.R;
+    pWriteColor[1] = result.Color.G;
+    pWriteColor[2] = result.Color.B;
+    pWriteColor[3] = result.Color.A;
+
+    uint8_t* pWriteShow = pShowData + (i * sizeof(uint8_t));
+    *pWriteShow = uint8_t(result.bShow ? 255 : 0);
+  }
+
+  auto& styling = *encodedFeatureIdSet.styling;
+  if (styling.pShowTexture) {
+    TObjectPtr<UTexture2D> pShowTexture =
+        styling.pShowTexture->pTexture->getUnrealTexture();
+
+    FUpdateTextureRegion2D region;
+    region.DestX = 0;
+    region.DestY = 0;
+    region.Width = pShowTexture->GetResource()->GetSizeX();
+    region.Height = pShowTexture->GetResource()->GetSizeY();
+    region.SrcX = 0;
+    region.SrcY = 0;
+
+    // Pitch = size in bytes of each row of the source image
+    uint32 sourcePitch = region.Width * sizeof(uint8_t);
+
+    ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
+    ([pResource = pShowTexture->GetResource(),
+      result = std::move(showResult),
+      region,
+      sourcePitch](FRHICommandListImmediate& RHICmdList) {
+      if (pResource) {
+        RHICmdList.UpdateTexture2D(
+            pResource->TextureRHI,
+            0,
+            region,
+            sourcePitch,
+            reinterpret_cast<const uint8*>(result.data()));
+      }
+    });
+  }
+
+  if (styling.pColorTexture) {
+    TObjectPtr<UTexture2D> pColorTexture =
+        styling.pColorTexture->pTexture->getUnrealTexture();
+
+    FUpdateTextureRegion2D region;
+    region.DestX = 0;
+    region.DestY = 0;
+    region.Width = pColorTexture->GetResource()->GetSizeX();
+    region.Height = pColorTexture->GetResource()->GetSizeY();
+    region.SrcX = 0;
+    region.SrcY = 0;
+
+    // Pitch = size in bytes of each row of the source image
+    uint32 sourcePitch = region.Width * 4 * sizeof(uint8_t);
+
+    ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
+    ([pResource = pColorTexture->GetResource(),
+      result = std::move(colorResult),
+      region,
+      sourcePitch](FRHICommandListImmediate& RHICmdList) {
+      if (pResource) {
+        RHICmdList.UpdateTexture2D(
+            pResource->TextureRHI,
+            0,
+            region,
+            sourcePitch,
+            reinterpret_cast<const uint8*>(result.data()));
+      }
+    });
+  }
+  return true;
+}
+} // namespace
+
 bool encodePrimitiveFeaturesGameThreadPart(
-    EncodedPrimitiveFeatures& encodedFeatures) {
+    EncodedPrimitiveFeatures& encodedFeatures,
+    const FCesiumModelMetadata& modelMetadata,
+    UObject* pBlueprintStyleInstance) {
   bool success = true;
 
   // Not all feature ID sets are necessarily textures, but reserve the max
@@ -266,16 +478,32 @@ bool encodePrimitiveFeaturesGameThreadPart(
 
   for (EncodedFeatureIdSet& encodedFeatureIdSet :
        encodedFeatures.featureIdSets) {
-    if (!encodedFeatureIdSet.texture) {
-      continue;
+    if (encodedFeatureIdSet.texture) {
+      auto& encodedFeatureIdTexture = *encodedFeatureIdSet.texture;
+      if (uniqueFeatureIdImages.Find(encodedFeatureIdTexture.pTexture.Get()) ==
+          INDEX_NONE) {
+        success &= loadTextureGameThreadPart(
+                       encodedFeatureIdTexture.pTexture.Get()) != nullptr;
+        uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture.Get());
+      }
     }
 
-    auto& encodedFeatureIdTexture = *encodedFeatureIdSet.texture;
-    if (uniqueFeatureIdImages.Find(encodedFeatureIdTexture.pTexture.Get()) ==
-        INDEX_NONE) {
-      success &= loadTextureGameThreadPart(
-                     encodedFeatureIdTexture.pTexture.Get()) != nullptr;
-      uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture.Get());
+    if (encodedFeatureIdSet.styling) {
+      bool loadTextureSuccess =
+          loadTextureGameThreadPart(
+              encodedFeatureIdSet.styling->pShowTexture.Get()) != nullptr;
+      loadTextureSuccess &=
+          loadTextureGameThreadPart(
+              encodedFeatureIdSet.styling->pColorTexture.Get()) != nullptr;
+
+      success &= loadTextureSuccess;
+
+      if (loadTextureSuccess) {
+        success &= encodeFeatureStylingGameThreadPart(
+            encodedFeatureIdSet,
+            modelMetadata,
+            pBlueprintStyleInstance);
+      }
     }
   }
 
@@ -286,15 +514,24 @@ void destroyEncodedPrimitiveFeatures(
     EncodedPrimitiveFeatures& encodedFeatures) {
   for (EncodedFeatureIdSet& encodedFeatureIdSet :
        encodedFeatures.featureIdSets) {
-    if (!encodedFeatureIdSet.texture) {
-      continue;
+    if (encodedFeatureIdSet.texture) {
+      EncodedFeatureIdTexture& encodedFeatureIdTexture =
+          *encodedFeatureIdSet.texture;
+      if (encodedFeatureIdTexture.pTexture) {
+        encodedFeatureIdTexture.pTexture->pTexture = nullptr;
+      }
     }
-
-    auto& encodedFeatureIdTexture = *encodedFeatureIdSet.texture;
-    if (encodedFeatureIdTexture.pTexture) {
-      encodedFeatureIdTexture.pTexture->pTexture = nullptr;
+    if (encodedFeatureIdSet.styling) {
+      EncodedFeatureStyling& styling = *encodedFeatureIdSet.styling;
+      if (styling.pShowTexture) {
+        styling.pShowTexture->pTexture = nullptr;
+      }
+      if (styling.pColorTexture) {
+        styling.pColorTexture->pTexture = nullptr;
+      }
     }
   }
+  encodedFeatures.featureIdSets.Empty();
 }
 
 FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable) {
@@ -528,20 +765,11 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
             GetPropertyTablePropertyStatus(property) ==
         ECesiumPropertyTablePropertyStatus::Valid) {
 
-      int64 floorSqrtFeatureCount = glm::sqrt(propertyTableCount);
-      int64 textureDimension =
-          (floorSqrtFeatureCount * floorSqrtFeatureCount == propertyTableCount)
-              ? floorSqrtFeatureCount
-              : (floorSqrtFeatureCount + 1);
-
       CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
-          new CesiumImage::ImageAsset();
-      pImage->width = pImage->height = textureDimension;
-      pImage->bytesPerChannel = encodedFormat.bytesPerChannel;
-      pImage->channels = encodedFormat.channels;
-      pImage->pixelData.resize(
-          textureDimension * textureDimension * encodedFormat.bytesPerChannel *
-          encodedFormat.channels);
+          createDataTexture(
+              propertyTableCount,
+              encodedFormat.bytesPerChannel,
+              encodedFormat.channels);
 
       if (encodingDetails.Conversion ==
           ECesiumEncodedMetadataConversion::ParseColorFromString) {
@@ -550,7 +778,8 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
             property,
             std::span(pImage->pixelData),
             encodedFormat.bytesPerChannel * encodedFormat.channels);
-      } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */ {
+      } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */
+      {
         CesiumEncodedMetadataCoerce::encode(
             *pDescription,
             property,
@@ -694,8 +923,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
                 false,
                 TEXTUREGROUP_8BitData,
                 false,
-                // This assumes that the texture's image only contains one byte
-                // per channel.
+                // This assumes that the texture's image only contains one
+                // byte per channel.
                 EPixelFormat::PF_R8G8B8A8_UINT)));
         propertyTexturePropertyMap.Emplace(pImage, encodedProperty.pTexture);
       }
@@ -933,8 +1162,8 @@ FString createHlslSafeName(const FString& rawName) {
   return safeName;
 }
 
-// TODO: consider picking better pixel formats when they are available for the
-// current platform.
+// TODO: consider picking better pixel formats when they are available for
+// the current platform.
 EncodedPixelFormat getPixelFormat(
     ECesiumEncodedMetadataType Type,
     ECesiumEncodedMetadataComponentType ComponentType) {
