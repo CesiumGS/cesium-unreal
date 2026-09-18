@@ -37,8 +37,6 @@ public:
       Meta = (DisplayName = "Add Properties"))
   void AddProperties();
 
-  // rename: Setup Material?
-
   /**
    * Creates or overwrites a boiler-plate material layer that exposes the
    * requested metadata properties in the current description. The nodes to
@@ -66,13 +64,8 @@ public:
 #endif
 
   /**
-   * The Blueprint class to instantiate for feature styling. Only used when
-   * StylingProviderType is set to Blueprint.
-   *
-   * Because Blueprints in Unreal need to run on the main thread, a Blueprint
-   * styling provider can cause significant performance degradation when styling
-   * large numbers of features. If improved performance is required, styling via
-   * C++ via the LambdaStylingProvider property should be used instead.
+   * The Blueprint class to instantiate for feature styling. This is used for
+   * any feature ID sets with StylingMode set to Blueprint.
    */
   UPROPERTY(
       EditAnywhere,
@@ -162,7 +155,11 @@ public:
   virtual void PostEditChangeChainProperty(
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
 #endif
-  // TODO: Should this be put on tileset instead??
+
+  /**
+   * Gets the instance of BlueprintStyleClass applied to features in this
+   * tileset. This may used to set custom variables on the style at runtime.
+   */
   UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
   UObject* GetStyleInstance() const { return this->_pStyleInstance; }
 

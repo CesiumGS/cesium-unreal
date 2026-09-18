@@ -1031,16 +1031,11 @@ void CesiumFeaturesMetadataViewer::createEnumComboBox(
                                   : FText::FromString(FString());
                      })
                      .ToolTipText_Lambda([&pComboBox, tooltip]() {
-                       if constexpr (std::is_same_v<
-                                         TEnum,
-                                         ECesiumEncodedMetadataConversion>) {
-                         UEnum* pEnum =
-                             StaticEnum<ECesiumEncodedMetadataConversion>();
-                         if (pEnum) {
-                           return pComboBox->GetSelectedItem().IsValid()
-                                      ? pEnum->GetToolTipTextByIndex(int64(
-                                            *pComboBox->GetSelectedItem()))
-                                      : FText::FromString(FString());
+                       if (tooltip.IsEmpty()) {
+                         UEnum* pEnum = StaticEnum<TEnum>();
+                         if (pEnum && pComboBox->GetSelectedItem().IsValid()) {
+                           return pEnum->GetToolTipTextByIndex(
+                               int64(*pComboBox->GetSelectedItem()));
                          }
                        }
                        return FText::FromString(tooltip);
@@ -1131,7 +1126,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       FeatureStylingModeEnum.options,
       pItem->pStylingModeSelection ? *pItem->pStylingModeSelection
                                    : ECesiumFeatureStylingMode::Material,
-      FString(""));
+      FString());
   pBox->AddSlot()
       .AutoWidth()
       .HAlign(EHorizontalAlignment::HAlign_Fill)
@@ -1210,30 +1205,6 @@ void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
                                   this,
                                   &CesiumFeaturesMetadataViewer::
                                       createFeatureIdSetInstanceRow)]];
-}
-
-void buildStylingModeDropdown(TSharedRef<SVerticalBox>& pContent) {
-  pContent->AddSlot().AutoHeight()
-      [SNew(SHeader).Content()
-           [SNew(STextBlock)
-                .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                .Text(FText::FromString(TEXT("Styling Mode")))
-                // .ToolTipText(FText::FromString(gltfFeaturesTooltip))
-                .Margin(FMargin(0.f, 10.f))]];
-
-  const FString materialStylingText =
-      "Metadata values are passed through textures to the generated material layer. "
-      "This enables numeric properties to be visualized through typical material "
-      "logic. Due to Unreal material limitations, properties containing strings, matrices, and arrays may not be able to be encoded.";
-
-  const FString blueprintStylingText =
-      "A Blueprint class is used to apply visual styles to a tileset. This allows more flexible evaluation of metadata properties that are not supported in materials, such as strings and big integers. The style must be evaluated on the main thread, however, which can impact performance.";
-
-  pContent->AddSlot().Padding(
-      0.0f,
-      10.0f)[SNew(STextBlock)
-                 .Text(FText::FromString(materialStylingText))
-                 .AutoWrapText(true)];
 }
 
 const FString gltfFeaturesTooltip = TEXT(

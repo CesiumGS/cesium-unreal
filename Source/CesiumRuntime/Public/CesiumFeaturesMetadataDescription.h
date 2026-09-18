@@ -19,12 +19,24 @@
  */
 UENUM()
 enum class ECesiumFeatureStylingMode : uint8 {
-  Material = 0 UMETA(
-      ToolTip =
-          "Passes metadata values to the material layer for use with other material logic."),
-  Blueprint = 1 UMETA(
-      ToolTip =
-          "Calls the Blueprint class implementing the ICesium3DTilesStylingProvider interface specified in BlueprintStyleClass.")
+  /**
+   * Metadata values are passed through textures to the generated material. This
+   * enables numeric properties to be used with typical material logic. Due to
+   * limitations with Unreal materials, though, any properties that contain
+   * strings, matrices, and arrays may not be able to be properly encoded."
+   */
+  Material,
+  /**
+   * Visual styles for each feature are evaluated in Blueprints before being
+   * passed to the generated material. This enables flexible interaction with
+   * metadata properties that are not supported in materials, such as strings
+   * and big integers. However, this can impact performance since Blueprints are
+   * executed on the main thread.
+   *
+   * The class assigned to BlueprintStyleClass on the component must implement
+   * the ICesium3DTilesStylingProvider interface.
+   */
+  Blueprint
 };
 
 /**
@@ -70,11 +82,11 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
   FString PropertyTableName;
 
   /**
-   * The styling provider to use to apply styling information to individual
-   * features.
+   * The mode used to apply styling to individual features.
    *
-   * By default, the features are connected to a property table in the material
-   * to be acted upon. However, they can also be styled via Blueprint.
+   * By default, feature IDs are used to extract metadata properties from
+   * property tables in the generated material. However, they can also be
+   * styled in a prepass using Blueprints.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Features")
   ECesiumFeatureStylingMode StylingMode = ECesiumFeatureStylingMode::Material;

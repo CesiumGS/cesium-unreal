@@ -12,16 +12,16 @@ USTRUCT(BlueprintType)
 struct FCesium3DTilesStyle {
   GENERATED_BODY()
 public:
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium|Styling")
   /**
    * Whether or not the given feature should be shown.
    */
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium|Styling")
   bool bShow = true;
 
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium|Styling")
   /**
    * The color to apply to the given feature.
    */
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium|Styling")
   FColor Color = FColor(255, 255, 255, 255);
 };
 
