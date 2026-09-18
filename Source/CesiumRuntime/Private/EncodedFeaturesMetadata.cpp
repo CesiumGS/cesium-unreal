@@ -229,39 +229,43 @@ void encodeFeatureStylingAnyThreadPart(
 
   EncodedFeatureStyling& styling = encodedFeatureIdSet.styling.emplace();
 
-  CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pShowImage =
-      createDataTexture(
-          count,
-          1, /* bytesPerChannel */
-          1 /* channels */,
-          std::byte(255));
+  {
+    CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
+        createDataTexture(
+            count,
+            1, /* bytesPerChannel */
+            1 /* channels */,
+            std::byte(255));
 
-  encodedFeatureIdSet.styling->pShowTexture = loadTextureAnyThreadPart(
-      *pShowImage,
-      TextureAddress::TA_Clamp,
-      TextureAddress::TA_Clamp,
-      TextureFilter::TF_Nearest,
-      false, /* useMipMaps */
-      TEXTUREGROUP_8BitData,
-      true, /* sRGB */
-      EPixelFormat::PF_R8);
+    encodedFeatureIdSet.styling->pShowTexture = loadTextureAnyThreadPart(
+        *pImage,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Nearest,
+        false, /* useMipMaps */
+        TEXTUREGROUP_8BitData,
+        true, /* sRGB */
+        EPixelFormat::PF_R8);
+  }
 
-  CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pColorImage =
-      createDataTexture(
-          count,
-          1, /* bytesPerChannel */
-          4 /* channels */,
-          std::byte(255));
+  {
+    CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
+        createDataTexture(
+            count,
+            1, /* bytesPerChannel */
+            4 /* channels */,
+            std::byte(255));
 
-  encodedFeatureIdSet.styling->pColorTexture = loadTextureAnyThreadPart(
-      *pColorImage,
-      TextureAddress::TA_Clamp,
-      TextureAddress::TA_Clamp,
-      TextureFilter::TF_Nearest,
-      false, /* useMipMaps */
-      TEXTUREGROUP_8BitData,
-      true, /* sRGB */
-      EPixelFormat::PF_R8G8B8A8);
+    encodedFeatureIdSet.styling->pColorTexture = loadTextureAnyThreadPart(
+        *pImage,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Nearest,
+        false, /* useMipMaps */
+        TEXTUREGROUP_8BitData,
+        true, /* sRGB */
+        EPixelFormat::PF_R8G8B8A8);
+  }
 }
 
 } // namespace
@@ -1045,7 +1049,7 @@ EncodedModelMetadata encodeModelMetadataAnyThreadPart(
     }
   }
 
-  return std::move(result);
+  return result;
 }
 
 bool encodePropertyTableGameThreadPart(
