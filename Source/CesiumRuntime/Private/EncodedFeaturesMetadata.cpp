@@ -234,7 +234,7 @@ void encodeFeatureStylingAnyThreadPart(
           count,
           1, /* bytesPerChannel */
           1 /* channels */,
-          std::byte(1));
+          std::byte(255));
 
   encodedFeatureIdSet.styling->pShowTexture = loadTextureAnyThreadPart(
       *pShowImage,
@@ -373,7 +373,7 @@ bool encodeFeatureStylingGameThreadPart(
       std::byte(255));
   uint8_t* pColorData = reinterpret_cast<uint8_t*>(colorResult.data());
 
-  std::vector<std::byte> showResult(count * sizeof(uint8_t), std::byte(1));
+  std::vector<std::byte> showResult(count * sizeof(uint8_t), std::byte(255));
   uint8_t* pShowData = reinterpret_cast<uint8_t*>(showResult.data());
 
   TScriptInterface<ICesium3DTilesStylingProvider> pInterface =
@@ -392,10 +392,41 @@ bool encodeFeatureStylingGameThreadPart(
     pWriteColor[3] = result.Color.A;
 
     uint8_t* pWriteShow = pShowData + (i * sizeof(uint8_t));
-    *pWriteShow = uint8_t(result.bShow);
+    *pWriteShow = uint8_t(result.bShow ? 255 : 0);
   }
 
   auto& styling = *encodedFeatureIdSet.styling;
+  if (styling.pShowTexture) {
+    TObjectPtr<UTexture2D> pShowTexture =
+        styling.pShowTexture->pTexture->getUnrealTexture();
+
+    FUpdateTextureRegion2D region;
+    region.DestX = 0;
+    region.DestY = 0;
+    region.Width = pShowTexture->GetResource()->GetSizeX();
+    region.Height = pShowTexture->GetResource()->GetSizeY();
+    region.SrcX = 0;
+    region.SrcY = 0;
+
+    // Pitch = size in bytes of each row of the source image
+    uint32 sourcePitch = region.Width * sizeof(uint8_t);
+
+    ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
+    ([pResource = pShowTexture->GetResource(),
+      result = std::move(showResult),
+      region,
+      sourcePitch](FRHICommandListImmediate& RHICmdList) {
+      if (pResource) {
+        RHICmdList.UpdateTexture2D(
+            pResource->TextureRHI,
+            0,
+            region,
+            sourcePitch,
+            reinterpret_cast<const uint8*>(result.data()));
+      }
+    });
+  }
+
   if (styling.pColorTexture) {
     TObjectPtr<UTexture2D> pColorTexture =
         styling.pColorTexture->pTexture->getUnrealTexture();

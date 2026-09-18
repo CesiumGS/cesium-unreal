@@ -2945,6 +2945,16 @@ static void SetFeaturesMetadataParameterValues(
             FMaterialParameterInfo(
                 FName(
                     encodedFeatureIdSet.name +
+                    EncodedFeaturesMetadata::MaterialFeatureShowSuffix),
+                association,
+                index),
+            encodedFeatureIdSet.styling->pShowTexture->pTexture
+                ->getUnrealTexture());
+
+        pMaterial->SetTextureParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(
+                    encodedFeatureIdSet.name +
                     EncodedFeaturesMetadata::MaterialFeatureColorSuffix),
                 association,
                 index),
