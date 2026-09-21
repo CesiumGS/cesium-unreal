@@ -1317,6 +1317,8 @@ void CesiumFeaturesMetadataViewer::buildTilesetStatisticsSection(
   for (const ClassStatisticsView& theClass : this->_statisticsClasses) {
     this->createClassStatisticsDropdown(pStatisticsContent, theClass);
   }
+
+  pContent->AddSlot().AutoHeight()[pStatisticsContent];
 }
 
 namespace {

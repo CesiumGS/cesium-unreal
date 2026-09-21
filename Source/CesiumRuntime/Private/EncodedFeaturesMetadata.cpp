@@ -120,7 +120,7 @@ CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> createDataTexture(
  * The feature IDs are simply sent to the GPU as texture coordinates, so this
  * just handles the variable names necessary for material access.
  *
- * @returns Whether the feature ID attribute was succesfully encoded.
+ * @returns Whether the feature ID attribute was successfully encoded.
  */
 bool encodeFeatureIdAttribute(
     const FCesiumFeatureIdAttribute& attribute,

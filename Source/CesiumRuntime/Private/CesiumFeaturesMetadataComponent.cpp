@@ -331,7 +331,11 @@ void UCesiumFeaturesMetadataComponent::recreateStyleInstance() {
 
   if (!this->BlueprintStyleClass->ImplementsInterface(
           UCesium3DTilesStylingProvider::StaticClass())) {
-    UE_LOG(LogCesium, Error, TEXT("TODO"));
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "BlueprintStyleClass must implement ICesium3DTilesStylingProvider."));
     return;
   }
 

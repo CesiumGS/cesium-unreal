@@ -48,7 +48,7 @@ public:
   FCesium3DTilesStyle
   EvaluateStyle(const FCesiumPropertyTable& PropertyTable, int64 FeatureId);
 
-  virtual FCesium3DTilesStyle OnEvaluateStyle_Implementation(
+  virtual FCesium3DTilesStyle EvaluateStyle_Implementation(
       const FCesiumPropertyTable& PropertyTable,
       int64 FeatureId) {
     return FCesium3DTilesStyle();

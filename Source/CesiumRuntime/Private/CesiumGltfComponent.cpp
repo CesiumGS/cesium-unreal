@@ -2942,7 +2942,7 @@ static void SetFeaturesMetadataParameterValues(
         pMaterial->SetTextureParameterValueByInfo(
             FMaterialParameterInfo(
                 FName(
-                    encodedFeatureIdSet.name +
+                    SafeName +
                     EncodedFeaturesMetadata::MaterialFeatureShowSuffix),
                 association,
                 index),
@@ -2952,7 +2952,7 @@ static void SetFeaturesMetadataParameterValues(
         pMaterial->SetTextureParameterValueByInfo(
             FMaterialParameterInfo(
                 FName(
-                    encodedFeatureIdSet.name +
+                    SafeName +
                     EncodedFeaturesMetadata::MaterialFeatureColorSuffix),
                 association,
                 index),
