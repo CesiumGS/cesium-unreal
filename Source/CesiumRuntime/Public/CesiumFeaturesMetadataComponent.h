@@ -157,8 +157,12 @@ public:
 #endif
 
   /**
-   * Gets the instance of BlueprintStyleClass applied to features in this
-   * tileset. This may used to set custom variables on the style at runtime.
+   * Gets the instance of BlueprintStyleClass that has been created to style
+   * features in this tileset. If no BlueprintStyleClass was specified, this
+   * will be null.
+   *
+   * This function may be used to modify variables on the instance of the style
+   * at runtime.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
   UObject* GetStyleInstance() const { return this->_pStyleInstance; }

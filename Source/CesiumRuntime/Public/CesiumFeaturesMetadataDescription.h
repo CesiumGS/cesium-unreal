@@ -21,9 +21,10 @@ UENUM()
 enum class ECesiumFeatureStylingMode : uint8 {
   /**
    * Metadata values are passed through textures to the generated material. This
-   * enables numeric properties to be used with typical material logic. Due to
-   * limitations with Unreal materials, though, any properties that contain
-   * strings, matrices, and arrays may not be able to be properly encoded."
+   * enables numeric properties to be used with typical material logic.
+   *
+   * Due to limitations with Unreal materials, properties that contain strings,
+   * matrices, and arrays may not be able to be properly encoded.
    */
   Material,
   /**
@@ -82,11 +83,11 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
   FString PropertyTableName;
 
   /**
-   * The mode used to apply styling to individual features.
+   * The method used to apply styling to individual features.
    *
-   * By default, feature IDs are used to extract metadata properties from
-   * property tables in the generated material. However, they can also be
-   * styled in a prepass using Blueprints.
+   * By default, metadata properties are encoded to textures and passed the
+   * generated material, allowing use with material logic. However, they can
+   * also be styled in a prepass using Blueprints.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Features")
   ECesiumFeatureStylingMode StylingMode = ECesiumFeatureStylingMode::Material;

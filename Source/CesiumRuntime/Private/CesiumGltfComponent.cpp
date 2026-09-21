@@ -2914,10 +2914,8 @@ static void SetFeaturesMetadataParameterValues(
           primitiveData.encodedFeatures,
           gltfComponent.GetModelMetadata(),
           pBlueprintStyling)) {
-    for (int32 i = 0; i < primitiveData.encodedFeatures.featureIdSets.Num();
-         i++) {
-      EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet =
-          primitiveData.encodedFeatures.featureIdSets[i];
+    for (EncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet :
+         primitiveData.encodedFeatures.featureIdSets) {
       FString SafeName =
           EncodedFeaturesMetadata::createHlslSafeName(encodedFeatureIdSet.name);
       if (encodedFeatureIdSet.nullFeatureId) {

@@ -335,7 +335,5 @@ void UCesiumFeaturesMetadataComponent::recreateStyleInstance() {
     return;
   }
 
-  if (!IsValid(this->_pStyleInstance)) {
-    this->_pStyleInstance = NewObject<UObject>(this, this->BlueprintStyleClass);
-  }
+  this->_pStyleInstance = NewObject<UObject>(this, this->BlueprintStyleClass);
 }

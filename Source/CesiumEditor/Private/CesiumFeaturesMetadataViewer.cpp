@@ -1108,7 +1108,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
                              ? FString::Printf(
                                    TEXT("Used with \"%s\" (Property Table)"),
                                    **pItem->pPropertyTableName)
-                             : TEXT("No associated properties");
+                             : TEXT("No associated property table");
   pBox->AddSlot()
       .FillWidth(1.0f)
       .Padding(5.0f)
@@ -1128,7 +1128,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
                                    : ECesiumFeatureStylingMode::Material,
       FString());
   pBox->AddSlot()
-      .AutoWidth()
+      .FillWidth(0.25)
       .HAlign(EHorizontalAlignment::HAlign_Fill)
       .VAlign(EVerticalAlignment::VAlign_Center)[pItem->pStylingModeCombo
                                                      ->AsShared()];
@@ -1247,19 +1247,23 @@ void CesiumFeaturesMetadataViewer::buildGltfFeaturesSection(
   }
 }
 
-const FString gltfMetadataTooltip = TEXT(
-    "Metadata in glTF and 3D Tiles refers to arbitrary information "
-    "associated with the 3D model and its parts. Metadata often appears "
-    "alongside glTF features (see above), associating properties with "
-    "particular features within a larger model."
-    "\n\n"
-    "While metadata can be queried per feature, it is often useful to "
-    "visualize it across an entire dataset through value-dependent "
-    "coloring and other visual effects. Material styling allows numeric "
-    "metadata properties to be passed to the material through textures "
-    "for use with material logic. Blueprint styling precomputes the values to pass to the material."
-    "\n\n"
-    "Add a property below to make it available to the material layer for styling. Make sure that you add the feature ID set above. is only used for Material styling.");
+const FString gltfMetadataTooltip =
+    TEXT("Metadata in glTF and 3D Tiles refers to arbitrary information "
+         "associated with the 3D model and its parts. Metadata often appears "
+         "alongside glTF features (see above), associating properties with "
+         "particular features within a larger model."
+         "\n\n"
+         "While metadata can be queried per feature, it is often useful to "
+         "visualize it across an entire dataset through value-dependent "
+         "coloring and other visual effects. Material styling allows numeric "
+         "metadata properties to be passed to the material through textures "
+         "for use with material logic. Blueprint styling precomputes visual "
+         "attributes, such as color and visibility, to apply directly in "
+         "the material."
+         "\n\n"
+         "For Material styling, add a property below to make its values "
+         "available in the material layer. Be sure to add a corresponding "
+         "feature ID set from above, if present.");
 
 void CesiumFeaturesMetadataViewer::buildGltfMetadataSection(
     TSharedRef<SVerticalBox>& pContent) {
@@ -1289,8 +1293,11 @@ void CesiumFeaturesMetadataViewer::buildGltfMetadataSection(
   }
 }
 
-const FString tilesetStatisticsTooltip = TEXT(
-    "Tilesets may supply a table of statistics that capture the range of metadata properties across a tileset. These values are powerful to use for visualization and can be used to apply effects like color ramps.");
+const FString tilesetStatisticsTooltip =
+    TEXT("Tilesets may supply a table of statistics that capture the range "
+         "of metadata values across a tileset. These values are useful "
+         "for visualization; for example, the minimum and maximum values of "
+         "a property can be used to define color ramps.");
 
 void CesiumFeaturesMetadataViewer::buildTilesetStatisticsSection(
     TSharedRef<SVerticalBox>& pContent) {

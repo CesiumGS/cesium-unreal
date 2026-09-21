@@ -30,6 +30,10 @@ class UCesium3DTilesStylingProvider : public UInterface {
   GENERATED_BODY()
 };
 
+/**
+ * An interface for applying visual styles to a Cesium3DTileset's features using
+ * Blueprints.
+ */
 class ICesium3DTilesStylingProvider {
   GENERATED_BODY()
 
