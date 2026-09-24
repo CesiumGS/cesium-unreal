@@ -6,6 +6,10 @@
 
 - Per-element styling for the `CesiumVectorTilesRasterOverlay` can now be specified via a blueprint class implementing `ICesiumVectorTilesStylingCallbacks` or via a C++ class derived from `CesiumVectorOverlays::VectorStylingProvider`. 
 
+##### Fixes :wrench:
+
+- Fixed a bug that made `FCesiumCamera` use incorrect parameters when its source was set to `ECameraParameterSource::CameraComponent`.
+
 ### v2.29.1 - 2026-09-01
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.63.0 to v0.64.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
