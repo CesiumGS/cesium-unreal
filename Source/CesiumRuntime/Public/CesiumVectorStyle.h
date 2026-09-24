@@ -74,6 +74,17 @@ struct FCesiumVectorLineStyle {
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECesiumVectorLineWidthMode WidthMode = ECesiumVectorLineWidthMode::Pixels;
+
+  /**
+   * Converts this Unreal representation into the Cesium Native equivalent.
+   */
+  CesiumVectorData::LineStyle toNative() const;
+
+  /**
+   * Creates this Unreal representation from the Cesium Native equivalent.
+   */
+  static FCesiumVectorLineStyle
+  fromNative(const CesiumVectorData::LineStyle& style);
 };
 
 /**
@@ -93,6 +104,17 @@ struct FCesiumVectorPolygonFillStyle {
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECesiumVectorColorMode ColorMode = ECesiumVectorColorMode::Normal;
+
+  /**
+   * Converts this Unreal representation into the Cesium Native equivalent.
+   */
+  CesiumVectorData::ColorStyle toNative() const;
+
+  /**
+   * Creates this Unreal representation from the Cesium Native equivalent.
+   */
+  static FCesiumVectorPolygonFillStyle
+  fromNative(const CesiumVectorData::ColorStyle& style);
 };
 
 /**
@@ -133,6 +155,17 @@ struct FCesiumVectorPolygonStyle {
       Category = "Cesium",
       meta = (EditCondition = "Outline"))
   FCesiumVectorLineStyle OutlineStyle;
+
+  /**
+   * Converts this Unreal representation into the Cesium Native equivalent.
+   */
+  CesiumVectorData::PolygonStyle toNative() const;
+
+  /**
+   * Creates this Unreal representation from the Cesium Native equivalent.
+   */
+  static FCesiumVectorPolygonStyle
+  fromNative(const CesiumVectorData::PolygonStyle& style);
 };
 
 USTRUCT(BlueprintType)
@@ -176,6 +209,17 @@ struct FCesiumVectorPointStyle {
       Category = "Cesium",
       meta = (EditCondition = "Outline"))
   FCesiumVectorLineStyle OutlineStyle;
+
+  /**
+   * Converts this Unreal representation into the Cesium Native equivalent.
+   */
+  CesiumVectorData::PointStyle toNative() const;
+
+  /**
+   * Creates this Unreal representation from the Cesium Native equivalent.
+   */
+  static FCesiumVectorPointStyle
+  fromNative(const CesiumVectorData::PointStyle& style);
 };
 
 /**
