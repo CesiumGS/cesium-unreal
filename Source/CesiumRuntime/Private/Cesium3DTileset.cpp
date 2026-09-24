@@ -1703,20 +1703,29 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       ellipsoid->GetNativeEllipsoid());
 }
 
-class FixedDepthHandler : public Cesium3DTilesSelection::ErrorMeasureHandler {
+class GeometricErrorDelegate
+    : public Cesium3DTilesSelection::ViewStateMeasureDelegate {
 public:
-  FixedDepthHandler(uint32 fixedDepth_)
-      : fixedDepth(fixedDepth_)
-  {
+  double computeSelectionMeasure(
+      const Cesium3DTilesSelection::Tile& tile,
+      double,
+      uint32_t) const override {
+    return tile.getGeometricError();
+  }
+};
+
+class FixedDepthDelegate
+    : public Cesium3DTilesSelection::ViewStateMeasureDelegate {
+public:
+  FixedDepthDelegate(uint32 fixedDepth_) : fixedDepth(fixedDepth_) {
     this->depthErrorMeasure = std::exp2(-int32(fixedDepth_));
   }
-  
-  double computeErrorMeasure(const Cesium3DTilesSelection::Tile&, double distance, uint32_t depth) const override {
-    return std::exp2(-int32(depth));
-  }
 
-  bool meetsErrorThreshold(double computedError, const Cesium3DTilesSelection::Tile&) const override {
-    return computedError < this->depthErrorMeasure;
+  double computeSelectionMeasure(
+      const Cesium3DTilesSelection::Tile&,
+      double distance,
+      uint32_t depth) const override {
+    return std::exp2(-int32(depth));
   }
   uint32 fixedDepth;
   double depthErrorMeasure;
@@ -1736,13 +1745,12 @@ ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
   if (this->FixedDepth == 0) {
     return Cesium3DTilesSelection::ViewState{
         builder.toRegion(),
-        this->FixedGeometricError,
+        std::make_shared<GeometricErrorDelegate>(),
         ellipsoid->GetNativeEllipsoid()};
   }
   return Cesium3DTilesSelection::ViewState{
       builder.toRegion(),
-      0.0,
-      std::make_shared<FixedDepthHandler>(this->FixedDepth),
+      std::make_shared<FixedDepthDelegate>(this->FixedDepth),
       ellipsoid->GetNativeEllipsoid()};
 }
 
@@ -1957,8 +1965,16 @@ void applyActorCollisionSettings(
 void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   Cesium3DTilesSelection::TilesetOptions& options =
       this->_pTileset->getOptions();
-  options.maximumScreenSpaceError =
-      static_cast<double>(this->MaximumScreenSpaceError);
+  if (this->FixedAreaLod) {
+    if (this->FixedDepth != 0) {
+      options.maximumScreenSpaceError = std::exp2(-int32(this->FixedDepth));
+    } else {
+      options.maximumScreenSpaceError = this->FixedGeometricError;
+    }
+  } else {
+    options.maximumScreenSpaceError =
+        static_cast<double>(this->MaximumScreenSpaceError);
+  }
   options.maximumCachedBytes = this->MaximumCachedBytes;
   options.preloadAncestors = this->PreloadAncestors;
   options.preloadSiblings = this->PreloadSiblings;
