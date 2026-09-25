@@ -2,9 +2,6 @@
 
 #pragma once
 
-#include "Cesium3DTilesSelection/Tileset.h"
-#include "Cesium3DTilesSelection/ViewState.h"
-#include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumEncodedMetadataComponent.h"
@@ -19,8 +16,12 @@
 #include "Engine/EngineTypes.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "PrimitiveSceneProxy.h"
-#include <PhysicsEngine/BodyInstance.h>
+
+#include <Cesium3DTilesSelection/Tileset.h>
+#include <Cesium3DTilesSelection/ViewState.h>
+#include <Cesium3DTilesSelection/ViewUpdateResult.h>
 #include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
