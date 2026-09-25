@@ -1742,15 +1742,15 @@ ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
       this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
       this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
       10000.0));
-  if (this->FixedDepth == 0) {
+  if (this->UseFixedDepth) {
     return Cesium3DTilesSelection::ViewState{
         builder.toRegion(),
-        std::make_shared<GeometricErrorDelegate>(),
+        std::make_shared<FixedDepthDelegate>(this->FixedDepth),
         ellipsoid->GetNativeEllipsoid()};
   }
   return Cesium3DTilesSelection::ViewState{
       builder.toRegion(),
-      std::make_shared<FixedDepthDelegate>(this->FixedDepth),
+      std::make_shared<GeometricErrorDelegate>(),
       ellipsoid->GetNativeEllipsoid()};
 }
 
@@ -1966,7 +1966,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   Cesium3DTilesSelection::TilesetOptions& options =
       this->_pTileset->getOptions();
   if (this->FixedAreaLod) {
-    if (this->FixedDepth != 0) {
+    if (this->UseFixedDepth) {
       options.maximumScreenSpaceError = std::exp2(-int32(this->FixedDepth));
     } else {
       options.maximumScreenSpaceError = this->FixedGeometricError;
