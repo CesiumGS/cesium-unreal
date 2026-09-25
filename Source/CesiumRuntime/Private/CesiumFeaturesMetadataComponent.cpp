@@ -333,11 +333,10 @@ void UCesiumFeaturesMetadataComponent::recreateStyleInstance() {
           UCesium3DTilesStylingProvider::StaticClass())) {
     UE_LOG(
         LogCesium,
-        Error,
+        Warning,
         TEXT(
-            "BlueprintStyleClass must implement ICesium3DTilesStylingProvider."));
-    return;
+            "BlueprintStyleClass must implement the EvaluateStyle function "
+            "from ICesium3DTilesStylingProvider in order to be used for styling."));
   }
-
   this->_pStyleInstance = NewObject<UObject>(this, this->BlueprintStyleClass);
 }

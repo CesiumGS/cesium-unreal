@@ -353,7 +353,9 @@ bool encodeFeatureStylingGameThreadPart(
     EncodedFeatureIdSet& encodedFeatureIdSet,
     const FCesiumModelMetadata& modelMetadata,
     UObject* pBlueprintStyleInstance) {
-  if (!IsValid(pBlueprintStyleInstance)) {
+  if (!IsValid(pBlueprintStyleInstance) ||
+      !pBlueprintStyleInstance->GetClass()->ImplementsInterface(
+          UCesium3DTilesStylingProvider::StaticClass())) {
     return false;
   }
 

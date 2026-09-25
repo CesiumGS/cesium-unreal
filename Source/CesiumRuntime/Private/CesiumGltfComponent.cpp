@@ -3748,12 +3748,12 @@ static void loadPrimitiveGameThreadPart(
   ICesium3DTilesetLifecycleEventReceiver* pLifecycleEventReceiver =
       pTilesetActor->GetLifecycleEventReceiver();
 
-  UObject* pBlueprintStyling = nullptr;
   const auto* pFeaturesMetadataComponent =
       pTilesetActor->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
-  if (pFeaturesMetadataComponent) {
-    pBlueprintStyling = pFeaturesMetadataComponent->GetStyleInstance();
-  }
+  UObject* pBlueprintStyling =
+      pFeaturesMetadataComponent
+          ? pFeaturesMetadataComponent->GetStyleInstance()
+          : nullptr;
 
   UMaterialInstanceDynamic* pMaterialForGltfPrimitive =
       createPrimitiveMaterialInstance(
