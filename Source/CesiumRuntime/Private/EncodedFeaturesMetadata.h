@@ -49,6 +49,8 @@ struct ImageAsset;
  */
 namespace EncodedFeaturesMetadata {
 
+#pragma region Material Naming Conventions
+
 /**
  * Naming convention for feature ID texture parameters nodes:
  *  - Texture: FeatureIDTextureName + "_TX"
@@ -65,6 +67,13 @@ static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
  * - Null Feature ID node: FeatureIDSetName + "_NULL_ID"
  */
 static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
+
+/**
+ * - Feature color: FeatureIDSetName + "_COLOR"
+ * - Feature show: FeatureIDSetName + "_SHOW"
+ */
+static const FString MaterialFeatureColorSuffix = "_COLOR";
+static const FString MaterialFeatureShowSuffix = "_SHOW";
 
 /**
  * Naming convention for metadata parameter nodes
@@ -134,6 +143,8 @@ static const FString MaterialPropertyUVSuffix = "_UV";
 static const FString MaterialTextureScaleOffsetSuffix = "_TX_SCALE_OFFSET";
 static const FString MaterialTextureRotationSuffix = "_TX_ROTATION";
 
+#pragma endregion
+
 #pragma region Encoded Primitive Features
 
 /**
@@ -193,6 +204,21 @@ struct EncodedFeatureIdTexture {
 };
 
 /**
+ * @brief The properties of @ref FCesium3DTilesStyle that have been evaluated
+ * for features on the CPU.
+ */
+struct EncodedFeatureStyling {
+  /**
+   * @brief The evaluated show values for each feature, encoded to a texture.
+   */
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pShowTexture;
+  /**
+   * @brief The evaluated color values for each feature, encoded to a texture.
+   */
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pColorTexture;
+};
+
+/**
  * @brief A feature ID set that has been encoded for access on the GPU.
  */
 struct EncodedFeatureIdSet {
@@ -230,10 +256,17 @@ struct EncodedFeatureIdSet {
   FString propertyTableName;
 
   /**
-   * A value that indicates that no feature is associated with the vertices or
-   * texels that have this value.
+   * @brief A value that indicates that no feature is associated with the
+   * vertices or texels that have this value.
    */
   std::optional<int64> nullFeatureId;
+
+  /**
+   * @brief The styling that has been evaluated for this feature ID set. Only
+   * used for feature ID sets with @ref ECesiumFeatureStylingMode set to
+   * Blueprint.
+   */
+  std::optional<EncodedFeatureStyling> styling;
 };
 
 /**
@@ -241,27 +274,33 @@ struct EncodedFeatureIdSet {
  * primitive.
  */
 struct EncodedPrimitiveFeatures {
+  /**
+   * @brief The feature ID sets that are encoded for this primitive.
+   */
   TArray<EncodedFeatureIdSet> featureIdSets;
 };
 
 /**
- * @brief Prepares the EXT_mesh_features of a glTF primitive to be encoded, for
- * use with Unreal Engine materials. This only encodes the feature ID sets
+ * @brief Prepares the EXT_mesh_features of a glTF primitive to be encoded,
+ * for use with Unreal Engine materials. This only encodes the feature ID sets
  * specified by the FCesiumPrimitiveFeaturesDescription.
  */
 EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
     const FCesiumPrimitiveFeaturesDescription& featuresDescription,
-    const FCesiumPrimitiveFeatures& features);
+    const FCesiumPrimitiveFeatures& features,
+    const FCesiumModelMetadata& modelMetadata);
 
 /**
- * @brief Encodes the EXT_mesh_features of a glTF primitive for use with Unreal
- * Engine materials.
+ * @brief Encodes the EXT_mesh_features of a glTF primitive for use with
+ * Unreal Engine materials.
  *
  * @returns True if the encoding of all feature ID sets was successful, false
  * otherwise.
  */
 bool encodePrimitiveFeaturesGameThreadPart(
-    EncodedPrimitiveFeatures& encodedFeatures);
+    EncodedPrimitiveFeatures& encodedFeatures,
+    const FCesiumModelMetadata& modelMetadata,
+    UObject* pBlueprintStyleInstance);
 
 void destroyEncodedPrimitiveFeatures(EncodedPrimitiveFeatures& encodedFeatures);
 
@@ -271,8 +310,8 @@ void destroyEncodedPrimitiveFeatures(EncodedPrimitiveFeatures& encodedFeatures);
 
 /**
  * @brief Generates a name for a property table in a glTF model's
- * EXT_structural_metadata. If the property table already has a name, this will
- * return the name. Otherwise, if the property table is unlabeled, its
+ * EXT_structural_metadata. If the property table already has a name, this
+ * will return the name. Otherwise, if the property table is unlabeled, its
  * corresponding class will be substituted.
  *
  * This is used by FCesiumPropertyTableDescription to display the names of
@@ -302,21 +341,21 @@ getNameForPropertyTexture(const FCesiumPropertyTexture& PropertyTexture);
  *
  * "PTABLE_<table name>_<property name>"
  *
- * This is used to name the texture parameter corresponding to this property in
- * the generated Unreal material.
+ * This is used to name the texture parameter corresponding to this property
+ * in the generated Unreal material.
  */
 FString getMaterialNameForPropertyTableProperty(
     const FString& propertyTableName,
     const FString& propertyName);
 
 /**
- * @brief Generates an HLSL-safe name for a property texture property in a glTF
- * model's EXT_structural_metadata. This is formatted like so:
+ * @brief Generates an HLSL-safe name for a property texture property in a
+ * glTF model's EXT_structural_metadata. This is formatted like so:
  *
  * "PTEXTURE_<texture name>_<property name>"
  *
- * This is used to name the texture parameter corresponding to this property in
- * the generated Unreal material.
+ * This is used to name the texture parameter corresponding to this property
+ * in the generated Unreal material.
  */
 FString getMaterialNameForPropertyTextureProperty(
     const FString& propertyTableName,
@@ -379,8 +418,8 @@ struct EncodedPropertyTable {
 };
 
 /**
- * A property texture property that has been made accessible to Unreal materials
- * through the GPU.
+ * A property texture property that has been made accessible to Unreal
+ * materials through the GPU.
  */
 struct EncodedPropertyTextureProperty {
   /**
@@ -400,16 +439,16 @@ struct EncodedPropertyTextureProperty {
 
   /**
    * @brief The set index of the texture coordinates from the glTF primitive
-   * that are used to sample this property texture. If this is -1, this texture
-   * will not be sampled by texture coordinates in the primitive, but may be
-   * sampled by other means in the Unreal material.
+   * that are used to sample this property texture. If this is -1, this
+   * texture will not be sampled by texture coordinates in the primitive, but
+   * may be sampled by other means in the Unreal material.
    */
   int64 textureCoordinateSetIndex;
 
   /**
-   * @brief The channels to use when constructing a value from texture data. The
-   * number of channels used is specified in the material itself, and derives
-   * from the type of the property.
+   * @brief The channels to use when constructing a value from texture data.
+   * The number of channels used is specified in the material itself, and
+   * derives from the type of the property.
    */
   std::array<int32, 4> channels;
 

@@ -4,7 +4,8 @@
 
 ##### Additions :tada:
 
-- Per-element styling for the `CesiumVectorTilesRasterOverlay` can now be specified via a blueprint class implementing `ICesiumVectorTilesStylingCallbacks` or via a C++ class derived from `CesiumVectorOverlays::VectorStylingProvider`. 
+- Added support for styling features in `ACesium3DTileset` with Blueprints, using a specified `BlueprintStyleClass` that implements `ICesium3DTilesStylingProvider` on `UCesiumFeaturesMetadataComponent`.
+- Added support for per-element styling on `CesiumVectorTilesRasterOverlay`, using either a specified Blueprint class implementing `ICesiumVectorTilesStylingCallbacks` or a C++ class derived from `CesiumVectorOverlays::VectorStylingProvider`. 
 
 ##### Fixes :wrench:
 
