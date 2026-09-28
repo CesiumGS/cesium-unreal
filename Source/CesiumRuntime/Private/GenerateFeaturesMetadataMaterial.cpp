@@ -11,6 +11,7 @@
 #include "ComponentReregisterContext.h"
 #include "Containers/Map.h"
 #include "ContentBrowserModule.h"
+#include "Editor.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "IContentBrowserSingleton.h"
 #include "IMaterialEditor.h"
@@ -34,25 +35,19 @@
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "UObject/Package.h"
 
-extern UNREALED_API class UEditorEngine* GEditor;
-
 using namespace EncodedFeaturesMetadata;
 using namespace GenerateMaterialUtility;
 
-static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {
-  return LoadObjFromPath<UMaterialFunction>(Path);
-}
-
 MaterialFunctionLibrary::MaterialFunctionLibrary()
-    : SelectTexCoords(LoadMaterialFunction(
+    : SelectTexCoords(LoadObjFromPath<UMaterialFunction>(
           "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords")),
-      TransformTexCoords(LoadMaterialFunction(
+      TransformTexCoords(LoadObjFromPath<UMaterialFunction>(
           "/CesiumForUnreal/Materials/MaterialFunctions/MF_CesiumTransformTextureCoordinates.MF_CesiumTransformTextureCoordinates")),
-      GetFeatureIdsFromAttribute(LoadMaterialFunction(
+      GetFeatureIdsFromAttribute(LoadObjFromPath<UMaterialFunction>(
           "/CesiumForUnreal/Materials/MaterialFunctions/CesiumGetFeatureIdsFromAttribute.CesiumGetFeatureIdsFromAttribute")),
-      GetFeatureIdsFromTexture(LoadMaterialFunction(
+      GetFeatureIdsFromTexture(LoadObjFromPath<UMaterialFunction>(
           "/CesiumForUnreal/Materials/MaterialFunctions/CesiumGetFeatureIdsFromTexture.CesiumGetFeatureIdsFromTexture")),
-      GetFeatureIdsFromInstance(LoadMaterialFunction(
+      GetFeatureIdsFromInstance(LoadObjFromPath<UMaterialFunction>(
           "/CesiumForUnreal/Materials/MaterialFunctions/CesiumGetFeatureIdsFromInstance.CesiumGetFeatureIdsFromInstance")) {
 }
 bool MaterialFunctionLibrary::isValid() const {

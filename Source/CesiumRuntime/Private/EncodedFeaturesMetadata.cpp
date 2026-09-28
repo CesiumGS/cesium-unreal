@@ -98,11 +98,7 @@ CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> createDataTexture(
     int32 bytesPerChannel,
     int32 channels,
     std::byte defaultValue = std::byte(0)) {
-  int64 sqrtElementCount = glm::sqrt(elementCount);
-
-  bool perfectSquare = (sqrtElementCount * sqrtElementCount == elementCount);
-  int64 textureDimension =
-      perfectSquare ? sqrtElementCount : (sqrtElementCount + 1);
+  int64 textureDimension = ceil(sqrt(elementCount));
 
   CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImage =
       new CesiumImage::ImageAsset();
@@ -374,13 +370,11 @@ bool encodeFeatureStylingGameThreadPart(
   int64 count =
       UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(*pTable);
 
-  std::vector<std::byte> colorResult(
-      count * sizeof(uint8_t) * 4,
-      std::byte(255));
-  uint8_t* pColorData = reinterpret_cast<uint8_t*>(colorResult.data());
+  std::vector<uint8_t> colorResult(count * 4, 255);
+  uint8_t* pColorData = colorResult.data();
 
-  std::vector<std::byte> showResult(count * sizeof(uint8_t), std::byte(255));
-  uint8_t* pShowData = reinterpret_cast<uint8_t*>(showResult.data());
+  std::vector<uint8_t> showResult(count, 255);
+  uint8_t* pShowData = showResult.data();
 
   TScriptInterface<ICesium3DTilesStylingProvider> pInterface =
       pBlueprintStyleInstance;
@@ -391,7 +385,7 @@ bool encodeFeatureStylingGameThreadPart(
             pInterface.GetObject(),
             *pTable,
             i);
-    uint8_t* pWriteColor = pColorData + (i * sizeof(uint8_t) * 4);
+    uint8_t* pWriteColor = pColorData + (i * 4);
     pWriteColor[0] = result.Color.R;
     pWriteColor[1] = result.Color.G;
     pWriteColor[2] = result.Color.B;
@@ -415,7 +409,7 @@ bool encodeFeatureStylingGameThreadPart(
     region.SrcY = 0;
 
     // Pitch = size in bytes of each row of the source image
-    uint32 sourcePitch = region.Width * sizeof(uint8_t);
+    uint32 sourcePitch = region.Width;
 
     ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
     ([pResource = pShowTexture->GetResource(),
@@ -428,7 +422,7 @@ bool encodeFeatureStylingGameThreadPart(
             0,
             region,
             sourcePitch,
-            reinterpret_cast<const uint8*>(result.data()));
+            result.data());
       }
     });
   }
@@ -446,7 +440,7 @@ bool encodeFeatureStylingGameThreadPart(
     region.SrcY = 0;
 
     // Pitch = size in bytes of each row of the source image
-    uint32 sourcePitch = region.Width * 4 * sizeof(uint8_t);
+    uint32 sourcePitch = region.Width * 4;
 
     ENQUEUE_RENDER_COMMAND(Cesium_UpdateResource)
     ([pResource = pColorTexture->GetResource(),
@@ -459,7 +453,7 @@ bool encodeFeatureStylingGameThreadPart(
             0,
             region,
             sourcePitch,
-            reinterpret_cast<const uint8*>(result.data()));
+            result.data());
       }
     });
   }
@@ -915,6 +909,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
         // Copy the image, so that we can keep a copy of it in the glTF.
         CesiumUtility::IntrusivePointer<CesiumImage::ImageAsset> pImageCopy =
             new CesiumImage::ImageAsset(*pImage);
+        check(pImageCopy->bytesPerChannel == 1);
         encodedProperty.pTexture =
             MakeShared<LoadedTextureResult>(std::move(*loadTextureAnyThreadPart(
                 *pImageCopy,
@@ -925,12 +920,10 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
                 false,
                 TEXTUREGROUP_8BitData,
                 false,
-                // This assumes that the texture's image only contains one
-                // byte per channel.
                 EPixelFormat::PF_R8G8B8A8_UINT)));
         propertyTexturePropertyMap.Emplace(pImage, encodedProperty.pTexture);
       }
-    };
+    }
 
     if (pDescription->PropertyDetails.bHasOffset) {
       encodedProperty.offset =
