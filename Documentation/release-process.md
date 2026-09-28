@@ -8,18 +8,13 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 
 ## Prepare Cesium for Unreal for Release
 
-1. Update the cesium-native submodule reference to point to the latest commit that you pushed above.
-   - Enter the `extern/cesium-native` directory and pull the latest changes and checkout the main branch as normal.
-   - To update the submodule reference, from the cesium-unreal root, run: `git add extern/cesium-native`
-2. Verify that `CHANGES.md` is complete and accurate.
-   - Give the header of the section containing the latest changes an appropriate version number and date.
-   - Diff main against the previous released version. This helps catch changes that are missing from the changelog, as well as changelog entries that were accidentally added to the wrong section.
-   - Use [Semantic Versioning](https://semver.org/) to pick the version number.
-   - Don't forget to add a note to the end of the version section indicating the cesium-native version number change. Use a previous version as the template for this and update the "from" and "to" version numbers accordingly.
-3. Change the version in `CesiumForUnreal.uplugin`:
-   - Increment the `Version` integer property.
-   - Change the `VersionName` property to the new three digit, dot-delimited version number.
-4. Create a new Cesium ion token for this release under the "CesiumJS" account:
+1. Call the `/prepare-release` using the next version number Github Copilot skill (`../.github/skills/prepare-release/SKILL.md`). This will 
+  - Determine the release date
+  - Review all changes since the last release, and update `CHANGES.md` directly, including the release header and an explicit cesium-native update note. 
+  - Runs the `release-prep.js` script The script to:
+    - Updates the version fields in `CesiumForUnreal.uplugin` and `package.json`
+    - Check out `main` in `extern/cesium-native`, pull the latest changes, and stage the submodule reference in the parent repo. 
+2. Create a new Cesium ion token for this release under the "CesiumJS" account:
    - Visit https://ion.cesium.com.
    - Log in using your own `@cesium.com` email address.
    - Click your name in the top-right corner and choose "Switch to CesiumJS". If you don't see this option, ask someone on the ion team to add you to the CesiumJS account.
@@ -30,8 +25,9 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
      - `Allow URLs`: "All Urls"
      - `Resources`: "All assets"
    - Copy the new token string into the `testIonToken` variable in `CesiumSceneGeneration.cpp`.
-5. Commit these changes. You can push them directly to `main`.
-6. Before continuing, verify that CI passes for all platforms and Unreal Engine versions.
+     - **Note:** This update is not done by Copilot because we do not want to pass secrets (the ion token) through the agent
+3. Review and commit these changes. You can push them directly to `main`.
+4. Before continuing, verify that CI passes for all platforms and Unreal Engine versions.
 
 ## Optimistically upload the release packages to the GitHub releases page
 
