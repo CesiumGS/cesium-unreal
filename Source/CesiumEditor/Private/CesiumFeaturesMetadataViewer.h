@@ -22,7 +22,7 @@ class ACesium3DTileset;
 class UCesiumFeaturesMetadataComponent;
 struct FCesiumModelMetadata;
 enum class ECesiumMetadataStatisticSemantic : uint8;
-enum class ComponentSearchResult;
+enum class ECesiumStylingMode : uint8;
 
 class CesiumFeaturesMetadataViewer : public SWindow {
   SLATE_BEGIN_ARGS(CesiumFeaturesMetadataViewer) {}
@@ -162,6 +162,16 @@ private:
      * The name of the property table that this instance references.
      */
     TSharedRef<FString> pPropertyTableName;
+    /**
+     * The combo box widget for setting the styling mode on the feature ID set.
+     */
+    TSharedPtr<SComboBox<TSharedRef<ECesiumFeatureStylingMode>>>
+        pStylingModeCombo;
+    /**
+     * The option to set as the selected styling mode, if previously specified
+     * (e.g., by details queried from UCesiumFeatureMetadataComponent).
+     */
+    TSharedPtr<ECesiumFeatureStylingMode> pStylingModeSelection;
 
     bool operator==(const FeatureIdSetInstance& rhs) const;
     bool operator!=(const FeatureIdSetInstance& rhs) const;
@@ -191,10 +201,10 @@ private:
   void gatherGltfFeaturesMetadata();
 
   /**
-   * @brief Syncs with any property encoding details present on the
+   * @brief Syncs with any encoding details present on the
    * UCesiumFeaturesMetadataComponent.
    */
-  void syncPropertyEncodingDetails();
+  void syncEncodingDetails();
 
   TSharedRef<ITableRow> createStatisticRow(
       TSharedRef<StatisticView> pItem,
@@ -231,6 +241,10 @@ private:
   void createGltfFeatureIdSetDropdown(
       TSharedRef<SScrollBox>& pContent,
       const FeatureIdSetView& property);
+
+  void buildGltfFeaturesSection(TSharedRef<SVerticalBox>& pContent);
+  void buildGltfMetadataSection(TSharedRef<SVerticalBox>& pContent);
+  void buildTilesetStatisticsSection(TSharedRef<SVerticalBox>& pContent);
 
   ComponentSearchResult findOnComponent(TSharedRef<StatisticView> pItem) const;
   ComponentSearchResult findOnComponent(
