@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ?? - ??
+
+##### Fixes :wrench:
+
+- Fixed an out-of-bounds access in `UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString` when the outer loop used each line's point count instead of the number of lines (#1870).
+
 ### v2.30.0 - 2026-10-01
 
 ##### Additions :tada:

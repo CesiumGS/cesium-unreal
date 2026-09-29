@@ -154,4 +154,65 @@ void FCesiumGeoJsonDocumentSpec::Define() {
           "test2");
     });
   });
+
+  Describe(
+      "UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString",
+      [this]() {
+        It("returns every line when the MultiLineString has multiple lines",
+           [this]() {
+             // Regression for #1870: the outer loop must bound by
+             // coordinates.size() (line count), not coordinates[i].size()
+             // (point count of the current line).
+             FCesiumGeoJsonDocument Document;
+             TestTrue(
+                 "LoadGeoJsonFromString Success",
+                 UCesiumGeoJsonDocumentBlueprintLibrary::LoadGeoJsonFromString(
+                     R"==({
+                  "type": "FeatureCollection",
+                  "features": [
+                    {
+                      "type": "Feature",
+                      "id": 0,
+                      "geometry": {
+                        "type": "MultiLineString",
+                        "coordinates": [
+                          [ [116.4, 39.9], [116.45, 39.85] ],
+                          [ [116.45, 39.85], [116.6, 39.7] ]
+                        ]
+                      },
+                      "properties": null
+                    }
+                  ]
+                 })==",
+                     Document));
+
+             TArray<FCesiumGeoJsonFeature> Features =
+                 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsFeatureCollection(
+                     UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
+                         Document));
+             TestEqual("Features.Num()", Features.Num(), 1);
+
+             FCesiumGeoJsonObject Geometry =
+                 UCesiumGeoJsonFeatureBlueprintLibrary::GetGeometry(Features[0]);
+             TestEqual(
+                 "Geometry type",
+                 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectType(Geometry),
+                 ECesiumGeoJsonObjectType::MultiLineString);
+
+             TArray<FCesiumGeoJsonLineString> Lines =
+                 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
+                     Geometry);
+             TestEqual("Lines.Num()", Lines.Num(), 2);
+             TestEqual("Lines[0].Points.Num()", Lines[0].Points.Num(), 2);
+             TestEqual("Lines[1].Points.Num()", Lines[1].Points.Num(), 2);
+             TestEqual(
+                 "Lines[0].Points[0].X", Lines[0].Points[0].X, 116.4, 1e-9);
+             TestEqual(
+                 "Lines[0].Points[0].Y", Lines[0].Points[0].Y, 39.9, 1e-9);
+             TestEqual(
+                 "Lines[1].Points[1].X", Lines[1].Points[1].X, 116.6, 1e-9);
+             TestEqual(
+                 "Lines[1].Points[1].Y", Lines[1].Points[1].Y, 39.7, 1e-9);
+           });
+      });
 }
