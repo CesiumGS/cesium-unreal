@@ -304,8 +304,8 @@ bool encodePrimitiveFeaturesGameThreadPart(
 
 /**
  * @brief Evaluates the given style instance for the given feature ID set and
- * encodes the results. This may be called after the primitive has been
- * instantiated to apply new styles to the glTF primitive.
+ * encodes the results. This is called by encodePrimitiveFeaturesGameThreadPart,
+ * but it may be called afterwards to apply new styles to the glTF primitive.
  *
  * @param encodedFeatureIdSet The encoded feature ID set.
  * @param modelMetadata The metadata of the model that contains the primitive.

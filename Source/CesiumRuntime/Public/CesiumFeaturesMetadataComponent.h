@@ -77,8 +77,9 @@ public:
   TSubclassOf<UObject> BlueprintStyleClass;
 
   /**
-   * Refreshes the style applied to the tileset. Use this function to pick up
-   * any changes to the Blueprint style instance in-Editor and at runtime.
+   * Reapplies the Blueprint style specified in BlueprintStyleClass to the
+   * tileset. Use this function to pick up any changes to the Blueprint
+   * in-Editor as well as its instance at runtime.
    */
   UFUNCTION(
       CallInEditor,
