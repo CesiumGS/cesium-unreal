@@ -286,7 +286,28 @@ void UCesiumFeaturesMetadataComponent::PostEditChangeChainProperty(
     this->SyncStatistics();
   }
 }
+
+void UCesiumFeaturesMetadataComponent::PostEditUndo() {
+  Super::PostEditUndo();
+
+  this->RefreshStyle();
+}
+
 #endif // WITH_EDITOR
+
+void UCesiumFeaturesMetadataComponent::RefreshStyle() {
+  ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  if (!pOwner) {
+    return;
+  }
+
+  TArray<UCesiumGltfComponent*> gltfComponents;
+  pOwner->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+  for (UCesiumGltfComponent* pGltf : gltfComponents) {
+    pGltf->ApplyStyle(this->GetStyleInstance());
+  }
+}
 
 void UCesiumFeaturesMetadataComponent::PostLoad() {
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -325,18 +346,22 @@ void UCesiumFeaturesMetadataComponent::PostLoad() {
 void UCesiumFeaturesMetadataComponent::recreateStyleInstance() {
   this->_pStyleInstance = nullptr;
 
-  if (!IsValid(this->BlueprintStyleClass)) {
-    return;
+  if (IsValid(this->BlueprintStyleClass)) {
+    // When a new Blueprint Class is created in-place, this check will report
+    // false. However, it will be valid once its Blueprint Editor opens and
+    // compiles. This allows the class to be instantiated now so it will work
+    // when the user implements the interface.
+    if (!this->BlueprintStyleClass->ImplementsInterface(
+            UCesium3DTilesStylingProvider::StaticClass())) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "BlueprintStyleClass must implement the EvaluateStyle function "
+              "from ICesium3DTilesStylingProvider in order to be used for styling."));
+    }
+    this->_pStyleInstance = NewObject<UObject>(this, this->BlueprintStyleClass);
   }
 
-  if (!this->BlueprintStyleClass->ImplementsInterface(
-          UCesium3DTilesStylingProvider::StaticClass())) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "BlueprintStyleClass must implement the EvaluateStyle function "
-            "from ICesium3DTilesStylingProvider in order to be used for styling."));
-  }
-  this->_pStyleInstance = NewObject<UObject>(this, this->BlueprintStyleClass);
+  this->RefreshStyle();
 }

@@ -302,6 +302,20 @@ bool encodePrimitiveFeaturesGameThreadPart(
     const FCesiumModelMetadata& modelMetadata,
     UObject* pBlueprintStyleInstance);
 
+/**
+ * @brief Evaluates the given style instance for the given feature ID set and
+ * encodes the results. This may be called after the primitive has been
+ * instantiated to apply new styles to the glTF primitive.
+ *
+ * @param encodedFeatureIdSet The encoded feature ID set.
+ * @param modelMetadata The metadata of the model that contains the primitive.
+ * @param pBlueprintStyleInstance The instance of the style to evaluate.
+ */
+void encodeFeatureStylingGameThreadPart(
+    EncodedFeatureIdSet& encodedFeatureIdSet,
+    const FCesiumModelMetadata& modelMetadata,
+    UObject* pBlueprintStyleInstance);
+
 void destroyEncodedPrimitiveFeatures(EncodedPrimitiveFeatures& encodedFeatures);
 
 #pragma endregion
