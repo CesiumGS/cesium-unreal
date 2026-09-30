@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added `UCesiumFeaturesMetadataComponent::RefreshStyle` to refresh the Blueprint style instance on the component, allowing it to apply changes in-Editor and at runtime.
+
 ### v2.30.0 - 2026-10-01
 
 ##### Additions :tada:
