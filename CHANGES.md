@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### vNext
+
+##### Fixes :wrench:
+
+- Point attenuation now follows the index buffer. Indexed points that share a position buffer were drawn at the first position in that buffer.
+
 ### v2.30.0 - 2026-10-01
 
 ##### Additions :tada:
