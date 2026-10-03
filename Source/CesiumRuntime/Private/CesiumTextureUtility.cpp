@@ -434,37 +434,26 @@ std::optional<EPixelFormat> getPixelFormatForImageAsset(
     switch (imageCesium.compressedPixelFormat) {
     case CesiumImage::GpuCompressedPixelFormat::ETC1_RGB:
       return EPixelFormat::PF_ETC1;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::ETC2_RGBA:
       return EPixelFormat::PF_ETC2_RGBA;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::BC1_RGB:
       return EPixelFormat::PF_DXT1;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::BC3_RGBA:
       return EPixelFormat::PF_DXT5;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::BC4_R:
       return EPixelFormat::PF_BC4;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::BC5_RG:
       return EPixelFormat::PF_BC5;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::BC7_RGBA:
       return EPixelFormat::PF_BC7;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::ASTC_4x4_RGBA:
       return EPixelFormat::PF_ASTC_4x4;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::PVRTC2_4_RGBA:
       return EPixelFormat::PF_PVRTC2;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::ETC2_EAC_R11:
       return EPixelFormat::PF_ETC2_R11_EAC;
-      break;
     case CesiumImage::GpuCompressedPixelFormat::ETC2_EAC_RG11:
       return EPixelFormat::PF_ETC2_RG11_EAC;
-      break;
     default:
       // Unsupported compressed texture format.
       return std::nullopt;
@@ -475,18 +464,14 @@ std::optional<EPixelFormat> getPixelFormatForImageAsset(
     switch (imageCesium.channels) {
     case 1:
       return PF_R8;
-      break;
     case 2:
       return PF_R8G8;
-      break;
     case 3:
     case 4:
     default:
       return PF_R8G8B8A8;
     };
   }
-
-  return std::nullopt;
 }
 
 } // namespace CesiumTextureUtility
