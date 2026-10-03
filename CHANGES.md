@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed compile errors when building the plugin from source with Unreal Engine's unreachable-code warnings treated as errors, as for Linux targets of projects using `BuildSettingsVersion.V7` or later.
+
 ### v2.30.0 - 2026-10-01
 
 ##### Additions :tada:
