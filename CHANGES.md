@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a crash in headless packaged games (`-nullrhi`) as tiles loaded: tile meshes no longer initialize render resources when the game can't render.
+
 ### v2.30.0 - 2026-10-01
 
 ##### Additions :tada:
