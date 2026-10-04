@@ -34,6 +34,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
+#include "Misc/App.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "PixelFormat.h"
@@ -3768,7 +3769,9 @@ static void loadPrimitiveGameThreadPart(
   pStaticMesh->AddMaterial(pMaterialForGltfPrimitive);
   pStaticMesh->SetLightingGuid();
 
-  {
+  // A headless game (-nullrhi) can't create render resources; collision still
+  // works without them.
+  if (FApp::CanEverRender()) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
     pStaticMesh->InitResources();
   }
@@ -3840,7 +3843,7 @@ static void loadPrimitiveGameThreadPart(
       pStaticMesh->SetLightingGuid();
     }
 
-    {
+    if (FApp::CanEverRender()) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitResources)
       pStaticMesh->InitResources();
     }
