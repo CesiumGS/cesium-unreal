@@ -187,32 +187,46 @@ void FCesiumGeoJsonDocumentSpec::Define() {
                      Document));
 
              TArray<FCesiumGeoJsonFeature> Features =
-                 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsFeatureCollection(
-                     UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
-                         Document));
+                 UCesiumGeoJsonObjectBlueprintLibrary::
+                     GetObjectAsFeatureCollection(
+                         UCesiumGeoJsonDocumentBlueprintLibrary::GetRootObject(
+                             Document));
              TestEqual("Features.Num()", Features.Num(), 1);
 
              FCesiumGeoJsonObject Geometry =
-                 UCesiumGeoJsonFeatureBlueprintLibrary::GetGeometry(Features[0]);
+                 UCesiumGeoJsonFeatureBlueprintLibrary::GetGeometry(
+                     Features[0]);
              TestEqual(
                  "Geometry type",
                  UCesiumGeoJsonObjectBlueprintLibrary::GetObjectType(Geometry),
                  ECesiumGeoJsonObjectType::MultiLineString);
 
              TArray<FCesiumGeoJsonLineString> Lines =
-                 UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
-                     Geometry);
+                 UCesiumGeoJsonObjectBlueprintLibrary::
+                     GetObjectAsMultiLineString(Geometry);
              TestEqual("Lines.Num()", Lines.Num(), 2);
              TestEqual("Lines[0].Points.Num()", Lines[0].Points.Num(), 2);
              TestEqual("Lines[1].Points.Num()", Lines[1].Points.Num(), 2);
              TestEqual(
-                 "Lines[0].Points[0].X", Lines[0].Points[0].X, 116.4, 1e-9);
+                 "Lines[0].Points[0].X",
+                 Lines[0].Points[0].X,
+                 116.4,
+                 1e-9);
              TestEqual(
-                 "Lines[0].Points[0].Y", Lines[0].Points[0].Y, 39.9, 1e-9);
+                 "Lines[0].Points[0].Y",
+                 Lines[0].Points[0].Y,
+                 39.9,
+                 1e-9);
              TestEqual(
-                 "Lines[1].Points[1].X", Lines[1].Points[1].X, 116.6, 1e-9);
+                 "Lines[1].Points[1].X",
+                 Lines[1].Points[1].X,
+                 116.6,
+                 1e-9);
              TestEqual(
-                 "Lines[1].Points[1].Y", Lines[1].Points[1].Y, 39.7, 1e-9);
+                 "Lines[1].Points[1].Y",
+                 Lines[1].Points[1].Y,
+                 39.7,
+                 1e-9);
            });
       });
 }
