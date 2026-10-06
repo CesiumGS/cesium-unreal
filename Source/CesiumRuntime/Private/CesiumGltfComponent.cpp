@@ -1484,7 +1484,27 @@ static void loadPrimitive(
   bool normalsAreRequired = !primitiveResult.isUnlit && isTriangles;
   bool needToGenerateFlatNormals = normalsAreRequired && !hasNormals;
   bool needToGenerateTangents = needsTangents && !hasTangents;
-  bool duplicateVertices = needToGenerateFlatNormals || needToGenerateTangents;
+
+  // Point attenuation addresses vertices as 0..N-1. An index that points
+  // somewhere else would draw the first position in the buffer, so expand
+  // those points into index order first.
+  bool pointIndicesNeedExpansion = false;
+  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    if (static_cast<int64>(indices.Num()) != positionView.size()) {
+      pointIndicesNeedExpansion = true;
+    } else {
+      for (int32 i = 0; i < indices.Num(); ++i) {
+        if (indices[i] != static_cast<uint32>(i)) {
+          pointIndicesNeedExpansion = true;
+          break;
+        }
+      }
+    }
+  }
+
+  bool duplicateVertices =
+      needToGenerateFlatNormals || needToGenerateTangents ||
+      pointIndicesNeedExpansion;
 
   uint32 numVertices =
       duplicateVertices ? uint32(indices.Num()) : uint32(positionView.size());

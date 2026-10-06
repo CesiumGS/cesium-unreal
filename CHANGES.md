@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Fixed an out-of-bounds access in `UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString` when the outer loop used each line's point count instead of the number of lines (#1870).
+- Point attenuation now accounts for an index buffer if present in the point primitive. Previously, indexed points would always draw starting from the first position in that buffer.
 
 ### v2.30.0 - 2026-10-01
 
