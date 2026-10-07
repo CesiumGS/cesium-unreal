@@ -1633,6 +1633,20 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   return cameras;
 }
 
+struct LayerDelegate : public Cesium3DTilesSelection::ViewStateMeasureDelegate {
+  std::vector<int64> layers;
+
+  bool isContentVisible(
+      const Cesium3DTilesSelection::ViewState& viewState,
+      const Cesium3DTilesSelection::Tile& tile) const override {
+    if (!this->layers.empty() && tile.getGroup()) {
+      return std::find(this->layers.begin(), this->layers.end(), *tile.getGroup())
+          != this->layers.end();
+    }
+    return true;
+  }
+};
+
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
@@ -1691,14 +1705,71 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
-  return Cesium3DTilesSelection::ViewState(
-      tilesetCameraLocation,
-      tilesetCameraFront,
-      tilesetCameraUp,
-      size,
-      horizontalFieldOfView,
-      verticalFieldOfView,
-      ellipsoid->GetNativeEllipsoid());
+  Cesium3DTilesSelection::ViewState result{
+    tilesetCameraLocation,
+    tilesetCameraFront,
+    tilesetCameraUp,
+    size,
+    horizontalFieldOfView,
+    verticalFieldOfView,
+    ellipsoid->GetNativeEllipsoid()};
+  auto layerDelegate = std::make_shared<LayerDelegate>();
+  layerDelegate->layers.emplace_back(0);
+  result.setMeasureDelegate(layerDelegate);
+  return result;
+}
+
+class GeometricErrorDelegate
+    : public Cesium3DTilesSelection::ViewStateMeasureDelegate {
+public:
+  double computeSelectionMeasure(
+      const Cesium3DTilesSelection::ViewState&,
+      const Cesium3DTilesSelection::Tile& tile,
+      double,
+      uint32_t) const override {
+    return tile.getGeometricError();
+  }
+};
+
+class FixedDepthDelegate
+    : public Cesium3DTilesSelection::ViewStateMeasureDelegate {
+public:
+  FixedDepthDelegate(uint32 fixedDepth_) : fixedDepth(fixedDepth_) {
+    this->depthErrorMeasure = std::exp2(-int32(fixedDepth_));
+  }
+
+  double computeSelectionMeasure(
+      const Cesium3DTilesSelection::ViewState&,
+      const Cesium3DTilesSelection::Tile&,
+      double distance,
+      uint32_t depth) const override {
+    return std::exp2(-int32(depth));
+  }
+  uint32 fixedDepth;
+  double depthErrorMeasure;
+};
+
+Cesium3DTilesSelection::ViewState
+ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
+  CesiumGeospatial::BoundingRegionBuilder builder;
+  builder.expandToIncludePosition(CesiumGeospatial::Cartographic::fromDegrees(
+      this->FixedAreaLongitude - this->FixedAreaLongitudeExtent / 2.0,
+      this->FixedAreaLatitude - this->FixedAreaLatitudeExtent / 2.0,
+      -10000.0));
+  builder.expandToIncludePosition(CesiumGeospatial::Cartographic::fromDegrees(
+      this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
+      this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
+      10000.0));
+  if (this->FixedDepth == 0) {
+    return Cesium3DTilesSelection::ViewState{
+        builder.toRegion(),
+        std::make_shared<GeometricErrorDelegate>(),
+        ellipsoid->GetNativeEllipsoid()};
+  }
+  return Cesium3DTilesSelection::ViewState{
+      builder.toRegion(),
+      std::make_shared<FixedDepthDelegate>(this->FixedDepth),
+      ellipsoid->GetNativeEllipsoid()};
 }
 
 #if WITH_EDITOR
