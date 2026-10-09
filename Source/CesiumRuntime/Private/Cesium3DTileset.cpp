@@ -53,10 +53,12 @@ THIRD_PARTY_INCLUDES_START
 #include <Cesium3DTilesSelection/TilesetOptions.h>
 #include <Cesium3DTilesSelection/TilesetSharedAssetSystem.h>
 #include <CesiumAsync/SharedAssetDepot.h>
+#include <CesiumGeospatial/BoundingRegionBuilder.h>
 #include <CesiumGeospatial/GlobeTransforms.h>
 #include <CesiumImage/Ktx2TranscodeTargets.h>
 #include <CesiumIonClient/Connection.h>
 
+#include <cmath>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
@@ -1760,15 +1762,15 @@ ACesium3DTileset::CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid) {
       this->FixedAreaLongitude + this->FixedAreaLongitudeExtent / 2.0,
       this->FixedAreaLatitude + this->FixedAreaLatitudeExtent / 2.0,
       10000.0));
-  if (this->FixedDepth == 0) {
+  if (this->UseFixedDepth) {
     return Cesium3DTilesSelection::ViewState{
         builder.toRegion(),
-        std::make_shared<GeometricErrorDelegate>(),
+        std::make_shared<FixedDepthDelegate>(this->FixedDepth),
         ellipsoid->GetNativeEllipsoid()};
   }
   return Cesium3DTilesSelection::ViewState{
       builder.toRegion(),
-      std::make_shared<FixedDepthDelegate>(this->FixedDepth),
+      std::make_shared<GeometricErrorDelegate>(),
       ellipsoid->GetNativeEllipsoid()};
 }
 
@@ -1983,8 +1985,16 @@ void applyActorCollisionSettings(
 void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   Cesium3DTilesSelection::TilesetOptions& options =
       this->_pTileset->getOptions();
-  options.maximumScreenSpaceError =
-      static_cast<double>(this->MaximumScreenSpaceError);
+  if (this->FixedAreaLod) {
+    if (this->UseFixedDepth) {
+      options.maximumScreenSpaceError = std::exp2(-int32(this->FixedDepth));
+    } else {
+      options.maximumScreenSpaceError = this->FixedGeometricError;
+    }
+  } else {
+    options.maximumScreenSpaceError =
+        static_cast<double>(this->MaximumScreenSpaceError);
+  }
   options.maximumCachedBytes = this->MaximumCachedBytes;
   options.preloadAncestors = this->PreloadAncestors;
   options.preloadSiblings = this->PreloadSiblings;
@@ -1994,7 +2004,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()
-          ->EnableExperimentalOcclusionCullingFeature &&
+      ->EnableExperimentalOcclusionCullingFeature &&
       this->EnableOcclusionCulling;
   options.showCreditsOnScreen = this->ShowCreditsOnScreen;
 
@@ -2261,13 +2271,17 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   UCesiumEllipsoid* ellipsoid = this->ResolveGeoreference()->GetEllipsoid();
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
-  for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(CreateViewStateFromViewParameters(
-        camera,
-        unrealWorldToCesiumTileset,
-        ellipsoid));
+  if (this->FixedAreaLod && this->FixedAreaLatitudeExtent > 0.0 &&
+      this->FixedAreaLongitudeExtent > 0.0) {
+    frustums.push_back(this->CreateFixedLodViewState(ellipsoid));
+  } else {
+    for (const FCesiumCamera& camera : cameras) {
+      frustums.push_back(CreateViewStateFromViewParameters(
+          camera,
+          unrealWorldToCesiumTileset,
+          ellipsoid));
+    }
   }
-
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
   if (this->_captureMovieMode) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)

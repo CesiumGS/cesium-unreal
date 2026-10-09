@@ -1040,6 +1040,34 @@ private:
       Category = Rendering)
   int32 TranslucencySortPriority;
 
+public:
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  bool FixedAreaLod = false;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  double FixedAreaLatitude = 0.0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  double FixedAreaLongitude = 0.0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  double FixedAreaLatitudeExtent = 0.0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  double FixedAreaLongitudeExtent = 0.0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  bool UseFixedDepth = false;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  double FixedGeometricError = 10000.0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  uint32 FixedDepth = 0;
+
+  UPROPERTY(Category = "Cesium", EditAnywhere)
+  TArray<uint32> VisibleLayers;
+
 protected:
   UPROPERTY()
   FString PlatformName;
