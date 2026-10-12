@@ -46,6 +46,7 @@
 
 THIRD_PARTY_INCLUDES_START
 #include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
+#include <Cesium3DTiles/GroupMetadata.h>
 #include <Cesium3DTilesSelection/EllipsoidTilesetLoader.h>
 #include <Cesium3DTilesSelection/GltfModifier.h>
 #include <Cesium3DTilesSelection/Tile.h>
@@ -1241,6 +1242,32 @@ void ACesium3DTileset::LoadTileset() {
     if (this->_pVoxelMetadataComponent.IsValid()) {
       this->_pVoxelMetadataComponent->SyncStatistics();
     }
+
+    if (pRootTile) {
+      const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
+          this->_pTileset->getMetadata();
+      if (pMetadata && !pMetadata->groups.empty()) {
+        UE_LOG(
+            LogCesium,
+            Log,
+            TEXT("found %d groups"),
+            pMetadata->groups.size());
+        this->VisibleLayers.SetNum(pMetadata->groups.size());
+        for (int32 i = 0; i < this->VisibleLayers.Num(); ++i) {
+          this->VisibleLayers[i].Enabled = false;
+          const Cesium3DTiles::GroupMetadata& groupMetadata =
+              pMetadata->groups[size_t(i)];
+          auto nameItr = groupMetadata.properties.find("name");
+          if (nameItr != groupMetadata.properties.end()) {
+            if (nameItr->second.isString()) {
+              this->VisibleLayers[i].Name =
+                  UTF8_TO_TCHAR(nameItr->second.getString().c_str());
+            }
+          }
+        }
+        this->VisibleLayers[0].Enabled = true;
+      }
+    }
   });
 
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
@@ -1641,15 +1668,17 @@ struct LayerDelegate : public Cesium3DTilesSelection::ViewStateMeasureDelegate {
   bool isContentVisible(
       const Cesium3DTilesSelection::ViewState& viewState,
       const Cesium3DTilesSelection::Tile& tile) const override {
-    if (!this->layers.empty() && tile.getGroup()) {
-      return std::find(this->layers.begin(), this->layers.end(), *tile.getGroup())
-          != this->layers.end();
+    if (tile.getGroup()) {
+      return std::find(
+                 this->layers.begin(),
+                 this->layers.end(),
+                 *tile.getGroup()) != this->layers.end();
     }
     return true;
   }
 };
 
-/*static*/ Cesium3DTilesSelection::ViewState
+Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset,
@@ -1708,16 +1737,22 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
   Cesium3DTilesSelection::ViewState result{
-    tilesetCameraLocation,
-    tilesetCameraFront,
-    tilesetCameraUp,
-    size,
-    horizontalFieldOfView,
-    verticalFieldOfView,
-    ellipsoid->GetNativeEllipsoid()};
-  auto layerDelegate = std::make_shared<LayerDelegate>();
-  layerDelegate->layers.emplace_back(0);
-  result.setMeasureDelegate(layerDelegate);
+      tilesetCameraLocation,
+      tilesetCameraFront,
+      tilesetCameraUp,
+      size,
+      horizontalFieldOfView,
+      verticalFieldOfView,
+      ellipsoid->GetNativeEllipsoid()};
+  if (this->VisibleLayers.Num() > 0) {
+    auto layerDelegate = std::make_shared<LayerDelegate>();
+    for (int32 layer = 0; layer < this->VisibleLayers.Num(); ++layer) {
+      if (this->VisibleLayers[layer].Enabled) {
+        layerDelegate->layers.emplace_back(layer);
+      }
+    }
+    result.setMeasureDelegate(layerDelegate);
+  }
   return result;
 }
 
@@ -2004,7 +2039,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()
-      ->EnableExperimentalOcclusionCullingFeature &&
+          ->EnableExperimentalOcclusionCullingFeature &&
       this->EnableOcclusionCulling;
   options.showCreditsOnScreen = this->ShowCreditsOnScreen;
 

@@ -100,6 +100,23 @@ enum class ETilesetSource : uint8 {
 UENUM(BlueprintType)
 enum class EApplyDpiScaling : uint8 { Yes, No, UseProjectDefault };
 
+USTRUCT()
+struct CESIUMRUNTIME_API FGroupDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * @brief whether the group is enabled.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  bool Enabled;
+
+  /**
+   * @brief: The name of the group
+   */
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
+  FString Name;
+};
+
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
   GENERATED_BODY()
@@ -1066,7 +1083,7 @@ public:
   uint32 FixedDepth = 0;
 
   UPROPERTY(Category = "Cesium", EditAnywhere)
-  TArray<uint32> VisibleLayers;
+  TArray<FGroupDescription> VisibleLayers;
 
 protected:
   UPROPERTY()
@@ -1322,10 +1339,13 @@ private:
   void LoadTileset();
   void DestroyTileset();
 
-  static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
+  Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const FCesiumCamera& camera,
       const glm::dmat4& unrealWorldToTileset,
       UCesiumEllipsoid* ellipsoid);
+
+  Cesium3DTilesSelection::ViewState
+  CreateFixedLodViewState(UCesiumEllipsoid* ellipsoid);
 
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
