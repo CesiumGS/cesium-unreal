@@ -6,6 +6,10 @@
 
 - Added `UCesiumFeaturesMetadataComponent::RefreshStyle` to refresh the Blueprint style instance on the component, allowing it to apply changes in-Editor and at runtime.
 
+##### Fixes :wrench:
+
+- Fixed an out-of-bounds access in `UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString` when the outer loop used each line's point count instead of the number of lines (#1870).
+
 ### v2.30.0 - 2026-10-01
 
 ##### Additions :tada:
