@@ -1,0 +1,19 @@
+name: check-cla
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  CheckCLA:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: CesiumGS/check-for-cla@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-id: ${{ github.event.number }}
+          microsoft-graph-info-json: ${{ secrets.MICROSOFT_GRAPH_INFO_JSON }}
+          cla-url: https://cesium.com/learn/cesium-unreal/ref-doc/contributing-unreal.html#contributor-license-agreement-cla
+          pull-request-guidelines-url: https://cesium.com/learn/cesium-unreal/ref-doc/contributing-unreal.html#opening-a-pull-request
