@@ -26,9 +26,11 @@
 #include "Widgets/Views/SListView.h"
 
 THIRD_PARTY_INCLUDES_START
-#include <Cesium3DTiles/Statistics.h>
 #include <Cesium3DTilesSelection/Tileset.h>
 #include <Cesium3DTilesSelection/TilesetMetadata.h>
+#include <CesiumTilesetJson/Class.h>
+#include <CesiumTilesetJson/Schema.h>
+#include <CesiumTilesetJson/Statistics.h>
 #include <CesiumUtility/Uri.h>
 THIRD_PARTY_INCLUDES_END
 
@@ -137,7 +139,7 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
   const Cesium3DTilesSelection::TilesetMetadata* pMetadata =
       tileset.GetTileset() ? tileset.GetTileset()->getMetadata() : nullptr;
 
-  const std::optional<Cesium3DTiles::Statistics>& maybeStatistics =
+  const std::optional<CesiumTilesetJson::Statistics>& maybeStatistics =
       pMetadata ? pMetadata->statistics : std::nullopt;
   if (!maybeStatistics) {
     return;
@@ -152,7 +154,7 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
         *tileset.GetActorLabel());
     return;
   }
-  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
+  const CesiumTilesetJson::Schema& schema = *pMetadata->schema;
 
   for (const auto& classIt : maybeStatistics->classes) {
     if (schema.classes.find(classIt.first) == schema.classes.end()) {
@@ -166,7 +168,7 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
       continue;
     }
 
-    const Cesium3DTiles::Class& tilesetClass = schema.classes.at(classIt.first);
+    const CesiumTilesetJson::Class& tilesetClass = schema.classes.at(classIt.first);
     TSharedRef<FString> pClassId = getSharedRef(classIt.first.c_str());
 
     TArray<TSharedRef<PropertyStatisticsView>> properties;

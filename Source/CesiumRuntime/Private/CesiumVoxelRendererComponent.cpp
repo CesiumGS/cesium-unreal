@@ -21,8 +21,11 @@
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 
-#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 #include <CesiumGeospatial/Ellipsoid.h>
+#include <CesiumTilesetJson/Class.h>
+#include <CesiumTilesetJson/ClassStatistics.h>
+#include <CesiumTilesetJson/ExtensionContent3dTilesContentVoxels.h>
+#include <CesiumTilesetJson/MetadataEntity.h>
 #include <CesiumUtility/Math.h>
 #include <variant>
 
@@ -90,8 +93,8 @@ FMaterialParameterInfo makeVoxelParameterInfo(const FString& name) {
       INDEX_NONE};
 }
 
-EVoxelGridShape getVoxelGridShape(
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+EVoxelGridShape
+getVoxelGridShape(const Cesium3DTiles::BoundingVolume& boundingVolume) {
   if (std::get_if<CesiumGeometry::OrientedBoundingBox>(&boundingVolume)) {
     return EVoxelGridShape::Box;
   }
@@ -169,9 +172,9 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
     const FVector& paddingBefore,
     const FVector& paddingAfter,
     ACesium3DTileset* pTilesetActor,
-    const Cesium3DTiles::Class* pVoxelClass,
+    const CesiumTilesetJson::Class* pVoxelClass,
     const FCesiumVoxelClassDescription* pDescription,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+    const Cesium3DTiles::BoundingVolume& boundingVolume) {
   UMaterialInterface* pMaterial = pTilesetActor->GetMaterial();
   UMaterialInstanceDynamic* pVoxelMaterial = UMaterialInstanceDynamic::Create(
       pMaterial ? pMaterial : pVoxelComponent->DefaultMaterial,
@@ -240,7 +243,7 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
         continue;
       }
 
-      const Cesium3DTiles::ClassProperty& property =
+      const CesiumTilesetJson::ClassProperty& property =
           pVoxelClass->properties.at(propertyId);
       FCesiumMetadataValueType valueType =
           FCesiumMetadataValueType::fromClassProperty(property);
@@ -306,7 +309,8 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
     ACesium3DTileset* pTilesetActor,
     const Cesium3DTilesSelection::TilesetMetadata& tilesetMetadata,
     const Cesium3DTilesSelection::Tile& rootTile,
-    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& voxelExtension,
+    const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels&
+        voxelExtension,
     const FCesiumVoxelClassDescription* pDescription) {
   if (!pTilesetActor) {
     return nullptr;
@@ -368,7 +372,7 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
   }
 
   // Check that bounding volume is supported.
-  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+  const Cesium3DTiles::BoundingVolume& boundingVolume =
       rootTile.getBoundingVolume();
   EVoxelGridShape shape = getVoxelGridShape(boundingVolume);
   if (shape == EVoxelGridShape::Invalid) {
@@ -381,7 +385,7 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
     return nullptr;
   }
 
-  const Cesium3DTiles::Class* pVoxelClass =
+  const CesiumTilesetJson::Class* pVoxelClass =
       &tilesetMetadata.schema->classes.at(voxelClassId);
   CESIUM_ASSERT(pVoxelClass != nullptr);
 
@@ -428,8 +432,9 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
 
   uint32 knownTileCount = 0;
   if (tilesetMetadata.metadata) {
-    const Cesium3DTiles::MetadataEntity& metadata = *tilesetMetadata.metadata;
-    const Cesium3DTiles::Class& tilesetClass =
+    const CesiumTilesetJson::MetadataEntity& metadata =
+        *tilesetMetadata.metadata;
+    const CesiumTilesetJson::Class& tilesetClass =
         tilesetMetadata.schema->classes.at(metadata.classProperty);
     for (const auto& propertyIt : tilesetClass.properties) {
       if (propertyIt.second.semantic == "TILESET_TILE_COUNT") {
@@ -464,7 +469,7 @@ UCesiumVoxelRendererComponent::createVoxelMaterial(
   options.gridShape = shape;
   options.voxelCount = dataDimensions.x * dataDimensions.y * dataDimensions.z;
 
-  const Cesium3DTiles::ClassStatistics* pStatistics = nullptr;
+  const CesiumTilesetJson::ClassStatistics* pStatistics = nullptr;
   if (tilesetMetadata.statistics &&
       tilesetMetadata.statistics->classes.contains(voxelClassId)) {
     pStatistics = &tilesetMetadata.statistics->classes.at(voxelClassId);

@@ -13,12 +13,18 @@
 #include "VoxelMegatextures.h"
 #include "VoxelOctree.h"
 
+#include <Cesium3DTiles/BoundingVolume.h>
 #include <Cesium3DTilesSelection/Tile.h>
 #include <glm/glm.hpp>
 #include <queue>
 #include <vector>
 
 #include "CesiumVoxelRendererComponent.generated.h"
+
+namespace CesiumTilesetJson {
+struct Class;
+struct ExtensionContent3dTilesContentVoxels;
+}
 
 namespace Cesium3DTilesSelection {
 class TilesetMetadata;
@@ -42,7 +48,8 @@ public:
       ACesium3DTileset* pTilesetActor,
       const Cesium3DTilesSelection::TilesetMetadata& tilesetMetadata,
       const Cesium3DTilesSelection::Tile& rootTile,
-      const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& voxelExtension,
+      const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels&
+          voxelExtension,
       const FCesiumVoxelClassDescription* pDescription);
 
   // Sets default values for this component's properties
@@ -95,9 +102,9 @@ private:
       const FVector& paddingBefore,
       const FVector& paddingAfter,
       ACesium3DTileset* pTilesetActor,
-      const Cesium3DTiles::Class* pVoxelClass,
+      const CesiumTilesetJson::Class* pVoxelClass,
       const FCesiumVoxelClassDescription* pDescription,
-      const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
+      const Cesium3DTiles::BoundingVolume& boundingVolume);
 
   struct VoxelTileUpdateInfo {
     const UCesiumGltfVoxelComponent* pComponent;

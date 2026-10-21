@@ -8,7 +8,7 @@
 #include "CoreMinimal.h"
 #include "PrimitiveSceneProxy.h"
 #include "SceneView.h"
-#include <Cesium3DTilesSelection/BoundingVolume.h>
+#include <Cesium3DTiles/BoundingVolume.h>
 #include <Cesium3DTilesSelection/TileOcclusionRendererProxy.h>
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -83,7 +83,7 @@ class UCesiumBoundingVolumeComponent
 
 public:
   // Sets default values for this component's properties
-  UCesiumBoundingVolumeComponent(){};
+  UCesiumBoundingVolumeComponent() {};
   virtual ~UCesiumBoundingVolumeComponent() = default;
 
   FPrimitiveSceneProxy* CreateSceneProxy() override;
@@ -130,7 +130,7 @@ private:
   // The time when this bounding volume was mapped to the tile.
   float _mappedFrameTime = 0.0f;
 
-  Cesium3DTilesSelection::BoundingVolume _tileBounds =
+  Cesium3DTiles::BoundingVolume _tileBounds =
       CesiumGeometry::OrientedBoundingBox(glm::dvec3(0.0), glm::dmat3(1.0));
   glm::dmat4 _tileTransform = glm::dmat4(1.0);
   glm::dmat4 _cesiumToUnreal = glm::dmat4(1.0);

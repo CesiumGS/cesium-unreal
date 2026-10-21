@@ -2,7 +2,7 @@
 
 #include "CesiumMetadataValueType.h"
 
-#include <Cesium3DTiles/ClassProperty.h>
+#include <CesiumTilesetJson/ClassProperty.h>
 
 using namespace CesiumGltf;
 
@@ -46,7 +46,7 @@ FString FCesiumMetadataValueType::ToString() const {
 }
 
 /*static*/ FCesiumMetadataValueType FCesiumMetadataValueType::fromClassProperty(
-    const Cesium3DTiles::ClassProperty& property) {
+    const CesiumTilesetJson::ClassProperty& property) {
   PropertyType propertyType = convertStringToPropertyType(property.type);
 
   PropertyComponentType propertyComponentType =

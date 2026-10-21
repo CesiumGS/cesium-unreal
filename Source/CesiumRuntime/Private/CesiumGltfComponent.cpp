@@ -1845,7 +1845,7 @@ bool dimensionsAreConsideredEqual(
 bool paddingIsConsideredEqual(
     EVoxelGridShape gridShape,
     const std::optional<CesiumGltf::Padding>& gltfPadding,
-    const std::optional<Cesium3DTiles::Padding>& tilesetPadding) {
+    const std::optional<CesiumTilesetJson::Padding>& tilesetPadding) {
   if (!gltfPadding && !tilesetPadding) {
     return true;
   }
@@ -1894,8 +1894,8 @@ static void loadVoxels(
     return;
   }
 
-  const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pTilesetExtension =
-      pVoxelOptions->pTilesetExtension;
+  const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels*
+      pTilesetExtension = pVoxelOptions->pTilesetExtension;
   if (!dimensionsAreConsideredEqual(
           pVoxelOptions->gridShape,
           voxelExtension.dimensions,
@@ -2521,7 +2521,7 @@ loadModelAnyThreadPart(
   return CesiumGltfTextures::createInWorkerThread(asyncSystem, *options.pModel)
       .thenInWorkerThread(
           [transform, ellipsoid, options = std::move(options)]() mutable
-          -> UCesiumGltfComponent::CreateOffGameThreadResult {
+              -> UCesiumGltfComponent::CreateOffGameThreadResult {
             auto pHalf = MakeUnique<HalfConstructedReal>();
 
             loadModelMetadata(pHalf->loadModelResult, options);
@@ -3505,7 +3505,7 @@ ConstructedPrimitiveComponent createPrimitiveComponent(
       auto* pPointMesh =
           NewObject<UCesiumGltfPointsComponent>(pGltf, componentName);
       pPointMesh->usesAdditiveRefinement =
-          tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
+          tile.getRefine() == Cesium3DTiles::TileRefine::Add;
       pPointMesh->geometricError = static_cast<float>(tile.getGeometricError());
       pPointMesh->dimensions = loadResult.dimensions;
 

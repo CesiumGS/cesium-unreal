@@ -16,7 +16,7 @@
 #include "Templates/UniquePtr.h"
 #include "UObject/Package.h"
 
-#include <Cesium3DTiles/Class.h>
+#include <CesiumTilesetJson/Class.h>
 #include <CesiumGltf/PropertyType.h>
 #include <glm/gtx/component_wise.hpp>
 

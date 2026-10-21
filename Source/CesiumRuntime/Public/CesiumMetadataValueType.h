@@ -10,7 +10,7 @@
 
 #include "CesiumMetadataValueType.generated.h"
 
-namespace Cesium3DTiles {
+namespace CesiumTilesetJson {
 struct ClassProperty;
 }
 
@@ -196,10 +196,10 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
 
   /**
    * Deduces the corresponding value type for a given
-   * Cesium3DTiles::ClassProperty.
+   * @ref CesiumTilesetJson::ClassProperty.
    */
   static FCesiumMetadataValueType
-  fromClassProperty(const Cesium3DTiles::ClassProperty& property);
+  fromClassProperty(const CesiumTilesetJson::ClassProperty& property);
 };
 
 template <typename T>

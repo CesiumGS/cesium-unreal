@@ -15,8 +15,9 @@
 #include "ShaderCore.h"
 #include "UnrealMetadataConversions.h"
 
-#include <Cesium3DTiles/Class.h>
-#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
+#include <CesiumTilesetJson/Class.h>
+#include <CesiumTilesetJson/ClassStatistics.h>
+#include <CesiumTilesetJson/ExtensionContent3dTilesContentVoxels.h>
 
 #if WITH_EDITOR
 #include "AssetRegistry/AssetData.h"
@@ -85,16 +86,16 @@ void UCesiumVoxelMetadataComponent::OnFetchMetadata(
   }
 
   const std::string classId(TCHAR_TO_UTF8(*this->Description.ClassId));
-  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
-  const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
+  const CesiumTilesetJson::Schema& schema = *pMetadata->schema;
+  const CesiumTilesetJson::Statistics& statistics = *pMetadata->statistics;
 
   if (!schema.classes.contains(classId) ||
       !statistics.classes.contains(classId)) {
     return;
   }
 
-  const Cesium3DTiles::Class& voxelClass = schema.classes.at(classId);
-  const Cesium3DTiles::ClassStatistics& classStatistics =
+  const CesiumTilesetJson::Class& voxelClass = schema.classes.at(classId);
+  const CesiumTilesetJson::ClassStatistics& classStatistics =
       statistics.classes.at(classId);
 
   for (FCesiumMetadataPropertyStatisticsDescription& propertyStatistics :

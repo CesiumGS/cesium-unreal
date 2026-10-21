@@ -11,12 +11,12 @@
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
 
-#include <Cesium3DTilesContent/registerAllTileContentTypes.h>
 #include <CesiumAsync/AsyncSystem.h>
 #include <CesiumAsync/CachingAssetAccessor.h>
 #include <CesiumAsync/GunzipAssetAccessor.h>
 #include <CesiumAsync/IAssetAccessor.h>
 #include <CesiumAsync/SqliteCache.h>
+#include <CesiumGltfConverters/registerAllConverterTypes.h>
 #include <CesiumUtility/Tracing.h>
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
@@ -30,7 +30,7 @@
 DEFINE_LOG_CATEGORY(LogCesium);
 
 void FCesiumRuntimeModule::StartupModule() {
-  Cesium3DTilesContent::registerAllTileContentTypes();
+  CesiumGltfConverters::registerAllConverterTypes();
 
   std::shared_ptr<spdlog::logger> pLogger = spdlog::default_logger();
   pLogger->sinks() = {std::make_shared<SpdlogUnrealLoggerSink>()};

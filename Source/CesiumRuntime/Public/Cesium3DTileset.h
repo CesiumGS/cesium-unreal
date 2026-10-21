@@ -44,7 +44,7 @@ class CesiumViewExtension;
 struct FCesiumCamera;
 class ICesium3DTilesetLifecycleEventReceiver;
 
-namespace Cesium3DTiles {
+namespace CesiumTilesetJson {
 struct ExtensionContent3dTilesContentVoxels;
 }
 
@@ -1361,9 +1361,9 @@ private:
    * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering
    * voxel data.
    */
-  void
-  createVoxelRenderer(const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
-                          VoxelExtension);
+  void createVoxelRenderer(
+      const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels&
+          VoxelExtension);
 
   /**
    * Writes the values of all properties of this actor into the

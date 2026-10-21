@@ -11,6 +11,7 @@
 #include "CesiumRasterOverlays.h"
 #include "EncodedFeaturesMetadata.h"
 
+#include <Cesium3DTiles/BoundingVolume.h>
 #include <CesiumGltf/AccessorUtility.h>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
@@ -138,7 +139,7 @@ public:
    * The bounding volume associated with the tile content to which this
    * primitive belongs.
    */
-  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
+  std::optional<Cesium3DTiles::BoundingVolume> boundingVolume;
 
   void destroy();
 

@@ -14,7 +14,7 @@
 #include "GenerateMaterialUtility.h"
 #include "UnrealMetadataConversions.h"
 
-#include <Cesium3DTiles/Statistics.h>
+#include <CesiumTilesetJson/Statistics.h>
 
 #if WITH_EDITOR
 #include "AssetRegistry/AssetData.h"
@@ -176,16 +176,16 @@ void UCesiumFeaturesMetadataComponent::OnFetchMetadata(
     return;
   }
 
-  const Cesium3DTiles::Schema& schema = *pMetadata->schema;
-  const Cesium3DTiles::Statistics& statistics = *pMetadata->statistics;
+  const CesiumTilesetJson::Schema& schema = *pMetadata->schema;
+  const CesiumTilesetJson::Statistics& statistics = *pMetadata->statistics;
 
   for (FCesiumMetadataClassStatisticsDescription& classStatistics :
        this->Description.Statistics) {
     std::string classId = TCHAR_TO_UTF8(*classStatistics.Id);
-    const Cesium3DTiles::Class* pClass = schema.classes.contains(classId)
-                                             ? &schema.classes.at(classId)
-                                             : nullptr;
-    const Cesium3DTiles::ClassStatistics* pClassStatistics =
+    const CesiumTilesetJson::Class* pClass = schema.classes.contains(classId)
+                                                 ? &schema.classes.at(classId)
+                                                 : nullptr;
+    const CesiumTilesetJson::ClassStatistics* pClassStatistics =
         statistics.classes.contains(classId) ? &statistics.classes.at(classId)
                                              : nullptr;
 

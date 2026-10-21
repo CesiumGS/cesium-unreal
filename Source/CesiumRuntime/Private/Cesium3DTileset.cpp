@@ -45,7 +45,6 @@
 #include "VecMath.h"
 
 THIRD_PARTY_INCLUDES_START
-#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 #include <Cesium3DTilesSelection/EllipsoidTilesetLoader.h>
 #include <Cesium3DTilesSelection/GltfModifier.h>
 #include <Cesium3DTilesSelection/Tile.h>
@@ -56,6 +55,7 @@ THIRD_PARTY_INCLUDES_START
 #include <CesiumGeospatial/GlobeTransforms.h>
 #include <CesiumImage/Ktx2TranscodeTargets.h>
 #include <CesiumIonClient/Connection.h>
+#include <CesiumTilesetJson/ExtensionContent3dTilesContentVoxels.h>
 
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
@@ -714,7 +714,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     return;
   }
 
-  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+  const Cesium3DTiles::BoundingVolume& boundingVolume =
       pRootTile->getBoundingVolume();
 
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
@@ -731,7 +731,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter =
-      Cesium3DTilesSelection::getBoundingVolumeCenter(boundingVolume);
+      Cesium3DTiles::getBoundingVolumeCenter(boundingVolume);
   FVector unrealCenter =
       pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
           VecMath::createVector(ecefCenter));
@@ -1231,7 +1231,7 @@ void ACesium3DTileset::LoadTileset() {
     }
 
     const auto* pVoxelExtension = pExternalContent->getExtension<
-        Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
+        CesiumTilesetJson::ExtensionContent3dTilesContentVoxels>();
     if (pVoxelExtension) {
       this->createVoxelRenderer(*pVoxelExtension);
     }
@@ -1952,7 +1952,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     for (const Cesium3DTilesSelection::Tile::ConstPointer& pTile :
          result.tilesToRenderThisFrame) {
       CesiumGeometry::OrientedBoundingBox obb =
-          Cesium3DTilesSelection::getOrientedBoundingBoxFromBoundingVolume(
+          Cesium3DTiles::getOrientedBoundingBoxFromBoundingVolume(
               pTile->getBoundingVolume(),
               Georeference->GetEllipsoid()->GetNativeEllipsoid());
 
@@ -2467,7 +2467,8 @@ void ACesium3DTileset::OnPreBeginPIE(bool bIsSimulating) {
 #endif
 
 void ACesium3DTileset::createVoxelRenderer(
-    const Cesium3DTiles::ExtensionContent3dTilesContentVoxels& VoxelExtension) {
+    const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels&
+        VoxelExtension) {
   const Cesium3DTilesSelection::Tile* pRootTile =
       this->_pTileset->getRootTile();
   if (!pRootTile) {

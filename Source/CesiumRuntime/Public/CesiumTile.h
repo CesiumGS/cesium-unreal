@@ -4,7 +4,7 @@
 
 #include "Components/PrimitiveComponent.h"
 #include "CoreMinimal.h"
-#include <Cesium3DTilesSelection/BoundingVolume.h>
+#include <Cesium3DTiles/BoundingVolume.h>
 #include "CesiumTile.generated.h"
 
 /**
@@ -20,7 +20,7 @@ class CESIUMRUNTIME_API UCesiumTile : public UPrimitiveComponent {
 
   glm::dmat4 _tileTransform;
 
-  Cesium3DTilesSelection::BoundingVolume _tileBounds =
+  Cesium3DTiles::BoundingVolume _tileBounds =
       CesiumGeometry::OrientedBoundingBox(glm::dvec3(0.0), glm::dmat3(1.0));
 
 public:
