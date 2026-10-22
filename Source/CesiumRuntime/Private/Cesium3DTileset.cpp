@@ -1136,7 +1136,7 @@ void ACesium3DTileset::LoadTileset() {
   // Our gaussian splat implementation takes float data, so we should avoid
   // converting the SPZ float data to glTF component types only to convert it
   // back again.
-  // options.contentOptions.spzDecoderOptions.forceFloatAccessors = true;
+  options.contentOptions.spzDecoderOptions.forceFloatAccessors = true;
 
   options.requestHeaders.reserve(this->RequestHeaders.Num());
 
