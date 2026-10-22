@@ -90,22 +90,47 @@ bool writeShCoeffs(
 }
 
 template <typename T, typename ComponentT>
-void writeConvertedAccessor(
+void writeConvertedAccessor4(
     const CesiumGltf::AccessorView<T>& accessorView,
     TArray<float>& data,
-    int32 stride) {
+    int32 stride,
+    TFunction<glm::vec4(glm::vec4)> convert) {
   for (int32 i = 0; i < accessorView.size(); i++) {
-    data[i * stride] = accessorView[i].x /
-                       static_cast<float>(TNumericLimits<ComponentT>::Max());
-    data[i * stride + 1] =
+    glm::vec4 vec = glm::vec4(
+        accessorView[i].x /
+            static_cast<float>(TNumericLimits<ComponentT>::Max()),
         accessorView[i].y /
-        static_cast<float>(TNumericLimits<ComponentT>::Max());
-    data[i * stride + 2] =
+            static_cast<float>(TNumericLimits<ComponentT>::Max()),
         accessorView[i].z /
-        static_cast<float>(TNumericLimits<ComponentT>::Max());
-    data[i * stride + 3] =
+            static_cast<float>(TNumericLimits<ComponentT>::Max()),
         accessorView[i].w /
-        static_cast<float>(TNumericLimits<ComponentT>::Max());
+            static_cast<float>(TNumericLimits<ComponentT>::Max()));
+    vec = convert(vec);
+    data[i * stride] = vec.x;
+    data[i * stride + 1] = vec.y;
+    data[i * stride + 2] = vec.z;
+    data[i * stride + 3] = vec.w;
+  }
+}
+
+template <typename T, typename ComponentT>
+void writeConvertedAccessor3(
+    const CesiumGltf::AccessorView<T>& accessorView,
+    TArray<float>& data,
+    int32 stride,
+    TFunction<glm::vec3(glm::vec3)> convert) {
+  for (int32 i = 0; i < accessorView.size(); i++) {
+    glm::vec3 vec = glm::vec3(
+        accessorView[i].x /
+            static_cast<float>(TNumericLimits<ComponentT>::Max()),
+        accessorView[i].y /
+            static_cast<float>(TNumericLimits<ComponentT>::Max()),
+        accessorView[i].z /
+            static_cast<float>(TNumericLimits<ComponentT>::Max()));
+    vec = convert(vec);
+    data[i * stride] = vec.x;
+    data[i * stride + 1] = vec.y;
+    data[i * stride + 2] = vec.z;
   }
 }
 } // namespace
@@ -232,26 +257,83 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     return;
   }
 
-  CesiumGltf::AccessorView<glm::vec3> scaleView(model, scaleIt->second);
-  if (scaleView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+  const CesiumGltf::Accessor& scaleAccessor = model.accessors[scaleIt->second];
+  if (scaleAccessor.componentType ==
+      CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE) {
+    CesiumGltf::AccessorView<glm::u8vec3> scaleView(model, scaleIt->second);
+    if (scaleView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
+          scaleView.status());
+      return;
+    }
+
+    this->Scales.SetNum(scaleView.size() * 4, EAllowShrinking::Yes);
+    writeConvertedAccessor3<glm::u8vec3, uint8>(
+        scaleView,
+        this->Scales,
+        4,
+        [](glm::vec3 vec) {
+          return glm::exp(vec) *
+                 glm::vec3(CesiumPrimitiveData::positionScaleFactor);
+        });
+  } else if (
+      scaleAccessor.componentType ==
+      CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_SHORT) {
+    CesiumGltf::AccessorView<glm::u16vec3> scaleView(model, scaleIt->second);
+    if (scaleView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
+          scaleView.status());
+      return;
+    }
+
+    this->Scales.SetNum(scaleView.size() * 4, EAllowShrinking::Yes);
+    writeConvertedAccessor3<glm::u16vec3, uint16>(
+        scaleView,
+        this->Scales,
+        4,
+        [](glm::vec3 vec) {
+          return glm::exp(vec) *
+                 glm::vec3(CesiumPrimitiveData::positionScaleFactor);
+        });
+  } else if (
+      scaleAccessor.componentType ==
+      CesiumGltf::AccessorSpec::ComponentType::FLOAT) {
+    CesiumGltf::AccessorView<glm::vec3> scaleView(model, scaleIt->second);
+    if (scaleView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
+          scaleView.status());
+      return;
+    }
+
+    this->Scales.SetNum(scaleView.size() * 4, EAllowShrinking::Yes);
+    for (int32 i = 0; i < scaleView.size(); i++) {
+      glm::vec3 scale = glm::exp(scaleView[i]) *
+                        glm::vec3(CesiumPrimitiveData::positionScaleFactor);
+      this->Scales[i * 4] = scale.x;
+      this->Scales[i * 4 + 1] = scale.y;
+      this->Scales[i * 4 + 2] = scale.z;
+      this->Scales[i * 4 + 3] = 0.0f;
+    }
+  } else {
     UE_LOG(
         LogCesium,
         Error,
         TEXT(
-            "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
-        scaleView.status());
+            "Mesh primitive has 'KHR_gaussian_splatting:SCALE' attribute with unsupported component type %d"),
+        scaleAccessor.componentType);
     return;
-  }
-
-  this->Scales.SetNum(scaleView.size() * 4, EAllowShrinking::Yes);
-  for (int32 i = 0; i < scaleView.size(); i++) {
-    this->Scales[i * 4] =
-        scaleView[i].x * CesiumPrimitiveData::positionScaleFactor;
-    this->Scales[i * 4 + 1] =
-        scaleView[i].y * CesiumPrimitiveData::positionScaleFactor;
-    this->Scales[i * 4 + 2] =
-        scaleView[i].z * CesiumPrimitiveData::positionScaleFactor;
-    this->Scales[i * 4 + 3] = 0.0;
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator rotationIt =
@@ -265,30 +347,86 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     return;
   }
 
-  CesiumGltf::AccessorView<glm::vec4> rotationView(model, rotationIt->second);
-  if (rotationView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+  const CesiumGltf::Accessor& rotationAccessor =
+      model.accessors[rotationIt->second];
+  if (rotationAccessor.componentType ==
+      CesiumGltf::AccessorSpec::ComponentType::BYTE) {
+    CesiumGltf::AccessorView<glm::i8vec4> rotationView(
+        model,
+        rotationIt->second);
+    if (rotationView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
+          rotationView.status());
+      return;
+    }
+
+    this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
+    writeConvertedAccessor4<glm::i8vec4, int8>(
+        rotationView,
+        this->Orientations,
+        4,
+        [](glm::vec4 vec) {
+          return glm::normalize(vec * glm::vec4(1.f, -1.f, 1.f, 1.f));
+        });
+  } else if (
+      rotationAccessor.componentType ==
+      CesiumGltf::AccessorSpec::ComponentType::SHORT) {
+    CesiumGltf::AccessorView<glm::i16vec4> rotationView(
+        model,
+        rotationIt->second);
+    if (rotationView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
+          rotationView.status());
+      return;
+    }
+
+    this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
+    writeConvertedAccessor4<glm::i16vec4, int16>(
+        rotationView,
+        this->Orientations,
+        4,
+        [](glm::vec4 vec) {
+          return glm::normalize(vec * glm::vec4(1.f, -1.f, 1.f, 1.f));
+        });
+  } else if (
+      rotationAccessor.componentType ==
+      CesiumGltf::AccessorSpec::ComponentType::FLOAT) {
+    CesiumGltf::AccessorView<glm::vec4> rotationView(model, rotationIt->second);
+    if (rotationView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
+          rotationView.status());
+      return;
+    }
+
+    this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
+    for (int32 i = 0; i < rotationView.size(); i++) {
+      glm::vec4 rot =
+          glm::normalize(rotationView[i] * glm::vec4(1.f, -1.f, 1.f, 1.f));
+      this->Orientations[i * 4] = rot.x;
+      this->Orientations[i * 4 + 1] = rot.y;
+      this->Orientations[i * 4 + 2] = rot.z;
+      this->Orientations[i * 4 + 3] = rot.w;
+    }
+  } else {
     UE_LOG(
         LogCesium,
         Error,
         TEXT(
-            "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
-        rotationView.status());
+            "Mesh primitive has 'KHR_gaussian_splatting:ROTATION' attribute with unsupported component type %d"),
+        rotationAccessor.componentType);
     return;
-  }
-
-  this->Orientations.SetNum(rotationView.size() * 4, EAllowShrinking::Yes);
-  for (int32 i = 0; i < rotationView.size(); i++) {
-    FQuat rotation(
-        rotationView[i].x,
-        -rotationView[i].y,
-        rotationView[i].z,
-        rotationView[i].w);
-    rotation.Normalize();
-
-    this->Orientations[i * 4] = rotation.X;
-    this->Orientations[i * 4 + 1] = rotation.Y;
-    this->Orientations[i * 4 + 2] = rotation.Z;
-    this->Orientations[i * 4 + 3] = rotation.W;
   }
 
   const std::unordered_map<std::string, int32_t>::const_iterator colorIt =
@@ -322,7 +460,11 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     }
 
     this->Colors.SetNum(accessorView.size() * 4, EAllowShrinking::Yes);
-    writeConvertedAccessor<glm::u8vec4, uint8>(accessorView, this->Colors, 4);
+    writeConvertedAccessor4<glm::u8vec4, uint8>(
+        accessorView,
+        this->Colors,
+        4,
+        [](glm::vec4 vec) { return vec; });
   } else if (
       colorAccessor.componentType ==
       CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_SHORT) {
@@ -338,7 +480,11 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
     }
 
     this->Colors.SetNum(accessorView.size() * 4, EAllowShrinking::Yes);
-    writeConvertedAccessor<glm::u16vec4, uint16>(accessorView, this->Colors, 4);
+    writeConvertedAccessor4<glm::u16vec4, uint16>(
+        accessorView,
+        this->Colors,
+        4,
+        [](glm::vec4 vec) { return vec; });
   } else if (
       colorAccessor.componentType ==
       CesiumGltf::AccessorSpec::ComponentType::FLOAT) {
