@@ -99,7 +99,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Set environment variables
         run: |
-          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
+          export GH_REF_NAME=$GITHUB_REF_NAME
+          export CESIUM_UNREAL_VERSION=${GH_REF_NAME//\//-} # replace slash with hyphen
           export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-56-${CESIUM_UNREAL_VERSION}"
           export BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME="CesiumForUnreal-56-SourceOnly-${CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
@@ -217,7 +218,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Set environment variables
         run: |
-          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
+          export GH_REF_NAME=$GITHUB_REF_NAME
+          export CESIUM_UNREAL_VERSION=${GH_REF_NAME//\//-} # replace slash with hyphen
           export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-57-${CESIUM_UNREAL_VERSION}"
           export BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME="CesiumForUnreal-57-SourceOnly-${CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
@@ -335,7 +337,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Set environment variables
         run: |
-          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
+          export GH_REF_NAME=$GITHUB_REF_NAME
+          export CESIUM_UNREAL_VERSION=${GH_REF_NAME//\//-} # replace slash with hyphen
           export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-58-${CESIUM_UNREAL_VERSION}"
           export BUILD_CESIUM_UNREAL_SOURCE_ONLY_PACKAGE_NAME="CesiumForUnreal-58-SourceOnly-${CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps

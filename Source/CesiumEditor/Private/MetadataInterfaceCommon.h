@@ -97,7 +97,7 @@ enum class ComponentSearchResult { NoMatch, PartialMatch, ExactMatch };
  */
 template <typename TEnum> struct MetadataEnumUtility {
   // Avoid allocating numerous instances of simple enum values (because shared
-  // pointers /refs are required for SComboBox).
+  // pointers or refs are required for SComboBox).
   TArray<TSharedRef<TEnum>> options;
 
   MetadataEnumUtility();
@@ -156,6 +156,7 @@ MetadataEnumUtility<TEnum>::getSharedRefs(const TArray<TEnum>& selection) {
   return result;
 }
 
+static MetadataEnumUtility<ECesiumFeatureStylingMode> FeatureStylingModeEnum;
 static MetadataEnumUtility<ECesiumEncodedMetadataConversion> ConversionEnum;
 static MetadataEnumUtility<ECesiumEncodedMetadataType> EncodedTypeEnum;
 static MetadataEnumUtility<ECesiumEncodedMetadataComponentType>

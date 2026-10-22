@@ -96,72 +96,17 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
 
   this->gatherTilesetStatistics();
   this->gatherGltfFeaturesMetadata();
-  this->syncPropertyEncodingDetails();
-
-  TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
-  pContent->ClearChildren();
+  this->syncEncodingDetails();
 
   TSharedRef<SVerticalBox> pVerticalBox = SNew(SVerticalBox);
 
-  pVerticalBox->AddSlot().AutoHeight()
-      [SNew(SHeader)
-           .Content()[SNew(STextBlock)
-                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                          .Text(FText::FromString(TEXT("glTF Features")))
-                          .Margin(FMargin(0.f, 10.f))]];
+  this->buildGltfFeaturesSection(pVerticalBox);
+  this->buildGltfMetadataSection(pVerticalBox);
+  this->buildTilesetStatisticsSection(pVerticalBox);
 
-  if (!this->_featureIdSets.IsEmpty()) {
-    TSharedRef<SScrollBox> pGltfFeatures = SNew(SScrollBox);
-    for (const FeatureIdSetView& featureIdSet : this->_featureIdSets) {
-      this->createGltfFeatureIdSetDropdown(pGltfFeatures, featureIdSet);
-    }
-    pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
-  } else {
-    pVerticalBox->AddSlot().AutoHeight()
-        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
-         SHorizontalBox::Slot()
-             [SNew(STextBlock)
-                  .AutoWrapText(true)
-                  .Text(FText::FromString(TEXT(
-                      "This tileset does not contain any glTF features in this view.")))]];
-  }
-
-  pVerticalBox->AddSlot().AutoHeight()
-      [SNew(SHeader)
-           .Content()[SNew(STextBlock)
-                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                          .Text(FText::FromString(TEXT("glTF Metadata")))
-                          .Margin(FMargin(0.f, 10.f))]];
-
-  if (!this->_metadataSources.IsEmpty()) {
-    TSharedRef<SScrollBox> pGltfContent = SNew(SScrollBox);
-    for (const PropertySourceView& source : this->_metadataSources) {
-      this->createGltfPropertySourceDropdown(pGltfContent, source);
-    }
-    pVerticalBox->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
-  } else {
-    pVerticalBox->AddSlot().AutoHeight()
-        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
-         SHorizontalBox::Slot()
-             [SNew(STextBlock)
-                  .AutoWrapText(true)
-                  .Text(FText::FromString(TEXT(
-                      "This tileset does not contain any glTF metadata in this view.")))]];
-  }
-
-  if (!this->_statisticsClasses.IsEmpty()) {
-    pVerticalBox->AddSlot().AutoHeight()
-        [SNew(SHeader).Content()
-             [SNew(STextBlock)
-                  .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                  .Text(FText::FromString(TEXT("Tileset Statistics")))
-                  .Margin(FMargin(0.f, 10.f))]];
-    TSharedRef<SScrollBox> pStatisticsContent = SNew(SScrollBox);
-    for (const ClassStatisticsView& theClass : this->_statisticsClasses) {
-      this->createClassStatisticsDropdown(pStatisticsContent, theClass);
-    }
-    pVerticalBox->AddSlot().AutoHeight()[pStatisticsContent];
-  }
+  const FString refreshButtonTooltip =
+      "Refreshes the lists with the feature ID sets and metadata from "
+      "currently loaded tiles in the ACesium3DTileset.";
 
   pVerticalBox->AddSlot()
       .Padding(0.0f, 10.0f)
@@ -172,14 +117,15 @@ void CesiumFeaturesMetadataViewer::SyncAndRebuildUI() {
                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
                .ContentPadding(FMargin(1.0, 1.0))
                .HAlign(EHorizontalAlignment::HAlign_Center)
-               .Text(FText::FromString(TEXT("Refresh with Current View")))
-               .ToolTipText(FText::FromString(TEXT(
-                   "Refreshes the lists with the feature ID sets and metadata from currently loaded tiles in the ACesium3DTileset.")))
+               .Text(FText::FromString(TEXT("Refresh for Current View")))
+               .ToolTipText(FText::FromString(refreshButtonTooltip))
                .OnClicked_Lambda([this]() {
                  this->SyncAndRebuildUI();
                  return FReply::Handled();
                })];
 
+  TSharedRef<SScrollBox> pContent = this->_pContent.ToSharedRef();
+  pContent->ClearChildren();
   pContent->AddSlot()[pVerticalBox];
 }
 
@@ -514,7 +460,7 @@ void CesiumFeaturesMetadataViewer::gatherGltfFeaturesMetadata() {
   }
 }
 
-void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
+void CesiumFeaturesMetadataViewer::syncEncodingDetails() {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
     return;
   }
@@ -581,6 +527,30 @@ void CesiumFeaturesMetadataViewer::syncPropertyEncodingDetails() {
         pInstance->encodingDetails->pEncodedComponentTypeSelection =
             EncodedComponentTypeEnum.options[componentTypeIndex].ToSharedPtr();
       }
+    }
+  }
+
+  const TArray<FCesiumFeatureIdSetDescription>& featureIdSets =
+      this->_pFeaturesMetadataComponent->Description.PrimitiveFeatures
+          .FeatureIdSets;
+  for (const FCesiumFeatureIdSetDescription& featureIdSet : featureIdSets) {
+    FeatureIdSetView* pFeatureIdSetView = this->_featureIdSets.FindByPredicate(
+        [&name = featureIdSet.Name](const FeatureIdSetView& set) {
+          return *set.pName == name;
+        });
+    if (!pFeatureIdSetView) {
+      continue;
+    }
+
+    for (TSharedRef<FeatureIdSetInstance>& pInstance :
+         pFeatureIdSetView->instances) {
+      int64 stylingModeIndex = int64(featureIdSet.StylingMode);
+
+      // Here the combo boxes will still be nullptr because
+      // OnGenerateRow is not executed right away, so save the selected
+      // option.
+      pInstance->pStylingModeSelection =
+          FeatureStylingModeEnum.options[stylingModeIndex].ToSharedPtr();
     }
   }
 }
@@ -1061,16 +1031,11 @@ void CesiumFeaturesMetadataViewer::createEnumComboBox(
                                   : FText::FromString(FString());
                      })
                      .ToolTipText_Lambda([&pComboBox, tooltip]() {
-                       if constexpr (std::is_same_v<
-                                         TEnum,
-                                         ECesiumEncodedMetadataConversion>) {
-                         UEnum* pEnum =
-                             StaticEnum<ECesiumEncodedMetadataConversion>();
-                         if (pEnum) {
-                           return pComboBox->GetSelectedItem().IsValid()
-                                      ? pEnum->GetToolTipTextByIndex(int64(
-                                            *pComboBox->GetSelectedItem()))
-                                      : FText::FromString(FString());
+                       if (tooltip.IsEmpty()) {
+                         UEnum* pEnum = StaticEnum<TEnum>();
+                         if (pEnum && pComboBox->GetSelectedItem().IsValid()) {
+                           return pEnum->GetToolTipTextByIndex(
+                               int64(*pComboBox->GetSelectedItem()));
                          }
                        }
                        return FText::FromString(tooltip);
@@ -1139,22 +1104,34 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
                    MetadataEnumUtility<ECesiumFeatureIdSetType>::
                        enumToNameString(pItem->type)))];
 
-  if (!pItem->pPropertyTableName->IsEmpty()) {
-    FString sourceString = FString::Printf(
-        TEXT("Used with \"%s\" (Property Table)"),
-        **pItem->pPropertyTableName);
-    pBox->AddSlot()
-        .FillWidth(1.0f)
-        .Padding(5.0f)
-        .HAlign(HAlign_Fill)
-        .VAlign(EVerticalAlignment::VAlign_Center)
-            [SNew(STextBlock)
-                 .AutoWrapText(true)
-                 .Text(FText::FromString(sourceString))
-                 .ToolTipText(FText::FromString(
-                     "The property table with which this feature ID set should be used. "
-                     "Add properties from the corresponding property table under \"glTF Metadata\"."))];
-  }
+  FString sourceString = !pItem->pPropertyTableName->IsEmpty()
+                             ? FString::Printf(
+                                   TEXT("Used with \"%s\" (Property Table)"),
+                                   **pItem->pPropertyTableName)
+                             : TEXT("No associated property table");
+  pBox->AddSlot()
+      .FillWidth(1.0f)
+      .Padding(5.0f)
+      .HAlign(HAlign_Fill)
+      .VAlign(EVerticalAlignment::VAlign_Center)
+          [SNew(STextBlock)
+               .AutoWrapText(true)
+               .Text(FText::FromString(sourceString))
+               .ToolTipText(FText::FromString(
+                   "The property table with which this feature ID set should be used. "
+                   "Add properties from the corresponding property table under \"glTF Metadata\"."))];
+
+  this->createEnumComboBox(
+      pItem->pStylingModeCombo,
+      FeatureStylingModeEnum.options,
+      pItem->pStylingModeSelection ? *pItem->pStylingModeSelection
+                                   : ECesiumFeatureStylingMode::Material,
+      FString());
+  pBox->AddSlot()
+      .FillWidth(0.25)
+      .HAlign(EHorizontalAlignment::HAlign_Fill)
+      .VAlign(EVerticalAlignment::VAlign_Center)[pItem->pStylingModeCombo
+                                                     ->AsShared()];
 
   TSharedRef<SWidget> pAddButton = PropertyCustomizationHelpers::MakeAddButton(
       FSimpleDelegate::CreateLambda(
@@ -1195,8 +1172,7 @@ CesiumFeaturesMetadataViewer::createFeatureIdSetInstanceRow(
       FText::FromString(TEXT(
           "Remove this feature ID set from the tileset's CesiumFeaturesMetadataComponent.")),
       TAttribute<bool>::Create([this, pItem]() {
-        return this->findOnComponent(pItem) ==
-               ComponentSearchResult::ExactMatch;
+        return this->findOnComponent(pItem) != ComponentSearchResult::NoMatch;
       }));
 
   pBox->AddSlot()
@@ -1229,6 +1205,120 @@ void CesiumFeaturesMetadataViewer::createGltfFeatureIdSetDropdown(
                                   this,
                                   &CesiumFeaturesMetadataViewer::
                                       createFeatureIdSetInstanceRow)]];
+}
+
+const FString gltfFeaturesTooltip = TEXT(
+    "Features are distinguishable parts of a larger glTF model identified by "
+    "integer IDs. Feature IDs may be assigned through different methods, such "
+    "as vertices in a mesh or texels in a texture. A feature ID set refers to "
+    "a set of feature ID values that are all assigned through the same method."
+    "\n\n"
+    "Add a feature ID set to make it available to the material layer for "
+    "styling. For both Material and Blueprint styling, only the feature ID "
+    "sets that are explicitly added will be used."
+    "\n\n"
+    "Feature ID sets are often paired with a property table that supplies "
+    "metadata for each feature. See glTF Metadata below.");
+
+void CesiumFeaturesMetadataViewer::buildGltfFeaturesSection(
+    TSharedRef<SVerticalBox>& pContent) {
+  pContent->AddSlot().AutoHeight()
+      [SNew(SHeader)
+           .Content()[SNew(STextBlock)
+                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                          .Text(FText::FromString(TEXT("glTF Features")))
+                          .ToolTipText(FText::FromString(gltfFeaturesTooltip))
+                          .Margin(FMargin(0.f, 10.f))]];
+
+  if (!this->_featureIdSets.IsEmpty()) {
+    TSharedRef<SScrollBox> pGltfFeatures = SNew(SScrollBox);
+    for (const FeatureIdSetView& featureIdSet : this->_featureIdSets) {
+      this->createGltfFeatureIdSetDropdown(pGltfFeatures, featureIdSet);
+    }
+    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfFeatures];
+  } else {
+    pContent->AddSlot().AutoHeight()
+        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+         SHorizontalBox::Slot()
+             [SNew(STextBlock)
+                  .AutoWrapText(true)
+                  .Text(FText::FromString(TEXT(
+                      "This tileset does not contain any glTF features in this view.")))]];
+  }
+}
+
+const FString gltfMetadataTooltip =
+    TEXT("Metadata in glTF and 3D Tiles refers to arbitrary information "
+         "associated with the 3D model and its parts. Metadata often appears "
+         "alongside glTF features (see above), associating properties with "
+         "particular features within a larger model."
+         "\n\n"
+         "While metadata can be queried per feature, it is often useful to "
+         "visualize it across an entire dataset through value-dependent "
+         "coloring and other visual effects. Material styling allows numeric "
+         "metadata properties to be passed to the material through textures "
+         "for use with material logic. Blueprint styling precomputes visual "
+         "attributes, such as color and visibility, to apply directly in "
+         "the material."
+         "\n\n"
+         "For Material styling, add a property below to make its values "
+         "available in the material layer. Be sure to add a corresponding "
+         "feature ID set from above, if present.");
+
+void CesiumFeaturesMetadataViewer::buildGltfMetadataSection(
+    TSharedRef<SVerticalBox>& pContent) {
+
+  pContent->AddSlot().AutoHeight()
+      [SNew(SHeader)
+           .Content()[SNew(STextBlock)
+                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                          .Text(FText::FromString(TEXT("glTF Metadata")))
+                          .ToolTipText(FText::FromString(gltfMetadataTooltip))
+                          .Margin(FMargin(0.f, 10.f))]];
+
+  if (!this->_metadataSources.IsEmpty()) {
+    TSharedRef<SScrollBox> pGltfContent = SNew(SScrollBox);
+    for (const PropertySourceView& source : this->_metadataSources) {
+      this->createGltfPropertySourceDropdown(pGltfContent, source);
+    }
+    pContent->AddSlot().MaxHeight(400.0f).AutoHeight()[pGltfContent];
+  } else {
+    pContent->AddSlot().AutoHeight()
+        [SNew(SHorizontalBox) + SHorizontalBox::Slot().FillWidth(0.05f) +
+         SHorizontalBox::Slot()
+             [SNew(STextBlock)
+                  .AutoWrapText(true)
+                  .Text(FText::FromString(TEXT(
+                      "This tileset does not contain any glTF metadata in this view.")))]];
+  }
+}
+
+const FString tilesetStatisticsTooltip =
+    TEXT("Tilesets may supply a table of statistics that capture the range "
+         "of metadata values across a tileset. These values are useful "
+         "for visualization; for example, the minimum and maximum values of "
+         "a property can be used to define color ramps.");
+
+void CesiumFeaturesMetadataViewer::buildTilesetStatisticsSection(
+    TSharedRef<SVerticalBox>& pContent) {
+  if (this->_statisticsClasses.IsEmpty()) {
+    return;
+  }
+
+  pContent->AddSlot().AutoHeight()
+      [SNew(SHeader).Content()
+           [SNew(STextBlock)
+                .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                .Text(FText::FromString(TEXT("Tileset Statistics")))
+                .ToolTipText(FText::FromString(tilesetStatisticsTooltip))
+                .Margin(FMargin(0.f, 10.f))]];
+
+  TSharedRef<SScrollBox> pStatisticsContent = SNew(SScrollBox);
+  for (const ClassStatisticsView& theClass : this->_statisticsClasses) {
+    this->createClassStatisticsDropdown(pStatisticsContent, theClass);
+  }
+
+  pContent->AddSlot().AutoHeight()[pStatisticsContent];
 }
 
 namespace {
@@ -1414,6 +1504,19 @@ ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
   }
 }
 
+namespace {
+ECesiumFeatureStylingMode getSelectedFeatureStylingMode(
+    const TSharedPtr<SComboBox<TSharedRef<ECesiumFeatureStylingMode>>>&
+        pCombo) {
+  if (!pCombo) {
+    return ECesiumFeatureStylingMode::Material;
+  }
+
+  TSharedPtr<ECesiumFeatureStylingMode> pMode = pCombo->GetSelectedItem();
+  return pMode ? *pMode : ECesiumFeatureStylingMode::Material;
+}
+} // namespace
+
 ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     TSharedRef<FeatureIdSetInstance> pItem) const {
   if (!this->_pFeaturesMetadataComponent.IsValid()) {
@@ -1430,7 +1533,12 @@ ComponentSearchResult CesiumFeaturesMetadataViewer::findOnComponent(
     return ComponentSearchResult::NoMatch;
   }
 
-  return pFeatureIdSet->PropertyTableName == *pItem->pPropertyTableName
+  if (pFeatureIdSet->PropertyTableName != *pItem->pPropertyTableName) {
+    return ComponentSearchResult::PartialMatch;
+  }
+
+  return pFeatureIdSet->StylingMode ==
+                 getSelectedFeatureStylingMode(pItem->pStylingModeCombo)
              ? ComponentSearchResult::ExactMatch
              : ComponentSearchResult::PartialMatch;
 }
@@ -1571,6 +1679,8 @@ void CesiumFeaturesMetadataViewer::registerFeatureIdSetInstance(
 
   pFeatureIdSet->Type = pItem->type;
   pFeatureIdSet->PropertyTableName = *pItem->pPropertyTableName;
+  pFeatureIdSet->StylingMode =
+      getSelectedFeatureStylingMode(pItem->pStylingModeCombo);
 
   this->_pFeaturesMetadataComponent->PostEditChange();
   UKismetSystemLibrary::EndTransaction();

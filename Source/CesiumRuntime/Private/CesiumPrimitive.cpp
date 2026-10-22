@@ -13,7 +13,9 @@ FVector3f scalePositionForUnreal(const FVector3f& position) {
 void CesiumPrimitiveData::destroy() {
   this->features = FCesiumPrimitiveFeatures();
   this->metadata = FCesiumPrimitiveMetadata();
-  this->encodedFeatures = EncodedFeaturesMetadata::EncodedPrimitiveFeatures();
+
+  EncodedFeaturesMetadata::destroyEncodedPrimitiveFeatures(
+      this->encodedFeatures);
   this->encodedMetadata = EncodedFeaturesMetadata::EncodedPrimitiveMetadata();
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS

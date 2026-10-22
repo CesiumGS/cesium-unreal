@@ -323,7 +323,7 @@ UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString(
 
   TArray<FCesiumGeoJsonLineString> Lines;
   Lines.Reserve(pMultiLineString->coordinates.size());
-  for (size_t i = 0; i < pMultiLineString->coordinates[i].size(); i++) {
+  for (size_t i = 0; i < pMultiLineString->coordinates.size(); i++) {
 
     TArray<FVector> Points;
     Points.Reserve(pMultiLineString->coordinates[i].size());

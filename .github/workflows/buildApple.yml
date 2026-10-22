@@ -82,7 +82,8 @@ jobs:
           unreal-program-name: ${{ inputs.unreal-program-name }}
       - name: Set environment variables
         run: |
-          export CESIUM_UNREAL_VERSION=$GITHUB_REF_NAME
+          export GH_REF_NAME=$GITHUB_REF_NAME
+          export CESIUM_UNREAL_VERSION=${GH_REF_NAME//\//-} # replace slash with hyphen
           export BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
