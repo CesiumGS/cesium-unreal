@@ -1,7 +1,5 @@
 name: Draft Release
 on:
-  push:
-    branches: [draft-release-workflow]
   workflow_dispatch:
     inputs:
       version:
@@ -49,3 +47,176 @@ jobs:
             echo "::error::Invalid version '$VERSION'. Expected X.Y.Z, for example 2.30.0."
             exit 1
           fi
+
+      - name: Resolve the build to publish
+        run: |
+          if [[ -n "$RUN_ID_INPUT" ]]; then
+            run_id="$RUN_ID_INPUT"
+            conclusion=$(gh run view "$run_id" --json conclusion --jq .conclusion)
+            if [[ "$conclusion" != "success" ]]; then
+              echo "::error::Build run $run_id concluded with '$conclusion'. Only successful builds can be published."
+              exit 1
+            fi
+          else
+            run_id=$(gh run list --workflow build.yml --branch "$SOURCE_BRANCH" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+
+          if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+            echo "::error::No successful build.yml run found for branch '$SOURCE_BRANCH'. Wait for CI to pass, or pass an explicit run_id."
+            exit 1
+          fi
+
+          head_sha=$(gh run view "$run_id" --json headSha --jq .headSha)
+          echo "Selected packages from run $run_id (commit $head_sha, requested branch $SOURCE_BRANCH)."
+          echo "RUN_ID=$run_id" >> "$GITHUB_ENV"
+          echo "HEAD_SHA=$head_sha" >> "$GITHUB_ENV"
+
+      - name: Inspect artifacts and print the package plan
+        run: |
+          artifacts=$(gh api --paginate --slurp "repos/${GH_REPO}/actions/runs/${RUN_ID}/artifacts")
+          echo "--- artifacts found in run $RUN_ID ---"
+          jq -r '.[] | .artifacts[] | "\(.name): id=\(.id), size=\(.size_in_bytes) bytes, expired=\(.expired)"' <<< "$artifacts"
+
+          suffix="${SOURCE_BRANCH//\//-}"
+          missing=0
+          for unreal in $UNREAL_VERSIONS; do
+            for variant in "" "-SourceOnly"; do
+              name="CesiumForUnreal-${unreal}${variant}-${suffix}"
+              file="CesiumForUnreal-${unreal}${variant}-v${VERSION}.zip"
+              matches=$(jq --arg name "$name" '[.[] | .artifacts[] | select(.name == $name and .expired == false)] | length' <<< "$artifacts")
+              if [[ "$matches" -ne 1 ]]; then
+                echo "::error::Expected one available artifact named $name, found $matches."
+                missing=1
+              fi
+              echo "Would download $name, repackage as $file, and upload to release v${VERSION}."
+            done
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            exit 1
+          fi
+
+      - name: Download and repackage the release artifacts
+        if: ${{ !inputs.dry_run }}
+        run: |
+          # build.yml names its artifacts after the branch, with slashes replaced by hyphens.
+          suffix="${SOURCE_BRANCH//\//-}"
+          mkdir -p out
+
+          for unreal in $UNREAL_VERSIONS; do
+            for variant in "" "-SourceOnly"; do
+              name="CesiumForUnreal-${unreal}${variant}-${suffix}"
+              directory="work/${name}"
+
+              echo "Downloading ${name}"
+              mkdir -p "$directory"
+              gh run download "$RUN_ID" --name "$name" --dir "$directory"
+
+              # Re-zip so the archive root matches what the Actions UI hands you.
+              ( cd "$directory" && zip -qr "${GITHUB_WORKSPACE}/out/CesiumForUnreal-${unreal}${variant}-v${VERSION}.zip" . )
+            done
+          done
+
+      - name: Verify the package set
+        if: ${{ !inputs.dry_run }}
+        run: |
+          expected=0
+          for unreal in $UNREAL_VERSIONS; do
+            expected=$((expected + 2))
+          done
+
+          actual=$(find out -maxdepth 1 -name '*.zip' | wc -l | tr -d ' ')
+          if [[ "$actual" -ne "$expected" ]]; then
+            echo "::error::Expected $expected packages but produced $actual. Check that build.yml and UNREAL_VERSIONS agree."
+            exit 1
+          fi
+
+          ls -lh out
+
+      - name: Generate the release notes
+        run: |
+          changelog=$(node scripts/changelog.js --version "$VERSION")
+
+          downloads=""
+          engines=()
+          for unreal in $UNREAL_VERSIONS; do
+            pretty="${unreal:0:1}.${unreal:1}"
+            engines+=("v${pretty}")
+            file="CesiumForUnreal-${unreal}-v${VERSION}.zip"
+            downloads+="- Unreal Engine ${pretty}: [${file}](https://github.com/${GH_REPO}/releases/download/v${VERSION}/${file})"$'\n'
+          done
+
+          count=${#engines[@]}
+          engine_list=""
+          for index in "${!engines[@]}"; do
+            if [[ $index -eq 0 ]]; then
+              engine_list="${engines[$index]}"
+            elif [[ $index -eq $((count - 1)) ]]; then
+              if [[ $count -eq 2 ]]; then
+                engine_list="${engine_list} and ${engines[$index]}"
+              else
+                engine_list="${engine_list}, and ${engines[$index]}"
+              fi
+            else
+              engine_list="${engine_list}, ${engines[$index]}"
+            fi
+          done
+
+          ENGINE_VERSIONS="$engine_list" DOWNLOADS="$downloads" CHANGELOG="$changelog" python3 - > notes.md <<'PYTHON'
+          import os
+
+          with open("scripts/release-notes-template.md", encoding="utf-8") as file:
+              notes = file.read()
+
+          for name in ("ENGINE_VERSIONS", "DOWNLOADS", "CHANGELOG"):
+              notes = notes.replace("{{%s}}" % name, os.environ[name].strip())
+
+          print(notes.strip())
+          PYTHON
+
+          echo "--- release notes ---"
+          cat notes.md
+
+      - name: Create or update the draft release (preview only in dry run)
+        run: |
+          tag="v${VERSION}"
+          title="Cesium for Unreal v${VERSION}"
+          echo "Release title: $title"
+          echo "Release tag: $tag"
+          echo "Target commit: $HEAD_SHA"
+
+          if gh release view "$tag" > /dev/null 2>&1; then
+            if [[ "$(gh release view "$tag" --json isDraft --jq .isDraft)" != "true" ]]; then
+              echo "::error::Release $tag already exists and has been published. Refusing to modify it."
+              exit 1
+            fi
+            echo "Would update the existing draft $tag with the release notes printed above."
+            if [[ "$DRY_RUN" != "true" ]]; then
+              gh release edit "$tag" --title "$title" --notes-file notes.md --target "$HEAD_SHA"
+            fi
+          else
+            echo "Would create draft $tag with the release notes printed above."
+            if [[ "$DRY_RUN" != "true" ]]; then
+              gh release create "$tag" --draft --title "$title" --notes-file notes.md --target "$HEAD_SHA"
+            fi
+          fi
+
+          echo "Would upload all planned packages, replacing attachments with matching names."
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "Dry run: no packages downloaded and no release changes made."
+          else
+            gh release upload "$tag" out/*.zip --clobber
+          fi
+
+      - name: Summarize
+        run: |
+          {
+            echo "### Draft release v${VERSION}"
+            echo
+            echo "Selected build: [${RUN_ID}](https://github.com/${GH_REPO}/actions/runs/${RUN_ID}) at commit \`${HEAD_SHA}\`."
+            echo
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "**Dry run:** no packages downloaded and no release changes made. See the logs for artifact metadata, package plans, and release notes."
+            else
+              echo "Review the draft at https://github.com/${GH_REPO}/releases before publishing."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
