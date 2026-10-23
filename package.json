@@ -10,7 +10,8 @@
   "scripts": {
     "format": "clang-format -i \"--glob=Source/@(Cesium*)/**/*.@(cpp|h|hpp)\"",
     "doxygen": "doxygen ./Documentation/Doxyfile",
-    "release-prep": "node scripts/release-prep.js"
+    "release-prep": "node scripts/release-prep.js",
+    "release-notes": "node scripts/changelog.js"
   },
   "repository": {
     "type": "git",

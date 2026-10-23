@@ -27,28 +27,28 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
    - Copy the new token string into the `testIonToken` variable in `CesiumSceneGeneration.cpp`.
      - **Note:** This update is not done by Copilot because we do not want to pass secrets (the ion token) through the agent
 3. Review and commit these changes. You can push them directly to `main`.
-4. Before continuing, verify that CI passes for all platforms and Unreal Engine versions.
+4. Before continuing, verify that CI passes for all platforms and Unreal Engine versions. The `Draft Release` workflow in the next section only publishes successful builds, so it will refuse to run until CI is green.
 
 ## Optimistically upload the release packages to the GitHub releases page
 
 Cesium for Unreal has several release packages, and they're fairly large, so it can take a while to upload them all to the GitHub Releases page. For that reason, it is helpful to start the process now, even though we haven't tested the release yet.
 
-1. Go to https://github.com/CesiumGS/cesium-unreal/actions.
-2. Click the most recent build of the `main` branch (it should be near the top). This should be the build for the commit you pushed in the previous section. If it's still running, wait. If it failed, you'll need to fix it.
-3. Scroll down to **Artifacts**.
-4. Download the artifacts that don't have an operating system in its name, e.g., `CesiumForUnreal-5X-main` and `CesiumForUnreal-5X-SourceOnly-main`. There will typically be 6 of these in total: a full build and a "SourceOnly" build for each of the three supported Unreal Engine versions.
-5. Rename each of the files downloaded above, replacing `main` in each with the actual release version number. For example, `CesiumForUnreal-57-SourceOnly-main.zip` might become `CesiumForUnreal-57-SourceOnly-v2.22.0.zip`.
-6. Create a new release by visiting https://github.com/CesiumGS/cesium-unreal/releases/new.
-7. Leave the release tag blank for now, as we haven't created it yet.
-8. Set `Release Title` to "Cesium for Unreal v2.22.0", updating the version number as appropriate.
-9. Copy the "release notes" section from a previous release, which you can find by visiting https://github.com/CesiumGS/cesium-unreal/releases/latest and clicking the Edit button. Be careful not to change or save the previous release!
-10. Update the version numbers as appropriate in the top section. Replace the changelog section with the actual changelog entries from this release. Copy it from `CHANGES.md`.
-11. Upload all 6 release package files by dragging them into the "Attach binaries" box. This will take a little while and doesn't have great feedback.
-12. Click Save Draft. Be careful not to publish it yet.
-13. Visit the [releases page](https://github.com/CesiumGS/cesium-unreal/releases) and you'll see the new draft release at the top. Expand the "Assets" section you should see the files you uploaded above.
-14. Take a moment to verify that the SHA256 listed for each file is identical to the SHA256 for the same file on the Artifacts page above. If they are, this proves the release package hasn't been inadvertently modified while you had a copy of it on your local machine. If they're different, stop the release process immediately!
+The `Draft Release` GitHub Actions workflow does this for you. It copies the packages directly from the build artifacts to a draft release, so they never pass through your local machine.
 
-If the uploaded packages are later found to have problems during testing, this step will need to be repeated.
+1. Go to the [Draft Release workflow](https://github.com/CesiumGS/cesium-unreal/actions/workflows/draftRelease.yml) and click "Run workflow".
+2. Enter the release version, for example `2.30.0`, leave the other inputs at their defaults, and click "Run workflow".
+   - The workflow publishes the most recent _successful_ build of `main`, so it will fail if CI hasn't passed yet.
+   - To publish a different build, enter its run ID in the `run_id` input.
+3. Wait for the workflow to finish. It will:
+   - Download the six combined packages from that build and rename them to the release version, for example `CesiumForUnreal-57-SourceOnly-v2.30.0.zip`.
+   - Build the release notes from the `CHANGES.md` section for this version.
+   - Create a draft release named "Cesium for Unreal v2.30.0" with all six packages attached, tagged `v2.30.0` against the exact commit that was built. The tag itself is not created until you publish the release.
+4. Visit the [releases page](https://github.com/CesiumGS/cesium-unreal/releases), expand the "Assets" section of the new draft, and confirm that all six packages are attached and that the release notes look correct.
+   - To preview the notes before running the workflow, use `npm run release-notes -- --version 2.30.0`.
+
+If the uploaded packages are later found to have problems during testing, re-run the workflow. It updates the existing draft in place, and refuses to modify the release once it has been published.
+
+We used to download the packages, rename them by hand, and then compare the SHA256 of each uploaded asset against the build artifact, to prove that it hadn't been modified while it was on a local machine. The workflow copies the packages straight from the build artifacts to the release, so there is no longer a local copy to verify.
 
 ## Install the Updated Packages
 
