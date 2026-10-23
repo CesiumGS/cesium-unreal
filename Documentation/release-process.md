@@ -48,8 +48,6 @@ The `Draft Release` GitHub Actions workflow does this for you. It copies the pac
 
 If the uploaded packages are later found to have problems during testing, re-run the workflow. It updates the existing draft in place, and refuses to modify the release once it has been published.
 
-We used to download the packages, rename them by hand, and then compare the SHA256 of each uploaded asset against the build artifact, to prove that it hadn't been modified while it was on a local machine. The workflow copies the packages straight from the build artifacts to the release, so there is no longer a local copy to verify.
-
 ## Install the Updated Packages
 
 1. Remove all existing copies of the Cesium for Unreal plugin from the engine plugin directories on your system, one for each version of Unreal Engine. On Windows this is usually `C:\Program Files\Epic Games\UE_5.X\Engine\Plugins\Marketplace`.
