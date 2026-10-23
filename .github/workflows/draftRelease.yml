@@ -134,7 +134,16 @@ jobs:
 
       - name: Generate the release notes
         run: |
-          changelog=$(node scripts/changelog.js --version "$VERSION")
+          if ! changelog=$(node scripts/changelog.js --version "$VERSION" 2> changelog-error.txt); then
+            reason=$(cat changelog-error.txt)
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "::warning::Could not extract the changelog for v${VERSION}: ${reason}"
+              changelog="_Dry run: no changelog section for v${VERSION} was found in CHANGES.md._"
+            else
+              echo "::error::Could not extract the changelog for v${VERSION}: ${reason}"
+              exit 1
+            fi
+          fi
 
           downloads=""
           engines=()
@@ -186,12 +195,16 @@ jobs:
 
           if gh release view "$tag" > /dev/null 2>&1; then
             if [[ "$(gh release view "$tag" --json isDraft --jq .isDraft)" != "true" ]]; then
-              echo "::error::Release $tag already exists and has been published. Refusing to modify it."
-              exit 1
-            fi
-            echo "Would update the existing draft $tag with the release notes printed above."
-            if [[ "$DRY_RUN" != "true" ]]; then
-              gh release edit "$tag" --title "$title" --notes-file notes.md --target "$HEAD_SHA"
+              if [[ "$DRY_RUN" != "true" ]]; then
+                echo "::error::Release $tag already exists and has been published. Refusing to modify it."
+                exit 1
+              fi
+              echo "::warning::Release $tag already exists and has been published. A full run would stop here and refuse to modify it."
+            else
+              echo "Would update the existing draft $tag with the release notes printed above."
+              if [[ "$DRY_RUN" != "true" ]]; then
+                gh release edit "$tag" --title "$title" --notes-file notes.md --target "$HEAD_SHA"
+              fi
             fi
           else
             echo "Would create draft $tag with the release notes printed above."
