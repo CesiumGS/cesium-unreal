@@ -79,6 +79,7 @@ jobs:
 
           suffix="${SOURCE_BRANCH//\//-}"
           missing=0
+          plan=""
           for unreal in $UNREAL_VERSIONS; do
             for variant in "" "-SourceOnly"; do
               name="CesiumForUnreal-${unreal}${variant}-${suffix}"
@@ -88,9 +89,14 @@ jobs:
                 echo "::error::Expected one available artifact named $name, found $matches."
                 missing=1
               fi
-              echo "Would download $name, repackage as $file, and upload to release v${VERSION}."
+              plan+=$(printf '%-44s -> %s' "$name" "$file")$'\n'
             done
           done
+
+          echo "--- package plan: artifact -> release asset ---"
+          printf '%s' "$plan"
+          echo "All assets above would be uploaded to release v${VERSION}."
+
           if [[ "$missing" -ne 0 ]]; then
             exit 1
           fi
