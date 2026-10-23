@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added `UCesiumFeaturesMetadataComponent::RefreshStyle` to refresh the Blueprint style instance on the component, allowing it to apply changes in-Editor and at runtime.
+
 ##### Fixes :wrench:
 
 - Fixed compile errors when building the plugin from source with Unreal Engine's unreachable-code warnings treated as errors, as for Linux targets of projects using `BuildSettingsVersion.V7` or later.
