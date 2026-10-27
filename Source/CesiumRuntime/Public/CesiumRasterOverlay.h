@@ -9,6 +9,7 @@
 #include "CoreMinimal.h"
 #include "Engine/Texture.h"
 #include "Engine/TextureDefines.h"
+#include <atomic>
 #include <memory>
 #include "CesiumRasterOverlay.generated.h"
 
@@ -258,5 +259,8 @@ protected:
 private:
   CesiumUtility::IntrusivePointer<CesiumRasterOverlays::RasterOverlay>
       _pOverlay;
-  int32 _overlaysBeingDestroyed;
+  // Lifetime-independent: shared with async-destruction continuations so they
+  // can complete safely even after this UObject has been destroyed.
+  std::shared_ptr<std::atomic<int32>> _pOverlaysBeingDestroyed =
+      std::make_shared<std::atomic<int32>>(0);
 };

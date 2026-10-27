@@ -12,7 +12,7 @@ FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
 
 // Sets default values for this component's properties
 UCesiumRasterOverlay::UCesiumRasterOverlay()
-    : _pOverlay(nullptr), _overlaysBeingDestroyed(0) {
+    : _pOverlay(nullptr), _pOverlaysBeingDestroyed(std::make_shared<std::atomic<int32>>(0)) {
   this->bAutoActivate = true;
 
   // Set this component to be initialized when the game starts, and to be ticked
@@ -111,22 +111,20 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
     return;
   }
 
-  Cesium3DTilesSelection::Tileset* pTileset = FindTileset();
-  if (!pTileset) {
-    return;
-  }
-
-  // Don't allow this RasterOverlay to be fully destroyed until
-  // any cesium-native RasterOverlays it created have wrapped up any async
-  // operations in progress and have been fully destroyed.
-  // See IsReadyForFinishDestroy.
-  ++this->_overlaysBeingDestroyed;
+  // (a) The async-destruction handshake must be armed even if the tileset is
+  // already gone, otherwise the continuation below can outlive this UObject.
+  ++(*this->_pOverlaysBeingDestroyed);
+  std::shared_ptr<std::atomic<int32>> pCounter = this->_pOverlaysBeingDestroyed;
   this->_pOverlay->getAsyncDestructionCompleteEvent(getAsyncSystem())
-      .thenInMainThread([this]() { --this->_overlaysBeingDestroyed; });
+      .thenInMainThread([pCounter]() { --(*pCounter); });
 
-  this->OnRemove(pTileset, this->_pOverlay);
-  pTileset->getOverlays().remove(this->_pOverlay);
-  this->_pOverlay.reset();
+  // (b) Never leave a dangling registration behind.
+  Cesium3DTilesSelection::Tileset* pTileset = FindTileset();
+  if (pTileset) {
+    this->OnRemove(pTileset, this->_pOverlay);
+    pTileset->getOverlays().remove(this->_pOverlay);
+  }
+  this->_pOverlay.reset();   // (c) always released, even without a tileset
 }
 
 void UCesiumRasterOverlay::Refresh() {
@@ -195,7 +193,7 @@ void UCesiumRasterOverlay::OnComponentDestroyed(bool bDestroyingHierarchy) {
 
 bool UCesiumRasterOverlay::IsReadyForFinishDestroy() {
   bool ready = Super::IsReadyForFinishDestroy();
-  ready &= this->_overlaysBeingDestroyed == 0;
+  ready &= (this->_pOverlaysBeingDestroyed->load() == 0);
 
   if (!ready) {
     getAssetAccessor()->tick();
