@@ -25,7 +25,7 @@ function buildTeamsMessageFromReleaseVersion(releaseVersion, colleaguesToTag) {
   const body = [
     {
       type: "TextBlock",
-      text: `Cesium for Unreal ${releaseVersion} is [now available](https://cesium.com/downloads/#cesium-for-unreal) 🎉`,
+      text: `Cesium for Unreal ${releaseVersion} is [now available](https://github.com/CesiumGS/cesium-unreal/releases) 🎉`,
       size: "Medium",
       wrap: true,
     }
