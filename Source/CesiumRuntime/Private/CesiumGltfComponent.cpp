@@ -4284,7 +4284,7 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 
   int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
-  if (fadeLayerIndex < 0) {
+  if (fadeLayerIndex == INDEX_NONE) {
     return;
   }
 
@@ -4315,6 +4315,65 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
             EMaterialParameterAssociation::LayerParameter,
             fadeLayerIndex),
         fadingIn ? 0.0f : 1.0f);
+  }
+}
+
+void UCesiumGltfComponent::ApplyStyle(UObject* pBlueprintStyleInstance) {
+  UCesiumMaterialUserData* pCesiumData =
+      BaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
+  int layerIndex = pCesiumData
+                       ? pCesiumData->LayerNames.Find("FeaturesMetadata")
+                       : INDEX_NONE;
+  if (layerIndex == INDEX_NONE) {
+    return;
+  }
+
+  for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+    if (auto* pCesiumPrimitive = Cast<ICesiumPrimitive>(pSceneComponent)) {
+      if (!pCesiumPrimitive ||
+          !IsValid(&pCesiumPrimitive->GetMeshComponent())) {
+        continue;
+      }
+
+      auto* pMaterial = Cast<UMaterialInstanceDynamic>(
+          pCesiumPrimitive->GetMeshComponent().GetMaterial(0));
+      if (!pMaterial) {
+        continue;
+      }
+
+      for (EncodedFeaturesMetadata::EncodedFeatureIdSet& featureIdSet :
+           pCesiumPrimitive->getPrimitiveData().encodedFeatures.featureIdSets) {
+        if (!featureIdSet.styling) {
+          // This feature ID set is not setup for Blueprint styling.
+          continue;
+        }
+
+        EncodedFeaturesMetadata::encodeFeatureStylingGameThreadPart(
+            featureIdSet,
+            this->GetModelMetadata(),
+            pBlueprintStyleInstance);
+
+        FString SafeName =
+            EncodedFeaturesMetadata::createHlslSafeName(featureIdSet.name);
+        pMaterial->SetTextureParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(
+                    SafeName +
+                    EncodedFeaturesMetadata::MaterialFeatureShowSuffix),
+                EMaterialParameterAssociation::LayerParameter,
+                layerIndex),
+            featureIdSet.styling->pShowTexture->pTexture->getUnrealTexture());
+
+        pMaterial->SetTextureParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(
+                    SafeName +
+                    EncodedFeaturesMetadata::MaterialFeatureColorSuffix),
+                EMaterialParameterAssociation::LayerParameter,
+                layerIndex),
+            featureIdSet.styling->pColorTexture->pTexture->getUnrealTexture());
+      }
+    }
   }
 }
 

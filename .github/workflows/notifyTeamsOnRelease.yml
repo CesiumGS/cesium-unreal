@@ -1,0 +1,26 @@
+name: Notify Teams on Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+jobs:
+  notify-teams-on-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies  
+        working-directory: .github/actions/notify-teams-on-release
+        run: npm install
+      - name: Run script
+        working-directory: .github/actions/notify-teams-on-release
+        run: node src/index.js
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
