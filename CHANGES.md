@@ -1,6 +1,6 @@
 # Change Log {#changes}
 
-### ? - ?
+### v2.31.0 - 2026-11-02
 
 ##### Additions :tada:
 
@@ -9,7 +9,9 @@
 ##### Fixes :wrench:
 
 - Fixed compile errors when building the plugin from source with Unreal Engine's unreachable-code warnings treated as errors, as for Linux targets of projects using `BuildSettingsVersion.V7` or later.
-- Fixed an out-of-bounds access in `UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString` when the outer loop used each line's point count instead of the number of lines (#1870).
+- Fixed an out-of-bounds access in `UCesiumGeoJsonObjectBlueprintLibrary::GetObjectAsMultiLineString` when the outer loop used each line's point count instead of the number of lines.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.65.0 to v0.66.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v2.30.0 - 2026-10-01
 
@@ -17,6 +19,8 @@
 
 - Added support for styling features in `ACesium3DTileset` with Blueprints, using a specified `BlueprintStyleClass` that implements `ICesium3DTilesStylingProvider` on `UCesiumFeaturesMetadataComponent`.
 - Added support for per-element styling on `CesiumVectorTilesRasterOverlay`, using either a specified Blueprint class implementing `ICesiumVectorTilesStylingCallbacks` or a C++ class derived from `CesiumVectorOverlays::VectorStylingProvider`. 
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.64.0 to v0.65.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ##### Fixes :wrench:
 
