@@ -309,6 +309,19 @@ void UCesiumFeaturesMetadataComponent::RefreshStyle() {
   }
 }
 
+TSubclassOf<UObject>
+UCesiumFeaturesMetadataComponent::GetBlueprintStyleClass() const {
+  return this->BlueprintStyleClass;
+}
+
+void UCesiumFeaturesMetadataComponent::SetBlueprintStyleClass(
+    TSubclassOf<UObject> NewBlueprintStyleClass) {
+  if (NewBlueprintStyleClass != this->BlueprintStyleClass) {
+    this->BlueprintStyleClass = NewBlueprintStyleClass;
+    this->recreateStyleInstance();
+  }
+}
+
 void UCesiumFeaturesMetadataComponent::PostLoad() {
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   // These deprecated variables should only be non-empty on the first load, in

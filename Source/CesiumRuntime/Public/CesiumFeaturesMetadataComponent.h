@@ -69,7 +69,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintReadWrite,
+      BlueprintGetter = GetBlueprintStyleClass,
+      BlueprintSetter = SetBlueprintStyleClass,
       Category = "Cesium",
       meta =
           (MustImplement =
@@ -179,6 +180,14 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium|Styling")
   UObject* GetStyleInstance() const { return this->_pStyleInstance; }
+
+  /** @copydoc ACesium3DTileset::BlueprintStyleClass */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  TSubclassOf<UObject> GetBlueprintStyleClass() const;
+
+  /** @copydoc ACesium3DTileset::BlueprintStyleClass */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetBlueprintStyleClass(TSubclassOf<UObject> NewBlueprintStyleClass);
 
 protected:
   virtual void OnFetchMetadata(
