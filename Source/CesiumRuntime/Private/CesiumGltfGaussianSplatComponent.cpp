@@ -277,8 +277,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
         this->Scales,
         4,
         [](glm::vec3 vec) {
-          return glm::exp(vec) *
-                 glm::vec3(CesiumPrimitiveData::positionScaleFactor);
+          return vec * glm::vec3(CesiumPrimitiveData::positionScaleFactor);
         });
   } else if (
       scaleAccessor.componentType ==
@@ -300,8 +299,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
         this->Scales,
         4,
         [](glm::vec3 vec) {
-          return glm::exp(vec) *
-                 glm::vec3(CesiumPrimitiveData::positionScaleFactor);
+          return vec * glm::vec3(CesiumPrimitiveData::positionScaleFactor);
         });
   } else if (
       scaleAccessor.componentType ==
@@ -319,8 +317,8 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
 
     this->Scales.SetNum(scaleView.size() * 4, EAllowShrinking::Yes);
     for (int32 i = 0; i < scaleView.size(); i++) {
-      glm::vec3 scale = glm::exp(scaleView[i]) *
-                        glm::vec3(CesiumPrimitiveData::positionScaleFactor);
+      glm::vec3 scale =
+          scaleView[i] * glm::vec3(CesiumPrimitiveData::positionScaleFactor);
       this->Scales[i * 4] = scale.x;
       this->Scales[i * 4 + 1] = scale.y;
       this->Scales[i * 4 + 2] = scale.z;
