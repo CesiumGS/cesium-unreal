@@ -85,7 +85,7 @@ jobs:
     uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-14
+      runner-label: macos-15
       unreal-engine-version: "5.6.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.6.0/UE_56-mac.zip"
       unreal-program-name: "UE_5.6"
@@ -204,7 +204,7 @@ jobs:
     uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-14
+      runner-label: macos-15
       unreal-engine-version: "5.7.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.7.0/UE_57-mac.zip"
       unreal-program-name: "UE_5.7"
@@ -323,7 +323,7 @@ jobs:
     uses: ./.github/workflows/buildApple.yml
     secrets: inherit
     with:
-      runner-label: macos-14
+      runner-label: macos-15
       unreal-engine-version: "5.8.0"
       unreal-engine-zip: "s3://cesium-unreal-engine/5.8.0/UE_58-mac.zip"
       unreal-program-name: "UE_5.8"
