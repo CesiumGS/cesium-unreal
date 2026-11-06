@@ -766,7 +766,11 @@ FTextureRHIRef FCesiumCreateNewTextureResource::InitializeTextureRHI() {
   // RHICreateTexture2D can actually copy over all the mips in one shot,
   // but it expects a particular memory layout. Might be worth configuring
   // Cesium Native's mip-map generation to obey a standard memory layout.
+#if ENGINE_VERSION_5_8_OR_HIGHER
+  FTextureRHIRef rhiTexture = FRHICommandListImmediate::Get().CreateTexture(createDesc);
+#else
   FTextureRHIRef rhiTexture = RHICreateTexture(createDesc);
+#endif
 
   // Copy over all image data (including mip levels)
   for (uint32 i = 0; i < mipCount; ++i) {
@@ -831,7 +835,11 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
 
   if (this->_depth > 1) {
     // Create a new empty RHI texture (3D).
+#if ENGINE_VERSION_5_8_OR_HIGHER
+    return FRHICommandListImmediate::Get().CreateTexture(
+#else
     return RHICreateTexture(
+#endif
         FRHITextureCreateDesc::Create3D(*debugName)
             .SetExtent(int32(this->_width), int32(this->_height))
             .SetDepth(this->_depth)
@@ -844,7 +852,11 @@ FTextureRHIRef FCesiumCreateEmptyTextureResource::InitializeTextureRHI() {
   }
 
   // Create a new empty RHI texture (2D).
+#if ENGINE_VERSION_5_8_OR_HIGHER
+  return FRHICommandListImmediate::Get().CreateTexture(
+#else
   return RHICreateTexture(
+#endif
       FRHITextureCreateDesc::Create2D(*debugName)
           .SetExtent(int32(this->_width), int32(this->_height))
           .SetFormat(this->_format)
