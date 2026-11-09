@@ -77,7 +77,19 @@ public:
   TSubclassOf<UObject> BlueprintStyleClass;
 
   /**
-   * @brief Description of both feature IDs and metadata from a glTF via the
+   * Reapplies the Blueprint style specified in BlueprintStyleClass to the
+   * tileset. Use this function to pick up any changes to the Blueprint
+   * in-Editor as well as its instance at runtime.
+   */
+  UFUNCTION(
+      CallInEditor,
+      BlueprintCallable,
+      Category = "Cesium",
+      Meta = (DisplayName = "Refresh Style"))
+  void RefreshStyle();
+
+  /**
+   * Description of both feature IDs and metadata from a glTF via the
    * EXT_mesh_features, EXT_instance_features, and EXT_structural_metadata
    * extensions. Indicates what parts of the extension should be uploaded to the
    * GPU for access in Unreal materials.
@@ -154,6 +166,7 @@ public:
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
   virtual void PostEditChangeChainProperty(
       FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
+  virtual void PostEditUndo() override;
 #endif
 
   /**
