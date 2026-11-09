@@ -59,6 +59,14 @@ jobs:
           fi
           sudo rm -rf /Applications/Xcode_16.1_beta.app
           sudo rm -rf /Applications/Xcode_16_beta_6.app
+          sudo rm -rf /Applications/Xcode_26.0.1.app
+          sudo rm -rf /Applications/Xcode_26.0.app
+          sudo rm -rf /Applications/Xcode_26.1.1.app
+          sudo rm -rf /Applications/Xcode_26.1.app
+          sudo rm -rf /Applications/Xcode_26.2.0.app
+          sudo rm -rf /Applications/Xcode_26.2.app
+          sudo rm -rf /Applications/Xcode_26.3.0.app
+          sudo rm -rf /Applications/Xcode_26.3.app
           ls /Applications
           df -h
       - name: Set XCode version
