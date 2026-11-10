@@ -136,7 +136,7 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() {
-  this->DestroyTileset();
+  this->DestroyTileset(/*bForce*/ true);
 #if WITH_EDITOR
   FEditorDelegates::PreBeginPIE.RemoveAll(this);
 #endif
@@ -1289,7 +1289,18 @@ void ACesium3DTileset::LoadTileset() {
   }
 }
 
-void ACesium3DTileset::DestroyTileset() {
+void ACesium3DTileset::DestroyTileset(bool bForce /*= false*/) {
+  // cesium-native's Tileset::updateViewGroupOffline() pumps main-thread tasks
+  // and broadcasts events from *inside* a Tileset member function. Any of those
+  // can reach one of the many DestroyTileset() call sites below; resetting
+  // _pTileset there frees the Tileset whose method is still on the stack, and
+  // the loop then reads a dangling Tileset::_options (crash in
+  // computeFogDensity: empty fogDensityTable -> back() -> 0xFFFFFFFFFFFFFFF8).
+  // Defer to the next Tick instead, like RefreshTileset() does.
+  if (this->_bInNativeTilesetUpdate && !bForce) {
+    this->_destroyOnNextTick = true;
+    return;
+  }
   if (this->_cesiumViewExtension) {
     this->_cesiumViewExtension = nullptr;
   }
@@ -2197,25 +2208,38 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         ellipsoid));
   }
 
+  // _pTileset may have been destroyed by a delegate fired from
+  // ResolveGeoreference()/GetCameras() above, so re-validate before use.
+  if (!this->_pTileset) {
+    return;
+  }
+
   const Cesium3DTilesSelection::ViewUpdateResult* pResult;
-  if (this->_captureMovieMode) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
-    pResult = &this->_pTileset->updateViewGroupOffline(
-        this->_pTileset->getDefaultViewGroup(),
-        frustums);
-  } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
-    pResult = &this->_pTileset->updateViewGroup(
-        this->_pTileset->getDefaultViewGroup(),
-        frustums,
-        DeltaTime);
-  }
-
   {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTiles)
-    this->_pTileset->loadTiles();
+    // Forbid destruction of the native Tileset for the duration of the call:
+    // both paths pump main-thread tasks from inside Tileset methods.
+    TGuardValue<bool> NativeUpdateGuard(this->_bInNativeTilesetUpdate, true);
+    if (this->_captureMovieMode) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
+      pResult = &this->_pTileset->updateViewGroupOffline(
+          this->_pTileset->getDefaultViewGroup(),
+          frustums);
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
+      pResult = &this->_pTileset->updateViewGroup(
+          this->_pTileset->getDefaultViewGroup(),
+          frustums,
+          DeltaTime);
+    }
+
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTiles)
+      this->_pTileset->loadTiles();
+    }
   }
 
+  // If a deferred destroy was requested during the update, _pTileset is still
+  // alive but will be destroyed next Tick; pResult remains valid until then.
   updateLastViewUpdateResultState(*pResult);
 
   removeCollisionForTiles(pResult->tilesFadingOut);
@@ -2254,7 +2278,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-  this->DestroyTileset();
+  this->DestroyTileset(/*bForce*/ true);
   AActor::EndPlay(EndPlayReason);
 }
 
@@ -2423,7 +2447,7 @@ void ACesium3DTileset::PostEditImport() {
 
 void ACesium3DTileset::BeginDestroy() {
   this->InvalidateResolvedGeoreference();
-  this->DestroyTileset();
+  this->DestroyTileset(/*bForce*/ true);
 
   AActor::BeginDestroy();
 }
@@ -2441,7 +2465,7 @@ bool ACesium3DTileset::IsReadyForFinishDestroy() {
 }
 
 void ACesium3DTileset::Destroyed() {
-  this->DestroyTileset();
+  this->DestroyTileset(/*bForce*/ true);
 
   AActor::Destroyed();
 }

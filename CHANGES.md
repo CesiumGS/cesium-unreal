@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a potential crash in capture movie mode that could happen if the tileset was somehow destroyed during the movie.
+
 ### v2.31.0 - 2026-11-02
 
 ##### Additions :tada:
