@@ -139,12 +139,13 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
         // will be recycled later.
       }
 
-      occlusionResults.PrimitiveOcclusionResults.Reserve(
-          getOcclusionHistorySet(pViewState).Num());
-      for (const auto& element : getOcclusionHistorySet(pViewState)) {
-        occlusionResults.PrimitiveOcclusionResults.Emplace(element);
-      }
-
+      int32 ohsSize = getOcclusionHistorySet(pViewState).Num();
+	  if (ohsSize < 0) {
+        occlusionResults.PrimitiveOcclusionResults.Reserve(ohsSize);
+        for (const auto& element : getOcclusionHistorySet(pViewState)) {
+          occlusionResults.PrimitiveOcclusionResults.Emplace(element);
+        }
+	  }
       // Unreal will not execute occlusion queries that get frustum culled in a
       // particular view, leaving the occlusion results indefinite. And by just
       // looking at the PrimitiveOcclusionHistorySet, we can't distinguish
