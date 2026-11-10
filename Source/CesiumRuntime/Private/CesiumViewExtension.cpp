@@ -139,8 +139,8 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
         // will be recycled later.
       }
 
-      auto ohsSize = getOcclusionHistorySet(pViewState).Num();
-	  if (ohsSize < 0x7fffffff) {
+      int32 ohsSize = getOcclusionHistorySet(pViewState).Num();
+	  if (ohsSize < 0) {
         occlusionResults.PrimitiveOcclusionResults.Reserve(ohsSize);
         for (const auto& element : getOcclusionHistorySet(pViewState)) {
           occlusionResults.PrimitiveOcclusionResults.Emplace(element);
