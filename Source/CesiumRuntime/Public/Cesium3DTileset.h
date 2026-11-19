@@ -737,7 +737,7 @@ private:
    * "tileset.json" file. If a quantized-mesh "layer.json" is provided, it will
    * be converted to 3D Tiles on-the-fly.
    *
-   * This property is ignored if the TilesetSource is FromCesiumIon.
+   * This property is only used when TilesetSource is FromUrl.
    */
   UPROPERTY(
       EditAnywhere,
@@ -750,7 +750,7 @@ private:
   /**
    * The ID of the Cesium ion asset to use.
    *
-   * This property is ignored if the TilesetSource is FromUrl.
+   * This property is only used when TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
@@ -765,7 +765,7 @@ private:
   /**
    * The access token to use to access the Cesium ion resource.
    *
-   * This property is ignored if the TilesetSource is FromUrl.
+   * This property is only used when TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
@@ -784,7 +784,7 @@ private:
   /**
    * The Cesium ion Server from which this tileset is loaded.
    *
-   * This property is ignored if the TilesetSource is FromUrl.
+   * This property is only used when TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
