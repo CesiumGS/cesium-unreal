@@ -168,7 +168,8 @@ void CesiumFeaturesMetadataViewer::gatherTilesetStatistics() {
       continue;
     }
 
-    const CesiumTilesetJson::Class& tilesetClass = schema.classes.at(classIt.first);
+    const CesiumTilesetJson::Class& tilesetClass =
+        schema.classes.at(classIt.first);
     TSharedRef<FString> pClassId = getSharedRef(classIt.first.c_str());
 
     TArray<TSharedRef<PropertyStatisticsView>> properties;

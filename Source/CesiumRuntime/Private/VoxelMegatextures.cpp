@@ -16,8 +16,8 @@
 #include "Templates/UniquePtr.h"
 #include "UObject/Package.h"
 
-#include <CesiumTilesetJson/Class.h>
 #include <CesiumGltf/PropertyType.h>
+#include <CesiumTilesetJson/Class.h>
 #include <glm/gtx/component_wise.hpp>
 
 using namespace CesiumGltf;

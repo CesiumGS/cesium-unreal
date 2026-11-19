@@ -24,7 +24,7 @@
 namespace CesiumTilesetJson {
 struct Class;
 struct ExtensionContent3dTilesContentVoxels;
-}
+} // namespace CesiumTilesetJson
 
 namespace Cesium3DTilesSelection {
 class TilesetMetadata;

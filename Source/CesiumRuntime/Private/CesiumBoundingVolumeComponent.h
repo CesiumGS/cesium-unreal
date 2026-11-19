@@ -83,7 +83,7 @@ class UCesiumBoundingVolumeComponent
 
 public:
   // Sets default values for this component's properties
-  UCesiumBoundingVolumeComponent() {};
+  UCesiumBoundingVolumeComponent(){};
   virtual ~UCesiumBoundingVolumeComponent() = default;
 
   FPrimitiveSceneProxy* CreateSceneProxy() override;
