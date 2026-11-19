@@ -24,7 +24,7 @@ struct FCesiumMetadataValue;
 struct FCesiumMetadataValueType;
 #endif
 
-namespace Cesium3DTiles {
+namespace CesiumTilesetJson {
 struct PropertyStatistics;
 }
 
