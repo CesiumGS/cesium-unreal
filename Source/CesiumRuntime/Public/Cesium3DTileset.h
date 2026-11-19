@@ -733,9 +733,11 @@ private:
   ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
 
   /**
-   * The URL of this tileset's "tileset.json" file.
+   * The URL of this tileset's file. This may be a glTF 2.1 asset or a
+   * "tileset.json" file. If a quantized-mesh "layer.json" is provided, it will
+   * be converted to 3D Tiles on-the-fly.
    *
-   * If this property is specified, the ion asset ID and token are ignored.
+   * This property is ignored if the TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
@@ -748,7 +750,7 @@ private:
   /**
    * The ID of the Cesium ion asset to use.
    *
-   * This property is ignored if the Url is specified.
+   * This property is ignored if the TilesetSource is FromUrl.
    */
   UPROPERTY(
       EditAnywhere,
@@ -762,6 +764,8 @@ private:
 
   /**
    * The access token to use to access the Cesium ion resource.
+   *
+   * This property is ignored if the TilesetSource is FromUrl.
    */
   UPROPERTY(
       EditAnywhere,
@@ -779,6 +783,8 @@ private:
 
   /**
    * The Cesium ion Server from which this tileset is loaded.
+   *
+   * This property is ignored if the TilesetSource is FromUrl.
    */
   UPROPERTY(
       EditAnywhere,
