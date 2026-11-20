@@ -169,7 +169,7 @@ FString GetSwizzleForEncodedType(ECesiumEncodedMetadataType Type);
 #endif
 
 FCesiumMetadataValue getValueForSemantic(
-    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const CesiumTilesetJson::PropertyStatistics& propertyStatistics,
     const FCesiumMetadataValueType& propertyType,
     ECesiumMetadataStatisticSemantic semantic);
 

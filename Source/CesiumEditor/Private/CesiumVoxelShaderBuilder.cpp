@@ -30,10 +30,13 @@
 #include "Widgets/Views/SListView.h"
 
 THIRD_PARTY_INCLUDES_START
-#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
-#include <Cesium3DTiles/Statistics.h>
 #include <Cesium3DTilesSelection/Tileset.h>
 #include <Cesium3DTilesSelection/TilesetMetadata.h>
+#include <CesiumTilesetJson/Class.h>
+#include <CesiumTilesetJson/ExtensionContent3dTilesContentVoxels.h>
+#include <CesiumTilesetJson/PropertyStatistics.h>
+#include <CesiumTilesetJson/Schema.h>
+#include <CesiumTilesetJson/Statistics.h>
 #include <CesiumUtility/Uri.h>
 THIRD_PARTY_INCLUDES_END
 
@@ -281,9 +284,8 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
   if (!pExternalContent)
     return;
 
-  const auto* pVoxelExtension =
-      pExternalContent
-          ->getExtension<Cesium3DTiles::ExtensionContent3dTilesContentVoxels>();
+  const auto* pVoxelExtension = pExternalContent->getExtension<
+      CesiumTilesetJson::ExtensionContent3dTilesContentVoxels>();
   if (!pVoxelExtension) {
     UE_LOG(
         LogCesiumEditor,
@@ -318,10 +320,10 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
     return;
   }
 
-  const Cesium3DTiles::Class& voxelClass =
+  const CesiumTilesetJson::Class& voxelClass =
       pMetadata->schema->classes.at(voxelClassId);
 
-  std::optional<Cesium3DTiles::ClassStatistics> statistics = std::nullopt;
+  std::optional<CesiumTilesetJson::ClassStatistics> statistics = std::nullopt;
   if (pMetadata->statistics &&
       pMetadata->statistics->classes.contains(voxelClassId)) {
     statistics = pMetadata->statistics->classes.at(voxelClassId);
@@ -362,7 +364,7 @@ void CesiumVoxelShaderBuilder::gatherVoxelPropertiesAndStatistics() {
         std::move(supportedConversions);
 
     if (statistics && statistics->properties.contains(propertyIt.first)) {
-      const Cesium3DTiles::PropertyStatistics& propertyStatistics =
+      const CesiumTilesetJson::PropertyStatistics& propertyStatistics =
           statistics->properties.at(propertyIt.first);
       TArray<TSharedRef<StatisticView>> statisticsView;
 
