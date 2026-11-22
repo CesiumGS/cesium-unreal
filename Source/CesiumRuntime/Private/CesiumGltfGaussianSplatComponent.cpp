@@ -74,7 +74,7 @@ bool writeShCoeffs(
               "Accessor view for spherical harmonic attribute degree %d index %d on mesh primitive returned invalid status: %d"),
           degree,
           i,
-          accessorView.status());
+          static_cast<int32>(accessorView.status()));
       return false;
     }
 
@@ -208,7 +208,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
         Error,
         TEXT(
             "'POSITION' accessor view on mesh primitive returned invalid status: %d"),
-        positionView.status());
+        static_cast<int32>(positionView.status()));
     return;
   }
 
@@ -267,7 +267,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
-          scaleView.status());
+          static_cast<int32>(scaleView.status()));
       return;
     }
 
@@ -289,7 +289,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
-          scaleView.status());
+          static_cast<int32>(scaleView.status()));
       return;
     }
 
@@ -311,7 +311,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'KHR_gaussian_splatting:SCALE' accessor view on mesh primitive returned invalid status: %d"),
-          scaleView.status());
+          static_cast<int32>(scaleView.status()));
       return;
     }
 
@@ -358,7 +358,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
-          rotationView.status());
+          static_cast<int32>(rotationView.status()));
       return;
     }
 
@@ -382,7 +382,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
-          rotationView.status());
+          static_cast<int32>(rotationView.status()));
       return;
     }
 
@@ -404,7 +404,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'KHR_gaussian_splatting:ROTATION' accessor view on mesh primitive returned invalid status: %d"),
-          rotationView.status());
+          static_cast<int32>(rotationView.status()));
       return;
     }
 
@@ -453,7 +453,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'COLOR_0' accessor view on mesh primitive returned invalid status: %d"),
-          accessorView.status());
+          static_cast<int32>(accessorView.status()));
       return;
     }
 
@@ -473,7 +473,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'COLOR_0' accessor view on mesh primitive returned invalid status: %d"),
-          accessorView.status());
+          static_cast<int32>(accessorView.status()));
       return;
     }
 
@@ -493,7 +493,7 @@ FCesiumGltfGaussianSplatData::FCesiumGltfGaussianSplatData(
           Error,
           TEXT(
               "'COLOR_0' accessor view on mesh primitive returned invalid status: %d"),
-          accessorView.status());
+          static_cast<int32>(accessorView.status()));
       return;
     }
 

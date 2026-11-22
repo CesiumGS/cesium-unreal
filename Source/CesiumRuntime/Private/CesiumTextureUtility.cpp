@@ -119,8 +119,8 @@ std::optional<int32_t> getSourceIndexFromModelAndTexture(
           LogCesium,
           Warning,
           TEXT(
-              "KTX texture source index must be non-negative and less than %d, but is %d"),
-          model.images.size(),
+              "KTX texture source index must be non-negative and less than %lld, but is %d"),
+          static_cast<int64>(model.images.size()),
           pKtxExtension->source);
       return std::nullopt;
     }
@@ -132,8 +132,8 @@ std::optional<int32_t> getSourceIndexFromModelAndTexture(
           LogCesium,
           Warning,
           TEXT(
-              "WebP texture source index must be non-negative and less than %d, but is %d"),
-          model.images.size(),
+              "WebP texture source index must be non-negative and less than %lld, but is %d"),
+          static_cast<int64>(model.images.size()),
           pWebpExtension->source);
       return std::nullopt;
     }
@@ -144,8 +144,8 @@ std::optional<int32_t> getSourceIndexFromModelAndTexture(
           LogCesium,
           Warning,
           TEXT(
-              "Texture source index must be non-negative and less than %d, but is %d"),
-          model.images.size(),
+              "Texture source index must be non-negative and less than %lld, but is %d"),
+          static_cast<int64>(model.images.size()),
           texture.source);
       return std::nullopt;
     }

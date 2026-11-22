@@ -807,7 +807,7 @@ TSharedRef<ITableRow> CesiumFeaturesMetadataViewer::createPropertyInstanceRow(
   if (pItem->propertyDetails.bIsArray) {
     int64 arraySize = pItem->propertyDetails.ArraySize;
     typeString += arraySize > 0
-                      ? FString::Printf(TEXT(" with %d elements"), arraySize)
+                      ? FString::Printf(TEXT(" with %lld elements"), arraySize)
                       : TEXT(" of variable size");
   }
 

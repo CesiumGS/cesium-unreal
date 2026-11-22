@@ -351,7 +351,7 @@ void FCesiumTextureResourceDeleter::operator()(FCesiumTextureResource* p) {
         Warning,
         TEXT(
             "Image cannot be created because it has an unsupported compressed pixel format (%d)."),
-        imageCesium.compressedPixelFormat);
+        static_cast<int32>(imageCesium.compressedPixelFormat));
     return nullptr;
   }
 

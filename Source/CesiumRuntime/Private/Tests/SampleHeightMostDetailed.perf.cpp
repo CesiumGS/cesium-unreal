@@ -346,7 +346,7 @@ bool RunMultipleQueryTest(
         staticMeshActor->SetActorLocation(unrealWorldPosition);
         staticMeshActor->SetActorScale3D(FVector(7, 7, 7));
         staticMeshActor->SetActorLabel(
-            FString::Printf(TEXT("Hit %d"), queryIndex));
+            FString::Printf(TEXT("Hit %llu"), queryIndex));
         staticMeshActor->SetFolderPath("/QueryResults");
         queryObject.creationMeshActor = staticMeshActor;
       }
@@ -359,7 +359,7 @@ bool RunMultipleQueryTest(
         staticMeshActor->SetActorLocation(unrealWorldPosition);
         staticMeshActor->SetActorScale3D(FVector(7, 7, 7));
         staticMeshActor->SetActorLabel(
-            FString::Printf(TEXT("Hit %d"), queryIndex));
+            FString::Printf(TEXT("Hit %llu"), queryIndex));
         staticMeshActor->SetFolderPath("/QueryResults");
         queryObject.playMeshActor = staticMeshActor;
       }
