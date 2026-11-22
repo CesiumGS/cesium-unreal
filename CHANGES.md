@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Tile requests now reuse HTTP connections instead of opening a new TCP and TLS connection for nearly every request. Unreal keeps only 5 idle libcurl connections by default; the plugin now raises it to 64.
+
 ### v2.31.0 - 2026-11-02
 
 ##### Additions :tada:
