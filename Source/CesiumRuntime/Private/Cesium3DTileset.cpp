@@ -1166,7 +1166,7 @@ void ACesium3DTileset::LoadTileset() {
     UE_LOG(
         LogCesium,
         Log,
-        TEXT("Loading tileset for asset ID %d"),
+        TEXT("Loading tileset for asset ID %lld"),
         this->IonAssetID);
     FString token = this->IonAccessToken.IsEmpty()
                         ? this->CesiumIonServer->DefaultIonAccessToken
@@ -1273,7 +1273,7 @@ void ACesium3DTileset::LoadTileset() {
     UE_LOG(
         LogCesium,
         Log,
-        TEXT("Loading tileset for asset ID %d done"),
+        TEXT("Loading tileset for asset ID %lld done"),
         this->IonAssetID);
     break;
   }
@@ -1314,7 +1314,7 @@ void ACesium3DTileset::DestroyTileset() {
     UE_LOG(
         LogCesium,
         Verbose,
-        TEXT("Destroying tileset for asset ID %d"),
+        TEXT("Destroying tileset for asset ID %lld"),
         this->IonAssetID);
     break;
   }
@@ -1385,7 +1385,7 @@ void ACesium3DTileset::DestroyTileset() {
     UE_LOG(
         LogCesium,
         Verbose,
-        TEXT("Destroying tileset for asset ID %d done"),
+        TEXT("Destroying tileset for asset ID %lld done"),
         this->IonAssetID);
     break;
   }
@@ -2020,16 +2020,17 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           LogCesium,
           Display,
           TEXT(
-              "%s: %d ms, Unreal Frame #%d, Tileset Frame: #%d, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
+              "%s: %lld ms, Unreal Frame #%llu, Tileset Frame: #%d, Visited %d, Culled Visited %d, Rendered %llu, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
           *this->GetName(),
-          (std::chrono::high_resolution_clock::now() - this->_startTime)
+          static_cast<int64>(
+              (std::chrono::high_resolution_clock::now() - this->_startTime)
                   .count() /
-              1000000,
-          GFrameCounter,
+              1000000),
+          static_cast<uint64>(GFrameCounter),
           result.frameNumber,
           result.tilesVisited,
           result.culledTilesVisited,
-          result.tilesToRenderThisFrame.size(),
+          static_cast<uint64>(result.tilesToRenderThisFrame.size()),
           result.tilesCulled,
           result.tilesOccluded,
           result.tilesWaitingForOcclusionResults,
@@ -2046,10 +2047,10 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           LogCesium,
           Display,
           TEXT(
-              "Images shared asset depot: %d distinct assets, %d inactive assets pending deletion (%d bytes)"),
-          imageDepot.getAssetCount(),
-          imageDepot.getInactiveAssetCount(),
-          imageDepot.getInactiveAssetTotalSizeBytes());
+              "Images shared asset depot: %llu distinct assets, %llu inactive assets pending deletion (%lld bytes)"),
+          static_cast<uint64>(imageDepot.getAssetCount()),
+          static_cast<uint64>(imageDepot.getInactiveAssetCount()),
+          static_cast<int64>(imageDepot.getInactiveAssetTotalSizeBytes()));
     }
   }
 }

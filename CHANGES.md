@@ -1,5 +1,11 @@
 # Change Log {#changes}
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed compile errors when building the plugin from source against Unreal Engine 5.9, whose compile-time format-string checks reject `%d` for 64-bit integers and enum class values in `UE_LOG` and `FString::Printf`.
+
 ### v2.31.0 - 2026-11-02
 
 ##### Additions :tada:

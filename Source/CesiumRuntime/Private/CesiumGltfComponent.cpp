@@ -854,8 +854,8 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT("Texture index must be less than %d, but is %d"),
-          model.textures.size(),
+          TEXT("Texture index must be less than %lld, but is %d"),
+          static_cast<int64>(model.textures.size()),
           gltfTextureInfo.value().index);
     }
     return nullptr;
@@ -2143,9 +2143,9 @@ static void loadInstancingData(
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT("instance rotation count %d not consistent with %d"),
-          rotations->count,
-          count);
+          TEXT("instance rotation count %lld not consistent with %lld"),
+          static_cast<int64>(rotations->count),
+          static_cast<int64>(count));
       return;
     }
   }
@@ -2156,9 +2156,9 @@ static void loadInstancingData(
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT("instance scale count %d not consistent with %d"),
-          scales->count,
-          count);
+          TEXT("instance scale count %lld not consistent with %lld"),
+          static_cast<int64>(scales->count),
+          static_cast<int64>(count));
       return;
     }
   }

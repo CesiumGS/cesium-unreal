@@ -32,9 +32,9 @@ FCesiumMetadataValue UCesiumPropertyArrayBlueprintLibrary::GetValue(
           FFrame::KismetExecutionMessage(
               *FString::Printf(
                   TEXT(
-                      "Attempted to access index %d from CesiumPropertyArray of length %d!"),
-                  index,
-                  v.size()),
+                      "Attempted to access index %lld from CesiumPropertyArray of length %lld!"),
+                  static_cast<int64>(index),
+                  static_cast<int64>(v.size())),
               ELogVerbosity::Warning,
               FName("CesiumPropertyArrayOutOfBoundsWarning"));
           return FCesiumMetadataValue();
