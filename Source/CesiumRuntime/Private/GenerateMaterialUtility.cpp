@@ -4,7 +4,7 @@
 #include "Containers/Map.h"
 #include "EncodedFeaturesMetadata.h"
 
-#include <Cesium3DTiles/PropertyStatistics.h>
+#include <CesiumTilesetJson/PropertyStatistics.h>
 
 #if WITH_EDITOR
 
@@ -213,7 +213,7 @@ UMaterialExpressionParameter* GenerateParameterNode(
 #endif
 
 FCesiumMetadataValue getValueForSemantic(
-    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const CesiumTilesetJson::PropertyStatistics& propertyStatistics,
     const FCesiumMetadataValueType& propertyType,
     ECesiumMetadataStatisticSemantic semantic) {
   CesiumUtility::JsonValue nullValue;

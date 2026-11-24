@@ -44,7 +44,7 @@ class CesiumViewExtension;
 struct FCesiumCamera;
 class ICesium3DTilesetLifecycleEventReceiver;
 
-namespace Cesium3DTiles {
+namespace CesiumTilesetJson {
 struct ExtensionContent3dTilesContentVoxels;
 }
 
@@ -733,9 +733,11 @@ private:
   ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
 
   /**
-   * The URL of this tileset's "tileset.json" file.
+   * The URL of this tileset's file. This may be a glTF 2.1 asset or a
+   * "tileset.json" file. If a quantized-mesh "layer.json" is provided, it will
+   * be converted to 3D Tiles on-the-fly.
    *
-   * If this property is specified, the ion asset ID and token are ignored.
+   * This property is only used when TilesetSource is FromUrl.
    */
   UPROPERTY(
       EditAnywhere,
@@ -748,7 +750,7 @@ private:
   /**
    * The ID of the Cesium ion asset to use.
    *
-   * This property is ignored if the Url is specified.
+   * This property is only used when TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
@@ -762,6 +764,8 @@ private:
 
   /**
    * The access token to use to access the Cesium ion resource.
+   *
+   * This property is only used when TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
@@ -779,6 +783,8 @@ private:
 
   /**
    * The Cesium ion Server from which this tileset is loaded.
+   *
+   * This property is only used when TilesetSource is FromCesiumIon.
    */
   UPROPERTY(
       EditAnywhere,
@@ -1366,9 +1372,9 @@ private:
    * Creates and attaches a \ref UCesiumVoxelRendererComponent for rendering
    * voxel data.
    */
-  void
-  createVoxelRenderer(const Cesium3DTiles::ExtensionContent3dTilesContentVoxels&
-                          VoxelExtension);
+  void createVoxelRenderer(
+      const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels&
+          VoxelExtension);
 
   /**
    * Writes the values of all properties of this actor into the
