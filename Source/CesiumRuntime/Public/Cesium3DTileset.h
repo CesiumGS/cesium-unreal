@@ -1298,7 +1298,12 @@ protected:
 
 private:
   void LoadTileset();
-  void DestroyTileset();
+
+  /**
+   * @param bForce destroy immediately even during a native update. Only valid
+   * from actor teardown paths, where no native update can be in progress.
+   */
+  void DestroyTileset(bool bForce = false);
 
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const FCesiumCamera& camera,
@@ -1431,6 +1436,14 @@ private:
   TWeakObjectPtr<UCesiumVoxelMetadataComponent> _pVoxelMetadataComponent;
 
   bool _destroyOnNextTick;
+
+  /**
+   * True while we are executing inside a cesium-native Tileset method that may
+   * synchronously pump main-thread tasks (see Tileset::updateViewGroupOffline).
+   * While this is set, the native Tileset MUST NOT be destroyed, because the
+   * call stack is still inside it. DestroyTileset() defers instead.
+   */
+  bool _bInNativeTilesetUpdate = false;
 
 #ifdef CESIUM_DEBUG_TILE_STATES
   TUniquePtr<Cesium3DTilesSelection::DebugTileStateDatabase> _pStateDebug;
