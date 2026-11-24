@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Added basic support for loading 3D Tiles 2.0 tilesets (i.e., glTF 2.1 models) through `ACesium3DTileset`.
+- Added basic support for loading 3D Tiles 2.0 tilesets (i.e., glTF 2.1 models) via URL in `ACesium3DTileset`.
 
 ### v2.31.0 - 2026-11-02
 
