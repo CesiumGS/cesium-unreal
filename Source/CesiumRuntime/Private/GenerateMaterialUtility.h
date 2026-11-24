@@ -24,7 +24,7 @@ struct FCesiumMetadataValue;
 struct FCesiumMetadataValueType;
 #endif
 
-namespace Cesium3DTiles {
+namespace CesiumTilesetJson {
 struct PropertyStatistics;
 }
 
@@ -169,7 +169,7 @@ FString GetSwizzleForEncodedType(ECesiumEncodedMetadataType Type);
 #endif
 
 FCesiumMetadataValue getValueForSemantic(
-    const Cesium3DTiles::PropertyStatistics& propertyStatistics,
+    const CesiumTilesetJson::PropertyStatistics& propertyStatistics,
     const FCesiumMetadataValueType& propertyType,
     ECesiumMetadataStatisticSemantic semantic);
 

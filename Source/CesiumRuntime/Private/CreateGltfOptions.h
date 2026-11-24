@@ -5,15 +5,16 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumFeaturesMetadataDescription.h"
-#include "CesiumGltf/Mesh.h"
-#include "CesiumGltf/MeshPrimitive.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumGltf/Node.h"
 #include "LoadGltfResult.h"
 #include "VoxelGridShape.h"
+#include <CesiumGltf/Mesh.h>
+#include <CesiumGltf/MeshPrimitive.h>
+#include <CesiumGltf/Model.h>
+#include <CesiumGltf/Node.h>
 
-#include <Cesium3DTiles/ExtensionContent3dTilesContentVoxels.h>
 #include <Cesium3DTilesSelection/TileLoadResult.h>
+#include <CesiumTilesetJson/Class.h>
+#include <CesiumTilesetJson/ExtensionContent3dTilesContentVoxels.h>
 
 /**
  * Various settings and options for loading a glTF model from a 3D Tileset.
@@ -114,12 +115,13 @@ struct CreateVoxelOptions {
   /**
    *  The 3DTILES_content_voxels extension found on the tileset's root content.
    */
-  const Cesium3DTiles::ExtensionContent3dTilesContentVoxels* pTilesetExtension;
+  const CesiumTilesetJson::ExtensionContent3dTilesContentVoxels*
+      pTilesetExtension;
 
   /**
    * A pointer to the class used by the tileset to define the voxel metadata.
    */
-  const Cesium3DTiles::Class* pVoxelClass;
+  const CesiumTilesetJson::Class* pVoxelClass;
 
   /**
    * The shape of the voxel grid.

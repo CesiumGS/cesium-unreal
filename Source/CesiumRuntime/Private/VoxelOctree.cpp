@@ -5,12 +5,12 @@
 #include "CesiumRuntime.h"
 #include "CesiumTextureResource.h"
 
-#include <Cesium3DTilesContent/ImplicitTilingUtilities.h>
+#include <Cesium3DTiles/ImplicitTilingUtilities.h>
 #include <UObject/Package.h>
 #include <glm/glm.hpp>
 
 using namespace CesiumGeometry;
-using namespace Cesium3DTilesContent;
+using namespace Cesium3DTiles;
 
 /*static*/ UVoxelOctreeTexture*
 UVoxelOctreeTexture::create(uint32 maximumTileCount) {

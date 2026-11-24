@@ -4,7 +4,7 @@
 
 #include "Math/BoxSphereBounds.h"
 #include "Math/TransformNonVectorized.h"
-#include <Cesium3DTilesSelection/BoundingVolume.h>
+#include <Cesium3DTiles/BoundingVolume.h>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
