@@ -2,13 +2,13 @@
 
 ### ? - ?
 
-##### Fixes :wrench:
-
-- Fixed a potential crash in capture movie mode that could happen if the tileset was somehow destroyed during the movie.
-
 ##### Additions :tada:
 
 - Added basic support for loading 3D Tiles 2.0 tilesets (i.e., glTF 2.1 models) via URL in `ACesium3DTileset`.
+
+##### Fixes :wrench:
+
+- Fixed a potential crash in capture movie mode that could happen if the tileset was somehow destroyed during the movie.
 
 ### v2.31.0 - 2026-11-02
 
